@@ -22,6 +22,7 @@ source "${SCRIPT_DIR}/scripts/services/ontology.sh"
 source "${SCRIPT_DIR}/scripts/services/agentoperator.sh"
 source "${SCRIPT_DIR}/scripts/services/dataagent.sh"
 source "${SCRIPT_DIR}/scripts/services/flowautomation.sh"
+source "${SCRIPT_DIR}/scripts/services/sandboxruntime.sh"
 source "${SCRIPT_DIR}/scripts/services/isf.sh"
 
 usage() {
@@ -62,6 +63,9 @@ usage() {
     echo "  flowautomation init           Install FlowAutomation services (flow-web, flow-automation, etc.)"
     echo "  flowautomation uninstall      Uninstall FlowAutomation services"
     echo "  flowautomation status         Show FlowAutomation services status"
+    echo "  sandboxruntime init           Install SandboxRuntime services (sandbox-runtime, etc.)"
+    echo "  sandboxruntime uninstall      Uninstall SandboxRuntime services"
+    echo "  sandboxruntime status         Show SandboxRuntime services status"
     echo "  isf init                      Install ISF services (informationsecurityfabric, hydra, sharemgnt, etc.)"
     echo "  isf uninstall                 Uninstall ISF services"
     echo "  isf status                    Show ISF services status"
@@ -462,6 +466,31 @@ main() {
         return 0
     fi
     
+    # Handle sandboxruntime module
+    if [[ "${module}" == "sandboxruntime" ]]; then
+        case "${action}" in
+            init)
+                shift 2
+                parse_dataagent_args "init" "$@"
+                install_dataagent
+                ;;
+            uninstall)
+                shift 2
+                parse_dataagent_args "uninstall" "$@"
+                uninstall_dataagent
+                ;;
+            status)
+                show_dataagent_status
+                ;;
+            *)
+                log_error "Unknown sandboxruntime action: ${action}"
+                usage
+                exit 1
+                ;;
+        esac
+        return 0
+    fi
+    
     # Handle isf module
     if [[ "${module}" == "isf" ]]; then
         case "${action}" in
@@ -594,12 +623,14 @@ main() {
                 install_agentoperator
                 install_dataagent
                 install_flowautomation
+                install_dataagent  # sandboxruntime uses dataagent functions
                 
                 log_info "KWeaver application services deployment completed!"
                 ;;
             uninstall)
                 check_root
                 log_info "Uninstalling KWeaver application services..."
+                uninstall_dataagent || true  # sandboxruntime
                 uninstall_flowautomation || true
                 uninstall_dataagent || true
                 uninstall_agentoperator || true
@@ -616,6 +647,7 @@ main() {
                 show_agentoperator_status
                 show_dataagent_status
                 show_flowautomation_status
+                show_dataagent_status  # sandboxruntime
                 ;;
             *)
                 log_error "Unknown kweaver action: ${action}"
@@ -696,6 +728,7 @@ main() {
                 install_agentoperator
                 install_dataagent
                 install_flowautomation
+                install_dataagent  # sandboxruntime uses dataagent functions
                 
                 show_status
                 log_info ""
@@ -708,6 +741,7 @@ main() {
                 log_info "Full reset: Uninstalling all components..."
                 
                 # Uninstall KWeaver services first
+                uninstall_dataagent || true  # sandboxruntime
                 uninstall_flowautomation || true
                 uninstall_dataagent || true
                 uninstall_agentoperator || true

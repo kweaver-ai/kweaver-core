@@ -26,7 +26,7 @@ bash ./deploy.sh full init
 
 | 项目 | 最低配置 | 推荐配置 |
 |------|---------|---------|
-| OS | CentOS 7/8+, RHEL 8/9 | CentOS 8+ |
+| OS | CentOS 7/8+, RHEL 8 | CentOS 8 |
 | CPU | 16 核 | 24 核 |
 | 内存 | 48 GB | 64 GB |
 | 磁盘 | 200 GB | 500 GB |
@@ -42,6 +42,8 @@ swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab
 
 # 3. 关闭 SELinux（可选，脚本会自动处理）
 setenforce 0
+
+# 4. 手动安装  container-selinux
 ```
 
 ### 网络要求
@@ -51,6 +53,7 @@ setenforce 0
 | 域名 | 用途 |
 |------|------|
 | `mirrors.aliyun.com` | RPM 软件包源 |
+| `mirrors.tuna.tsinghua.edu.cn` | 清华大学containerd.io RPM源  |
 | `registry.aliyuncs.com` | Kubernetes 组件镜像 |
 | `swr.cn-east-3.myhuaweicloud.com` | 应用镜像仓库 |
 | `repo.huaweicloud.com` | Helm 二进制文件 |

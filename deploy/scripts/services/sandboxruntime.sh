@@ -1,17 +1,11 @@
 
-# Studio releases list
-declare -a STUDIO_RELEASES=(
-    "deploy-web"
-    "studio-web"
-    "business-system-frontend"
-    "business-system-service"
-    "mf-model-manager-nginx"
-    "mf-model-manager"
-    "mf-model-api"
+# DataAgent releases list
+declare -a DATAAGENT_RELEASES=(
+    "sandbox-runtime"
 )
 
-# Parse studio command arguments
-parse_studio_args() {
+# Parse dataagent command arguments
+parse_dataagent_args() {
     local action="$1"
     shift
     
@@ -50,23 +44,23 @@ parse_studio_args() {
     done
 }
 
-# Initialize Studio database using common database initialization function
-init_studio_database() {
-    local sql_dir="${SCRIPT_DIR}/scripts/sql/studio"
+# Initialize DataAgent database using common database initialization function
+init_dataagent_database() {
+    local sql_dir="${SCRIPT_DIR}/scripts/sql/dataagent"
     
     # Only initialize database if RDS is internal (MariaDB installed in cluster)
     if ! is_rds_internal; then
-        warn_external_rds_sql_required "Studio" "${sql_dir}"
-        log_warn "Skipping automatic Studio database initialization (external RDS)"
+        warn_external_rds_sql_required "DataAgent" "${sql_dir}"
+        log_warn "Skipping automatic DataAgent database initialization (external RDS)"
         return 0
     fi
     
-    init_module_database "studio" "${sql_dir}"
+    init_module_database "dataagent" "${sql_dir}"
 }
 
-# Install Studio services via Helm
-install_studio() {
-    log_info "Installing Studio services via Helm..."
+# Install DataAgent services via Helm
+install_dataagent() {
+    log_info "Installing DataAgent services via Helm..."
     log_info "  Version: ${HELM_CHART_VERSION:-0.1.0}"
     log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 
@@ -83,28 +77,29 @@ install_studio() {
     helm repo update
     
     # Initialize database first
-    if ! init_studio_database; then
-        log_error "Failed to initialize Studio database"
+    if ! init_dataagent_database; then
+        log_error "Failed to initialize DataAgent database"
         return 1
     fi
     
     log_info "Target namespace: ${namespace}"
     
     # Install each release
-    for release_name in "${STUDIO_RELEASES[@]}"; do
-        install_studio_release "${release_name}" "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
+    for release_name in "${DATAAGENT_RELEASES[@]}"; do
+        install_dataagent_release "${release_name}" "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
     done
     
-    log_info "Studio services installation completed"
+    log_info "DataAgent services installation completed"
 }
 
-# Install a single Studio release
-install_studio_release() {
+# Install a single DataAgent release
+install_dataagent_release() {
     local release_name="$1"
     local chart_name="$2"
     local namespace="$3"
     local helm_repo_name="$4"
-    local default_version="$5"
+    local release_version="$5"
+    local values_file="${6:-${SCRIPT_DIR}/conf/config.yaml}"
     
     log_info "Installing ${release_name}..."
     
@@ -116,15 +111,15 @@ install_studio_release() {
         "upgrade" "--install" "${release_name}"
         "${chart_ref}"
         "--namespace" "${namespace}"
-        "-f" "${SCRIPT_DIR}/conf/config.yaml"
+        "-f" "${values_file}"
     )
     
     # Add version parameter only if specified
-    if [[ -n "${default_version}" ]]; then
-        helm_args+=("--version" "${default_version}")
+    if [[ -n "${release_version}" ]]; then
+        helm_args+=("--version" "${release_version}")
     fi
     
-    helm_args+=("--devel" "--wait" "--timeout=600s")
+    helm_args+=("--devel")
     
     # Execute Helm install/upgrade
     if helm "${helm_args[@]}"; then
@@ -135,17 +130,17 @@ install_studio_release() {
     fi
 }
 
-# Uninstall Studio services
-uninstall_studio() {
-    log_info "Uninstalling Studio services..."
+# Uninstall DataAgent services
+uninstall_dataagent() {
+    log_info "Uninstalling DataAgent services..."
     
     # Get namespace from config.yaml
     local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
     namespace="${namespace:-kweaver-ai}"
     
     # Uninstall in reverse order
-    for ((i=${#STUDIO_RELEASES[@]}-1; i>=0; i--)); do
-        local release_name="${STUDIO_RELEASES[$i]}"
+    for ((i=${#DATAAGENT_RELEASES[@]}-1; i>=0; i--)); do
+        local release_name="${DATAAGENT_RELEASES[$i]}"
         log_info "Uninstalling ${release_name}..."
         if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
             log_info "✓ ${release_name} uninstalled successfully"
@@ -154,12 +149,12 @@ uninstall_studio() {
         fi
     done
     
-    log_info "Studio services uninstallation completed"
+    log_info "DataAgent services uninstallation completed"
 }
 
-# Show Studio services status
-show_studio_status() {
-    log_info "Studio services status:"
+# Show DataAgent services status
+show_dataagent_status() {
+    log_info "DataAgent services status:"
     
     # Get namespace from config.yaml
     local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
@@ -169,7 +164,7 @@ show_studio_status() {
     log_info ""
     
     # Check each release
-    for release_name in "${STUDIO_RELEASES[@]}"; do
+    for release_name in "${DATAAGENT_RELEASES[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
             local status=$(helm status "${release_name}" -n "${namespace}" -o json 2>/dev/null | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
             log_info "  ✓ ${release_name}: ${status}"

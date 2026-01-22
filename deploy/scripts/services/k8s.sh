@@ -422,28 +422,31 @@ install_containerd() {
 
     detect_package_manager
     
-    # Step 1: Check if containerd service already exists and is running
-    if systemctl is-active --quiet containerd 2>/dev/null; then
-        log_info "containerd service is already running, skipping installation"
-        # Still ensure configuration is correct
-        configure_containerd_runtime
-        return 0
-    fi
-    
-    # Step 2: Check if containerd is installed but not running
+    # Step 1: Check if containerd binary exists (indicates it's already installed)
     if command -v containerd &> /dev/null; then
-        log_info "containerd is installed but not running, attempting to start..."
-        systemctl start containerd 2>/dev/null || true
-        sleep 2
+        log_info "containerd binary found, skipping package installation"
+        # Check and configure containerd
+        configure_containerd_runtime
+        
+        # Try to start if not running
+        if ! systemctl is-active --quiet containerd 2>/dev/null; then
+            log_info "Starting containerd service..."
+            systemctl daemon-reload
+            systemctl enable containerd
+            systemctl start containerd
+            sleep 2
+        fi
+        
         if systemctl is-active --quiet containerd 2>/dev/null; then
-            log_info "containerd started successfully"
-            configure_containerd_runtime
+            log_info "containerd is running and configured"
+            return 0
+        else
+            log_warn "Failed to start containerd, but binary exists. Continuing..."
             return 0
         fi
-        log_warn "containerd is installed but failed to start, will try to reconfigure..."
     fi
     
-    # Step 3: containerd is not installed, proceed with installation
+    # Step 2: containerd is not installed, proceed with installation
     log_info "containerd is not installed, proceeding with installation..."
     
     # Function to configure Docker repo (Tsinghua mirror)
@@ -648,24 +651,43 @@ configure_containerd_runtime() {
     # Configure containerd
     mkdir -p /etc/containerd
     
-    # Always ensure CRI plugin is enabled
+    # Check if config file exists and is initialized
     if [[ ! -f /etc/containerd/config.toml ]]; then
         log_info "Creating containerd configuration file..."
-        containerd config default | tee /etc/containerd/config.toml
+        containerd config default > /etc/containerd/config.toml
+        if [[ ! -s /etc/containerd/config.toml ]]; then
+            log_error "Failed to generate containerd config file"
+            return 1
+        fi
+        log_info "✓ Configuration file created and initialized"
     else
-        log_info "containerd configuration file already exists, ensuring CRI plugin is enabled..."
+        log_info "Configuration file exists, checking initialization..."
+        if [[ ! -s /etc/containerd/config.toml ]]; then
+            log_warn "Configuration file is empty, reinitializing..."
+            containerd config default > /etc/containerd/config.toml
+        else
+            log_info "✓ Configuration file is initialized"
+        fi
     fi
     
-    # Enable CRI plugin (always check and enable)
+    # Ensure CRI plugin is enabled
     if grep -q "disabled_plugins.*cri" /etc/containerd/config.toml; then
         log_info "Enabling CRI plugin in containerd..."
         sed -i 's/disabled_plugins.*=.*\[.*"cri".*\]/disabled_plugins = []/g' /etc/containerd/config.toml
+    else
+        log_info "✓ CRI plugin is enabled"
     fi
     
-    # Enable systemd cgroup driver
-    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+    # Ensure systemd cgroup driver is enabled
+    if grep -q "SystemdCgroup = false" /etc/containerd/config.toml; then
+        log_info "Enabling systemd cgroup driver..."
+        sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+    else
+        log_info "✓ Systemd cgroup driver is enabled"
+    fi
     
-    # Start and enable containerd
+    # Restart containerd to apply configuration
+    log_info "Restarting containerd to apply configuration..."
     systemctl daemon-reload
     systemctl enable containerd
     systemctl restart containerd
@@ -690,9 +712,10 @@ EOF
                 return 1
             fi
         fi
+        log_info "✓ CRI connection verified"
     fi
     
-    log_info "containerd runtime configured successfully"
+    log_info "✓ containerd runtime configured successfully"
 }
 
 # Install crictl (container runtime interface CLI)

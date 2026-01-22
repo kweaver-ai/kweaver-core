@@ -122,10 +122,14 @@ install_flowautomation_release() {
         "${chart_ref}"
         "--namespace" "${namespace}"
         "-f" "${values_file}"
-        "--version" "${release_version}"
-        "--devel"
-        "--wait" "--timeout=600s"
     )
+    
+    # Add version parameter only if specified
+    if [[ -n "${release_version}" ]]; then
+        helm_args+=("--version" "${release_version}")
+    fi
+    
+    helm_args+=("--devel")
     
     # Execute Helm install/upgrade
     if helm "${helm_args[@]}"; then
