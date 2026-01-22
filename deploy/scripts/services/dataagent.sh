@@ -1,7 +1,7 @@
 
 # DataAgent releases list
 declare -a DATAAGENT_RELEASES=(
-    "agent-factory"
+    "agent-backend"
     "agent-web"
 )
 
