@@ -120,7 +120,7 @@ HELM_VERSION="${HELM_VERSION:-v3.19.0}"
 HELM_TARBALL_BASEURL="${HELM_TARBALL_BASEURL:-https://repo.huaweicloud.com/helm/${HELM_VERSION}/}"
 
 # Global Helm Chart Configuration (for Studio, Ontology, and other modules)
-HELM_CHART_VERSION="${HELM_CHART_VERSION:-0.1.0}"
+HELM_CHART_VERSION="${HELM_CHART_VERSION:-}"
 HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
 

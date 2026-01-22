@@ -98,7 +98,7 @@ init_isf_database() {
 # Install ISF services via Helm
 install_isf() {
     log_info "Installing ISF services via Helm..."
-    log_info "  Version: ${HELM_CHART_VERSION:-0.1.0}"
+    log_info "  Version: ${HELM_CHART_VERSION}"
     log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 
     # Get namespace from config.yaml

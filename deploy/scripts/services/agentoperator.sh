@@ -65,7 +65,7 @@ init_agentoperator_database() {
 # Install agentoperator services via Helm
 install_agentoperator() {
     log_info "Installing agentoperator services via Helm..."
-    log_info "  Version: ${HELM_CHART_VERSION:-0.1.0}"
+    log_info "  Version: ${HELM_CHART_VERSION}"
     log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 
     # Get namespace from config.yaml

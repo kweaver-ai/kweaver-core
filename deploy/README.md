@@ -14,7 +14,7 @@ cd kweaver/deploy
 # 2. 编辑配置文件（可选，使用默认配置可跳过）
 # vim conf/config.yaml
 
-# 3. 一键部署所有组件
+# 3. 一键部署所有组件，默认安装最新版本
 bash ./deploy.sh full init
 ```
 
