@@ -6,11 +6,6 @@ declare -a FLOWAUTOMATION_RELEASES=(
     "flow-stream-data-pipeline"
     "ecron-analysis"
     "ecron-management"
-    "doc-audit-client"
-    "workflow-manage-client"
-    "workflow-manage-front"
-    "flow-audit-core"
-    "flow-audit-config"
     "coderunner"
 )
 
