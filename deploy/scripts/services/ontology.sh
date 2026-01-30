@@ -53,6 +53,20 @@ parse_ontology_args() {
     done
 }
 
+# Initialize ontology database using common database initialization function
+init_ontology_database() {
+    local sql_dir="${SCRIPT_DIR}/scripts/sql/ontology"
+    
+    # Only initialize database if RDS is internal (MariaDB installed in cluster)
+    if ! is_rds_internal; then
+        warn_external_rds_sql_required "Ontology" "${sql_dir}"
+        log_warn "Skipping automatic Ontology database initialization (external RDS)"
+        return 0
+    fi
+    
+    init_module_database "ontology" "${sql_dir}"
+}
+
 # Install Ontology services via Helm
 install_ontology() {
     log_info "Installing Ontology services via Helm..."
@@ -70,6 +84,12 @@ install_ontology() {
     log_info "Adding Helm repo: ${HELM_CHART_REPO_NAME} -> ${HELM_CHART_REPO_URL}"
     helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
     helm repo update
+
+    # Initialize database first
+    if ! init_ontology_database; then
+        log_error "Failed to initialize ontology database"
+        return 1
+    fi
     
     log_info "Target namespace: ${namespace}"
     
