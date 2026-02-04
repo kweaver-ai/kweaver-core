@@ -12,6 +12,7 @@ This document defines the KWeaver architecture rules. **For day-to-day work, rea
   - **Exception (ISF only)**: ISF may provide **independent frontend components** (micro-frontend modules), but they must be mounted by DIP. No standalone UI entry and no built-in BFF.
 - **DIP (single presentation entry)**: All UI is in DIP. DIP **requires Core at runtime**.
 - **Product dependency**: Products may call DIP or Core. DIP may only call Core. No reverse dependency.
+- **Component optionality**: Info Security Fabric (ISF) is optional. Except DIP base, other capability modules are optional by default and must support enable/disable with explicit UI degradation messaging (see Section 2).
 
 ```mermaid
 flowchart LR
@@ -22,7 +23,7 @@ flowchart LR
 
 ### 1.2 Presentation and backend (no page-scoped BFF)
 
-- **Frontend uses a monorepo**: DIP host app, shared UI libraries, and micro-frontend modules (including ISF frontend components) collaborate in one monorepo.
+- **DIP frontend uses a monorepo (MUST)**: DIP host app, shared UI libraries, and micro-frontend modules (including Info Security Fabric frontend components) collaborate in one monorepo.
 - **Allowed**: Split **micro-apps** by business and delivery boundaries (micro-frontend / micro-app modules).
 - **Forbidden**:
   - Adding a dedicated backend for each page/micro-frontend module (page-scoped BFF)
@@ -67,6 +68,19 @@ If all answers are “no” → do not add a new service.
 - **Contract**:
   - HTTP: OpenAPI 3.1 (unified error model + pagination/filter/sort)
   - Skill: Claude Skills (tool/function calling). Must declare auth/tenant/audit and input/output schemas.
+
+- **Compatibility definition (MUST)**:
+  - **Request/Input compatibility**: older clients/callers must still work when fields are missing or use older values; do not change optional fields to required.
+  - **Response/Output compatibility**: adding new fields is allowed; do not remove/rename existing fields; callers must ignore unknown fields.
+  - **Behavior compatibility**: semantics must remain stable; no “same name, different meaning”.
+
+- **Skills must be compatible too (Claude Skills)**:
+  - If a Skill is used by DIP/products, treat it as **Public** and keep it backward compatible.
+  - **Stable `name`**: once published, `name` must not change (renaming means a new Skill).
+  - **Schema compatibility**:
+    - `input_schema`: only add optional fields / extend enums (callers tolerate unknown values). Do not delete fields or change optional to required.
+    - `output_schema`: only add fields. Do not delete/rename existing fields.
+  - **Breaking changes**: only via a new `version` (and a new `name` if needed) with a deprecation window.
 - **Change requirements**: API changes require ADR + OpenAPI diff (breaking detection) + contract tests (critical endpoints)
 
 ### 1.4 Service budget (MUST)
@@ -97,6 +111,7 @@ Exemption (must be recorded):
 - **APIs**: OpenAPI updated + breaking detection passed + deprecation/migration notes + contract tests
 - **Backend additions**: no page-scoped BFF; any new service must pass the questions in 1.2
 - **Micro-apps**: micro-apps are allowed; do not add backend microservices per micro-app (backends must be one of DIP Gateway / DIP module backends / product-domain services)
+- **Monorepo**: DIP frontend uses a monorepo (including micro-apps/micro-frontends). Splitting micro-apps must not introduce new backend microservices.
 - **Budget**: Core < 5, DIP ≤ 5; service inventory and counts updated
 
 ---
