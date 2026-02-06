@@ -1,7 +1,7 @@
 
 # SandboxRuntime releases list
 declare -a SANDBOXRUNTIME_RELEASES=(
-    "sandbox-runtime"
+    "sandbox"
 )
 
 # Parse sandboxruntime command arguments
