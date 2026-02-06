@@ -44,6 +44,20 @@ parse_sandboxruntime_args() {
     done
 }
 
+# Initialize sandbox database using common database initialization function
+init_sandbox_database() {
+    local sql_dir="${SCRIPT_DIR}/scripts/sql/sandbox"
+    
+    # Only initialize database if RDS is internal (MariaDB installed in cluster)
+    if ! is_rds_internal; then
+        warn_external_rds_sql_required "Sandbox" "${sql_dir}"
+        log_warn "Skipping automatic Sandbox database initialization (external RDS)"
+        return 0
+    fi
+    
+    init_module_database "sandbox" "${sql_dir}"
+}
+
 # Install SandboxRuntime services via Helm
 install_sandboxruntime() {
     log_info "Installing SandboxRuntime services via Helm..."
@@ -62,6 +76,12 @@ install_sandboxruntime() {
     helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
     helm repo update
 
+    # Initialize database first
+    if ! init_sandbox_database; then
+        log_error "Failed to initialize sandbox database"
+        return 1
+    fi
+    
     log_info "Target namespace: ${namespace}"
 
     # Install each release
