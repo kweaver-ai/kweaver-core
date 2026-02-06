@@ -665,9 +665,27 @@ configure_containerd_runtime() {
         if [[ ! -s /etc/containerd/config.toml ]]; then
             log_warn "Configuration file is empty, reinitializing..."
             containerd config default > /etc/containerd/config.toml
+        elif ! grep -q "SystemdCgroup" /etc/containerd/config.toml; then
+            log_warn "Configuration file appears incomplete (missing runtime settings), reinitializing..."
+            containerd config default > /etc/containerd/config.toml
         else
             log_info "✓ Configuration file is initialized"
         fi
+    fi
+    
+    # Ensure sandbox_image uses the configured image repository (avoid pulling from registry.k8s.io)
+    local desired_sandbox_image="${IMAGE_REPOSITORY}/pause:3.9"
+    if grep -q 'sandbox_image' /etc/containerd/config.toml; then
+        local current_sandbox_image
+        current_sandbox_image=$(grep 'sandbox_image' /etc/containerd/config.toml | head -1 | sed 's/.*= *"//;s/".*//')
+        if [[ "${current_sandbox_image}" != "${desired_sandbox_image}" ]]; then
+            log_info "Updating sandbox_image from ${current_sandbox_image} to ${desired_sandbox_image}..."
+            sed -i "s|sandbox_image = \".*\"|sandbox_image = \"${desired_sandbox_image}\"|g" /etc/containerd/config.toml
+        else
+            log_info "✓ sandbox_image is correctly configured"
+        fi
+    else
+        log_warn "sandbox_image not found in config, this may cause issues with default containerd sandbox image"
     fi
     
     # Ensure CRI plugin is enabled
