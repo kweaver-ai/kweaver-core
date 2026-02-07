@@ -1,4 +1,4 @@
--- Source: ontology/ontology-manager/migrations/mariadb/0.2.0/pre/init.sql
+-- Source: ontology/ontology-manager/migrations/mariadb/0.3.0/pre/init.sql
 USE adp;
 
 -- 业务知识网络
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS t_action_schedule (
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT 'Branch',
   f_action_type_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT 'Action type ID to execute',
   f_cron_expression VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Standard 5-field cron expression (min hour dom mon dow)',
-  f_unique_identities MEDIUMTEXT DEFAULT NULL COMMENT 'JSON array of target object unique identities',
+  f_instance_identities MEDIUMTEXT DEFAULT NULL COMMENT 'JSON array of target object instance identities',
   f_dynamic_params MEDIUMTEXT DEFAULT NULL COMMENT 'JSON object of dynamic parameters',
   f_status VARCHAR(20) NOT NULL DEFAULT 'inactive' COMMENT 'Schedule status: active or inactive',
   f_last_run_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT 'Last execution timestamp (ms)',
@@ -1477,4 +1477,3 @@ CREATE TABLE IF NOT EXISTS `task_info` (
   `cpu_time` varchar(30) NOT NULL COMMENT 'cpu耗时',
   PRIMARY KEY (`task_id`,`sub_task_id`)
 );
-
