@@ -75,6 +75,7 @@ install_ingress_nginx() {
         --set controller.ingressClassResource.name="${INGRESS_NGINX_CLASS}"
         --set controller.ingressClassResource.default=true
         --set controller.ingressClass="${INGRESS_NGINX_CLASS}"
+        --set controller.config.proxy-body-size="1024m"
         --set defaultBackend.enabled=false
         --wait --timeout=600s
     )
