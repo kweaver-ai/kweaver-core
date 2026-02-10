@@ -10,8 +10,8 @@ The DIP platform includes key subsystems such as ADP, Decision Agent, DIP Studio
 
 ## 📚 Quick Links
 
-- 🤝 [Contributing](CONTRIBUTING.md) - Guidelines for contributing to the project
-- 🚀 [Release Guidelines](RELEASE.md) - Version management and release process
+- 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
+- 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 📄 [License](LICENSE.txt) - Apache License 2.0
 - 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver/issues) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/kweaver/issues) - Suggest a new feature
@@ -46,7 +46,7 @@ The DIP platform includes key subsystems such as ADP, Decision Agent, DIP Studio
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
+We welcome contributions! Please see our [Contributing Guide](rules/CONTRIBUTING.md) for details on how to contribute to this project.
 
 Quick start:
 
@@ -62,7 +62,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## Support & Contact
 
-- **Contributing**: [Contributing Guide](CONTRIBUTING.md)
+- **Contributing**: [Contributing Guide](rules/CONTRIBUTING.md)
 - **Issues**: [GitHub Issues](https://github.com/kweaver-ai/kweaver/issues)
 - **License**: [Apache License 2.0](LICENSE.txt)
 

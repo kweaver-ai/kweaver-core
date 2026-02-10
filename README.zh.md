@@ -10,8 +10,8 @@ DIP 平台包括 ADP、Decision Agent、DIP Studio、AI Store 等关键子系统
 
 ## 📚 快速链接
 
-- 🤝 [贡献指南](CONTRIBUTING.zh.md) - 项目贡献指南
-- 🚀 [发布规范](RELEASE.zh.md) - 版本管理与发布流程
+- 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
+- 🚀 [发布规范](rules/RELEASE.zh.md) - 版本管理与发布流程
 - 📄 [许可证](LICENSE.txt) - Apache License 2.0
 - 🐛 [报告 Bug](https://github.com/kweaver-ai/kweaver/issues) - 报告问题或 Bug
 - 💡 [功能建议](https://github.com/kweaver-ai/kweaver/issues) - 提出新功能建议
@@ -46,7 +46,7 @@ DIP 平台包括 ADP、Decision Agent、DIP Studio、AI Store 等关键子系统
 
 ## 贡献指南
 
-我们欢迎贡献！请查看我们的[贡献指南](CONTRIBUTING.zh.md)了解如何为项目做出贡献。
+我们欢迎贡献！请查看我们的[贡献指南](rules/CONTRIBUTING.zh.md)了解如何为项目做出贡献。
 
 快速开始：
 
@@ -62,7 +62,7 @@ DIP 平台包括 ADP、Decision Agent、DIP Studio、AI Store 等关键子系统
 
 ## 支持与联系
 
-- **贡献指南**: [贡献指南](CONTRIBUTING.zh.md)
+- **贡献指南**: [贡献指南](rules/CONTRIBUTING.zh.md)
 - **问题反馈**: [GitHub Issues](https://github.com/kweaver-ai/kweaver/issues)
 - **许可证**: [Apache License 2.0](LICENSE.txt)
 
