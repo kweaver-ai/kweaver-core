@@ -18,7 +18,7 @@ cd kweaver/deploy
 bash ./deploy.sh full init
 ```
 
-部署完成后，访问 `https://<节点IP>` 即可使用。
+部署完成后，访问 `https://<节点IP>/studio` 即可使用,账号admin，初始密码eisoo.com
 
 ## 📋 Prerequisites
 
