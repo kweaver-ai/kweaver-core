@@ -22,7 +22,7 @@ USE adp;
 -- Table: t_sandbox_template
 -- ================================================================
 -- 沙箱模板定义表（基础表，被 session 引用，先创建）
-CREATE TABLE `t_sandbox_template` (
+CREATE TABLE IF NOT EXISTS `t_sandbox_template` (
   `f_id` varchar(40) NOT NULL,
   `f_name` varchar(128) NOT NULL,
   `f_description` varchar(500) NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE `t_sandbox_template` (
 -- Table: t_sandbox_runtime_node
 -- ================================================================
 -- 运行时节点注册表
-CREATE TABLE `t_sandbox_runtime_node` (
+CREATE TABLE IF NOT EXISTS `t_sandbox_runtime_node` (
   `f_node_id` varchar(40) NOT NULL,
   `f_hostname` varchar(128) NOT NULL,
   `f_runtime_type` varchar(20) NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE `t_sandbox_runtime_node` (
 -- Table: t_sandbox_session
 -- ================================================================
 -- 沙箱会话管理表（含依赖安装支持）
-CREATE TABLE `t_sandbox_session` (
+CREATE TABLE IF NOT EXISTS `t_sandbox_session` (
   `f_id` varchar(255) NOT NULL,
   `f_template_id` varchar(40) NOT NULL,
   `f_status` varchar(20) NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE `t_sandbox_session` (
 -- Table: t_sandbox_execution
 -- ================================================================
 -- 代码执行记录表
-CREATE TABLE `t_sandbox_execution` (
+CREATE TABLE IF NOT EXISTS `t_sandbox_execution` (
   `f_id` varchar(40) NOT NULL,
   `f_session_id` varchar(255) NOT NULL,
   `f_status` varchar(20) NOT NULL,
@@ -163,4 +163,3 @@ CREATE TABLE `t_sandbox_execution` (
   KEY `t_sandbox_execution_idx_status` (`f_status`),
   KEY `t_sandbox_execution_idx_created_at` (`f_created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
