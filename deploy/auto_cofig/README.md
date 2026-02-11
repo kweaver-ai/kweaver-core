@@ -46,7 +46,7 @@ DS_COMMENT=备注信息  # 数据源备注信息
 ## 环境准备
 
 ### 前置条件
-1. 需登录系统工作台，并添加小模型，然后重启ontology-manager服务，确保服务起来。
+1. 登录系统工作台，创建kweaver账号(如：test),访问 https://ip/studio 登录页，登录test用户（默认密码：123456）后下方提示修改密码，进行密码修改，修改密码后才可登录。
 2. 为当前用户添加对应权限：添加数据源、导入业务知识网络、导入DataAgent权限 导入数据流。
 
 ### 1. 安装依赖（无需执行）
@@ -74,7 +74,7 @@ chmod +x auto_config.sh
 执行全部4个步骤：获取token、创建数据源并扫描、导入业务知识网络、导入DataAgent、导入数据流。
 
 ```bash
-./auto_config.sh agent.json 业务知识网络.json 数据流.json
+./auto_config.sh agent.json HD供应链业务知识网络.json dataflow.json
 ```
 
 ### 执行示例
