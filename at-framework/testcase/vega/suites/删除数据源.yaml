@@ -1,0 +1,62 @@
+feature: 接口参数校验
+story: 删除数据源
+switch: y
+tags: [regression, data-connection]
+cases:
+- name: 新增数据源_mysql_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '测试数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"测试数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id\": \"$.id\",\n \"catalog_name\": \"$.name\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_参数校验_id存在_请求成功
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_参数校验_id不存在_请求失败
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_参数校验_id已删除_请求失败
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_参数校验_id为内置数据源_请求失败
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''

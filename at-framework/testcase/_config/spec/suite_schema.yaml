@@ -1,0 +1,41 @@
+# 套件（suite）规范 - 每个模块 suites/*.yaml 文件必须符合此结构（框架级，所有模块共用）
+# 智能体新增/修改套件或 tags 时以此为唯一依据
+
+fields:
+  - name: feature
+    type: string
+    required: true
+    description: 功能大类，如 接口参数校验、冒烟测试、数据源管理
+  - name: story
+    type: string
+    required: true
+    description: 场景/故事，建议与文件名（不含扩展名）一致，便于与 _suite_file 对应
+  - name: switch
+    type: string
+    required: true
+    enum: [y, n]
+    description: |
+      y 表示该套件参与加载（进入用例池），n 表示不加载（整套件不出现在 case_list）。
+      与 agent 按 scope/tags/api_name 筛选的关系：switch 控制「是否入池」，筛选控制「入池后执行哪些」。
+      保留 switch 的典型场景——整套件临时下线、WIP 或已废弃时，改一处即可排除，无需删文件或改每条 case 的 tags。
+  - name: tags
+    type: list
+    required: false
+    description: 套件默认标签；单条 case 未写 tags 时继承此处；若 case 自带 tags 则以 case 为准（粒度到用例）
+    item_type: string
+  - name: description
+    type: string
+    required: false
+    description: 套件说明，供人工或智能体选 suite 时阅读；不参与执行
+  - name: cases
+    type: list
+    required: true
+    description: 用例数组，每项符合 case_schema.yaml；数组顺序即加载顺序，执行顺序由各 case 的 prev_case 依赖决定
+    item_ref: case_schema.yaml
+
+file_convention: "仅 .yaml / .yml 被加载；文件名建议与 story 一致，如 新增数据源.yaml"
+
+# switch 与 agent 筛选的分工（执行由 agent 确认筛选后触发时仍建议保留 switch）
+# - switch=n → 该套件不加载，用例池中无该套件下任何 case，agent 再筛选也选不到
+# - switch=y → 进入用例池；是否执行由 SCOPE/TAGS/API_NAME 等筛选决定
+# - 使用 switch 做「整套件下线/WIP/废弃」比改 tags 或删文件更简单、可逆

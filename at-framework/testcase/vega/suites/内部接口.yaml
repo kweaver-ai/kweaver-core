@@ -1,0 +1,444 @@
+feature: 接口参数校验
+story: 内部接口
+switch: n
+tags: [regression, data-connection]
+cases:
+- name: 新增数据源_mysql_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '新增数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"新增数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id\": \"$.id\",\n \"catalog_name\": \"$.name\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 新增数据源_postgres_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '扫描数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"postgresql\",\n    \"comment\": \"扫描Postgres数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_postgres}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id_2\": \"$.id\",\n \"catalog_name_2\": \"$.name\"\n\
+    }"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_请求成功
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数缺省_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_全量参数_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"limit\": 10,\n \"offset\": 0,\n \"keyword\": \"\",\n \"type\"\
+    : \"structured\",\n \"sort\": \"created_at\",\n \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit=-2_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -2\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit=-1_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit=0_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit=10_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit=100_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_limit非Integer类型_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=-1_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=0_不指定limit_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=0_指定limit_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=10_不指定limit_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=10_指定limit_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset=100_指定limit_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_offset非Integer类型_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_keyword模糊搜索_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"新增数据源\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_keyword包含中英文、数字、符号等_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"新增数据源\\nABCD-abcd-1234\\t`~!@#$%^&*()+_={}[]|\\\
+    \\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_keyword按地址搜索_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"${template_host_1}\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_type非枚举值_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_sort非枚举值_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_参数校验_direction非枚举值_请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_按类型查询_查询structured类型_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"structured\",\n    \"offset\": 0,\n    \"limit\"\
+    : 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_按类型查询_查询no-structured类型_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"no-structured\",\n    \"offset\": 0,\n    \"limit\"\
+    : 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_按类型查询_查询other类型_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"other\",\n    \"offset\": 0,\n    \"limit\": 10\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_按类型查询_多类型查询_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"structured,no-structured,other\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_按类型查询_多类型查询_类型未定义请求失败
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"type\": \"structured,no-structured,undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按创建时间正序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"created_at\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按创建时间倒序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"created_at\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按更新时间正序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"updated_at\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按更新时间倒序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"updated_at\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按名称正序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"name\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询数据源列表_排序规则_按名称倒序_请求成功
+  url: 查询数据源列表（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"name\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看数据源详情__参数校验_id不存在_请求失败
+  url: 查询数据源详情（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看数据源详情__参数校验_id已删除_请求失败
+  url: 查询数据源详情（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看数据源详情__参数校验_id存在_请求成功
+  url: 查询数据源详情（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看数据源详情__参数校验_id为内置数据源_请求成功
+  url: 查询数据源详情（内部）
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''

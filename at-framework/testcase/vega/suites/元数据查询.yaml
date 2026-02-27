@@ -1,0 +1,1427 @@
+feature: 接口参数校验
+story: 元数据查询
+switch: n
+tags: [regression, data-connection]
+cases:
+- name: 新增数据源_postgres_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '扫描数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"postgresql\",\n    \"comment\": \"扫描Postgres数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_postgres}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id\": \"$.id\",\n \"catalog_name\": \"$.name\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 数据源扫描_postgres_请求成功
+  url: 元数据扫描
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n \"scan_name\": \"{{ '扫描任务_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n \"ds_info\": {\n  \"ds_id\": \"${catalog_id}\",\n  \"ds_type\"\
+    : \"postgresql\"\n },\n \"type\": 0,\n \"tables\": []\n}"
+  form_params: ''
+  resp_values: "{\n \"task_id\": \"$.id\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 新增数据源_mysql_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '新增数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"新增数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id_2\": \"$.id\",\n \"catalog_name_2\": \"$.name\"\n\
+    }"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_请求成功
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 单数据源扫描_指定数据源扫描_请求成功
+  url: 元数据扫描
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n \"scan_name\": \"{{ '扫描任务_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n \"ds_info\": {\n  \"ds_id\": \"${catalog_id}\",\n  \"ds_type\"\
+    : \"postgresql\"\n },\n \"type\": 0\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数缺省_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_全量参数_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"ds_id\": \"${catalog_id}\",\n \"status\": \"\",\n \"limit\"\
+    : -1,\n \"offset\": 0,\n \"keyword\": \"\",\n \"sort\": \"start_time\",\n \"direction\"\
+    : \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_ds不存在_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"ds_id\": \"00000000-0000-0000-000000000000\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_ds已删除_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"ds_id\": \"${catalog_id_2}\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_ds为内置数据源_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"ds_id\": \"${buildin_catalog_id}\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: "{\n \"$.total_count\": 0\n}"
+- name: 查询扫描任务列表_参数校验_ds存在_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"ds_id\": \"${catalog_id}\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_status非枚举值_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_查询等待中任务_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"wait\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_查询进行中任务_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"running\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_查询扫描成功任务_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"success\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_查询扫描失败任务_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"fail\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit=-2_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -2\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit=-1_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit=0_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit=10_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit=100_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_limit非Integer类型_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=-1_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=0_不指定limit_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=0_指定limit_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=10_不指定limit_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=10_指定limit_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset=100_指定limit_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_offset非Integer类型_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_keyword模糊搜索_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_keyword包含中英文、数字、符号等_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\\nABCD-abcd-1234\\t`~!@#$%^&*()+_={}[]|\\\
+    \\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_sort非枚举值_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_sort为空_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_direction非枚举值_请求失败
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_参数校验_direction为空_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_排序规则_按开始时间正序_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"start_time\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_排序规则_按开始时间倒序_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"start_time\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_排序规则_按名称正序_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"name\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询扫描任务列表_排序规则_按名称倒序_请求成功
+  url: 查询扫描任务列表
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"name\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务状态_参数校验_id不存在_请求失败
+  url: 查看指定任务状态
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务状态_参数校验_id存在_请求成功
+  url: 查看指定任务状态
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_id不存在_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_id存在_参数缺省_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_id存在_全量参数_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"\",\n \"limit\": -1,\n \"offset\": 0,\n \"keyword\"\
+    : \"\",\n \"sort\": \"start_time\",\n \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_status非枚举值_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_查询等待中任务_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"wait\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_查询进行中任务_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"running\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_查询扫描成功任务_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"success\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_查询扫描失败任务_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"status\": \"fail\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit=-2_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -2\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit=-1_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit=0_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit=10_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit=100_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_limit非Integer类型_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=-1_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=0_不指定limit_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=0_指定limit_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=10_不指定limit_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=10_指定limit_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset=100_指定limit_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_offset非Integer类型_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_keyword模糊搜索_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_keyword包含中英文、数字、符号等_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\\nABCD-abcd-1234\\t`~!@#$%^&*()+_={}[]|\\\
+    \\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_sort非枚举值_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_sort为空_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_direction非枚举值_请求失败
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_参数校验_direction为空_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_排序规则_按开始时间正序_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"start_time\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_排序规则_按开始时间倒序_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"start_time\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_排序规则_按名称正序_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"table_name\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查看任务结果_排序规则_按名称倒序_请求成功
+  url: 查看指定任务结果
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"table_name\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_id不存在_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_id为内置数据源_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: "{\n \"$.total_count\": 0\n}"
+- name: 查询表信息_参数校验_id存在_参数缺省_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: "{\n \"table_id\": \"$.entries[0].id\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_id存在_全量参数_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"limit\": -1,\n \"offset\": 0,\n \"keyword\": \"\",\n \"sort\"\
+    : \"f_name\",\n \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit=-2_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -2\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit=-1_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit=0_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit=10_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit=100_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_limit非Integer类型_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=-1_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=0_不指定limit_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=0_指定limit_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=10_不指定limit_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=10_指定limit_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset=100_指定limit_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_offset非Integer类型_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_keyword模糊搜索_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_keyword包含中英文、数字、符号等_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\\nABCD-abcd-1234\\t`~!@#$%^&*()+_={}[]|\\\
+    \\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_sort非枚举值_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_sort为空_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_direction非枚举值_请求失败
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_参数校验_direction为空_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按创建时间正序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_create_time\",\n    \"direction\": \"asc\"\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按创建时间倒序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_create_time\",\n    \"direction\": \"desc\"\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按操作时间正序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_operation_time\",\n    \"direction\": \"asc\"\
+    \n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按操作时间倒序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_operation_time\",\n    \"direction\": \"desc\"\
+    \n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按名称正序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_name\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询表信息_排序规则_按名称倒序_请求成功
+  url: 查询指定数据源下表信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_name\",\n    \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_id不存在_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_id存在_参数缺省_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_id存在_全量参数_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n \"limit\": -1,\n \"offset\": 0,\n \"keyword\": \"\",\n \"sort\"\
+    : \"f_field_name\",\n \"direction\": \"desc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit=-2_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -2\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit=-1_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit=0_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit=10_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit=100_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_limit非Integer类型_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=-1_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": -1\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=0_不指定limit_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=0_指定limit_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 0\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=10_不指定limit_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=10_指定limit_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 10\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset=100_指定limit_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"limit\": 0,\n    \"offset\": 100\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_offset非Integer类型_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"offset\": \"a\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_keyword模糊搜索_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_keyword包含中英文、数字、符号等_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"keyword\": \"扫描数据源\\nABCD-abcd-1234\\t`~!@#$%^&*()+_={}[]|\\\
+    \\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_sort非枚举值_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_sort为空_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_direction非枚举值_请求失败
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"undefined\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_参数校验_direction为空_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"direction\": \"\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_排序规则_按开始时间正序_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_create_time\",\n    \"direction\": \"asc\"\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_排序规则_按开始时间倒序_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_create_time\",\n    \"direction\": \"desc\"\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_排序规则_按名称正序_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_field_name\",\n    \"direction\": \"asc\"\n}"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 查询字段信息_排序规则_按名称倒序_请求成功
+  url: 查询指定表下字段信息
+  prev_case: ''
+  path_params: ''
+  query_params: "{\n    \"sort\": \"f_field_name\",\n    \"direction\": \"desc\"\n\
+    }"
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''

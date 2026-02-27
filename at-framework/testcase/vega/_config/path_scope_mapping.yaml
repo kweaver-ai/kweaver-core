@@ -1,0 +1,81 @@
+# 提交路径 → 测试范围映射表（全自动流水线使用）
+# 提交监听根据变更路径匹配 path_patterns，得到 scope、tags、suggested_suites
+# 执行器根据 scope/tags 调用 get_cases() 按需提取并运行
+# 测试类型：除 API 功能测试、契约测试外，涉及性能的改动用 tags 含 performance 标识，智能体可 TAGS=performance 或 SCOPE=performance 筛选
+
+subsystems:
+  # 虚拟 scope：按测试类型筛选（不绑定路径，供执行/提取用）
+  - id: performance
+    name: 性能测试
+    path_patterns: []   # 不按路径匹配，仅作 scope 使用
+    scope_tags: [performance]
+    suggested_suites: []
+    description: "用例或套件 tags 含 performance 时，SCOPE=performance 或 TAGS=performance 可筛出所有性能用例"
+  - id: vega-data-connection
+    name: VEGA数据连接
+    path_patterns:
+      - "vega/data-connection/**"
+      - "vega/vega-backend/**/data-connection*"
+    scope_tags: [regression, data-connection]
+    smoke_tags: [smoke]
+    performance_tags: [performance]   # 可选；该子系统有性能用例时，提交涉及性能改动可筛此类
+    suggested_suites:
+      - 测试数据源
+      - 新增数据源
+      - 更新数据源
+      - 删除数据源
+      - 查询数据源
+      - 内部接口
+      - 元数据扫描
+      - 元数据查询
+
+  - id: vega-mdl-data-model
+    name: VEGA数据模型
+    path_patterns:
+      - "vega/mdl-data-model/**"
+      - "vega/mdl-data-model-job/**"
+    scope_tags: [regression, data-view]
+    suggested_suites: []
+
+  - id: vega-gateway
+    name: VEGA网关
+    path_patterns:
+      - "vega/vega-gateway-pro/**"
+      - "vega/vega-gateway/**"
+    scope_tags: [regression]
+    suggested_suites:
+      - 冒烟测试
+
+  - id: ontology
+    name: 本体
+    path_patterns:
+      - "ontology/**"
+    scope_tags: [regression, ontology]
+    suggested_suites: []
+
+  - id: dataflow
+    name: 数据流
+    path_patterns:
+      - "dataflow/**"
+    scope_tags: [regression, dataflow]
+    suggested_suites: []
+
+  - id: execution-factory
+    name: 执行工厂/算子
+    path_patterns:
+      - "execution-factory/**"
+    scope_tags: [regression, operator]
+    suggested_suites: []
+
+change_actions:
+  added: "新增文件/API → 智能体自动补充用例"
+  modified: "修改 → 智能体检查并更新用例或断言"
+  deleted: "删除 → 智能体禁用或删除对应用例"
+
+# 测试类型与 tags 约定（智能体识别用，多维度测试架构见 docs/测试架构设计_基于Commit与多智能体.md）
+test_type_tags:
+  functional: [regression, smoke]   # API 功能测试
+  contract: [regression, contract]  # 契约/结构校验（resp_schema 等）
+  boundary: [boundary, regression]  # 边界测试（参数边界、长度、枚举临界值）
+  stress: [stress]                  # 压力/并发测试
+  performance: [performance]        # 性能测试；case/suite 打 tag performance 后可用 TAGS=performance 或 SCOPE=performance 筛选

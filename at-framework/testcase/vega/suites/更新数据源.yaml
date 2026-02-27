@@ -1,0 +1,914 @@
+feature: 接口参数校验
+story: 更新数据源
+switch: y
+tags: [regression, data-connection]
+cases:
+- name: 新增数据源_mysql_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '新增数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"新增数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id\": \"$.id\",\n \"catalog_name\": \"$.name\"\n}"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 新增数据源_postgres_请求成功
+  url: 新增数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '新增数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"postgresql\",\n    \"comment\": \"新增Postgres数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_postgres}\n}"
+  form_params: ''
+  resp_values: "{\n \"catalog_id_2\": \"$.id\",\n \"catalog_name_2\": \"$.name\"\n\
+    }"
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 删除数据源_请求成功
+  url: 删除数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_id不存在_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_id已删除_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: ''
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_id为内置数据源_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"${catalog_name}\",\n    \"type\": \"mysql\",\n\
+    \    \"comment\": \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_id存在_信息无变更_请求成功
+  url: 更新数据源
+  prev_case: 新增数据源_mysql_请求成功
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"${catalog_name}\",\n    \"type\": \"mysql\",\n\
+    \    \"comment\": \"新增数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_id存在_信息变更_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"\",\n    \"type\": \"mysql\",\n    \"comment\"\
+    : \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": [\"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\"],\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n  \
+    \  \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": 0,\n    \"type\": \"mysql\",\n    \"comment\": \"\
+    更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": true,\n    \"type\": \"mysql\",\n    \"comment\"\
+    : \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含中英文、数字、中划线、下划线_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name以数字开头_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '%0.6d-更新数据源_Template' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name以字母开头_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ 'Template-%0.6d_更新数据源' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name以符号开头_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '-更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含不支持的符号_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template@%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含不支持的符号_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template(%0.6d)' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含不支持的符号_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template<%0.6d>' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含空白字符_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template %0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含空白字符_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template\\\\n%0.6d' | format(range(1,\
+    \ 1000000) | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含空白字符_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template\\\\t%0.6d' | format(range(1,\
+    \ 1000000) | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name长度为1_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '%d' | format(range(0, 9) | random) }}\",\n\
+    \    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name长度为128_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.113d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name长度为129_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.114d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name包含首尾空格_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '   更新数据源_Template-%0.6d   ' | format(range(1,\
+    \ 1000000) | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\
+    ,\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name为纯空格_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"        \",\n    \"type\": \"mysql\",\n    \"comment\"\
+    : \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_name已存在_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"${catalog_name_2}\",\n    \"type\": \"mysql\",\n\
+    \    \"comment\": \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment缺省_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment缺省_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": [\"更新数据源\"],\n \
+    \   \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": 0,\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": true,\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment包含中文、字母、数字、符号、空白符号等_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\\nABCD-abcd-1234\\\
+    t`~!@#$%^&*()+_={}[]|\\\\:;\\\"'<>,.?/ ·~！@#￥%……&*（）——-+={}【】：；“‘|、《》，。？、\",\n\
+    \    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment长度为1_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"a\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment长度为255_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"{{ '更新数据源-%0.249d'\
+    \ | format(range(1, 1000000) | random) }}\",\n    \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment长度为256_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"{{ '更新数据源-%0.250d'\
+    \ | format(range(1, 1000000) | random) }}\",\n    \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment包含首尾空格_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"   更新数据源   \"\
+    ,\n    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_comment为纯空格_请求成功
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"        \",\n\
+    \    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '200'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"\",\n    \"comment\": \"更新数据源\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"comment\": \"更新数据源\",\n    \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": [\"mysql\"],\n    \"comment\": \"更新数据源\",\n \
+    \   \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": 0,\n    \"comment\": \"更新数据源\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": true,\n    \"comment\": \"更新数据源\",\n    \"bin_data\"\
+    : ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_type非枚举值_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"undefined\",\n    \"comment\": \"更新数据源\",\n\
+    \    \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_修改type_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"postgresql\",\n    \"comment\": \"更新数据源\",\n\
+    \    \"bin_data\": ${bin_data_template_postgres}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_访问配置缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": {}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_访问配置缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_访问配置非object_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": [${bin_data_template_mysql}]\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_访问配置非object_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": 0\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_访问配置非object_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": true\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_host缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_host非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_host地址错误_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_port缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_port非integer类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_port错误_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '500'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_port超出正常端口号范围_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_protocol缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_protocol非string类型_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_protocol非枚举值_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_修改protocol_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_account缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_account缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_account非string_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_password缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_password缺省_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\"\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_password非string_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_用户名密码错误_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
+- name: 更新数据源_参数校验_使用明文密码_请求失败
+  url: 更新数据源
+  prev_case: ''
+  path_params: ''
+  query_params: ''
+  body_params: "{\n    \"name\": \"{{ '更新数据源_Template-%0.6d' | format(range(1, 1000000)\
+    \ | random) }}\",\n    \"type\": \"mysql\",\n    \"comment\": \"更新数据源\",\n   \
+    \ \"bin_data\": ${bin_data_template_mysql}\n}"
+  form_params: ''
+  resp_values: ''
+  code_check: '400'
+  resp_schema: ''
+  resp_check: ''
