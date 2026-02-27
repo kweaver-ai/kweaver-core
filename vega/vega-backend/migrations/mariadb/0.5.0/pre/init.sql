@@ -94,7 +94,7 @@
 --   }
 -- ]
 -- ==========================================
-USE adp;
+
 -- ==========================================
 -- 1. t_catalog 主表
 -- ==========================================
@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS t_resource (
     -- LogicView 专属字段
     f_logic_type              VARCHAR(20) NOT NULL DEFAULT '' COMMENT '逻辑类型: derived(衍生), composite(复合), 仅LogicView使用',
     f_logic_definition        MEDIUMTEXT NOT NULL COMMENT '逻辑定义（JSON格式），仅LogicView使用',
-    f_logic_definition_type   VARCHAR(20) NOT NULL DEFAULT '' COMMENT '定义类型: sql, mapping, script',
+    -- f_logic_definition_type   VARCHAR(20) NOT NULL DEFAULT '' COMMENT '定义类型: sql, mapping, script',
 
     -- Local查询配置（物化）
     f_local_enabled           BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用Local查询（物化）',

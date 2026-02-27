@@ -36,6 +36,8 @@ type ResourceDataQueryParams struct {
 	Timeout     time.Duration `json:"-"`                      // 超时时间，查询参数
 	SearchAfter []any         `json:"search_after,omitempty"` // OpenSearch search after参数
 
+	QueryType string `json:"query_type"`
+
 	FilterCondCfg    *FilterCondCfg  `json:"-"`
 	ActualFilterCond FilterCondition `json:"-"`
 

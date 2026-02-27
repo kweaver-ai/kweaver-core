@@ -18,6 +18,16 @@ Description = "Invalid request body"
 Solution = "Please check the parameter"
 ErrorLink = "None"
 
+[VegaBackend.InvalidParameter.ResourceType]
+Description = "Invalid resource_type parameter"
+Solution = "resource_type must be one of: mariadb, opensearch, postgresql"
+ErrorLink = "None"
+
+[VegaBackend.InvalidParameter.StreamSize]
+Description = "Invalid stream_size parameter"
+Solution = "stream_size must be between 100 and 10000, default is 10000"
+ErrorLink = "None"
+
 [VegaBackend.InvalidParameter.Limit]
 Description = "Invalid limit parameter"
 Solution = "Please check the parameter"
@@ -162,6 +172,11 @@ ErrorLink = "None"
 [VegaBackend.Query.InvalidParameter.JoinTableNotInTables]
 Description = "Join alias not in tables"
 Solution = "Please check joins configuration"
+ErrorLink = "None"
+
+[VegaBackend.Query.InvalidParameter.QueryTimeout]
+Description = "Invalid query_timeout parameter"
+Solution = "query_timeout must be between 1 and 3600"
 ErrorLink = "None"
 
 [VegaBackend.Query.CatalogNotFound]

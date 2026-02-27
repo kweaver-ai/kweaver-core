@@ -13,6 +13,7 @@ const (
 	VegaBackend_Query_InvalidParameter_QueryIDRequired      = "VegaBackend.Query.InvalidParameter.QueryIDRequired"
 	VegaBackend_Query_InvalidParameter_LimitExceeded        = "VegaBackend.Query.InvalidParameter.LimitExceeded"
 	VegaBackend_Query_InvalidParameter_JoinTableNotInTables = "VegaBackend.Query.InvalidParameter.JoinTableNotInTables"
+	VegaBackend_Query_InvalidParameter_QueryTimeout         = "VegaBackend.Query.InvalidParameter.QueryTimeout"
 
 	// 404 Not Found
 	VegaBackend_Query_CatalogNotFound  = "VegaBackend.Query.CatalogNotFound"
@@ -33,6 +34,7 @@ var QueryErrCodeList = []string{
 	VegaBackend_Query_InvalidParameter_QueryIDRequired,
 	VegaBackend_Query_InvalidParameter_LimitExceeded,
 	VegaBackend_Query_InvalidParameter_JoinTableNotInTables,
+	VegaBackend_Query_InvalidParameter_QueryTimeout,
 	VegaBackend_Query_CatalogNotFound,
 	VegaBackend_Query_ResourceNotFound,
 	VegaBackend_Query_SessionExpired,

@@ -386,7 +386,7 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 		return err
 	}
 
-	switch req.Category {
+	switch req.OriginResource.Category {
 	case interfaces.ResourceCategoryLogicView:
 		logicType, err := rs.validateLogicDefinition(ctx, req)
 		if err != nil {

@@ -14,6 +14,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
@@ -485,6 +486,165 @@ func (c *OpenSearchConnector) fetchSettings(ctx context.Context, index *interfac
 		}
 	}
 	return nil
+}
+
+// fetchMappingsForQuery 获取索引的mapping信息并构建字段类型映射
+func (c *OpenSearchConnector) fetchMappingsForQuery(ctx context.Context, indexName string, fieldTypeMap map[string]string) error {
+	req := opensearchapi.IndicesGetMappingRequest{
+		Index: []string{indexName},
+	}
+	resp, err := req.Do(ctx, c.client)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.IsError() {
+		return fmt.Errorf("opensearch API error: %s", resp.String())
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// 解析 JSON
+	var dataMapping map[string]struct {
+		Mappings struct {
+			Properties map[string]Property `json:"properties"`
+		} `json:"mappings"`
+	}
+	if err := json.Unmarshal(bodyBytes, &dataMapping); err != nil {
+		return fmt.Errorf("failed to unmarshal mappings: %w", err)
+	}
+
+	// 解析字段类型
+	result := make(map[string]map[string]any)
+	if idxData, ok := dataMapping[indexName]; ok {
+		parseProperties("", idxData.Mappings.Properties, result)
+	}
+
+	// 构建字段类型映射
+	for fieldName, value := range result {
+		if fieldType, ok := value["type"].(string); ok {
+			fieldTypeMap[fieldName] = MapType(fieldType)
+		}
+	}
+
+	return nil
+}
+
+// ExecuteRawQuery executes a raw OpenSearch DSL query on the specified index.
+func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string, query map[string]any) (*interfaces.SQLQueryResponse, error) {
+	if err := c.Connect(ctx); err != nil {
+		return nil, fmt.Errorf("connect failed: %w", err)
+	}
+
+	// Convert query to JSON
+	queryJSON, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	// Log the DSL query
+	logger.Infof("[OpenSearch DSL Query] Index: %s, Query: %s", index, string(queryJSON))
+
+	// Create search request
+	req := opensearchapi.SearchRequest{
+		Index: []string{index},
+		Body:  strings.NewReader(string(queryJSON)),
+	}
+
+	// Execute search
+	resp, err := req.Do(ctx, c.client)
+	if err != nil {
+		return nil, fmt.Errorf("execute query failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.IsError() {
+		return nil, fmt.Errorf("opensearch API error: %s", resp.String())
+	}
+
+	// Parse response
+	var searchResp struct {
+		Hits struct {
+			Total struct {
+				Value int64 `json:"value"`
+			} `json:"total"`
+			Hits []struct {
+				Source map[string]any `json:"_source"`
+				Sort   []any          `json:"sort"` // 添加sort字段
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	// If no hits, return empty result
+	if len(searchResp.Hits.Hits) == 0 {
+		return &interfaces.SQLQueryResponse{
+			Columns:    []interfaces.ColumnInfo{},
+			Entries:    []map[string]any{},
+			TotalCount: 0,
+			Stats: interfaces.QueryStats{
+				IsTimeout: false,
+			},
+		}, nil
+	}
+
+	// 获取索引的mapping信息以确定字段类型
+	fieldTypeMap := make(map[string]string)
+	if err := c.fetchMappingsForQuery(ctx, index, fieldTypeMap); err != nil {
+		// 如果获取mapping失败，使用默认的string类型
+		logger.Warnf("failed to fetch index mappings, using default string type: %v", err)
+	}
+
+	// Collect all field names from the first hit
+	firstHit := searchResp.Hits.Hits[0].Source
+	columns := make([]interfaces.ColumnInfo, 0, len(firstHit))
+	for fieldName := range firstHit {
+		fieldType := "string" // 默认类型
+		if mappedType, ok := fieldTypeMap[fieldName]; ok {
+			fieldType = mappedType
+		}
+		columns = append(columns, interfaces.ColumnInfo{
+			Name: fieldName,
+			Type: fieldType,
+		})
+	}
+
+	// Convert hits to entries
+	entries := make([]map[string]any, 0, len(searchResp.Hits.Hits))
+	for _, hit := range searchResp.Hits.Hits {
+		entries = append(entries, hit.Source)
+	}
+
+	// 构建响应
+	// total_count统一设置为实际返回的数据条数
+	totalCount := int64(len(entries))
+
+	response := &interfaces.SQLQueryResponse{
+		Columns:    columns,
+		Entries:    entries,
+		TotalCount: totalCount,
+		Stats: interfaces.QueryStats{
+			IsTimeout: false,
+		},
+	}
+
+	// 如果有结果，检查是否需要返回search_after
+	if len(searchResp.Hits.Hits) > 0 {
+		lastHit := searchResp.Hits.Hits[len(searchResp.Hits.Hits)-1]
+		// 如果最后一条记录有sort值，将其作为search_after返回
+		if len(lastHit.Sort) > 0 {
+			response.Stats.SearchAfter = lastHit.Sort
+		}
+	}
+
+	return response, nil
 }
 
 // ExecuteQuery executes a query on the OpenSearch index.

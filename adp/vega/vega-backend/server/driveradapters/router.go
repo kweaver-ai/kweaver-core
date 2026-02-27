@@ -102,6 +102,7 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.DELETE("/:ids", r.DeleteResourcesByEx)
 
 			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByEx)
+			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByEx)
 
 			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByEx)
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
@@ -163,6 +164,7 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.DELETE("/:ids", r.DeleteResourcesByIn)
 
 			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByIn)
+			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByIn)
 
 			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByIn)
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)

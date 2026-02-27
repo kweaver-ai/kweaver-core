@@ -37,6 +37,9 @@ const (
 	// union的类型
 	UnionType_All      = "all"
 	UnionType_Distinct = "distinct"
+
+	// MaxRecursionDepth 逻辑视图最大嵌套深度，防止循环引用导致栈溢出
+	MaxRecursionDepth = 10
 )
 
 const (
@@ -82,6 +85,7 @@ type LogicView struct {
 	Resource
 	FieldsMap      map[string]*ViewProperty `json:"fields_map,omitempty" mapstructure:"-"`
 	IsSingleSource bool                     `json:"is_single_source,omitempty" mapstructure:"-"`
+	RefResources   map[string]*Resource     `json:"ref_resources,omitempty" mapstructure:"-"`
 }
 
 // LogicDefinitionNode 表示图中的节点

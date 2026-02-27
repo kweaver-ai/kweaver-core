@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/bytedance/sonic v1.15.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.11.0
@@ -26,6 +27,7 @@ require (
 )
 
 require (
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	gitee.com/chunanyong/dm v1.8.22 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
