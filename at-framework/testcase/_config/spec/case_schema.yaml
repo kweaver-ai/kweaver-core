@@ -1,0 +1,101 @@
+# 单条用例（case）规范 - 智能体增删改 case 的唯一依据（框架级，所有模块共用）
+# 各模块 suites/*.yaml 中 cases 数组的每一项必须符合此结构
+
+fields:
+  - name: name
+    type: string
+    required: true
+    description: 用例唯一名称，建议格式「场景_预期」如 测试数据源_参数校验_type缺省_请求失败；同一 suite 内不应重复
+  - name: url
+    type: string
+    required: true
+    description: 接口名称，必须与 本模块 _config/apis.yaml 中某一项的 name 完全一致（加载时会合并该 API 的 url、method、headers）
+  - name: prev_case
+    type: string
+    required: false
+    default: ""
+    description: 前置用例的 name，先执行前置再执行本用例；空表示无前置。若存在同名用例，执行时取 case_list 中首次匹配
+  - name: path_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象字符串，路径参数，如 {"id":"${catalog_id}"}。对应 OpenAPI parameter in path
+  - name: query_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象字符串，查询参数。对应 OpenAPI parameter in query
+  - name: header_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象字符串，用例级请求头覆盖/追加，如 {"X-Request-Id":"${request_id}"}。与 apis 的 headers 合并后发请求；Authorization 由框架注入。对应 OpenAPI parameter in header
+  - name: cookie_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象字符串，Cookie 键值，如 {"session_id":"xxx"}。对应 OpenAPI parameter in cookie；多数 REST 用例可省略
+  - name: body_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 字符串，请求体；可引用全局变量 ${var} 或 ${bin_data_template_xxx}。对应 OpenAPI requestBody content application/json
+  - name: form_params
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象字符串，表单参数；特殊接口可为非 JSON，执行时解析失败则以 None 传给请求。对应 OpenAPI requestBody content application/x-www-form-urlencoded 或 multipart/form-data
+  - name: resp_values
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象，从响应中提取供后续用例使用，如 {"catalog_id":"$.id"}
+  - name: code_check
+    type: string
+    required: false
+    default: ""
+    description: 期望的 HTTP 状态码，如 200、400。对应 OpenAPI responses 下的状态码
+  - name: resp_headers_check
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象，响应头断言，如 {"Content-Type":"application/json","Location":"/api/xxx"}。头名大小写不敏感。对应 OpenAPI responses.xxx.headers
+  - name: resp_check
+    type: string
+    required: false
+    default: ""
+    description: JSON 对象，jsonpath 键与期望值，如 {"$.code":0,"$.data.name":"x"}；值可为任意 JSON 类型（字符串、数字、布尔、null），与 jsonpath 提取结果比较
+  - name: resp_schema
+    type: string
+    required: false
+    default: ""
+    description: 响应样本 JSON 对象（非 JSON Schema），框架用 genson 生成 schema 后对响应做结构校验
+  - name: tags
+    type: list
+    required: false
+    description: |
+      本条用例的标签（粒度到单条），用于按提交精确筛选用例；未写则继承套件 tags。
+      测试类型约定（智能体据此识别）：smoke=冒烟，regression=回归，performance=性能测试。
+      性能相关改动时，智能体筛选 tags 含 performance 的用例执行。如 [api:xxx, regression], [performance, data-connection]
+  - name: description
+    type: string
+    required: false
+    description: 用例说明，供人工或智能体阅读；不参与执行，加载时可选保留
+
+variable_ref: "用例中引用全局变量使用 ${var} 或 $var"
+substitution_order: "参数替换顺序 1) global.yaml 展开为 global_flat 2) 前置用例 resp_values 3) path_params（若不为空）4) 执行前 Jinja2 渲染所有字符串字段"
+
+# 与 OpenAPI 3.0 的对应关系（便于从 OpenAPI 生成或校验用例）
+openapi_mapping:
+  request:
+    path: path_params
+    query: query_params
+    header: header_params
+    cookie: cookie_params
+    requestBody_application_json: body_params
+    requestBody_form: form_params
+  response:
+    status: code_check
+    headers: resp_headers_check
+    content_schema: resp_schema
+    content_assertion: resp_check
