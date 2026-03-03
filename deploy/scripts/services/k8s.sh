@@ -895,6 +895,13 @@ configure_system() {
     log_info "Loading kernel modules..."
     modprobe overlay 2>/dev/null || true
     modprobe br_netfilter 2>/dev/null || true
+
+    # Ensure required kernel modules load on boot
+    log_info "Configuring kernel modules to load on boot..."
+    mkdir -p /etc/modules-load.d 2>/dev/null || true
+    cat > /etc/modules-load.d/kubernetes.conf <<EOF
+br_netfilter
+EOF
     
     # Configure kernel parameters
     log_info "Configuring kernel parameters..."
@@ -954,4 +961,3 @@ reset_k8s() {
     log_warn "Reset completed. iptables/IPVS rules are not automatically cleaned by this script."
     log_info "Kubernetes reset done"
 }
-
