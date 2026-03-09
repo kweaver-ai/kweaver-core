@@ -12,32 +12,36 @@
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Global
+# Global Variables (Propagated to all subcharts automatically)
 # ---------------------------------------------------------------------------
+# In the Open Source Umbrella version, we use Helm's `global` block to pass 
+# common configurations down to all 40+ subcharts.
+# Subcharts are designed to prioritize `global.xxx` and fallback to their local `.Values.xxx`
+# to maintain compatibility with legacy independent commercial deployments.
 global:
-  imageRegistry: ""          # e.g. harbor.internal/kweaver (for offline)
+  # Image overrides
+  imageRegistry: "swr.cn-east-3.myhuaweicloud.com/kweaver-ai"
   imagePullSecrets: []
-  storageClass: "local-path"
-
-# =============================================================================
-# Common Subchart Values (Injected via YAML Anchors)
-# =============================================================================
-# The following block contains all common configurations that each subchart expects
-# at its root level (based on the original config.yaml template).
-x-common-values: &commonValues
+  
+  # Basic Deployment
   replicaCount: 1
   mode: Community
+  storageClass: "local-path"
+  ingressClassName: "nginx"
+
+  # Environment
   env:
     language: en_US.UTF-8
     timezone: Asia/Shanghai
-  image:
-    registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+
+  # Access Address
   accessAddress:
     host: 10.4.175.152
     port: 443
     scheme: https
     path: /
-  ingressClassName: nginx
+
+  # Flow Automation S3 Config
   flowAutomation:
     s3:
       default: "default"
@@ -50,6 +54,8 @@ x-common-values: &commonValues
           bucketName: ""
           skipVerify: true
           disableHTTPS: false
+
+  # Dependency Services (Databases, MQ, Cache, etc.)
   depServices:
     mq:
       auth:
@@ -113,118 +119,13 @@ x-common-values: &commonValues
 
 
 # =============================================================================
-# Injection Mapping
+# Specific Subchart Overrides (Optional)
 # =============================================================================
-# We bundle all core subcharts into one anchor, and merge it depending on whether
-# we are deploying kweaver-core alone, or as part of kweaver-dip.
+# If a specific subchart requires a different configuration than the global defaults,
+# you can define it here. Helm's local values always override global ones in templates 
+# if written correctly, or we can just specify them under the subchart's key.
 
-x-core-subs: &coreSubs
-  agent-operator-integration:
-    <<: *commonValues
-  operator-web:
-    <<: *commonValues
-  agent-retrieval:
-    <<: *commonValues
-  data-retrieval:
-    <<: *commonValues
-  agent-backend:
-    <<: *commonValues
-  agent-web:
-    <<: *commonValues
-  agent-app:
-    <<: *commonValues
-  agent-executor:
-    <<: *commonValues
-  agent-factory:
-    <<: *commonValues
-  agent-memory:
-    <<: *commonValues
-  coderunner:
-    <<: *commonValues
-  dataflow:
-    <<: *commonValues
-  agent-operator-app:
-    <<: *commonValues
-  ontology-manager:
-    <<: *commonValues
-  ontology-query:
-    <<: *commonValues
-  vega-web:
-    <<: *commonValues
-  data-connection:
-    <<: *commonValues
-  vega-gateway:
-    <<: *commonValues
-  vega-gateway-pro:
-    <<: *commonValues
-  mdl-data-model:
-    <<: *commonValues
-  mdl-uniquery:
-    <<: *commonValues
-  mdl-data-model-job:
-    <<: *commonValues
-  hydra:
-    <<: *commonValues
-  sharemgnt-single:
-    <<: *commonValues
-  user-management:
-    <<: *commonValues
-  sharemgnt:
-    <<: *commonValues
-  authentication:
-    <<: *commonValues
-  policy-management:
-    <<: *commonValues
-  audit-log:
-    <<: *commonValues
-  eacp:
-    <<: *commonValues
-  thirdparty-message-plugin:
-    <<: *commonValues
-  isfwebthrift:
-    <<: *commonValues
-  message:
-    <<: *commonValues
-  isfweb:
-    <<: *commonValues
-  authorization:
-    <<: *commonValues
-  news-feed:
-    <<: *commonValues
-  ingress-informationsecurityfabric:
-    <<: *commonValues
-  eacp-single:
-    <<: *commonValues
-  oauth2-ui:
-    <<: *commonValues
-  sandbox:
-    <<: *commonValues
+# Example:
+# agent-backend:
+#   replicaCount: 3
 
-# ---------------------------------------------------------------------------
-# 1. 注入到 core 子图 (当单独部署 kweaver-core 时生效)
-# ---------------------------------------------------------------------------
-<<: *coreSubs
-
-# ---------------------------------------------------------------------------
-# 2. 注入到 kweaver-core 层级下 (当部署 kweaver-dip，间接包含 core 时生效)
-# ---------------------------------------------------------------------------
-kweaver-core:
-  <<: *coreSubs
-
-# ---------------------------------------------------------------------------
-# 3. 注入到 dip 的直属子图 (只有部署 kweaver-dip 时才包含这部分子图)
-# ---------------------------------------------------------------------------
-deploy-web:
-  <<: *commonValues
-studio-web:
-  <<: *commonValues
-business-system-frontend:
-  <<: *commonValues
-business-system-service:
-  <<: *commonValues
-mf-model-manager-nginx:
-  <<: *commonValues
-mf-model-manager:
-  <<: *commonValues
-mf-model-api:
-  <<: *commonValues

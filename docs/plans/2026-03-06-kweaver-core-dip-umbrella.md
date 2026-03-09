@@ -1068,15 +1068,33 @@ metadata:
 ```
 *(注：如果移除 `namespace` 字段，Helm 默认也会将其部署到 Release 的命名空间，但显式写 `{{ .Release.Namespace }}` 更严谨。)*
 
-### 2. 真正的“零改造”：利用 YAML 锚点完全替代 Global 透传
+### 2. 双场景兼容：利用 Templates 降级读取 Global 变量
 
-**背景：** 最初我们考虑使用 Helm 的 `global` 块来传递 `imageRegistry` 或 `depServices` 等全局共享变量。但使用 `global` 有一个致命缺点：**必须重构所有的子 chart**。开发人员需要将 40 多个子 chart 仓库中的 `{{ .Values.image.registry }}` 全部修改为 `{{ .Values.global.imageRegistry }}`，成本极大且容易出错。
+**背景：** 
+由于 KWeaver 的各个子 chart 需要同时满足两种部署形态：
+1. **商业版本（已存在方案）**：各子组件独立部署，各自的 `values.yaml` 中包含完整的局部配置（如 `depServices`，`replicaCount` 等），且不会传递 `global` 变量。
+2. **开源/统一安装版本（Umbrella 方案）**：将 40+ 个组件作为 `kweaver-core` 或 `kweaver-dip` 的子 chart。为了提升 UI 部署的体验（无需用户重复配置 40 次密码等）并适配业界主流的生态工具，我们决定在父 chart 的 `values.yaml` 中统一提供 **`global`** 配置块进行向下透传。
 
-**最终最佳实践（零代码侵入）：**
-通过在 Umbrella 的统一配置文件 `products-values.yaml` 中使用 **YAML 锚点与合并键（`<<: *commonValues`）**，我们将原本的全局配置（如 `image.registry`、`replicaCount`、`depServices` 等）直接“精准降维投喂”到了每个子 chart 的局部作用域中。
+**改造方案（改模板，不改 Values 结构）：**
+由于 Helm 的限制，我们无法在子 chart 的 `values.yaml` 里直接引用 `global` 变量。必须在各子 chart 的**模板文件（Templates）**层面做兼容性修改：优先读取 `global`，若为空则降级（Fallback）读取局部变量。
 
-**结论：子 chart 的模板文件不需要做任何传值逻辑的修改！**
-- 它们依然像以前独立部署时一样，毫无感知地读取局部的 `{{ .Values.image.registry }}` 和 `{{ .Values.depServices.xxx }}`。
-- 这不仅省去了浩大的重构工程，还保证了子 chart 的 **100% 向下兼容**。无论是作为 Umbrella 的子组件，还是作为独立组件被单独 `helm install`，子 chart 的代码都不需要任何 if-else 分支。
+**改造示例（以 depServices 和 registry 为例）：**
+在每个子 chart 的 templates（或 helper 函数）中，将直接读取局部配置的代码：
+```gotemplate
+host: {{ .Values.depServices.rds.host }}
+image: {{ .Values.image.registry }}/...
+```
 
-*(注：`metadata.namespace` 依然推荐清理硬编码，统一使用 `{{ .Release.Namespace }}`，但由于 Helm 命令行 `-n kweaver` 会强制指定 namespace，即便不改通常也能正常部署)*
+替换为利用 `coalesce` 或 `default` 优先读取 `global` 的兼容逻辑：
+```gotemplate
+{{- /* 优先获取全局 depServices，不存在则使用局部的 */ -}}
+{{- $deps := coalesce .Values.global.depServices .Values.depServices -}}
+host: {{ $deps.rds.host }}
+
+{{- /* 优先获取全局 registry，不存在则使用局部的 */ -}}
+{{- $registry := coalesce .Values.global.imageRegistry .Values.image.registry -}}
+image: {{ $registry }}/...
+```
+
+**结论：** 
+通过这样的改造，**商业版独立部署**时没有 `global` 输入，系统完美回退到现有的 `values`，没有任何影响；而在**开源 Umbrella 部署**时，用户只需在最外层填写一次 `global.depServices`，所有子图将自动继承这些全局通用配置，大幅提升了可视化部署面板中的操作体验和安全性。
