@@ -1070,10 +1070,25 @@ metadata:
 
 ### 2. 双场景兼容：利用 Templates 降级读取 Global 变量
 
-**背景：** 
+**背景与架构决策：** 
 由于 KWeaver 的各个子 chart 需要同时满足两种部署形态：
 1. **商业独立版本**：各子组件独立部署，各自的 `values.yaml` 中包含完整的局部配置（如 `depServices`，`replicaCount` 等），且不会传递 `global` 变量。
 2. **开源 Umbrella 版本**：将 40+ 个组件作为 `kweaver-core` 或 `kweaver-dip` 的子 chart。为了提升 UI 部署的体验（无需用户重复配置 40 次密码等）并适配业界主流的生态工具，在父 chart 的 `values.yaml` 中统一提供 **`global`** 配置块进行向下透传。
+
+**为什么放弃其他 Values 传递方案（如 YAML 锚点）？**
+在设计之初，我们曾考虑过以下方案，但最终由于无法契合开源/商业交付生态而放弃：
+1. **纯 YAML 锚点（YAML Anchors `&` 与 `<<`）**：
+   - *方案与优势*：在顶层用锚点将 `depServices` 映射给所有子 chart，子 chart 可实现“零代码改造”。
+   - *致命缺陷（生态工具不兼容）*：主流的云原生 UI 部署面板（如 Rancher, KubeSphere, ArgoCD 参数覆盖）在读取 chart 时，会将 YAML 解析为 JSON 树，这会导致所有锚点被瞬间**完全展开（Flatten）**。用户会在可视化界面上看到 40 份一模一样的数据库配置表单；同时该结构无法与 `values.schema.json` 配合做严格校验。
+2. **引入 Helmfile 等编排工具**：
+   - *缺陷*：引入了新的 CLI 依赖，增加了开源用户的学习成本，打破了“纯 Helm 原生 (`helm install`) 一键部署”的最佳体验。
+3. **Kustomize 后置渲染（Post-renderer）**：
+   - *缺陷*：依靠底层强行替换 k8s manifest（如 ConfigMap/Secret），面对 40 多个组件不同的字段结构，Patch 规则极其脆弱且难以维护。
+
+**当前方案（Global + Templates 降级）的核心优势：**
+- **UI 体验极佳**：由于通用配置全部收敛在顶层 `global` 中，用户在前端面板（如 ArgoCD UI）只需填写一次数据库密码，即可自动应用到所有组件。
+- **100% Helm 原生**：零外部工具依赖，符合开源界（如 Bitnami, Prometheus 社区）处理巨型 Umbrella Chart 的最佳实践。
+- **平滑双轨并行**：商业部署（无 global）继续读取原有 `values`，开源部署（有 global）实现全局统一接管。
 
 **改造方案（改模板，不改 Values 结构）：**
 由于 Helm 的限制，我们无法在子 chart 的 `values.yaml` 里直接引用 `global` 变量。必须在各子 chart 的**模板文件（Templates）**层面做兼容性修改：优先读取 `global`，若为空则降级（Fallback）读取局部变量。
