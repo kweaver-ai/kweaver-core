@@ -957,7 +957,7 @@ helm upgrade --install kweaver-dip oci://harbor.internal/kweaver/kweaver-dip \
   --version 0.1.0 \
   -n kweaver --create-namespace \
   -f products-values.yaml \
-  --set global.imageRegistry=harbor.internal/kweaver \
+  --set global.image.registry=harbor.internal/kweaver \
   --wait --timeout 30m
 ```
 
@@ -1092,7 +1092,7 @@ image: {{ .Values.image.registry }}/...
 host: {{ $deps.rds.host }}
 
 {{- /* 优先获取全局 registry，不存在则使用局部的 */ -}}
-{{- $registry := coalesce .Values.global.imageRegistry .Values.image.registry -}}
+{{- $registry := coalesce ((.Values.global | default dict).image | default dict).registry .Values.image.registry -}}
 image: {{ $registry }}/...
 ```
 

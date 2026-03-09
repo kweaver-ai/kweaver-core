@@ -20,7 +20,8 @@
 # to maintain compatibility with legacy independent commercial deployments.
 global:
   # Image overrides
-  imageRegistry: "swr.cn-east-3.myhuaweicloud.com/kweaver-ai"
+  image:
+    registry: "swr.cn-east-3.myhuaweicloud.com/kweaver-ai"
   imagePullSecrets: []
   
   # Basic Deployment
