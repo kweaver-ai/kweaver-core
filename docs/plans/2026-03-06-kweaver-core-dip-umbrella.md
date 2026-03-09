@@ -1029,7 +1029,7 @@ Expected:
 ```text
 Phase 1（当前 → 1 个月）
   ├── kweaver-core / kweaver-dip Chart.yaml + values.yaml
-  ├── products-values.yaml（YAML anchors）
+  ├── products-values.yaml（Global 降级兼容策略）
   ├── DB init Hook Jobs
   ├── values.schema.json
   ├── helm test hooks
@@ -1040,6 +1040,7 @@ Phase 2（3-6 个月后）
   ├── deploy/helmfile.yaml
   ├── deploy/argocd/appset.yaml
   ├── 版本兼容性矩阵 + CI 自动化测试
+  └── Subchart 模板批量改造脚本
   └── 离线部署文档（Harbor）
 
 ## 17. 附录：子 Chart 适配 Umbrella 改造指南
