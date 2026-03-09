@@ -1068,36 +1068,15 @@ metadata:
 ```
 *(注：如果移除 `namespace` 字段，Helm 默认也会将其部署到 Release 的命名空间，但显式写 `{{ .Release.Namespace }}` 更严谨。)*
 
-### 2. 镜像仓库（Image Registry）的获取
+### 2. 真正的“零改造”：利用 YAML 锚点完全替代 Global 透传
 
-**背景：** 在离线部署场景下，用户会在 Umbrella 层的 `global.imageRegistry` 统一设置私有仓库地址（如 `harbor.internal/kweaver`）。Helm 的机制是：Umbrella chart 的 `global` 块会自动合并并透传给所有子 chart 的 `global` 块。
-*(注意：常规的 `image` 字段属于各自 chart 的局部变量，不会自动透传)*
+**背景：** 最初我们考虑使用 Helm 的 `global` 块来传递 `imageRegistry` 或 `depServices` 等全局共享变量。但使用 `global` 有一个致命缺点：**必须重构所有的子 chart**。开发人员需要将 40 多个子 chart 仓库中的 `{{ .Values.image.registry }}` 全部修改为 `{{ .Values.global.imageRegistry }}`，成本极大且容易出错。
 
-**改造：**
-子 chart 的镜像渲染逻辑需要优先读取 `{{ .Values.global.imageRegistry }}`。
+**最终最佳实践（零代码侵入）：**
+通过在 Umbrella 的统一配置文件 `products-values.yaml` 中使用 **YAML 锚点与合并键（`<<: *commonValues`）**，我们将原本的全局配置（如 `image.registry`、`replicaCount`、`depServices` 等）直接“精准降维投喂”到了每个子 chart 的局部作用域中。
 
-*修改模板示例：*
-```yaml
-      containers:
-        - name: app
-          # 优先使用 global.imageRegistry，若无则降级使用子 chart 自身的 image.registry
-          image: "{{ if .Values.global.imageRegistry }}{{ .Values.global.imageRegistry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-```
-并且在子 chart 的 `values.yaml` 中补充（或保持空）：
-```yaml
-global:
-  imageRegistry: ""
-```
+**结论：子 chart 的模板文件不需要做任何传值逻辑的修改！**
+- 它们依然像以前独立部署时一样，毫无感知地读取局部的 `{{ .Values.image.registry }}` 和 `{{ .Values.depServices.xxx }}`。
+- 这不仅省去了浩大的重构工程，还保证了子 chart 的 **100% 向下兼容**。无论是作为 Umbrella 的子组件，还是作为独立组件被单独 `helm install`，子 chart 的代码都不需要任何 if-else 分支。
 
-### 3. depServices 依赖配置的注入与对齐
-
-**背景：** Umbrella chart 统一在顶层维护了所有基础设施（RDS, Redis, MQ, OpenSearch 等）的连接信息。但 Helm 默认**不会**将外层的局部变量（如 `depServices`）平级透传给子 chart，除非放到 `global` 中，或者在外层的 `values.yaml` 里为每个子 chart 显式赋值。
-
-由于将庞大的 `depServices` 放入 `global` 可能会导致结构混乱，我们在 Umbrella 的 `products-values.yaml` 中采用 **YAML Anchors (锚点)** 的方式，将外层定义好的 `depServices` 统一注入给各个子 chart。
-
-**对子 chart 的要求：**
-子 chart 不需要大改代码，但必须确保：
-1. 子 chart 的 `values.yaml` 中包含它自己所需的 `depServices` 结构。
-2. templates 中的连接串（如 DB_HOST、REDIS_HOST 等）是严格从 `{{ .Values.depServices.xxx }}` 中读取的（不需要加 global 前缀）。
-
-*只要子 chart 遵守了这个规范，Umbrella 通过 YAML 锚点注入的 `depServices` 就会直接覆盖子 chart 的局部变量。*
+*(注：`metadata.namespace` 依然推荐清理硬编码，统一使用 `{{ .Release.Namespace }}`，但由于 Helm 命令行 `-n kweaver` 会强制指定 namespace，即便不改通常也能正常部署)*
