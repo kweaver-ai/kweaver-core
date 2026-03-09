@@ -1072,28 +1072,45 @@ metadata:
 
 **背景：** 
 由于 KWeaver 的各个子 chart 需要同时满足两种部署形态：
-1. **商业版本（已存在方案）**：各子组件独立部署，各自的 `values.yaml` 中包含完整的局部配置（如 `depServices`，`replicaCount` 等），且不会传递 `global` 变量。
-2. **开源/统一安装版本（Umbrella 方案）**：将 40+ 个组件作为 `kweaver-core` 或 `kweaver-dip` 的子 chart。为了提升 UI 部署的体验（无需用户重复配置 40 次密码等）并适配业界主流的生态工具，我们决定在父 chart 的 `values.yaml` 中统一提供 **`global`** 配置块进行向下透传。
+1. **商业独立版本**：各子组件独立部署，各自的 `values.yaml` 中包含完整的局部配置（如 `depServices`，`replicaCount` 等），且不会传递 `global` 变量。
+2. **开源 Umbrella 版本**：将 40+ 个组件作为 `kweaver-core` 或 `kweaver-dip` 的子 chart。为了提升 UI 部署的体验（无需用户重复配置 40 次密码等）并适配业界主流的生态工具，在父 chart 的 `values.yaml` 中统一提供 **`global`** 配置块进行向下透传。
 
 **改造方案（改模板，不改 Values 结构）：**
 由于 Helm 的限制，我们无法在子 chart 的 `values.yaml` 里直接引用 `global` 变量。必须在各子 chart 的**模板文件（Templates）**层面做兼容性修改：优先读取 `global`，若为空则降级（Fallback）读取局部变量。
 
-**改造示例（以 depServices 和 registry 为例）：**
-在每个子 chart 的 templates（或 helper 函数）中，将直接读取局部配置的代码：
+**改造示例（最佳实践）：**
+建议在每个子 chart 的 `templates/_helpers.tpl` 中统一定义兼容函数，然后替换 deployment 等文件中的直接引用。
+
+*1. 在 `_helpers.tpl` 中添加：*
 ```gotemplate
-host: {{ .Values.depServices.rds.host }}
-image: {{ .Values.image.registry }}/...
+{{- /* 优先获取全局 registry，不存在则使用局部的 */ -}}
+{{- define "kweaver.imageRegistry" -}}
+{{- $globalImage := ( .Values.global | default dict ).image | default dict -}}
+{{- coalesce $globalImage.registry .Values.image.registry -}}
+{{- end -}}
+
+{{- /* 优先获取全局 depServices 并与局部合并，避免全局遗漏某些字段 */ -}}
+{{- define "kweaver.depServices" -}}
+{{- $globalDeps := ( .Values.global | default dict ).depServices | default dict -}}
+{{- if $globalDeps -}}
+{{- toYaml (mergeOverwrite (deepCopy .Values.depServices) $globalDeps) -}}
+{{- else -}}
+{{- toYaml .Values.depServices -}}
+{{- end -}}
+{{- end -}}
 ```
 
-替换为利用 `coalesce` 或 `default` 优先读取 `global` 的兼容逻辑：
+*2. 在 `deployment.yaml` 等资源中调用：*
 ```gotemplate
-{{- /* 优先获取全局 depServices，不存在则使用局部的 */ -}}
-{{- $deps := coalesce .Values.global.depServices .Values.depServices -}}
-host: {{ $deps.rds.host }}
-
-{{- /* 优先获取全局 registry，不存在则使用局部的 */ -}}
-{{- $registry := coalesce ((.Values.global | default dict).image | default dict).registry .Values.image.registry -}}
-image: {{ $registry }}/...
+      containers:
+        - name: app
+          # 使用 helper 渲染 registry
+          image: "{{ include "kweaver.imageRegistry" . }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            # 使用 helper 渲染 depServices，并反序列化为字典
+            {{- $deps := include "kweaver.depServices" . | fromYaml }}
+            - name: DB_HOST
+              value: {{ $deps.rds.host | quote }}
 ```
 
 **结论：** 
