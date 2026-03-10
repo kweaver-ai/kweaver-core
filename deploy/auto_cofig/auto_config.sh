@@ -610,7 +610,7 @@ import_knowledge_network() {
 
   # Import knowledge network (submit the JSON payload directly via API)
   local KN_RESPONSE=$(curl -s -k -X POST \
-    "${BASE_URL}/api/ontology-manager/v1/knowledge-networks" \
+    "${BASE_URL}/api/ontology-manager/v1/knowledge-networks?validate_dependency=false" \
     -H "Content-Type: application/json" \
     -H "x-business-domain: ${BUSINESS_DOMAIN}" \
     -H "Authorization: Bearer ${TOKEN}" \
