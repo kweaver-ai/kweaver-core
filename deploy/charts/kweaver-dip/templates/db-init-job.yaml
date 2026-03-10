@@ -1,4 +1,6 @@
 {{- if .Values.dbInit.enabled }}
+{{- $rds := .Values.global.depServices.rds }}
+{{- $registry := .Values.global.image.registry | default "" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -9,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-weight": "-3"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: {{ .Values.dbInit.backoffLimit | default 3 }}
@@ -26,29 +28,29 @@ spec:
           command: ['sh', '-c']
           args:
             - |
-              echo "Waiting for MariaDB at {{ .Values.depServices.rds.host }}:{{ .Values.depServices.rds.port }}..."
-              until nc -z {{ .Values.depServices.rds.host }} {{ .Values.depServices.rds.port }}; do
+              echo "Waiting for MariaDB at {{ $rds.host }}:{{ $rds.port }}..."
+              until nc -z {{ $rds.host }} {{ $rds.port }}; do
                 echo "  MariaDB not ready, retrying in 5s..."
                 sleep 5
               done
               echo "MariaDB is reachable."
       containers:
         - name: migrate
-          image: "{{ if .Values.global.imageRegistry }}{{ .Values.global.imageRegistry }}/{{ end }}{{ .Values.dbInit.image.repository }}:{{ .Values.dbInit.image.tag }}"
+          image: "{{ if $registry }}{{ $registry }}/{{ end }}{{ .Values.dbInit.image.repository }}:{{ .Values.dbInit.image.tag }}"
           imagePullPolicy: {{ .Values.dbInit.image.pullPolicy | default "IfNotPresent" }}
           env:
             - name: DB_HOST
-              value: {{ .Values.depServices.rds.host | quote }}
+              value: {{ $rds.host | quote }}
             - name: DB_PORT
-              value: {{ .Values.depServices.rds.port | quote }}
+              value: {{ $rds.port | quote }}
             - name: DB_USER
-              value: {{ .Values.depServices.rds.user | quote }}
+              value: {{ $rds.user | quote }}
             - name: DB_PASSWORD
-              value: {{ .Values.depServices.rds.password | quote }}
+              value: {{ $rds.password | quote }}
             - name: DB_NAME
-              value: {{ .Values.depServices.rds.database | default "adp" | quote }}
+              value: {{ $rds.database | default "adp" | quote }}
             - name: DB_TYPE
-              value: {{ .Values.depServices.rds.type | default "MariaDB" | quote }}
+              value: {{ $rds.type | default "MariaDB" | quote }}
             - name: MIGRATION_TARGET
               value: "dip"
 {{- end }}

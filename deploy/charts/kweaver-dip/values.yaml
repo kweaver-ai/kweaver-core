@@ -11,12 +11,103 @@ kweaver-core:
 
 # ---------------------------------------------------------------------------
 # Global settings (propagated to all subcharts via Helm globals)
+#
+# Same structure as kweaver-core. In Umbrella mode, users configure global
+# once; Helm auto-propagates to all subcharts including the embedded
+# kweaver-core dependency.
 # ---------------------------------------------------------------------------
 global:
-  imageRegistry: ""
+  # Image registry
+  image:
+    registry: ""
   imagePullSecrets: []
+
+  # Basic deployment
+  replicaCount: 1
+  mode: Community
   storageClass: ""
-  namespace: kweaver
+  ingressClassName: "nginx"
+
+  # Environment
+  env:
+    language: "en_US.UTF-8"
+    timezone: "Asia/Shanghai"
+
+  # Access address (ingress endpoint)
+  accessAddress:
+    host: ""
+    port: 443
+    scheme: https
+    path: /
+
+  # Flow Automation S3 Config
+  flowAutomation:
+    s3:
+      default: "default"
+      connections: []
+
+  # Dependency services (databases, MQ, cache, etc.)
+  depServices:
+    rds:
+      host: ""
+      hostRead: ""
+      port: 3306
+      portRead: 3306
+      user: ""
+      password: ""
+      root_password: ""
+      database: "adp"
+      admin_key: ""
+      source_type: internal
+      type: MariaDB
+
+    redis:
+      connectType: standalone
+      sourceType: internal
+      connectInfo:
+        host: ""
+        port: 6379
+        username: "root"
+        password: ""
+        sentinelHost: ""
+        sentinelPort: 26379
+        sentinelUsername: ""
+        sentinelPassword: ""
+        masterGroupName: "mymaster"
+
+    mq:
+      mqType: kafka
+      mqHost: ""
+      mqPort: 9092
+      mqLookupdHost: ""
+      mqLookupdPort: 0
+      auth:
+        mechanism: ""
+        username: ""
+        password: ""
+
+    opensearch:
+      distribution: opensearch
+      host: ""
+      port: 9200
+      protocol: http
+      user: "admin"
+      password: ""
+      version: ""
+
+    mongodb:
+      source_type: internal
+      host: ""
+      port: 28000
+      user: ""
+      password: ""
+      replicaSet: ""
+      options:
+        authSource: admin
+
+    zookeeper:
+      host: ""
+      port: 2181
 
 # ---------------------------------------------------------------------------
 # DIP module switches
@@ -27,88 +118,6 @@ modules:
   modelfactory:
     enabled: true
 
-# ---------------------------------------------------------------------------
-# Environment
-# ---------------------------------------------------------------------------
-env:
-  language: "en_US.UTF-8"
-  timezone: "Asia/Shanghai"
-
-# ---------------------------------------------------------------------------
-# Access address (ingress endpoint)
-# ---------------------------------------------------------------------------
-accessAddress:
-  host: ""
-  port: 443
-  scheme: https
-  path: /
-  ingressClass: "class-443"
-
-# ---------------------------------------------------------------------------
-# Dependent services connection info
-# (same schema as kweaver-core; filled by user in products-values.yaml)
-# ---------------------------------------------------------------------------
-depServices:
-  rds:
-    host: ""
-    hostRead: ""
-    port: 3306
-    portRead: 3306
-    user: ""
-    password: ""
-    root_password: ""
-    database: "adp"
-    admin_key: ""
-    source_type: internal
-    type: MariaDB
-
-  redis:
-    connectType: standalone
-    sourceType: internal
-    connectInfo:
-      host: ""
-      port: 6379
-      username: "root"
-      password: ""
-      sentinelHost: ""
-      sentinelPort: 26379
-      sentinelUsername: ""
-      sentinelPassword: ""
-      masterGroupName: "mymaster"
-
-  mq:
-    mqType: kafka
-    mqHost: ""
-    mqPort: 9092
-    mqLookupdHost: ""
-    mqLookupdPort: 0
-    auth:
-      mechanism: ""
-      username: ""
-      password: ""
-
-  opensearch:
-    distribution: opensearch
-    host: ""
-    port: 9200
-    protocol: http
-    user: "admin"
-    password: ""
-    version: ""
-
-  mongodb:
-    source_type: internal
-    host: ""
-    port: 28000
-    user: ""
-    password: ""
-    replicaSet: ""
-    options:
-      authSource: admin
-
-  zookeeper:
-    host: ""
-    port: 2181
 
 # ---------------------------------------------------------------------------
 # Database initialization hook (DIP-specific tables)

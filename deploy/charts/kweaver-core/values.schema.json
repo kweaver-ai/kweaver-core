@@ -5,10 +5,34 @@
     "global": {
       "type": "object",
       "properties": {
-        "imageRegistry": { "type": "string" },
+        "image": {
+          "type": "object",
+          "properties": {
+            "registry": { "type": "string" }
+          }
+        },
         "imagePullSecrets": { "type": "array", "items": { "type": "object" } },
+        "replicaCount": { "type": "integer", "minimum": 0 },
+        "mode": { "type": "string" },
         "storageClass": { "type": "string" },
-        "namespace": { "type": "string" }
+        "ingressClassName": { "type": "string" },
+        "env": {
+          "type": "object",
+          "properties": {
+            "language": { "type": "string" },
+            "timezone": { "type": "string" }
+          }
+        },
+        "accessAddress": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "scheme": { "type": "string", "enum": ["http", "https"] },
+            "path": { "type": "string" }
+          }
+        },
+        "depServices": { "type": "object" }
       }
     },
     "modules": {
@@ -19,102 +43,6 @@
         "dataagent":      { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "ontology":       { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "sandboxruntime": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] }
-      }
-    },
-    "depServices": {
-      "type": "object",
-      "required": ["rds", "redis", "mq", "opensearch"],
-      "properties": {
-        "rds": {
-          "type": "object",
-          "required": ["host", "port", "user", "password"],
-          "properties": {
-            "host":          { "type": "string" },
-            "hostRead":      { "type": "string" },
-            "port":          { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "portRead":      { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "user":          { "type": "string" },
-            "password":      { "type": "string" },
-            "root_password": { "type": "string" },
-            "database":      { "type": "string" },
-            "admin_key":     { "type": "string" },
-            "source_type":   { "type": "string", "enum": ["internal", "external"] },
-            "type":          { "type": "string", "enum": ["MariaDB", "MySQL", "TiDB"] }
-          }
-        },
-        "redis": {
-          "type": "object",
-          "required": ["connectType"],
-          "properties": {
-            "connectType": { "type": "string", "enum": ["standalone", "sentinel"] },
-            "sourceType":  { "type": "string", "enum": ["internal", "external"] },
-            "connectInfo": {
-              "type": "object",
-              "properties": {
-                "host":             { "type": "string" },
-                "port":             { "type": "integer" },
-                "username":         { "type": "string" },
-                "password":         { "type": "string" },
-                "sentinelHost":     { "type": "string" },
-                "sentinelPort":     { "type": "integer" },
-                "sentinelUsername":  { "type": "string" },
-                "sentinelPassword":  { "type": "string" },
-                "masterGroupName":  { "type": "string" }
-              }
-            }
-          }
-        },
-        "mq": {
-          "type": "object",
-          "required": ["mqType", "mqHost", "mqPort"],
-          "properties": {
-            "mqType":         { "type": "string", "enum": ["kafka", "nsq"] },
-            "mqHost":         { "type": "string" },
-            "mqPort":         { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "mqLookupdHost":  { "type": "string" },
-            "mqLookupdPort":  { "type": "integer" },
-            "auth": {
-              "type": "object",
-              "properties": {
-                "mechanism": { "type": "string" },
-                "username":  { "type": "string" },
-                "password":  { "type": "string" }
-              }
-            }
-          }
-        },
-        "opensearch": {
-          "type": "object",
-          "required": ["host", "port"],
-          "properties": {
-            "distribution": { "type": "string" },
-            "host":         { "type": "string" },
-            "port":         { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "protocol":     { "type": "string", "enum": ["http", "https"] },
-            "user":         { "type": "string" },
-            "password":     { "type": "string" },
-            "version":      { "type": "string" }
-          }
-        },
-        "mongodb": {
-          "type": "object",
-          "properties": {
-            "source_type": { "type": "string" },
-            "host":        { "type": "string" },
-            "port":        { "type": "integer" },
-            "user":        { "type": "string" },
-            "password":    { "type": "string" },
-            "replicaSet":  { "type": "string" },
-            "options":     { "type": "object" }
-          }
-        },
-        "zookeeper": {
-          "type": "object",
-          "properties": {
-            "host": { "type": "string" },
-            "port": { "type": "integer" }
-          }
-        }
       }
     },
     "dbInit": {

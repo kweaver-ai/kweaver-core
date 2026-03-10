@@ -119,14 +119,105 @@ global:
       ingressClass: nginx
 
 
+# ---------------------------------------------------------------------------
+# Module Switches
+# ---------------------------------------------------------------------------
+modules:
+  isf:
+    enabled: true
+  agentoperator:
+    enabled: true
+  dataagent:
+    enabled: true
+  ontology:
+    enabled: true
+  sandboxruntime:
+    enabled: true
+  studio:
+    enabled: true
+  modelfactory:
+    enabled: true
+
 # =============================================================================
 # Specific Subchart Overrides (Optional)
 # =============================================================================
-# If a specific subchart requires a different configuration than the global defaults,
-# you can define it here. Helm's local values always override global ones in templates 
-# if written correctly, or we can just specify them under the subchart's key.
+# Helm injects values under `<subchart-name>:` as the subchart's `.Values.*`.
+# You can override ANY field that exists in the subchart's own values.yaml.
+#
+# How it works:
+#   - `global.*`             → Auto-propagated to ALL subcharts as `.Values.global.*`
+#   - `<subchart-name>.*`    → Injected into THAT subchart as `.Values.*`
+#   - `modules.*`            → NOT propagated, only used by parent chart for condition
+#
+# Priority (highest → lowest):
+#   1. --set agent-backend.replicaCount=5       (CLI)
+#   2. This file: agent-backend.replicaCount: 3 (subchart key override)
+#   3. Subchart's own values.yaml default        (subchart default)
+# =============================================================================
 
-# Example:
+# ---------------------------------------------------------------------------
+# Example 1: Override global fields for a specific subchart
+# ---------------------------------------------------------------------------
 # agent-backend:
+#   # Override global.replicaCount (default: 1) for this subchart only
 #   replicaCount: 3
+#
+#   # Override global.image.registry for this subchart only
+#   image:
+#     registry: "harbor.internal/kweaver"
+#
+#   # Override global.depServices.rds for this subchart (e.g. dedicated DB)
+#   depServices:
+#     rds:
+#       host: 'agent-dedicated-db.svc.cluster.local'
+#       database: 'agent_db'
+
+# ---------------------------------------------------------------------------
+# Example 2: Set subchart-specific fields (not in global)
+# ---------------------------------------------------------------------------
+# These fields exist in the subchart's own values.yaml but are NOT part of
+# the global block. You can still set them via the subchart key.
+#
+# agent-backend:
+#   resources:
+#     limits:
+#       cpu: "4"
+#       memory: 8Gi
+#     requests:
+#       cpu: "1"
+#       memory: 2Gi
+#   nodeSelector:
+#     gpu: "true"
+#   tolerations:
+#     - key: "gpu"
+#       operator: "Exists"
+#       effect: "NoSchedule"
+#   affinity: {}
+#   extraEnv:
+#     - name: LOG_LEVEL
+#       value: debug
+#     - name: CUSTOM_FLAG
+#       value: "1"
+#   serviceAccount:
+#     create: true
+#     name: "agent-backend-sa"
+
+# ---------------------------------------------------------------------------
+# Example 3: Multiple subcharts with different overrides
+# ---------------------------------------------------------------------------
+# isfweb:
+#   replicaCount: 2
+#   resources:
+#     limits:
+#       cpu: "2"
+#       memory: 4Gi
+#
+# dataflow:
+#   depServices:
+#     rds:
+#       host: 'dataflow-dedicated-db.svc.cluster.local'
+#       database: 'dataflow'
+#   extraEnv:
+#     - name: WORKER_COUNT
+#       value: "8"
 

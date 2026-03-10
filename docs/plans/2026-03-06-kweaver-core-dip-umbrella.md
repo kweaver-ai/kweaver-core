@@ -98,19 +98,17 @@ ghcr.io/kweaver-ai/
 
 ## 3. 服务归属（待确认）
 
-### 3.1 `kweaver-core`（36 个子 chart）
+### 3.1 `kweaver-core`（40 个子 chart）
 
-- ISF：
+- ISF（17）：
   - `hydra`、`sharemgnt-single`、`user-management`、`sharemgnt`、`authentication`、`policy-management`、`audit-log`、`eacp`、`thirdparty-message-plugin`、`isfwebthrift`、`message`、`isfweb`、`authorization`、`news-feed`、`ingress-informationsecurityfabric`、`eacp-single`、`oauth2-ui`
-- AgentOperator：
+- AgentOperator（4）：
   - `agent-operator-integration`、`operator-web`、`agent-retrieval`、`data-retrieval`
-- DataAgent（按确认）：
-  - `agent-backend`、`agent-web`
-- FlowAutomation：
-  - `flow-web`、`dataflow`、`coderunner`
-- Ontology：
+- DataAgent（9）：
+  - `agent-backend`、`agent-web`、`agent-app`、`agent-executor`、`agent-factory`、`agent-memory`、`coderunner`、`dataflow`、`agent-operator-app`
+- Ontology（9）：
   - `ontology-manager`、`ontology-query`、`vega-web`、`data-connection`、`vega-gateway`、`vega-gateway-pro`、`mdl-data-model`、`mdl-uniquery`、`mdl-data-model-job`
-- SandboxRuntime：
+- SandboxRuntime（1）：
   - `sandbox`
 
 ### 3.2 `kweaver-dip`（7 个子 chart + 强依赖 `kweaver-core`）
@@ -259,10 +257,10 @@ dependencies:
 - `modules.isf.enabled`
 - `modules.agentoperator.enabled`
 - `modules.dataagent.enabled`
-- `modules.flowautomation.enabled`
 - `modules.ontology.enabled`
 - `modules.sandboxruntime.enabled`
 - `modules.studio.enabled`（用于 DIP）
+- `modules.modelfactory.enabled`（用于 DIP）
 
 **Step 3: 默认策略**
 
@@ -286,43 +284,158 @@ dependencies:
 **Files:**
 - Create: `deploy/conf/products-values.yaml`
 
-**Step 1: 定义通用锚点**
+**设计决策：** 使用 Helm 原生 `global` 块向所有子 chart 透传通用配置，而非 YAML 锚点。详见 Section 17 的架构决策说明——锚点方案因生态工具不兼容（ArgoCD/Rancher UI 会展开锚点）而放弃。
+
+**Step 1: 定义 `global` 通用配置块**
 
 ```yaml
-common: &common
-  namespace: kweaver
+global:
+  image:
+    registry: "swr.cn-east-3.myhuaweicloud.com/kweaver-ai"
+  imagePullSecrets: []
   replicaCount: 1
   mode: Community
+  storageClass: "local-path"
+  ingressClassName: "nginx"
   env:
     language: en_US.UTF-8
     timezone: Asia/Shanghai
-  image:
-    registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
-  depServices: {}
+  accessAddress:
+    host: 10.4.175.152
+    port: 443
+    scheme: https
+    path: /
+  depServices:
+    rds:
+      host: 'mariadb.resource.svc.cluster.local'
+      port: 3306
+      user: 'adp'
+      password: ''
+      database: 'adp'
+      type: MariaDB
+    redis:
+      connectType: sentinel
+      connectInfo:
+        sentinelHost: proton-redis-sentinel.resource.svc.cluster.local
+        sentinelPort: 26379
+        password: ''
+    mq:
+      mqType: kafka
+      mqHost: 'kafka.resource.svc.cluster.local'
+      mqPort: 9092
+    opensearch:
+      host: 'opensearch-cluster-master.resource.svc.cluster.local'
+      port: 9200
+      protocol: https
+    mongodb:
+      host: 'mongodb.resource.svc.cluster.local'
+      port: 28000
 ```
 
-**Step 2: fan-out 到子 chart 键**
+说明：
+- Helm 会自动将 `global` 块透传给所有子 chart，无需逻一对每个子 chart 复制配置。
+- 子 chart 模板通过 Section 17 的“Global + Templates 降级”模式读取：优先取 `global.xxx`，若为空则回退到局部 `.Values.xxx`。
 
-```yaml
-agent-backend: { <<: *common }
-agent-web: { <<: *common }
-isfweb: { <<: *common }
-deploy-web: { <<: *common }
-studio-web: { <<: *common }
-```
-
-**Step 3: 暴露模块开关**
+**Step 2: 暴露模块开关**
 
 ```yaml
 modules:
   isf: { enabled: true }
   agentoperator: { enabled: true }
   dataagent: { enabled: true }
-  flowautomation: { enabled: true }
   ontology: { enabled: true }
   sandboxruntime: { enabled: true }
   studio: { enabled: true }
+  modelfactory: { enabled: true }
 ```
+
+**Step 3: 特定子 chart 覆盖（可选）**
+
+Helm 的 values 传递规则：
+
+| 层级 | 传递方式 | 优先级 |
+|------|----------|--------|
+| `global.*` | Helm **自动透传**给所有子 chart，子 chart 通过 `.Values.global.*` 访问 | 最低（被子 chart 局部值覆盖） |
+| `<subchart-name>.*` | Helm 将该键下的所有字段**注入**为子 chart 的 `.Values.*` | 中等 |
+| `modules.*` | **不透传**，仅父 chart 自己读取，用于 dependency condition 判断 | — |
+
+在 `products-values.yaml` 中，如果某个子 chart 需要与全局不同的配置，直接在**顶层以子 chart 名称为键**写入覆盖值：
+
+```yaml
+# products-values.yaml
+
+global:
+  image:
+    registry: "swr.cn-east-3.myhuaweicloud.com/kweaver-ai"
+  replicaCount: 1
+  depServices:
+    rds:
+      host: 'mariadb.resource.svc.cluster.local'
+      # ...
+
+modules:
+  isf: { enabled: true }
+  # ...
+
+# --- 以下为可选的子 chart 级覆盖 ---
+# 可以覆盖子 chart values.yaml 中的任意字段，不限于 global 中定义的键。
+
+# 例 1：agent-backend 需要 3 副本（覆盖 global.replicaCount=1）
+agent-backend:
+  replicaCount: 3
+
+# 例 2：isfweb 使用不同的镜像源（覆盖 global.image.registry）
+isfweb:
+  image:
+    registry: "harbor.internal/kweaver"
+
+# 例 3：dataflow 连接专用数据库（覆盖 global.depServices.rds）
+dataflow:
+  depServices:
+    rds:
+      host: 'dataflow-dedicated-db.svc.cluster.local'
+      database: 'dataflow'
+
+# 例 4：覆盖子 chart 的任意字段（resources、nodeSelector、extraEnv 等）
+# 这些字段不在 global 中，但存在于子 chart 自己的 values.yaml 中
+agent-backend:
+  resources:
+    limits:
+      cpu: "4"
+      memory: 8Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
+  nodeSelector:
+    gpu: "true"
+  tolerations:
+    - key: "gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+  extraEnv:
+    - name: LOG_LEVEL
+      value: debug
+```
+
+> **说明：** `<subchart-name>.*` 注入机制可以覆盖子 chart `values.yaml` 中的**任意字段**，不仅限于 `global` 中定义的键。只要子 chart 的 `values.yaml` 中声明了该字段（如 `resources`、`nodeSelector`、`tolerations`、`extraEnv`、`serviceAccount` 等），父 chart 就可以通过这个键进行覆盖。Helm 会对这些值做 deep merge，将父 chart 指定的值与子 chart 的默认值合并。
+
+**优先级解析顺序（子 chart 模板视角）：**
+
+```text
+子 chart 模板中的 .Values.replicaCount 解析优先级：
+
+1. --set agent-backend.replicaCount=5         ← 命令行最高优先
+2. products-values.yaml 中 agent-backend.replicaCount: 3  ← 子 chart 键覆盖
+3. 子 chart 自己的 values.yaml 中 replicaCount: 1   ← 子 chart 默认值
+
+子 chart 模板中的 .Values.global.depServices.rds 解析优先级：
+
+1. --set global.depServices.rds.host=xxx      ← 命令行最高优先
+2. products-values.yaml 中 global.depServices.rds.host    ← values 文件
+3. 父 chart values.yaml 中 global.depServices.rds.host   ← 父 chart 默认值
+```
+
+> **设计要点：** `global` 是 Helm 内置的魔术键，自动向下透传。而 `<subchart-name>` 键也是 Helm 内置的注入机制——父 chart values 中 `agent-backend.replicaCount: 3` 会被 Helm 自动注入为 `agent-backend` 子 chart 的 `.Values.replicaCount`。这两个机制是 Helm 原生能力，无需额外代码。
 
 Expected: 用户只改这一个 values 文件即可安装 core 或 dip。
 
@@ -539,44 +652,46 @@ OCI 模式下，稳定版本与 preview 版本通过 **tag 语义** 自然隔离
 
 ```yaml
 # kweaver-core/templates/db-init-job.yaml
+{{- if .Values.dbInit.enabled }}
+{{- $rds := .Values.global.depServices.rds }}
+{{- $registry := .Values.global.image.registry | default "" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Release.Name }}-core-db-init
+  name: {{ .Release.Name }}-db-init
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
-  backoffLimit: 3
+  backoffLimit: {{ .Values.dbInit.backoffLimit | default 3 }}
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       initContainers:
-        - name: wait-db
+        - name: wait-for-db
           image: busybox:1.36
-          command: ['sh', '-c', 'until nc -z {{ .Values.database.host }} {{ .Values.database.port }}; do echo waiting for db; sleep 2; done']
+          command: ['sh', '-c']
+          args:
+            - |
+              until nc -z {{ $rds.host }} {{ $rds.port }}; do echo waiting for db; sleep 5; done
       containers:
         - name: migrate
-          image: "{{ .Values.common.image.registry }}/kweaver-db-migrate:{{ .Chart.AppVersion }}"
+          image: "{{ if $registry }}{{ $registry }}/{{ end }}{{ .Values.dbInit.image.repository }}:{{ .Values.dbInit.image.tag }}"
           env:
             - name: DB_HOST
-              value: "{{ .Values.database.host }}"
+              value: {{ $rds.host | quote }}
             - name: DB_PORT
-              value: "{{ .Values.database.port | default 3306 }}"
-            - name: DB_NAME
-              value: "{{ .Values.database.coreDB | default "kweaver_core" }}"
+              value: {{ $rds.port | quote }}
             - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-db-secret
-                  key: username
+              value: {{ $rds.user | quote }}
             - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-db-secret
-                  key: password
-          command: ["./migrate", "up"]
+              value: {{ $rds.password | quote }}
+            - name: DB_NAME
+              value: {{ $rds.database | default "adp" | quote }}
+            - name: MIGRATION_TARGET
+              value: "core"
+{{- end }}
 ```
 
 **Step 2: DIP 数据库初始化**
@@ -585,12 +700,13 @@ DIP 使用相同模式，但 `hook-weight` 更大（在 core 之后执行）：
 
 ```yaml
 # kweaver-dip/templates/db-init-job.yaml
+# 与 core 相同结构，但 hook-weight 更大（core=-5 先执行，dip=-3 后执行）
 metadata:
-  name: {{ .Release.Name }}-dip-db-init
+  name: {{ .Release.Name }}-db-init
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-3"       # core=-5 先执行，dip=-3 后执行
-    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 ```
 
 **Step 3: 执行顺序保证**
@@ -768,7 +884,6 @@ spec:
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["modules"],
   "properties": {
     "modules": {
       "type": "object",
@@ -776,17 +891,22 @@ spec:
         "isf":            { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "agentoperator":  { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "dataagent":      { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
-        "flowautomation": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "ontology":       { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] },
         "sandboxruntime": { "type": "object", "properties": { "enabled": { "type": "boolean" } }, "required": ["enabled"] }
       }
     },
-    "database": {
+    "depServices": {
       "type": "object",
-      "required": ["host"],
+      "required": ["rds", "redis", "mq", "opensearch"],
       "properties": {
-        "host": { "type": "string", "minLength": 1 },
-        "port": { "type": "integer", "minimum": 1, "maximum": 65535, "default": 3306 }
+        "rds": {
+          "type": "object",
+          "required": ["host", "port", "user", "password"],
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        }
       }
     }
   }
@@ -1007,7 +1127,7 @@ Expected:
 
 ## 15. 完成定义（DoD）
 
-**Phase 1（短期 MVP）：**
+**Phase 1（MVP）：**
 - `kweaver-core`、`kweaver-dip` 通过 OCI Registry（`ghcr.io`）发布并可直接安装。
 - `kweaver-dip` 默认包含 `kweaver-core` 依赖，支持 `kweaver-core.enabled=false` 跳过。
 - 子 chart 仅出现在 `oci://ghcr.io/kweaver-ai/charts/` 路径，不在对外文档中暴露。
@@ -1018,7 +1138,7 @@ Expected:
 - `helm test` 提供基础连通性验证。
 - GitHub Actions OCI 推送 workflow 就绪。
 
-**Phase 2（长期演进）：**
+**Phase 2（演进）：**
 - 提供 Helmfile 声明式部署配置（`deploy/helmfile.yaml`）。
 - 提供 Argo CD ApplicationSet 示例（`deploy/argocd/appset.yaml`）。
 - 版本兼容性矩阵 + CI 自动化测试。
@@ -1027,7 +1147,7 @@ Expected:
 ## 16. 演进路线图
 
 ```text
-Phase 1（当前 → 1 个月）
+Phase 1
   ├── kweaver-core / kweaver-dip Chart.yaml + values.yaml
   ├── products-values.yaml（Global 降级兼容策略）
   ├── DB init Hook Jobs
@@ -1036,12 +1156,13 @@ Phase 1（当前 → 1 个月）
   ├── OCI 推送 workflow（ghcr.io）
   └── Preview 通道（prerelease OCI tag）
 
-Phase 2（3-6 个月后）
+Phase 2
   ├── deploy/helmfile.yaml
   ├── deploy/argocd/appset.yaml
   ├── 版本兼容性矩阵 + CI 自动化测试
-  └── Subchart 模板批量改造脚本
+  ├── Subchart 模板批量改造脚本
   └── 离线部署文档（Harbor）
+```
 
 ## 17. 附录：子 Chart 适配 Umbrella 改造指南
 
@@ -1093,6 +1214,8 @@ metadata:
 
 **改造方案（改模板，不改 Values 结构）：**
 由于 Helm 的限制，我们无法在子 chart 的 `values.yaml` 里直接引用 `global` 变量。必须在各子 chart 的**模板文件（Templates）**层面做兼容性修改：优先读取 `global`，若为空则降级（Fallback）读取局部变量。
+
+> **注意：** 此降级模式仅适用于**子 chart 模板**（需同时支持独立部署和 Umbrella 部署）。Umbrella chart 自身的模板（如 `db-init-job.yaml`）可直接读取 `.Values.global.depServices`，因为它们仅在 Umbrella 模式下运行。
 
 **改造示例（最佳实践）：**
 建议在每个子 chart 的 `templates/_helpers.tpl` 中统一定义兼容函数，然后替换 deployment 等文件中的直接引用。
