@@ -86,34 +86,34 @@ Beyond "seeing more", Agents must "do it right". KWeaver Core provides constrain
 ### Core Architecture
 
 ```text
-┌────────────────────── KWeaver Core ──────────────────────┐
-│        │                                         │       │
-│        │  Decision Agent                         │       │
-│        │  (Dolphin Runtime / Agent Executor)      │       │
-│  Info  │─────────────────────────────────────────│ Trace │
-│  Secu- │                                         │       │
-│  rity  │  AI Data Platform                       │  AI   │
-│        │  ┌───────────────────────────────────┐  │       │
-│ Fabric │  │ Context Loader                    │  │ Obse- │
-│        │  │  ┌───────────┐   ┌─────────────┐ │  │ rvab- │
-│ (ISF)  │  │  │ Retrieval │ → │   Ranker    │ │  │ ility │
-│        │  │  └───────────┘   └─────────────┘ │  │   /   │
-│ Access │  ├───────────────────────────────────┤  │ Evid- │
-│ Control│  │ Business Knowledge Network        │  │ ence  │
-│   /    │  │ ┌───────────────────────────────┐ │  │       │
-│ Secu-  │  │ │ BKN Engine                    │ │  │       │
-│  rity  │  │ │ (Data / Logic / Risk / Action)│ │  │       │
-│        │  │ │   ↓ mapping      ↓ mapping    │ │  │       │
-│        │  │ │ ┌──────┐ ┌──────────┐ ┌─────┐│ │  │       │
-│        │  │ │ │ VEGA │ │Execution │ │Data-││ │  │       │
-│        │  │ │ │Engine│ │ Factory  │ │flow ││ │  │       │
-│        │  │ │ └──────┘ └──────────┘ └─────┘│ │  │       │
-│        │  │ └───────────────────────────────┘ │  │       │
-│        │  └───────────────────────────────────┘  │       │
-│        │                                         │       │
-└────────┴─────────────────────────────────────────┴───────┘
-              ↕                ↕                ↕
-      Multi-source & Multi-modal Data (30+ data sources)
+┌──────────────────────── KWeaver Core ────────────────────────┐
+│         │                                          │         │
+│         │  Decision Agent                          │         │
+│  Info   │  (Dolphin Runtime / Agent Executor)       │  Trace │
+│  Secu-  │──────────────────────────────────────────│         │
+│  rity   │                                          │   AI    │
+│         │  AI Data Platform                        │         │
+│ Fabric  │  ┌────────────────────────────────────┐  │  Obse-  │
+│         │  │ Context Loader                     │  │  rvab-  │
+│ (ISF)   │  │  ┌───────────┐   ┌─────────────┐  │  │  ility  │
+│         │  │  │ Retrieval │ → │   Ranker    │  │  │    /    │
+│ Access  │  │  └───────────┘   └─────────────┘  │  │  Evid-  │
+│ Control │  ├────────────────────────────────────┤  │  ence   │
+│    /    │  │ Business Knowledge Network         │  │         │
+│ Secu-   │  │  ┌────────────────────────────┐    │  │         │
+│  rity   │  │  │ BKN Engine                 │    │  │         │
+│         │  │  │ (Data/Logic/Risk/Action)    │    │  │         │
+│         │  │  └──────┬─────────────┬───────┘    │  │         │
+│         │  │         ↓ mapping     ↓ mapping    │  │         │
+│         │  │  ┌────────┐ ┌───────────┐ ┌──────┐ │  │         │
+│         │  │  │  VEGA  │ │ Execution │ │ Data │ │  │         │
+│         │  │  │ Engine │ │  Factory  │ │ flow │ │  │         │
+│         │  │  └────────┘ └───────────┘ └──────┘ │  │         │
+│         │  └────────────────────────────────────┘  │         │
+│         │                                          │         │
+└─────────┴──────────────────────────────────────────┴─────────┘
+               ↕                ↕                ↕
+       Multi-source & Multi-modal Data (30+ data sources)
 ```
 
 | Component | Description |
