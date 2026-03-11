@@ -203,21 +203,41 @@ modules:
 #     name: "agent-backend-sa"
 
 # ---------------------------------------------------------------------------
-# Example 3: Multiple subcharts with different overrides
+# Example 3: Nested dependency overrides (dip → core → subchart)
 # ---------------------------------------------------------------------------
-# isfweb:
-#   replicaCount: 2
-#   resources:
-#     limits:
-#       cpu: "2"
-#       memory: 4Gi
+# When installing kweaver-dip (which embeds kweaver-core), customizing a
+# core subchart (e.g. hydra) requires the nested key path:
+#   kweaver-core.<subchart-name>.<field>
 #
-# dataflow:
-#   depServices:
-#     rds:
-#       host: 'dataflow-dedicated-db.svc.cluster.local'
-#       database: 'dataflow'
-#   extraEnv:
-#     - name: WORKER_COUNT
-#       value: "8"
+# Note: `global.*` does NOT need this prefix — it auto-propagates recursively.
+#       Only `<subchart-name>.*` injection requires the nested path.
+#
+# kweaver-core:
+#   # Customize hydra (core's subchart)
+#   hydra:
+#     replicaCount: 2
+#     resources:
+#       limits:
+#         cpu: "2"
+#         memory: 4Gi
+#
+#   # Customize isfweb (core's subchart)
+#   isfweb:
+#     replicaCount: 3
+#     image:
+#       tag: "0.3.1"
+#
+#   # Customize agent-backend (core's subchart)
+#   agent-backend:
+#     resources:
+#       limits:
+#         cpu: "4"
+#         memory: 8Gi
+#     nodeSelector:
+#       gpu: "true"
+#
+# Comparison:
+#   Direct install core:  hydra.replicaCount: 2
+#   Install via dip:      kweaver-core.hydra.replicaCount: 2
+#   CLI --set via dip:    --set kweaver-core.hydra.replicaCount=2
 

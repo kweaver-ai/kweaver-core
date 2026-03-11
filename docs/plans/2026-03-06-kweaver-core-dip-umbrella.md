@@ -29,9 +29,9 @@
 - 包含：
   - `kweaver-core`、`kweaver-dip` 的 chart 设计、发布、索引隔离、分支包策略。
   - 单一 values 文件设计与模块开关。
+  - 现有子 chart 兼容 global 变量场景。
 - 不包含：
   - 基础设施（MariaDB/Redis/Kafka/OpenSearch/MongoDB 等）生命周期自动化。
-  - 现有子 chart 源码重构。
 
 ## 2. 目标状态设计
 
@@ -181,32 +181,6 @@ deploy/
 - 停止接受新 `.tgz` 提交。
 - GitHub Actions workflow 可选保留（用于历史版本的 gh-pages 索引），但不作为新版本发布路径。
 
-### Task 1：建立源码与发布职责边界
-
-**Files:**
-- Create: `deploy/charts/kweaver-core/Chart.yaml`
-- Create: `deploy/charts/kweaver-core/values.yaml`
-- Create: `deploy/charts/kweaver-core/values.schema.json`
-- Create: `deploy/charts/kweaver-dip/Chart.yaml`
-- Create: `deploy/charts/kweaver-dip/values.yaml`
-- Create: `deploy/charts/kweaver-dip/values.schema.json`
-- Create: `deploy/conf/products-values.yaml`
-- Modify: `deploy/README.md`
-- Modify: `deploy/README.zh.md`
-
-**Step 1: 创建 umbrella chart 目录**
-
-Run:
-```bash
-mkdir -p /code/kweaver/kweaver/deploy/charts/kweaver-core/templates/tests
-mkdir -p /code/kweaver/kweaver/deploy/charts/kweaver-dip/templates/tests
-```
-Expected: core/dip umbrella chart 源码目录就绪。
-
-**Step 2: `deploy/charts` 仅保留 umbrella chart**
-
-- `deploy/charts/` 仅包含 `kweaver-core/`、`kweaver-dip/` 两个目录。
-- 原有的基础设施 `.tgz` 文件（`kafka-32.4.3.tgz`、`mariadb-20.0.0.tgz` 等）和 `proton-mariadb/` 目录迁移到 Proton 项目或删除。
 
 ## 5. Umbrella Chart 设计细则
 
@@ -259,8 +233,7 @@ dependencies:
 - `modules.dataagent.enabled`
 - `modules.ontology.enabled`
 - `modules.sandboxruntime.enabled`
-- `modules.studio.enabled`（用于 DIP）
-- `modules.modelfactory.enabled`（用于 DIP）
+- `modules.modelfactory.enabled`
 
 **Step 3: 默认策略**
 
@@ -345,7 +318,6 @@ modules:
   dataagent: { enabled: true }
   ontology: { enabled: true }
   sandboxruntime: { enabled: true }
-  studio: { enabled: true }
   modelfactory: { enabled: true }
 ```
 
@@ -436,6 +408,57 @@ agent-backend:
 ```
 
 > **设计要点：** `global` 是 Helm 内置的魔术键，自动向下透传。而 `<subchart-name>` 键也是 Helm 内置的注入机制——父 chart values 中 `agent-backend.replicaCount: 3` 会被 Helm 自动注入为 `agent-backend` 子 chart 的 `.Values.replicaCount`。这两个机制是 Helm 原生能力，无需额外代码。
+
+**Step 4: 嵌套依赖下的子 chart 配置覆盖**
+
+当 `kweaver-dip` 内嵌 `kweaver-core` 时，存在三层嵌套：`kweaver-dip → kweaver-core → 子 chart（如 hydra）`。
+
+Helm 的值注入规则按**嵌套键路径**逍归传递：
+
+```yaml
+# products-values.yaml — 通过 kweaver-dip 安装时自定义 core 的子 chart
+
+global:
+  depServices:
+    rds:
+      host: 'mariadb.resource.svc.cluster.local'
+  # global 自动逍归透传到所有层级，无需嵌套键
+
+# 自定义 hydra（core 的子 chart）— 需要嵌套键路径
+kweaver-core:
+  hydra:
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: "2"
+        memory: 4Gi
+
+  # 自定义 isfweb（core 的子 chart）
+  isfweb:
+    replicaCount: 3
+
+  # 自定义 agent-backend（core 的子 chart）
+  agent-backend:
+    resources:
+      limits:
+        cpu: "4"
+        memory: 8Gi
+    nodeSelector:
+      gpu: "true"
+
+# 自定义 deploy-web（dip 的直接子 chart）— 无需嵌套
+deploy-web:
+  replicaCount: 2
+```
+
+**不同安装方式下的键路径对比：**
+
+| 安装方式 | 自定义 hydra 的键 | 命令行 `--set` |
+|----------|-----------------|------------------|
+| 直接装 core | `hydra.replicaCount: 2` | `--set hydra.replicaCount=2` |
+| 通过 dip 装全套 | `kweaver-core.hydra.replicaCount: 2` | `--set kweaver-core.hydra.replicaCount=2` |
+
+> **关键区别：** `global.*` 无论嵌套多深都自动穿透所有层级（无需嵌套键），而 `<subchart-name>.*` 只注入到直接子 chart，不自动透传。所以通过 dip 自定义 core 的子 chart 时必须用 `kweaver-core.<subchart>.*` 路径。
 
 Expected: 用户只改这一个 values 文件即可安装 core 或 dip。
 
@@ -1125,44 +1148,7 @@ Expected:
 - 风险：内网/离线环境无法访问 `ghcr.io`。
   - 控制：提供 `helm pull` + `helm push` 到私有 Harbor 的离线部署文档。
 
-## 15. 完成定义（DoD）
 
-**Phase 1（MVP）：**
-- `kweaver-core`、`kweaver-dip` 通过 OCI Registry（`ghcr.io`）发布并可直接安装。
-- `kweaver-dip` 默认包含 `kweaver-core` 依赖，支持 `kweaver-core.enabled=false` 跳过。
-- 子 chart 仅出现在 `oci://ghcr.io/kweaver-ai/charts/` 路径，不在对外文档中暴露。
-- 用户编辑一个 values 文件后，可一条命令安装 core 或 dip。
-- 数据库初始化通过 Helm Hook 自动完成，无需手动操作。
-- 分支包具备 preview 发布（prerelease tag）、测试与隔离能力，不影响稳定通道。
-- `values.schema.json` 覆盖模块开关和数据库配置校验。
-- `helm test` 提供基础连通性验证。
-- GitHub Actions OCI 推送 workflow 就绪。
-
-**Phase 2（演进）：**
-- 提供 Helmfile 声明式部署配置（`deploy/helmfile.yaml`）。
-- 提供 Argo CD ApplicationSet 示例（`deploy/argocd/appset.yaml`）。
-- 版本兼容性矩阵 + CI 自动化测试。
-- 离线部署文档（Harbor 私有 registry 推送流程）。
-
-## 16. 演进路线图
-
-```text
-Phase 1
-  ├── kweaver-core / kweaver-dip Chart.yaml + values.yaml
-  ├── products-values.yaml（Global 降级兼容策略）
-  ├── DB init Hook Jobs
-  ├── values.schema.json
-  ├── helm test hooks
-  ├── OCI 推送 workflow（ghcr.io）
-  └── Preview 通道（prerelease OCI tag）
-
-Phase 2
-  ├── deploy/helmfile.yaml
-  ├── deploy/argocd/appset.yaml
-  ├── 版本兼容性矩阵 + CI 自动化测试
-  ├── Subchart 模板批量改造脚本
-  └── 离线部署文档（Harbor）
-```
 
 ## 17. 附录：子 Chart 适配 Umbrella 改造指南
 
