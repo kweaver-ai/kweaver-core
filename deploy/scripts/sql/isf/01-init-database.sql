@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS `t_reserved_name` (
   `f_update_time` bigint(20) NOT NULL COMMENT '修改时间',
   PRIMARY KEY (`f_id`),
   KEY `idx_name` (`f_name`)
-) ENGINE=InnoDB COMMENT='保留名称表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='保留名称表';
 
 -- hydra
 
@@ -820,6 +820,15 @@ CREATE TABLE IF NOT EXISTS `t_site_info` (
   UNIQUE KEY `f_uniq_index_index` (`f_uniq_index`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
+CREATE TABLE IF NOT EXISTS `t_manager_limit_space` (
+  `f_manager_id` char(40) NOT NULL,                                 -- 管理员id
+  `f_limit_user_space` bigint(20) DEFAULT '-1',                     -- 限制的总用户配额, -1为不限制
+  `f_allocated_limit_user_space` bigint(20) DEFAULT '0',            -- 已分配的首先用户配额
+  `f_limit_doc_space` bigint(20) DEFAULT '-1',                      -- 限制的总文档配额, -1为不限制
+  `f_allocated_limit_doc_space` bigint(20) DEFAULT '0',             -- 已分配的受限文档配额
+  PRIMARY KEY (`f_manager_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
 CREATE TABLE IF NOT EXISTS `t_third_party_db` (
     `f_third_db_id` char(50) NOT NULL,                              -- 第三方数据库标识id
     `f_name` char(50) DEFAULT "",                                   -- 第三方名称
@@ -989,6 +998,15 @@ CREATE TABLE IF NOT EXISTS `t_net_docs_limit_info` (
     PRIMARY KEY (`f_index`),
     KEY `f_doc_id_index` (`f_doc_id`)
 )ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `t_doc_download_limit` (
+  `f_id` varchar(40) NOT NULL,                                      -- 记录标识
+  `f_obj_id` varchar(40) NOT NULL,                                  -- 对象id
+  `f_obj_type` tinyint(4) NOT NULL,                                 -- 对象类型
+  `f_download_limit_value` bigint(20) NOT NULL,                     -- 下载的数量限制
+  `f_time` bigint(20) NOT NULL,                                     -- 记录的时间
+  PRIMARY KEY (`f_id`, `f_obj_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE IF NOT EXISTS `t_user_verification_code` (
   `f_user_id` char(40) NOT NULL,                                    -- 用户id
@@ -1773,100 +1791,6 @@ CREATE TABLE IF NOT EXISTS t_pers_rec_svc_config
     unique key uk_key (f_key)
 ) ENGINE = InnoDB COMMENT '个性化推荐 服务配置（用于存储一些配置或标识等）';
 
--- ThirdpartyMessagePlugin
-
-/*
-MySQL: Database - thirdparty_message
-*********************************************************************
-*/
-use thirdparty_message;
-
-CREATE TABLE IF NOT EXISTS `t_thirdparty_config` (
-  `f_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `f_app_name` varchar(128) NOT NULL DEFAULT '' COMMENT '第三方app名',
-  `f_enable` smallint(6) DEFAULT NULL COMMENT '第三方配置开关，1为启用，0为禁用',
-  `f_class_name` varchar(255) NOT NULL DEFAULT '' COMMENT '插件模块名(插件类名)',
-  `f_message_type_list` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT '消息类型' CHECK (json_valid(`f_message_type_list`)),
-  `f_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT '其他配置' CHECK (json_valid(`f_config`)),
-  `f_file_name` varchar(255) NOT NULL COMMENT '第三方插件名称',
-  `f_object_id` char(40) NOT NULL COMMENT '文件在对象存储中id',
-  `f_oss_id` char(40) NOT NULL COMMENT '对象存储id',
-  PRIMARY KEY (`f_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2;
-
-CREATE TABLE IF NOT EXISTS `t_task_lock` (
-  `f_primary_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `f_task_name` varchar(100) NOT NULL COMMENT '任务锁名称',
-  `f_status` varchar(30) NOT NULL DEFAULT 'running' COMMENT '任务锁状态: running运行中，done完成',
-  `f_create_time` datetime NOT NULL COMMENT '创建时间',
-  `f_update_time` timestamp NOT NULL COMMENT '锁的更新时间',
-  PRIMARY KEY (`f_primary_id`),
-  UNIQUE KEY `f_task_name` (`f_task_name`)
-) ENGINE = InnoDB COMMENT = '任务锁表';
-
--- Message
-
-/*
-MySQL: Database - message
-*********************************************************************
-*/
-use anyshare;
-
-CREATE TABLE IF NOT EXISTS `t_to_do_message` (
-    `f_msg_id` char(40) NOT NULL COMMENT '待办消息唯一标识',
-    `f_channel` varchar(128) NOT NULL COMMENT '消息类型',
-    `f_payload` mediumtext NOT NULL COMMENT '消息内容',
-    `f_create_stamp` bigint(20) NOT NULL COMMENT '消息创建时间',
-    PRIMARY KEY (`f_msg_id`),
-    KEY `idx_t_to_do_message_f_create_stamp` (`f_create_stamp`)
-) ENGINE=InnoDB COMMENT='待办消息表';
-
-CREATE TABLE IF NOT EXISTS `t_to_do_message_usermap` (
-    `f_msg_id` char(40) NOT NULL COMMENT '待办消息唯一标识',
-    `f_user_id` char(40) NOT NULL COMMENT '用户id',
-    `f_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '消息状态, 1: 已读, 0: 未读',
-    `f_handler_id` char(40) NOT NULL DEFAULT '' COMMENT '消息处理者id，如果未被处理则为空',
-    `f_create_stamp` bigint(20) NOT NULL COMMENT '消息创建时间',
-    PRIMARY KEY (`f_msg_id`,`f_user_id`),
-    KEY `idx_t_to_do_message_usermap_f_user_id` (`f_user_id`),
-    KEY `idx_t_to_do_message_usermap_f_create_stamp` (`f_create_stamp`)
-) ENGINE=InnoDB COMMENT='待办消息用户关联表';
-
-  CREATE TABLE IF NOT EXISTS `t_msg_outbox` (
-    `f_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键',
-    `f_business_type` tinyint(4) NOT NULL COMMENT '业务类型',
-    `f_message` longtext NOT NULL COMMENT '消息内容，json格式字符串',
-    `f_create_time` bigint(20) NOT NULL COMMENT '消息创建时间',
-    PRIMARY KEY (`f_id`),
-    KEY `idx_business_type_and_create_time` (`f_business_type`, `f_create_time`)
-) ENGINE=InnoDB COMMENT='消息中心outbox信息表';
-
-CREATE TABLE IF NOT EXISTS `t_msg_outbox_lock` (
-    `f_business_type` tinyint(4) NOT NULL COMMENT '业务类型',
-    PRIMARY KEY (`f_business_type`)
-) ENGINE=InnoDB COMMENT='outbox分布式锁表';
-
-CREATE TABLE IF NOT EXISTS `t_message` (                                        -- 此表记录消息信息
-    `f_msg_id` char(40) NOT NULL,                                                   -- 消息的唯一标识
-    `f_content` mediumtext NOT NULL COMMENT '消息内容',
-    `f_create_stamp` bigint(20) NOT NULL,                                           -- 消息创建时间
-    `f_task_id` char(40) DEFAULT NULL,                                              -- 任务id
-    `f_channel` varchar(128) NOT NULL DEFAULT '' COMMENT '消息类型',                 -- 消息类型，7.0.5.6新增字段，达梦数据库新增字段NOT NULL在有数据的情况下必须指定默认值，否则新增字段会失败，所以设置默认值为''
-    PRIMARY KEY (`f_msg_id`),
-    KEY `idx_t_message_f_create_stamp` (`f_create_stamp`) USING BTREE
-  ) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `t_message_usermap` (                -- 此表记录消息-用户关联信息
-    `f_msg_id` char(40) NOT NULL,                                 -- 消息的唯一标识
-    `f_user_id` char(40) NOT NULL,                                -- 用户id
-    `f_status` tinyint(4) NOT NULL,                               -- 消息状态, 1: 已读, 0: 未读
-    `f_read_stamp` bigint(20) NOT NULL DEFAULT 0,                 -- 消息已读的时间, 微秒的时间戳
-    PRIMARY KEY (`f_msg_id`,`f_user_id`),
-    KEY `idx_t_message_usermap_user_and_status_and_msg` (`f_user_id`,`f_status`,`f_msg_id`)
-  ) ENGINE=InnoDB;
-
-INSERT INTO t_msg_outbox_lock(f_business_type) SELECT 1 FROM DUAL WHERE NOT EXISTS(SELECT f_business_type FROM t_msg_outbox_lock WHERE f_business_type = 1);
-
 -- Authorization
 
 /*
@@ -1904,7 +1828,6 @@ CREATE TABLE IF NOT EXISTS `t_policy`
     `f_accessor_name`  varchar(150) NOT NULL COMMENT '访问者名称',
     `f_operation`     longtext   NOT NULL COMMENT '操作',
     `f_condition`     longtext   NOT NULL COMMENT '条件',
-    `f_ancestors`     longtext   NOT NULL COMMENT '祖先信息',
     `f_end_time` bigint(20) NOT NULL COMMENT '过期时间',
     `f_create_time` bigint(20) NOT NULL COMMENT '创建时间',
     `f_modify_time` bigint(20) NOT NULL COMMENT '修改时间',
@@ -1972,15 +1895,3 @@ CREATE TABLE IF NOT EXISTS `t_obligation` (
     KEY `idx_f_type_id` (`f_type_id`),
     PRIMARY KEY (`f_primary_id`)
 ) ENGINE = InnoDB COMMENT='义务表';
-
-
-CREATE TABLE IF NOT EXISTS `t_resource_type_hierarchy`
-(
-    `f_primary_id` bigint(20) NOT NULL AUTO_INCREMENT,
-    `f_resource_type_id`  char(40) NOT NULL COMMENT '根节点的资源类型唯一标识',
-    `f_children`          longtext NOT NULL COMMENT '下级节点信息',
-    `f_created_at` bigint(20) NOT NULL COMMENT '创建时间',
-    `f_modified_at` bigint(20) NOT NULL COMMENT '修改时间',
-    UNIQUE KEY `uk_resource_type_id` (`f_resource_type_id`),
-    PRIMARY KEY (`f_primary_id`)
-) ENGINE = InnoDB COMMENT='资源类型层级关系表';
