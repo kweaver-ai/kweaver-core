@@ -9,14 +9,10 @@ declare -a ISF_RELEASES=(
     policy-management
     audit-log
     eacp
-    thirdparty-message-plugin
     isfwebthrift
-    message
     isfweb
     authorization
-    news-feed
     ingress-informationsecurityfabric
-    eacp-single
     oauth2-ui
 )
 
@@ -38,7 +34,6 @@ declare -a ISF_DATABASES=(
     "anydata"
     "third_app_mgnt"
     "hydra_v2"
-    "thirdparty_message"
 )
 
 # Parse isf command arguments
