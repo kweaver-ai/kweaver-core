@@ -164,7 +164,11 @@ CREATE TABLE IF NOT EXISTS `t_reserved_name` (
   `f_update_time` bigint(20) NOT NULL COMMENT '修改时间',
   PRIMARY KEY (`f_id`),
   KEY `idx_name` (`f_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='保留名称表';
+) ENGINE=InnoDB COMMENT='保留名称表';
+
+INSERT INTO `t_sharemgnt_config`(`f_key`, `f_value`) SELECT 'user_expired_disable_lock', 'locked' FROM DUAL WHERE NOT EXISTS (SELECT `f_key` FROM `t_sharemgnt_config` WHERE `f_key` = 'user_expired_disable_lock');
+INSERT INTO `t_sharemgnt_config`(`f_key`, `f_value`) SELECT 'user_not_login_disable_lock', 'locked' FROM DUAL WHERE NOT EXISTS (SELECT `f_key` FROM `t_sharemgnt_config` WHERE `f_key` = 'user_not_login_disable_lock');
+
 
 -- hydra
 
@@ -820,15 +824,6 @@ CREATE TABLE IF NOT EXISTS `t_site_info` (
   UNIQUE KEY `f_uniq_index_index` (`f_uniq_index`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
-CREATE TABLE IF NOT EXISTS `t_manager_limit_space` (
-  `f_manager_id` char(40) NOT NULL,                                 -- 管理员id
-  `f_limit_user_space` bigint(20) DEFAULT '-1',                     -- 限制的总用户配额, -1为不限制
-  `f_allocated_limit_user_space` bigint(20) DEFAULT '0',            -- 已分配的首先用户配额
-  `f_limit_doc_space` bigint(20) DEFAULT '-1',                      -- 限制的总文档配额, -1为不限制
-  `f_allocated_limit_doc_space` bigint(20) DEFAULT '0',             -- 已分配的受限文档配额
-  PRIMARY KEY (`f_manager_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
-
 CREATE TABLE IF NOT EXISTS `t_third_party_db` (
     `f_third_db_id` char(50) NOT NULL,                              -- 第三方数据库标识id
     `f_name` char(50) DEFAULT "",                                   -- 第三方名称
@@ -998,15 +993,6 @@ CREATE TABLE IF NOT EXISTS `t_net_docs_limit_info` (
     PRIMARY KEY (`f_index`),
     KEY `f_doc_id_index` (`f_doc_id`)
 )ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS `t_doc_download_limit` (
-  `f_id` varchar(40) NOT NULL,                                      -- 记录标识
-  `f_obj_id` varchar(40) NOT NULL,                                  -- 对象id
-  `f_obj_type` tinyint(4) NOT NULL,                                 -- 对象类型
-  `f_download_limit_value` bigint(20) NOT NULL,                     -- 下载的数量限制
-  `f_time` bigint(20) NOT NULL,                                     -- 记录的时间
-  PRIMARY KEY (`f_id`, `f_obj_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE IF NOT EXISTS `t_user_verification_code` (
   `f_user_id` char(40) NOT NULL,                                    -- 用户id
@@ -1189,6 +1175,12 @@ CREATE TABLE IF NOT EXISTS `t_user_custom_attr` (
 
 INSERT INTO `t_sharemgnt_config`(`f_key`, `f_value`) SELECT 'reserved_name_lock', 'locked' FROM DUAL WHERE NOT EXISTS (SELECT `f_key` FROM `t_sharemgnt_config` WHERE `f_key` = 'reserved_name_lock');
 
+CREATE TABLE IF NOT EXISTS `t_distributed_lock` (
+    `f_lock_key` varchar(26) NOT NULL COMMENT '锁key',
+    `f_hoder_id` char(36) NOT NULL COMMENT '锁holder id',
+    `f_expire_time` datetime COMMENT '锁过期时间',
+    PRIMARY KEY (`f_lock_key`)
+) ENGINE=InnoDB COMMENT '分布式锁表';
 -- PolicyManagement
 
 /*
@@ -1828,6 +1820,7 @@ CREATE TABLE IF NOT EXISTS `t_policy`
     `f_accessor_name`  varchar(150) NOT NULL COMMENT '访问者名称',
     `f_operation`     longtext   NOT NULL COMMENT '操作',
     `f_condition`     longtext   NOT NULL COMMENT '条件',
+    `f_ancestors`     longtext   NOT NULL COMMENT '祖先信息',
     `f_end_time` bigint(20) NOT NULL COMMENT '过期时间',
     `f_create_time` bigint(20) NOT NULL COMMENT '创建时间',
     `f_modify_time` bigint(20) NOT NULL COMMENT '修改时间',
@@ -1895,3 +1888,15 @@ CREATE TABLE IF NOT EXISTS `t_obligation` (
     KEY `idx_f_type_id` (`f_type_id`),
     PRIMARY KEY (`f_primary_id`)
 ) ENGINE = InnoDB COMMENT='义务表';
+
+
+CREATE TABLE IF NOT EXISTS `t_resource_type_hierarchy`
+(
+    `f_primary_id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `f_resource_type_id`  char(40) NOT NULL COMMENT '根节点的资源类型唯一标识',
+    `f_children`          longtext NOT NULL COMMENT '下级节点信息',
+    `f_created_at` bigint(20) NOT NULL COMMENT '创建时间',
+    `f_modified_at` bigint(20) NOT NULL COMMENT '修改时间',
+    UNIQUE KEY `uk_resource_type_id` (`f_resource_type_id`),
+    PRIMARY KEY (`f_primary_id`)
+) ENGINE = InnoDB COMMENT='资源类型层级关系表';
