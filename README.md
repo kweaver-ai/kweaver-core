@@ -6,7 +6,7 @@
 
 KWeaver is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
 
-The DIP platform includes key subsystems such as KWeaver Core, DIP Studio, and AI Store.
+The KWeaver project includes KWeaver Core and KWeaver DIP.
 
 ## 📚 Quick Links
 
@@ -23,11 +23,9 @@ The DIP platform includes key subsystems such as KWeaver Core, DIP Studio, and A
 
 ```text
 ┌─────────────────────────────────────────────┐
-│              DIP Platform                   │
+│                 KWeaver                     │
 │  ┌───────────────────────────────────────┐  │
-│  │             AI Store                  │  │
-│  ├───────────────────────────────────────┤  │
-│  │            DIP Studio                 │  │
+│  │           KWeaver DIP                 │  │
 │  ├───────────────────────────────────────┤  │
 │  │           KWeaver Core                │  │
 │  └───────────────────────────────────────┘  │
@@ -38,9 +36,8 @@ The DIP platform includes key subsystems such as KWeaver Core, DIP Studio, and A
 
 | Sub-project | Description | Repository |
 | --- | --- | --- |
-| **AI Store** | AI application and component marketplace | [kweaver-ai/ai-store](https://github.com/kweaver-ai/ai-store) |
-| **Studio** | DIP Studio - Visual development and management interface | [kweaver-ai/studio](https://github.com/kweaver-ai/studio) |
-| **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI | [kweaver-ai/adp](https://github.com/kweaver-ai/adp) |
+| **KWeaver DIP** | Include AI application and component marketplace, DIP Studio - Visual development and management interface | [AI Store](https://github.com/kweaver-ai/ai-store)<br>[DIP Studio](https://github.com/kweaver-ai/studio)|
+| **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
 
 ## KWeaver Core
 

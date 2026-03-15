@@ -6,7 +6,7 @@
 
 KWeaver 是一个构建、发布、运行决策智能型 AI 应用的开源生态。此生态采用本体作为业务知识网络的核心方法，以 DIP 为核心平台，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每一员的生产力。
 
-DIP 平台包括 KWeaver Core、DIP Studio、AI Store 等关键子系统。
+KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
 
 ## 📚 快速链接
 
@@ -23,11 +23,9 @@ DIP 平台包括 KWeaver Core、DIP Studio、AI Store 等关键子系统。
 
 ```text
 ┌─────────────────────────────────────────────┐
-│               DIP 平台                       │
+│                 KWeaver                     │
 │  ┌───────────────────────────────────────┐  │
-│  │             AI Store                  │  │
-│  ├───────────────────────────────────────┤  │
-│  │            DIP Studio                 │  │
+│  │           KWeaver DIP                 │  │
 │  ├───────────────────────────────────────┤  │
 │  │           KWeaver Core                │  │
 │  └───────────────────────────────────────┘  │
@@ -38,9 +36,8 @@ DIP 平台包括 KWeaver Core、DIP Studio、AI Store 等关键子系统。
 
 | 子项目 | 描述 | 仓库地址 |
 | --- | --- | --- |
-| **AI Store** | AI 应用与组件市场 | [kweaver-ai/ai-store](https://github.com/kweaver-ai/ai-store) |
-| **Studio** | DIP Studio - 可视化开发与管理界面 | [kweaver-ai/studio](https://github.com/kweaver-ai/studio) |
-| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI | [kweaver-ai/adp](https://github.com/kweaver-ai/adp) |
+| **KWeaver DIP** | 包含 AI 应用与组件市场、DIP Studio - 可视化开发与管理界面 | [AI Store](https://github.com/kweaver-ai/ai-store)<br>[DIP Studio](https://github.com/kweaver-ai/studio)|
+| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
 
 ## KWeaver Core
 
