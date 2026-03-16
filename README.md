@@ -19,6 +19,37 @@ The KWeaver project includes KWeaver Core and KWeaver DIP.
 - 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver/issues) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/kweaver/issues) - Suggest a new feature
 
+## 🚀 Quick Start
+
+1. **Source deployment**: see the [Deployment Guide](deploy/README.md).
+2. **Prerequisites**: follow the prerequisites described in `deploy/README.md`.
+3. **Run installation scripts**:
+
+```bash
+# Full one-click deployment (recommended)
+./deploy.sh full init     # Infrastructure + KWeaver application services
+# Layered deployment
+./deploy.sh infra init    # Only infrastructure: K8s + data services
+./deploy.sh kweaver init  # Only application services: ISF/Studio/Ontology etc.
+# Help
+./deploy.sh --help
+```
+
+4. **Verify the deployment**:
+
+```bash
+# Check cluster status
+kubectl get nodes
+kubectl get pods -A
+
+# Check service status
+./deploy.sh kweaver status
+```
+
+5. **Access the system**:
+   - Deployment console: `https://<node-ip>/deploy`, account `admin`, initial password `eisoo.com`
+   - KWeaver Studio: `https://<node-ip>/studio`
+
 ## Platform Architecture
 
 ```text
