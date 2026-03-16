@@ -213,6 +213,22 @@ Quick start:
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.
 
+## 🎬 Demo Video
+
+<div align="center">
+<video src="./docs/demo.mp4" controls width="75%"></video>
+
+> If the video does not play, you can [download and view it directly](./docs/demo.mp4).
+</div>
+
+## 💬 Community
+
+<div align="center">
+<img src="./docs/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
+
+Scan to join the KWeaver community group
+</div>
+
 ## Support & Contact
 
 - **Contributing**: [Contributing Guide](rules/CONTRIBUTING.md)
