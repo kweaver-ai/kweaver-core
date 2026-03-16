@@ -77,8 +77,70 @@ kubectl get pods -A
 
 | 子项目 | 描述 | 仓库地址 |
 | --- | --- | --- |
+| **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
 | **KWeaver DIP** | 包含 AI 应用与组件市场、DIP Studio - 可视化开发与管理界面 | [AI Store](https://github.com/kweaver-ai/ai-store)<br>[DIP Studio](https://github.com/kweaver-ai/studio)|
 | **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
+
+## KWeaver SDK
+
+[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 为 AI 智能体和开发者提供对 KWeaver 知识网络与 Decision Agent 的程序化访问能力，包含三项集成能力：
+
+### AI Agent Skill
+
+`kweaver-core` skill 让 AI 编程助手（Claude Code、GPT、Cursor 等）完整掌握 KWeaver 的 API 和 CLI 用法，可代替用户自主操作 KWeaver 平台。
+
+```bash
+npx skills add kweaver-ai/kweaver-sdk --skill kweaver-core
+```
+
+### CLI
+
+TypeScript 和 Python 两套 CLI 共用相同的 `kweaver` 命令结构：
+
+```bash
+kweaver auth login https://your-kweaver.com     # 登录认证
+kweaver bkn list                                 # 浏览知识网络
+kweaver bkn object-type list <kn-id>            # 查看对象类型
+kweaver bkn action-type execute <kn-id> <at-id> # 执行 Action
+kweaver agent list                               # 列出 Decision Agent
+kweaver agent chat <agent-id> -m "你好"          # 与 Agent 对话
+kweaver context-loader kn-search "关键词"        # 语义搜索
+kweaver call /api/...                            # 原始 API 调用
+```
+
+安装方式：
+
+| 包 | 安装命令 |
+| --- | --- |
+| TypeScript CLI + SDK | `npm install -g kweaver-sdk`（Node 22+） |
+| Python CLI + SDK | `pip install kweaver-sdk[cli]`（Python 3.10+） |
+
+### TypeScript & Python SDK
+
+类型安全的客户端库，用于程序化集成：
+
+```typescript
+import { KWeaverClient } from "kweaver-sdk";
+const client = new KWeaverClient();                           // 读取 ~/.kweaver/ 凭据
+
+const kns   = await client.knowledgeNetworks.list();          // 列出知识网络
+const reply = await client.agents.chat("agent-id", "你好");   // 与 Decision Agent 对话
+await client.agents.stream("agent-id", "你好", {              // 流式对话
+  onTextDelta: (chunk) => process.stdout.write(chunk),
+});
+const results = await client.contextLoader(mcpUrl, "kn-id")   // 语义搜索
+  .search({ query: "高血压 治疗" });
+```
+
+```python
+from kweaver import KWeaverClient, ConfigAuth
+client = KWeaverClient(auth=ConfigAuth())
+kns  = client.knowledge_networks.list()
+conv = client.conversations.create("agent-id")
+msg  = conv.send("你好")
+```
+
+---
 
 ## KWeaver Core
 
