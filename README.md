@@ -19,6 +19,16 @@ The KWeaver project includes KWeaver Core and KWeaver DIP.
 - 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver/issues) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/kweaver/issues) - Suggest a new feature
 
+## 🎬 Demo Video
+
+<div align="center">
+<a href="https://www.bilibili.com/video/BV1gVwLz2EPq/?share_source=copy_web&vd_source=38b75aee569678b3399e663488ce07b5" target="_blank">
+<img src="./docs/demo-cover.png" alt="KWeaver Demo Video" width="75%"/>
+</a>
+
+Click the image to watch the KWeaver demo on Bilibili
+</div>
+
 ## Platform Architecture
 
 ```text
@@ -212,14 +222,6 @@ Quick start:
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.
-
-## 🎬 Demo Video
-
-<div align="center">
-<video src="./docs/demo.mp4" controls width="75%"></video>
-
-> If the video does not play, you can [download and view it directly](./docs/demo.mp4).
-</div>
 
 ## 💬 Community
 
