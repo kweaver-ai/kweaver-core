@@ -19,6 +19,37 @@ KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
 - 🐛 [报告 Bug](https://github.com/kweaver-ai/kweaver/issues) - 报告问题或 Bug
 - 💡 [功能建议](https://github.com/kweaver-ai/kweaver/issues) - 提出新功能建议
 
+## 🚀 快速开始
+
+1. 源码部署：参考 [部署文档](deploy/README.zh.md)。
+2. 前置要求：参考 `deploy/README.zh.md` 中前置条件。
+3. 执行安装部署脚本：
+
+```bash
+# 完整一键部署（推荐）
+./deploy.sh full init     # 基础设施 + KWeaver 应用服务
+# 分层部署
+./deploy.sh infra init    # 仅基础设施：K8s + 数据服务
+./deploy.sh kweaver init  # 仅应用服务：ISF/Studio/Ontology 等
+# 查看帮助
+./deploy.sh --help
+```
+
+4. 验证部署：
+
+```bash
+# 检查集群状态
+kubectl get nodes
+kubectl get pods -A
+
+# 检查服务状态
+./deploy.sh kweaver status
+```
+
+5. 部署完成后，可按以下地址访问：
+   - 部署工作台：`https://<节点IP>/deploy`，账号 `admin`，初始密码 `eisoo.com`
+   - KWeaver 页面：`https://<节点IP>/studio`
+
 ## 平台架构
 
 ```text
