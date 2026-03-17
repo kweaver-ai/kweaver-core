@@ -36,8 +36,8 @@ Click the image to watch the KWeaver demo on Bilibili
 3. **Run installation scripts**:
 
 ```bash
-# git clone https://github.com/kweaver-ai/kweaver.git
-# cd kweaver/deploy
+git clone https://github.com/kweaver-ai/kweaver.git
+cd kweaver/deploy
 
 # Full one-click deployment (recommended)
 ./deploy.sh full init     # Infrastructure + KWeaver application services
@@ -88,19 +88,28 @@ kubectl get pods -A
 
 ## KWeaver SDK
 
-[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) gives AI agents and developers programmatic access to KWeaver knowledge networks and Decision Agents. It ships three integrated capabilities:
+[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) gives AI agents (Claude Code, GPT, custom agents, etc.) access to KWeaver knowledge networks and Decision Agents via the `kweaver` CLI. It also provides Python and TypeScript SDKs for programmatic integration.
 
 ### AI Agent Skill
 
-The `kweaver-core` skill equips AI coding assistants (Claude Code, GPT, Cursor, etc.) with full knowledge of KWeaver's APIs and CLI conventions, so they can autonomously operate KWeaver on your behalf.
+The `kweaver-core` skill equips AI coding assistants with full knowledge of KWeaver's APIs and CLI conventions, so they can autonomously operate KWeaver on your behalf.
 
 ```bash
-npx skills add kweaver-ai/kweaver-sdk --skill kweaver-core
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 ```
 
-### CLI
+[![skills.sh](https://skills.sh/badge/kweaver-core)](https://skills.sh/kweaver-ai/kweaver-sdk)
 
-Both TypeScript and Python CLIs share the same `kweaver` command:
+**Before using the skill**, authenticate with your KWeaver instance:
+
+```bash
+npm install -g @kweaver-ai/kweaver-sdk
+kweaver auth login https://your-kweaver-instance.com
+```
+
+See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md) for details.
+
+### CLI
 
 ```bash
 kweaver auth login https://your-kweaver.com     # authenticate
@@ -113,36 +122,24 @@ kweaver context-loader kn-search "query"        # semantic search
 kweaver call /api/...                            # raw API call
 ```
 
-Install:
-
-| Package | Install |
-| --- | --- |
-| TypeScript CLI + SDK | `npm install -g kweaver-sdk` (Node 22+) |
-| Python CLI + SDK | `pip install kweaver-sdk[cli]` (Python 3.10+) |
-
 ### TypeScript & Python SDK
 
-Type-safe client libraries for programmatic integration:
-
 ```typescript
-import { KWeaverClient } from "kweaver-sdk";
-const client = new KWeaverClient();                          // reads ~/.kweaver/ credentials
+import { KWeaverClient } from "@kweaver-ai/kweaver-sdk";
+const client = new KWeaverClient();   // reads ~/.kweaver/ credentials
 
-const kns   = await client.knowledgeNetworks.list();         // list knowledge networks
-const reply = await client.agents.chat("agent-id", "Hello"); // chat with a Decision Agent
-await client.agents.stream("agent-id", "Hello", {            // streaming chat
+const kns   = await client.knowledgeNetworks.list();
+const reply = await client.agents.chat("agent-id", "Hello");
+await client.agents.stream("agent-id", "Hello", {
   onTextDelta: (chunk) => process.stdout.write(chunk),
 });
-const results = await client.contextLoader(mcpUrl, "kn-id")  // semantic search
-  .search({ query: "hypertension treatment" });
 ```
 
 ```python
 from kweaver import KWeaverClient, ConfigAuth
 client = KWeaverClient(auth=ConfigAuth())
 kns  = client.knowledge_networks.list()
-conv = client.conversations.create("agent-id")
-msg  = conv.send("Hello")
+msg  = client.conversations.send_message("", "Hello", agent_id="agent-id")
 ```
 
 ---
