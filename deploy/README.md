@@ -153,34 +153,6 @@ If you use an external database:
 2. Configure external DB connection settings
 3. Manually run the SQL initialization scripts under `scripts/sql/`
 
-## 🔍 Troubleshooting
-
-### CoreDNS not ready
-
-```bash
-# Check whether firewall is disabled
-systemctl status firewalld
-
-# Restart CoreDNS
-kubectl -n kube-system delete pod -l k8s-app=kube-dns
-```
-
-### Pods fail to pull images
-
-```bash
-# Check network connectivity
-curl -I https://swr.cn-east-3.myhuaweicloud.com
-
-# Check containerd config
-cat /etc/containerd/config.toml
-```
-
-### View component logs
-
-```bash
-kubectl logs -n <namespace> <pod-name>
-```
-
 ## 📁 Project Structure
 
 ```
@@ -217,6 +189,66 @@ deploy/
 # Uninstall a single component
 ./deploy.sh mariadb uninstall
 ./deploy.sh k8s reset
+```
+
+## 🔍 Troubleshooting
+
+### CoreDNS not ready
+
+```bash
+# Check whether firewall is disabled
+systemctl status firewalld
+
+# Restart CoreDNS
+kubectl -n kube-system delete pod -l k8s-app=kube-dns
+```
+
+### Pods fail to pull images
+
+```bash
+# Check network connectivity
+curl -I https://swr.cn-east-3.myhuaweicloud.com
+
+# Check containerd config
+cat /etc/containerd/config.toml
+```
+
+### Kubernetes apt source 404 (Ubuntu/Debian)
+
+If `apt update` fails with a 404 for the legacy `packages.cloud.google.com` repository:
+
+```
+Err:7 https://packages.cloud.google.com/apt kubernetes-xenial Release
+  404  Not Found
+```
+
+The old Google-hosted apt repository has been deprecated. Migrate to the new `pkgs.k8s.io` source:
+
+```bash
+# Remove old source and key
+sudo apt-mark unhold kubeadm kubelet kubectl || true
+sudo apt remove -y kubeadm kubelet kubectl
+sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo mkdir -p /etc/apt/keyrings
+
+# Add new pkgs.k8s.io source (v1.28 to match KWeaver's requirement)
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Reinstall and pin
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+### View component logs
+
+```bash
+kubectl logs -n <namespace> <pod-name>
 ```
 
 ## 📄 License

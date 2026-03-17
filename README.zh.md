@@ -38,6 +38,7 @@ KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
 ```bash
 git clone https://github.com/kweaver-ai/kweaver.git
 cd kweaver/deploy
+chmod +x deploy.sh
 
 # 完整一键部署（推荐）
 ./deploy.sh full init     # 基础设施 + KWeaver 应用服务

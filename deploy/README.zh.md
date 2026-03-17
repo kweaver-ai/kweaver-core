@@ -153,34 +153,6 @@ depServices:
 2. 配置外部数据库连接信息
 3. 手动执行 SQL 初始化脚本（位于 `scripts/sql/` 目录）
 
-## 🔍 Troubleshooting
-
-### CoreDNS 不就绪
-
-```bash
-# 检查防火墙是否关闭
-systemctl status firewalld
-
-# 手动重启 CoreDNS
-kubectl -n kube-system delete pod -l k8s-app=kube-dns
-```
-
-### Pod 拉取镜像失败
-
-```bash
-# 检查网络连通性
-curl -I https://swr.cn-east-3.myhuaweicloud.com
-
-# 检查 containerd 配置
-cat /etc/containerd/config.toml
-```
-
-### 查看组件日志
-
-```bash
-kubectl logs -n <namespace> <pod-name>
-```
-
 ## 📁 Project Structure
 
 ```
@@ -217,6 +189,66 @@ deploy/
 # 卸载单个组件
 ./deploy.sh mariadb uninstall
 ./deploy.sh k8s reset
+```
+
+## 🔍 Troubleshooting
+
+### CoreDNS 不就绪
+
+```bash
+# 检查防火墙是否关闭
+systemctl status firewalld
+
+# 手动重启 CoreDNS
+kubectl -n kube-system delete pod -l k8s-app=kube-dns
+```
+
+### Pod 拉取镜像失败
+
+```bash
+# 检查网络连通性
+curl -I https://swr.cn-east-3.myhuaweicloud.com
+
+# 检查 containerd 配置
+cat /etc/containerd/config.toml
+```
+
+### Kubernetes apt 源 404（Ubuntu/Debian）
+
+如果 `apt update` 报错，提示旧的 `packages.cloud.google.com` 仓库 404：
+
+```
+Err:7 https://packages.cloud.google.com/apt kubernetes-xenial Release
+  404  Not Found
+```
+
+旧版 Google 托管的 apt 源已废弃，需要迁移到新的 `pkgs.k8s.io` 源：
+
+```bash
+# 移除旧源和密钥
+sudo apt-mark unhold kubeadm kubelet kubectl || true
+sudo apt remove -y kubeadm kubelet kubectl
+sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo mkdir -p /etc/apt/keyrings
+
+# 添加新的 pkgs.k8s.io 源（v1.28，与 KWeaver 要求一致）
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# 重新安装并锁定版本
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+### 查看组件日志
+
+```bash
+kubectl logs -n <namespace> <pod-name>
 ```
 
 ## 📄 License

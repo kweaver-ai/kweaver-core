@@ -38,6 +38,7 @@ Click the image to watch the KWeaver demo on Bilibili
 ```bash
 git clone https://github.com/kweaver-ai/kweaver.git
 cd kweaver/deploy
+chmod +x deploy.sh
 
 # Full one-click deployment (recommended)
 ./deploy.sh full init     # Infrastructure + KWeaver application services
