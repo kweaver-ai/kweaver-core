@@ -2,7 +2,7 @@
   "agents": [
     {
       "id": "01KH5RMP1SQEB8ZCRZ00YSB2ZA",
-      "name": "HD供应链业务问答助手",
+      "name": "供应链业务问答助手",
       "key": "01KFT0E68A1RES94ZV6FK408NN",
       "profile": "供应链智能助手是一款基于企业ERP数据的AI分析工具，支持库存预警、订单追踪、BOM逆向计算及替代物料推荐，帮助企业快速识别供应链风险，优化生产排程与采购决策",
       "product_key": "dip",
