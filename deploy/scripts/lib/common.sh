@@ -107,6 +107,33 @@ helm_repo_add_with_retry() {
     return 1
 }
 
+# Run a helm upgrade --install with retry. Retries on timeout or transient failures (e.g. GitHub Pages rate limiting).
+# Usage: helm_install_with_retry <release_name> <helm_args...>
+# Env: HELM_INSTALL_RETRIES (default 3), HELM_INSTALL_TIMEOUT (default 120s per attempt)
+helm_install_with_retry() {
+    local release_name="$1"
+    shift
+    local max_retries="${HELM_INSTALL_RETRIES:-3}"
+    local attempt_timeout="${HELM_INSTALL_TIMEOUT:-120s}"
+
+    for i in $(seq 1 "${max_retries}"); do
+        log_info "Installing ${release_name} (attempt ${i}/${max_retries})..."
+        if helm upgrade --install "$@" --timeout="${attempt_timeout}"; then
+            log_info "✓ ${release_name} installed successfully"
+            return 0
+        fi
+        log_warn "✗ ${release_name} install failed (attempt ${i}/${max_retries})"
+        if [[ "${i}" -lt "${max_retries}" ]]; then
+            log_info "Refreshing repo index before retry..."
+            timeout 30 helm repo update 2>/dev/null || true
+            sleep 5
+        fi
+    done
+
+    log_error "✗ ${release_name} failed after ${max_retries} attempts"
+    return 1
+}
+
 # Check if component is already installed in Helm
 is_helm_installed() {
     local release="$1"
