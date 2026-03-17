@@ -590,8 +590,7 @@ install_mariadb_bitnami() {
     fi
 
     if [[ "${use_local_chart}" != "true" ]]; then
-        helm repo add --force-update bitnami "${HELM_REPO_BITNAMI}"
-        helm repo update
+        helm_repo_add_with_retry bitnami "${HELM_REPO_BITNAMI}"
     fi
 
     local -a helm_args

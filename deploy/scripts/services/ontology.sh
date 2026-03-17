@@ -80,10 +80,8 @@ install_ontology() {
     # Create namespace if not exists
     kubectl create namespace "${namespace}" 2>/dev/null || true
     
-    # Add Helm repo
-    log_info "Adding Helm repo: ${HELM_CHART_REPO_NAME} -> ${HELM_CHART_REPO_URL}"
-    helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
-    helm repo update
+    # Add Helm repo with retry
+    helm_repo_add_with_retry "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
 
     # Initialize database first
     if ! init_ontology_database; then

@@ -36,6 +36,41 @@ generate_random_password() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
 }
 
+# Add a Helm repo and update with retry (handles flaky networks / IPv6 issues on cloud VMs).
+# Usage: helm_repo_add_with_retry <repo_name> <repo_url> [max_retries]
+helm_repo_add_with_retry() {
+    local repo_name="$1"
+    local repo_url="$2"
+    local max_retries="${3:-5}"
+    local added=false
+
+    log_info "Adding Helm repo: ${repo_name} -> ${repo_url}"
+    for i in $(seq 1 "${max_retries}"); do
+        if timeout 30 helm repo add --force-update "${repo_name}" "${repo_url}"; then
+            added=true
+            break
+        fi
+        log_warn "helm repo add failed, retry ${i}/${max_retries}..."
+        sleep 3
+    done
+
+    if [[ "${added}" != "true" ]]; then
+        log_error "helm repo add ${repo_name} failed after ${max_retries} retries"
+        return 1
+    fi
+
+    for i in $(seq 1 "${max_retries}"); do
+        if timeout 30 helm repo update "${repo_name}"; then
+            return 0
+        fi
+        log_warn "helm repo update failed, retry ${i}/${max_retries}..."
+        sleep 3
+    done
+
+    log_error "helm repo update ${repo_name} failed after ${max_retries} retries"
+    return 1
+}
+
 # Check if component is already installed in Helm
 is_helm_installed() {
     local release="$1"
