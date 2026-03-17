@@ -45,19 +45,26 @@ maybe_disable_ipv6() {
         return 0
     fi
 
+    log_info "Checking network connectivity to ${test_host} ..."
     if curl -4 --connect-timeout 5 -sSf -o /dev/null "${test_host}" 2>/dev/null; then
         if ! curl --connect-timeout 5 -sSf -o /dev/null "${test_host}" 2>/dev/null; then
             log_warn "IPv4 works but default (IPv6) connection failed for ${test_host}"
             log_warn "Disabling IPv6 to work around cloud VM routing issues..."
             sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1 || true
             sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1 || true
+            log_info "IPv6 disabled successfully"
 
             local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
             if [[ -f "${kubeconfig}" ]] && grep -q '\[::1\]' "${kubeconfig}"; then
                 log_warn "Patching kubeconfig: replacing [::1] with 127.0.0.1 in ${kubeconfig}"
                 sed -i 's/\[::1\]/127.0.0.1/g' "${kubeconfig}"
+                log_info "kubeconfig patched successfully"
             fi
+        else
+            log_info "Network connectivity OK"
         fi
+    else
+        log_warn "IPv4 connectivity check failed for ${test_host}, network may be unreachable"
     fi
 }
 
