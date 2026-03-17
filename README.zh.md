@@ -8,7 +8,7 @@
 
 中文 | [English](README.md)
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core)
 
 KWeaver 是一个构建、发布、运行决策智能型 AI 应用的开源生态。此生态采用业务知识网络（Business Knowledge Network）作为核心方法论，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每一员的生产力。
 
@@ -104,8 +104,6 @@ kubectl get pods -A
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 ```
-
-[![skills.sh](https://skills.sh/badge/kweaver-core)](https://skills.sh/kweaver-ai/kweaver-sdk)
 
 **使用 skill 前**，需先完成 KWeaver 实例认证：
 
