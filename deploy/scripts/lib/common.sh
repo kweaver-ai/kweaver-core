@@ -36,38 +36,60 @@ generate_random_password() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
 }
 
+# Try to disable IPv6 if connectivity check fails with IPv6 enabled.
+# Many cloud VMs have broken IPv6 routing that causes DNS/HTTPS timeouts.
+maybe_disable_ipv6() {
+    local test_host="$1"
+    if [[ -z "${test_host}" ]]; then
+        return 0
+    fi
+
+    if curl -4 --connect-timeout 5 -sSf -o /dev/null "${test_host}" 2>/dev/null; then
+        if ! curl --connect-timeout 5 -sSf -o /dev/null "${test_host}" 2>/dev/null; then
+            log_warn "IPv4 works but default (IPv6) connection failed for ${test_host}"
+            log_warn "Disabling IPv6 to work around cloud VM routing issues..."
+            sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1 || true
+            sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1 || true
+        fi
+    fi
+}
+
 # Add a Helm repo and update with retry (handles flaky networks / IPv6 issues on cloud VMs).
 # Usage: helm_repo_add_with_retry <repo_name> <repo_url> [max_retries]
 helm_repo_add_with_retry() {
     local repo_name="$1"
     local repo_url="$2"
     local max_retries="${3:-5}"
+    local timeout_sec="${HELM_REPO_TIMEOUT:-60}"
     local added=false
+
+    # Pre-check: auto-disable IPv6 if it causes connectivity issues
+    maybe_disable_ipv6 "${repo_url%/}/index.yaml"
 
     log_info "Adding Helm repo: ${repo_name} -> ${repo_url}"
     for i in $(seq 1 "${max_retries}"); do
-        if timeout 30 helm repo add --force-update "${repo_name}" "${repo_url}"; then
+        if timeout "${timeout_sec}" helm repo add --force-update "${repo_name}" "${repo_url}"; then
             added=true
             break
         fi
-        log_warn "helm repo add failed, retry ${i}/${max_retries}..."
+        log_warn "helm repo add failed (attempt ${i}/${max_retries}), retrying in 3s..."
         sleep 3
     done
 
     if [[ "${added}" != "true" ]]; then
-        log_error "helm repo add ${repo_name} failed after ${max_retries} retries"
+        log_error "helm repo add ${repo_name} failed after ${max_retries} retries (hint: on cloud VMs, try: sysctl -w net.ipv6.conf.all.disable_ipv6=1)"
         return 1
     fi
 
     for i in $(seq 1 "${max_retries}"); do
-        if timeout 30 helm repo update "${repo_name}"; then
+        if timeout "${timeout_sec}" helm repo update "${repo_name}"; then
             return 0
         fi
-        log_warn "helm repo update failed, retry ${i}/${max_retries}..."
+        log_warn "helm repo update failed (attempt ${i}/${max_retries}), retrying in 3s..."
         sleep 3
     done
 
-    log_error "helm repo update ${repo_name} failed after ${max_retries} retries"
+    log_error "helm repo update ${repo_name} failed after ${max_retries} retries (hint: on cloud VMs, try: sysctl -w net.ipv6.conf.all.disable_ipv6=1)"
     return 1
 }
 
