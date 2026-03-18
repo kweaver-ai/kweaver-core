@@ -109,20 +109,63 @@ helm_repo_add_with_retry() {
 
 # Run a helm upgrade --install with retry. Retries on timeout or transient failures (e.g. GitHub Pages rate limiting).
 # Usage: helm_install_with_retry <release_name> <helm_args...>
-# Env: HELM_INSTALL_RETRIES (default 3), HELM_INSTALL_TIMEOUT (default 120s per attempt)
+# Env:
+#   HELM_INSTALL_RETRIES (default 3)
+#   HELM_INSTALL_TIMEOUT (default 120s, passed to helm --timeout)
+#   HELM_COMMAND_TIMEOUT (default 180s, process-level timeout to avoid hangs during chart download/TLS)
 helm_install_with_retry() {
     local release_name="$1"
     shift
     local max_retries="${HELM_INSTALL_RETRIES:-3}"
     local attempt_timeout="${HELM_INSTALL_TIMEOUT:-120s}"
+    local command_timeout="${HELM_COMMAND_TIMEOUT:-180}"
+    local namespace="default"
+    local prev_arg=""
+    local arg=""
+
+    for arg in "$@"; do
+        if [[ "${prev_arg}" == "--namespace" || "${prev_arg}" == "-n" ]]; then
+            namespace="${arg}"
+            prev_arg=""
+            continue
+        fi
+        case "${arg}" in
+            --namespace=*|-n=*)
+                namespace="${arg#*=}"
+                ;;
+            --namespace|-n)
+                prev_arg="${arg}"
+                ;;
+        esac
+    done
 
     for i in $(seq 1 "${max_retries}"); do
-        log_info "Installing ${release_name} (attempt ${i}/${max_retries})..."
-        if helm upgrade --install "$@" --timeout="${attempt_timeout}"; then
+        log_info "Installing ${release_name} (attempt ${i}/${max_retries}, helm timeout=${attempt_timeout}, command timeout=${command_timeout}s)..."
+        local helm_output=""
+        set +e
+        helm_output="$(timeout "${command_timeout}" helm upgrade --install "$@" --timeout="${attempt_timeout}" 2>&1)"
+        local helm_rc=$?
+        set -e
+
+        if [[ ${helm_rc} -eq 0 ]]; then
             log_info "✓ ${release_name} installed successfully"
             return 0
         fi
+
+        echo "${helm_output}"
+
+        if [[ ${helm_rc} -eq 124 ]]; then
+            log_warn "✗ ${release_name} command timed out after ${command_timeout}s"
+        fi
         log_warn "✗ ${release_name} install failed (attempt ${i}/${max_retries})"
+
+        if [[ "${helm_output}" == *"has no deployed releases"* ]]; then
+            log_warn "Detected stale failed Helm release ${release_name} in namespace ${namespace}, cleaning it up before retry..."
+            helm uninstall "${release_name}" -n "${namespace}" >/dev/null 2>&1 || true
+            sleep 3
+            continue
+        fi
+
         if [[ "${i}" -lt "${max_retries}" ]]; then
             log_info "Refreshing repo index before retry..."
             timeout 30 helm repo update 2>/dev/null || true

@@ -261,6 +261,24 @@ sudo apt-mark hold kubelet kubeadm kubectl
 kubectl logs -n <namespace> <pod-name>
 ```
 
+### Helm 卸载 Hook 失败
+
+如果某个服务在安装或升级过程中因为 `post-delete` hook Job 卡住或执行失败而报错，可以先绕过该 hook，并手动清理残留资源：
+
+```bash
+# 跳过失败的 post-delete hook
+helm uninstall <release-name> -n <namespace> --no-hooks
+
+# 检查是否还有残留 Job / Pod
+kubectl get job,pod -n <namespace> | grep <release-name>
+
+# 如仍有残留则手动删除
+kubectl delete job -n <namespace> <release-name>-post-delete-job --ignore-not-found
+kubectl delete pod -n <namespace> -l job-name=<release-name>-post-delete-job --ignore-not-found
+```
+
+清理完成后，再重新执行安装。
+
 ## 📄 License
 
 [Apache License 2.0](../LICENSE.txt)
