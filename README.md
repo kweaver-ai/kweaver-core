@@ -18,12 +18,80 @@ The KWeaver project includes KWeaver Core and KWeaver DIP.
 
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
+- 📘 [Documentation](#documentation) - Browse the guides in `docs/` by module
 - 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
 - 🧾 [Changelog](rules/CHANGELOG.md) - All notable changes
 - 📄 [License](LICENSE.txt) - Apache License 2.0
 - 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver/issues) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/kweaver/issues) - Suggest a new feature
+
+## Documentation
+
+Documentation in this repository is organized under `docs/` by product module. Most guides in this directory are currently written in Chinese.
+
+```text
+docs/
+├── autoflow/
+├── decision_agent/
+├── intelligent_evaluation/
+├── ontology_engine/
+├── operator_factory/
+├── vega/
+│   ├── create_data_model/
+│   └── create_data_view/
+├── demo-cover.png
+├── demo.mp4
+└── qrcode.png
+```
+
+### `docs/autoflow`
+
+- [Create Workflow](docs/autoflow/create_workflow.md)
+- [Data Flow Documentation (Markdown)](docs/autoflow/create_data_flow.md)
+- [Use Python Node in Autoflow](docs/autoflow/use_python.md)
+- [Autoflow Observability](docs/autoflow/observability.md)
+
+### `docs/decision_agent`
+
+- [What Is Decision Agent](docs/decision_agent/what_is.md)
+- [Create Decision Agent](docs/decision_agent/create.md)
+- [Create and Use Decision Agent](docs/decision_agent/use.md)
+- [Import and Export Decision Agent](docs/decision_agent/import_export.md)
+- [Decision Agent Observability](docs/decision_agent/observability.md)
+- [DolphinLanguage 0.3.4 Specification](docs/decision_agent/dolphin_lang_spec.md)
+
+### `docs/intelligent_evaluation`
+
+- [Evaluation Dataset](docs/intelligent_evaluation/evaluation_dataset.md)
+- [Evaluation Rules](docs/intelligent_evaluation/evaluation_rules.md)
+- [Manage Test Indicators](docs/intelligent_evaluation/manage_test_indicators.md)
+- [Effect Evaluation Task](docs/intelligent_evaluation/effect_evaluation_task.md)
+- [Adapter Usage Guide](docs/intelligent_evaluation/adapter_usage.md)
+- [Ranking](docs/intelligent_evaluation/ranking.md)
+
+### `docs/ontology_engine`
+
+- [Build Business Knowledge Network](docs/ontology_engine/build_knowledge.md)
+- [Concept Group](docs/ontology_engine/concept_group.md)
+- [Task Management](docs/ontology_engine/task_manage.md)
+
+### `docs/operator_factory`
+
+- `create_skill.md` - placeholder for Operator Factory skill documentation
+
+### `docs/vega`
+
+- [Create Data Connection](docs/vega/create_data_connection.md)
+- [Indicator Model](docs/vega/create_data_model/indicator_model.md)
+- [Atomic View](docs/vega/create_data_view/atomic_view.md)
+- [Custom View](docs/vega/create_data_view/custom_view.md)
+
+### `docs/` assets
+
+- [Demo Video Cover](docs/demo-cover.png)
+- [Demo Video](docs/demo.mp4)
+- [Community QR Code](docs/qrcode.png)
 
 ## 🎬 Demo Video
 
