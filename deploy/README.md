@@ -230,6 +230,8 @@ sudo apt-mark unhold kubeadm kubelet kubectl || true
 sudo apt remove -y kubeadm kubelet kubectl
 sudo rm -f /etc/apt/sources.list.d/kubernetes.list
 sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Create keyrings directory
 sudo mkdir -p /etc/apt/keyrings
 
 # Add new pkgs.k8s.io source (v1.28 to match KWeaver's requirement)
