@@ -1,0 +1,26 @@
+# 套件清单：dataflow 模块
+
+suites:
+  - name: flow
+    feature: 数据流管理
+    description: 数据流的 CRUD 测试
+    tags:
+      - dataflow
+      - flow
+    file: flow/flow.yaml
+
+  - name: node
+    feature: 节点管理
+    description: 节点的 CRUD 测试
+    tags:
+      - dataflow
+      - node
+    file: node/node.yaml
+
+  - name: execution
+    feature: 执行管理
+    description: 数据流执行、停止、历史查询测试
+    tags:
+      - dataflow
+      - execution
+    file: execution/execution.yaml

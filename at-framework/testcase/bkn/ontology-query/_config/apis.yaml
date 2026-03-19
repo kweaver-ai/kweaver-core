@@ -1,0 +1,22 @@
+# API 列表：bkn/ontology-query 模块
+# 格式：name (接口名称) -> url, method, headers
+
+- name: 搜索对象
+  url: /api/ontology-query/v1/knowledge-networks/${kn_id}
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 子图查询
+  url: /api/ontology-query/v1/knowledge-networks/${kn_id}/subgraph
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 列出对象
+  url: /api/ontology-query/v1/knowledge-networks/${kn_id}/object-types/${ot_id}
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 执行行动
+  url: /api/ontology-query/v1/knowledge-networks/${kn_id}/action-types/${action_id}
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'

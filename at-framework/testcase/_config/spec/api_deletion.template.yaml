@@ -1,0 +1,45 @@
+# API 删除管理模板：
+# 作用：当研发侧删除/下线接口后，智能体可根据本文件生成模块级产物（如 testcase/<模块名>/_config/api_deletion.yaml），
+#      并批量删除或禁用 suites/*.yaml 中 url 引用这些 API name 的 case。
+#
+# 与 apis.yaml 的关系：
+# - api_name 必须与模块 _config/apis.yaml 中已有的 name 完全一致（删除前的旧值）。
+# - 智能体处理顺序建议：1) 从 apis.yaml 删除接口定义 2) 根据本文件删除/禁用 case 3) 更新 suite_manifest（如有需要）。
+#
+# 与 path_scope_mapping 的关系：
+# - 该模板是“case 维护动作清单”，不是“提交路径到 scope 的映射”，两者互补。
+#
+# 操作策略（strategy）建议：
+# - delete_case: 直接删除命中的 case（推荐默认）
+# - disable_suite: 若命中 case 占整套件大多数，可将 suite 的 switch 改为 n
+# - mark_deprecated: 仅给 case 增加 deprecated 标签（过渡期）
+
+version: 1
+module: ""   # 目标模块名，如 vega / dataflow / ontology
+
+default_strategy: delete_case
+default_reason: "API removed from backend"
+
+deleted_apis:
+  - api_name: ""         # 必填；对应 apis.yaml 的 name（不是 path）
+    strategy: ""         # 可选：delete_case | disable_suite | mark_deprecated；为空则用 default_strategy
+    reason: ""           # 可选；为空则用 default_reason
+    remove_prev_case_refs: true   # 是否同时清理其它 case 的 prev_case 指向（推荐 true）
+    touched_suites: []   # 可选；若已知受影响套件，可提前给出 story 或文件名
+    note: ""             # 可选；给智能体的备注
+
+# 可选：额外保护规则（防误删）
+guardrails:
+  dry_run: true         # true=仅产出变更建议，不直接落盘；false=可直接执行删除
+  require_api_exists_in_apis: true   # true=api_name 不在 apis.yaml 时直接报错
+  keep_smoke_cases: false            # true=命中 smoke 标签 case 时仅标记，不删除
+
+# 预期输出（给智能体/流水线的结构约定）
+expected_outputs:
+  report_file: "_output/api_deletion_report.json"   # 建议生成：删除了哪些 case、修改了哪些 suite
+  fields:
+    - api_name
+    - matched_cases
+    - deleted_cases
+    - modified_suites
+    - unresolved_refs

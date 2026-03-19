@@ -16,15 +16,21 @@ from jinja2 import Template
 from jsonschema.validators import validate
 
 from common.func import replace_params, genson
-from conftest import config, case_list, BEARER_AUTH
+from conftest import config, compute_case_list, BEARER_AUTH
 from request.http_client import HTTPClient
 
 resp_values = {}
 
 
+def pytest_generate_tests(metafunc):
+    if metafunc.function.__name__ != "test_case":
+        return
+    cl = compute_case_list()
+    argvals = [(x["feature"], x["story"], x["name"], x) for x in cl]
+    metafunc.parametrize("feature, story, case_name, case_info", argvals)
+
+
 @allure.title("{case_name}")
-@pytest.mark.parametrize("feature, story, case_name, case_info",
-                         [(x["feature"], x["story"], x["name"], x) for x in case_list])
 def test_case(feature, story, case_name, case_info):
     print("run case: %s @ %s.%s" % (case_name, story, feature))
     allure.attach(
@@ -36,7 +42,7 @@ def test_case(feature, story, case_name, case_info):
 
     if case_info["prev_case"]:
         with allure.step("执行前置用例执行"):
-            for x in case_list:
+            for x in compute_case_list():
                 if x["name"] == case_info["prev_case"]:
                     test_case(x["feature"], x["story"], x["name"], x)
                     # 若存在同名用例，仅执行第一个匹配项
@@ -78,7 +84,9 @@ def test_case(feature, story, case_name, case_info):
         )
 
     with allure.step("发送请求"):
-        client = HTTPClient(url="https://%s%s" % (config["env"]["host"], case_info["url"]),
+        _scheme = (config["env"].get("request_scheme") or "https").strip().rstrip(":/") or "https"
+        _host = (config["env"].get("host") or "").strip()
+        client = HTTPClient(url="%s://%s%s" % (_scheme, _host, case_info["url"]),
                             method=case_info["method"], headers=case_headers)
         send_kw = dict(params=case_query_params, json=case_body_params, data=case_form_params)
         if case_cookie_params:

@@ -1,0 +1,72 @@
+# 全局变量清单：execution-factory 模块
+
+variables:
+  # 环境配置
+  - name: host
+    description: ADP 测试环境主机地址
+    ref: "${env:ADP_HOST}"
+    used_in:
+      - all
+
+  - name: token
+    description: 认证 Token
+    ref: "${env:ADP_TOKEN}"
+    used_in:
+      - all
+
+  - name: timestamp
+    description: 时间戳，用于生成唯一名称
+    ref: "${timestamp}"
+    used_in:
+      - all
+
+  # 执行任务
+  - name: test_task_name
+    description: 测试执行任务名称
+    ref: "测试执行任务_${timestamp}"
+    used_in:
+      - task
+
+  - name: test_task_id
+    description: 测试执行任务 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - task
+
+  - name: test_task_description
+    description: 测试执行任务描述
+    ref: "自动化测试创建的执行任务"
+    used_in:
+      - task
+
+  # 执行器
+  - name: test_executor_id
+    description: 测试执行器 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - executor
+
+  - name: test_executor_name
+    description: 测试执行器名称
+    ref: "测试执行器_${timestamp}"
+    used_in:
+      - executor
+
+  - name: test_executor_type
+    description: 测试执行器类型
+    ref: "default"
+    used_in:
+      - executor
+
+  # 执行结果
+  - name: test_result_id
+    description: 测试执行结果 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - result
+
+  - name: test_result_status
+    description: 测试执行结果状态
+    ref: ""
+    used_in:
+      - result

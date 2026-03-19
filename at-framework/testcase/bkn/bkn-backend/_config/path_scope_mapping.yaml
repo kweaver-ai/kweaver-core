@@ -1,0 +1,113 @@
+# path_scope_mapping：bkn/bkn-backend 模块
+
+subsystems:
+  # 知识网络管理
+  - id: bkn-knowledge-network
+    name: 知识网络管理
+    path_patterns:
+      - "bkn/bkn-backend/**/knowledge-network/**"
+      - "bkn/bkn-backend/**/kn/**"
+    scope_tags:
+      - knowledge-network
+      - ontology
+    smoke_tags:
+      - smoke
+      - knowledge-network
+    suggested_suites:
+      - knowledge-network
+
+  # 对象类管理
+  - id: bkn-object-type
+    name: 对象类管理
+    path_patterns:
+      - "bkn/bkn-backend/**/object-type/**"
+    scope_tags:
+      - object-type
+      - ontology
+    smoke_tags:
+      - smoke
+      - object
+    suggested_suites:
+      - object-type
+
+  # 关系类管理
+  - id: bkn-relation-type
+    name: 关系类管理
+    path_patterns:
+      - "bkn/bkn-backend/**/relation-type/**"
+    scope_tags:
+      - relation-type
+      - ontology
+    smoke_tags:
+      - smoke
+      - relation
+    suggested_suites:
+      - relation-type
+
+  # 行动类管理
+  - id: bkn-action-type
+    name: 行动类管理
+    path_patterns:
+      - "bkn/bkn-backend/**/action-type/**"
+    scope_tags:
+      - action-type
+      - ontology
+    smoke_tags:
+      - smoke
+      - action
+    suggested_suites:
+      - action-type
+
+  # 概念分组管理
+  - id: bkn-concept-group
+    name: 概念分组管理
+    path_patterns:
+      - "bkn/bkn-backend/**/concept-group/**"
+    scope_tags:
+      - concept-group
+      - ontology
+    smoke_tags:
+      - smoke
+      - concept-group
+    suggested_suites:
+      - concept-group
+
+  # 任务管理
+  - id: bkn-task
+    name: 任务管理
+    path_patterns:
+      - "bkn/bkn-backend/**/job/**"
+      - "bkn/bkn-backend/**/task/**"
+    scope_tags:
+      - task
+      - job
+    smoke_tags:
+      - smoke
+      - task
+    suggested_suites:
+      - task
+
+  # 虚拟 scope：按测试类型筛选
+  - id: performance
+    name: 性能测试
+    path_patterns: []
+    scope_tags:
+      - performance
+    suggested_suites: []
+
+path_to_api: []
+
+change_actions:
+  added: "新增文件/API → 智能体自动补充用例"
+  modified: "修改 → 智能体检查并更新用例或断言"
+  deleted: "删除 → 智能体禁用或删除对应用例"
+
+test_type_tags:
+  functional:
+    - smoke
+    - regression
+  contract:
+    - schema
+    - contract
+  performance:
+    - performance

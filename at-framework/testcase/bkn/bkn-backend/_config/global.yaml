@@ -1,0 +1,39 @@
+# 全局变量配置：bkn/bkn-backend 模块
+
+# ==================== 环境配置 ====================
+business_domain: "${env:ADP_BUSINESS_DOMAIN}"
+host: "${env:ADP_HOST}"
+token: "${env:ADP_TOKEN}"
+timestamp: "${timestamp}"
+
+# ==================== 知识网络测试数据 ====================
+test_kn_name: "测试知识网络_${timestamp}"
+test_kn_id: ""
+test_kn_branch: "main"
+test_kn_comment: "自动化测试创建的知识网络"
+
+# ==================== 对象类测试数据 ====================
+test_object_name: "测试对象_${timestamp}"
+test_object_id: ""
+test_object_comment: "自动化测试创建的对象类"
+test_object_icon: "icon-object"
+test_object_color: "#1890ff"
+
+# ==================== 关系类测试数据 ====================
+test_relation_name: "测试关系_${timestamp}"
+test_relation_id: ""
+test_relation_comment: "自动化测试创建的关系类"
+
+# ==================== 行动类测试数据 ====================
+test_action_name: "测试行动_${timestamp}"
+test_action_id: ""
+test_action_comment: "自动化测试创建的行动类"
+
+# ==================== 概念分组测试数据 ====================
+test_group_name: "测试分组_${timestamp}"
+test_group_id: ""
+test_group_comment: "自动化测试创建的分组"
+
+# ==================== 任务测试数据 ====================
+test_task_id: ""
+test_task_name: "测试任务_${timestamp}"

@@ -1,0 +1,133 @@
+# 全局变量清单：bkn/bkn-backend 模块
+
+variables:
+  # 环境配置
+  - name: business_domain
+    description: 业务域 ID，用于多租户隔离
+    ref: "${env:ADP_BUSINESS_DOMAIN}"
+    used_in:
+      - knowledge-network
+      - object
+      - relation
+      - action
+      - concept-group
+
+  - name: host
+    description: ADP 测试环境主机地址
+    ref: "${env:ADP_HOST}"
+    used_in:
+      - all
+
+  - name: token
+    description: 认证 Token
+    ref: "${env:ADP_TOKEN}"
+    used_in:
+      - all
+
+  - name: timestamp
+    description: 时间戳，用于生成唯一名称
+    ref: "${timestamp}"
+    used_in:
+      - all
+
+  # 知识网络
+  - name: test_kn_name
+    description: 测试知识网络名称
+    ref: "测试知识网络_${timestamp}"
+    used_in:
+      - knowledge-network
+
+  - name: test_kn_id
+    description: 测试知识网络 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - knowledge-network
+      - object
+      - relation
+      - action
+      - concept-group
+      - task
+
+  - name: test_kn_branch
+    description: 测试知识网络分支
+    ref: "main"
+    used_in:
+      - knowledge-network
+
+  - name: test_kn_comment
+    description: 测试知识网络描述
+    ref: "自动化测试创建的知识网络"
+    used_in:
+      - knowledge-network
+
+  # 对象类
+  - name: test_object_name
+    description: 测试对象类名称
+    ref: "测试对象_${timestamp}"
+    used_in:
+      - object
+
+  - name: test_object_id
+    description: 测试对象类 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - object
+      - relation
+
+  - name: test_object_comment
+    description: 测试对象类描述
+    ref: "自动化测试创建的对象类"
+    used_in:
+      - object
+
+  # 关系类
+  - name: test_relation_name
+    description: 测试关系类名称
+    ref: "测试关系_${timestamp}"
+    used_in:
+      - relation
+
+  - name: test_relation_id
+    description: 测试关系类 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - relation
+
+  # 行动类
+  - name: test_action_name
+    description: 测试行动类名称
+    ref: "测试行动_${timestamp}"
+    used_in:
+      - action
+
+  - name: test_action_id
+    description: 测试行动类 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - action
+
+  # 概念分组
+  - name: test_group_name
+    description: 测试概念分组名称
+    ref: "测试分组_${timestamp}"
+    used_in:
+      - concept-group
+
+  - name: test_group_id
+    description: 测试概念分组 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - concept-group
+
+  # 任务
+  - name: test_task_id
+    description: 测试任务 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - task
+
+  - name: test_task_name
+    description: 测试任务名称
+    ref: "测试任务_${timestamp}"
+    used_in:
+      - task

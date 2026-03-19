@@ -1,0 +1,62 @@
+# API 列表：execution-factory 模块
+# 格式：name (接口名称) -> url, method, headers
+
+- name: 获取执行任务列表
+  url: /api/execution-factory/v1/tasks
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 创建执行任务
+  url: /api/execution-factory/v1/tasks
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行任务详情
+  url: /api/execution-factory/v1/tasks/${task_id}
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 更新执行任务
+  url: /api/execution-factory/v1/tasks/${task_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 删除执行任务
+  url: /api/execution-factory/v1/tasks/${task_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 启动执行任务
+  url: /api/execution-factory/v1/tasks/${task_id}/start
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 停止执行任务
+  url: /api/execution-factory/v1/tasks/${task_id}/stop
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行结果
+  url: /api/execution-factory/v1/tasks/${task_id}/results
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行日志
+  url: /api/execution-factory/v1/tasks/${task_id}/logs
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行器列表
+  url: /api/execution-factory/v1/executors
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 注册执行器
+  url: /api/execution-factory/v1/executors
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 注销执行器
+  url: /api/execution-factory/v1/executors/${executor_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json"}'

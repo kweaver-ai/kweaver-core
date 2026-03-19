@@ -1,0 +1,71 @@
+# path_scope_mapping：dataflow 模块
+
+subsystems:
+  # 数据流管理
+  - id: dataflow-flow
+    name: 数据流管理
+    path_patterns:
+      - "dataflow/**/flow/**"
+      - "dataflow/dia-flow-web/**"
+    scope_tags:
+      - dataflow
+      - flow
+    smoke_tags:
+      - smoke
+      - flow
+    suggested_suites:
+      - flow
+
+  # 节点管理
+  - id: dataflow-node
+    name: 节点管理
+    path_patterns:
+      - "dataflow/**/node/**"
+    scope_tags:
+      - dataflow
+      - node
+    smoke_tags:
+      - smoke
+      - node
+    suggested_suites:
+      - node
+
+  # 执行管理
+  - id: dataflow-execution
+    name: 执行管理
+    path_patterns:
+      - "dataflow/**/execution/**"
+      - "dataflow/flow-automation/**"
+    scope_tags:
+      - dataflow
+      - execution
+    smoke_tags:
+      - smoke
+      - execution
+    suggested_suites:
+      - execution
+
+  # 虚拟 scope：按测试类型筛选
+  - id: performance
+    name: 性能测试
+    path_patterns: []
+    scope_tags:
+      - performance
+    suggested_suites: []
+
+path_to_api: []
+
+change_actions:
+  added: "新增文件/API → 智能体自动补充用例"
+  modified: "修改 → 智能体检查并更新用例或断言"
+  deleted: "删除 → 智能体禁用或删除对应用例"
+
+test_type_tags:
+  functional:
+    - smoke
+    - regression
+  contract:
+    - schema
+    - contract
+  performance:
+    - performance

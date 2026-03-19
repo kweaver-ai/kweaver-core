@@ -1,0 +1,143 @@
+# API 列表：bkn/bkn-backend 模块
+# 格式：name (接口名称) -> url, method, headers
+
+# ==================== 知识网络 API ====================
+- name: 获取知识网络列表
+  url: /api/ontology-manager/v1/knowledge-networks
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建知识网络
+  url: /api/ontology-manager/v1/knowledge-networks
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 获取知识网络详情
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 更新知识网络
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除知识网络
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+# ==================== 对象类 API ====================
+- name: 获取对象类列表
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建对象类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 更新对象类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types/${ob_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 获取对象类详情
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types/${ob_ids}
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除对象类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types/${ob_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+# ==================== 关系类 API ====================
+- name: 获取关系类列表
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建关系类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 更新关系类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types/${edge_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除关系类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types/${edge_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+# ==================== 行动类 API ====================
+- name: 获取行动类列表
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建行动类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 更新行动类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types/${at_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除行动类
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types/${at_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+# ==================== 概念分组 API ====================
+- name: 获取概念分组列表
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建概念分组
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 更新概念分组
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${group_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除概念分组
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${group_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 获取概念分组详情
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${group_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+# ==================== 任务 API ====================
+- name: 获取任务列表
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/jobs
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 创建任务
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/jobs
+  method: POST
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 删除任务
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/jobs/${task_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+
+- name: 获取任务详情
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/jobs/${rt_id}/tasks
+  method: GET
+  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'

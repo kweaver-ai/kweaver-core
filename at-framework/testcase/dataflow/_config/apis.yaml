@@ -1,0 +1,67 @@
+# API 列表：dataflow 模块
+# 格式：name (接口名称) -> url, method, headers
+
+- name: 获取数据流列表
+  url: /api/dataflow/v1/flows
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 创建数据流
+  url: /api/dataflow/v1/flows
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取数据流详情
+  url: /api/dataflow/v1/flows/${flow_id}
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 更新数据流
+  url: /api/dataflow/v1/flows/${flow_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 删除数据流
+  url: /api/dataflow/v1/flows/${flow_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 执行数据流
+  url: /api/dataflow/v1/flows/${flow_id}/execute
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行历史
+  url: /api/dataflow/v1/flows/${flow_id}/executions
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取执行详情
+  url: /api/dataflow/v1/executions/${execution_id}
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 停止执行
+  url: /api/dataflow/v1/executions/${execution_id}/stop
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 获取节点列表
+  url: /api/dataflow/v1/nodes
+  method: GET
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 创建节点
+  url: /api/dataflow/v1/nodes
+  method: POST
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 更新节点
+  url: /api/dataflow/v1/nodes/${node_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json"}'
+
+- name: 删除节点
+  url: /api/dataflow/v1/nodes/${node_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json"}'

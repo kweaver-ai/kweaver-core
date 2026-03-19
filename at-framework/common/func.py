@@ -11,6 +11,7 @@ import copy
 import json
 import os
 import string
+import warnings
 
 from genson import SchemaBuilder
 from jinja2 import Template
@@ -20,6 +21,12 @@ try:
     _YAML_AVAILABLE = True
 except ImportError:
     _YAML_AVAILABLE = False
+
+
+def _strict_missing_api():
+    """环境变量 AT_STRICT_LOAD_APIS=1/true 时，apis.yaml 中不存在的接口名将导致加载失败而非静默跳过。"""
+    v = (os.environ.get("AT_STRICT_LOAD_APIS") or "").strip().lower()
+    return v in ("1", "true", "yes", "on")
 
 
 def _read_yaml(path, default=None):
@@ -148,6 +155,7 @@ def load_case_from_yaml(base_dir):
         return out
 
     case_list = []
+    skipped_missing_api = []
     if not os.path.isdir(suites_dir):
         return case_list
 
@@ -172,11 +180,18 @@ def load_case_from_yaml(base_dir):
             case = _normalize_case(c)
             api_name = case["url"]
             if api_name not in api_params:
+                cname = (case.get("name") or "").strip() or "(unnamed)"
+                skipped_missing_api.append("  suite=%s case=%s api_name=%r" % (fn, cname, api_name))
                 continue
             case["feature"] = feature
             case["story"] = story
             case["_suite_file"] = fn
-            case = replace_params({**case, **api_params[api_name]}, **global_flat)
+            # 仅从 apis 合并 url/method/headers，避免 API 项的 name 覆盖用例的 name
+            api_row = api_params[api_name]
+            case["url"] = api_row.get("url", "")
+            case["method"] = api_row.get("method", "GET")
+            case["headers"] = api_row.get("headers", "{}")
+            case = replace_params(case, **global_flat)
             case["api_name"] = api_name
             case["_suite_file"] = fn
             ct = c.get("tags")
@@ -185,6 +200,18 @@ def load_case_from_yaml(base_dir):
             else:
                 case["tags"] = list(suite_tags)
             case_list.append(case)
+
+    if skipped_missing_api:
+        detail = "\n".join(skipped_missing_api[:50])
+        if len(skipped_missing_api) > 50:
+            detail += "\n  ... and %d more" % (len(skipped_missing_api) - 50)
+        msg = (
+            "以下用例引用的接口名未在 apis.yaml 中定义，已跳过加载（请补全 apis 或修正 case 的 url 字段）：\n%s"
+            % detail
+        )
+        if _strict_missing_api():
+            raise ValueError(msg)
+        warnings.warn(msg, UserWarning, stacklevel=2)
 
     return case_list
 

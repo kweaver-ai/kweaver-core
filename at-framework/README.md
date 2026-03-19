@@ -8,7 +8,7 @@
 
 ### 1.1 设计原则
 
-- **多模块通用**：框架与具体业务解耦，VEGA 仅为模块之一；通过 `config.ini` 的 `case_file` 指定当前运行模块。
+- **多模块通用**：框架与 ADP 各子仓库解耦；**VEGA 仅为调试/示例模块**。通过 `config.ini` 的 `case_file` 指向 `testcase/<模块>`（如后续 `dataflow`、`ontology`）。会话清理等业务逻辑放在各模块的 `framework_hooks.py`，框架 `conftest` 仅负责调度。
 - **规范即契约**：用例/套件结构、全局变量、API 定义均有唯一规范（Spec），便于智能体按规范增删改与提取。
 - **单条用例粒度**：支持按 scope、tags、api_name、api_path 筛选用例，只跑受影响的用例，而非整 suite。
 
@@ -57,11 +57,13 @@
 │   ├── func.py                # 加载用例、get_cases、全局变量、参数替换
 │   └── constant.py            # 报告路径等常量
 ├── request/                   # HTTP 客户端
-├── conftest.py                # pytest  fixture、用例列表来源、按模块清理
-├── test_run.py                # 单条用例执行逻辑（请求、断言）
+├── conftest.py                # pytest、延迟加载用例、按模块调用 framework_hooks 清理
+├── test_run.py                # 单条用例执行（请求、断言）
+├── tests/                     # 框架自测（`pytest tests/`，不加载业务用例、不跑 session 清理）
 ├── main.py                    # 入口：pytest + Allure 报告
 ├── scripts/
-│   └── extract_cases.py       # 按条件提取用例或全局变量清单（CLI）
+│   ├── extract_cases.py         # 按条件提取用例或全局变量清单（CLI）
+│   └── validate_module.py       # 校验模块目录是否可被框架加载（`--strict-apis`）
 ├── report/                    # 报告输出（xml、html、junit）
 ├── requirement.txt
 ├── pytest.ini
@@ -90,11 +92,14 @@ pip install -r requirement.txt
 
 | 配置项 | 说明 |
 |--------|------|
-| `[env].host` | 被测服务主机（如 10.4.111.209） |
+| `[env].host` | 被测服务主机（不含协议） |
+| `[env].request_scheme` | `https` 或 `http`，与 host 组成请求基址（各 ADP 网关可能不同） |
 | `[env].case_file` | 当前运行的**模块目录**，如 `./testcase/vega` |
-| `[env].clean_up` | `1`=执行清理，其他=不清理 |
-| `[env].clean_up_module` | 仅当与 case_file 对应模块名一致时执行清理（如 `vega`），避免误清其他模块 |
+| `[env].clean_up` | `1` 且本会话包含 `test_run` 用例时，调用该模块 `framework_hooks.session_clean_up` |
+| `[env].clean_up_module` | 仅当与 case_file 模块名一致时执行上述清理（避免误清） |
 | `[external].token` | Bearer Token，请求头中自动注入 |
+
+**环境变量**：`AT_STRICT_LOAD_APIS=1` 时，若用例引用的接口名不在 `apis.yaml` 中则**加载失败**（CI 推荐）；默认仅告警并跳过错误引用。
 
 ### 3.4 运行测试
 
@@ -241,13 +246,17 @@ CASE_FILE=testcase/vega python scripts/extract_cases.py --globals
 
 ---
 
-## 七、新增一个测试模块
+## 七、新增一个测试模块（adp 任意子域）
 
-1. 在 `testcase/` 下新建目录，如 `testcase/新模块/`。
-2. 创建 `_config/`：从 vega 复制并修改 `apis.yaml`、`global.yaml`、`global_manifest.yaml`、`path_scope_mapping.yaml`、`suite_manifest.yaml`；`spec/` 下仅保留 README 指向 `testcase/_config/spec/`。
-3. 创建 `suites/`，按 suite_schema、case_schema 编写 `*.yaml`。
-4. 在 `config.ini` 中设置 `case_file = ./testcase/新模块`，按需设置 `clean_up_module`。
-5. 运行：`pytest` 或 `python main.py`，提取：`python scripts/extract_cases.py --base-dir testcase/新模块 ...`。
+1. 在 `testcase/` 下新建目录，如 `testcase/dataflow/`。
+2. 创建 `_config/`：参考 `testcase/_config/spec/*.template.yaml` 与 vega 示例，填写 `apis.yaml`、`global.yaml`、`global_manifest.yaml`、`path_scope_mapping.yaml`、`suite_manifest.yaml`。
+3. 创建 `suites/`，符合 `suite_schema` / `case_schema`。
+4. **可选**：复制 `spec/framework_hooks.template.py` 为 `framework_hooks.py`，实现 `session_clean_up(config, allure)`（会话级清数据等）；无此需求可不创建。
+5. `config.ini`：`case_file`、`clean_up_module`、`request_scheme` 与目标环境一致。
+6. 校验：`python scripts/validate_module.py testcase/新模块 --strict-apis`
+7. 运行：`pytest test_run.py` 或 `python main.py`；提取：`python scripts/extract_cases.py --base-dir testcase/新模块 ...`。
+
+**框架自测**（不连被测环境、不加载业务 YAML）：`pytest tests/`
 
 ---
 

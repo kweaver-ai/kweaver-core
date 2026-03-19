@@ -1,0 +1,11 @@
+# 全局变量模板：各模块按需定义环境相关变量，供用例中 ${var} 引用
+# 敏感信息（密码等）建议使用密文或环境变量注入，勿提交明文
+# 与 global_manifest.yaml 的 variables 一一对应，case 中仅可引用 manifest 中列出的 name
+
+# 示例结构（实际 key 由模块自定，如 模块_host、模块_port、bin_data_template_xxx 等）
+# buildin_catalog_id: ""
+# mysql_host: ""
+# mysql_port: ""
+# mysql_user: ""
+# mysql_password: ""
+# bin_data_template_mysql: "{\"database_name\": \"${mysql_db_1}\", ...}"

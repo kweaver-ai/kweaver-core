@@ -1,0 +1,9 @@
+# 全局变量清单模板 - 与 global.yaml 一一对应；case 中仅可使用此处列出的 name，引用方式为 ${name}
+# 可由脚本从 global.yaml 的 key 自动生成骨架，description 可后续补全
+
+variables:
+  - name: ""           # 与 global.yaml 的 key 一致
+    description: ""    # 可选，变量说明
+    ref: ""            # 引用示例，如 "${var_name}"
+  # 可选字段（智能体/脚本用）：
+  # used_in: [body_params]   # 该变量常用于的字段

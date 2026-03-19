@@ -1,0 +1,69 @@
+# path_scope_mapping：execution-factory 模块
+
+subsystems:
+  # 执行任务管理
+  - id: execution-factory-task
+    name: 执行任务管理
+    path_patterns:
+      - "execution-factory/**/task/**"
+    scope_tags:
+      - execution-factory
+      - task
+    smoke_tags:
+      - smoke
+      - task
+    suggested_suites:
+      - task
+
+  # 执行器管理
+  - id: execution-factory-executor
+    name: 执行器管理
+    path_patterns:
+      - "execution-factory/**/executor/**"
+    scope_tags:
+      - execution-factory
+      - executor
+    smoke_tags:
+      - smoke
+      - executor
+    suggested_suites:
+      - executor
+
+  # 执行结果管理
+  - id: execution-factory-result
+    name: 执行结果管理
+    path_patterns:
+      - "execution-factory/**/result/**"
+    scope_tags:
+      - execution-factory
+      - result
+    smoke_tags:
+      - smoke
+      - result
+    suggested_suites:
+      - result
+
+  # 虚拟 scope：按测试类型筛选
+  - id: performance
+    name: 性能测试
+    path_patterns: []
+    scope_tags:
+      - performance
+    suggested_suites: []
+
+path_to_api: []
+
+change_actions:
+  added: "新增文件/API → 智能体自动补充用例"
+  modified: "修改 → 智能体检查并更新用例或断言"
+  deleted: "删除 → 智能体禁用或删除对应用例"
+
+test_type_tags:
+  functional:
+    - smoke
+    - regression
+  contract:
+    - schema
+    - contract
+  performance:
+    - performance

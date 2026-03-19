@@ -1,0 +1,28 @@
+# path_scope_mapping 模板：智能体根据此模板生成或更新各模块产物（如 testcase/vega/_config/path_scope_mapping.yaml）
+# - 不存在则从本模板 + 仓库目录扫描生成
+# - 已存在则根据仓库路径/API 变化进行增删改（追加新 scope、更新 path_patterns、合并 suggested_suites）
+# 所有模板统一放在 testcase/_config/spec/ 下，vega 等为按模板生成的产物
+
+subsystems:
+  # 虚拟 scope：按测试类型筛选（不绑定路径）
+  - id: performance
+    name: 性能测试
+    path_patterns: []
+    scope_tags: [performance]
+    suggested_suites: []
+  # 以下由智能体根据仓库顶层目录（vega/, ontology/, dataflow/ 等）自动补充或更新
+  # 规则：每个顶层目录可对应一栏，id 为目录名转 scope 标识（如 vega-data-connection），path_patterns 为 ["dirname/**"]
+
+path_to_api: []   # 由智能体根据 apis.yaml 或代码扫描补充
+
+change_actions:
+  added: "新增文件/API → 智能体自动补充用例"
+  modified: "修改 → 智能体检查并更新用例或断言"
+  deleted: "删除 → 智能体禁用或删除对应用例"
+
+test_type_tags:
+  functional: [regression, smoke]
+  contract: [regression, contract]
+  boundary: [boundary, regression]
+  stress: [stress]
+  performance: [performance]

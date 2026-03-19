@@ -1,0 +1,26 @@
+# 套件清单：execution-factory 模块
+
+suites:
+  - name: task
+    feature: 执行任务管理
+    description: 执行任务的 CRUD、启动、停止测试
+    tags:
+      - execution-factory
+      - task
+    file: task/task.yaml
+
+  - name: executor
+    feature: 执行器管理
+    description: 执行器的注册、注销、查询测试
+    tags:
+      - execution-factory
+      - executor
+    file: executor/executor.yaml
+
+  - name: result
+    feature: 执行结果管理
+    description: 执行结果查询、日志获取测试
+    tags:
+      - execution-factory
+      - result
+    file: result/result.yaml

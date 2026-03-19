@@ -1,0 +1,50 @@
+# 套件清单：bkn/bkn-backend 模块
+
+suites:
+  - name: knowledge-network
+    feature: 知识网络管理
+    description: 知识网络的 CRUD 测试
+    tags:
+      - knowledge-network
+      - ontology
+    file: knowledge-network/knowledge-network.yaml
+
+  - name: object-type
+    feature: 对象类管理
+    description: 对象类的 CRUD 测试
+    tags:
+      - object-type
+      - ontology
+    file: object-type/object-type.yaml
+
+  - name: relation-type
+    feature: 关系类管理
+    description: 关系类的 CRUD 测试
+    tags:
+      - relation-type
+      - ontology
+    file: relation-type/relation-type.yaml
+
+  - name: action-type
+    feature: 行动类管理
+    description: 行动类的 CRUD 测试
+    tags:
+      - action-type
+      - ontology
+    file: action-type/action-type.yaml
+
+  - name: concept-group
+    feature: 概念分组管理
+    description: 概念分组的 CRUD 测试
+    tags:
+      - concept-group
+      - ontology
+    file: concept-group/concept-group.yaml
+
+  - name: task
+    feature: 任务管理
+    description: 任务的创建、查询、删除测试
+    tags:
+      - task
+      - job
+    file: task/task.yaml

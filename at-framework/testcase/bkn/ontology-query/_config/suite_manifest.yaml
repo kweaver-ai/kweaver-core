@@ -1,0 +1,34 @@
+# 套件清单：bkn/ontology-query 模块
+
+suites:
+  - name: search
+    feature: 对象搜索
+    description: 本体对象搜索查询测试
+    tags:
+      - ontology-query
+      - search
+    file: search/search.yaml
+
+  - name: subgraph
+    feature: 子图查询
+    description: 子图查询测试
+    tags:
+      - ontology-query
+      - subgraph
+    file: subgraph/subgraph.yaml
+
+  - name: list
+    feature: 对象列表
+    description: 按对象类型列出对象测试
+    tags:
+      - ontology-query
+      - list
+    file: list/list.yaml
+
+  - name: action
+    feature: 行动执行
+    description: 行动类执行测试
+    tags:
+      - ontology-query
+      - action
+    file: action/action.yaml

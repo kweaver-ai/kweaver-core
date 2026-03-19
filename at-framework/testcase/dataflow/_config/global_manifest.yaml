@@ -1,0 +1,73 @@
+# 全局变量清单：dataflow 模块
+
+variables:
+  # 环境配置
+  - name: host
+    description: ADP 测试环境主机地址
+    ref: "${env:ADP_HOST}"
+    used_in:
+      - all
+
+  - name: token
+    description: 认证 Token
+    ref: "${env:ADP_TOKEN}"
+    used_in:
+      - all
+
+  - name: timestamp
+    description: 时间戳，用于生成唯一名称
+    ref: "${timestamp}"
+    used_in:
+      - all
+
+  # 数据流
+  - name: test_flow_name
+    description: 测试数据流名称
+    ref: "测试数据流_${timestamp}"
+    used_in:
+      - flow
+
+  - name: test_flow_id
+    description: 测试数据流 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - flow
+      - execution
+
+  - name: test_flow_description
+    description: 测试数据流描述
+    ref: "自动化测试创建的数据流"
+    used_in:
+      - flow
+
+  # 节点
+  - name: test_node_name
+    description: 测试节点名称
+    ref: "测试节点_${timestamp}"
+    used_in:
+      - node
+
+  - name: test_node_id
+    description: 测试节点 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - node
+
+  - name: test_node_type
+    description: 测试节点类型
+    ref: "transform"
+    used_in:
+      - node
+
+  # 执行
+  - name: test_execution_id
+    description: 测试执行 ID（运行时动态赋值）
+    ref: ""
+    used_in:
+      - execution
+
+  - name: test_execution_status
+    description: 测试执行状态
+    ref: ""
+    used_in:
+      - execution

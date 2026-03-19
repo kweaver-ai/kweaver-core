@@ -1,0 +1,20 @@
+# 全局变量配置：execution-factory 模块
+
+# ==================== 环境配置 ====================
+host: "${env:ADP_HOST}"
+token: "${env:ADP_TOKEN}"
+timestamp: "${timestamp}"
+
+# ==================== 执行任务测试数据 ====================
+test_task_name: "测试执行任务_${timestamp}"
+test_task_id: ""
+test_task_description: "自动化测试创建的执行任务"
+
+# ==================== 执行器测试数据 ====================
+test_executor_id: ""
+test_executor_name: "测试执行器_${timestamp}"
+test_executor_type: "default"
+
+# ==================== 执行结果测试数据 ====================
+test_result_id: ""
+test_result_status: ""
