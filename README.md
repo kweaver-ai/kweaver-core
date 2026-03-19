@@ -19,6 +19,7 @@ The KWeaver project includes KWeaver Core and KWeaver DIP.
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
 - 📘 [Documentation](docs/) - Product documentation and usage guides
+- 📝 [Blog](https://kweaver-ai.github.io/kweaver/) - KWeaver technical articles and updates
 - 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
 - 🧾 [Changelog](rules/CHANGELOG.md) - All notable changes
@@ -240,6 +241,8 @@ BKN Lang is a Markdown-based business knowledge modeling language, designed for 
 - **Easy to integrate** — Definitions stored as full-text in specific database fields with no complex underlying table coupling. Context Loader dynamically loads on demand, discarding static hardcoding. Plug-and-play across systems and Agents, flowing as lightweight assets through AI Data Platform.
 
 ### Benchmarks & Experiments
+
+See more details: [KWeaver Blog](https://kweaver-ai.github.io/kweaver/)
 
 #### Unstructured Data Q&A — Cross-Platform Comparison
 
