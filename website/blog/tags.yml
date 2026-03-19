@@ -37,3 +37,13 @@ research:
   label: Research
   permalink: /research
   description: Research and experiment posts
+
+context-engineering:
+  label: Context Engineering
+  permalink: /context-engineering
+  description: Context engineering posts
+
+agent:
+  label: Agent
+  permalink: /agent
+  description: AI agent related posts
