@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'KWeaver',
-  tagline: 'AI-Native Knowledge Graph Platform',
+  tagline: 'Open-Source Decision Intelligence AI Ecosystem',
   favicon: 'img/favicon.ico',
 
   future: {
