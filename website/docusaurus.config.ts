@@ -13,10 +13,10 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://aishu-technology.github.io',
+  url: 'https://kweaver-ai.github.io',
   baseUrl: '/kweaver/',
 
-  organizationName: 'AISHU-Technology',
+  organizationName: 'kweaver-ai',
   projectName: 'kweaver',
 
   onBrokenLinks: 'throw',
@@ -35,7 +35,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/AISHU-Technology/kweaver/tree/main/website/',
+          editUrl: 'https://github.com/kweaver-ai/kweaver/tree/main/website/',
         },
         blog: {
           showReadingTime: true,
@@ -43,7 +43,7 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/AISHU-Technology/kweaver/tree/main/website/',
+          editUrl: 'https://github.com/kweaver-ai/kweaver/tree/main/website/',
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
@@ -76,7 +76,7 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/AISHU-Technology/kweaver',
+          href: 'https://github.com/kweaver-ai/kweaver',
           label: 'GitHub',
           position: 'right',
         },
@@ -99,11 +99,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Issues',
-              href: 'https://github.com/AISHU-Technology/kweaver/issues',
+              href: 'https://github.com/kweaver-ai/kweaver/issues',
             },
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/AISHU-Technology/kweaver/discussions',
+              href: 'https://github.com/kweaver-ai/kweaver/discussions',
             },
           ],
         },
@@ -116,7 +116,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/AISHU-Technology/kweaver',
+              href: 'https://github.com/kweaver-ai/kweaver',
             },
           ],
         },
