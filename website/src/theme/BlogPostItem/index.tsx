@@ -5,32 +5,53 @@ import {useColorMode} from '@docusaurus/theme-common';
 import Giscus from '@giscus/react';
 
 function LikeButton() {
-  const [count, setCount] = useState<number | null>(null);
+  const [count, setCount] = useState<number>(0);
+  const [loaded, setLoaded] = useState(false);
   const [discussionUrl, setDiscussionUrl] = useState<string | null>(null);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.origin !== 'https://giscus.app') return;
       const data = event.data?.giscus;
-      if (!data?.discussion) return;
-      const total = data.discussion.reactions?.totalCount;
-      if (typeof total === 'number') setCount(total);
-      if (data.discussion.url) setDiscussionUrl(data.discussion.url);
+      if (!data) return;
+
+      // Discussion exists — read reactions
+      if (data.discussion) {
+        const total = data.discussion.reactions?.totalCount;
+        if (typeof total === 'number') setCount(total);
+        if (data.discussion.url) setDiscussionUrl(data.discussion.url);
+        setLoaded(true);
+      }
+
+      // Discussion not found — giscus sends a "discussion not found" message
+      if (data.error || data.discussion === null) {
+        setLoaded(true);
+      }
     }
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+
+    // Fallback: after 3s, stop showing loading state
+    const timer = setTimeout(() => setLoaded(true), 3000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(timer);
+    };
   }, []);
 
   const handleClick = useCallback(() => {
     if (discussionUrl) {
       window.open(discussionUrl, '_blank', 'noopener');
+    } else {
+      // No discussion yet — go to repo discussions page
+      window.open('https://github.com/kweaver-ai/kweaver/discussions', '_blank', 'noopener');
     }
   }, [discussionUrl]);
 
   return (
     <button
       onClick={handleClick}
-      title={discussionUrl ? '点击前往点赞' : '加载中...'}
+      title="点击前往点赞"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -43,7 +64,7 @@ function LikeButton() {
         background: 'var(--ifm-color-emphasis-100)',
         border: '1px solid var(--ifm-color-emphasis-300)',
         borderRadius: '2rem',
-        cursor: discussionUrl ? 'pointer' : 'default',
+        cursor: 'pointer',
         transition: 'all 0.2s',
       }}
       onMouseEnter={(e) => {
@@ -56,7 +77,7 @@ function LikeButton() {
       }}
     >
       <span style={{fontSize: '1.2rem'}}>👍</span>
-      <span>{count !== null ? `${count} 个赞` : '加载中...'}</span>
+      <span>{loaded ? `${count} 个赞` : '加载中...'}</span>
     </button>
   );
 }
