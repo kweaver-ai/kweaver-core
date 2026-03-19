@@ -1,11 +1,12 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import BlogPostItem from '@theme-original/BlogPostItem';
 import {useBlogPost} from '@docusaurus/plugin-content-blog/client';
 import {useColorMode} from '@docusaurus/theme-common';
 import Giscus from '@giscus/react';
 
-function ReactionCount() {
+function LikeButton() {
   const [count, setCount] = useState<number | null>(null);
+  const [discussionUrl, setDiscussionUrl] = useState<string | null>(null);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -13,35 +14,50 @@ function ReactionCount() {
       const data = event.data?.giscus;
       if (!data?.discussion) return;
       const total = data.discussion.reactions?.totalCount;
-      if (typeof total === 'number') {
-        setCount(total);
-      }
+      if (typeof total === 'number') setCount(total);
+      if (data.discussion.url) setDiscussionUrl(data.discussion.url);
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  if (count === null) return null;
+  const handleClick = useCallback(() => {
+    if (discussionUrl) {
+      window.open(discussionUrl, '_blank', 'noopener');
+    }
+  }, [discussionUrl]);
 
   return (
-    <div
+    <button
+      onClick={handleClick}
+      title={discussionUrl ? '点击前往点赞' : '加载中...'}
       style={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
-        gap: '0.4rem',
-        margin: '0.5rem 0 1rem',
-        fontSize: '0.95rem',
-        color: 'var(--ifm-color-emphasis-700)',
-        cursor: 'pointer',
+        gap: '0.5rem',
+        padding: '0.5rem 1.2rem',
+        marginTop: '1.5rem',
+        fontSize: '1rem',
+        fontWeight: 500,
+        color: 'var(--ifm-color-primary)',
+        background: 'var(--ifm-color-emphasis-100)',
+        border: '1px solid var(--ifm-color-emphasis-300)',
+        borderRadius: '2rem',
+        cursor: discussionUrl ? 'pointer' : 'default',
+        transition: 'all 0.2s',
       }}
-      title="点击点赞"
-      onClick={() => {
-        document.querySelector('.giscus')?.scrollIntoView({behavior: 'smooth'});
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'var(--ifm-color-primary)';
+        e.currentTarget.style.color = '#fff';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'var(--ifm-color-emphasis-100)';
+        e.currentTarget.style.color = 'var(--ifm-color-primary)';
       }}
     >
-      <span style={{fontSize: '1.1rem'}}>👍</span>
-      <span>{count} 个赞</span>
-    </div>
+      <span style={{fontSize: '1.2rem'}}>👍</span>
+      <span>{count !== null ? `${count} 个赞` : '加载中...'}</span>
+    </button>
   );
 }
 
@@ -67,8 +83,9 @@ export default function BlogPostItemWrapper(props) {
       <BlogPostItem {...props} />
       {isBlogPostPage && (
         <>
-          <ReactionCount />
-          <div className="giscus-reactions-only" style={{marginTop: '2rem'}}>
+          <LikeButton />
+          {/* Hidden Giscus: only used to fetch reaction count */}
+          <div style={{position: 'absolute', width: 0, height: 0, overflow: 'hidden'}}>
             <Giscus
               {...GISCUS_PROPS}
               theme={colorMode === 'dark' ? 'dark' : 'light'}
