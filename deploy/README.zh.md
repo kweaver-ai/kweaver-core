@@ -320,6 +320,45 @@ kubectl describe pod -n <namespace> <pod-name>
 kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
 ```
 
+### Pod CrashLoopBackOff（容器崩溃循环）
+
+如果 Pod 处于 `CrashLoopBackOff` 状态（不断重启），说明容器启动后持续崩溃。常见原因包括：
+
+1. **配置错误**（缺少或无效的配置值）
+2. **数据库连接失败**（数据库未就绪或凭证错误）
+3. **缺少依赖服务**（其他服务不可用）
+4. **资源限制**（内存/CPU 约束）
+5. **应用错误**（检查应用日志）
+
+**诊断：**
+```bash
+# 1. 检查 Pod 状态和详细信息（显示事件和容器状态）
+kubectl get pod <pod-name> -n <namespace> -o wide
+kubectl describe pod <pod-name> -n <namespace>
+
+# 2. 查看当前容器日志
+kubectl logs <pod-name> -n <namespace> --tail=100
+
+# 3. 查看上一个容器的日志（崩溃前的容器）
+kubectl logs <pod-name> -n <namespace> --previous --tail=100
+
+# 4. 查看命名空间最近的事件
+kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -30
+
+# 5. 验证依赖服务是否就绪（如数据库）
+kubectl get pods -n <namespace> | grep -E 'mariadb|mongodb|mysql'
+kubectl get svc -n <namespace> | grep -E 'mariadb|mongodb|mysql'
+
+# 6. 检查 Helm Release 状态
+helm status <release-name> -n <namespace>
+```
+
+**常见修复方法：**
+- **数据库未就绪**：等待数据库 Pod 进入 `Running` 状态后再安装依赖服务
+- **数据库凭证错误**：检查 `config.yaml` 中的数据库连接配置
+- **缺少环境变量**：验证 Helm values 和 config.yaml
+- **资源限制**：检查 `kubectl describe pod` 中是否有 `OOMKilled` 或资源限制错误
+
 ### Kubernetes apt 源 404（Ubuntu/Debian）
 
 如果 `apt update` 报错，提示旧的 `packages.cloud.google.com` 仓库 404：

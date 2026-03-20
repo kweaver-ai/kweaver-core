@@ -615,6 +615,9 @@ main() {
                     esac
                 done
                 
+                # Validate and auto-repair missing credentials before installing services
+                validate_config_credentials
+
                 # Install all KWeaver services in order
                 install_isf
                 install_studio
@@ -721,6 +724,9 @@ main() {
                             ;;
                     esac
                 done
+
+                # Validate and auto-repair missing credentials before installing services
+                validate_config_credentials
                 
                 install_isf
                 install_studio

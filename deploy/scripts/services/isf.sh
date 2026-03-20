@@ -102,6 +102,9 @@ install_isf() {
     export HELM_COMMAND_TIMEOUT="${ISF_COMMAND_TIMEOUT:-${HELM_COMMAND_TIMEOUT:-900}}"
     log_info "  Using timeout: helm=${HELM_INSTALL_TIMEOUT}, command=${HELM_COMMAND_TIMEOUT}s"
 
+    # Validate and auto-repair missing credentials (e.g. empty Kafka SASL password)
+    validate_config_credentials
+
     # Get namespace from config.yaml
     local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
     namespace="${namespace:-kweaver-ai}"

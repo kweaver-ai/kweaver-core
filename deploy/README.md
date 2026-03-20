@@ -316,6 +316,45 @@ kubectl describe pod -n <namespace> <pod-name>
 kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
 ```
 
+### Pod CrashLoopBackOff
+
+If a Pod is in `CrashLoopBackOff` state (restarting repeatedly), the container is crashing after startup. Common causes include:
+
+1. **Configuration errors** (missing/invalid config values)
+2. **Database connection failures** (database not ready or wrong credentials)
+3. **Missing dependencies** (other services not available)
+4. **Resource limits** (memory/CPU constraints)
+5. **Application errors** (check application logs)
+
+**Diagnosis:**
+```bash
+# 1. Check Pod status and describe (shows events and container status)
+kubectl get pod <pod-name> -n <namespace> -o wide
+kubectl describe pod <pod-name> -n <namespace>
+
+# 2. Check current container logs
+kubectl logs <pod-name> -n <namespace> --tail=100
+
+# 3. Check previous container logs (from crashed container)
+kubectl logs <pod-name> -n <namespace> --previous --tail=100
+
+# 4. Check recent events in namespace
+kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -30
+
+# 5. Verify dependencies are ready (e.g., database)
+kubectl get pods -n <namespace> | grep -E 'mariadb|mongodb|mysql'
+kubectl get svc -n <namespace> | grep -E 'mariadb|mongodb|mysql'
+
+# 6. Check Helm release status
+helm status <release-name> -n <namespace>
+```
+
+**Common fixes:**
+- **Database not ready**: Wait for database pods to be `Running` before installing dependent services
+- **Wrong database credentials**: Check `config.yaml` database connection settings
+- **Missing environment variables**: Verify Helm values and config.yaml
+- **Resource constraints**: Check `kubectl describe pod` for `OOMKilled` or resource limit errors
+
 ### Kubernetes apt source 404 (Ubuntu/Debian)
 
 If `apt update` fails with a 404 for the legacy `packages.cloud.google.com` repository:

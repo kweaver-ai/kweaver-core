@@ -786,3 +786,139 @@ print_web_access_info() {
     log_info "  Default account: admin"
     log_info "  Initial password: eisoo.com"
 }
+
+# Validate config.yaml credentials and auto-repair empty passwords by reading
+# actual secrets from the cluster. This prevents CrashLoopBackOff caused by
+# missing credentials (e.g. Kafka SASL password not populated during initial
+# config generation).
+#
+# Safe to call multiple times — only patches empty fields, never overwrites
+# user-set values.
+validate_config_credentials() {
+    local cfg="${CONFIG_YAML_PATH}"
+    if [[ ! -f "${cfg}" ]]; then
+        return 0
+    fi
+
+    local patched=0
+
+    # --- Kafka SASL password ---
+    if [[ "${KAFKA_AUTH_ENABLED}" == "true" ]]; then
+        local current_kafka_pw
+        current_kafka_pw="$(awk '
+            /^  mq:/{in_mq=1; next}
+            in_mq && /^  [^ ]/{in_mq=0}
+            in_mq && /auth:/{in_auth=1; next}
+            in_auth && /password:/{
+                sub(/.*password: */, ""); gsub(/["'\''[:space:]]/, ""); print; exit
+            }
+            in_auth && /^    [^ ]/{in_auth=0}
+        ' "${cfg}" 2>/dev/null || true)"
+
+        if [[ -z "${current_kafka_pw}" ]]; then
+            local secret_pw
+            secret_pw="$(get_secret_b64_key "${KAFKA_NAMESPACE}" "${KAFKA_SASL_SECRET_NAME}" client-passwords 2>/dev/null || true)"
+            secret_pw="${secret_pw%%,*}"
+            if [[ -n "${secret_pw}" ]]; then
+                sed -i.bak "s|^\(.*mq:.*\)$|\\1|" "${cfg}" 2>/dev/null || true
+                python3 - "${cfg}" "${secret_pw}" <<'PYEOF' 2>/dev/null || \
+                sed -i.bak "/^  mq:/,/^  [^ ]/ s|password: *['\"]* *['\"]* *$|password: '${secret_pw}'|" "${cfg}"
+import sys
+cfg_path, new_pw = sys.argv[1], sys.argv[2]
+with open(cfg_path, 'r') as f:
+    lines = f.readlines()
+in_mq, in_auth = False, False
+for i, line in enumerate(lines):
+    stripped = line.lstrip()
+    if stripped.startswith('mq:'):
+        in_mq = True
+        continue
+    if in_mq and not line.startswith(' ') and stripped and not stripped.startswith('#'):
+        in_mq = False
+    if in_mq and stripped.startswith('auth:'):
+        in_auth = True
+        continue
+    if in_auth and stripped.startswith('password:'):
+        indent = line[:len(line) - len(line.lstrip())]
+        lines[i] = f"{indent}password: '{new_pw}'\n"
+        in_auth = False
+        in_mq = False
+        break
+with open(cfg_path, 'w') as f:
+    f.writelines(lines)
+PYEOF
+                rm -f "${cfg}.bak" 2>/dev/null || true
+                patched=$((patched + 1))
+                log_info "Auto-repaired: Kafka SASL password populated from cluster secret"
+            else
+                log_warn "Kafka SASL password is empty in config.yaml and no secret found in cluster"
+            fi
+        fi
+    fi
+
+    # --- Redis password ---
+    local current_redis_pw
+    current_redis_pw="$(awk '
+        /^  redis:/{in_r=1; next}
+        in_r && /^  [^ ]/{in_r=0}
+        in_r && /connectInfo:/{in_ci=1; next}
+        in_ci && /^ *password:/{
+            sub(/.*password: */, ""); gsub(/["'\''[:space:]]/, ""); print; exit
+        }
+        in_ci && /^    [^ ]/{in_ci=0}
+    ' "${cfg}" 2>/dev/null || true)"
+
+    if [[ -z "${current_redis_pw}" ]]; then
+        local redis_secret_names=(
+            "redis-proton-redis-secret"
+            "proton-redis-proton-redis-secret"
+            "redis-secret"
+            "redis-auth"
+        )
+        local found_redis_pw=""
+        for sn in "${redis_secret_names[@]}"; do
+            found_redis_pw="$(get_secret_b64_key "${REDIS_NAMESPACE}" "${sn}" password 2>/dev/null || true)"
+            if [[ -n "${found_redis_pw}" ]]; then break; fi
+            found_redis_pw="$(get_secret_b64_key "${REDIS_NAMESPACE}" "${sn}" nonEncrpt-password 2>/dev/null || true)"
+            if [[ -n "${found_redis_pw}" ]]; then break; fi
+        done
+        if [[ -n "${found_redis_pw}" ]]; then
+            local decoded
+            decoded="$(printf '%s' "${found_redis_pw}" | base64 -d 2>/dev/null || echo "")"
+            if [[ -n "${decoded}" && "${decoded}" != "${found_redis_pw}" ]]; then
+                found_redis_pw="${decoded}"
+            fi
+            python3 - "${cfg}" "${found_redis_pw}" <<'PYEOF' 2>/dev/null || true
+import sys
+cfg_path, new_pw = sys.argv[1], sys.argv[2]
+with open(cfg_path, 'r') as f:
+    lines = f.readlines()
+in_redis, in_ci, patched_count = False, False, 0
+for i, line in enumerate(lines):
+    stripped = line.lstrip()
+    if stripped.startswith('redis:'):
+        in_redis = True
+        continue
+    if in_redis and not line.startswith(' ') and stripped and not stripped.startswith('#'):
+        in_redis = False
+    if in_redis and stripped.startswith('connectInfo:'):
+        in_ci = True
+        continue
+    if in_ci and stripped.startswith('password:') and patched_count == 0:
+        indent = line[:len(line) - len(line.lstrip())]
+        lines[i] = f"{indent}password: '{new_pw}'\n"
+        patched_count += 1
+with open(cfg_path, 'w') as f:
+    f.writelines(lines)
+PYEOF
+            patched=$((patched + 1))
+            log_info "Auto-repaired: Redis password populated from cluster secret"
+        fi
+    fi
+
+    if [[ ${patched} -gt 0 ]]; then
+        log_info "Config validation complete: ${patched} credential(s) auto-repaired"
+    else
+        log_info "Config validation complete: all credentials present"
+    fi
+}
