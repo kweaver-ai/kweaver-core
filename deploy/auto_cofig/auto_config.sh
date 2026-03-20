@@ -1080,11 +1080,18 @@ import_knowledge_network() {
   local kn_basename
   kn_basename=$(basename "$KNOWLEDGE_NETWORK_FILE")
   if [[ "$kn_basename" == "供应链业务知识网络.json" ]]; then
-    local tmp_kn="/tmp/kn_supply_chain_${temp_suffix}.json"
-    if prepare_supply_chain_kn_json "$KNOWLEDGE_NETWORK_FILE" "$tmp_kn"; then
-      kn_file_to_import="$tmp_kn"
+    # 直接修改原文件，备份原文件
+    local backup_file="${KNOWLEDGE_NETWORK_FILE}.bak.${temp_suffix}"
+    cp "$KNOWLEDGE_NETWORK_FILE" "$backup_file"
+    echo -e "${YELLOW}  已备份原文件到: ${backup_file}${NC}"
+    
+    if prepare_supply_chain_kn_json "$KNOWLEDGE_NETWORK_FILE" "$KNOWLEDGE_NETWORK_FILE"; then
+      echo -e "${GREEN}  ✓ 已更新文件: ${KNOWLEDGE_NETWORK_FILE}${NC}"
+      # 备份文件保留，用户可以查看对比
     else
-      echo -e "${YELLOW}  警告: 供应链知识网络替换失败，将使用原文件导入${NC}"
+      echo -e "${RED}  错误: 供应链知识网络替换失败，已恢复原文件${NC}"
+      mv "$backup_file" "$KNOWLEDGE_NETWORK_FILE"
+      return 1
     fi
   fi
 
@@ -1096,7 +1103,8 @@ import_knowledge_network() {
     -H "Authorization: Bearer ${TOKEN}" \
     --data-binary "@${kn_file_to_import}")
 
-  [[ "$kn_file_to_import" != "$KNOWLEDGE_NETWORK_FILE" ]] && rm -f "$kn_file_to_import" 2>/dev/null
+  # 清理备份文件（可选，保留以便查看对比）
+  # [[ -f "${KNOWLEDGE_NETWORK_FILE}.bak.${temp_suffix}" ]] && rm -f "${KNOWLEDGE_NETWORK_FILE}.bak.${temp_suffix}" 2>/dev/null
 
   local KN_ID=$(echo $KN_RESPONSE | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
   if [ -z "$KN_ID" ]; then
