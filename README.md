@@ -104,21 +104,23 @@ kubectl get pods -A
 
 Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills). Badges: [![skills.sh kweaver-core](https://img.shields.io/badge/kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
-**`kweaver-core`** — full KWeaver APIs and CLI conventions so assistants can operate KWeaver on your behalf.
+**Install both skills at once** (recommended):
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
+  --skill kweaver-core --skill create-bkn
+```
+
+- **`kweaver-core`** — full KWeaver APIs and CLI conventions so assistants can operate KWeaver on your behalf. See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md).
+- **`create-bkn`** — guided workflow and tooling to create and manage **Business Knowledge Networks (BKN)** from your AI coding assistant. See [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md).
+
+**Install a single skill only** (optional):
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
-```
-
-See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md).
-
-**`create-bkn`** — guided workflow and tooling to create and manage **Business Knowledge Networks (BKN)** from your AI coding assistant.
-
-```bash
+# or
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill create-bkn
 ```
-
-See [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md).
 
 **Before using any skill**, authenticate with your KWeaver instance:
 
