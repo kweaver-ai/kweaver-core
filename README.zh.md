@@ -16,6 +16,7 @@ KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
 
 ## 📚 快速链接
 
+- 🌐 [在线体验](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - 在线试用 KWeaver（用户名：`kweaver`，密码：`111111`）
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
 - 📝 [博客](https://kweaver-ai.github.io/kweaver/) - KWeaver 技术文章与更新

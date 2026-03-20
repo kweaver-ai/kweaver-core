@@ -16,6 +16,7 @@ The KWeaver project includes KWeaver Core and KWeaver DIP.
 
 ## 📚 Quick Links
 
+- 🌐 [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Try KWeaver online (username: `kweaver`, password: `111111`)
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
 - 📘 [Documentation](docs/) - Product documentation and usage guides
