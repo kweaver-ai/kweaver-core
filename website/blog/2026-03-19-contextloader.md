@@ -6,6 +6,8 @@ tags: [kweaver, contextloader, rag, llm, knowledge-graph, research]
 image: /img/blog/contextloader/comparison_accuracy.png
 ---
 
+**文章贡献者**：陈储培、李倩兰
+
 ## 摘要
 
 随着大语言模型在复杂业务场景中的广泛应用，如何有效组织和管理上下文信息已成为提升推理质量的关键挑战。传统的检索增强生成（RAG）方法通过语义向量匹配实现知识召回，但在处理结构化业务知识网络时，面临召回粒度粗糙、推理路径割裂、上下文膨胀等根本性局限。本研究提出 **ContextLoader** 框架，一种面向业务知识网络的结构化上下文管理方案。该框架通过两个互补机制——**Trim**（相关性裁剪）和 **Toon**（Token-Optimized Notation，标记优化表示）——在工具返回结果写入 LLM 上下文前进行结构化质量提升。
