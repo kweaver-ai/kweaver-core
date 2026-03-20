@@ -190,6 +190,80 @@ depServices:
 2. 配置外部数据库连接信息
 3. 手动执行 SQL 初始化脚本（位于 `scripts/sql/` 目录）
 
+### 场景化自动配置
+
+`auto_cofig` 目录提供了常见部署场景的自动化环境配置脚本。您可以使用这些脚本快速配置数据源、知识网络、智能体、数据流、算子、工具集和 MCP。
+
+**前置条件：**
+
+1. 登录系统工作台（`https://<节点IP>/deploy`，默认账号/密码：`admin/eisoo.com`）
+2. 在 **信息安全管理 → 统一身份认证 → 账户 → 用户** 中新建测试用户
+3. 在 **角色与访问策略 → 角色管理** 中，将测试用户添加到以下角色：数据管理员、AI管理员、应用管理员
+4. 访问 Studio（`https://<节点IP>/studio`），使用测试用户登录（默认密码：`123456`），按提示修改密码
+
+**使用方法：**
+
+1. 进入 `auto_cofig` 目录：
+   ```bash
+   cd deploy/auto_cofig
+   ```
+
+2. 配置环境文件（`config.env`）：
+   ```bash
+   # 认证信息
+   USERNAME=test
+   PASSWORD=your_password
+   
+   # 数据源配置
+   DS_TYPE=mysql              # 数据库类型
+   DS_NAME=Your Data Source    # 连接名称
+   DS_DATABASE_NAME=your_db   # 数据库名称
+   DS_HOST=your_host          # 数据库地址
+   DS_PORT=3306              # 数据库端口
+   DS_USERNAME=db_user        # 数据库用户名
+   DS_PASSWORD=db_password    # 数据库密码
+   ```
+
+3. 执行自动配置脚本：
+   ```bash
+   chmod +x auto_config.sh
+   
+   # 完整配置（所有步骤）
+   ./auto_config.sh agent.json knowledge_network.json dataflow.json
+   
+   # 或执行单个步骤
+   ./auto_config.sh --step 1                    # 获取token
+   ./auto_config.sh --step 2                    # 创建数据源并扫描
+   ./auto_config.sh --step 3 knowledge_network.json  # 导入知识网络
+   ./auto_config.sh --step 4 agent.json        # 导入DataAgent
+   ./auto_config.sh --step 5 dataflow.json     # 导入数据流
+   ./auto_config.sh --step 6 operator.adp      # 导入算子
+   ./auto_config.sh --step 7 toolbox.adp      # 导入工具集
+   ./auto_config.sh --step 8 mcp.adp           # 导入MCP
+   ```
+
+**可用步骤：**
+
+- 步骤 1：获取认证 token
+- 步骤 2：创建数据源并扫描
+- 步骤 3：导入业务知识网络
+- 步骤 4：导入 DataAgent
+- 步骤 5：导入数据流
+- 步骤 6：导入算子（可选）
+- 步骤 7：导入工具集（可选）
+- 步骤 8：导入 MCP（可选）
+
+**示例场景文件：**
+
+`auto_cofig` 目录包含供应链场景的示例配置文件：
+- `agent.json` - DataAgent 配置
+- `供应链业务知识网络.json` - 业务知识网络
+- `dataflow.json` - 数据流配置
+- `contextloader工具集_020.adp` - 工具集示例
+- `基础结构化数据分析工具箱2.adp` - 工具集示例
+
+详细使用说明请参考 `auto_cofig/README.md`。
+
 ## 📁 Project Structure
 
 ```
@@ -199,6 +273,11 @@ deploy/
 │   ├── config.yaml         # 部署配置文件
 │   ├── kube-flannel.yml    # Flannel 网络配置
 │   └── local-path-storage.yaml  # 本地存储配置
+├── auto_cofig/             # 场景化自动配置
+│   ├── auto_config.sh      # 自动配置脚本
+│   ├── config.env          # 配置模板
+│   ├── README.md           # 使用说明
+│   └── *.json, *.adp       # 示例场景文件
 └── scripts/
     ├── lib/
     │   └── common.sh       # 公共函数库
