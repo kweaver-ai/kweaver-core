@@ -84,7 +84,7 @@ function ShareButton() {
             fontSize: '0.8rem',
             color: 'var(--ifm-color-emphasis-600)',
           }}>
-            微信扫码分享到朋友圈
+            微信扫码打开，点右上角 ··· 分享
           </div>
         </div>
       )}
