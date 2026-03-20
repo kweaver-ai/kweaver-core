@@ -530,13 +530,172 @@ EOF
   return 0
 }
 
+# Get admin token for model API access
+get_admin_token() {
+  local temp_suffix=$$_admin
+  echo -e "${YELLOW}使用 admin 账号获取 token（用于模型接口）...${NC}"
+
+  # Load admin credentials from config
+  local ADMIN_USER="${ADMIN:-admin}"
+  local ADMIN_PASS="${ADMINPASS:-}"
+
+  if [ -z "$ADMIN_PASS" ]; then
+    echo -e "${RED}错误: 未设置 ADMINPASS，无法使用 admin 账号登录${NC}"
+    return 1
+  fi
+
+  # Create temp public key files for openssl
+  LOGIN_PUBKEY_FILE="/tmp/login_public_key_${temp_suffix}"
+  echo "$LOGIN_PUBLIC_KEY" > "$LOGIN_PUBKEY_FILE"
+
+  # Encrypt login password with openssl
+  local ENCRYPTED_LOGIN_PASSWORD=""
+  if command -v openssl >/dev/null 2>&1 && [ -n "$ADMIN_PASS" ]; then
+    ENCRYPTED_LOGIN_PASSWORD=$(printf "%s" "$ADMIN_PASS" | openssl rsautl -encrypt -pubin -inkey "$LOGIN_PUBKEY_FILE" 2>/dev/null | base64 | tr -d '\n')
+  fi
+
+  if [ -z "$ENCRYPTED_LOGIN_PASSWORD" ]; then
+    echo -e "${RED}错误: admin 登录密码加密失败${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE"
+    return 1
+  fi
+
+  # Fetch CSRF token and challenge from the login page
+  local LOGIN_PAGE_URL="${BASE_URL}/interface/studioweb/login?lang=zh-cn&state=EjVex8mfXS&x-forwarded-prefix=&integrated=false&product=adp&_t=$(date +%s)000"
+  local LOGIN_PAGE_RESPONSE=$(curl -s -k -c "/tmp/session_cookies_${temp_suffix}.txt" -L "$LOGIN_PAGE_URL")
+
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}错误: 无法访问登录页面${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Extract CSRF token from page content
+  CSRFTOKEN_REGEX='"csrftoken"[[:space:]]*:[[:space:]]*"[^"]*"'
+  CSRFTOKEN_LINE=$(echo "$LOGIN_PAGE_RESPONSE" | grep -oP "$CSRFTOKEN_REGEX" | head -1)
+  
+  local CSRF_TOKEN=""
+  if [ -n "$CSRFTOKEN_LINE" ]; then
+    CSRF_TOKEN=$(echo "$CSRFTOKEN_LINE" | cut -d'"' -f4)
+  fi
+
+  # Extract challenge from page content
+  CHALLENGE_REGEX='"challenge"[[:space:]]*:[[:space:]]*"[^"]*"'
+  CHALLENGE_LINE=$(echo "$LOGIN_PAGE_RESPONSE" | grep -oP "$CHALLENGE_REGEX" | head -1)
+  local CHALLENGE=""
+  if [ -n "$CHALLENGE_LINE" ]; then
+    CHALLENGE=$(echo "$CHALLENGE_LINE" | cut -d'"' -f4)
+  fi
+
+  if [ -z "$CSRF_TOKEN" ] || [ -z "$CHALLENGE" ]; then
+    echo -e "${RED}错误: 无法从登录页面获取CSRF token或challenge${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Build login payload
+  local SIGNIN_URL="${BASE_URL}/oauth2/signin"
+  local LOGIN_PAYLOAD=$(cat <<EOF
+{
+  "_csrf": "$CSRF_TOKEN",
+  "challenge": "$CHALLENGE",
+  "account": "$ADMIN_USER",
+  "password": "$ENCRYPTED_LOGIN_PASSWORD",
+  "vcode": {"id": "", "content": ""},
+  "dualfactorauthinfo": {"validcode": {"vcode": ""}, "OTP": {"OTP": ""}},
+  "remember": false,
+  "device": {"name": "", "description": "", "client_type": "console_web", "udids": []}
+}
+EOF
+  )
+
+  # Send login request
+  local SIGNIN_RESPONSE=$(curl -s -k -XPOST \
+    -H "Content-Type: application/json" \
+    -b "/tmp/session_cookies_${temp_suffix}.txt" \
+    -c "/tmp/session_cookies_after_signin_${temp_suffix}.txt" \
+    "$SIGNIN_URL" \
+    -d "$LOGIN_PAYLOAD")
+
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}错误: admin 登录请求发送失败${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Validate login response
+  local REDIRECT_URL=$(echo "$SIGNIN_RESPONSE" | grep -oP '"redirect"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4 | sed 's/\\//g')
+
+  if [ -z "$REDIRECT_URL" ]; then
+    echo -e "${RED}错误: admin 登录失败，响应内容: $SIGNIN_RESPONSE${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Follow redirect to complete login
+  local REDIRECT_RESPONSE=$(curl -s -k -L GET \
+    -b "/tmp/session_cookies_after_signin_${temp_suffix}.txt" \
+    -c "/tmp/final_cookies_${temp_suffix}.txt" \
+    "$REDIRECT_URL")
+
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}错误: admin 重定向URL访问失败${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Find token in cookie file
+  local ADMIN_TOKEN=$(awk '$6 ~ /studio\.oauth2_token/ {print $7}' "/tmp/final_cookies_${temp_suffix}.txt" 2>/dev/null | head -1)
+
+  if [ -z "$ADMIN_TOKEN" ]; then
+    # If not found, try extracting from response headers
+    local RESPONSE_WITH_HEADERS=$(curl -s -k -D - -L \
+      -b "/tmp/session_cookies_after_signin_${temp_suffix}.txt" \
+      -c "/tmp/final_cookies_v2_${temp_suffix}.txt" \
+      "$REDIRECT_URL")
+
+    # Extract Set-Cookie from headers
+    ADMIN_TOKEN=$(echo "$RESPONSE_WITH_HEADERS" | grep -i 'Set-Cookie:' | grep 'studio.oauth2_token' | grep -oP 'studio\.oauth2_token=\K[^;]*' | head -1)
+    # Still not found? Try the v2 cookie file
+    if [ -z "$ADMIN_TOKEN" ]; then
+      ADMIN_TOKEN=$(awk '$6 ~ /studio\.oauth2_token/ {print $7}' "/tmp/final_cookies_v2_${temp_suffix}.txt" 2>/dev/null | head -1)
+    fi
+  fi
+
+  if [ -z "$ADMIN_TOKEN" ]; then
+    echo -e "${RED}错误: 无法从cookie中提取 admin token${NC}"
+    rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt" "/tmp/final_cookies_v2_${temp_suffix}.txt"
+    return 1
+  fi
+
+  # Cleanup temp files
+  rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt" "/tmp/final_cookies_v2_${temp_suffix}.txt"
+
+  # Export admin token
+  export ADMIN_TOKEN="$ADMIN_TOKEN"
+  return 0
+}
+
 check_model_config() {
   echo -e "${YELLOW}检查模型配置（大模型、向量模型）...${NC}"
+  
+  # Get admin token for model API access
+  if ! get_admin_token; then
+    echo -e "${RED}错误: 无法获取 admin token，跳过模型配置检查${NC}"
+    return 1
+  fi
+
   local resp
   resp=$(curl -s -k -X GET \
     "${BASE_URL}/api/mf-model-manager/v1/small-model/list?page=1&size=100&order=desc&rule=update_time&model_name=" \
-    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "Content-Type: application/json" 2>/dev/null)
+  
+  if [ $? -ne 0 ] || [ -z "$resp" ]; then
+    echo -e "${RED}错误: 无法访问模型接口${NC}"
+    return 1
+  fi
+
   local has_llm has_embed
   has_llm=$(echo "$resp" | grep -o '"model_type":"llm"' | head -1)
   has_embed=$(echo "$resp" | grep -o '"model_type":"embedding"' | head -1)
@@ -747,11 +906,20 @@ prepare_supply_chain_kn_json() {
     echo -e "${RED}错误: 需要 jq 命令来替换供应链知识网络中的 data_view 与 model_id，请安装 jq${NC}"
     return 1
   fi
+  
+  # Ensure admin token is available for model API access
+  if [[ -z "${ADMIN_TOKEN:-}" ]]; then
+    if ! get_admin_token; then
+      echo -e "${RED}错误: 无法获取 admin token，无法替换供应链知识网络${NC}"
+      return 1
+    fi
+  fi
+  
   echo -e "${YELLOW}  获取数据视图列表...${NC}"
   local dv_resp
   dv_resp=$(curl -s -k -X GET \
     "${BASE_URL}/api/mdl-data-model/v1/data-views?sort=update_time&direction=desc&offset=0&limit=100" \
-    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "Content-Type: application/json" 2>/dev/null)
   local dv_map
   dv_map=$(echo "$dv_resp" | jq -r '[.entries[]? | select((.technical_name // .name) != null and .id != null) | {key: (.technical_name // .name), value: .id}] | from_entries' 2>/dev/null)
@@ -763,7 +931,7 @@ prepare_supply_chain_kn_json() {
   local model_resp
   model_resp=$(curl -s -k -X GET \
     "${BASE_URL}/api/mf-model-manager/v1/small-model/list?page=1&size=100&order=desc&rule=update_time&model_name=" \
-    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "Content-Type: application/json" 2>/dev/null)
   local embedding_model_id
   embedding_model_id=$(echo "$model_resp" | jq -r '.data[]? | select(.model_type == "embedding") | .model_id' 2>/dev/null | head -1)
