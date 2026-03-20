@@ -102,7 +102,7 @@ kubectl get pods -A
 
 ### AI Agent Skills
 
-Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills). Badges: [![skills.sh kweaver-core](https://img.shields.io/badge/kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
+Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills).
 
 **Install both skills at once** (recommended):
 
