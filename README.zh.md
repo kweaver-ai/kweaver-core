@@ -8,7 +8,7 @@
 
 中文 | [English](README.md)
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
 KWeaver 是一个构建、发布、运行决策智能型 AI 应用的开源生态。此生态采用业务知识网络（Business Knowledge Network）作为核心方法论，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每一员的生产力。
 
@@ -99,22 +99,32 @@ kubectl get pods -A
 
 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
 
-### AI Agent Skill
+### AI Agent Skills
 
-`kweaver-core` skill 让 AI 编程助手完整掌握 KWeaver 的 API 和 CLI 用法，可代替用户自主操作 KWeaver 平台。
+从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。徽章：[![skills.sh kweaver-core](https://img.shields.io/badge/kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
+
+**`kweaver-core`** — 让 AI 编程助手掌握 KWeaver 的 API 与 CLI，可代替用户操作 KWeaver 平台。
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 ```
 
-**使用 skill 前**，需先完成 KWeaver 实例认证：
+更多说明见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md)。
+
+**`create-bkn`** — 在 AI 编程助手中创建与管理**业务知识网络（BKN）**的流程与工具。
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill create-bkn
+```
+
+更多说明见 [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md)。
+
+**使用任意 skill 前**，需先完成 KWeaver 实例认证：
 
 ```bash
 npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
-
-更多说明见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md)。
 
 ### CLI
 

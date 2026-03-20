@@ -8,7 +8,7 @@
 
 [中文](README.zh.md) | English
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
 KWeaver is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts business knowledge network (Business Knowledge Network) as its core methodology, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
 
@@ -100,22 +100,32 @@ kubectl get pods -A
 
 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) gives AI agents (Claude Code, GPT, custom agents, etc.) access to KWeaver knowledge networks and Decision Agents via the `kweaver` CLI. It also provides Python and TypeScript SDKs for programmatic integration.
 
-### AI Agent Skill
+### AI Agent Skills
 
-The `kweaver-core` skill equips AI coding assistants with full knowledge of KWeaver's APIs and CLI conventions, so they can autonomously operate KWeaver on your behalf.
+Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills). Badges: [![skills.sh kweaver-core](https://img.shields.io/badge/kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
+
+**`kweaver-core`** — full KWeaver APIs and CLI conventions so assistants can operate KWeaver on your behalf.
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 ```
 
-**Before using the skill**, authenticate with your KWeaver instance:
+See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md).
+
+**`create-bkn`** — guided workflow and tooling to create and manage **Business Knowledge Networks (BKN)** from your AI coding assistant.
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill create-bkn
+```
+
+See [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md).
+
+**Before using any skill**, authenticate with your KWeaver instance:
 
 ```bash
 npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
-
-See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md) for details.
 
 ### CLI
 
