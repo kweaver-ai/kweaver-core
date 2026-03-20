@@ -1085,12 +1085,17 @@ import_knowledge_network() {
     cp "$KNOWLEDGE_NETWORK_FILE" "$backup_file"
     echo -e "${YELLOW}  已备份原文件到: ${backup_file}${NC}"
     
-    if prepare_supply_chain_kn_json "$KNOWLEDGE_NETWORK_FILE" "$KNOWLEDGE_NETWORK_FILE"; then
+    # 使用临时文件进行替换，然后替换原文件
+    local tmp_kn="/tmp/kn_supply_chain_${temp_suffix}.json"
+    if prepare_supply_chain_kn_json "$KNOWLEDGE_NETWORK_FILE" "$tmp_kn"; then
+      # 替换成功，将临时文件内容复制到原文件
+      mv "$tmp_kn" "$KNOWLEDGE_NETWORK_FILE"
       echo -e "${GREEN}  ✓ 已更新文件: ${KNOWLEDGE_NETWORK_FILE}${NC}"
-      # 备份文件保留，用户可以查看对比
+      echo -e "${YELLOW}  备份文件: ${backup_file}（可对比查看）${NC}"
     else
       echo -e "${RED}  错误: 供应链知识网络替换失败，已恢复原文件${NC}"
       mv "$backup_file" "$KNOWLEDGE_NETWORK_FILE"
+      rm -f "$tmp_kn"
       return 1
     fi
   fi
