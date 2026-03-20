@@ -8,7 +8,7 @@ generate_config_yaml() {
     # Count password lines that have a real value (not empty '' or "").
     if [[ -f "${out}" ]]; then
         local filled
-        filled=$(grep 'password:' "${out}" 2>/dev/null | grep -cv "password: *'*'* *$")
+        filled=$(grep 'password:' "${out}" 2>/dev/null | grep -cv "password: *'*'* *$" || true)
         if [[ "${filled}" -gt 0 ]]; then
             log_info "Passwords already present in config.yaml, skipping regeneration."
             return 0
