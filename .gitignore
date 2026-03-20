@@ -2,5 +2,5 @@
 /kw-studio/coverage
 /kw-studio/build
 /kw-studio/report
-
+/deploy/auto_cofig/ref
 .DS_Store
