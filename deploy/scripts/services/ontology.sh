@@ -1,6 +1,7 @@
 
 # Ontology releases list (format: release_name:version, empty version means use default)
 declare -a ONTOLOGY_RELEASES=(
+    "vega-backend:"
     "bkn-backend:"
     "ontology-query:"
     "vega-web:"
