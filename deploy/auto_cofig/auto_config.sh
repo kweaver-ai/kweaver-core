@@ -266,6 +266,87 @@ fi
 
 BUSINESS_DOMAIN="bd_public"
 
+# 执行前检查：数据导入状态、模型配置
+check_data_import() {
+  echo -e "${YELLOW}检查数据导入状态...${NC}"
+  local ns="${NAMESPACE_DEMO:-demo}"
+  local pod_name
+  pod_name=$(kubectl get pod -n "${ns}" -l "app.kubernetes.io/instance=demo-mariadb" --no-headers 2>/dev/null | awk 'NR==1{print $1}')
+  if [[ -z "${pod_name}" ]]; then
+    pod_name=$(kubectl get pod -n "${ns}" -l "app=mariadb" --no-headers 2>/dev/null | awk 'NR==1{print $1}')
+  fi
+  if [[ -z "${pod_name}" ]]; then
+    echo -e "${RED}错误: 未在 ${ns} 命名空间找到 MariaDB Pod${NC}"
+    echo "请先运行 setup_tem_db.sh 完成数据导入。"
+    return 1
+  fi
+  local db_user="${DS_USERNAME:-adp}"
+  local db_pass="${DS_PASSWORD:-}"
+  if [[ -z "${db_pass}" ]]; then
+    echo -e "${RED}错误: 未设置 DS_PASSWORD，无法连接数据库校验${NC}"
+    return 1
+  fi
+  local db_cli
+  db_cli=$(kubectl exec -n "${ns}" "${pod_name}" -- sh -lc 'command -v mariadb 2>/dev/null || command -v mysql 2>/dev/null' 2>/dev/null || true)
+  if [[ -z "${db_cli}" ]]; then
+    echo -e "${RED}错误: Pod 内未找到 mariadb/mysql 客户端${NC}"
+    return 1
+  fi
+  local tem_exists
+  tem_exists=$(kubectl exec -n "${ns}" "${pod_name}" -- sh -lc \
+    "${db_cli} -u '${db_user}' -p'${db_pass}' -N -e \"SHOW DATABASES LIKE 'tem';\" 2>/dev/null | grep -x tem" 2>/dev/null || true)
+  if [[ -z "${tem_exists}" ]]; then
+    echo -e "${RED}错误: 数据库 tem 不存在${NC}"
+    echo "请先运行 setup_tem_db.sh 完成数据导入。"
+    return 1
+  fi
+  local table_count
+  table_count=$(kubectl exec -n "${ns}" "${pod_name}" -- sh -lc \
+    "${db_cli} -u '${db_user}' -p'${db_pass}' -N -e \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='tem';\" 2>/dev/null" 2>/dev/null || true)
+  if [[ -z "${table_count}" ]] || [[ "${table_count}" -eq 0 ]]; then
+    echo -e "${RED}错误: tem 数据库表数量为 0，数据导入可能失败${NC}"
+    echo "请先运行 setup_tem_db.sh 完成数据导入。"
+    return 1
+  fi
+  echo -e "${GREEN}✓ 数据导入检查通过（tem 表数量: ${table_count}）${NC}"
+  return 0
+}
+
+check_model_config() {
+  echo -e "${YELLOW}检查模型配置（大模型、向量模型）...${NC}"
+  local resp
+  resp=$(curl -s -k -X GET \
+    "${BASE_URL}/api/mf-model-manager/v1/small-model/list?page=1&size=100&order=desc&rule=update_time&model_name=" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" 2>/dev/null)
+  local has_llm has_embed
+  has_llm=$(echo "$resp" | grep -o '"model_type":"llm"' | head -1)
+  has_embed=$(echo "$resp" | grep -o '"model_type":"embedding"' | head -1)
+  if [[ -z "${has_llm}" ]]; then
+    echo -e "${RED}错误: 未配置大模型（model_type=llm）${NC}"
+    echo "请在控制台/Studio 中先添加大模型。"
+    return 1
+  fi
+  if [[ -z "${has_embed}" ]]; then
+    echo -e "${RED}错误: 未配置向量模型（model_type=embedding）${NC}"
+    echo "请在控制台/Studio 中先添加向量模型。"
+    return 1
+  fi
+  echo -e "${GREEN}✓ 模型配置检查通过（大模型、向量模型已配置）${NC}"
+  return 0
+}
+
+# 执行前必须通过的检查
+run_pre_checks() {
+  check_data_import || exit 1
+  get_token || exit 1
+  if [[ -f "/tmp/token_$$.env" ]]; then
+    # shellcheck disable=SC1090
+    . "/tmp/token_$$.env"
+  fi
+  check_model_config || exit 1
+}
+
 echo -e "${GREEN}开始自动配置环境...${NC}"
 echo "IP地址: $IP_ADDRESS (自动获取)"
 echo "用户名: $USERNAME"
@@ -273,6 +354,9 @@ echo "Agent文件: $AGENT_FILE"
 echo "知识网络文件: $KNOWLEDGE_NETWORK_FILE"
 echo "数据流文件: $DATAFLOW_FILE"
 echo ""
+
+# 执行前检查（数据导入、模型配置）并获取 token
+run_pre_checks
 
 # Get token
 get_token() {
@@ -594,6 +678,77 @@ EOF
   fi
 }
 
+# 供应链业务知识网络：用 data_view id 与 embedding model_id 替换 JSON 后再导入
+prepare_supply_chain_kn_json() {
+  local src_file="$1"
+  local out_file="$2"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo -e "${RED}错误: 需要 jq 命令来替换供应链知识网络中的 data_view 与 model_id，请安装 jq${NC}"
+    return 1
+  fi
+  echo -e "${YELLOW}  获取数据视图列表...${NC}"
+  local dv_resp
+  dv_resp=$(curl -s -k -X GET \
+    "${BASE_URL}/api/mdl-data-model/v1/data-views?sort=update_time&direction=desc&offset=0&limit=100" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" 2>/dev/null)
+  local dv_map
+  dv_map=$(echo "$dv_resp" | jq -r '[.entries[]? | select((.technical_name // .name) != null and .id != null) | {key: (.technical_name // .name), value: .id}] | from_entries' 2>/dev/null)
+  if [[ -z "$dv_map" || "$dv_map" == "null" ]]; then
+    echo -e "${RED}错误: 无法获取数据视图列表或列表为空${NC}"
+    return 1
+  fi
+  echo -e "${YELLOW}  获取向量模型 ID...${NC}"
+  local model_resp
+  model_resp=$(curl -s -k -X GET \
+    "${BASE_URL}/api/mf-model-manager/v1/small-model/list?page=1&size=100&order=desc&rule=update_time&model_name=" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" 2>/dev/null)
+  local embedding_model_id
+  embedding_model_id=$(echo "$model_resp" | jq -r '.data[]? | select(.model_type == "embedding") | .model_id' 2>/dev/null | head -1)
+  if [[ -z "$embedding_model_id" || "$embedding_model_id" == "null" ]]; then
+    echo -e "${YELLOW}  警告: 未找到 embedding 模型，将保留原 vector_config.model_id${NC}"
+    embedding_model_id=""
+  fi
+  echo -e "${YELLOW}  替换 JSON 中的 data_view id 与 vector model_id...${NC}"
+  local jq_script
+  if [[ -n "$embedding_model_id" ]]; then
+    jq_script='
+      .object_types |= map(
+        (if .data_source and .data_source.type == "data_view" and .data_source.name and ($dv_map[.data_source.name] != null) then .data_source.id = $dv_map[.data_source.name] else . end) |
+        (.data_properties |= map(
+          if .index_config and .index_config.vector_config and .index_config.vector_config.enabled == true then
+            .index_config.vector_config.model_id = $embed_id
+          else . end
+        ))
+      ) |
+      .relation_types |= map(
+        if .mapping_rules and .mapping_rules.backing_data_source and .mapping_rules.backing_data_source.name and ($dv_map[.mapping_rules.backing_data_source.name] != null) then
+          .mapping_rules.backing_data_source.id = $dv_map[.mapping_rules.backing_data_source.name]
+        else . end
+      )
+    '
+    jq --argjson dv_map "$dv_map" --arg embed_id "$embedding_model_id" "$jq_script" "$src_file" > "$out_file" 2>/dev/null
+  else
+    jq_script='
+      .object_types |= map(
+        if .data_source and .data_source.type == "data_view" and .data_source.name and ($dv_map[.data_source.name] != null) then .data_source.id = $dv_map[.data_source.name] else . end
+      ) |
+      .relation_types |= map(
+        if .mapping_rules and .mapping_rules.backing_data_source and .mapping_rules.backing_data_source.name and ($dv_map[.mapping_rules.backing_data_source.name] != null) then
+          .mapping_rules.backing_data_source.id = $dv_map[.mapping_rules.backing_data_source.name]
+        else . end
+      )
+    '
+    jq --argjson dv_map "$dv_map" "$jq_script" "$src_file" > "$out_file" 2>/dev/null
+  fi
+  if [[ $? -ne 0 || ! -s "$out_file" ]]; then
+    echo -e "${RED}错误: jq 替换失败${NC}"
+    return 1
+  fi
+  return 0
+}
+
 # Import business knowledge network
 import_knowledge_network() {
   local temp_suffix=$$
@@ -608,13 +763,27 @@ import_knowledge_network() {
   # Ensure token exists
   ensure_token_exists || return 1
 
+  local kn_file_to_import="$KNOWLEDGE_NETWORK_FILE"
+  local kn_basename
+  kn_basename=$(basename "$KNOWLEDGE_NETWORK_FILE")
+  if [[ "$kn_basename" == "供应链业务知识网络.json" ]]; then
+    local tmp_kn="/tmp/kn_supply_chain_${temp_suffix}.json"
+    if prepare_supply_chain_kn_json "$KNOWLEDGE_NETWORK_FILE" "$tmp_kn"; then
+      kn_file_to_import="$tmp_kn"
+    else
+      echo -e "${YELLOW}  警告: 供应链知识网络替换失败，将使用原文件导入${NC}"
+    fi
+  fi
+
   # Import knowledge network (submit the JSON payload directly via API)
   local KN_RESPONSE=$(curl -s -k -X POST \
     "${BASE_URL}/api/ontology-manager/v1/knowledge-networks?validate_dependency=false" \
     -H "Content-Type: application/json" \
     -H "x-business-domain: ${BUSINESS_DOMAIN}" \
     -H "Authorization: Bearer ${TOKEN}" \
-    --data-binary "@${KNOWLEDGE_NETWORK_FILE}")
+    --data-binary "@${kn_file_to_import}")
+
+  [[ "$kn_file_to_import" != "$KNOWLEDGE_NETWORK_FILE" ]] && rm -f "$kn_file_to_import" 2>/dev/null
 
   local KN_ID=$(echo $KN_RESPONSE | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
   if [ -z "$KN_ID" ]; then
@@ -844,7 +1013,7 @@ if [ "$STEP_MODE" = true ]; then
   # Step mode
   case $STEP_NUMBER in
     1)
-      get_token
+      echo -e "${GREEN}Token 已在预检查中获取${NC}"
       ;;
     2)
       create_datasource
@@ -879,12 +1048,11 @@ if [ "$STEP_MODE" = true ]; then
 else
   # Run-all mode
   echo "执行全部步骤..."
+  # Token 已在 run_pre_checks 中获取
 
-  # 1. Get token
-  if get_token; then
-    DATASOURCE_SUCCESS=0
+  DATASOURCE_SUCCESS=0
 
-    # 2. Create datasource
+  # 2. Create datasource
     if create_datasource; then
       DATASOURCE_SUCCESS=1
     else
@@ -964,10 +1132,6 @@ else
     else
       echo -e "${YELLOW}⚠ 未指定MCP文件，跳过导入MCP${NC}"
     fi
-  else
-    echo -e "${RED}获取token失败，终止执行${NC}"
-    exit 1
-  fi
 fi
 
 # Cleanup temp files
