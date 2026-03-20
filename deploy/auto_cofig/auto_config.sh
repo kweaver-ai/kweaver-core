@@ -135,21 +135,49 @@ if [ -f "$DS_CONFIG_FILE" ]; then
   . "$DS_CONFIG_FILE"
 fi
 
-# Detect local IP
-echo -e "${YELLOW}正在获取本机IP地址...${NC}"
+# Get IP address from config.yaml (accessAddress.host), fallback to config.env or auto-detect
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONF_YAML="${ROOT_DIR}/conf/config.yaml"
+
+echo -e "${YELLOW}正在获取KWeaver访问地址...${NC}"
 if [ -n "$IP_ADDRESS" ]; then
   echo "使用环境变量中的IP地址: $IP_ADDRESS"
-else
+elif [ -f "$CONF_YAML" ]; then
+  # Try to read from config.yaml accessAddress.host
+  IP_ADDRESS=$(awk '
+    BEGIN { in_access=0 }
+    /^[[:space:]]*accessAddress:[[:space:]]*$/ { in_access=1; next }
+    in_access && /^[[:space:]]{2}host:[[:space:]]*/ {
+      line=$0
+      sub("^[[:space:]]{2}host:[[:space:]]*", "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      gsub(/^'\''|'\''$/, "", line)
+      gsub(/^"|"$/, "", line)
+      if (line != "" && line != "null") {
+        print line
+        exit
+      }
+    }
+    in_access && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*/ && $1 !~ /^host:$/ { }
+  ' "$CONF_YAML" 2>/dev/null)
+  if [ -n "$IP_ADDRESS" ]; then
+    echo "从 config.yaml (accessAddress.host) 读取IP地址: $IP_ADDRESS"
+  fi
+fi
+
+# Fallback to auto-detect if not found
+if [ -z "$IP_ADDRESS" ]; then
   IP_ADDRESS=$(ip route get 8.8.8.8 2>/dev/null | grep -oP 'src \K\S+' | head -1)
   if [ -z "$IP_ADDRESS" ]; then
     IP_ADDRESS=$(hostname -I | awk '{print $1}' 2>/dev/null)
   fi
   if [ -z "$IP_ADDRESS" ]; then
-    echo -e "${RED}错误: 无法自动获取本机IP地址${NC}"
-    echo "提示: 可以通过设置环境变量 IP_ADDRESS 来指定IP地址"
-    echo "例如: export IP_ADDRESS=192.168.1.100"
+    echo -e "${RED}错误: 无法获取KWeaver访问地址${NC}"
+    echo "提示: 请在 deploy/conf/config.yaml 中设置 accessAddress.host，或设置环境变量 IP_ADDRESS"
+    echo "例如: export IP_ADDRESS=43.129.210.161"
     exit 1
   fi
+  echo "自动检测到IP地址: $IP_ADDRESS"
 fi
 
 BASE_URL="https://${IP_ADDRESS}"
