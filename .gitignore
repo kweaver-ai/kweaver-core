@@ -4,3 +4,5 @@
 /kw-studio/report
 /deploy/auto_cofig/ref
 .DS_Store
+# 配置文件（包含密码，不应提交）
+deploy/auto_cofig/config.env
