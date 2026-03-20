@@ -96,6 +96,12 @@ install_isf() {
     log_info "  Version: ${HELM_CHART_VERSION}"
     log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 
+    # ISF services may require longer timeout for image pulls, DB init, and dependency waits
+    # Use ISF-specific timeout if set, otherwise default to 600s (10 min) for install, 900s (15 min) for command
+    export HELM_INSTALL_TIMEOUT="${ISF_HELM_TIMEOUT:-${HELM_INSTALL_TIMEOUT:-600s}}"
+    export HELM_COMMAND_TIMEOUT="${ISF_COMMAND_TIMEOUT:-${HELM_COMMAND_TIMEOUT:-900}}"
+    log_info "  Using timeout: helm=${HELM_INSTALL_TIMEOUT}, command=${HELM_COMMAND_TIMEOUT}s"
+
     # Get namespace from config.yaml
     local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
     namespace="${namespace:-kweaver-ai}"

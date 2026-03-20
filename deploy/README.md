@@ -286,6 +286,36 @@ curl -I https://swr.cn-east-3.myhuaweicloud.com
 cat /etc/containerd/config.toml
 ```
 
+### Helm install timeout (context deadline exceeded)
+
+If you see errors like `UPGRADE FAILED: context deadline exceeded` when installing services (especially ISF services like `sharemgnt-single`), the default timeout may be too short for slow networks or large images.
+
+**Solution:** Increase timeout via environment variables before running deploy:
+
+```bash
+# For ISF services (default: 600s helm, 900s command)
+export ISF_HELM_TIMEOUT=900s
+export ISF_COMMAND_TIMEOUT=1200
+sudo bash ./deploy.sh isf init
+
+# For all services (global override)
+export HELM_INSTALL_TIMEOUT=600s
+export HELM_COMMAND_TIMEOUT=900
+sudo bash ./deploy.sh kweaver init
+
+# For Kafka (already has longer default: 1800s)
+export KAFKA_HELM_TIMEOUT=2400s
+sudo bash ./deploy.sh kafka init
+```
+
+**Diagnosis:**
+```bash
+# Check Pod status and events
+kubectl get pods -n <namespace> | grep <service-name>
+kubectl describe pod -n <namespace> <pod-name>
+kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
+```
+
 ### Kubernetes apt source 404 (Ubuntu/Debian)
 
 If `apt update` fails with a 404 for the legacy `packages.cloud.google.com` repository:

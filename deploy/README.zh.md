@@ -290,6 +290,36 @@ curl -I https://swr.cn-east-3.myhuaweicloud.com
 cat /etc/containerd/config.toml
 ```
 
+### Helm 安装超时（context deadline exceeded）
+
+如果安装服务（特别是 ISF 服务如 `sharemgnt-single`）时出现 `UPGRADE FAILED: context deadline exceeded` 错误，默认超时时间可能对慢速网络或大镜像来说太短。
+
+**解决方案：** 在运行部署前通过环境变量增加超时时间：
+
+```bash
+# ISF 服务专用（默认：helm 600s，command 900s）
+export ISF_HELM_TIMEOUT=900s
+export ISF_COMMAND_TIMEOUT=1200
+sudo bash ./deploy.sh isf init
+
+# 全局覆盖（所有服务）
+export HELM_INSTALL_TIMEOUT=600s
+export HELM_COMMAND_TIMEOUT=900
+sudo bash ./deploy.sh kweaver init
+
+# Kafka（已有更长默认值：1800s）
+export KAFKA_HELM_TIMEOUT=2400s
+sudo bash ./deploy.sh kafka init
+```
+
+**诊断：**
+```bash
+# 检查 Pod 状态和事件
+kubectl get pods -n <namespace> | grep <service-name>
+kubectl describe pod -n <namespace> <pod-name>
+kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
+```
+
 ### Kubernetes apt 源 404（Ubuntu/Debian）
 
 如果 `apt update` 报错，提示旧的 `packages.cloud.google.com` 仓库 404：
