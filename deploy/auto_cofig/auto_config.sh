@@ -701,7 +701,14 @@ check_model_config() {
     local model_types=$(echo "$resp" | jq -r '.data[]?.model_type' 2>/dev/null | sort -u | tr '\n' ' ')
     if [ -n "$model_types" ]; then
       echo -e "${YELLOW}  检测到的模型类型: ${model_types}${NC}"
+    else
+      local total=$(echo "$resp" | jq -r '.total // .data | length' 2>/dev/null)
+      echo -e "${YELLOW}  模型列表总数: ${total:-0}${NC}"
     fi
+  else
+    # Fallback: use grep to find model_type
+    local model_count=$(echo "$resp" | grep -o '"model_type"' | wc -l)
+    echo -e "${YELLOW}  响应中包含 ${model_count} 个模型类型字段${NC}"
   fi
 
   local has_llm has_embed
