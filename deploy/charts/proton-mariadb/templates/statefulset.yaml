@@ -101,6 +101,11 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if not .Values.mariadb.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- end }}
   {{- if .Values.mariadb.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
@@ -114,10 +119,4 @@ spec:
         resources:
           requests:
             storage: {{ .Values.mariadb.persistence.size }}
-  {{- else }}
-  template:
-    spec:
-      volumes:
-        - name: data
-          emptyDir: {}
   {{- end }}
