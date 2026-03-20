@@ -135,31 +135,41 @@ if [ -f "$DS_CONFIG_FILE" ]; then
   . "$DS_CONFIG_FILE"
 fi
 
-# Get IP address from config.yaml (accessAddress.host), fallback to config.env or auto-detect
+# Get configuration from config.yaml, fallback to config.env or auto-detect
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONF_YAML="${ROOT_DIR}/conf/config.yaml"
 
+# Helper function to read YAML value
+read_yaml_value() {
+  local section="$1"
+  local key="$2"
+  local indent="$3"
+  if [ -f "$CONF_YAML" ]; then
+    awk -v section="$section" -v key="$key" -v indent="$indent" '
+      BEGIN { in_section=0 }
+      $0 ~ "^[[:space:]]*" section ":[[:space:]]*$" { in_section=1; next }
+      in_section && $0 ~ "^" indent key ":[[:space:]]*" {
+        line=$0
+        sub("^" indent key ":[[:space:]]*", "", line)
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+        gsub(/^'\''|'\''$/, "", line)
+        gsub(/^"|"$/, "", line)
+        if (line != "" && line != "null") {
+          print line
+          exit
+        }
+      }
+      in_section && $0 ~ "^[[:space:]]{0," (length(indent)-1) "}[a-zA-Z0-9_-]+:[[:space:]]*" && $0 !~ "^" indent key ":" { in_section=0 }
+    ' "$CONF_YAML" 2>/dev/null
+  fi
+}
+
+# Get IP_ADDRESS: env/config.env > config.yaml (accessAddress.host) > auto-detect
 echo -e "${YELLOW}正在获取KWeaver访问地址...${NC}"
 if [ -n "$IP_ADDRESS" ]; then
-  echo "使用环境变量中的IP地址: $IP_ADDRESS"
+  echo "使用环境变量/config.env 中的IP地址: $IP_ADDRESS"
 elif [ -f "$CONF_YAML" ]; then
-  # Try to read from config.yaml accessAddress.host
-  IP_ADDRESS=$(awk '
-    BEGIN { in_access=0 }
-    /^[[:space:]]*accessAddress:[[:space:]]*$/ { in_access=1; next }
-    in_access && /^[[:space:]]{2}host:[[:space:]]*/ {
-      line=$0
-      sub("^[[:space:]]{2}host:[[:space:]]*", "", line)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-      gsub(/^'\''|'\''$/, "", line)
-      gsub(/^"|"$/, "", line)
-      if (line != "" && line != "null") {
-        print line
-        exit
-      }
-    }
-    in_access && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*/ && $1 !~ /^host:$/ { }
-  ' "$CONF_YAML" 2>/dev/null)
+  IP_ADDRESS=$(read_yaml_value "accessAddress" "host" "[[:space:]]{2}")
   if [ -n "$IP_ADDRESS" ]; then
     echo "从 config.yaml (accessAddress.host) 读取IP地址: $IP_ADDRESS"
   fi
@@ -182,52 +192,21 @@ fi
 
 BASE_URL="https://${IP_ADDRESS}"
 
-# Get DS_HOST from config.yaml (datasource.host or depServices.rds.host), fallback to config.env
+# Get DS_HOST: env/config.env > config.yaml (datasource.host) > config.yaml (depServices.rds.host) > default
 echo -e "${YELLOW}正在获取数据源地址...${NC}"
 if [ -n "$DS_HOST" ]; then
   echo "使用环境变量/config.env 中的数据源地址: $DS_HOST"
 elif [ -f "$CONF_YAML" ]; then
-  # Try to read from config.yaml datasource.host first
-  DS_HOST=$(awk '
-    BEGIN { in_datasource=0 }
-    /^[[:space:]]*datasource:[[:space:]]*$/ { in_datasource=1; next }
-    in_datasource && /^[[:space:]]{2}host:[[:space:]]*/ {
-      line=$0
-      sub("^[[:space:]]{2}host:[[:space:]]*", "", line)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-      gsub(/^'\''|'\''$/, "", line)
-      gsub(/^"|"$/, "", line)
-      if (line != "" && line != "null") {
-        print line
-        exit
-      }
-    }
-    in_datasource && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*/ && $1 !~ /^host:$/ { }
-  ' "$CONF_YAML" 2>/dev/null)
-  
-  # If not found, try depServices.rds.host as fallback
-  if [ -z "$DS_HOST" ]; then
-    DS_HOST=$(awk '
-      BEGIN { in_rds=0 }
-      /^[[:space:]]*rds:[[:space:]]*$/ { in_rds=1; next }
-      in_rds && /^[[:space:]]{4}host:[[:space:]]*$/ { next }
-      in_rds && /^[[:space:]]{4}host:[[:space:]]*/ {
-        line=$0
-        sub("^[[:space:]]{4}host:[[:space:]]*", "", line)
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-        gsub(/^'\''|'\''$/, "", line)
-        gsub(/^"|"$/, "", line)
-        if (line != "" && line != "null") {
-          print line
-          exit
-        }
-      }
-      in_rds && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*/ && $1 !~ /^rds:$/ { in_rds=0 }
-    ' "$CONF_YAML" 2>/dev/null)
-  fi
-  
+  # Try datasource.host first
+  DS_HOST=$(read_yaml_value "datasource" "host" "[[:space:]]{2}")
   if [ -n "$DS_HOST" ]; then
-    echo "从 config.yaml 读取数据源地址: $DS_HOST"
+    echo "从 config.yaml (datasource.host) 读取数据源地址: $DS_HOST"
+  else
+    # Fallback to depServices.rds.host
+    DS_HOST=$(read_yaml_value "rds" "host" "[[:space:]]{4}")
+    if [ -n "$DS_HOST" ]; then
+      echo "从 config.yaml (depServices.rds.host) 读取数据源地址: $DS_HOST"
+    fi
   fi
 fi
 
