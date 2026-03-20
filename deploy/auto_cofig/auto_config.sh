@@ -975,31 +975,35 @@ prepare_supply_chain_kn_json() {
   fi
   
   echo -e "${YELLOW}  获取数据视图列表...${NC}"
-  local dv_resp
-  dv_resp=$(curl -s -k -X GET \
-    "${BASE_URL}/api/mdl-data-model/v1/data-views?sort=update_time&direction=desc&offset=0&limit=100" \
-    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-    -H "Content-Type: application/json" 2>/dev/null)
-  
-  # Debug: check response
-  if [[ -z "$dv_resp" ]] || echo "$dv_resp" | grep -q "error\|Error\|Bad Request"; then
-    echo -e "${YELLOW}    警告: 数据视图API响应异常，前200字符: ${dv_resp:0:200}${NC}"
-  fi
-  
-  local dv_map
-  dv_map=$(echo "$dv_resp" | jq -r '[.entries[]? | select((.technical_name // .name) != null and .id != null) | {key: (.technical_name // .name), value: .id}] | from_entries' 2>/dev/null)
-  
-  # Debug: show data view names if map is empty
-  if [[ -z "$dv_map" || "$dv_map" == "null" ]]; then
-    echo -e "${YELLOW}    调试: 数据视图映射为空，检查响应结构...${NC}"
-    if command -v jq >/dev/null 2>&1; then
-      local entries_count=$(echo "$dv_resp" | jq '.entries | length' 2>/dev/null || echo "0")
-      echo -e "${YELLOW}    响应中的 entries 数量: ${entries_count}${NC}"
-      if [[ "${entries_count}" -gt 0 ]]; then
-        echo -e "${YELLOW}    前3个数据视图名称: $(echo "$dv_resp" | jq -r '.entries[0:3] | .[] | (.technical_name // .name)' 2>/dev/null | tr '\n' ' ')${NC}"
-      fi
+  local dv_resp dv_map dv_count
+  local max_retries=12
+  local retry_interval=10
+  for (( attempt=1; attempt<=max_retries; attempt++ )); do
+    dv_resp=$(curl -s -k -X GET \
+      "${BASE_URL}/api/mdl-data-model/v1/data-views?sort=update_time&direction=desc&offset=0&limit=100" \
+      -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+      -H "Content-Type: application/json" 2>/dev/null)
+
+    if [[ -z "$dv_resp" ]] || echo "$dv_resp" | grep -q "error\|Error\|Bad Request"; then
+      echo -e "${YELLOW}    警告: 数据视图API响应异常，前200字符: ${dv_resp:0:200}${NC}"
     fi
-    echo -e "${RED}错误: 无法获取数据视图列表或列表为空${NC}"
+
+    dv_map=$(echo "$dv_resp" | jq -r '[.entries[]? | select((.technical_name // .name) != null and .id != null) | {key: (.technical_name // .name), value: .id}] | from_entries' 2>/dev/null)
+    dv_count=$(echo "$dv_map" | jq 'length' 2>/dev/null || echo "0")
+
+    if [[ "$dv_count" -gt 0 ]]; then
+      echo -e "${GREEN}    ✓ 获取到 ${dv_count} 个数据视图${NC}"
+      break
+    fi
+
+    if [[ $attempt -lt $max_retries ]]; then
+      echo -e "${YELLOW}    数据视图暂未生成（扫描可能仍在进行），${retry_interval}秒后重试... (${attempt}/${max_retries})${NC}"
+      sleep $retry_interval
+    fi
+  done
+
+  if [[ "$dv_count" -le 0 ]]; then
+    echo -e "${RED}错误: 等待超时，数据视图列表仍为空（数据源扫描可能未完成）${NC}"
     return 1
   fi
   echo -e "${YELLOW}  获取向量模型 ID...${NC}"
@@ -1015,13 +1019,8 @@ prepare_supply_chain_kn_json() {
     embedding_model_id=""
   fi
   echo -e "${YELLOW}  替换 JSON 中的 data_view id 与 vector model_id...${NC}"
-  
-  # Debug: show data view map and embedding model ID
-  if command -v jq >/dev/null 2>&1; then
-    local dv_count=$(echo "$dv_map" | jq 'length' 2>/dev/null || echo "0")
-    echo -e "${YELLOW}    数据视图映射数量: ${dv_count}${NC}"
-    echo -e "${YELLOW}    向量模型ID: ${embedding_model_id:-未找到}${NC}"
-  fi
+  echo -e "${YELLOW}    数据视图映射数量: ${dv_count}${NC}"
+  echo -e "${YELLOW}    向量模型ID: ${embedding_model_id:-未找到}${NC}"
   
   local jq_script
   local jq_err_file="/tmp/jq_error_$$.txt"
@@ -1068,11 +1067,19 @@ prepare_supply_chain_kn_json() {
   fi
   rm -f "$jq_err_file"
   
-  # Verify replacement results
+  # Verify replacement results by comparing with original
   if command -v jq >/dev/null 2>&1; then
-    local replaced_count=$(jq '[.object_types[]? | select(.data_source.type == "data_view" and .data_source.id != null)] | length' "$out_file" 2>/dev/null || echo "0")
+    local dv_total=$(jq '[.object_types[]? | select(.data_source.type == "data_view")] | length' "$out_file" 2>/dev/null || echo "0")
+    local dv_matched=0
+    for dv_name in $(echo "$dv_map" | jq -r 'keys[]' 2>/dev/null); do
+      local expected_id=$(echo "$dv_map" | jq -r --arg k "$dv_name" '.[$k]' 2>/dev/null)
+      local actual_id=$(jq -r --arg name "$dv_name" '.object_types[]? | select(.data_source.name == $name) | .data_source.id' "$out_file" 2>/dev/null)
+      if [[ "$actual_id" == "$expected_id" ]]; then
+        dv_matched=$((dv_matched + 1))
+      fi
+    done
     local vector_replaced_count=$(jq '[.object_types[].data_properties[]? | select(.index_config.vector_config.enabled == true and .index_config.vector_config.model_id != "" and .index_config.vector_config.model_id != null)] | length' "$out_file" 2>/dev/null || echo "0")
-    echo -e "${GREEN}    ✓ 替换完成: 数据视图 ${replaced_count} 个, 向量模型配置 ${vector_replaced_count} 个${NC}"
+    echo -e "${GREEN}    ✓ 替换完成: 数据视图 ${dv_matched}/${dv_total} 个匹配, 向量模型配置 ${vector_replaced_count} 个${NC}"
   fi
   
   return 0
