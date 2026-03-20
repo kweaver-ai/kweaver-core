@@ -668,8 +668,7 @@ uninstall_mariadb() {
 
     # Use Helm to uninstall the release (automatically removes all managed resources)
     if helm status mariadb -n "${ns}" >/dev/null 2>&1; then
-        log_info "Removing Helm release: mariadb"
-        helm uninstall mariadb -n "${ns}"
+        helm_uninstall_safe "mariadb" "${ns}"
         log_warn "Deleting MariaDB PVCs (data loss!)"
         kubectl delete pvc -n "${ns}" -l app.kubernetes.io/instance=mariadb 2>/dev/null || true
         kubectl delete pvc -n "${ns}" -l app.kubernetes.io/name=mariadb 2>/dev/null || true

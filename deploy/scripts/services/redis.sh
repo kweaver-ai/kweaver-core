@@ -126,7 +126,7 @@ uninstall_redis() {
     local ns="${REDIS_NAMESPACE}"
     log_info "Uninstalling Redis from namespace ${ns}..."
 
-    helm uninstall redis -n "${ns}" 2>/dev/null || true
+    helm_uninstall_safe "redis" "${ns}"
     # Best-effort cleanup for old Bitnami redis chart resources (may remain if release was upgraded/failed).
     kubectl delete -n "${ns}" sts,deploy,svc,pod,cm,secret,pdb -l app.kubernetes.io/instance=redis 2>/dev/null || true
     kubectl delete deploy/redis -n "${ns}" 2>/dev/null || true

@@ -164,13 +164,7 @@ install_ingress_nginx() {
 uninstall_ingress_nginx() {
     log_info "Uninstalling ingress-nginx-controller from namespace ingress-nginx..."
 
-    # Uninstall Helm release
-    if helm status ingress-nginx -n ingress-nginx >/dev/null 2>&1; then
-        log_info "Removing Helm release: ingress-nginx"
-        helm uninstall ingress-nginx -n ingress-nginx
-    else
-        log_info "Helm release ingress-nginx not found, skipping Helm uninstall"
-    fi
+    helm_uninstall_safe "ingress-nginx" "ingress-nginx"
 
     # Delete namespace
     kubectl delete namespace ingress-nginx 2>/dev/null || true

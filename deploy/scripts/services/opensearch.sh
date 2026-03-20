@@ -169,7 +169,7 @@ EOF
 uninstall_opensearch() {
     log_info "Uninstalling OpenSearch from namespace ${OPENSEARCH_NAMESPACE}..."
 
-    helm uninstall "${OPENSEARCH_RELEASE_NAME}" -n "${OPENSEARCH_NAMESPACE}" 2>/dev/null || true
+    helm_uninstall_safe "${OPENSEARCH_RELEASE_NAME}" "${OPENSEARCH_NAMESPACE}"
 
     # Delete PVCs (this will also trigger PV deletion if reclaim policy is Delete)
     if [[ "${OPENSEARCH_PURGE_PVC}" == "true" ]]; then

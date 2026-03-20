@@ -198,7 +198,7 @@ EOF
 uninstall_zookeeper() {
     log_info "Uninstalling Zookeeper from namespace ${ZOOKEEPER_NAMESPACE}..."
 
-    helm uninstall "${ZOOKEEPER_RELEASE_NAME}" -n "${ZOOKEEPER_NAMESPACE}" 2>/dev/null || true
+    helm_uninstall_safe "${ZOOKEEPER_RELEASE_NAME}" "${ZOOKEEPER_NAMESPACE}"
 
     # Delete PVCs by default (Zookeeper PVCs are deleted on uninstall)
     if [[ "${ZOOKEEPER_PURGE_PVC}" == "true" ]]; then

@@ -131,15 +131,10 @@ uninstall_agentoperator() {
     local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
     namespace="${namespace:-kweaver-ai}"
     
-    # Uninstall in reverse order
+    # Uninstall in reverse order (with timeout protection per release)
     for ((i=${#AGENTOPERATOR_RELEASES[@]}-1; i>=0; i--)); do
         local release_name="${AGENTOPERATOR_RELEASES[$i]}"
-        log_info "Uninstalling ${release_name}..."
-        if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
-            log_info "✓ ${release_name} uninstalled successfully"
-        else
-            log_warn "⚠ ${release_name} not found or already uninstalled"
-        fi
+        helm_uninstall_safe "${release_name}" "${namespace}"
     done
     
     log_info "agentoperator services uninstallation completed"

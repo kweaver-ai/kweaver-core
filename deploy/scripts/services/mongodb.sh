@@ -516,7 +516,7 @@ install_mongodb() {
 uninstall_mongodb() {
     log_info "Uninstalling MongoDB from namespace ${MONGODB_NAMESPACE}..."
 
-    helm uninstall "${MONGODB_RELEASE_NAME}" -n "${MONGODB_NAMESPACE}" 2>/dev/null || true
+    helm_uninstall_safe "${MONGODB_RELEASE_NAME}" "${MONGODB_NAMESPACE}"
 
     # Delete PVCs by default (MongoDB PVCs are deleted on uninstall)
     log_info "Deleting MongoDB PVCs..."

@@ -164,6 +164,52 @@ helm_repo_add_with_retry() {
     return 1
 }
 
+# Uninstall a Helm release with timeout and --no-hooks fallback.
+# If normal uninstall hangs (e.g. post-delete hook stuck), retries with --no-hooks.
+# Env:
+#   HELM_UNINSTALL_TIMEOUT (default 120s, process-level timeout)
+helm_uninstall_safe() {
+    local release_name="$1"
+    local namespace="${2:-default}"
+    local cmd_timeout="${HELM_UNINSTALL_TIMEOUT:-120}"
+
+    if ! helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log_info "Uninstalling ${release_name} (timeout=${cmd_timeout}s)..."
+    set +e
+    local output
+    output="$(timeout "${cmd_timeout}" helm uninstall "${release_name}" -n "${namespace}" 2>&1)"
+    local rc=$?
+    set -e
+
+    if [[ ${rc} -eq 0 ]]; then
+        log_info "✓ ${release_name} uninstalled"
+        return 0
+    fi
+
+    if [[ ${rc} -eq 124 ]]; then
+        log_warn "✗ ${release_name} uninstall timed out after ${cmd_timeout}s, retrying with --no-hooks..."
+    else
+        log_warn "✗ ${release_name} uninstall failed (rc=${rc}), retrying with --no-hooks..."
+        echo "${output}" >&2
+    fi
+
+    set +e
+    output="$(timeout "${cmd_timeout}" helm uninstall "${release_name}" -n "${namespace}" --no-hooks 2>&1)"
+    rc=$?
+    set -e
+
+    if [[ ${rc} -eq 0 ]]; then
+        log_info "✓ ${release_name} uninstalled (--no-hooks)"
+    else
+        log_warn "✗ ${release_name} uninstall with --no-hooks also failed (rc=${rc})"
+        echo "${output}" >&2
+    fi
+    return 0
+}
+
 # Run a helm upgrade --install with retry. Retries on timeout or transient failures (e.g. GitHub Pages rate limiting).
 # Usage: helm_install_with_retry <release_name> <helm_args...>
 # Env:

@@ -275,7 +275,7 @@ EOF
 uninstall_kafka() {
     log_info "Uninstalling Kafka from namespace ${KAFKA_NAMESPACE}..."
 
-    helm uninstall "${KAFKA_RELEASE_NAME}" -n "${KAFKA_NAMESPACE}" 2>/dev/null || true
+    helm_uninstall_safe "${KAFKA_RELEASE_NAME}" "${KAFKA_NAMESPACE}"
 
     if [[ "${KAFKA_PURGE_PVC}" == "true" ]]; then
         log_info "Deleting Kafka PVCs..."
