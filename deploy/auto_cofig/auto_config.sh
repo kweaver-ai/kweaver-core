@@ -533,14 +533,14 @@ EOF
 # Get admin token for model API access
 get_admin_token() {
   local temp_suffix=$$_admin
-  echo -e "${YELLOW}使用 admin 账号获取 token（用于模型接口）...${NC}"
+  echo -e "${YELLOW}使用 admin 账号获取 token（用于模型接口）...${NC}" >&2
 
   # Load admin credentials from config
   local ADMIN_USER="${ADMIN:-admin}"
   local ADMIN_PASS="${ADMINPASS:-}"
 
   if [ -z "$ADMIN_PASS" ]; then
-    echo -e "${RED}错误: 未设置 ADMINPASS，无法使用 admin 账号登录${NC}"
+    echo -e "${RED}错误: 未设置 ADMINPASS，无法使用 admin 账号登录${NC}" >&2
     return 1
   fi
 
@@ -555,7 +555,7 @@ get_admin_token() {
   fi
 
   if [ -z "$ENCRYPTED_LOGIN_PASSWORD" ]; then
-    echo -e "${RED}错误: admin 登录密码加密失败${NC}"
+    echo -e "${RED}错误: admin 登录密码加密失败${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE"
     return 1
   fi
@@ -565,7 +565,7 @@ get_admin_token() {
   local LOGIN_PAGE_RESPONSE=$(curl -s -k -c "/tmp/session_cookies_${temp_suffix}.txt" -L "$LOGIN_PAGE_URL")
 
   if [ $? -ne 0 ]; then
-    echo -e "${RED}错误: 无法访问登录页面${NC}"
+    echo -e "${RED}错误: 无法访问登录页面${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt"
     return 1
   fi
@@ -588,7 +588,7 @@ get_admin_token() {
   fi
 
   if [ -z "$CSRF_TOKEN" ] || [ -z "$CHALLENGE" ]; then
-    echo -e "${RED}错误: 无法从登录页面获取CSRF token或challenge${NC}"
+    echo -e "${RED}错误: 无法从登录页面获取CSRF token或challenge${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt"
     return 1
   fi
@@ -618,7 +618,7 @@ EOF
     -d "$LOGIN_PAYLOAD")
 
   if [ $? -ne 0 ]; then
-    echo -e "${RED}错误: admin 登录请求发送失败${NC}"
+    echo -e "${RED}错误: admin 登录请求发送失败${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt"
     return 1
   fi
@@ -627,7 +627,7 @@ EOF
   local REDIRECT_URL=$(echo "$SIGNIN_RESPONSE" | grep -oP '"redirect"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4 | sed 's/\\//g')
 
   if [ -z "$REDIRECT_URL" ]; then
-    echo -e "${RED}错误: admin 登录失败，响应内容: $SIGNIN_RESPONSE${NC}"
+    echo -e "${RED}错误: admin 登录失败，响应内容: $SIGNIN_RESPONSE${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt"
     return 1
   fi
@@ -639,7 +639,7 @@ EOF
     "$REDIRECT_URL")
 
   if [ $? -ne 0 ]; then
-    echo -e "${RED}错误: admin 重定向URL访问失败${NC}"
+    echo -e "${RED}错误: admin 重定向URL访问失败${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt"
     return 1
   fi
@@ -663,7 +663,7 @@ EOF
   fi
 
   if [ -z "$ADMIN_TOKEN" ]; then
-    echo -e "${RED}错误: 无法从cookie中提取 admin token${NC}"
+    echo -e "${RED}错误: 无法从cookie中提取 admin token${NC}" >&2
     rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt" "/tmp/final_cookies_v2_${temp_suffix}.txt"
     return 1
   fi
@@ -671,8 +671,8 @@ EOF
   # Cleanup temp files
   rm -f "$LOGIN_PUBKEY_FILE" "/tmp/session_cookies_${temp_suffix}.txt" "/tmp/session_cookies_after_signin_${temp_suffix}.txt" "/tmp/final_cookies_${temp_suffix}.txt" "/tmp/final_cookies_v2_${temp_suffix}.txt"
 
-  # Export admin token
-  export ADMIN_TOKEN="$ADMIN_TOKEN"
+  # Output token to stdout so caller can capture it
+  echo "$ADMIN_TOKEN"
   return 0
 }
 
@@ -680,7 +680,8 @@ check_model_config() {
   echo -e "${YELLOW}检查模型配置（大模型、向量模型）...${NC}"
   
   # Get admin token for model API access
-  if ! get_admin_token; then
+  ADMIN_TOKEN=$(get_admin_token)
+  if [ $? -ne 0 ] || [ -z "$ADMIN_TOKEN" ]; then
     echo -e "${RED}错误: 无法获取 admin token，跳过模型配置检查${NC}"
     return 1
   fi
@@ -966,7 +967,8 @@ prepare_supply_chain_kn_json() {
   
   # Ensure admin token is available for model API access
   if [[ -z "${ADMIN_TOKEN:-}" ]]; then
-    if ! get_admin_token; then
+    ADMIN_TOKEN=$(get_admin_token)
+    if [ $? -ne 0 ] || [ -z "$ADMIN_TOKEN" ]; then
       echo -e "${RED}错误: 无法获取 admin token，无法替换供应链知识网络${NC}"
       return 1
     fi
