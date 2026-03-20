@@ -65,15 +65,15 @@ function ShareButton() {
           ref={popoverRef}
           style={{
             position: 'absolute',
-            top: '100%',
+            bottom: '100%',
             right: 0,
-            marginTop: '0.5rem',
+            marginBottom: '0.5rem',
             padding: '1rem',
             background: 'var(--ifm-background-color)',
             border: '1px solid var(--ifm-color-emphasis-300)',
             borderRadius: '0.5rem',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 100,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            zIndex: 1000,
             textAlign: 'center',
             whiteSpace: 'nowrap',
           }}
