@@ -116,6 +116,10 @@ modules:
     enabled: true
   sandboxruntime:
     enabled: true
+  studio:
+    enabled: true
+  modelfactory:
+    enabled: true
 
 
 # ---------------------------------------------------------------------------

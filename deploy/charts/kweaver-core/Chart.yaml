@@ -1,222 +1,164 @@
 apiVersion: v2
 name: kweaver-core
-description: KWeaver Core umbrella chart — ISF, AgentOperator, DataAgent, Ontology, SandboxRuntime
+description: KWeaver Core umbrella chart — ISF, AgentOperator, DataAgent, Ontology,
+  SandboxRuntime, Studio, ModelFactory
 type: application
-version: 0.1.0
-appVersion: "0.3.0"
-
-# ---------------------------------------------------------------------------
-# ISF (17)
-# ---------------------------------------------------------------------------
+version: 0.5.0-alpha.1
+appVersion: 0.4.0
 dependencies:
-  - name: hydra
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: sharemgnt-single
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: user-management
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: sharemgnt
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: authentication
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: policy-management
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: audit-log
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: eacp
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: thirdparty-message-plugin
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: isfwebthrift
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: message
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: isfweb
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: authorization
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: news-feed
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: ingress-informationsecurityfabric
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: eacp-single
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  - name: oauth2-ui
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.isf.enabled
-
-  # ---------------------------------------------------------------------------
-  # AgentOperator (4)
-  # ---------------------------------------------------------------------------
-  - name: agent-operator-integration
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.agentoperator.enabled
-
-  - name: operator-web
-    version: "0.3.2"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.agentoperator.enabled
-
-  - name: agent-retrieval
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.agentoperator.enabled
-
-  - name: data-retrieval
-    version: "0.3.2"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.agentoperator.enabled
-
-  # ---------------------------------------------------------------------------
-  # DataAgent (9)
-  # ---------------------------------------------------------------------------
-  - name: agent-backend
-    version: "0.3.4"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-web
-    version: "0.3.3"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-app
-    version: "0.1.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-executor
-    version: "0.1.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-factory
-    version: "0.1.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-memory
-    version: "0.1.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: coderunner
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: dataflow
-    version: "0.3.2"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  - name: agent-operator-app
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.dataagent.enabled
-
-  # ---------------------------------------------------------------------------
-  # Ontology (9)
-  # ---------------------------------------------------------------------------
-  - name: ontology-manager
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: ontology-query
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: vega-web
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: data-connection
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: vega-gateway
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: vega-gateway-pro
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: mdl-data-model
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: mdl-uniquery
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  - name: mdl-data-model-job
-    version: "0.3.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.ontology.enabled
-
-  # ---------------------------------------------------------------------------
-  # SandboxRuntime (1)
-  # ---------------------------------------------------------------------------
-  - name: sandbox
-    version: "0.2.0"
-    repository: "oci://ghcr.io/kweaver-ai/charts"
-    condition: modules.sandboxruntime.enabled
+- name: hydra
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: sharemgnt-single
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: user-management
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: sharemgnt
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: authentication
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: policy-management
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: audit-log
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: eacp
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: isfwebthrift
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: isfweb
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: authorization
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: ingress-informationsecurityfabric
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: oauth2-ui
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.isf.enabled
+- name: agent-operator-integration
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.agentoperator.enabled
+- name: operator-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.agentoperator.enabled
+- name: agent-retrieval
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.agentoperator.enabled
+- name: data-retrieval
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.agentoperator.enabled
+- name: agent-backend
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.dataagent.enabled
+- name: agent-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.dataagent.enabled
+- name: coderunner
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.dataagent.enabled
+- name: dataflow
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.dataagent.enabled
+- name: flow-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.dataagent.enabled
+- name: bkn-backend
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: ontology-query
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: vega-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: data-connection
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: vega-gateway
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: vega-gateway-pro
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: mdl-data-model
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: mdl-uniquery
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: mdl-data-model-job
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.ontology.enabled
+- name: sandbox
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.sandboxruntime.enabled
+- name: deploy-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.studio.enabled
+- name: studio-web
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.studio.enabled
+- name: business-system-frontend
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.studio.enabled
+- name: business-system-service
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.studio.enabled
+- name: mf-model-manager-nginx
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.modelfactory.enabled
+- name: mf-model-manager
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.modelfactory.enabled
+- name: mf-model-api
+  version: 0.5.0-alpha.1
+  repository: http://127.0.0.1:8879
+  condition: modules.modelfactory.enabled
