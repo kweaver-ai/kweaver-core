@@ -16,7 +16,6 @@ chmod +x auto_config.sh
 
 ```bash
 ./auto_config.sh agent.json 供应链业务知识网络.json dataflow.json
-./auto_config.sh --step 7 contextloader工具集_020.adp
 ./auto_config.sh --step 7 基础结构化数据分析工具箱2.adp
 ```
 
