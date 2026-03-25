@@ -129,10 +129,16 @@ npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
 
+> **Self-signed certificate?** If your instance uses a self-signed or untrusted TLS certificate (common for fresh deployments without a CA-issued cert), add `-k` to skip certificate verification:
+>
+> ```bash
+> kweaver auth login https://your-kweaver-instance.com -k
+> ```
+
 ### CLI
 
 ```bash
-kweaver auth login https://your-kweaver.com     # authenticate
+kweaver auth login https://your-kweaver.com     # authenticate (-k for self-signed certs)
 kweaver bkn list                                 # browse knowledge networks
 kweaver bkn object-type list <kn-id>            # inspect object types
 kweaver bkn action-type execute <kn-id> <at-id> # execute an action

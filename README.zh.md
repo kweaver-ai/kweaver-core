@@ -128,10 +128,16 @@ npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
 
+> **自签名证书？** 如果你的实例使用了自签名或不受信任的 TLS 证书（新部署且未配置 CA 签发证书时很常见），添加 `-k` 参数跳过证书验证：
+>
+> ```bash
+> kweaver auth login https://your-kweaver-instance.com -k
+> ```
+
 ### CLI
 
 ```bash
-kweaver auth login https://your-kweaver.com     # 登录认证
+kweaver auth login https://your-kweaver.com     # 登录认证（自签名证书加 -k）
 kweaver bkn list                                 # 浏览知识网络
 kweaver bkn object-type list <kn-id>            # 查看对象类型
 kweaver bkn action-type execute <kn-id> <at-id> # 执行 Action
