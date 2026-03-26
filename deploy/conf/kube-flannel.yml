@@ -1,12 +1,3 @@
----
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: kube-flannel
-  labels:
-    k8s-app: flannel
-    pod-security.kubernetes.io/enforce: privileged
----
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -48,7 +39,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: flannel
-  namespace: kube-flannel
+  namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -56,13 +47,13 @@ metadata:
   labels:
     k8s-app: flannel
   name: flannel
-  namespace: kube-flannel
+  namespace: kube-system
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: kube-flannel-cfg
-  namespace: kube-flannel
+  namespace: kube-system
   labels:
     tier: node
     k8s-app: flannel
@@ -101,7 +92,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-flannel-ds
-  namespace: kube-flannel
+  namespace: kube-system
   labels:
     tier: node
     app: flannel

@@ -2,8 +2,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONF_DIR="${CONF_DIR:-${SCRIPT_DIR}/conf}"
+CONF_DIR="${CONF_DIR:-${HOME}/.kweaver-ai}"
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
+
+# Fix paths to use script's conf directory, not user home
+FLANNEL_MANIFEST_PATH="${SCRIPT_DIR}/conf/kube-flannel.yml"
+LOCALPV_MANIFEST_PATH="${SCRIPT_DIR}/conf/local-path-storage.yaml"
+HELM_INSTALL_SCRIPT_PATH="${SCRIPT_DIR}/conf/get-helm-3"
 
 # Source all service libraries
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
@@ -14,16 +19,12 @@ source "${SCRIPT_DIR}/scripts/services/mariadb.sh"
 source "${SCRIPT_DIR}/scripts/services/redis.sh"
 source "${SCRIPT_DIR}/scripts/services/kafka.sh"
 source "${SCRIPT_DIR}/scripts/services/zookeeper.sh"
-source "${SCRIPT_DIR}/scripts/services/mongodb.sh"
+# source "${SCRIPT_DIR}/scripts/services/mongodb.sh"  # MongoDB disabled
 source "${SCRIPT_DIR}/scripts/services/ingress_nginx.sh"
 source "${SCRIPT_DIR}/scripts/services/opensearch.sh"
-source "${SCRIPT_DIR}/scripts/services/studio.sh"
-source "${SCRIPT_DIR}/scripts/services/ontology.sh"
-source "${SCRIPT_DIR}/scripts/services/agentoperator.sh"
-source "${SCRIPT_DIR}/scripts/services/decisionagent.sh"
-source "${SCRIPT_DIR}/scripts/services/flowautomation.sh"
-source "${SCRIPT_DIR}/scripts/services/sandboxruntime.sh"
+source "${SCRIPT_DIR}/scripts/services/core.sh"
 source "${SCRIPT_DIR}/scripts/services/isf.sh"
+source "${SCRIPT_DIR}/scripts/services/dip.sh"
 
 usage() {
     echo "Kubernetes Infrastructure Initialization Script"
@@ -31,78 +32,216 @@ usage() {
     echo "Usage: $0 <module> [action]"
     echo ""
     echo "Modules and Actions:"
-    echo "  k8s init                      Initialize K8s master node with CNI and DNS"
+    echo "  k8s install                   Initialize K8s master node with CNI and DNS"
     echo "  k8s reset                     Reset Kubernetes cluster state (kubeadm reset -f + cleanup)"
     echo "  k8s status                    Show cluster status"
-    echo "  mariadb init                  Install single-node MariaDB 11"
+    echo "  mariadb install               Install single-node MariaDB 11"
     echo "  mariadb uninstall             Uninstall MariaDB (optionally purge PVC)"
-    echo "  redis init                    Install single-node Redis 7"
+    echo "  redis install                 Install single-node Redis 7"
     echo "  redis uninstall               Uninstall Redis (PVCs will be deleted by default)"
-    echo "  kafka init                    Install single-node Kafka"
+    echo "  kafka install                 Install single-node Kafka"
     echo "  kafka uninstall               Uninstall Kafka (PVCs will be deleted by default)"
-    echo "  opensearch init               Install single-node OpenSearch"
+    echo "  opensearch install            Install single-node OpenSearch"
     echo "  opensearch uninstall          Uninstall OpenSearch (optionally purge PVC)"
-    echo "  mongodb init                  Install MongoDB"
-    echo "  mongodb uninstall             Uninstall MongoDB (PVCs will be deleted)"
-    echo "  zookeeper init                Install single-node Zookeeper"
+    echo "  zookeeper install             Install single-node Zookeeper"
     echo "  zookeeper uninstall           Uninstall Zookeeper (PVCs will be deleted by default)"
-    echo "  ingress-nginx init            Install ingress-nginx-controller"
+    echo "  ingress-nginx install         Install ingress-nginx-controller"
     echo "  ingress-nginx uninstall       Uninstall ingress-nginx-controller"
-    echo "  studio init                   Install Studio services (deploy-web, studio-web, etc.)"
-    echo "  studio uninstall              Uninstall Studio services"
-    echo "  studio status                 Show Studio services status"
-    echo "  ontology init                 Install Ontology services (ontology-manager, vega-web, etc.)"
-    echo "  ontology uninstall            Uninstall Ontology services"
-    echo "  ontology status               Show Ontology services status"
-    echo "  agent_operator init           Install Agent Operator services (agent-operator-app, operator-web, etc.)"
-    echo "  agent_operator uninstall      Uninstall Agent Operator services"
-    echo "  agent_operator status         Show Agent Operator services status"
-    echo "  decisionagent init            Install DecisionAgent services (agent-backend, agent-web, etc.)"
-    echo "  decisionagent uninstall       Uninstall DecisionAgent services"
-    echo "  decisionagent status          Show DecisionAgent services status"
-    echo "  flowautomation init           Install FlowAutomation services (flow-web, flow-automation, etc.)"
-    echo "  flowautomation uninstall      Uninstall FlowAutomation services"
-    echo "  flowautomation status         Show FlowAutomation services status"
-    echo "  sandboxruntime init           Install SandboxRuntime services (sandbox-runtime, etc.)"
-    echo "  sandboxruntime uninstall      Uninstall SandboxRuntime services"
-    echo "  sandboxruntime status         Show SandboxRuntime services status"
-    echo "  isf init                      Install ISF services (informationsecurityfabric, hydra, sharemgnt, etc.)"
+    echo "  kweaver-core install          Install KWeaver Core services (studio, ontology, agentoperator, etc.)"
+    echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
+    echo "  kweaver-core status           Show KWeaver Core services status"
+    echo "                                Use --enable-isf=false to skip ISF installation"
+    echo "  isf install                   Install ISF services (informationsecurityfabric, hydra, sharemgnt, etc.)"
     echo "  isf uninstall                 Uninstall ISF services"
     echo "  isf status                    Show ISF services status"
-    echo "  all init                      Run full initialization (k8s + mariadb + redis + ingress-nginx)"
+    echo "  kweaver-dip install           Install KWeaver DIP services (17 charts); installs K8s first if not present"
+    echo "  kweaver-dip uninstall         Uninstall KWeaver DIP services"
+    echo "  kweaver-dip status            Show KWeaver DIP services status"
+    echo "  all install                   Run full initialization (k8s + mariadb + redis + ingress-nginx)"
     echo ""
     echo "Examples:"
-    echo "  $0 k8s init                   # Initialize K8s master node with default settings"
-    echo "  $0 k8s reset                  # Reset cluster state before re-init"
+    echo "  $0 k8s install                # Initialize K8s master node with default settings"
+    echo "  $0 k8s reset                  # Reset cluster state before re-install"
     echo "  $0 k8s status                 # Show cluster status"
-    echo "  POD_CIDR=10.0.0.0/16 $0 k8s init  # Initialize with custom POD_CIDR"
-    echo "  $0 mariadb init               # Install MariaDB"
+    echo "  POD_CIDR=10.0.0.0/16 $0 k8s install  # Initialize with custom POD_CIDR"
+    echo "  $0 mariadb install            # Install MariaDB"
     echo "  $0 mariadb uninstall          # Uninstall MariaDB"
     echo "  $0 mariadb uninstall --delete-data  # Uninstall MariaDB and delete PVC (data loss!)"
     echo "  MARIADB_PURGE_PVC=true $0 mariadb uninstall  # Same as --delete-data (data loss!)"
-    echo "  $0 redis init                 # Install Redis"
+    echo "  $0 redis install              # Install Redis"
     echo "  $0 redis uninstall            # Uninstall Redis"
     echo "  $0 redis uninstall                         # Uninstall Redis (PVCs deleted by default)"
     echo "  REDIS_PURGE_PVC=false $0 redis uninstall   # Uninstall Redis but keep PVCs"
-    echo "  $0 kafka init                 # Install Kafka"
+    echo "  $0 kafka install              # Install Kafka"
     echo "  $0 kafka uninstall                         # Uninstall Kafka (PVCs deleted by default)"
     echo "  KAFKA_PURGE_PVC=false $0 kafka uninstall   # Uninstall Kafka but keep PVCs"
-    echo "  $0 opensearch init            # Install OpenSearch"
+    echo "  $0 opensearch install         # Install OpenSearch"
     echo "  $0 opensearch uninstall       # Uninstall OpenSearch"
     echo "  OPENSEARCH_PURGE_PVC=true $0 opensearch uninstall  # Uninstall OpenSearch and delete PVC (data loss!)"
-    echo "  $0 mongodb init               # Install MongoDB"
-    echo "  $0 mongodb uninstall          # Uninstall MongoDB (PVCs will be deleted)"
-    echo "  $0 zookeeper init             # Install Zookeeper"
+    echo "  $0 zookeeper install          # Install Zookeeper"
     echo "  $0 zookeeper uninstall        # Uninstall Zookeeper (PVCs deleted by default)"
-    echo "  ZOOKEEPER_PURGE_PVC=false $0 zookeeper uninstall  # Uninstall Zookeeper but keep PVCs"
+    echo "  ZOOKEEPER_PURGE_PVC=false $0 zookeeper uninstall  # Uninstall Zookeeper but keep PVC's"
     echo "  # Install from remote repo with version and devel:"
-    echo "  ZOOKEEPER_CHART_REF=dip/zookeeper ZOOKEEPER_CHART_VERSION=0.0.0-feature-800792 ZOOKEEPER_CHART_DEVEL=true $0 zookeeper init"
+    echo "  ZOOKEEPER_CHART_REF=dip/zookeeper ZOOKEEPER_CHART_VERSION=0.0.0-feature-800792 ZOOKEEPER_CHART_DEVEL=true $0 zookeeper install"
     echo "  # Install with additional values file and --set:"
-    echo "  ZOOKEEPER_VALUES_FILE=conf/config.yaml ZOOKEEPER_EXTRA_SET_VALUES='image.registry=swr.cn-east-3.myhuaweicloud.com/kweaver-ai' $0 zookeeper init"
-    echo "  $0 ingress-nginx init         # Install ingress-nginx-controller"
+    echo "  ZOOKEEPER_VALUES_FILE=~/.kweaver-ai/config.yaml ZOOKEEPER_EXTRA_SET_VALUES='image.registry=swr.cn-east-3.myhuaweicloud.com/kweaver-ai' $0 zookeeper install"
+    echo "  $0 ingress-nginx install      # Install ingress-nginx-controller"
     echo "  $0 ingress-nginx uninstall    # Uninstall ingress-nginx-controller"
-    echo "  $0 config generate            # Generate/update conf/config.yaml"
-    echo "  $0 all init                   # Full initialization with all components"
+    echo "  $0 kweaver-dip install        # Install KWeaver DIP (auto-installs K8s if absent)"
+    echo "  $0 kweaver-dip install --charts_dir=/path/to/charts  # Install DIP from a local charts directory"
+    echo "  $0 kweaver-dip uninstall      # Uninstall KWeaver DIP services"
+    echo "  $0 kweaver-dip status         # Show KWeaver DIP services status"
+    echo "  $0 config generate            # Generate/update ~/.kweaver-ai/config.yaml"
+    echo "  $0 all install                # Full initialization with all components"
+    echo ""
+    echo "Global Options:"
+    echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
+    echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
+    echo ""
+    echo "  $0 kweaver-core install --enable-isf=false  # Install KWeaver Core without ISF"
+    echo "  $0 kweaver-core install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=proton-public"
+    echo "  $0 isf install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=proton-public"
+    echo "  $0 kweaver-dip install --config=/root/.kweaver-ai/config.yaml"
+}
+
+_detect_node_ip() {
+    local node_ip
+    node_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | head -1 | tr -d '\n' || true)"
+    if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
+        node_ip="$(ip addr show 2>/dev/null | grep -oE 'inet [0-9]+(\.[0-9]+){3}' | awk '{print $2}' | grep -v '^127\.' | head -1 || true)"
+    fi
+    if [[ -z "${node_ip}" ]]; then
+        node_ip="10.x.x.x"
+    fi
+    echo "${node_ip}"
+}
+
+_read_access_address_field() {
+    local field="$1"
+    if [[ ! -f "${CONFIG_YAML_PATH}" ]]; then
+        return 0
+    fi
+    awk -v key="${field}:" '
+        $1=="accessAddress:" {in=1; next}
+        in && $1==key {print $2; exit}
+        in && $0 ~ /^[^ ]/ {in=0}
+    ' "${CONFIG_YAML_PATH}" 2>/dev/null | sed -e 's/^"//; s/"$//' -e "s/^'//; s/'$//"
+}
+
+_upsert_access_address() {
+    local host="$1"
+    local port="$2"
+    local path="$3"
+    local scheme="$4"
+    local tmp
+    local src
+
+    mkdir -p "$(dirname "${CONFIG_YAML_PATH}")"
+    tmp="$(mktemp)"
+    src="${CONFIG_YAML_PATH}"
+    if [[ ! -f "${src}" ]]; then
+        src="/dev/null"
+    fi
+
+    awk -v host="${host}" -v port="${port}" -v path="${path}" -v scheme="${scheme}" '
+        BEGIN {in_block=0; replaced=0}
+        {
+            if ($1=="accessAddress:") {
+                print "accessAddress:"
+                print "  host: " host
+                print "  port: " port
+                print "  scheme: " scheme
+                print "  path: " path
+                in_block=1
+                replaced=1
+                next
+            }
+
+            if (in_block==1) {
+                if ($0 ~ /^[^ ]/) {
+                    in_block=0
+                    print $0
+                }
+                next
+            }
+
+            print $0
+        }
+        END {
+            if (replaced==0) {
+                print "accessAddress:"
+                print "  host: " host
+                print "  port: " port
+                print "  scheme: " scheme
+                print "  path: " path
+            }
+        }
+    ' "${src}" > "${tmp}"
+
+    mv "${tmp}" "${CONFIG_YAML_PATH}"
+}
+
+confirm_access_address_before_install() {
+    local confirm_switch="${CONFIRM_ACCESS_ADDRESS:-true}"
+    local config_missing_before="false"
+    if [[ ! -f "${CONFIG_YAML_PATH}" ]]; then
+        config_missing_before="true"
+    fi
+    if [[ "${confirm_switch}" == "false" ]]; then
+        return 0
+    fi
+
+    local host port path scheme
+    host="$(_read_access_address_field "host")"
+    port="$(_read_access_address_field "port")"
+    path="$(_read_access_address_field "path")"
+    scheme="$(_read_access_address_field "scheme")"
+
+    host="${host:-$(_detect_node_ip)}"
+    port="${port:-443}"
+    path="${path:-/}"
+    scheme="${scheme:-https}"
+
+    local url="${scheme}://${host}:${port}${path}"
+
+    if [[ ! -t 0 ]]; then
+        log_info "Non-interactive mode detected, use accessAddress: ${url}"
+        # For first-time initialization, generate full config first.
+        if [[ "${config_missing_before}" == "true" ]]; then
+            log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
+            generate_config_yaml
+        fi
+        # Then upsert the confirmed accessAddress into full config.
+        _upsert_access_address "${host}" "${port}" "${path}" "${scheme}"
+        return 0
+    fi
+
+    echo ""
+    log_info "Will use accessAddress: ${url}"
+    read -r -p "Confirm this address? [Y/n]: " confirm_answer
+    confirm_answer="${confirm_answer:-Y}"
+
+    if [[ ! "${confirm_answer}" =~ ^[Yy]$ ]]; then
+        read -r -p "Enter host [${host}]: " input_host
+        read -r -p "Enter port [${port}]: " input_port
+        read -r -p "Enter path [${path}]: " input_path
+        read -r -p "Enter scheme [${scheme}]: " input_scheme
+
+        host="${input_host:-${host}}"
+        port="${input_port:-${port}}"
+        path="${input_path:-${path}}"
+        scheme="${input_scheme:-${scheme}}"
+    fi
+
+    # For first-time initialization, generate full config first.
+    if [[ "${config_missing_before}" == "true" ]]; then
+        log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
+        generate_config_yaml
+    fi
+
+    # Then upsert the confirmed accessAddress into full config.
+    _upsert_access_address "${host}" "${port}" "${path}" "${scheme}"
+    log_info "accessAddress written to ${CONFIG_YAML_PATH}: ${scheme}://${host}:${port}${path}"
 }
 
 
@@ -110,7 +249,8 @@ usage() {
 main() {
     local module="${1:-}"
     local action="${2:-}"
-    
+    shift 2 2>/dev/null || true
+
     # If no arguments, show usage
     if [[ -z "${module}" ]]; then
         usage
@@ -135,7 +275,7 @@ main() {
     # Handle storage module
     if [[ "${module}" == "storage" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_localpv
                 ;;
@@ -151,7 +291,7 @@ main() {
     # Handle k8s module
     if [[ "${module}" == "k8s" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 # Pre-install dependencies (containerd, k8s, helm) before k8s init
                 log_info "Pre-installing dependencies..."
@@ -174,7 +314,7 @@ main() {
 
                 if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
                     if ! command -v helm >/dev/null 2>&1; then
-                        log_error "Helm is required to install ingress-nginx. Please run: $0 k8s init"
+                        log_error "Helm is required to install ingress-nginx. Please run: $0 k8s install"
                         exit 1
                     fi
                     install_ingress_nginx
@@ -203,7 +343,7 @@ main() {
     # Handle mariadb module
     if [[ "${module}" == "mariadb" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_mariadb
                 ;;
@@ -224,7 +364,7 @@ main() {
     # Handle redis module
     if [[ "${module}" == "redis" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_redis
                 ;;
@@ -244,7 +384,7 @@ main() {
     # Handle opensearch module
     if [[ "${module}" == "opensearch" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_opensearch
                 ;;
@@ -261,30 +401,30 @@ main() {
         return 0
     fi
 
-    # Handle mongodb module
-    if [[ "${module}" == "mongodb" ]]; then
-        case "${action}" in
-            init)
-                check_root
-                install_mongodb
-                ;;
-            uninstall)
-                check_root
-                uninstall_mongodb
-                ;;
-            *)
-                log_error "Unknown mongodb action: ${action}"
-                usage
-                exit 1
-                ;;
-        esac
-        return 0
-    fi
+    # Handle mongodb module (disabled)
+    # if [[ "${module}" == "mongodb" ]]; then
+    #     case "${action}" in
+    #         install|init)
+    #             check_root
+    #             # install_mongodb  # MongoDB disabled
+    #             ;;
+    #         uninstall)
+    #             check_root
+    #             # uninstall_mongodb  # MongoDB disabled
+    #             ;;
+    #         *)
+    #             log_error "Unknown mongodb action: ${action}"
+    #             usage
+    #             exit 1
+    #             ;;
+    #     esac
+    #     return 0
+    # fi
 
     # Handle zookeeper module
     if [[ "${module}" == "zookeeper" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_zookeeper
                 ;;
@@ -304,7 +444,7 @@ main() {
     # Handle kafka module
     if [[ "${module}" == "kafka" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_kafka
                 ;;
@@ -324,7 +464,7 @@ main() {
     # Handle ingress-nginx module
     if [[ "${module}" == "ingress-nginx" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 install_ingress_nginx
                 ;;
@@ -341,24 +481,23 @@ main() {
         return 0
     fi
     
-    # Handle studio module
-    if [[ "${module}" == "studio" ]]; then
+    # Handle kweaver-core module
+    if [[ "${module}" == "kweaver-core" ]] || [[ "${module}" == "core" ]]; then
         case "${action}" in
-            init)
-                shift 2
-                parse_studio_args "init" "$@"
-                install_studio
+            install|init)
+                parse_core_args "install" "$@"
+                confirm_access_address_before_install
+                install_core
                 ;;
             uninstall)
-                shift 2
-                parse_studio_args "uninstall" "$@"
-                uninstall_studio
+                parse_core_args "uninstall" "$@"
+                uninstall_core
                 ;;
             status)
-                show_studio_status
+                show_core_status
                 ;;
             *)
-                log_error "Unknown studio action: ${action}"
+                log_error "Unknown kweaver-core action: ${action}"
                 usage
                 exit 1
                 ;;
@@ -366,141 +505,40 @@ main() {
         return 0
     fi
     
-    # Handle ontology module
-    if [[ "${module}" == "ontology" ]]; then
+    # Handle kweaver-dip module
+    if [[ "${module}" == "kweaver-dip" ]] || [[ "${module}" == "dip" ]]; then
         case "${action}" in
-            init)
-                shift 2
-                parse_ontology_args "init" "$@"
-                install_ontology
+            install|init)
+                check_root
+                parse_dip_args "install" "$@"
+                confirm_access_address_before_install
+                install_dip
                 ;;
             uninstall)
-                shift 2
-                parse_ontology_args "uninstall" "$@"
-                uninstall_ontology
+                check_root
+                parse_dip_args "uninstall" "$@"
+                uninstall_dip
                 ;;
             status)
-                show_ontology_status
+                show_dip_status
                 ;;
             *)
-                log_error "Unknown ontology action: ${action}"
+                log_error "Unknown kweaver-dip action: ${action}"
                 usage
                 exit 1
                 ;;
         esac
         return 0
     fi
-    
-    # Handle agent_operator module (supports both agent_operator and agentoperator)
-    if [[ "${module}" == "agent_operator" ]] || [[ "${module}" == "agentoperator" ]]; then
-        case "${action}" in
-            init)
-                shift 2
-                parse_agentoperator_args "init" "$@"
-                install_agentoperator
-                ;;
-            uninstall)
-                shift 2
-                parse_agentoperator_args "uninstall" "$@"
-                uninstall_agentoperator
-                ;;
-            status)
-                show_agentoperator_status
-                ;;
-            *)
-                log_error "Unknown agentoperator action: ${action}"
-                usage
-                exit 1
-                ;;
-        esac
-        return 0
-    fi
-    
-    # Handle decisionagent module
-    if [[ "${module}" == "decisionagent" ]]; then
-        case "${action}" in
-            init)
-                shift 2
-                parse_decisionagent_args "init" "$@"
-                install_decisionagent
-                ;;
-            uninstall)
-                shift 2
-                parse_decisionagent_args "uninstall" "$@"
-                uninstall_decisionagent
-                ;;
-            status)
-                show_decisionagent_status
-                ;;
-            *)
-                log_error "Unknown decisionagent action: ${action}"
-                usage
-                exit 1
-                ;;
-        esac
-        return 0
-    fi
-    
-    # Handle flowautomation module
-    if [[ "${module}" == "flowautomation" ]]; then
-        case "${action}" in
-            init)
-                shift 2
-                parse_flowautomation_args "init" "$@"
-                install_flowautomation
-                ;;
-            uninstall)
-                shift 2
-                parse_flowautomation_args "uninstall" "$@"
-                uninstall_flowautomation
-                ;;
-            status)
-                show_flowautomation_status
-                ;;
-            *)
-                log_error "Unknown flowautomation action: ${action}"
-                usage
-                exit 1
-                ;;
-        esac
-        return 0
-    fi
-    
-    # Handle sandboxruntime module
-    if [[ "${module}" == "sandboxruntime" ]]; then
-        case "${action}" in
-            init)
-                shift 2
-                parse_sandboxruntime_args "init" "$@"
-                install_sandboxruntime
-                ;;
-            uninstall)
-                shift 2
-                parse_sandboxruntime_args "uninstall" "$@"
-                uninstall_sandboxruntime
-                ;;
-            status)
-                show_sandboxruntime_status
-                ;;
-            *)
-                log_error "Unknown sandboxruntime action: ${action}"
-                usage
-                exit 1
-                ;;
-        esac
-        return 0
-    fi
-    
+
     # Handle isf module
     if [[ "${module}" == "isf" ]]; then
         case "${action}" in
-            init)
-                shift 2
-                parse_isf_args "init" "$@"
+            install|init)
+                parse_isf_args "install" "$@"
                 install_isf
                 ;;
             uninstall)
-                shift 2
                 parse_isf_args "uninstall" "$@"
                 uninstall_isf
                 ;;
@@ -520,7 +558,7 @@ main() {
     # 'all' is an alias for 'infra' for backward compatibility
     if [[ "${module}" == "all" ]] || [[ "${module}" == "infra" ]]; then
         case "${action}" in
-            init)
+            install|init)
                 check_root
                 log_info "=========================================="
                 log_info "  Deploying Infrastructure (K8s + Data Services)"
@@ -548,7 +586,7 @@ main() {
                 install_redis
                 install_kafka
                 install_zookeeper
-                install_mongodb
+                # install_mongodb  # MongoDB disabled
                 if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
                     install_ingress_nginx
                 fi
@@ -564,7 +602,7 @@ main() {
                 log_info "Resetting infrastructure..."
                 uninstall_opensearch || true
                 uninstall_ingress_nginx || true
-                uninstall_mongodb || true
+                # uninstall_mongodb || true  # MongoDB disabled
                 uninstall_zookeeper || true
                 uninstall_kafka || true
                 uninstall_redis || true
@@ -618,36 +656,21 @@ main() {
                 
                 # Install all KWeaver services in order
                 install_isf
-                install_studio
-                install_ontology
-                install_agentoperator
-                install_decisionagent
-                install_flowautomation
-                install_sandboxruntime
+                install_core
 
                 log_info "KWeaver application services deployment completed!"
                 ;;
             uninstall)
                 check_root
                 log_info "Uninstalling KWeaver application services..."
-                uninstall_sandboxruntime || true
-                uninstall_flowautomation || true
-                uninstall_decisionagent || true
-                uninstall_agentoperator || true
-                uninstall_ontology || true
-                uninstall_studio || true
+                uninstall_core || true
                 uninstall_isf || true
                 log_info "KWeaver application services uninstalled!"
                 ;;
             status)
                 log_info "KWeaver application services status:"
                 show_isf_status
-                show_studio_status
-                show_ontology_status
-                show_agentoperator_status
-                show_decisionagent_status
-                show_flowautomation_status
-                show_sandboxruntime_status
+                show_core_status
                 ;;
             *)
                 log_error "Unknown kweaver action: ${action}"
@@ -696,7 +719,7 @@ main() {
                 install_redis
                 install_kafka
                 install_zookeeper
-                install_mongodb
+                # install_mongodb  # MongoDB disabled
                 if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
                     install_ingress_nginx
                 fi
@@ -752,7 +775,7 @@ main() {
                 # Then uninstall infrastructure
                 uninstall_opensearch || true
                 uninstall_ingress_nginx || true
-                uninstall_mongodb || true
+                # uninstall_mongodb || true  # MongoDB disabled
                 uninstall_zookeeper || true
                 uninstall_kafka || true
                 uninstall_redis || true

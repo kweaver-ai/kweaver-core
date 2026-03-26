@@ -260,7 +260,7 @@ install_cni() {
     
     # Install Flannel CNI (ensure network CIDR matches POD_CIDR)
     # Note: Image addresses are already configured in the YAML file
-    read_or_fetch "${FLANNEL_MANIFEST_PATH}" "${FLANNEL_MANIFEST_URL}" | \
+    cat "${FLANNEL_MANIFEST_PATH}" | \
         sed "s|10.244.0.0/16|${POD_CIDR}|g" | \
         kubectl apply -f -
     
