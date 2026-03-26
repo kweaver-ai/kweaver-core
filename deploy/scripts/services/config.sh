@@ -6,7 +6,7 @@ generate_config_yaml() {
 
     load_image_registry_from_config
 
-    local cfg_namespace="kweaver-ai"
+    local cfg_namespace="kweaver"
     local cfg_lang="en_US.UTF-8"
     local cfg_tz="Asia/Shanghai"
     if [[ -f "${out}" ]]; then
@@ -56,12 +56,14 @@ STORAGE_EOF
     local mariadb_password="${MARIADB_PASSWORD}"
     local mariadb_root_password="${MARIADB_ROOT_PASSWORD}"
     local mariadb_database="${MARIADB_DATABASE:-adp}"
+    local mariadb_configured=false
 
     # Try to find MariaDB secret by label first (more reliable than hardcoded name)
     # The proton-mariadb chart creates a secret named mariadb-proton-mariadb-auth
     local mariadb_secret
     mariadb_secret="$(kubectl -n "${mariadb_ns}" get secret -l app.kubernetes.io/instance=mariadb,app=mariadb -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
     if [[ -n "${mariadb_secret}" ]]; then
+        mariadb_configured=true
         local from_secret
         from_secret="$(get_secret_b64_key "${mariadb_ns}" "${mariadb_secret}" mariadb-user 2>/dev/null || echo "")"
         if [[ -n "${from_secret}" ]]; then
@@ -104,6 +106,12 @@ STORAGE_EOF
         redis_sts_name="proton-redis-proton-redis"
     elif kubectl -n "${redis_ns}" get statefulset redis >/dev/null 2>&1; then
         redis_sts_name="redis"
+    fi
+
+    # Only treat Redis as configured when a release/resource truly exists in cluster.
+    local redis_configured=false
+    if [[ -n "${redis_sts_name}" ]] || helm status "${redis_release_name}" -n "${redis_ns}" >/dev/null 2>&1; then
+        redis_configured=true
     fi
     
     # Default username is "root" for local chart, "default" for Bitnami chart
@@ -231,15 +239,8 @@ STORAGE_EOF
         fi
     fi
     
-    # Method 3: Check if REDIS_ARCHITECTURE is set to sentinel
-    if [[ "${redis_connect_type}" != "sentinel" ]] && [[ "${REDIS_ARCHITECTURE:-standalone}" == "sentinel" ]]; then
-        redis_connect_type="sentinel"
-        # Use proton-redis chart naming convention: {release-name}-proton-redis-sentinel
-        local calculated_sts_name="${redis_release_name}-proton-redis"
-        redis_sentinel_host="${calculated_sts_name}-sentinel.${redis_ns}.svc.cluster.local"
-        redis_sentinel_host="${redis_sentinel_host%.}"  # Remove trailing dot
-        log_info "Redis sentinel mode detected (via REDIS_ARCHITECTURE variable)"
-    fi
+    # Do NOT infer sentinel mode from REDIS_ARCHITECTURE default variable here,
+    # otherwise a fresh cluster without Redis would be mis-detected as sentinel.
     
     # For sentinel mode, try to get master group name from StatefulSet or use default
     if [[ "${redis_connect_type}" == "sentinel" ]] && [[ -n "${redis_sts_name}" ]]; then
@@ -268,8 +269,13 @@ STORAGE_EOF
     local os_user="admin"
     local os_password="${OPENSEARCH_INITIAL_ADMIN_PASSWORD}"
     local os_protocol="${OPENSEARCH_PROTOCOL}"
+    local opensearch_configured=false
     if [[ -z "${os_protocol}" ]]; then
         os_protocol="http"
+    fi
+    if helm status "${OPENSEARCH_RELEASE_NAME}" -n "${os_ns}" >/dev/null 2>&1 || \
+       kubectl -n "${os_ns}" get svc "${OPENSEARCH_CLUSTER_NAME}-${OPENSEARCH_NODE_GROUP}" >/dev/null 2>&1; then
+        opensearch_configured=true
     fi
 
     # MongoDB - only generate config if MongoDB is installed
@@ -288,9 +294,6 @@ STORAGE_EOF
             # Try to get password from secret
             mongodb_password=$(kubectl -n "${mongodb_ns}" get secret "${MONGODB_SECRET_NAME}" -o jsonpath='{.data.password}' 2>/dev/null | base64 -d 2>/dev/null || echo "")
         fi
-        log_info "MongoDB detected, will generate config section"
-    else
-        log_info "MongoDB not detected (secret ${MONGODB_SECRET_NAME} not found in namespace ${mongodb_ns}), skipping MongoDB config"
     fi
     
     # MongoDB connection parameters (config.yaml schema expected by proton-cli)
@@ -322,6 +325,7 @@ STORAGE_EOF
     local kafka_mechanism="${KAFKA_SASL_MECHANISM}"
     local kafka_user="${KAFKA_CLIENT_USER}"
     local kafka_password="${KAFKA_CLIENT_PASSWORD}"
+    local kafka_configured=false
     if [[ "${KAFKA_AUTH_ENABLED}" == "true" ]]; then
         local client_pw
         client_pw="$(get_secret_b64_key "${kafka_ns}" "${KAFKA_SASL_SECRET_NAME}" client-passwords)"
@@ -331,10 +335,16 @@ STORAGE_EOF
     fi
     local kafka_svc
     kafka_svc="$(first_service_with_port "${kafka_ns}" "app.kubernetes.io/instance=${KAFKA_RELEASE_NAME}" 9092)"
-    if [[ -z "${kafka_svc}" ]]; then
+    if [[ -n "${kafka_svc}" ]]; then
+        kafka_configured=true
+    elif kubectl -n "${kafka_ns}" get svc "${KAFKA_RELEASE_NAME}" >/dev/null 2>&1; then
         kafka_svc="${KAFKA_RELEASE_NAME}"
+        kafka_configured=true
     fi
-    local kafka_host="${kafka_svc}.${kafka_ns}.svc.cluster.local"
+    local kafka_host=""
+    if [[ "${kafka_configured}" == "true" ]]; then
+        kafka_host="${kafka_svc}.${kafka_ns}.svc.cluster.local"
+    fi
 
     # Zookeeper - only generate config if Zookeeper is installed
     local zookeeper_ns="${ZOOKEEPER_NAMESPACE}"
@@ -360,9 +370,6 @@ STORAGE_EOF
     
     if [[ "${zookeeper_detected}" == "true" ]]; then
         zookeeper_configured=true
-        log_info "Zookeeper detected, will generate config section"
-    else
-        log_info "Zookeeper not detected (StatefulSet or Service not found in namespace ${zookeeper_ns}), skipping Zookeeper config"
     fi
 
     # Build MongoDB config section if MongoDB is installed
@@ -380,7 +387,6 @@ STORAGE_EOF
       authSource: $(yaml_quote "${mongodb_auth_source}")
 MONGODB_EOF
 )
-        log_info "MongoDB config section prepared"
     fi
 
     # Build Zookeeper config section if Zookeeper is installed
@@ -393,7 +399,6 @@ MONGODB_EOF
     port: ${zookeeper_port}
 ZOOKEEPER_EOF
 )
-        log_info "Zookeeper config section prepared"
     fi
 
     # Ingress-Nginx - detect actual IngressClass name
@@ -435,9 +440,6 @@ ZOOKEEPER_EOF
     if helm status "${ingress_nginx_release}" -n "${ingress_nginx_namespace}" >/dev/null 2>&1 || \
        kubectl -n "${ingress_nginx_namespace}" get deploy ingress-nginx-controller >/dev/null 2>&1; then
         ingress_class_configured=true
-        log_info "Ingress-Nginx detected, IngressClass: ${ingress_class_name}"
-    else
-        log_info "Ingress-Nginx not detected, skipping ingress class config"
     fi
 
     # Build ingress class config section (always use "class-443" as key, but with actual ingressClass value)
@@ -448,13 +450,13 @@ ZOOKEEPER_EOF
     ingressClass: $(yaml_quote "${ingress_class_name}")
 INGRESS_CLASS_EOF
 )
-        log_info "Ingress class config section prepared (class-443 -> ${ingress_class_name})"
     fi
 
     # Build Redis config section based on deployment mode
     local redis_section=""
-    if [[ "${redis_connect_type}" == "sentinel" ]]; then
-        redis_section=$(cat <<REDIS_SENTINEL_EOF
+    if [[ "${redis_configured}" == "true" ]]; then
+        if [[ "${redis_connect_type}" == "sentinel" ]]; then
+            redis_section=$(cat <<REDIS_SENTINEL_EOF
   redis:
     connectInfo:
       masterGroupName: $(yaml_quote "${redis_master_group_name}")
@@ -468,8 +470,8 @@ INGRESS_CLASS_EOF
     sourceType: internal
 REDIS_SENTINEL_EOF
 )
-    else
-        redis_section=$(cat <<REDIS_STANDALONE_EOF
+        else
+            redis_section=$(cat <<REDIS_STANDALONE_EOF
   redis:
     connectInfo:
       host: $(yaml_quote "${redis_host}")
@@ -479,6 +481,73 @@ REDIS_SENTINEL_EOF
     connectType: $(yaml_quote "${redis_connect_type}")
     sourceType: internal
 REDIS_STANDALONE_EOF
+)
+        fi
+    fi
+
+    local mq_section=""
+    if [[ "${kafka_configured}" == "true" ]]; then
+        mq_section=$(cat <<MQ_EOF
+  mq:
+    auth:
+      mechanism: $(yaml_quote "${kafka_mechanism}")
+      username: $(yaml_quote "${kafka_user}")
+      password: $(yaml_quote "${kafka_password}")
+    mqHost: $(yaml_quote "${kafka_host}")
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9092
+    mqType: kafka
+MQ_EOF
+)
+    fi
+
+    local opensearch_section=""
+    if [[ "${opensearch_configured}" == "true" ]]; then
+        opensearch_section=$(cat <<OS_EOF
+  opensearch:
+    distribution: opensearch
+    host: $(yaml_quote "${os_host}")
+    user: $(yaml_quote "${os_user}")
+    password: $(yaml_quote "${os_password}")
+    port: 9200
+    protocol: ${os_protocol}
+    version: ""
+OS_EOF
+)
+    fi
+
+    local rds_section=""
+    if [[ "${mariadb_configured}" == "true" ]]; then
+        rds_section=$(cat <<RDS_EOF
+  rds:
+    admin_key: $(yaml_quote "${mariadb_admin_key}")
+    host: $(yaml_quote "${mariadb_host}")
+    hostRead: $(yaml_quote "${mariadb_host}")
+    port: 3306
+    portRead: 3306
+    source_type: internal
+    type: MariaDB
+    user: $(yaml_quote "${mariadb_user}")
+    password: $(yaml_quote "${mariadb_password}")
+    root_password: $(yaml_quote "${mariadb_root_password}")
+    database: $(yaml_quote "${mariadb_database}")
+RDS_EOF
+)
+    fi
+
+    local dep_services_section=""
+    if [[ -n "${mq_section}${opensearch_section}${mongodb_section}${zookeeper_section}${rds_section}${redis_section}" ]]; then
+        dep_services_section=$(cat <<DEP_EOF
+depServices:
+${mq_section}
+${opensearch_section}
+${mongodb_section}
+${zookeeper_section}
+${rds_section}
+${redis_section}
+${ingress_class_section}
+DEP_EOF
 )
     fi
 
@@ -495,57 +564,21 @@ accessAddress:
   port: 443
   scheme: https
   path: /
-depServices:
-  mq:
-    auth:
-      mechanism: $(yaml_quote "${kafka_mechanism}")
-      username: $(yaml_quote "${kafka_user}")
-      password: $(yaml_quote "${kafka_password}")
-    mqHost: $(yaml_quote "${kafka_host}")
-    mqLookupdHost: ""
-    mqLookupdPort: 0
-    mqPort: 9092
-    mqType: kafka
-  opensearch:
-    distribution: opensearch
-    host: $(yaml_quote "${os_host}")
-    user: $(yaml_quote "${os_user}")
-    password: $(yaml_quote "${os_password}")
-    port: 9200
-    protocol: ${os_protocol}
-    version: ""
-${mongodb_section}
-${zookeeper_section}
-  rds:
-    admin_key: $(yaml_quote "${mariadb_admin_key}")
-    host: $(yaml_quote "${mariadb_host}")
-    hostRead: $(yaml_quote "${mariadb_host}")
-    port: 3306
-    portRead: 3306
-    source_type: internal
-    type: MariaDB
-    user: $(yaml_quote "${mariadb_user}")
-    password: $(yaml_quote "${mariadb_password}")
-    root_password: $(yaml_quote "${mariadb_root_password}")
-    database: $(yaml_quote "${mariadb_database}")
-${redis_section}
-${ingress_class_section}
+${dep_services_section}
 EOF
 
     log_info "Wrote config file: ${out}"
-    if [[ "${mongodb_configured}" == "true" ]]; then
-        log_info "✓ MongoDB config was included in config.yaml"
+    local included_services=()
+    [[ "${mongodb_configured}" == "true" ]] && included_services+=("MongoDB")
+    [[ "${zookeeper_configured}" == "true" ]] && included_services+=("Zookeeper")
+    [[ "${ingress_class_configured}" == "true" ]] && included_services+=("Ingress-Nginx")
+    [[ "${redis_configured}" == "true" ]] && included_services+=("Redis")
+    [[ "${kafka_configured}" == "true" ]] && included_services+=("Kafka")
+    [[ "${opensearch_configured}" == "true" ]] && included_services+=("OpenSearch")
+    [[ "${mariadb_configured}" == "true" ]] && included_services+=("MariaDB")
+    if [[ ${#included_services[@]} -gt 0 ]]; then
+        log_info "Included services in config.yaml: ${included_services[*]}"
     else
-        log_info "✗ MongoDB config was NOT included in config.yaml (mongodb_configured=${mongodb_configured})"
-    fi
-    if [[ "${zookeeper_configured}" == "true" ]]; then
-        log_info "✓ Zookeeper config was included in config.yaml"
-    else
-        log_info "✗ Zookeeper config was NOT included in config.yaml (zookeeper_configured=${zookeeper_configured})"
-    fi
-    if [[ "${ingress_class_configured}" == "true" ]]; then
-        log_info "✓ Ingress class config (class-443) was included in config.yaml with ingressClass: ${ingress_class_name}"
-    else
-        log_info "✗ Ingress class config was NOT included in config.yaml (ingress_class_configured=${ingress_class_configured})"
+        log_info "No dependency services detected; depServices section not written"
     fi
 }

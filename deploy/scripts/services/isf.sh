@@ -68,6 +68,14 @@ parse_isf_args() {
                 HELM_CHART_REPO_NAME="$2"
                 shift 2
                 ;;
+            --config=*)
+                CONFIG_YAML_PATH="${1#*=}"
+                shift
+                ;;
+            --config)
+                CONFIG_YAML_PATH="$2"
+                shift 2
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

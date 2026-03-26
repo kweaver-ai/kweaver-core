@@ -1,21 +1,15 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: local-path-storage
-
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: local-path-provisioner-service-account
-  namespace: local-path-storage
+  namespace: kube-system
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: local-path-provisioner-role
-  namespace: local-path-storage
+  namespace: kube-system
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -45,7 +39,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: local-path-provisioner-bind
-  namespace: local-path-storage
+  namespace: kube-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -53,7 +47,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: local-path-provisioner-service-account
-    namespace: local-path-storage
+    namespace: kube-system
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -67,14 +61,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: local-path-provisioner-service-account
-    namespace: local-path-storage
+    namespace: kube-system
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: local-path-provisioner
-  namespace: local-path-storage
+  namespace: kube-system
 spec:
   replicas: 1
   selector:
@@ -125,7 +119,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: local-path-config
-  namespace: local-path-storage
+  namespace: kube-system
 data:
   config.json: |-
     {

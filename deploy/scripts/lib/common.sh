@@ -107,7 +107,7 @@ K8S_RPM_REPO_GPGKEY="${K8S_RPM_REPO_GPGKEY:-https://mirrors.aliyun.com/kubernete
 # Flannel CNI Image Repository Configuration
 FLANNEL_IMAGE_REPO="${FLANNEL_IMAGE_REPO:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/}"
 FLANNEL_MANIFEST_PATH="${FLANNEL_MANIFEST_PATH:-${CONF_DIR}/kube-flannel.yml}"
-FLANNEL_MANIFEST_URL="${FLANNEL_MANIFEST_URL:-https://raw.githubusercontent.com/flannel-io/flannel/v0.25.5/Documentation/kube-flannel.yml}"
+FLANNEL_MANIFEST_URL="${FLANNEL_MANIFEST_URL:-https://gitee.com/mirrors/flannel/raw/main/Documentation/kube-flannel.yml}"
 
 
 # Helm Configuration

@@ -11,7 +11,6 @@ accessAddress:
   port: 443
   scheme: https
   path: /
-ingressClassName: nginx
 flowAutomation:
   s3:
     default: "default"
@@ -61,7 +60,7 @@ depServices:
     source_type: internal
     type: MariaDB
     user: 'adp'
-    password: ''
+    password: 'adp@123456'
     database: 'adp'
   redis:
     connectInfo:
