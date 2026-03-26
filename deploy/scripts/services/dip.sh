@@ -110,15 +110,27 @@ _dip_ensure_kweaver_core() {
 
     local missing_isf=false
     local missing_core=false
+    local release_name
 
-    if _dip_helm_release_exists "hydra" "${namespace}"; then
-        log_info "  ✓ ISF already installed (hydra found)"
+    if [[ ${#ISF_RELEASES[@]} -gt 0 ]]; then
+        for release_name in "${ISF_RELEASES[@]}"; do
+            if _dip_helm_release_exists "${release_name}" "${namespace}"; then
+                log_info "  ✓ ISF release already installed (${release_name})"
+            else
+                log_info "  ✗ ISF release not installed (${release_name})"
+                missing_isf=true
+            fi
+        done
     else
-        log_info "  ✗ ISF not installed — installing now..."
-        missing_isf=true
+        # Fallback: keep old behavior if ISF_RELEASES is unavailable for any reason.
+        if _dip_helm_release_exists "hydra" "${namespace}"; then
+            log_info "  ✓ ISF already installed (hydra found)"
+        else
+            log_info "  ✗ ISF not installed — installing now..."
+            missing_isf=true
+        fi
     fi
 
-    local release_name
     for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do
         if _dip_helm_release_exists "${release_name}" "${namespace}"; then
             log_info "  ✓ Core release already installed (${release_name})"
@@ -278,9 +290,8 @@ install_dip() {
         use_local=true
         log_info "Using local DIP charts from: ${charts_dir}"
     else
-        # Auto-derive repo name from URL last path segment if not explicitly set
-        if [[ "${HELM_CHART_REPO_NAME}" == "kweaver" && -n "${HELM_CHART_REPO_URL}" ]]; then
-            HELM_CHART_REPO_NAME="${HELM_CHART_REPO_URL##*/}"
+        if [[ -z "${HELM_CHART_REPO_NAME}" ]]; then
+            HELM_CHART_REPO_NAME="kweaver"
         fi
         log_info "No local DIP charts directory found, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION:-latest}"
@@ -317,6 +328,12 @@ _install_dip_release_local() {
         return 1
     fi
 
+    local target_version
+    target_version=$(get_local_chart_version "${chart_tgz}")
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${release_name}" "${target_version}"; then
+        return 0
+    fi
+
     log_info "Installing ${release_name} from local chart: $(basename "${chart_tgz}")..."
 
     local -a helm_args=(
@@ -341,6 +358,15 @@ _install_dip_release_repo() {
     local namespace="$2"
     local helm_repo_name="$3"
     local release_version="$4"
+
+    local target_version="${release_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version=$(get_repo_chart_latest_version "${helm_repo_name}" "${release_name}")
+    fi
+
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${release_name}" "${target_version}"; then
+        return 0
+    fi
 
     # Clean up any pending state before installing
     local current_status

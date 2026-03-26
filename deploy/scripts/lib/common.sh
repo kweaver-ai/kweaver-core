@@ -43,6 +43,75 @@ is_helm_installed() {
     helm list -n "${ns}" --short | grep -q "^${release}$"
 }
 
+# Get currently installed chart version for a release.
+# Args: <release_name> <namespace> [chart_name]
+get_installed_chart_version() {
+    local release_name="$1"
+    local namespace="$2"
+    local chart_name="${3:-}"
+
+    local installed_chart
+    installed_chart=$(helm list -n "${namespace}" --filter "^${release_name}$" -o json 2>/dev/null \
+        | grep -o '"chart":"[^"]*"' | head -1 | sed -e 's/^"chart":"//' -e 's/"$//')
+
+    if [[ -z "${installed_chart}" ]]; then
+        return 0
+    fi
+
+    if [[ -n "${chart_name}" && "${installed_chart}" == "${chart_name}-"* ]]; then
+        echo "${installed_chart#${chart_name}-}"
+        return 0
+    fi
+
+    # Fallback format: chart string is usually <chartName>-<version>
+    echo "${installed_chart##*-}"
+}
+
+# Get latest chart version from Helm repo metadata.
+# Args: <repo_name> <chart_name>
+get_repo_chart_latest_version() {
+    local repo_name="$1"
+    local chart_name="$2"
+    helm search repo "${repo_name}/${chart_name}" --devel -l 2>/dev/null | awk 'NR==2 {print $2}'
+}
+
+# Get chart version from local .tgz package.
+# Args: <chart_tgz_path>
+get_local_chart_version() {
+    local chart_tgz="$1"
+    helm show chart "${chart_tgz}" 2>/dev/null | awk '$1=="version:" {print $2; exit}'
+}
+
+# Decide whether upgrade can be skipped when installed chart version equals target version.
+# Return 0 => skip upgrade, Return 1 => continue upgrade.
+# Args: <release_name> <namespace> <chart_name> <target_version>
+should_skip_upgrade_same_chart_version() {
+    local release_name="$1"
+    local namespace="$2"
+    local chart_name="$3"
+    local target_version="$4"
+
+    if [[ -z "${target_version}" ]]; then
+        return 1
+    fi
+
+    local current_status
+    current_status=$(helm status "${release_name}" -n "${namespace}" -o json 2>/dev/null \
+        | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ "${current_status}" != "deployed" ]]; then
+        return 1
+    fi
+
+    local installed_version
+    installed_version=$(get_installed_chart_version "${release_name}" "${namespace}" "${chart_name}")
+    if [[ -n "${installed_version}" && "${installed_version}" == "${target_version}" ]]; then
+        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}."
+        return 0
+    fi
+
+    return 1
+}
+
 # Get existing password from config.yaml if it exists
 get_existing_password() {
     local key="$1"

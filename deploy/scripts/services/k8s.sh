@@ -941,7 +941,7 @@ reset_k8s() {
     
     # Confirmation prompt
     echo ""
-    echo "WARNING: This will reset Kubernetes and clean up CNI/kubeconfig files."
+    echo "WARNING: This will completely reset Kubernetes and clean up all certificates, containers, and configurations."
     echo "This action cannot be undone."
     read -p "Type 'Y' or 'y' to confirm: " -r confirm
     
@@ -952,6 +952,12 @@ reset_k8s() {
     
     systemctl stop kubelet 2>/dev/null || true
     kubeadm reset -f 2>/dev/null || true
+    
+    # 清理 kubelet 证书目录（关键！避免证书不匹配问题）
+    rm -rf /var/lib/kubelet/pki/* 2>/dev/null || true
+    
+    # 清理容器运行时相关（只清理容器，保留镜像）
+    crictl rm --all 2>/dev/null || true
     
     rm -rf /etc/cni/net.d 2>/dev/null || true
     rm -rf /var/lib/cni 2>/dev/null || true

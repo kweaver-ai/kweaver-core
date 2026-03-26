@@ -152,6 +152,12 @@ _install_core_release_local() {
         return 1
     fi
 
+    local target_version
+    target_version=$(get_local_chart_version "${chart_tgz}")
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${release_name}" "${target_version}"; then
+        return 0
+    fi
+
     log_info "Installing ${release_name} from local chart: $(basename "${chart_tgz}")..."
 
     if helm upgrade --install "${release_name}" "${chart_tgz}" \
@@ -179,6 +185,15 @@ _install_core_release_repo() {
     fi
 
     local chart_ref="${helm_repo_name}/${chart_name}"
+
+    local target_version="${release_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version=$(get_repo_chart_latest_version "${helm_repo_name}" "${chart_name}")
+    fi
+
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${chart_name}" "${target_version}"; then
+        return 0
+    fi
 
     # Clean up any pending state before installing
     local current_status
@@ -231,9 +246,9 @@ install_core() {
     else
         log_info "No local Core charts directory found, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION}"
-        log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-proton-public} -> ${HELM_CHART_REPO_URL:-https://acr.aishu.cn/chartrepo/proton-public}"
-        HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-proton-public}"
-        HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://acr.aishu.cn/chartrepo/proton-public}"
+        log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
+        HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
+        HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
         helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}" || true
         helm repo update "${HELM_CHART_REPO_NAME}" || true
     fi

@@ -99,8 +99,8 @@ usage() {
     echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
     echo ""
     echo "  $0 kweaver-core install --enable-isf=false  # Install KWeaver Core without ISF"
-    echo "  $0 kweaver-core install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=proton-public"
-    echo "  $0 isf install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=proton-public"
+    echo "  $0 kweaver-core install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
+    echo "  $0 isf install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
     echo "  $0 kweaver-dip install --config=/root/.kweaver-ai/config.yaml"
 }
 
@@ -122,9 +122,9 @@ _read_access_address_field() {
         return 0
     fi
     awk -v key="${field}:" '
-        $1=="accessAddress:" {in=1; next}
-        in && $1==key {print $2; exit}
-        in && $0 ~ /^[^ ]/ {in=0}
+        $1=="accessAddress:" {in_block=1; next}
+        in_block && $1==key {print $2; exit}
+        in_block && $0 ~ /^[^ ]/ {in_block=0}
     ' "${CONFIG_YAML_PATH}" 2>/dev/null | sed -e 's/^"//; s/"$//' -e "s/^'//; s/'$//"
 }
 
@@ -191,16 +191,29 @@ confirm_access_address_before_install() {
         return 0
     fi
 
-    local host port path scheme
-    host="$(_read_access_address_field "host")"
-    port="$(_read_access_address_field "port")"
-    path="$(_read_access_address_field "path")"
-    scheme="$(_read_access_address_field "scheme")"
+    local raw_host raw_port raw_path raw_scheme
+    raw_host="$(_read_access_address_field "host")"
+    raw_port="$(_read_access_address_field "port")"
+    raw_path="$(_read_access_address_field "path")"
+    raw_scheme="$(_read_access_address_field "scheme")"
 
-    host="${host:-$(_detect_node_ip)}"
-    port="${port:-443}"
-    path="${path:-/}"
-    scheme="${scheme:-https}"
+    local need_confirm="false"
+    if [[ "${config_missing_before}" == "true" ]]; then
+        need_confirm="true"
+    elif [[ -z "${raw_host}" && -z "${raw_port}" && -z "${raw_path}" && -z "${raw_scheme}" ]]; then
+        need_confirm="true"
+    fi
+
+    # 正常场景：配置文件存在且 accessAddress 已有内容时，不重复弹窗
+    if [[ "${need_confirm}" != "true" ]]; then
+        return 0
+    fi
+
+    local host port path scheme
+    host="${raw_host:-$(_detect_node_ip)}"
+    port="${raw_port:-443}"
+    path="${raw_path:-/}"
+    scheme="${raw_scheme:-https}"
 
     local url="${scheme}://${host}:${port}${path}"
 

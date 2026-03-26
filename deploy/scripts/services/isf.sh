@@ -172,6 +172,15 @@ install_isf_release() {
     
     # Build Helm chart reference
     local chart_ref="${helm_repo_name}/${chart_name}"
+
+    local target_version="${release_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version=$(get_repo_chart_latest_version "${helm_repo_name}" "${chart_name}")
+    fi
+
+    if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${chart_name}" "${target_version}"; then
+        return 0
+    fi
     
     # Build Helm command
     local -a helm_args=(
