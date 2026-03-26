@@ -16,8 +16,11 @@ cd kweaver/deploy
 # 2. 编辑配置文件（可选，使用默认配置可跳过）
 # vim conf/config.yaml
 
-# 3. 一键部署所有组件，默认安装最新版本
-bash ./deploy.sh full init
+# 3. 安装 KWeaver Core（默认包含 ISF）
+bash ./deploy.sh kweaver-core install
+
+# 3'. 安装 KWeaver DIP（会自动补齐依赖）
+# bash ./deploy.sh kweaver-dip install
 ```
 
 部署完成后，访问 `https://<节点IP>/studio` 即可使用,账号admin，初始密码eisoo.com
@@ -84,35 +87,54 @@ setenforce 0
 ### 部署命令
 
 ```bash
-# 完整一键部署（推荐）
-./deploy.sh full init     # 基础设施 + KWeaver 应用服务
+# 推荐安装方式
+./deploy.sh kweaver-core install
+# 安装 KWeaver Core，默认会安装 ISF
 
-# 分层部署
-./deploy.sh infra init    # 仅基础设施：K8s + 数据服务
-./deploy.sh kweaver init  # 仅应用服务：ISF/Studio/Ontology 等
+./deploy.sh kweaver-core install --enable-isf=false
+# 安装 KWeaver Core，但不安装 ISF
 
-# 部署单个基础设施组件
-./deploy.sh k8s init      # Kubernetes 集群
-./deploy.sh mariadb init  # MariaDB
-./deploy.sh mongodb init  # MongoDB
-./deploy.sh redis init    # Redis
-./deploy.sh kafka init    # Kafka
-./deploy.sh opensearch init  # OpenSearch
+./deploy.sh kweaver-dip install
+# 安装 KWeaver DIP；如果 K8s、数据服务、ISF 或 KWeaver Core 缺失，会自动补齐依赖
 
-# 部署单个应用服务
-./deploy.sh isf init      # ISF 服务
-./deploy.sh studio init   # Studio 服务
+./deploy.sh core install
+# 同上，core 是 kweaver-core 的别名
 
-# 指定 Helm 仓库和版本
-./deploy.sh kweaver init --helm_repo=https://kweaver-ai.github.io/helm-repo/ --version=0.1.0
+./deploy.sh dip install
+# 同上，dip 是 kweaver-dip 的别名
 
-# 支持多种版本类型
-./deploy.sh kweaver init --version=0.1.0                    # 稳定版
-./deploy.sh kweaver init --version=0.0.0-feature-xxx        # 分支/开发版
-./deploy.sh kweaver init                                     # 最新版
+# kweaver-core 核心用法
+./deploy.sh kweaver-core install --config=/root/.kweaver-ai/config.yaml
+# 指定配置文件
+
+./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
+# 从指定 Helm 仓库安装指定版本
+
+
+# 其他可选命令
+./deploy.sh isf install
+./deploy.sh config generate
+./deploy.sh k8s install
+./deploy.sh storage install
+./deploy.sh mariadb install
+./deploy.sh redis install
+./deploy.sh kafka install
+./deploy.sh zookeeper install
+./deploy.sh opensearch install
+./deploy.sh ingress-nginx install
+
+# 状态与卸载
+./deploy.sh isf status
+./deploy.sh kweaver-core status
+./deploy.sh kweaver-dip status
+./deploy.sh kweaver uninstall
+./deploy.sh kweaver-core uninstall
+./deploy.sh isf uninstall
+./deploy.sh kweaver-dip uninstall
+./deploy.sh k8s reset
 
 # 查看帮助
-./deploy.sh --help
+./deploy.sh
 ```
 
 ### 验证部署

@@ -16,8 +16,11 @@ cd kweaver/deploy
 # 2. Edit the config file (optional; skip to use defaults)
 # vim conf/config.yaml
 
-# 3. Deploy all components (installs the latest version by default)
-bash ./deploy.sh full init
+# 3. Install KWeaver Core (includes ISF by default)
+bash ./deploy.sh kweaver-core install
+
+# 3'. Install KWeaver DIP (automatically installs missing dependencies)
+# bash ./deploy.sh kweaver-dip install
 ```
 
 After deployment, open `https://<node-ip>/studio`. Username: `admin`, initial password: `eisoo.com`.
@@ -84,35 +87,53 @@ The deployment scripts need access to the following domains:
 ### Deployment commands
 
 ```bash
-# Full one-click deployment (recommended)
-./deploy.sh full init     # Infrastructure + KWeaver application services
+# Recommended install paths
+./deploy.sh kweaver-core install
+# Install KWeaver Core; ISF is installed by default
 
-# Layered deployment
-./deploy.sh infra init    # Infrastructure only: K8s + data services
-./deploy.sh kweaver init  # Application services only: ISF/Studio/Ontology, etc.
+./deploy.sh kweaver-core install --enable-isf=false
+# Install KWeaver Core without ISF
 
-# Deploy a single infrastructure component
-./deploy.sh k8s init         # Kubernetes cluster
-./deploy.sh mariadb init     # MariaDB
-./deploy.sh mongodb init     # MongoDB
-./deploy.sh redis init       # Redis
-./deploy.sh kafka init       # Kafka
-./deploy.sh opensearch init  # OpenSearch
+./deploy.sh kweaver-dip install
+# Install KWeaver DIP; if K8s, data services, ISF, or KWeaver Core are missing, they will be installed automatically
 
-# Deploy a single application service
-./deploy.sh isf init         # ISF service
-./deploy.sh studio init      # Studio service
+./deploy.sh core install
+# Same as above; `core` is an alias of `kweaver-core`
 
-# Specify Helm repo and version
-./deploy.sh kweaver init --helm_repo=https://kweaver-ai.github.io/helm-repo/ --version=0.1.0
+./deploy.sh dip install
+# Same as above; `dip` is an alias of `kweaver-dip`
 
-# Multiple version types are supported
-./deploy.sh kweaver init --version=0.1.0              # Stable release
-./deploy.sh kweaver init --version=0.0.0-feature-xxx  # Branch/dev build
-./deploy.sh kweaver init                              # Latest
+# KWeaver Core examples
+./deploy.sh kweaver-core install --config=/root/.kweaver-ai/config.yaml
+# Use a specific config file
+
+./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
+# Install a specific version from a specific Helm repo
+
+# Optional commands
+./deploy.sh isf install
+./deploy.sh config generate
+./deploy.sh k8s install
+./deploy.sh storage install
+./deploy.sh mariadb install
+./deploy.sh redis install
+./deploy.sh kafka install
+./deploy.sh zookeeper install
+./deploy.sh opensearch install
+./deploy.sh ingress-nginx install
+
+# Status and uninstall
+./deploy.sh isf status
+./deploy.sh kweaver-core status
+./deploy.sh kweaver-dip status
+./deploy.sh kweaver uninstall
+./deploy.sh kweaver-core uninstall
+./deploy.sh isf uninstall
+./deploy.sh kweaver-dip uninstall
+./deploy.sh k8s reset
 
 # Help
-./deploy.sh --help
+./deploy.sh
 ```
 
 ### Verify deployment
@@ -254,4 +275,3 @@ kubectl logs -n <namespace> <pod-name>
 ## 📄 License
 
 [Apache License 2.0](../LICENSE.txt)
-
