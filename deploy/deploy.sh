@@ -709,6 +709,7 @@ main() {
                 log_info "KWeaver application services status:"
                 show_isf_status
                 show_core_status
+                show_dip_status
                 ;;
             *)
                 log_error "Unknown kweaver action: ${action}"
