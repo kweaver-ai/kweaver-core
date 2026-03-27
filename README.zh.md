@@ -49,10 +49,8 @@ cd kweaver/deploy
 chmod +x deploy.sh
 
 # 完整一键部署（推荐）
-./deploy.sh full init     # 基础设施 + KWeaver 应用服务
-# 分层部署
-./deploy.sh infra init    # 仅基础设施：K8s + 数据服务
-./deploy.sh kweaver init  # 仅应用服务：ISF/Studio/BKN/Vega 等
+./deploy.sh kweaver-core install     # 基础设施 + KWeaver 应用服务
+
 # 查看帮助
 ./deploy.sh --help
 ```

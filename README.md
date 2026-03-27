@@ -50,11 +50,8 @@ cd kweaver/deploy
 chmod +x deploy.sh
 
 # Full one-click deployment (recommended)
-./deploy.sh full init     # Infrastructure + KWeaver application services
-# Layered deployment
-./deploy.sh infra init    # Only infrastructure: K8s + data services
-./deploy.sh kweaver init  # Only application services: ISF/Studio/BKN/Vega etc.
-# Help
+./deploy.sh kweaver-core install     # Infrastructure + KWeaver application services
+
 ./deploy.sh --help
 ```
 
