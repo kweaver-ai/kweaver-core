@@ -544,6 +544,20 @@ SELECT 'opensearch', 'opensearch', 'OpenSearch 搜索引擎连接器', 'local', 
     TRUE
 FROM DUAL WHERE NOT EXISTS ( SELECT f_type FROM t_connector_type WHERE f_type = 'opensearch' );
 
+INSERT INTO t_connector_type (f_type, f_name, f_description, f_mode, f_category, f_field_config, f_enabled)
+SELECT 'postgresql', 'postgresql', 'PostgreSQL 关系型数据库连接器', 'local', 'table',
+       '{
+           "host":      {"name":"主机地址","type":"string","description":"数据库服务器主机地址","required":true,"encrypted":false},
+           "port":      {"name":"端口号","type":"integer","description":"数据库服务器端口","required":true,"encrypted":false},
+           "username":  {"name":"用户名","type":"string","description":"数据库用户名","required":true,"encrypted":false},
+           "password":  {"name":"密码","type":"string","description":"数据库密码","required":true,"encrypted":true},
+           "database":  {"name":"数据库名","type":"string","description":"PostgreSQL 连接目标 database","required":true,"encrypted":false},
+           "schemas":   {"name":"Schema 列表","type":"array","description":"可选；为空则扫描当前库下除系统 schema 外的用户 schema；非空则仅扫描列出的 schema","required":false,"encrypted":false},
+           "options":   {"name":"连接参数","type":"object","description":"连接参数（如 sslmode、connect_timeout 等）","required":false,"encrypted":false}
+       }',
+       TRUE
+FROM DUAL WHERE NOT EXISTS ( SELECT f_type FROM t_connector_type WHERE f_type = 'postgresql' );
+
 -- ==========================================
 -- 7. t_discover_task 发现任务表
 -- ==========================================
@@ -575,6 +589,39 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
     INDEX idx_catalog_id (f_catalog_id),
     INDEX idx_status (f_status)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='发现任务表，记录异步资源发现任务的状态和结果';
+
+-- ==========================================
+-- 8. t_build_task 构建任务表
+-- ==========================================
+CREATE TABLE IF NOT EXISTS t_build_task (
+    -- 主键与关联信息
+    f_id                      VARCHAR(40) NOT NULL COMMENT '任务ID',
+    f_resource_id             VARCHAR(40) NOT NULL COMMENT '资源ID',
+
+    -- 任务状态
+    f_status                  VARCHAR(20) NOT NULL COMMENT '任务状态: pending, running, completed, failed',
+    f_mode                    VARCHAR(20) NOT NULL COMMENT '任务模式: full, incremental, realtime',
+    f_total_count             BIGINT NOT NULL DEFAULT 0 COMMENT '总数',
+    f_synced_count            BIGINT NOT NULL DEFAULT 0 COMMENT '已同步数',
+    f_vectorized_count        BIGINT NOT NULL DEFAULT 0 COMMENT '已做向量数',
+    f_synced_mark             VARCHAR(100) DEFAULT NULL COMMENT '同步标记',
+    f_error_msg               TEXT DEFAULT NULL COMMENT '错误信息',
+
+    -- 审计字段
+    f_creator_id              VARCHAR(40) NOT NULL COMMENT '创建人ID',
+    f_creator_type            VARCHAR(20) NOT NULL COMMENT '创建人类型',
+    f_create_time             BIGINT NOT NULL COMMENT '创建时间',
+    f_updater_id              VARCHAR(40) NOT NULL COMMENT '更新人ID',
+    f_updater_type            VARCHAR(20) NOT NULL COMMENT '更新人类型',
+    f_update_time             BIGINT NOT NULL COMMENT '更新时间',
+
+    -- 索引
+    PRIMARY KEY (f_id),
+    INDEX idx_resource_id (f_resource_id),
+    INDEX idx_status (f_status),
+    INDEX idx_create_time (f_create_time)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT='构建任务表';
+
 
 -- Source: vega/data-connection/migrations/mariadb/0.2.0/pre/init.sql
 -- Copyright The kweaver.ai Authors.
