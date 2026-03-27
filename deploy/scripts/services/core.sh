@@ -36,6 +36,8 @@ declare -a KWEAVER_CORE_RELEASES=(
     "coderunner"
     # sandboxruntime
     "sandbox"
+    # ossgateway
+    "oss-gateway-backend"
 )
 
 # Default kweaver-core namespace
@@ -47,6 +49,17 @@ declare -A CORE_CHART_NAME_MAP=(
 
 # Default local charts directory
 CORE_LOCAL_CHARTS_DIR="${CORE_LOCAL_CHARTS_DIR:-}"
+
+# Core SQL module directories to initialize before installing Core releases.
+declare -a CORE_SQL_MODULES=(
+    "studio"
+    "ontology"
+    "agentoperator"
+    "dataagent"
+    "decisionagent"
+    "flowautomation"
+    "sandbox"
+)
 
 # Parse kweaver-core command arguments
 parse_core_args() {
@@ -87,6 +100,10 @@ parse_core_args() {
                 CORE_LOCAL_CHARTS_DIR="$2"
                 shift 2
                 ;;
+            --force-refresh)
+                FORCE_REFRESH_CHARTS="true"
+                shift
+                ;;
             --namespace=*)
                 CORE_NAMESPACE="${1#*=}"
                 shift
@@ -122,20 +139,74 @@ parse_core_args() {
 # Resolve local charts directory for kweaver-core
 _core_resolve_charts_dir() {
     if [[ -n "${CORE_LOCAL_CHARTS_DIR}" ]]; then
-        # --charts_dir was explicitly set; only use it if it exists
         if [[ -d "${CORE_LOCAL_CHARTS_DIR}" ]]; then
             echo "${CORE_LOCAL_CHARTS_DIR}"
         fi
-        return
     fi
-    echo ""
+}
+
+_core_download_charts_dir() {
+    if [[ -n "${CORE_LOCAL_CHARTS_DIR}" ]]; then
+        ensure_charts_dir "${CORE_LOCAL_CHARTS_DIR}"
+        return 0
+    fi
+
+    ensure_charts_dir "$(resolve_shared_charts_dir)"
+}
+
+init_core_databases() {
+    if ! is_rds_internal; then
+        warn_external_rds_sql_required "KWeaver Core" "${SCRIPT_DIR}/scripts/sql"
+        log_warn "Skipping automatic KWeaver Core database initialization (external RDS)"
+        return 0
+    fi
+
+    local module_name
+    local sql_dir
+    for module_name in "${CORE_SQL_MODULES[@]}"; do
+        sql_dir="${SCRIPT_DIR}/scripts/sql/${module_name}"
+        if [[ ! -d "${sql_dir}" ]]; then
+            log_warn "Skipping ${module_name} database initialization: SQL directory not found (${sql_dir})"
+            continue
+        fi
+
+        if ! init_module_database "${module_name}" "${sql_dir}"; then
+            log_error "Failed to initialize database for module: ${module_name}"
+            return 1
+        fi
+    done
+}
+
+download_core() {
+    log_info "Downloading KWeaver Core charts..."
+    ensure_helm_available
+
+    HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
+    HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
+
+    local charts_dir
+    charts_dir="$(_core_download_charts_dir)"
+
+    ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
+
+    if [[ "${ENABLE_ISF}" != "false" ]]; then
+        local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+        ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+        download_isf
+        ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+    fi
+
+    local release_name
+    for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+    done
 }
 
 # Find local chart tgz for a given release name
 _core_find_local_chart() {
     local charts_dir="$1"
     local release_name="$2"
-    find "${charts_dir}" -maxdepth 1 -name "${release_name}-*.tgz" 2>/dev/null | sort -V | tail -1
+    find_cached_chart_tgz "${charts_dir}" "${release_name}"
 }
 
 # Install a single kweaver-core release from a local .tgz
@@ -244,13 +315,12 @@ install_core() {
         use_local=true
         log_info "Using local Core charts from: ${charts_dir}"
     else
-        log_info "No local Core charts directory found, using Helm repo."
+        log_info "No explicit local Core charts directory provided, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION}"
         log_info "  Helm Repo: ${HELM_CHART_REPO_NAME:-kweaver} -> ${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
         HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
         HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
-        helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}" || true
-        helm repo update "${HELM_CHART_REPO_NAME}" || true
+        ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
     fi
 
     log_info "Target namespace: ${namespace}"
@@ -260,7 +330,21 @@ install_core() {
         log_info "ISF installation disabled via --enable-isf=false"
     else
         log_info "Installing ISF services (default, use --enable-isf=false to skip)"
-        install_isf
+        local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+        if [[ "${use_local}" == "true" ]]; then
+            ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+        fi
+        if ! install_isf; then
+            ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+            log_error "Failed to install ISF services"
+            return 1
+        fi
+        ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+    fi
+
+    if ! init_core_databases; then
+        log_error "Failed to initialize KWeaver Core databases"
+        return 1
     fi
 
     for release_name in "${KWEAVER_CORE_RELEASES[@]}"; do

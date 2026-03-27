@@ -1,6 +1,10 @@
 
 # KWeaver DIP (Data Intelligence Platform) releases list
 # Chart names correspond to the tgz files in docs/kweaver-dip/charts/
+declare -a DIP_PRERELEASES=(
+    "dip-data-migrator"
+)
+
 declare -a DIP_RELEASES=(
     "anyfabric-frontend"
     "auth-service"
@@ -66,6 +70,10 @@ parse_dip_args() {
             --charts_dir)
                 DIP_LOCAL_CHARTS_DIR="$2"
                 shift 2
+                ;;
+            --force-refresh)
+                FORCE_REFRESH_CHARTS="true"
+                shift
                 ;;
             --namespace=*)
                 DIP_NAMESPACE="${1#*=}"
@@ -222,44 +230,57 @@ _dip_ensure_data_services() {
     fi
 }
 
-# Resolve the local charts directory: use explicit override, or auto-discover
-# relative to SCRIPT_DIR (deploy root).
+# Resolve the local charts directory for install-time local chart usage.
+# Only an explicit --charts_dir opt-in enables local chart installs.
 _dip_resolve_charts_dir() {
     if [[ -n "${DIP_LOCAL_CHARTS_DIR}" ]]; then
-        echo "${DIP_LOCAL_CHARTS_DIR}"
+        if [[ -d "${DIP_LOCAL_CHARTS_DIR}" ]]; then
+            echo "${DIP_LOCAL_CHARTS_DIR}"
+        fi
+    fi
+}
+
+_dip_download_charts_dir() {
+    if [[ -n "${DIP_LOCAL_CHARTS_DIR}" ]]; then
+        ensure_charts_dir "${DIP_LOCAL_CHARTS_DIR}"
         return 0
     fi
 
-    # Auto-discover: look for charts next to deploy/ (sibling docs/ dir)
-    local candidates=(
-        "${SCRIPT_DIR}/../docs/kweaver-dip/charts"
-        "${SCRIPT_DIR}/charts/kweaver-dip"
-        "${LOCAL_CHARTS_DIR}/kweaver-dip"
-    )
-    for candidate in "${candidates[@]}"; do
-        if [[ -d "${candidate}" ]]; then
-            echo "$(cd "${candidate}" && pwd)"
-            return 0
-        fi
-    done
-
-    echo ""
-    # No local charts found: caller should fallback to Helm repo mode.
-    return 0
+    ensure_charts_dir "$(resolve_shared_charts_dir)"
 }
 
 # Find a local tgz for a chart name inside a directory (picks the first match)
 _dip_find_local_chart() {
     local charts_dir="$1"
     local chart_name="$2"
-    local tgz
-    tgz=$(find "${charts_dir}" -maxdepth 1 -name "${chart_name}-*.tgz" 2>/dev/null | sort -V | tail -1)
-    echo "${tgz}"
+    find_cached_chart_tgz "${charts_dir}" "${chart_name}"
+}
+
+_dip_show_access_hints() {
+    local base_url
+    base_url="$(get_access_address_base_url)"
+    if [[ -z "${base_url}" ]]; then
+        return 0
+    fi
+
+    log_info "Access KWeaver deploy console: ${base_url}/deploy"
+    log_info "Access KWeaver studio: ${base_url}/studio"
 }
 
 # Install DIP services via Helm
 install_dip() {
     log_info "Installing KWeaver DIP services via Helm..."
+
+    local charts_dir
+    charts_dir="$(_dip_resolve_charts_dir)"
+
+    local use_local=false
+    if [[ -n "${charts_dir}" && -d "${charts_dir}" ]]; then
+        use_local=true
+        CORE_LOCAL_CHARTS_DIR="${charts_dir}"
+        ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+        log_info "Using local DIP charts from: ${charts_dir}"
+    fi
 
     # Ensure K8s is running (install if absent)
     _dip_ensure_k8s
@@ -282,25 +303,27 @@ install_dip() {
     kubectl create namespace "${namespace}" 2>/dev/null || true
 
     # Resolve chart source: local directory takes priority over remote repo
-    local charts_dir
-    charts_dir="$(_dip_resolve_charts_dir)"
-
-    local use_local=false
-    if [[ -n "${charts_dir}" && -d "${charts_dir}" ]]; then
-        use_local=true
-        log_info "Using local DIP charts from: ${charts_dir}"
-    else
+    if [[ "${use_local}" != "true" ]]; then
         if [[ -z "${HELM_CHART_REPO_NAME}" ]]; then
             HELM_CHART_REPO_NAME="kweaver"
         fi
-        log_info "No local DIP charts directory found, using Helm repo."
+        log_info "No explicit local DIP charts directory provided, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION:-latest}"
         log_info "  Helm Repo: ${HELM_CHART_REPO_NAME} -> ${HELM_CHART_REPO_URL}"
-        helm repo add --force-update "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}" || true
-        helm repo update "${HELM_CHART_REPO_NAME}" || true
+        ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
     fi
 
     log_info "Target namespace: ${namespace}"
+
+    local release_name
+
+    for release_name in "${DIP_PRERELEASES[@]}"; do
+        if [[ "${use_local}" == "true" ]]; then
+            _install_dip_release_local "${release_name}" "${charts_dir}" "${namespace}"
+        else
+            _install_dip_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
+        fi
+    done
 
     # Install each release
     for release_name in "${DIP_RELEASES[@]}"; do
@@ -312,6 +335,41 @@ install_dip() {
     done
 
     log_info "KWeaver DIP services installation completed."
+    _dip_show_access_hints
+}
+
+download_dip() {
+    log_info "Downloading KWeaver DIP charts..."
+    ensure_helm_available
+
+    HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
+    HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
+
+    local charts_dir
+    charts_dir="$(_dip_download_charts_dir)"
+
+    local original_core_charts_dir="${CORE_LOCAL_CHARTS_DIR:-}"
+    local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+    local original_enable_isf="${ENABLE_ISF:-}"
+    CORE_LOCAL_CHARTS_DIR="${charts_dir}"
+    ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+    ENABLE_ISF="true"
+
+    ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
+    download_core
+
+    local release_name
+    for release_name in "${DIP_PRERELEASES[@]}"; do
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+    done
+
+    for release_name in "${DIP_RELEASES[@]}"; do
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+    done
+
+    CORE_LOCAL_CHARTS_DIR="${original_core_charts_dir}"
+    ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+    ENABLE_ISF="${original_enable_isf}"
 }
 
 # Install a single DIP release from a local .tgz chart file
@@ -420,6 +478,16 @@ uninstall_dip() {
         fi
     done
 
+    for ((i=${#DIP_PRERELEASES[@]}-1; i>=0; i--)); do
+        local release_name="${DIP_PRERELEASES[$i]}"
+        log_info "Uninstalling ${release_name}..."
+        if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
+            log_info "✓ ${release_name} uninstalled successfully"
+        else
+            log_warn "⚠ ${release_name} not found or already uninstalled"
+        fi
+    done
+
     log_info "KWeaver DIP services uninstallation completed."
 }
 
@@ -433,6 +501,17 @@ show_dip_status() {
 
     log_info "Namespace: ${namespace}"
     log_info ""
+
+    local release_name
+    for release_name in "${DIP_PRERELEASES[@]}"; do
+        if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
+            local status
+            status=$(helm status "${release_name}" -n "${namespace}" -o json 2>/dev/null | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+            log_info "  ✓ ${release_name}: ${status}"
+        else
+            log_info "  ✗ ${release_name}: not installed"
+        fi
+    done
 
     for release_name in "${DIP_RELEASES[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then

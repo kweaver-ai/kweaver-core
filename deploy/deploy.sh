@@ -48,13 +48,16 @@ usage() {
     echo "  ingress-nginx install         Install ingress-nginx-controller"
     echo "  ingress-nginx uninstall       Uninstall ingress-nginx-controller"
     echo "  kweaver-core install          Install KWeaver Core services (studio, ontology, agentoperator, etc.)"
+    echo "  kweaver-core download         Download/update KWeaver Core charts into deploy/.tmp/charts"
     echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
     echo "  kweaver-core status           Show KWeaver Core services status"
     echo "                                Use --enable-isf=false to skip ISF installation"
     echo "  isf install                   Install ISF services (informationsecurityfabric, hydra, sharemgnt, etc.)"
+    echo "  isf download                  Download/update ISF charts into deploy/.tmp/charts"
     echo "  isf uninstall                 Uninstall ISF services"
     echo "  isf status                    Show ISF services status"
     echo "  kweaver-dip install           Install KWeaver DIP services (17 charts); installs K8s first if not present"
+    echo "  kweaver-dip download          Download/update DIP + Core + ISF charts into deploy/.tmp/charts"
     echo "  kweaver-dip uninstall         Uninstall KWeaver DIP services"
     echo "  kweaver-dip status            Show KWeaver DIP services status"
     echo "  all install                   Run full initialization (k8s + mariadb + redis + ingress-nginx)"
@@ -88,6 +91,8 @@ usage() {
     echo "  $0 ingress-nginx install      # Install ingress-nginx-controller"
     echo "  $0 ingress-nginx uninstall    # Uninstall ingress-nginx-controller"
     echo "  $0 kweaver-dip install        # Install KWeaver DIP (auto-installs K8s if absent)"
+    echo "  $0 kweaver-dip download       # Download DIP + dependency charts into deploy/.tmp/charts"
+    echo "  $0 kweaver-dip download --charts_dir=/path/to/charts # Download DIP charts into a specific local directory"
     echo "  $0 kweaver-dip install --charts_dir=/path/to/charts  # Install DIP from a local charts directory"
     echo "  $0 kweaver-dip uninstall      # Uninstall KWeaver DIP services"
     echo "  $0 kweaver-dip status         # Show KWeaver DIP services status"
@@ -97,10 +102,18 @@ usage() {
     echo "Global Options:"
     echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
     echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
+    echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
+    echo "                                install only uses local charts when this option is explicitly set"
     echo ""
     echo "  $0 kweaver-core install --enable-isf=false  # Install KWeaver Core without ISF"
+    echo "  $0 kweaver-core download --enable-isf=false # Download Core charts only, skip ISF charts"
+    echo "  $0 kweaver-core download --charts_dir=/path/to/charts # Download Core charts into a specific local directory"
+    echo "  $0 kweaver-core install --charts_dir=/path/to/charts  # Install Core from a local charts directory"
     echo "  $0 kweaver-core install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
+    echo "  $0 isf download --charts_dir=/path/to/charts         # Download ISF charts into a specific local directory"
+    echo "  $0 isf install --charts_dir=/path/to/charts          # Install ISF from a local charts directory"
     echo "  $0 isf install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
+    echo "  $0 isf download --force-refresh              # Force re-download ISF charts to deploy/.tmp/charts"
     echo "  $0 kweaver-dip install --config=/root/.kweaver-ai/config.yaml"
 }
 
@@ -502,6 +515,10 @@ main() {
                 confirm_access_address_before_install
                 install_core
                 ;;
+            download)
+                parse_core_args "download" "$@"
+                download_core
+                ;;
             uninstall)
                 parse_core_args "uninstall" "$@"
                 uninstall_core
@@ -527,6 +544,10 @@ main() {
                 confirm_access_address_before_install
                 install_dip
                 ;;
+            download)
+                parse_dip_args "download" "$@"
+                download_dip
+                ;;
             uninstall)
                 check_root
                 parse_dip_args "uninstall" "$@"
@@ -550,6 +571,10 @@ main() {
             install|init)
                 parse_isf_args "install" "$@"
                 install_isf
+                ;;
+            download)
+                parse_isf_args "download" "$@"
+                download_isf
                 ;;
             uninstall)
                 parse_isf_args "uninstall" "$@"

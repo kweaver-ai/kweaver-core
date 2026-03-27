@@ -102,7 +102,6 @@ EOF
     helm_args=(
         upgrade --install "${OPENSEARCH_RELEASE_NAME}" "${chart_ref}"
         --namespace "${OPENSEARCH_NAMESPACE}"
-        --atomic
         --set image.repository="${os_image_repo}"
         --set image.tag="${os_image_tag}"
         --set-file config.opensearch\\.yml="${tmp_os_yml}"
@@ -121,6 +120,10 @@ EOF
         --set-string extraEnvs[0].value="${OPENSEARCH_INITIAL_ADMIN_PASSWORD}"
         --wait --timeout=900s
     )
+
+    if [[ "${OPENSEARCH_HELM_ATOMIC}" == "true" ]]; then
+        helm_args+=(--atomic)
+    fi
 
     if [[ "${use_local_chart}" != "true" ]]; then
         helm_args+=(--version "${OPENSEARCH_CHART_VERSION}")

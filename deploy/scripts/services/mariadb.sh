@@ -75,10 +75,11 @@ setup_mariadb_databases() {
     
     # Execute SQL commands
     log_info "Creating databases and granting permissions..."
-    local sql_commands="CREATE DATABASE IF NOT EXISTS \`${MARIADB_DATABASE}\`; GRANT ALL PRIVILEGES ON \`${MARIADB_DATABASE}\`.* TO '${MARIADB_USER}'@'%';"
+    local sql_commands="CREATE DATABASE IF NOT EXISTS \`${MARIADB_DATABASE}\`;"
     for db in "${databases[@]}"; do
-        sql_commands+=" CREATE DATABASE IF NOT EXISTS \`${db}\`; GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MARIADB_USER}'@'%';"
+        sql_commands+=" CREATE DATABASE IF NOT EXISTS \`${db}\`;"
     done
+    sql_commands+=" GRANT ALL PRIVILEGES ON *.* TO '${MARIADB_USER}'@'%' WITH GRANT OPTION;"
     sql_commands+=" FLUSH PRIVILEGES;"
 
     echo "${sql_commands}" | kubectl -n "${ns}" exec -i "${pod_name}" -- mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" >/dev/null 2>&1 || true

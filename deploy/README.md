@@ -19,6 +19,10 @@ cd kweaver/deploy
 # 3. Install KWeaver Core (includes ISF by default)
 bash ./deploy.sh kweaver-core install
 
+# 3'. Pre-download charts into deploy/.tmp/charts, then install from that directory explicitly
+# bash ./deploy.sh kweaver-core download
+# bash ./deploy.sh kweaver-core install --charts_dir=./.tmp/charts
+
 # 3'. Install KWeaver DIP (automatically installs missing dependencies)
 # bash ./deploy.sh kweaver-dip install
 ```
@@ -48,7 +52,8 @@ swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab
 # 3. Disable SELinux (optional; the script may handle this)
 setenforce 0
 
-# 4. Manually install container-selinux
+# 4. Manually install containerd.io
+dnf install containerd.io
 ```
 
 ### Network requirements
@@ -97,6 +102,36 @@ The deployment scripts need access to the following domains:
 ./deploy.sh kweaver-dip install
 # Install KWeaver DIP; if K8s, data services, ISF, or KWeaver Core are missing, they will be installed automatically
 
+./deploy.sh kweaver-core download
+# Download/update KWeaver Core charts into deploy/.tmp/charts; includes ISF charts by default
+
+./deploy.sh kweaver-core download --charts_dir=/path/to/charts
+# Download/update KWeaver Core charts into a specific local directory
+
+./deploy.sh kweaver-core download --enable-isf=false
+# Download only KWeaver Core charts and skip ISF charts
+
+./deploy.sh kweaver-core install --charts_dir=./.tmp/charts
+# Install KWeaver Core from pre-downloaded local charts
+
+./deploy.sh kweaver-dip download
+# Download/update DIP + Core + ISF charts into deploy/.tmp/charts
+
+./deploy.sh kweaver-dip download --charts_dir=/path/to/charts
+# Download/update DIP + Core + ISF charts into a specific local directory
+
+./deploy.sh kweaver-dip install --charts_dir=./.tmp/charts
+# Install KWeaver DIP from pre-downloaded local charts
+
+./deploy.sh isf download --force-refresh
+# Force re-download ISF charts into deploy/.tmp/charts
+
+./deploy.sh isf download --charts_dir=/path/to/charts
+# Download/update ISF charts into a specific local directory
+
+./deploy.sh isf install --charts_dir=./.tmp/charts
+# Install ISF from pre-downloaded local charts
+
 ./deploy.sh core install
 # Same as above; `core` is an alias of `kweaver-core`
 
@@ -109,6 +144,9 @@ The deployment scripts need access to the following domains:
 
 ./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
 # Install a specific version from a specific Helm repo
+
+./deploy.sh kweaver-core download --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
+# Pre-download a specific chart version from a specific Helm repo
 
 # Optional commands
 ./deploy.sh isf install
@@ -135,6 +173,18 @@ The deployment scripts need access to the following domains:
 # Help
 ./deploy.sh
 ```
+
+### Chart pre-download and cache
+
+- The shared chart cache directory defaults to `deploy/.tmp/charts`
+- If `download` cannot find `helm`, it installs `helm` first
+- `download` uses incremental refresh by default instead of re-downloading everything
+- If `--version` is set, the script only checks whether that exact chart version is already cached
+- If `--version` is not set, the script compares the repo latest chart version with the newest cached local version and only downloads when the repo is newer
+- `kweaver-core download` includes ISF charts by default; use `--enable-isf=false` to skip them
+- `kweaver-dip download` automatically downloads the full DIP + KWeaver Core + ISF dependency chart set
+- `download` is the only path that creates or updates the default shared cache in `deploy/.tmp/charts`
+- `install` does not auto-use `deploy/.tmp/charts`; pass `--charts_dir=<dir>` when you want to install from pre-downloaded local `.tgz` files
 
 ### Verify deployment
 
