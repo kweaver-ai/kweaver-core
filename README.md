@@ -10,7 +10,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
-KWeaver is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts business knowledge network (Business Knowledge Network) as its core methodology, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
+KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliable in complex enterprises.
 
 The KWeaver project includes KWeaver Core and KWeaver DIP.
 
@@ -129,20 +129,61 @@ npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
 
+> **Self-signed certificate?** If your instance uses a self-signed or untrusted TLS certificate (common for fresh deployments without a CA-issued cert), add `-k` to skip certificate verification:
+>
+> ```bash
+> kweaver auth login https://your-kweaver-instance.com -k
+> ```
+
+### Headless login (SSH, CI, containers — no browser)
+
+The **npm** `kweaver` CLI can complete OAuth without a local graphical browser:
+
+1. On a machine **with** a browser, run `kweaver auth login https://your-instance`. After success, copy the one-line command from the callback page, or run `kweaver auth export` / `kweaver auth export --json`.
+2. On the **headless** host, run that command — it uses `--client-id`, `--client-secret`, and `--refresh-token` to exchange tokens and save credentials under `~/.kweaver/` as usual.
+
+You can also run `kweaver auth login <url> --client-id … --client-secret … --refresh-token …` directly on the headless machine if you already have those values.
+
+Full details: [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication) (TypeScript package README). The Python `kweaver` CLI still uses interactive browser login; reuse the same `~/.kweaver/` directory copied from a machine where the Node CLI finished login, or set `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` (see [kweaver-sdk Authentication](https://github.com/kweaver-ai/kweaver-sdk#authentication)).
+
 ### CLI
 
 ```bash
-kweaver auth login https://your-kweaver.com     # authenticate
+kweaver auth login https://your-kweaver.com     # authenticate (-k for self-signed certs)
 kweaver bkn list                                 # browse knowledge networks
+kweaver bkn search <kn-id> "query"              # semantic search over a BKN
+kweaver bkn build <kn-id> --wait                # rebuild index and wait for completion
 kweaver bkn object-type list <kn-id>            # inspect object types
 kweaver bkn action-type execute <kn-id> <at-id> # execute an action
 kweaver agent list                               # list Decision Agents
 kweaver agent chat <agent-id> -m "Hello"        # chat with an agent
-kweaver context-loader kn-search "query"        # semantic search
+kweaver ds import-csv <ds-id> --files "*.csv"   # import CSV files into a datasource
+kweaver context-loader kn-search "query"        # semantic search via Context Loader
 kweaver call /api/...                            # raw API call
 ```
 
 ### TypeScript & Python SDK
+
+**Simple API (recommended):**
+
+```typescript
+import kweaver from "@kweaver-ai/kweaver-sdk/kweaver";
+kweaver.configure({ config: true, bknId: "your-bkn-id", agentId: "your-agent-id" });
+
+const results = await kweaver.search("What risks exist in the supply chain?");
+const reply   = await kweaver.chat("Summarise the top 3 risks");
+await kweaver.weaver({ wait: true });   // rebuild BKN index
+```
+
+```python
+import kweaver
+kweaver.configure(config=True, bkn_id="your-bkn-id", agent_id="your-agent-id")
+
+results = kweaver.search("What risks exist in the supply chain?")
+reply   = kweaver.chat("Summarise the top 3 risks")
+```
+
+**Full client API (advanced):**
 
 ```typescript
 import { KWeaverClient } from "@kweaver-ai/kweaver-sdk";

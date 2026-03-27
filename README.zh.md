@@ -10,7 +10,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
-KWeaver 是一个构建、发布、运行决策智能型 AI 应用的开源生态。此生态采用业务知识网络（Business Knowledge Network）作为核心方法论，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每一员的生产力。
+KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基础平台。它将分散的数据、知识、工具和策略转化为受治理的上下文、安全的执行和可验证的反馈闭环。通过语义建模、实时访问、运行时管控和 TraceAI，帮助 AI 系统在复杂企业环境中可靠地推理、适应和行动。
 
 KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
 
@@ -128,20 +128,61 @@ npm install -g @kweaver-ai/kweaver-sdk
 kweaver auth login https://your-kweaver-instance.com
 ```
 
+> **自签名证书？** 如果你的实例使用了自签名或不受信任的 TLS 证书（新部署且未配置 CA 签发证书时很常见），添加 `-k` 参数跳过证书验证：
+>
+> ```bash
+> kweaver auth login https://your-kweaver-instance.com -k
+> ```
+
+### 无浏览器环境登录（SSH、CI、容器等）
+
+**npm 版** `kweaver` CLI 可在没有本地图形浏览器的环境完成 OAuth 登录：
+
+1. 在**有浏览器**的机器上执行 `kweaver auth login https://你的实例`；登录成功后，从回调页复制一行命令，或执行 `kweaver auth export` / `kweaver auth export --json`。
+2. 在**无头（headless）**机器上执行该命令，通过 `--client-id`、`--client-secret`、`--refresh-token` 换取令牌并写入 `~/.kweaver/`。
+
+若已持有上述参数，也可在无头机器上直接执行：`kweaver auth login <url> --client-id … --client-secret … --refresh-token …`。
+
+完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication)）。
+
 ### CLI
 
 ```bash
-kweaver auth login https://your-kweaver.com     # 登录认证
+kweaver auth login https://your-kweaver.com     # 登录认证（自签名证书加 -k）
 kweaver bkn list                                 # 浏览知识网络
+kweaver bkn search <kn-id> "关键词"              # 知识网络语义搜索
+kweaver bkn build <kn-id> --wait                # 重建索引并等待完成
 kweaver bkn object-type list <kn-id>            # 查看对象类型
 kweaver bkn action-type execute <kn-id> <at-id> # 执行 Action
 kweaver agent list                               # 列出 Decision Agent
 kweaver agent chat <agent-id> -m "你好"          # 与 Agent 对话
-kweaver context-loader kn-search "关键词"        # 语义搜索
+kweaver ds import-csv <ds-id> --files "*.csv"   # 将 CSV 文件导入数据源
+kweaver context-loader kn-search "关键词"        # 通过 Context Loader 语义搜索
 kweaver call /api/...                            # 原始 API 调用
 ```
 
 ### TypeScript & Python SDK
+
+**简洁 API（推荐）：**
+
+```typescript
+import kweaver from "@kweaver-ai/kweaver-sdk/kweaver";
+kweaver.configure({ config: true, bknId: "your-bkn-id", agentId: "your-agent-id" });
+
+const results = await kweaver.search("供应链有哪些风险？");
+const reply   = await kweaver.chat("总结前三大风险");
+await kweaver.weaver({ wait: true });   // 重建 BKN 索引
+```
+
+```python
+import kweaver
+kweaver.configure(config=True, bkn_id="your-bkn-id", agent_id="your-agent-id")
+
+results = kweaver.search("供应链有哪些风险？")
+reply   = kweaver.chat("总结前三大风险")
+```
+
+**底层客户端（高级用法）：**
 
 ```typescript
 import { KWeaverClient } from "@kweaver-ai/kweaver-sdk";
