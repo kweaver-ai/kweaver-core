@@ -445,6 +445,60 @@ func (ca *catalogAccess) GetByName(ctx context.Context, name string) (*interface
 	return catalog, nil
 }
 
+// ListIDs lists Catalog IDs with filters.
+func (ca *catalogAccess) ListIDs(ctx context.Context, params interfaces.CatalogsQueryParams) ([]string, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "List catalog IDs",
+		trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	builder := sq.Select("f_id").From(CATALOG_TABLE_NAME)
+
+	if params.Tag != "" {
+		tag := "%" + params.Tag + "%"
+		builder = builder.Where(sq.Like{"f_tags": tag})
+	}
+
+	if params.Type != "" {
+		builder = builder.Where(sq.Eq{"f_type": params.Type})
+	}
+	if params.HealthCheckStatus != "" {
+		builder = builder.Where(sq.Eq{"f_health_check_status": params.HealthCheckStatus})
+	}
+
+	// 排序
+	if params.Sort != "" {
+		builder = builder.OrderBy(fmt.Sprintf("%s %s", params.Sort, params.Direction))
+	} else {
+		builder = builder.OrderBy("f_update_time DESC")
+	}
+
+	sqlStr, vals, err := builder.ToSql()
+	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
+		return nil, err
+	}
+
+	rows, err := ca.db.QueryContext(ctx, sqlStr, vals...)
+	if err != nil {
+		span.SetStatus(codes.Error, "Query failed")
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			span.SetStatus(codes.Error, "Scan row failed")
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return ids, nil
+}
+
 // List lists Catalogs with filters.
 func (ca *catalogAccess) List(ctx context.Context, params interfaces.CatalogsQueryParams) ([]*interfaces.Catalog, int64, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "List catalogs",
@@ -578,6 +632,106 @@ func (ca *catalogAccess) List(ctx context.Context, params interfaces.CatalogsQue
 
 	span.SetStatus(codes.Ok, "")
 	return catalogs, total, nil
+}
+
+// ListCatalogSrcsIDs lists Catalog Source IDs with filters.
+func (ca *catalogAccess) ListCatalogSrcsIDs(ctx context.Context, params interfaces.ListCatalogsQueryParams) ([]string, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcsIDs",
+		trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	builder := sq.Select("f_id").From(CATALOG_TABLE_NAME)
+
+	if params.ID != "" {
+		builder = builder.Where(sq.Eq{"f_id": params.ID})
+	}
+
+	if params.Keyword != "" {
+		keyword := "%" + params.Keyword + "%"
+		builder = builder.Where(sq.Like{"f_name": keyword})
+	}
+
+	// 排序
+	if params.Sort != "" {
+		builder = builder.OrderBy(fmt.Sprintf("%s %s", params.Sort, params.Direction))
+	} else {
+		builder = builder.OrderBy("f_update_time DESC")
+	}
+
+	sqlStr, vals, err := builder.ToSql()
+	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
+		return nil, err
+	}
+
+	rows, err := ca.db.QueryContext(ctx, sqlStr, vals...)
+	if err != nil {
+		span.SetStatus(codes.Error, "Query failed")
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			span.SetStatus(codes.Error, "Scan row failed")
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return ids, nil
+}
+
+// ListCatalogSrcsByIDs lists Catalog Sources by IDs.
+func (ca *catalogAccess) ListCatalogSrcsByIDs(ctx context.Context, ids []string) ([]*interfaces.ListCatalogEntry, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "ListCatalogSrcsByIDs",
+		trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	if len(ids) == 0 {
+		return []*interfaces.ListCatalogEntry{}, nil
+	}
+
+	builder := sq.Select(
+		"f_id",
+		"f_name",
+	).From(CATALOG_TABLE_NAME).Where(sq.Eq{"f_id": ids})
+
+	sqlStr, vals, err := builder.ToSql()
+	if err != nil {
+		span.SetStatus(codes.Error, "Build sql failed")
+		return nil, err
+	}
+
+	rows, err := ca.db.QueryContext(ctx, sqlStr, vals...)
+	if err != nil {
+		span.SetStatus(codes.Error, "Query failed")
+		return nil, err
+	}
+	defer rows.Close()
+
+	entries := make([]*interfaces.ListCatalogEntry, 0)
+	for rows.Next() {
+		entry := &interfaces.ListCatalogEntry{}
+
+		err := rows.Scan(
+			&entry.ID,
+			&entry.Name,
+		)
+		if err != nil {
+			span.SetStatus(codes.Error, "Scan row failed")
+			return nil, err
+		}
+
+		entry.Type = interfaces.RESOURCE_TYPE_CATALOG
+		entries = append(entries, entry)
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return entries, nil
 }
 
 // ListCatalogSrcs lists Catalog Sources with filters.

@@ -146,6 +146,51 @@ func (mr *MockCatalogAccessMockRecorder) ListCatalogSrcs(ctx, params any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCatalogSrcs", reflect.TypeOf((*MockCatalogAccess)(nil).ListCatalogSrcs), ctx, params)
 }
 
+// ListCatalogSrcsByIDs mocks base method.
+func (m *MockCatalogAccess) ListCatalogSrcsByIDs(ctx context.Context, ids []string) ([]*interfaces.ListCatalogEntry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCatalogSrcsByIDs", ctx, ids)
+	ret0, _ := ret[0].([]*interfaces.ListCatalogEntry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCatalogSrcsByIDs indicates an expected call of ListCatalogSrcsByIDs.
+func (mr *MockCatalogAccessMockRecorder) ListCatalogSrcsByIDs(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCatalogSrcsByIDs", reflect.TypeOf((*MockCatalogAccess)(nil).ListCatalogSrcsByIDs), ctx, ids)
+}
+
+// ListCatalogSrcsIDs mocks base method.
+func (m *MockCatalogAccess) ListCatalogSrcsIDs(ctx context.Context, params interfaces.ListCatalogsQueryParams) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListCatalogSrcsIDs", ctx, params)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListCatalogSrcsIDs indicates an expected call of ListCatalogSrcsIDs.
+func (mr *MockCatalogAccessMockRecorder) ListCatalogSrcsIDs(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCatalogSrcsIDs", reflect.TypeOf((*MockCatalogAccess)(nil).ListCatalogSrcsIDs), ctx, params)
+}
+
+// ListIDs mocks base method.
+func (m *MockCatalogAccess) ListIDs(ctx context.Context, params interfaces.CatalogsQueryParams) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIDs", ctx, params)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIDs indicates an expected call of ListIDs.
+func (mr *MockCatalogAccessMockRecorder) ListIDs(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIDs", reflect.TypeOf((*MockCatalogAccess)(nil).ListIDs), ctx, params)
+}
+
 // Update mocks base method.
 func (m *MockCatalogAccess) Update(ctx context.Context, catalog *interfaces.Catalog) error {
 	m.ctrl.T.Helper()

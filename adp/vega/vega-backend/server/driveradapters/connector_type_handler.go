@@ -174,7 +174,7 @@ func (r *restHandler) RegisterConnectorType(c *gin.Context) {
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
-// GetConnectorType handles GET /api/vega-backend/v1/connector-types/:id
+// GetConnectorType handles GET /api/vega-backend/v1/connector-types/:type
 func (r *restHandler) GetConnectorType(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"GetConnectorType", trace.WithSpanKind(trace.SpanKindServer))
@@ -193,9 +193,9 @@ func (r *restHandler) GetConnectorType(c *gin.Context) {
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	id := c.Param("id")
+	tp := c.Param("type")
 
-	connectorType, err := r.cts.GetByType(ctx, id)
+	connectorType, err := r.cts.GetByType(ctx, tp)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)

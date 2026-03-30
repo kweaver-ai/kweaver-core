@@ -194,13 +194,14 @@ func TestGetByCatalogID_Success(t *testing.T) {
 
 func TestList_Pagination(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
-	resources := []*interfaces.Resource{{ID: "r1"}, {ID: "r2"}, {ID: "r3"}, {ID: "r4"}}
-	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(4), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any(), true, gomock.Any()).
+	ids := []string{"c1", "c2", "c3", "c4"}
+	mockRA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
-			"r1": {}, "r2": {}, "r3": {}, "r4": {},
+			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"}, "c3": {ResourceID: "c3"}, "c4": {ResourceID: "c4"},
 		}, nil)
+	resources := []*interfaces.Resource{{ID: "r2"}, {ID: "r3"}}
+	mockRA.EXPECT().GetByIDsBasic(gomock.Any(), gomock.Any()).Return(resources, nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	result, total, err := rs.List(context.Background(), interfaces.ResourcesQueryParams{
@@ -222,13 +223,14 @@ func TestList_Pagination(t *testing.T) {
 
 func TestList_ReturnAll(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
+	ids := []string{"c1", "c2"}
 	resources := []*interfaces.Resource{{ID: "r1"}, {ID: "r2"}}
-	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(2), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any(), true, gomock.Any()).
+	mockRA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
-			"r1": {}, "r2": {},
+			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"},
 		}, nil)
+	mockRA.EXPECT().GetByIDsBasic(gomock.Any(), gomock.Any()).Return(resources, nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	result, total, err := rs.List(context.Background(), interfaces.ResourcesQueryParams{
@@ -247,11 +249,11 @@ func TestList_ReturnAll(t *testing.T) {
 
 func TestList_OffsetBeyondTotal(t *testing.T) {
 	rs, mockRA, mockPS, _, _, _ := newTestService(t)
-	resources := []*interfaces.Resource{{ID: "r1"}}
-	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(1), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any(), true, gomock.Any()).
-		Return(map[string]interfaces.PermissionResourceOps{"r1": {}}, nil)
+
+	ids := []string{"c1"}
+	mockRA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
+		Return(map[string]interfaces.PermissionResourceOps{"c1": {ResourceID: "c1"}}, nil)
 
 	result, total, err := rs.List(context.Background(), interfaces.ResourcesQueryParams{
 		PaginationQueryParams: interfaces.PaginationQueryParams{Offset: 10, Limit: 5},

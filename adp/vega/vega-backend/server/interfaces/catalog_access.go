@@ -21,6 +21,8 @@ type CatalogAccess interface {
 	GetByName(ctx context.Context, name string) (*Catalog, error)
 	// List lists Catalogs with filters.
 	List(ctx context.Context, params CatalogsQueryParams) ([]*Catalog, int64, error)
+	// ListIDs lists Catalog IDs with filters.
+	ListIDs(ctx context.Context, params CatalogsQueryParams) ([]string, error)
 	// Update updates a Catalog.
 	Update(ctx context.Context, catalog *Catalog) error
 	// DeleteByIDs deletes Catalogs by IDs.
@@ -33,4 +35,8 @@ type CatalogAccess interface {
 
 	// ListCatalogSrcs lists Catalog Sources with filters.
 	ListCatalogSrcs(ctx context.Context, params ListCatalogsQueryParams) ([]*ListCatalogEntry, int64, error)
+	// ListCatalogSrcsIDs lists Catalog Source IDs with filters.
+	ListCatalogSrcsIDs(ctx context.Context, params ListCatalogsQueryParams) ([]string, error)
+	// ListCatalogSrcsByIDs lists Catalog Sources by IDs.
+	ListCatalogSrcsByIDs(ctx context.Context, ids []string) ([]*ListCatalogEntry, error)
 }
