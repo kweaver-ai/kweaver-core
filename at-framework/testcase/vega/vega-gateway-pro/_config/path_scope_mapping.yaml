@@ -1,0 +1,29 @@
+# 路径 → 作用域/标签/建议套件 映射：vega-gateway-pro 模块
+
+mappings:
+  - paths:
+      - "vega/vega-gateway-pro/**"
+    scope: "vega-gateway-pro"
+    tags:
+      - "gateway-pro"
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
+
+  - paths:
+      - "vega/vega-gateway-pro/src/main/java/com/eisoo/gateway/controller/LoadBalancerController.java"
+    scope: "loadbalancer"
+    tags:
+      - "loadbalancer"
+      - "lb"
+    suggested_suites:
+      - "loadbalancer_test.yaml"
+
+  - paths:
+      - "vega/vega-gateway-pro/src/main/java/com/eisoo/gateway/controller/CircuitBreakerController.java"
+    scope: "circuitbreaker"
+    tags:
+      - "circuitbreaker"
+      - "熔断"
+    suggested_suites:
+      - "circuitbreaker_test.yaml"

@@ -7,19 +7,79 @@
 @File   : test_run.py
 """
 import json
+import random
+import string as _str
 from json import JSONDecodeError
 
 import allure
 import jsonpath
 import pytest
-from jinja2 import Template
+from jinja2 import Environment
 from jsonschema.validators import validate
 
-from common.func import replace_params, genson
+from common import at_env
+from common.func import replace_params, replace_placeholders, genson
 from conftest import config, compute_case_list, BEARER_AUTH
 from request.http_client import HTTPClient
 
 resp_values = {}
+
+
+def _resolve_authorization(case_info):
+    """默认 Bearer 见 conftest（环境变量优先）；套件 token_source: login 时再调 get_token。"""
+    src = (case_info.get("_token_source") or "").strip().lower()
+    if src not in ("login", "get_token", "token_provider"):
+        return BEARER_AUTH
+    try:
+        from src.common.token_provider import get_token
+
+        user, pwd = at_env.admin_credentials(config)
+        if not user:
+            allure.attach("token_source=login 但未配置 AT_ADMIN_USER / test_data.admin_user，已回退默认 Bearer", name="鉴权说明")
+            return BEARER_AUTH
+        tok = get_token(user, pwd)
+        if tok:
+            return "Bearer %s" % tok
+        allure.attach(
+            "get_token 返回空，已回退默认 Bearer（AT_API_TOKEN / external.token / test_data.application_token）",
+            name="鉴权说明",
+        )
+    except Exception as ex:
+        allure.attach(str(ex), name="get_token 异常")
+    return BEARER_AUTH
+
+
+def _jinja_random_string(length=8, model=8):
+    """与 etrino 用例中 `random_string(6, 8)` 一致，供 Jinja 渲染；不依赖 faker。"""
+    chars = ""
+    if model & 1:
+        chars += _str.whitespace
+    if (model >> 1) & 1:
+        chars += _str.ascii_lowercase
+    if (model >> 2) & 1:
+        chars += _str.ascii_uppercase
+    if (model >> 3) & 1:
+        chars += _str.digits
+    if (model >> 4) & 1:
+        chars += _str.hexdigits
+    if (model >> 5) & 1:
+        chars += _str.octdigits
+    if (model >> 6) & 1:
+        chars += _str.punctuation + r"·！￥……（）【】、：；“‘《》，。？、"
+    if not chars:
+        chars = _str.ascii_lowercase + _str.digits
+    return "".join(random.choices(chars, k=max(1, int(length))))
+
+
+_jinja_env = Environment()
+_jinja_env.globals["random_string"] = _jinja_random_string
+
+
+def _render_jinja_fields(case_info):
+    out = {}
+    for k, v in case_info.items():
+        out[k] = _jinja_env.from_string(v).render() if isinstance(v, str) else v
+    return out
 
 
 def pytest_generate_tests(metafunc):
@@ -52,8 +112,9 @@ def test_case(feature, story, case_name, case_info):
         # 更新前序用例提取的变量
         case_info = replace_params(case_info, **resp_values)
 
-        # jinja2渲染变量
-        case_info = {k: Template(v).render() for k, v in case_info.items()}
+        # 替换 DP_AT 风格占位符（${ts_uuid}, ${random_str} 等）
+        case_info = {k: replace_placeholders(v) for k, v in case_info.items()}
+        case_info = _render_jinja_fields(case_info)
 
         # 替换path参数
         if case_info["path_params"] != '':
@@ -67,7 +128,7 @@ def test_case(feature, story, case_name, case_info):
                 case_headers.update(json.loads(case_info["header_params"]))
             except JSONDecodeError:
                 pass
-        case_headers["Authorization"] = BEARER_AUTH
+        case_headers["Authorization"] = _resolve_authorization(case_info)
         case_query_params = json.loads(case_info["query_params"]) if case_info["query_params"] != '' else {}
         case_body_params = json.loads(case_info["body_params"]) if case_info["body_params"] != '' else {}
         try:
@@ -84,8 +145,7 @@ def test_case(feature, story, case_name, case_info):
         )
 
     with allure.step("发送请求"):
-        _scheme = (config["env"].get("request_scheme") or "https").strip().rstrip(":/") or "https"
-        _host = (config["env"].get("host") or "").strip()
+        _scheme, _host = at_env.resolve_request_target(config)
         client = HTTPClient(url="%s://%s%s" % (_scheme, _host, case_info["url"]),
                             method=case_info["method"], headers=case_headers)
         send_kw = dict(params=case_query_params, json=case_body_params, data=case_form_params)

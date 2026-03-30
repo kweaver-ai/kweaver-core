@@ -1,0 +1,345 @@
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊查询（in）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: in
+    field: p_personid
+    value: [102,65,94]
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,精确查询（"=="）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: "=="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊查询（》=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: ">="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊查询（!=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: "!="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊查询（》=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: "<="
+    field: p_personid
+    value: 102
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,子条件and
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: p_firstname
+        operation: like
+        value: K%
+      - field: p_gender
+        operation: "=="
+        value: female
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,子条件or
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: or
+    sub_conditions:
+      - field: p_firstname
+        operation: like
+        value: K%
+      - field: p_gender
+        operation: "=="
+        value: female
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,多层嵌套
+  ot_id: post
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: ps_browserused
+        value: Firefox
+        operation: "!="
+      - operation: and
+        sub_conditions:
+          - field: ps_language
+            value: uz
+            operation: "=="
+          - field: ps_locationip
+            value: 59.165.223.95
+            operation: "=="
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊-虚拟化查询（in）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: in
+    field: p_personid
+    value: [102,65,94]
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,精确-虚拟化查询（"=="）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: "=="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊-虚拟化查询（》=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: ">="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊-虚拟化查询（!=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: "!="
+    field: p_personid
+    value: 102
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,模糊-虚拟化查询（》=）
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: "<="
+    field: p_personid
+    value: 102
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,-子条件-虚拟化查询-and
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: and
+    sub_conditions:
+      - field: p_firstname
+        operation: like
+        value: K%
+      - field: p_gender
+        operation: "=="
+        value: female
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,子条件-虚拟化-or
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: or
+    sub_conditions:
+      - field: p_firstname
+        operation: like
+        value: K%
+      - field: p_gender
+        operation: "=="
+        value: female
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,多层嵌套--虚拟化查询
+  ot_id: post
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: true
+  condition:
+    operation: and
+    sub_conditions:
+      - field: ps_browserused
+        value: Firefox
+        operation: "!="
+      - operation: and
+        sub_conditions:
+          - field: ps_language
+            value: uz
+            operation: "=="
+          - field: ps_locationip
+            value: 59.165.223.95
+            operation: "=="
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,索引查询-match
+  ot_id: person
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: p_lastname
+        operation: match
+        value: Kapoor
+      - field: p_gender
+        operation: match
+        value: female
+  assert_data:
+    - p_personid: 30786325579247
+    - p_personid: 28587302323191
+    - p_personid: 19791209301475
+    - p_personid: 19791209300814
+    - p_personid: 8796093023560
+    - p_personid: 2199023256576
+
+
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,索引查询-knn
+  ot_id: tagclass
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: tc_name
+        operation: knn
+        value: wor
+        limit_key: k
+        limit_value: 10
+
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,knn+match
+  ot_id: tagclass
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: tc_name
+        operation: knn
+        value: wor
+        limit_key: k
+        limit_value: 10
+      - field: tc_name
+        operation: match
+        value: work
+  assert_data:
+    - tc_tagclassid: 188
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,knn+"=="
+  ot_id: tagclass
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: tc_name
+        operation: knn
+        value: wor
+        limit_key: k
+        limit_value: 10
+      - field: tc_tagclassid
+        operation: "<="
+        value: 50
+
+  assert_data:
+    - tc_tagclassid: 0
+    - tc_tagclassid: 41
+    - tc_tagclassid: 43
+
+- case_name: 查询场景-ldbc-检索指定对象类的详细数据,match+"=="
+  ot_id: tagclass
+  test_type: positive
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: and
+    sub_conditions:
+      - field: tc_name
+        operation: match
+        value: COUNTRY
+      - field: tc_tagclassid
+        operation: "<="
+        value: 100
+
+  assert_data:
+    - tc_tagclassid: 62

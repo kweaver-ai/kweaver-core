@@ -1,0 +1,17 @@
+cases:
+- case_id: ontology_job_001
+  suite: Ontology Job (legacy migration)
+  switch: n
+  name: ontology_job
+  description: 执行本体任务 / Run ontology job
+  api_name: list_knowledge_networks
+  tags:
+  - ontology
+  - legacy
+  - api:list_knowledge_networks
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0

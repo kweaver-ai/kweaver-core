@@ -10,7 +10,11 @@ import configparser
 import copy
 import json
 import os
+import re
 import string
+import time
+import uuid
+import random
 import warnings
 
 from genson import SchemaBuilder
@@ -21,6 +25,12 @@ try:
     _YAML_AVAILABLE = True
 except ImportError:
     _YAML_AVAILABLE = False
+
+# 高频常用汉字表（用于随机中文生成）
+_COMMON_HANZI = (
+    "的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十"
+    "三之进等部度家电力里如水化高自二理起小物现实现加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那主义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道路命此变条只没结解决问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设置及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任选取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清念建"
+)
 
 
 def _strict_missing_api():
@@ -199,6 +209,10 @@ def load_case_from_yaml(base_dir):
                 case["tags"] = list(ct)
             else:
                 case["tags"] = list(suite_tags)
+            # 套件或单条用例可设 token_source: login，执行时走 token_provider.get_token
+            case["_token_source"] = str(
+                c.get("token_source") or suite.get("token_source", "") or ""
+            ).strip()
             case_list.append(case)
 
     if skipped_missing_api:
@@ -290,7 +304,7 @@ def replace_params(input_case, **kwargs):
 
 
 def load_sys_config(file):
-    cfg = configparser.ConfigParser()
+    cfg = configparser.ConfigParser(interpolation=None)
     cfg.read(file, encoding="utf-8")
     return {x: {y[0]: y[1] for y in cfg.items(x)} for x in cfg.sections()}
 
@@ -300,6 +314,138 @@ def genson(data: dict):
     builder.add_object(data)
     to_schema = builder.to_schema()
     return to_schema
+
+
+# ============= DP_AT 风格占位符替换支持 =============
+
+def _random_str(length=8, kind="alnum"):
+    """生成随机字符串"""
+    if length <= 0:
+        return ""
+    kind = (kind or "alnum").lower()
+    if kind == "digits":
+        pool = string.digits
+    elif kind == "letters":
+        pool = string.ascii_letters
+    elif kind == "hex":
+        pool = "0123456789abcdef"
+    else:
+        pool = string.ascii_letters + string.digits
+    return "".join(random.choice(pool) for _ in range(length))
+
+
+def _random_int(min_value=0, max_value=10**9):
+    """生成随机整数"""
+    if min_value > max_value:
+        min_value, max_value = max_value, min_value
+    return random.randint(min_value, max_value)
+
+
+def _random_cn(length=4):
+    """生成随机中文"""
+    if length <= 0:
+        return ""
+    return "".join(random.choice(_COMMON_HANZI) for _ in range(length))
+
+
+def _fake_cn_name():
+    """生成中文姓名"""
+    return _random_cn(random.randint(2, 3))
+
+
+def _ts_uuid():
+    """生成时间戳 UUID"""
+    return f"{int(time.time())}_{_random_str(6)}"
+
+
+def _gen_uuid():
+    """生成标准 UUID"""
+    return str(uuid.uuid4())
+
+
+def _ts_ms():
+    """当前时间戳（毫秒）"""
+    return int(time.time() * 1000)
+
+
+def _ts_s():
+    """当前时间戳（秒）"""
+    return int(time.time())
+
+
+def replace_placeholders(text):
+    """
+    替换 DP_AT 风格占位符：${func(args)}
+    支持的占位符：
+    - ${ts_uuid} -> 时间戳 UUID
+    - ${uuid} -> 标准 UUID
+    - ${random_str} / ${random_str(n)} -> 随机字符串
+    - ${random_int} / ${random_int(min,max)} -> 随机整数
+    - ${fake_cn_name} -> 中文姓名
+    - ${random_cn} / ${random_cn(n)} -> 随机中文
+    - ${ts_ms} -> 毫秒时间戳
+    - ${ts_s} -> 秒时间戳
+    """
+    if not isinstance(text, str):
+        return text
+    
+    if "${" not in text:
+        return text
+    
+    pattern = re.compile(r'\$\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\}')
+    
+    def _parse_args(arg_str):
+        if not arg_str:
+            return []
+        parts = []
+        for raw in arg_str.split(","):
+            item = raw.strip()
+            if item:
+                try:
+                    parts.append(int(item))
+                except ValueError:
+                    parts.append(item)
+        return parts
+    
+    def repl(m):
+        func_name = m.group(1).strip()
+        args = _parse_args(m.group(2)) if m.group(2) else []
+        
+        func_map = {
+            'ts_uuid': lambda: _ts_uuid(),
+            'uuid': lambda: _gen_uuid(),
+            'random_str': lambda: _random_str(*args) if args else _random_str(),
+            'random_int': lambda: _random_int(*args) if args else _random_int(),
+            'fake_cn_name': lambda: _fake_cn_name(),
+            'random_cn': lambda: _random_cn(*args) if args else _random_cn(),
+            'ts_ms': lambda: _ts_ms(),
+            'ts_s': lambda: _ts_s(),
+        }
+        
+        func = func_map.get(func_name)
+        if func:
+            try:
+                return str(func())
+            except Exception:
+                return m.group(0)
+        return m.group(0)
+    
+    return pattern.sub(repl, text)
+
+
+def replace_params_with_placeholders(input_case, **kwargs):
+    """
+    先替换 global 变量，再替换占位符
+    """
+    tmp_case = copy.deepcopy(input_case)
+    # 第一步：替换 global 变量
+    output_case = {k: string.Template(str(v)).safe_substitute(**kwargs) for k, v in tmp_case.items()}
+    # 第二步：替换占位符
+    output_case = {k: replace_placeholders(v) for k, v in output_case.items()}
+    return output_case
+
+
+# ============= 占位符替换支持结束 =============
 
 
 if __name__ == "__main__":

@@ -1,0 +1,22 @@
+# 指标模型 YAML 用例数据
+
+# 正向测试用例
+- case_name: "指标模型-正常创建-名称-中文名称"
+  metric_id: "${ts_uuid}"
+  metric_name: "${fake_cn_name}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+
+
+
+# 异常测试用例
+- case_name: "指标模型-异常创建-名称-超长"
+  metric_id: "${ts_uuid}"
+  metric_name: "${random_str(256)}"
+  test_type: "negative"
+  expected_status: 400
+  expected_res: "指标模型名称长度超出限制"
+  should_exist_in_db: true
+

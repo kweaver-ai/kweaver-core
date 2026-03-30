@@ -1,0 +1,172 @@
+# ==================================================
+# 对象类更新 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类更新接口对各种有效参数的处理能力
+# - 确保接口能够正确更新对象类并返回成功状态
+# - 覆盖所有正常使用场景的参数组合
+
+### 测试用例分类
+# 1. **基本更新测试**：验证各种名称格式的更新
+# 2. **参数校验-正向测试**：验证参数的各种有效情况
+# 3. **边界值测试**：验证参数的边界值情况
+# 4. **可选参数测试**：验证exclude_fields参数的使用
+
+### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本更新测试
+# ==================================================
+
+- case_name: "对象类-更新-名称-中文名称"
+  object_c_name: "${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "update-${fake_cn_name}"
+  data_properties: 4
+
+- case_name: "对象类-更新-名称-字符"
+  object_c_name: "${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "update-${random_str}"
+  data_properties: 4
+
+- case_name: "对象类-更新-名称-数字"
+  object_c_name: "${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "update-${random_int}"
+  data_properties: 4
+
+- case_name: "对象类-更新-名称-混合类型"
+  object_c_name: "${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "${fake_cn_name}${random_int}${random_str}"
+  data_properties: 4
+
+
+# ==================================================
+# 2. 参数校验-正向测试
+# ==================================================
+
+# - case_name: "参数校验-更新时缺少branch参数"
+#   object_c_name: "原始对象类-${random_str}"
+#   object_id: "${ts_uuid}"
+#   object_u_name: "更新对象类-${random_str}"
+#   data_properties: 4
+#   exclude_fields: ["branch"]
+#   note: "branch允许不传"
+
+- case_name: "参数校验-更新name为最短有效字符串"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  data_properties: 4
+  object_u_name: "A"
+  note: "name为单个字符应该成功"
+
+- case_name: "参数校验-更新name包含特殊字符"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  data_properties: 4
+  object_u_name: "更新@#$%^&*()对象类"
+  note: "name可以包含特殊字符"
+
+- case_name: "参数校验-更新name包含emoji"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  data_properties: 4
+  object_u_name: "更新😀对象类"
+  note: "name可以包含emoji"
+
+- case_name: "参数校验-更新name包含空格"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  data_properties: 4
+  object_u_name: "更新 对象类"
+  note: "name可以包含空格"
+
+
+# ==================================================
+# 3. 可选参数测试
+# ==================================================
+
+- case_name: "参数校验-更新时不传可选参数tags"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 4
+  exclude_fields: ["tags"]
+  note: "tags是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数comment"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 4
+  exclude_fields: ["comment"]
+  note: "comment是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数icon"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 4
+  exclude_fields: ["icon"]
+  note: "icon是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数color"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 4
+  exclude_fields: ["color"]
+  note: "color是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传所有可选参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 4
+  exclude_fields: ["tags", "comment", "icon", "color"]
+  note: "不传所有可选参数应该成功"
+
+
+# ==================================================
+# 4. 边界值测试
+# ==================================================
+
+- case_name: "参数校验-更新data_properties包含1个属性"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 1
+  note: "data_properties包含1个属性应该成功"
+
+- case_name: "参数校验-更新data_properties包含100个属性"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 100
+  note: "data_properties包含100个属性应该成功"
+
+- case_name: "参数校验-正常更新name"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  data_properties: 4
+  object_u_name: "更新后的对象类名称-${random_str}"
+  note: "正常更新name应该成功"
+
+- case_name: "参数校验-正常更新data_properties"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 5
+  note: "正常更新data_properties应该成功"

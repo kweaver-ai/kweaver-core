@@ -1,0 +1,22 @@
+# 套件清单：vega-backend 模块
+
+suites:
+  - name: smoke_test.yaml
+    description: 冒烟测试
+    priority: high
+    estimated_duration: "5m"
+
+  - name: query_test.yaml
+    description: 查询执行和会话管理测试
+    priority: high
+    estimated_duration: "15m"
+
+  - name: resource_crud.yaml
+    description: 资源增删改查测试
+    priority: medium
+    estimated_duration: "10m"
+
+  - name: permission_test.yaml
+    description: 权限检查测试
+    priority: medium
+    estimated_duration: "8m"

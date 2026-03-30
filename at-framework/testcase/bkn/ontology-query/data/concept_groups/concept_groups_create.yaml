@@ -1,0 +1,126 @@
+# 正向测试用例
+- case_name: "概念分组-名称-中文名称"
+  groups_id: "${ts_uuid}"
+  groups_name: "${fake_cn_name}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-名称-英文名称"
+  groups_id: "${ts_uuid}"
+  groups_name: "${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-名称-纯数字"
+  groups_id: "${ts_uuid}"
+  groups_name: "${random_int}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-名称-混合名称"
+  groups_id: "${ts_uuid}"
+  groups_name: "${fake_cn_name}${random_int}${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-ID为空"
+  groups_id: ""
+  groups_name: "ID为空-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-小写字母"
+  groups_id: "${random_str}"
+  groups_name: "小写字母-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-下划线连字符"
+  groups_id: "${random_str}-_"
+  groups_name: "下划线连字符-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+
+- case_name: "概念分组-最小必填"
+  groups_id: "${ts_uuid}_min"
+  groups_name: "最小字段-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+# 边界值测试用例
+- case_name: "概念分组-边界值-最短有效ID"
+  groups_id: "${random_str(1)}"
+  groups_name: "最短ID测试-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+
+- case_name: "概念分组-边界值-特殊字符名称"
+  groups_id: "${ts_uuid}_special"
+  groups_name: "特殊字符@#$%^&*()测试-${random_str}"
+  test_type: "positive"
+  expected_status: 201
+  should_exist_in_db: true
+
+# 异常测试用例
+- case_name: "概念分组-异常创建-超长名称"
+  groups_id: "${random_str(10)}"
+  groups_name: "${random_str(256)}"
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: false
+
+- case_name: "概念分组-异常创建-无效ID字符"
+  groups_id: "invalid@~!@#$%^&*(Z)"
+  groups_name: "无效ID字符测试-${random_str}"
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: false
+
+- case_name: "概念分组-异常创建-ID以下划线开头"
+  groups_id: "_invalid_start_${random_str}"
+  groups_name: "下划线开头ID-${random_str}"
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: false
+
+- case_name: "概念分组-异常创建-ID以连字符开头"
+  groups_id: "-invalid-start-${random_str}"
+  groups_name: "连字符开头ID-${random_str}"
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: false
+
+- case_name: "概念分组-异常创建-空名称"
+  groups_id: "${ts_uuid}_empty_name"
+  groups_name: ""
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: false
+
+- case_name: "概念分组-异常创建-重复ID"
+  groups_id: "duplicate_id_${random_str}"
+  groups_name: "重复ID测试-${random_str}"
+  test_type: "negative"
+  expected_status: 400
+  should_exist_in_db: true
+  note: "重复ID—name"
+
+- case_name: "概念分组-异常创建-重复name"
+  groups_id: ""
+  groups_name: "重复name测试-${random_str}"
+  test_type: "negative"
+  expected_status: 403
+  should_exist_in_db: true
+  note: "重复ID—name"
+

@@ -1,0 +1,156 @@
+# ==================================================
+# 业务知识网络更新 - 负向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证业务知识网络更新接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验失败场景
+
+### 测试用例分类
+# 1. **必填参数缺失测试**：验证必填参数缺失的情况
+# 2. **name字段校验测试**：验证名称字段的格式校验
+# 3. **tags字段校验测试**：验证标签字段的格式校验
+# 4. **comment字段校验测试**：验证备注字段的格式校验
+# 5. **ID字段校验测试**：验证ID字段的格式校验
+# 6. **权限校验测试**：验证权限相关的测试场景
+# 7. **特殊场景测试**：验证特殊场景下的测试用例
+
+### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - kn_c_name：创建时的名称
+#   - kn_id：业务知识网络ID
+#   - kn_u_name：更新后的名称
+#   - 其他参数：根据测试场景而定
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 必填参数缺失测试
+# ==================================================
+
+- case_name: "必填参数缺失-缺少name参数"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: ""
+  expected_status: 400
+  note: "更新时缺少name参数应该失败"
+
+- case_name: "必填参数缺失-name为空字符串"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: ""
+  expected_status: 400
+  note: "更新时name为空字符串应该失败"
+
+
+# ==================================================
+# 2. name字段校验测试
+# ==================================================
+
+- case_name: "name校验-name长度超过40字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "${random_str(41)}"
+  expected_status: 400
+  note: "更新名称长度超过40个字符应该失败"
+
+- case_name: "name校验-name为超长字符串"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "${random_str(256)}"
+  expected_status: 400
+  note: "更新名称为超长字符串应该失败"
+
+
+# ==================================================
+# 3. tags字段校验测试
+# ==================================================
+
+- case_name: "tags校验-tags超过5个元素"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags测试-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: ["标签1", "标签2", "标签3", "标签4", "标签5", "标签6"]
+  expected_status: 400
+  note: "更新tags超过5个元素应该失败"
+
+- case_name: "tags校验-tag名称包含特殊字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags测试-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: ["标签包含/:?\"<>|"]
+  expected_status: 400
+  note: "更新tags包含特殊字符应该失败"
+
+- case_name: "tags校验-tag名称为空字符串"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags测试-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: [""]
+  expected_status: 400
+  note: "更新tags包含空字符串标签应该失败"
+
+- case_name: "tags校验-tag名称长度超过40字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags测试-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: ["${random_str(41)}"]
+  expected_status: 400
+  note: "更新tags包含超长名称标签应该失败"
+
+
+# ==================================================
+# 4. comment字段校验测试
+# ==================================================
+
+- case_name: "comment校验-comment长度超过255字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-comment测试-${random_str}"
+  kn_c_comment: ""
+  kn_u_comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "更新备注长度超过1000个字符应该失败"
+
+
+# ==================================================
+# 5. ID字段校验测试
+# ==================================================
+
+- case_name: "ID校验-更新不存在的ID"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  non_existent_id: "non_existent_id_${random_str}"
+  kn_u_name: "更新测试-${random_str}"
+  expected_status: 403
+  note: "更新不存在的知识网络ID应该失败"
+
+- case_name: "ID校验-更新ID包含无效字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  invalid_id: "invalid@id${random_str}"
+  kn_u_name: "更新测试-${random_str}"
+  expected_status: 403
+  note: "更新时使用无效ID格式应该失败"
+
+
+# ==================================================
+# 6. 权限校验测试
+# ==================================================
+
+
+
+# ==================================================
+# 7. 特殊场景测试
+# ==================================================

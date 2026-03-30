@@ -1,0 +1,149 @@
+cases:
+- case_id: query_001
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: action_query_by_group
+  description: 按分组查询动作 / Query actions by group
+  api_name: query_action_by_group
+  tags:
+  - ontology
+  - legacy
+  - api:query_action_by_group
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: action_id
+    value: ${action_id}
+  body:
+    limit: 10
+    offset: 0
+- case_id: query_002
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: object_instances_by_group
+  description: 按分组查询对象实例 / Query object instances by group
+  api_name: query_objects_by_type
+  tags:
+  - ontology
+  - legacy
+  - api:query_objects_by_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: ot_id
+    value: ${ot_id}
+  body:
+    limit: 10
+    offset: 0
+- case_id: query_003
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: object_query
+  description: 查询对象实例 / Query object instances
+  api_name: query_subgraph
+  tags:
+  - ontology
+  - legacy
+  - api:query_subgraph
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    query:
+      limit: 10
+      offset: 0
+- case_id: query_004
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: query_response_structure
+  description: 校验查询响应结构 / Validate query response structure
+  api_name: query_subgraph
+  tags:
+  - ontology
+  - legacy
+  - api:query_subgraph
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    query:
+      limit: 10
+      offset: 0
+- case_id: query_005
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: relation_instances_by_group
+  description: 按分组查询关系实例 / Query relation instances by group
+  api_name: query_subgraph
+  tags:
+  - ontology
+  - legacy
+  - api:query_subgraph
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    query:
+      limit: 10
+      offset: 0
+- case_id: query_006
+  suite: Ontology Query (legacy migration)
+  switch: n
+  name: relation_query
+  description: 查询关系实例 / Query relation instances
+  api_name: query_subgraph
+  tags:
+  - ontology
+  - legacy
+  - api:query_subgraph
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    query:
+      limit: 10
+      offset: 0

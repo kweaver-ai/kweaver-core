@@ -1,0 +1,56 @@
+# API 列表：vega-gateway 模块
+
+- name: 获取网关配置
+  url: /api/vega-gateway/v1/config
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新网关配置
+  url: /api/vega-gateway/v1/config
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取路由列表
+  url: /api/vega-gateway/v1/routes
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 创建路由
+  url: /api/vega-gateway/v1/routes
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新路由
+  url: /api/vega-gateway/v1/routes/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除路由
+  url: /api/vega-gateway/v1/routes/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取限流配置
+  url: /api/vega-gateway/v1/ratelimit
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新限流配置
+  url: /api/vega-gateway/v1/ratelimit
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取认证配置
+  url: /api/vega-gateway/v1/auth
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 健康检查
+  url: /api/vega-gateway/v1/health
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取指标
+  url: /api/vega-gateway/v1/metrics
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

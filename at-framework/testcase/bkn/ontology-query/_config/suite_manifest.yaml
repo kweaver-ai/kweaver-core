@@ -1,34 +1,37 @@
-# 套件清单：bkn/ontology-query 模块
-
 suites:
-  - name: search
-    feature: 对象搜索
-    description: 本体对象搜索查询测试
-    tags:
-      - ontology-query
-      - search
-    file: search/search.yaml
-
-  - name: subgraph
-    feature: 子图查询
-    description: 子图查询测试
-    tags:
-      - ontology-query
-      - subgraph
-    file: subgraph/subgraph.yaml
-
-  - name: list
-    feature: 对象列表
-    description: 按对象类型列出对象测试
-    tags:
-      - ontology-query
-      - list
-    file: list/list.yaml
-
-  - name: action
-    feature: 行动执行
-    description: 行动类执行测试
-    tags:
-      - ontology-query
-      - action
-    file: action/action.yaml
+- name: kn_ldbc.yaml
+  description: KN LDBC (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: knowledge_network.yaml
+  description: Knowledge Network (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: object_type.yaml
+  description: Object Type (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: relation_type.yaml
+  description: Relation Type (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: ontology_job.yaml
+  description: Ontology Job (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: action_type.yaml
+  description: Action Type (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: concept_groups.yaml
+  description: Concept Groups (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: query.yaml
+  description: Ontology Query (legacy migration)
+  priority: medium
+  estimated_duration: 10m
+- name: import_export.yaml
+  description: Import Export (legacy migration)
+  priority: medium
+  estimated_duration: 10m

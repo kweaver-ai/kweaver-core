@@ -1,0 +1,122 @@
+# API 列表：data-connection 模块
+# 格式：name (接口名称) -> url, method, headers
+
+- name: 获取数据源列表
+  url: /api/data-connection/v1/datasource/assignable-catalog
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询数据源列表
+  url: /api/data-connection/v1/datasource
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询数据源详情
+  url: /api/data-connection/v1/datasource/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 新增数据源
+  url: /api/data-connection/v1/datasource
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新数据源
+  url: /api/data-connection/v1/datasource/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除数据源
+  url: /api/data-connection/v1/datasource/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 测试数据源连接
+  url: /api/data-connection/v1/datasource/test
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询所有支持数据源
+  url: /api/data-connection/v1/datasource/connectors
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询数据源列表（内部）
+  url: /api/internal/data-connection/v1/datasource
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询数据源详情（内部）
+  url: /api/internal/data-connection/v1/datasource/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 元数据扫描
+  url: /api/data-connection/v1/metadata/scan
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 元数据批量扫描
+  url: /api/data-connection/v1/metadata/scan/batch
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 元数据扫描重试
+  url: /api/data-connection/v1/metadata/scan/retry
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询扫描任务列表
+  url: /api/data-connection/v1/metadata/scan
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查看指定任务状态
+  url: /api/data-connection/v1/metadata/scan/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查看指定任务结果
+  url: /api/data-connection/v1/metadata/scan/info/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取表字段详情
+  url: /api/data-connection/v1/metadata/tables/${table_id}/fields
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询视图列表
+  url: /api/data-connection/v1/views
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 创建视图
+  url: /api/data-connection/v1/views
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新视图
+  url: /api/data-connection/v1/views/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除视图
+  url: /api/data-connection/v1/views/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 同步视图元数据
+  url: /api/data-connection/v1/views/${id}/sync
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 查询 OpenSearch 索引
+  url: /api/data-connection/v1/opensearch/indices
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取 OpenSearch 字段映射
+  url: /api/data-connection/v1/opensearch/${index_name}/mapping
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

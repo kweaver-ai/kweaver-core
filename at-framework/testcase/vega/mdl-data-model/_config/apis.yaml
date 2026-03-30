@@ -1,0 +1,128 @@
+- name: 查询数据模型列表
+  url: /api/mdl-data-model/v1/models
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 创建数据模型
+  url: /api/mdl-data-model/v1/models
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 查询数据模型详情
+  url: /api/mdl-data-model/v1/models/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 更新数据模型
+  url: /api/mdl-data-model/v1/models/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 删除数据模型
+  url: /api/mdl-data-model/v1/models/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 查询模型字段列表
+  url: /api/mdl-data-model/v1/models/${id}/fields
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 添加模型字段
+  url: /api/mdl-data-model/v1/models/${id}/fields
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 更新模型字段
+  url: /api/mdl-data-model/v1/models/${id}/fields/${field_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 删除模型字段
+  url: /api/mdl-data-model/v1/models/${id}/fields/${field_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 发布数据模型
+  url: /api/mdl-data-model/v1/models/${id}/publish
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 撤销发布
+  url: /api/mdl-data-model/v1/models/${id}/unpublish
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 查询模型版本历史
+  url: /api/mdl-data-model/v1/models/${id}/versions
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 模型导入
+  url: /api/mdl-data-model/v1/models/import
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 模型导出
+  url: /api/mdl-data-model/v1/models/${id}/export
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_metric_groups
+  url: /api/mdl-data-model/v1/metric-model-groups
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_metric_group
+  url: /api/mdl-data-model/v1/metric-model-groups
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_metric_group
+  url: /api/mdl-data-model/v1/metric-model-groups/${group_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_metric_group
+  url: /api/mdl-data-model/v1/metric-model-groups/${group_id}?force=${force}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_metric_models
+  url: /api/mdl-data-model/v1/metric-models
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_metric_model
+  url: /api/mdl-data-model/v1/metric-models
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_metric_model
+  url: /api/mdl-data-model/v1/metric-models/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_metric_models
+  url: /api/mdl-data-model/v1/metric-models/${ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_data_view_groups
+  url: /api/mdl-data-model/v1/data-view-groups
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_data_view_group
+  url: /api/mdl-data-model/v1/data-view-groups
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_data_view_group
+  url: /api/mdl-data-model/v1/data-view-groups/${group_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_data_view_group
+  url: /api/mdl-data-model/v1/data-view-groups/${group_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: export_data_views_by_group
+  url: /api/mdl-data-model/v1/data-view-groups/${group_id}/data-views
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_row_column_rule
+  url: /api/mdl-data-model/v1/data-view-row-column-rules
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_row_column_rules
+  url: /api/mdl-data-model/v1/data-view-row-column-rules
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: get_row_column_rule
+  url: /api/mdl-data-model/v1/data-view-row-column-rules/${rule_ids}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_row_column_rule
+  url: /api/mdl-data-model/v1/data-view-row-column-rules/${rule_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_row_column_rule
+  url: /api/mdl-data-model/v1/data-view-row-column-rules/${rule_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

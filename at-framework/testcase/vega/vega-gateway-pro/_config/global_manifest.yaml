@@ -1,0 +1,32 @@
+# 全局变量清单：vega-gateway-pro 模块
+
+variables:
+  - name: loadbalancer_id
+    description: 负载均衡配置 ID
+    type: string
+    example: "lb-xxx-xxx-xxx"
+    required: true
+
+  - name: loadbalancer_name
+    description: 负载均衡名称
+    type: string
+    example: "test-lb"
+    required: true
+
+  - name: circuitbreaker_id
+    description: 熔断配置 ID
+    type: string
+    example: "cb-xxx-xxx-xxx"
+    required: false
+
+  - name: failure_threshold
+    description: 失败阈值
+    type: integer
+    example: 5
+    required: false
+
+  - name: tracing_enabled
+    description: 链路追踪是否启用
+    type: boolean
+    example: true
+    required: false

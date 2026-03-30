@@ -1,0 +1,303 @@
+# ==================================================
+# 对象类创建 - 负向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类创建接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验失败场景
+
+# ### 测试用例分类
+# 1. **必填参数缺失测试**：验证缺少必填字段的情况
+# 2. **ID参数校验错误测试**：验证ID参数的各种无效格式
+# 3. **name参数校验错误测试**：验证name参数的各种无效格式
+# 4. **tags参数校验错误测试**：验证tags参数的各种无效情况
+# 5. **comments参数校验错误测试**：验证comment参数的各种无效情况
+# 6. **data_properties参数校验错误测试**：验证属性数量的无效情况
+# 7. **primary_key参数校验错误测试**：验证主键参数的各种无效情况
+# 8. **incremental_key参数校验错误测试**：验证增量键参数的各种无效情况
+# 9. **重复参数测试**：验证重复ID和name的情况
+# 10. **特殊字符测试**：验证包含特殊字符的参数
+# 11. **边界值测试**：验证参数的边界值情况
+# 12. **必传字段未传测试**：验证exclude_fields参数的使用
+# 13. **注释掉的测试用例**：暂时未启用的测试场景
+
+# ### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 必填参数缺失测试
+# ==================================================
+
+- case_name: "创建对象类-必填参数缺失-name为空"
+  object_id: "${ts_uuid}"
+  object_name: ""
+  data_properties: 4
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+- case_name: "创建对象类-必填参数缺失-data_properties为空"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 0
+  primary_key: "test_string"
+  display_key: "test_string"
+  expected_status: 400
+  note: "data_properties为空应该失败"
+
+
+# ==================================================
+# 2. ID参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-ID参数错误-无效字符"
+  object_id: "invalid@id${random_str}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  expected_status: 400
+  note: "ID包含无效字符@应该失败"
+
+- case_name: "创建对象类-ID参数错误-以下划线开头"
+  object_id: "_invalid_id${random_str}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  expected_status: 400
+  note: "ID以下划线开头应该失败"
+
+- case_name: "创建对象类-ID参数错误-以连字符开头"
+  object_id: "-invalid_id${random_str}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  expected_status: 400
+  note: "ID以连字符开头应该失败"
+
+- case_name: "创建对象类-ID参数错误-长度超限"
+  object_id: "${random_str(101)}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  expected_status: 400
+  note: "ID长度超过100字符应该失败"
+
+
+# ==================================================
+# 3. name参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-name参数错误-长度超限"
+  object_id: "${ts_uuid}"
+  object_name: "${random_str(41)}"
+  data_properties: 4
+  expected_status: 400
+  note: "name长度超过40字符应该失败"
+
+
+# ==================================================
+# 4. tags参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-tags参数错误-超过最大数量"
+  object_id: "${ts_uuid}"
+  object_name: "tags超过最大数量"
+  tags: ["标签1", "标签2", "标签3", "标签4", "标签5", "标签6"]
+  data_properties: 4
+  expected_status: 400
+  note: "tags超过5个元素应该失败"
+
+- case_name: "创建对象类-tags参数错误-单个标签超长"
+  object_id: "${ts_uuid}"
+  object_name: "单个标签超长"
+  tags: ["${random_str(41)}", "正常标签"]
+  data_properties: 4
+  expected_status: 400
+  note: "单个标签长度超过40字符应该失败"
+
+
+# ==================================================
+# 5. comments参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-comment参数错误-长度超限"
+  object_id: "${ts_uuid}"
+  object_name: "comment长度超限"
+  comment: "${random_str(1001)}"
+  data_properties: 4
+  expected_status: 400
+  note: "comment长度超过1000字符应该失败"
+
+
+# ==================================================
+# 6. data_properties参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-data_properties参数错误-超过最大数量"
+  object_id: "${ts_uuid}"
+  object_name: "data_properties超过最大数量"
+  data_properties: 1001
+  expected_status: 400
+  note: "data_properties超过1000个应该失败"
+
+
+# ==================================================
+# 7. primary_key参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-primary_key参数错误-不存在的属性"
+  object_id: "${ts_uuid}"
+  object_name: "primary_key不存在的属性"
+  data_properties: 4
+  primary_key: "non_existent_property"
+  expected_status: 400
+  note: "primary_key引用不存在的属性应该失败"
+
+
+# ==================================================
+# 8. incremental_key参数校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-incremental_key参数错误-不存在的属性"
+  object_id: "${ts_uuid}"
+  object_name: "incremental_key参数错误-不存在的属性"
+  data_properties: 4
+  incremental_key: "non_existent_property"
+  expected_status: 400
+  note: "incremental_key引用不存在的属性应该失败"
+
+
+# ==================================================
+# 9. 重复参数测试
+# ==================================================
+
+- case_name: "创建对象类-重复参数测试-重复ID"
+  object_id: "test_id"
+  object_name: "重复ID-${random_str}"
+  data_properties: 4
+  expected_status: 400
+  note: "重复ID—name"
+
+- case_name: "创建对象类-重复参数测试-重复name"
+  object_id: "${ts_uuid}"
+  object_name: "重复名称"
+  data_properties: 4
+  expected_status: 400
+  note: "重复ID—name"
+
+
+# ==================================================
+# 10. 特殊字符测试
+# ==================================================
+
+- case_name: "创建对象类-特殊字符测试-ID包含中文"
+  object_id: "中文ID${random_str}"
+  object_name: "中文ID"
+  data_properties: 4
+  expected_status: 400
+  note: "ID包含中文应该失败"
+
+- case_name: "创建对象类-特殊字符测试-ID包含空格"
+  object_id: "invalid id${random_str}"
+  object_name: "ID包含空格"
+  data_properties: 4
+  expected_status: 400
+  note: "ID包含空格应该失败"
+
+
+# ==================================================
+# 11. 边界值测试
+# ==================================================
+
+- case_name: "创建对象类-边界值测试-ID超出最大长度"
+  object_id: "${random_str(101)}"
+  object_name: "ID超出最大长度"
+  data_properties: 4
+  expected_status: 400
+  note: "ID长度超过100字符应该失败"
+
+- case_name: "创建对象类-边界值测试-name超出最大长度"
+  object_id: "${ts_uuid}"
+  object_name: "${random_str(256)}"
+  data_properties: 4
+  expected_status: 400
+  note: "name长度超过255字符应该失败"
+
+
+# ==================================================
+# 12. 增量键校验错误测试
+# ==================================================
+
+- case_name: "创建对象类-增量键校验错误-类型不匹配"
+  object_id: "${ts_uuid}"
+  object_name: "增量键校验错误-类型不匹配"
+  data_properties: 4
+  incremental_key: "incremental_field"
+  expected_status: 400
+  note: "增量键类型不是timestamp或datetime应该失败"
+
+
+# ==================================================
+# 13. 必传字段未传测试
+# ==================================================
+
+- case_name: "创建对象类-必传字段未传-name"
+  object_id: "${ts_uuid}"
+  object_name: "必传字段未传-name"
+  data_properties: 4
+  expected_status: 400
+  exclude_fields: ["name"]
+  note: "name未传应该失败"
+
+- case_name: "创建对象类-必传字段未传-data_properties"
+  object_id: "${ts_uuid}"
+  object_name: "必传字段未传-data_properties"
+  data_properties: 4
+  expected_status: 400
+  exclude_fields: ["data_properties"]
+  note: "data_properties未传应该失败"
+
+- case_name: "创建对象类-必传字段未传-primary_keys"
+  object_id: "${ts_uuid}"
+  object_name: "必传字段未传-primary_keys"
+  data_properties: 4
+  expected_status: 400
+  exclude_fields: ["primary_keys"]
+  note: "primary_keys未传应该失败"
+
+- case_name: "创建对象类-必传字段未传-display_key"
+  object_id: "${ts_uuid}"
+  object_name: "必传字段未传-display_key"
+  data_properties: 4
+  expected_status: 400
+  exclude_fields: ["display_key"]
+  note: "display_key未传应该失败"
+
+
+# ==================================================
+# 14. 注释掉的测试用例
+# ==================================================
+
+## 14.1 branch参数校验错误测试
+# - case_name: "创建对象类-branch参数错误-长度超限"
+#   object_id: "${ts_uuid}"
+#   object_name: "branch长度超限"
+#   data_properties: 4
+#   branch: "${random_str(41)}"
+# #   expected_status: 400
+# #   note: "branch长度超过40字符应该失败"
+
+## 14.2 base_branch参数校验错误测试
+# - case_name: "创建对象类-base_branch参数错误-长度超限"
+#   object_id: "${ts_uuid}"
+#   object_name: "base_branch长度超限"
+#   data_properties: 4
+#   branch: "main"
+#   base_branch: "${random_str(41)}"
+# #   expected_status: 400
+# #   note: "base_branch长度超过40字符应该失败"

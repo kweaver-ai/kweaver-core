@@ -1,0 +1,272 @@
+# ==================================================
+# 对象类创建 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类创建接口对各种有效参数的处理能力
+# - 确保接口能够正确创建对象类并返回成功状态
+# - 覆盖所有正常使用场景的参数组合
+
+# ### 测试用例分类
+# 1. **基本参数测试**：包含必填字段的基本创建场景
+# 2. **ID参数测试**：验证不同ID格式的有效性
+# 3. **name参数测试**：验证不同名称格式的有效性
+# 4. **tags参数测试**：验证标签参数的使用
+# 5. **comments参数测试**：验证备注参数的使用
+# 6. **data_properties测试**：验证属性数量的边界值
+# 7. **primary_key测试**：验证主键参数的使用
+# 8. **incremental_key测试**：验证增量键参数的使用
+# 9. **branch测试**：验证分支参数的使用
+# 10. **base_branch测试**：验证基础分支参数的使用
+# 11. **特殊字符测试**：验证包含特殊字符的参数
+# 12. **边界值测试**：验证参数的最大长度限制
+
+# ### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本参数测试
+# ==================================================
+
+- case_name: "创建对象类-基本参数-正常创建"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  tags: ["测试", "对象类"]
+  comment: "这是一个测试对象类"
+  data_properties: 4
+  note: "正常创建对象类，包含基本参数"
+
+- case_name: "创建对象类-基本参数-不指定ID"
+  object_id: ""
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  note: "不指定ID，系统会自动生成"
+
+
+# ==================================================
+# 2. ID参数测试
+# ==================================================
+
+- case_name: "创建对象类-ID参数-有效格式"
+  object_id: "valid_id_${random_str}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  note: "ID包含字母、数字和下划线，符合命名规范"
+
+
+# ==================================================
+# 3. name参数测试
+# ==================================================
+
+- case_name: "创建对象类-name参数-中文名称"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${fake_cn_name}"
+  data_properties: 4
+  note: "name为中文名称，符合命名规范"
+
+- case_name: "创建对象类-name参数-英文名称"
+  object_id: "${ts_uuid}"
+  object_name: "TestObject-${random_str}"
+  data_properties: 4
+  note: "name为英文名称，符合命名规范"
+
+- case_name: "创建对象类-name参数-边界值-最短有效长度"
+  object_id: "${ts_uuid}"
+  object_name: "A"
+  data_properties: 4
+  note: "name长度为1字符，符合最短长度限制"
+
+
+# ==================================================
+# 4. tags参数测试
+# ==================================================
+
+- case_name: "创建对象类-tags参数-正常标签"
+  object_id: "${ts_uuid}"
+  object_name: "正常标签"
+  tags: ["标签1", "标签2", "标签3"]
+  data_properties: 4
+  note: "tags包含正常标签，符合规范"
+
+- case_name: "创建对象类-tags参数-空标签"
+  object_id: "${ts_uuid}"
+  object_name: "tags为空数组"
+  tags: []
+  data_properties: 4
+  note: "tags为空数组，符合规范"
+
+- case_name: "创建对象类-tags参数-最大数量"
+  object_id: "${ts_uuid}"
+  object_name: "tags最大数量5"
+  tags: ["标签1", "标签2", "标签3", "标签4", "标签5"]
+  data_properties: 4
+  note: "tags包含5个标签，符合最大数量限制"
+
+
+# ==================================================
+# 5. comments参数测试
+# ==================================================
+
+- case_name: "创建对象类-comment参数-正常备注"
+  object_id: "${ts_uuid}"
+  object_name: "正常备注"
+  comment: "这是一个详细的测试对象类备注信息"
+  data_properties: 4
+  note: "comment包含正常备注信息"
+
+
+# ==================================================
+# 6. data_properties测试
+# ==================================================
+
+- case_name: "创建对象类-data_properties-最小属性数量"
+  object_id: "${ts_uuid}"
+  object_name: "最小属性数量1"
+  data_properties: 1
+  note: "data_properties包含1个属性，符合最小数量限制"
+
+- case_name: "创建对象类-data_properties-最大属性数量"
+  object_id: "${ts_uuid}"
+  object_name: "最大属性数量1000"
+  data_properties: 1000
+  note: "data_properties包含1000个属性，符合最大数量限制"
+
+
+# ==================================================
+# 7. primary_key测试
+# ==================================================
+
+- case_name: "创建对象类-primary_key-正常主键-integer"
+  object_id: "${ts_uuid}"
+  object_name: "主键-integer"
+  data_properties: 4
+  static: true
+  primary_key: "test_integer"
+  note: "指定正常的primary_key"
+
+- case_name: "创建对象类-primary_key-正常主键-string"
+  object_id: "${ts_uuid}"
+  object_name: "主键-string"
+  data_properties: 4
+  static: true
+  primary_key: "test_string"
+  note: "指定正常的primary_key"
+
+- case_name: "创建对象类-primary_key-正常主键unsigned integer"
+  object_id: "${ts_uuid}"
+  object_name: "主键unsigned integer"
+  data_properties: 4
+  static: true
+  primary_key: "test_unsigned_integer"
+  note: "指定正常的primary_key"
+
+
+# ==================================================
+# 8. incremental_key测试
+# ==================================================
+
+- case_name: "创建对象类-incremental_key-正常增量键-integer"
+  object_id: "${ts_uuid}"
+  object_name: "增量键-integer"
+  data_properties: 4
+  static: true
+  incremental_key: "test_integer"
+  note: "指定正常的incremental_key"
+
+- case_name: "创建对象类-incremental_key-正常增量键-datetime"
+  object_id: "${ts_uuid}"
+  object_name: "增量键-datetime"
+  data_properties: 4
+  static: true
+  incremental_key: "test_datetime"
+  note: "指定正常的incremental_key"
+
+- case_name: "创建对象类-incremental_key-正常增量键-timestamp"
+  object_id: "${ts_uuid}"
+  object_name: "增量键-timestamp"
+  data_properties: 4
+  static: true
+  incremental_key: "test_timestamp"
+  note: "指定正常的incremental_key"
+
+
+# ==================================================
+# 9. branch测试
+# ==================================================
+
+- case_name: "创建对象类-branch-默认分支"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  branch: "main"
+  note: "使用默认的main分支"
+
+
+# ==================================================
+# 10. base_branch测试
+# ==================================================
+
+- case_name: "创建对象类-base_branch-空分支"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  branch: "test_branch"
+  base_branch: ""
+  note: "指定base_branch为空"
+
+
+# ==================================================
+# 11. 特殊字符测试
+# ==================================================
+
+- case_name: "创建对象类-特殊字符-name包含特殊字符"
+  object_id: "${ts_uuid}"
+  object_name: "测试@#$%^&*()对象类-${random_str}"
+  data_properties: 4
+  note: "name包含特殊字符，符合规范"
+
+- case_name: "创建对象类-特殊字符-tags包含特殊字符"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  tags: ["测试@", "对象类-_"]
+  data_properties: 4
+  note: "tags包含特殊字符，符合规范"
+
+
+# ==================================================
+# 12. 边界值测试
+# ==================================================
+
+- case_name: "创建对象类-边界值-ID最大长度"
+  object_id: "${random_str(40)}"
+  object_name: "测试对象类-${random_str}"
+  data_properties: 4
+  note: "ID使用最大允许长度40字符"
+
+- case_name: "创建对象类-边界值-name最大长度"
+  object_id: "${ts_uuid}"
+  object_name: "${random_str(40)}"
+  data_properties: 4
+  note: "name使用最大允许长度40字符"
+
+- case_name: "创建对象类-边界值-comment最大长度"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  comment: "${random_str(1000)}"
+  data_properties: 4
+  note: "comment使用最大允许长度1000字符"
+
+- case_name: "创建对象类-边界值-tags最大数量"
+  object_id: "${ts_uuid}"
+  object_name: "测试对象类-${random_str}"
+  tags: ["标签1", "标签2", "标签3", "标签4", "标签5"]
+  data_properties: 4
+  note: "tags使用最大允许数量5个"

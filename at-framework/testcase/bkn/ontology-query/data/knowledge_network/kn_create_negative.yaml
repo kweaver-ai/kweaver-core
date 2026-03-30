@@ -1,0 +1,208 @@
+# ==================================================
+# 业务知识网络创建 - 负向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证业务知识网络创建接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验失败场景
+
+### 测试用例分类
+# 1. **必填参数缺失测试**：验证必填参数缺失的情况
+# 2. **ID格式校验测试**：验证ID字段的格式校验
+# 3. **name字段校验测试**：验证名称字段的格式校验
+# 4. **tags字段校验测试**：验证标签字段的格式校验
+# 5. **comment字段校验测试**：验证备注字段的格式校验
+# 6. **branch字段校验测试**：验证分支字段的格式校验
+
+### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - kn_id：业务知识网络ID
+#   - kn_name：业务知识网络名称
+#   - 其他参数：根据测试场景而定
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 必填参数缺失测试
+# ==================================================
+
+- case_name: "必填参数缺失-name为空"
+  kn_id: "${ts_uuid}"
+  kn_name: ""
+  expected_status: 400
+  note: "name是必填参数，不能为空"
+
+- case_name: "必填参数缺失-name参数缺失"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["name"]
+  expected_status: 400
+  note: "name是必填参数，不传应该失败"
+
+- case_name: "必填参数缺失-branch参数缺失"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["branch"]
+  expected_status: 400
+  note: "branch是必填参数，不传应该失败"
+
+- case_name: "必填参数缺失-同时缺少name和branch"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["name", "branch"]
+  expected_status: 400
+  note: "同时缺少name和branch参数"
+
+
+# ==================================================
+# 2. ID格式校验测试
+# ==================================================
+
+- case_name: "ID格式校验-ID包含大写字母"
+  kn_id: "InvalidID_${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID只能包含小写字母、数字、下划线、连字符"
+
+- case_name: "ID格式校验-ID以下划线开头"
+  kn_id: "_${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID不能以下划线开头"
+
+- case_name: "ID格式校验-ID以连字符开头"
+  kn_id: "-${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID不能以连字符开头"
+
+- case_name: "ID格式校验-ID包含特殊字符"
+  kn_id: "test@id#${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID包含特殊字符@和#"
+
+- case_name: "ID格式校验-ID包含空格"
+  kn_id: "test id ${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID包含空格"
+
+- case_name: "ID格式校验-ID包含中文"
+  kn_id: "测试${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID包含中文字符"
+
+- case_name: "ID格式校验-ID长度超过40字符"
+  kn_id: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"
+  kn_name: "测试网络${random_str}"
+  expected_status: 400
+  note: "ID长度超过40个字符"
+
+- case_name: "ID格式校验-ID包含无效字符组合"
+  kn_id: "invalid@~!@#$%^&*(Z)"
+  kn_name: "无效ID字符测试"
+  expected_status: 400
+  note: "ID包含无效字符组合"
+
+
+# ==================================================
+# 3. name字段校验测试
+# ==================================================
+
+- case_name: "name校验-name长度超过40字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "${random_str(41)}"
+  expected_status: 400
+  note: "name长度超过40个字符"
+
+- case_name: "name校验-name为超长字符串"
+  kn_id: "${ts_uuid}"
+  kn_name: "${random_str(256)}"
+  expected_status: 400
+  note: "name超过最大长度限制"
+
+
+# ==================================================
+# 4. tags字段校验测试
+# ==================================================
+
+- case_name: "tags校验-tags超过5个元素"
+  kn_id: "${ts_uuid}"
+  kn_name: "tags超过5个元素测试"
+  expected_status: 400
+  tags:
+    - "标签1"
+    - "标签2"
+    - "标签3"
+    - "标签4"
+    - "标签5"
+    - "标签6"
+  note: "tags不能超过5个元素"
+
+- case_name: "tags校验-tag名称为空字符串"
+  kn_id: "${ts_uuid}"
+  kn_name: "标签名称为空测试"
+  expected_status: 400
+  tags: [""]
+  note: "tag名称不能为空"
+
+- case_name: "tags校验-tag名称长度超过40字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "标签名称过长测试"
+  expected_status: 400
+  tags: ["${random_str(41)}"]
+  note: "tag名称长度不能超过40个字符"
+
+- case_name: "tags校验-tag名称包含特殊字符1"
+  kn_id: "${ts_uuid}"
+  kn_name: "标签包含特殊字符测试1"
+  expected_status: 400
+  tags: ["标签包含/:?\\\"<>|"]
+  note: "tag名称不能包含特殊字符/:?\"<>|"
+
+- case_name: "tags校验-tag名称包含特殊字符2"
+  kn_id: "${ts_uuid}"
+  kn_name: "标签包含特殊字符测试2"
+  expected_status: 400
+  tags: ["标签包含：？‘’"]
+  note: "tag名称不能包含特殊字符：？‘’"
+
+- case_name: "tags校验-tag名称包含特殊字符3"
+  kn_id: "${ts_uuid}"
+  kn_name: "标签包含特殊字符测试3"
+  expected_status: 400
+  tags: ["标签包含,#[]{}%&*$^!='"]
+  note: "tag名称不能包含特殊字符,#[]{}%&*$^!='"
+
+
+# ==================================================
+# 5. comment字段校验测试
+# ==================================================
+
+- case_name: "comment校验-comment长度超过1000字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "备注过长测试"
+  comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "comment长度超过1000个字符"
+
+
+# ==================================================
+# 6. branch字段校验测试
+# ==================================================
+
+- case_name: "branch校验-branch参数缺失"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["branch"]
+  expected_status: 400
+  note: "branch是必填参数，不传应该失败"

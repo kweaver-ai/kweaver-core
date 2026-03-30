@@ -1,22 +1,100 @@
-# API 列表：bkn/ontology-query 模块
-# 格式：name (接口名称) -> url, method, headers
-
-- name: 搜索对象
-  url: /api/ontology-query/v1/knowledge-networks/${kn_id}
+- name: legacy_placeholder_api
+  url: /api/ontology-manager/v1/health
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_knowledge_networks
+  url: /api/ontology-manager/v1/knowledge-networks
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_knowledge_network
+  url: /api/ontology-manager/v1/knowledge-networks
   method: POST
-  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
-
-- name: 子图查询
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: get_knowledge_network
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_knowledge_network
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_knowledge_network
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_object_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_object_types
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_object_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types/${object_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_object_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/object-types/${object_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_relation_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_relation_types
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: update_relation_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_relation_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/relation-types/${rt_ids}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_action_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_action_types
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_action_type
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/action-types/${action_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: create_concept_group
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: list_concept_groups
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: delete_concept_group
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${groups_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: add_group_objects
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${groups_id}/object-types
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: remove_group_object
+  url: /api/ontology-manager/v1/knowledge-networks/${kn_id}/concept-groups/${groups_id}/object-types/${objects_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: query_subgraph
   url: /api/ontology-query/v1/knowledge-networks/${kn_id}/subgraph
   method: POST
-  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
-
-- name: 列出对象
-  url: /api/ontology-query/v1/knowledge-networks/${kn_id}/object-types/${ot_id}
-  method: POST
-  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
-
-- name: 执行行动
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: query_action_by_group
   url: /api/ontology-query/v1/knowledge-networks/${kn_id}/action-types/${action_id}
   method: POST
-  headers: '{"Content-Type": "application/json", "X-Business-Domain": "${business_domain}"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: query_objects_by_type
+  url: /api/ontology-query/v1/knowledge-networks/${kn_id}/object-types/${ot_id}
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

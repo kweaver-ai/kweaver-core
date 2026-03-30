@@ -1,0 +1,125 @@
+# ==================================================
+# 对象类更新 - 参数校验负面测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类更新接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验失败场景
+
+### 测试用例分类
+# 1. **必填参数缺失测试**：验证缺少必填字段的情况
+# 2. **参数类型校验测试**：验证参数类型的无效情况
+# 3. **边界值测试**：验证参数的边界值情况
+# 4. **data_properties参数校验测试**：验证属性数量的无效情况
+
+### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 必填参数缺失测试
+# ==================================================
+
+- case_name: "参数校验-更新时缺少name参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  exclude_fields: ["name"]
+  expected_status: 400
+  note: "name是必填参数，不传应该失败"
+
+- case_name: "参数校验-更新时缺少primary_keys参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  exclude_fields: ["primary_keys"]
+  expected_status: 400
+  note: "primary_keys是必填参数，不传应该失败"
+
+- case_name: "参数校验-更新时缺少display_key参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  exclude_fields: ["display_key"]
+  expected_status: 400
+  note: "display_key是必填参数，不传应该失败"
+
+- case_name: "参数校验-更新时缺少data_properties参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  exclude_fields: ["data_properties"]
+  expected_status: 400
+  note: "data_properties是必填参数，不传应该失败"
+
+- case_name: "参数校验-更新时缺少多个必填参数"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  exclude_fields: ["name", "primary_keys"]
+  expected_status: 400
+  note: "同时缺少name和primary_keys参数"
+
+
+# ==================================================
+# 2. 参数类型校验测试
+# ==================================================
+
+- case_name: "参数校验-更新name为空字符串"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: ""
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+- case_name: "参数校验-更新primary_keys为空数组"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  primary_keys: ""
+  expected_status: 400
+  note: "primary_keys为空数组应该失败"
+
+- case_name: "参数校验-更新display_key为空字符串"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  display_key: ""
+  expected_status: 400
+  note: "display_key为空字符串应该失败"
+
+
+# ==================================================
+# 3. 边界值测试
+# ==================================================
+
+- case_name: "参数校验-更新name为超长字符串"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "name为超长字符串-${random_str(300)}"
+  expected_status: 400
+  note: "name超过最大长度限制"
+
+
+# ==================================================
+# 4. data_properties参数校验测试
+# ==================================================
+
+- case_name: "参数校验-更新data_properties为空数组"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties: 0
+  expected_status: 400
+  display_key: "test"
+  primary_keys: "test"
+  note: "data_properties为空数组应该失败"

@@ -1,0 +1,129 @@
+cases:
+- case_id: knowledge_network_001
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_create
+  description: 创建知识网络 / Create knowledge network
+  api_name: create_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:create_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: kn_id
+  body:
+    name: kn_${timestamp}
+    display_name: KN_${timestamp}
+    description: auto migrated case
+- case_id: knowledge_network_002
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_delete
+  description: 删除知识网络 / Delete knowledge network
+  api_name: delete_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:delete_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+- case_id: knowledge_network_003
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_list
+  description: 查询知识网络列表 / List knowledge networks
+  api_name: list_knowledge_networks
+  tags:
+  - ontology
+  - legacy
+  - api:list_knowledge_networks
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+- case_id: knowledge_network_004
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_parameter_validation
+  description: 校验知识网络参数 / Validate knowledge network parameters
+  api_name: create_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:create_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  body:
+    name: kn_${timestamp}
+    display_name: KN_${timestamp}
+    description: auto migrated case
+- case_id: knowledge_network_005
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_update
+  description: 更新知识网络 / Update knowledge network
+  api_name: update_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:update_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: kn_updated_${timestamp}
+    display_name: KN_UPDATED_${timestamp}
+    description: auto migrated update
+- case_id: knowledge_network_006
+  suite: Knowledge Network (legacy migration)
+  switch: n
+  name: kn_update_parameter_validation
+  description: 校验知识网络更新参数 / Validate knowledge network update parameters
+  api_name: update_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:update_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: kn_updated_${timestamp}
+    display_name: KN_UPDATED_${timestamp}
+    description: auto migrated update

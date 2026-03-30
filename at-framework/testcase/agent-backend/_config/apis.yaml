@@ -1,0 +1,76 @@
+# API 列表：agent-backend 模块
+
+- name: 获取 Agent 列表
+  url: /api/agent-backend/v1/agents
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 创建 Agent
+  url: /api/agent-backend/v1/agents
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取 Agent 详情
+  url: /api/agent-backend/v1/agents/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新 Agent
+  url: /api/agent-backend/v1/agents/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除 Agent
+  url: /api/agent-backend/v1/agents/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 启动 Agent
+  url: /api/agent-backend/v1/agents/${id}/start
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 停止 Agent
+  url: /api/agent-backend/v1/agents/${id}/stop
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取 Agent 状态
+  url: /api/agent-backend/v1/agents/${id}/status
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取 Agent 日志
+  url: /api/agent-backend/v1/agents/${id}/logs
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 调用 Agent
+  url: /api/agent-backend/v1/agents/${id}/invoke
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取任务列表
+  url: /api/agent-backend/v1/tasks
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 创建任务
+  url: /api/agent-backend/v1/tasks
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取任务状态
+  url: /api/agent-backend/v1/tasks/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 取消任务
+  url: /api/agent-backend/v1/tasks/${id}/cancel
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 健康检查
+  url: /api/agent-backend/v1/health
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

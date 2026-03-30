@@ -1,0 +1,340 @@
+- case_name: "查询场景-ldbc-基于路径查询,3对象2关系路径,某用户所在的国家"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 94
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+  assert_data:
+    - p_personid: 94
+    - p_placeid: 0
+    - p_placeid: 135
+
+
+
+- case_name: "查询场景-ldbc-基于路径查询,2对象1关系，标签所属分类"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: tag
+          condition:
+            operation: "=="
+            field: t_tagid
+            value: 94
+        - id: tagclass
+      relation_types:
+        - relation_type_id: tag_hastype_tagclass
+          source_object_type_id: tag
+          target_object_type_id: tagclass
+
+  assert_data:
+    - t_tagid: 94
+    - tc_tagclassid: 148
+
+
+- case_name: "查询场景-ldbc-基于路径查询,同关系正反跳，朋友的朋友"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            field: p_personid
+            operation: "=="
+            value: 94
+        - id: person
+          condition:
+            field: p_personid
+            operation: "=="
+            value: 987
+        - id: person
+          condition:
+            field: p_personid
+            operation: <
+            value: 10000
+      relation_types:
+        - relation_type_id: person_knows_person
+          source_object_type_id: person
+          target_object_type_id: person
+        - relation_type_id: person_knows_person
+          source_object_type_id: person
+          target_object_type_id: person
+  assert_data:
+    - p_personid: 94
+    - p_personid: 987
+    - p_personid: 1490
+    - p_personid: 1274
+
+- case_name: "查询场景-ldbc-基于路径查询,同关系正反跳，某论坛用户的关系网"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: forum
+          condition:
+            field: f_forumid
+            operation: "=="
+            value: 36
+        - id: person
+        - id: organisation
+        - id: person
+      relation_types:
+        - relation_type_id: forum_hasmember_person
+          source_object_type_id: forum
+          target_object_type_id: person
+        - relation_type_id: person_studyat_organisation
+          source_object_type_id: person
+          target_object_type_id: organisation
+        - relation_type_id: person_studyat_organisation
+          source_object_type_id: organisation
+          target_object_type_id: person
+  assert_data:
+    - p_personid: 19791209301592
+    - p_personid: 8796093022412
+    - p_personid: 4398046512636
+    - p_personid: 1564
+    - o_organisationid: 2829
+    - o_organisationid: 5805
+    - p_personid: 8796093023577
+    - p_personid: 2199023256437
+    - p_personid: 30786325578932
+    - o_organisationid: 1853
+    - p_personid: 30786325578370
+    - p_personid: 28587302323722
+    - o_organisationid: 1855
+    - p_personid: 32985348834375
+    - p_personid: 30786325578629
+    - p_personid: 26388279067534
+    - p_personid: 683
+    - f_forumid: 36
+    - p_personid: 10995116278292
+    - p_personid: 10995116278468
+    - p_personid: 13194139533482
+
+
+
+- case_name: "查询场景-ldbc-基于路径查询,多个relation"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 94
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 65
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+
+
+
+
+- case_name: "查询场景-ldbc-虚拟化-基于路径查询,3对象2关系路径,某用户所在的国家"
+  limit: 10
+  need_total: false
+  ignoring_store_cache: true
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 94
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+  assert_data:
+    - p_personid: 94
+    - p_placeid: 0
+    - p_placeid: 135
+
+
+
+- case_name: "查询场景-ldbc-虚拟化-基于路径查询,2对象1关系，标签所属分类"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: true
+  relation_type_paths:
+    - object_types:
+        - id: tag
+          condition:
+            operation: "=="
+            field: t_tagid
+            value: 94
+        - id: tagclass
+      relation_types:
+        - relation_type_id: tag_hastype_tagclass
+          source_object_type_id: tag
+          target_object_type_id: tagclass
+
+  assert_data:
+    - t_tagid: 94
+    - tc_tagclassid: 148
+
+
+- case_name: "查询场景-ldbc-虚拟化-基于路径查询,同关系正反跳，朋友的朋友"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: true
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            field: p_personid
+            operation: "=="
+            value: 94
+        - id: person
+          condition:
+            field: p_personid
+            operation: "=="
+            value: 987
+        - id: person
+          condition:
+            field: p_personid
+            operation: <
+            value: 10000
+      relation_types:
+        - relation_type_id: person_knows_person
+          source_object_type_id: person
+          target_object_type_id: person
+        - relation_type_id: person_knows_person
+          source_object_type_id: person
+          target_object_type_id: person
+  assert_data:
+    - p_personid: 94
+    - p_personid: 987
+    - p_personid: 1490
+    - p_personid: 1274
+
+- case_name: "查询场景-ldbc-虚拟化-基于路径查询,同关系正反跳，某论坛用户的关系网"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: true
+  relation_type_paths:
+    - object_types:
+        - id: forum
+          condition:
+            field: f_forumid
+            operation: "=="
+            value: 36
+        - id: person
+        - id: organisation
+        - id: person
+      relation_types:
+        - relation_type_id: forum_hasmember_person
+          source_object_type_id: forum
+          target_object_type_id: person
+        - relation_type_id: person_studyat_organisation
+          source_object_type_id: person
+          target_object_type_id: organisation
+        - relation_type_id: person_studyat_organisation
+          source_object_type_id: organisation
+          target_object_type_id: person
+  assert_data:
+    - p_personid: 19791209301592
+    - p_personid: 8796093022412
+    - p_personid: 4398046512636
+    - p_personid: 1564
+    - o_organisationid: 2829
+    - o_organisationid: 5805
+    - p_personid: 8796093023577
+    - p_personid: 2199023256437
+    - p_personid: 30786325578932
+    - o_organisationid: 1853
+    - p_personid: 30786325578370
+    - p_personid: 28587302323722
+    - o_organisationid: 1855
+    - p_personid: 32985348834375
+    - p_personid: 30786325578629
+    - p_personid: 26388279067534
+    - p_personid: 683
+    - f_forumid: 36
+    - p_personid: 10995116278292
+    - p_personid: 10995116278468
+    - p_personid: 13194139533482
+
+
+
+- case_name: "查询场景-ldbc-虚拟化-基于路径查询,多个relation"
+  limit: 10
+  need_total: true
+  ignoring_store_cache: true
+  relation_type_paths:
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 94
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+    - object_types:
+        - id: person
+          condition:
+            operation: "=="
+            field: p_personid
+            value: 65
+        - id: place
+        - id: place
+      relation_types:
+        - relation_type_id: person_islocatedin_place
+          source_object_type_id: person
+          target_object_type_id: place
+        - relation_type_id: place_ispartof_place
+          source_object_type_id: place
+          target_object_type_id: place
+
+

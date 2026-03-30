@@ -1,82 +1,25 @@
-# 全局变量清单：bkn/ontology-query 模块
-
 variables:
-  # 环境配置
-  - name: business_domain
-    description: 业务域 ID，用于多租户隔离
-    ref: "${env:ADP_BUSINESS_DOMAIN}"
-    used_in:
-      - all
-
-  - name: host
-    description: ADP 测试环境主机地址
-    ref: "${env:ADP_HOST}"
-    used_in:
-      - all
-
-  - name: token
-    description: 认证 Token
-    ref: "${env:ADP_TOKEN}"
-    used_in:
-      - all
-
-  - name: timestamp
-    description: 时间戳，用于生成唯一名称
-    ref: "${timestamp}"
-    used_in:
-      - all
-
-  # 知识网络
-  - name: test_kn_id
-    description: 测试知识网络 ID（运行时动态赋值）
-    ref: ""
-    used_in:
-      - search
-      - subgraph
-      - list
-      - action
-
-  - name: test_kn_branch
-    description: 测试知识网络分支
-    ref: "main"
-    used_in:
-      - all
-
-  # 对象类型
-  - name: test_object_type_id
-    description: 测试对象类型 ID（运行时动态赋值）
-    ref: ""
-    used_in:
-      - list
-
-  - name: test_object_type_name
-    description: 测试对象类型名称
-    ref: "测试对象类型"
-    used_in:
-      - list
-
-  # 行动
-  - name: test_action_id
-    description: 测试行动类 ID（运行时动态赋值）
-    ref: ""
-    used_in:
-      - action
-
-  - name: test_action_name
-    description: 测试行动类名称
-    ref: "测试行动"
-    used_in:
-      - action
-
-  # 查询
-  - name: test_search_query
-    description: 测试搜索查询语句
-    ref: "测试搜索"
-    used_in:
-      - search
-
-  - name: test_subgraph_root_id
-    description: 测试子图根节点 ID
-    ref: ""
-    used_in:
-      - subgraph
+- name: kn_id
+  description: knowledge network id
+  ref: ${kn_id}
+- name: object_id
+  description: object type id
+  ref: ${object_id}
+- name: action_id
+  description: action type id
+  ref: ${action_id}
+- name: groups_id
+  description: concept group id
+  ref: ${groups_id}
+- name: objects_id
+  description: object id in group
+  ref: ${objects_id}
+- name: ot_id
+  description: object type id for query
+  ref: ${ot_id}
+- name: id
+  description: generic id
+  ref: ${id}
+- name: rt_ids
+  description: relation type ids
+  ref: ${rt_ids}

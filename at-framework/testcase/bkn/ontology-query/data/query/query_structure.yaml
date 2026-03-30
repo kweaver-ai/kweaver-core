@@ -1,0 +1,64 @@
+- case_name: 查询场景-对象检索查询结构体校验
+  ot_id: tag
+  test_type: object
+  limit: 10
+  need_total: true
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: ==
+    field: t_tagid
+    value: 3
+  response_structure:
+    - _instance_id
+    - _instance_identity
+    - _display
+    - _score
+    - t_url
+    - t_name
+    - t_tagid
+
+- case_name: 查询场景-起点查询结构体校验
+  ot_id: tag
+  test_type: source_target
+  limit: 10
+  need_total: false
+  include_type_info: false
+  ignoring_store_cache: false
+  condition:
+    operation: ==
+    field: t_tagid
+    value: 3
+  response_structure:
+    - _instance_id
+    - _instance_identity
+    - _display
+    - object_type_id
+    - object_type_name
+    - properties
+
+
+- case_name: "查询场景-关系查询结构体校验"
+  limit: 10
+  test_type: relation
+  need_total: false
+  ignoring_store_cache: false
+  relation_type_paths:
+    - object_types:
+        - id: tag
+          condition:
+            operation: "=="
+            field: t_tagid
+            value: 94
+        - id: tagclass
+      relation_types:
+        - relation_type_id: tag_hastype_tagclass
+          source_object_type_id: tag
+          target_object_type_id: tagclass
+  response_structure:
+    - _instance_id
+    - _instance_identity
+    - _display
+    - object_type_id
+    - object_type_name
+    - properties

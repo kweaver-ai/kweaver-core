@@ -1,84 +1,17 @@
-# path_scope_mapping：bkn/ontology-query 模块
-
-subsystems:
-  # 对象搜索
-  - id: bkn-ontology-query-search
-    name: 对象搜索
-    path_patterns:
-      - "bkn/ontology-query/**/search/**"
-      - "web/src/services/ontologyQuery/**"
-    scope_tags:
-      - ontology-query
-      - search
-    smoke_tags:
-      - smoke
-      - search
-    suggested_suites:
-      - search
-
-  # 子图查询
-  - id: bkn-ontology-query-subgraph
-    name: 子图查询
-    path_patterns:
-      - "bkn/ontology-query/**/subgraph/**"
-    scope_tags:
-      - ontology-query
-      - subgraph
-    smoke_tags:
-      - smoke
-      - subgraph
-    suggested_suites:
-      - subgraph
-
-  # 对象列表
-  - id: bkn-ontology-query-list
-    name: 对象列表
-    path_patterns:
-      - "bkn/ontology-query/**/list/**"
-    scope_tags:
-      - ontology-query
-      - list
-    smoke_tags:
-      - smoke
-      - list
-    suggested_suites:
-      - list
-
-  # 行动执行
-  - id: bkn-ontology-query-action
-    name: 行动执行
-    path_patterns:
-      - "bkn/ontology-query/**/action/**"
-    scope_tags:
-      - ontology-query
-      - action
-    smoke_tags:
-      - smoke
-      - action
-    suggested_suites:
-      - action
-
-  # 虚拟 scope：按测试类型筛选
-  - id: performance
-    name: 性能测试
-    path_patterns: []
-    scope_tags:
-      - performance
-    suggested_suites: []
-
-path_to_api: []
-
-change_actions:
-  added: "新增文件/API → 智能体自动补充用例"
-  modified: "修改 → 智能体检查并更新用例或断言"
-  deleted: "删除 → 智能体禁用或删除对应用例"
-
-test_type_tags:
-  functional:
-    - smoke
-    - regression
-  contract:
-    - schema
-    - contract
-  performance:
-    - performance
+mappings:
+- paths:
+  - bkn/ontology-query/**
+  scope: bkn-ontology
+  tags:
+  - ontology
+  - query
+  suggested_suites:
+  - kn_ldbc.yaml
+  - knowledge_network.yaml
+  - object_type.yaml
+  - relation_type.yaml
+  - ontology_job.yaml
+  - action_type.yaml
+  - concept_groups.yaml
+  - query.yaml
+  - import_export.yaml

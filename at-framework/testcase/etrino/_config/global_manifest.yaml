@@ -1,0 +1,187 @@
+variables:
+- name: buildin_catalog_id
+  description: from excel
+  ref: ${buildin_catalog_id}
+- name: mysql_host
+  description: from excel
+  ref: ${mysql_host}
+- name: mysql_port
+  description: from excel
+  ref: ${mysql_port}
+- name: mysql_user
+  description: from excel
+  ref: ${mysql_user}
+- name: mysql_password
+  description: from excel
+  ref: ${mysql_password}
+- name: mysql_password_error
+  description: from excel
+  ref: ${mysql_password_error}
+- name: mysql_password_plaintext
+  description: from excel
+  ref: ${mysql_password_plaintext}
+- name: mysql_db_1
+  description: from excel
+  ref: ${mysql_db_1}
+- name: mysql_db_2
+  description: from excel
+  ref: ${mysql_db_2}
+- name: oracle_host
+  description: from excel
+  ref: ${oracle_host}
+- name: oracle_port
+  description: from excel
+  ref: ${oracle_port}
+- name: oracle_user
+  description: from excel
+  ref: ${oracle_user}
+- name: oracle_password
+  description: from excel
+  ref: ${oracle_password}
+- name: oracle_password_error
+  description: from excel
+  ref: ${oracle_password_error}
+- name: oracle_password_plaintext
+  description: from excel
+  ref: ${oracle_password_plaintext}
+- name: oracle_db
+  description: from excel
+  ref: ${oracle_db}
+- name: oracle_schema_1
+  description: from excel
+  ref: ${oracle_schema_1}
+- name: oracle_schema_2
+  description: from excel
+  ref: ${oracle_schema_2}
+- name: postgres_host
+  description: from excel
+  ref: ${postgres_host}
+- name: postgres_port
+  description: from excel
+  ref: ${postgres_port}
+- name: postgres_user
+  description: from excel
+  ref: ${postgres_user}
+- name: postgres_password
+  description: from excel
+  ref: ${postgres_password}
+- name: postgres_password_error
+  description: from excel
+  ref: ${postgres_password_error}
+- name: postgres_password_plaintext
+  description: from excel
+  ref: ${postgres_password_plaintext}
+- name: postgres_schema
+  description: from excel
+  ref: ${postgres_schema}
+- name: postgres_db_1
+  description: from excel
+  ref: ${postgres_db_1}
+- name: postgres_db_2
+  description: from excel
+  ref: ${postgres_db_2}
+- name: inceptor_host
+  description: from excel
+  ref: ${inceptor_host}
+- name: inceptor_port
+  description: from excel
+  ref: ${inceptor_port}
+- name: inceptor_token
+  description: from excel
+  ref: ${inceptor_token}
+- name: inceptor_token_error
+  description: from excel
+  ref: ${inceptor_token_error}
+- name: inceptor_db_1
+  description: from excel
+  ref: ${inceptor_db_1}
+- name: inceptor_db_2
+  description: from excel
+  ref: ${inceptor_db_2}
+- name: opensearch_host
+  description: from excel
+  ref: ${opensearch_host}
+- name: opensearch_port
+  description: from excel
+  ref: ${opensearch_port}
+- name: opensearch_user
+  description: from excel
+  ref: ${opensearch_user}
+- name: opensearch_password
+  description: from excel
+  ref: ${opensearch_password}
+- name: opensearch_password_error
+  description: from excel
+  ref: ${opensearch_password_error}
+- name: opensearch_password_plaintext
+  description: from excel
+  ref: ${opensearch_password_plaintext}
+- name: clickhouse_host
+  description: from excel
+  ref: ${clickhouse_host}
+- name: clickhouse_port
+  description: from excel
+  ref: ${clickhouse_port}
+- name: clickhouse_user
+  description: from excel
+  ref: ${clickhouse_user}
+- name: clickhouse_password
+  description: from excel
+  ref: ${clickhouse_password}
+- name: clickhouse_password_error
+  description: from excel
+  ref: ${clickhouse_password_error}
+- name: clickhouse_password_plaintext
+  description: from excel
+  ref: ${clickhouse_password_plaintext}
+- name: clickhouse_db_1
+  description: from excel
+  ref: ${clickhouse_db_1}
+- name: clickhouse_db_2
+  description: from excel
+  ref: ${clickhouse_db_2}
+- name: mariadb_host
+  description: from excel
+  ref: ${mariadb_host}
+- name: mariadb_port
+  description: from excel
+  ref: ${mariadb_port}
+- name: mariadb_user
+  description: from excel
+  ref: ${mariadb_user}
+- name: mariadb_password
+  description: from excel
+  ref: ${mariadb_password}
+- name: mariadb_password_error
+  description: from excel
+  ref: ${mariadb_password_error}
+- name: mariadb_password_plaintext
+  description: from excel
+  ref: ${mariadb_password_plaintext}
+- name: mariadb_db_1
+  description: from excel
+  ref: ${mariadb_db_1}
+- name: mariadb_db_2
+  description: from excel
+  ref: ${mariadb_db_2}
+- name: bin_data_template_mysql
+  description: from excel
+  ref: ${bin_data_template_mysql}
+- name: bin_data_template_oracle
+  description: from excel
+  ref: ${bin_data_template_oracle}
+- name: bin_data_template_postgres
+  description: from excel
+  ref: ${bin_data_template_postgres}
+- name: bin_data_template_inceptor
+  description: from excel
+  ref: ${bin_data_template_inceptor}
+- name: bin_data_template_opensearch
+  description: from excel
+  ref: ${bin_data_template_opensearch}
+- name: bin_data_template_clickhouse
+  description: from excel
+  ref: ${bin_data_template_clickhouse}
+- name: bin_data_template_mariadb
+  description: from excel
+  ref: ${bin_data_template_mariadb}

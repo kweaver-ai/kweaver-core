@@ -1,0 +1,150 @@
+cases:
+- case_id: object_type_001
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_create
+  description: 创建对象类型 / Create object type
+  api_name: create_object_type
+  tags:
+  - ontology
+  - legacy
+  - api:create_object_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: object_id
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: object_type_${timestamp}
+    display_name: ObjectType_${timestamp}
+    description: auto migrated object type
+- case_id: object_type_002
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_delete
+  description: 删除对象类型 / Delete object type
+  api_name: delete_object_type
+  tags:
+  - ontology
+  - legacy
+  - api:delete_object_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: object_id
+    value: ${object_id}
+- case_id: object_type_003
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_list
+  description: 查询对象类型列表 / List object types
+  api_name: list_object_types
+  tags:
+  - ontology
+  - legacy
+  - api:list_object_types
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+- case_id: object_type_004
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_parameter_validation
+  description: 校验对象类型参数 / Validate object type parameters
+  api_name: create_object_type
+  tags:
+  - ontology
+  - legacy
+  - api:create_object_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: object_type_${timestamp}
+    display_name: ObjectType_${timestamp}
+    description: auto migrated object type
+- case_id: object_type_005
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_update
+  description: 更新对象类型 / Update object type
+  api_name: update_object_type
+  tags:
+  - ontology
+  - legacy
+  - api:update_object_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: object_id
+    value: ${object_id}
+  body:
+    name: object_type_updated_${timestamp}
+    display_name: ObjectTypeUpdated_${timestamp}
+    description: auto migrated object update
+- case_id: object_type_006
+  suite: Object Type (legacy migration)
+  switch: n
+  name: object_update_parameter_validation
+  description: 校验对象类型更新参数 / Validate object type update parameters
+  api_name: update_object_type
+  tags:
+  - ontology
+  - legacy
+  - api:update_object_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: object_id
+    value: ${object_id}
+  body:
+    name: object_type_updated_${timestamp}
+    display_name: ObjectTypeUpdated_${timestamp}
+    description: auto migrated object update

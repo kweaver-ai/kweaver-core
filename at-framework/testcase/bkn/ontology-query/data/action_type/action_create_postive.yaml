@@ -1,0 +1,380 @@
+# ==================================================
+# 行动类创建 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证行动类创建接口对各种有效参数的处理能力
+# - 确保接口能够正确创建行动类并返回成功状态
+# - 覆盖所有正常使用场景的参数组合
+
+# ### 测试用例分类
+# 1. **基本参数测试**：包含必填字段的基本创建场景
+# 2. **边界值测试**：参数的最大长度、空值等边界情况
+# 3. **可选参数测试**：tags、comment等可选参数的使用
+# 4. **完整参数测试**：包含所有可能参数的创建场景
+# 5. **不同类型测试**：验证不同action_type的创建场景
+
+# ### 使用说明
+# - 所有测试用例均为正向测试,验证接口对有效参数的处理
+# - 测试用例按类别分组,便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本参数测试
+# ==================================================
+
+- case_name: "创建行动类-基本参数测试-add类型"
+  id: ""
+  name: "添加操作-${random_str}"
+  action_type: "add"
+  note: "基本参数测试,包含必填字段,action_type为add"
+  is_delete: true
+
+- case_name: "创建行动类-基本参数测试-modify类型"
+  id: ""
+  name: "修改操作-${random_str}"
+  action_type: "modify"
+  note: "基本参数测试,包含必填字段,action_type为modify"
+  is_delete: true
+
+- case_name: "创建行动类-基本参数测试-delete类型"
+  id: ""
+  name: "删除操作-${random_str}"
+  action_type: "delete"
+  note: "基本参数测试,包含必填字段,action_type为delete"
+  is_delete: true
+
+
+# ==================================================
+# 2. 边界值测试
+# ==================================================
+
+- case_name: "创建行动类-边界值测试-id最大长度"
+  id: "${random_str(40)}"
+  name: "边界值测试-${random_str}"
+  action_type: "add"
+  note: "id使用最大允许长度40字符"
+  is_delete: true
+
+- case_name: "创建行动类-边界值测试-name最大长度"
+  id: ""
+  name: "${random_str(40)}"
+  action_type: "add"
+  note: "name使用最大允许长度40字符"
+  is_delete: true
+
+- case_name: "创建行动类-边界值测试-comment最大长度"
+  id: ""
+  name: "边界值测试-${random_str}"
+  action_type: "add"
+  comment: "${random_str(1000)}"
+  note: "comment使用最大允许长度1000字符"
+  is_delete: true
+
+
+
+# ==================================================
+# 3. 可选参数测试
+# ==================================================
+
+- case_name: "创建行动类-可选参数测试-带tags参数"
+  id: ""
+  name: "带标签操作-${random_str}"
+  action_type: "add"
+  tags: ["测试", "行动类"]
+  note: "带tags参数的行动类创建"
+  is_delete: true
+
+- case_name: "创建行动类-可选参数测试-带comment参数"
+  id: ""
+  name: "带备注操作-${random_str}"
+  action_type: "add"
+  comment: "这是一个带备注的测试行动类"
+  note: "带comment参数的行动类创建"
+  is_delete: true
+
+
+
+- case_name: "创建行动类-可选参数测试-affect_object_type_id"
+  id: ""
+  name: "带影响操作-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  affect_object_type_id: "comment"
+  note: "带affect_object_type_id参数的行动类创建"
+  is_delete: true
+
+
+
+# ==================================================
+# 4. 完整参数测试
+# ==================================================
+
+- case_name: "创建行动类-完整参数测试"
+  id: ""
+  name: "完整参数测试-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  tags: ["测试", "完整参数"]
+  comment: "这是一个带有完整参数的测试行动类"
+  condition:
+    operation: "=="
+    field: "p_personid"
+    object_type_id: "person"
+    value: 94
+  affect_object_type_id: "comment"
+  module_type: "action_type"
+  note: "带有完整参数的行动类创建"
+  is_delete: true
+
+
+
+# ==================================================
+# 5. 不同类型测试
+# ==================================================
+
+- case_name: "创建行动类-不同类型测试-add类型"
+  id: ""
+  name: "添加操作-${random_str}"
+  action_type: "add"
+  note: "action_type为add的行动类创建"
+  is_delete: true
+
+
+- case_name: "创建行动类-不同类型测试-modify类型"
+  id: ""
+  name: "修改操作-${random_str}"
+  action_type: "modify"
+  note: "action_type为modify的行动类创建"
+  is_delete: true
+
+
+- case_name: "创建行动类-不同类型测试-delete类型"
+  id: ""
+  name: "删除操作-${random_str}"
+  action_type: "delete"
+  note: "action_type为delete的行动类创建"
+  is_delete: true
+
+
+
+# ==================================================
+# 6. condition测试
+# ==================================================
+- case_name: "行动类-多个条件"
+  name: "行动类-多个条件"
+  id: "person_actions"
+  test_type: "positive"
+  action_type: "add"
+  object_type_id: "person"
+  affect_object_type_id: "comment"
+  condition:
+    operation: "or"
+    sub_conditions:
+      - field: "p_firstname"
+        object_type_id: "person"
+        operation: "=="
+        value: "K"
+      - field: "p_gender"
+        operation: "=="
+        object_type_id: "person"
+        value: "female"
+  is_delete: false
+
+
+
+- case_name: "行动类-person"
+  name: "行动类—person"
+  id: "action_person"
+  test_type: "positive"
+  action_type: "add"
+  object_type_id: "person"
+  affect_object_type_id: "person"
+  condition:
+    operation: "=="
+    field: "p_personid"
+    object_type_id: "person"
+    value: 94
+  is_delete: false
+
+
+
+- case_name: "行动类-comment"
+  name: "行动类—comment"
+  id: "action_comment"
+  test_type: "positive"
+  action_type: "delete"
+  object_type_id: "comment"
+  affect_object_type_id: "comment"
+  condition:
+    operation: "=="
+    field: "c_commentid"
+    object_type_id: "comment"
+    value: 32485
+  is_delete: false
+
+
+
+- case_name: "行动类-post"
+  name: "行动类—post"
+  id: "action_post"
+  test_type: "positive"
+  action_type: "delete"
+  object_type_id: "post"
+  affect_object_type_id: "post"
+  condition:
+    operation: "=="
+    field: "ps_postid"
+    object_type_id: "post"
+    value: 3
+  is_delete: false
+
+
+
+- case_name: "行动类-place"
+  name: "行动类—place"
+  id: "action_place"
+  test_type: "positive"
+  action_type: "add"
+  object_type_id: "place"
+  affect_object_type_id: "place"
+  condition:
+    operation: "=="
+    field: "p_placeid"
+    object_type_id: "place"
+    value: 94
+  is_delete: false
+
+
+
+- case_name: "行动类-forum"
+  name: "行动类—forum"
+  id: "action_forum"
+  test_type: "positive"
+  action_type: "add"
+  object_type_id: "forum"
+  affect_object_type_id: "forum"
+  condition:
+    operation: "=="
+    field: "f_forumid"
+    object_type_id: "forum"
+    value: 36
+  is_delete: false
+
+
+
+- case_name: "行动类-organisation"
+  name: "行动类—organisation"
+  id: "action_organisation"
+  test_type: "positive"
+  action_type: "modify"
+  object_type_id: "organisation"
+  affect_object_type_id: "organisation"
+  condition:
+    operation: "=="
+    field: "o_organisationid"
+    object_type_id: "organisation"
+    value: 94
+  is_delete: false
+
+
+
+- case_name: "行动类-tag"
+  name: "行动类—tag"
+  id: "action_tag"
+  test_type: "positive"
+  action_type: "modify"
+  object_type_id: "tag"
+  affect_object_type_id: "tag"
+  condition:
+    operation: "=="
+    field: "t_tagid"
+    object_type_id: "tag"
+    value: 94
+  is_delete: false
+
+
+
+- case_name: "行动类-tagclass"
+  name: "行动类—tagclass"
+  id: "action_tagclass"
+  test_type: "positive"
+  action_type: "modify"
+  object_type_id: "tagclass"
+  affect_object_type_id: "tagclass"
+  condition:
+    operation: "=="
+    field: "tc_tagclassid"
+    object_type_id: "tagclass"
+    value: 94
+  is_delete: false
+
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-condition"
+  id: ""
+  name: "condition不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["condition"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-id"
+  id: ""
+  name: "id不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["id"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-comment"
+  id: ""
+  name: "comment不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["comment"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-paramters"
+  id: ""
+  name: "parameters不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["parameters"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-concept_groups"
+  id: ""
+  name: "concept_groups不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["concept_groups"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-affect"
+  id: ""
+  name: "affect不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["affect"]
+  is_delete: true
+
+
+- case_name: "创建行动类-非必填参数校验-排除字段-action_source"
+  id: ""
+  name: "action_source不传"
+  action_type: "add"
+  note: "基本参数测试,非必填参数不传"
+  exclude_fields: ["action_source"]
+  is_delete: true

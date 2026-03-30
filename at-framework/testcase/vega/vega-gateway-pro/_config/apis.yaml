@@ -1,0 +1,61 @@
+# API 列表：vega-gateway-pro 模块
+
+- name: 获取高级配置
+  url: /api/vega-gateway-pro/v1/config
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新高级配置
+  url: /api/vega-gateway-pro/v1/config
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取负载均衡配置
+  url: /api/vega-gateway-pro/v1/loadbalancer
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新负载均衡配置
+  url: /api/vega-gateway-pro/v1/loadbalancer
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取熔断配置
+  url: /api/vega-gateway-pro/v1/circuitbreaker
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新熔断配置
+  url: /api/vega-gateway-pro/v1/circuitbreaker
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取链路追踪配置
+  url: /api/vega-gateway-pro/v1/tracing
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新链路追踪配置
+  url: /api/vega-gateway-pro/v1/tracing
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取日志配置
+  url: /api/vega-gateway-pro/v1/logging
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新日志配置
+  url: /api/vega-gateway-pro/v1/logging
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 健康检查
+  url: /api/vega-gateway-pro/v1/health
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取指标
+  url: /api/vega-gateway-pro/v1/metrics
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

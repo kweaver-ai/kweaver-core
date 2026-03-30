@@ -1,0 +1,11 @@
+model_id: mdl-test-001
+model_name: test-model
+field_id: field-test-001
+field_name: test_field
+version_id: ver-test-001
+model_status: published
+group_id: group-test-001
+force: 'false'
+ids: id-a,id-b
+rule_id: rule-test-001
+rule_ids: rule-a,rule-b

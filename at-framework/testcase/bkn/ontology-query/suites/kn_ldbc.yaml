@@ -1,0 +1,25 @@
+cases:
+- case_id: kn_ldbc_001
+  suite: KN LDBC (legacy migration)
+  switch: n
+  name: create_ldbc_kn
+  description: 创建 LDBC 知识网络 / Create LDBC knowledge network
+  api_name: create_knowledge_network
+  tags:
+  - ontology
+  - legacy
+  - api:create_knowledge_network
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: kn_id
+  body:
+    name: kn_${timestamp}
+    display_name: KN_${timestamp}
+    description: auto migrated case

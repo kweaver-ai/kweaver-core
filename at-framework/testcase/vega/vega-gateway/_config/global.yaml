@@ -1,0 +1,7 @@
+# 全局变量：vega-gateway 模块
+
+route_id: "route-test-001"
+route_name: "test-route"
+route_path: "/api/test"
+ratelimit_id: "rl-test-001"
+requests_per_second: 100

@@ -1,0 +1,453 @@
+# ==================================================
+# 关系类创建 - 参数校验负面测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证关系类创建接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验场景
+
+# ### 测试用例分类
+# 1. **基础参数校验**:id、name、tags、comment 等基本参数
+# 2. **关联对象参数校验**:source_object_type_id、target_object_type_id 等
+# 3. **映射规则参数校验**:mapping_rules、source_property、target_property 等
+# 4. **类型相关参数校验**:type 参数、data_view 类型特殊要求
+# 5. **排除必传参数校验**:验证不传必传参数的情况
+# 6. **注释掉的测试用例**:暂时未启用的测试场景
+
+# ### 使用说明
+# - 所有测试用例均为负面测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基础参数校验
+# ==================================================
+
+## 1.1 id参数校验
+- case_name: "创建关系类-id超过最大长度"
+  id: "${random_str(41)}"
+  name: "id超过40个字符"
+  expected_status: 400
+  note: "id超过40个字符应该失败"
+
+- case_name: "创建关系类-id以下划线开头"
+  id: "_test_relation"
+  name: "id以下划线开头"
+  expected_status: 400
+  note: "id以下划线开头应该失败"
+
+- case_name: "创建关系类-id以连字符开头"
+  id: "-test_relation"
+  name: "id以连字符开头"
+  expected_status: 400
+  note: "id以连字符开头应该失败"
+
+- case_name: "创建关系类-id包含特殊字符"
+  id: "test_relation@#$"
+  name: "id包含特殊字符"
+  expected_status: 400
+  note: "id包含特殊字符应该失败"
+
+## 1.2 name参数校验
+- case_name: "创建关系类-name为空"
+  id: ""
+  name: ""
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+- case_name: "创建关系类-name超过最大长度"
+  id: ""
+  name: "${random_str(41)}"
+  expected_status: 400
+  note: "name超过40个字符应该失败"
+
+## 1.3 tags参数校验
+- case_name: "创建关系类-tags超过最大数量"
+  id: ""
+  name: "tags超过最大数量"
+  tags: ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6"]
+  expected_status: 400
+  note: "tags超过5个应该失败"
+
+- case_name: "创建关系类-tag超过最大长度"
+  id: ""
+  name: "tag超过最大长度"
+  tags: ["${random_str(41)}"]
+  expected_status: 400
+  note: "单个tag超过40个字符应该失败"
+
+- case_name: "创建关系类-tag包含特殊字符"
+  id: ""
+  name: "tag包含特殊字符"
+  tags: ["tag@#$"]
+  expected_status: 400
+  note: "tag包含特殊字符应该失败"
+
+## 1.4 comment参数校验
+- case_name: "创建关系类-comment超过最大长度"
+  id: ""
+  name: "comment超过最大长度"
+  comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "comment超过1000个字符应该失败"
+
+
+# ==================================================
+# 2. 关联对象参数校验
+# ==================================================
+
+## 2.1 source_object_type_id参数校验
+- case_name: "创建关系类-source_object_type_id为空"
+  id: ""
+  name: "source_object_type_id为空"
+  source_object_type_id: ""
+  target_object_type_id: "object2"
+  expected_status: 400
+  note: "source_object_type_id为空应该失败"
+
+- case_name: "创建关系类-source_object_type_id不存在"
+  id: ""
+  name: "source_object_type_id不存在"
+  source_object_type_id: "non_existent_object_id"
+  target_object_type_id: "object2"
+  expected_status: 500
+  note: "source_object_type_id不存在应该失败"
+
+## 2.2 target_object_type_id参数校验
+- case_name: "创建关系类-target_object_type_id为空"
+  id: ""
+  name: "target_object_type_id为空"
+  source_object_type_id: "object1"
+  target_object_type_id: ""
+  expected_status: 400
+  note: "target_object_type_id为空应该失败"
+
+- case_name: "创建关系类-target_object_type_id不存在"
+  id: ""
+  name: "target_object_type_id不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "non_existent_object_id"
+  expected_status: 500
+  note: "target_object_type_id不存在应该失败"
+
+
+# ==================================================
+# 3. 映射规则参数校验
+# ==================================================
+## 3.1 mapping_rules参数校验
+- case_name: "创建关系类-mapping_rules为空"
+  id: ""
+  name: "mapping_rules为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules: []
+  expected_status: 400
+  note: "mapping_rules为空应该失败"
+- case_name: "创建关系类-不传mapping_rules参数"
+  id: ""
+  name: "不传mapping_rules参数"
+  exclude_fields: ["mapping_rules"]
+  expected_status: 400
+  note: "不传mapping_rules参数应该失败"
+
+
+## 3.2 direct类型mapping_rules校验
+- case_name: "创建关系类-type为direct但mapping_rules缺少source_property"
+  id: ""
+  name: "缺少source_property"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - target_property:
+        name: "test_string"
+  expected_status: 400
+  note: "type为direct但mapping_rules缺少source_property应该失败"
+
+- case_name: "创建关系类-type为direct但mapping_rules缺少target_property"
+  id: ""
+  name: "缺少target_property"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: "test_string"
+  expected_status: 400
+  note: "type为direct但mapping_rules缺少target_property应该失败"
+
+## 3.3 source_property相关测试
+- case_name: "创建关系类-source_property.name不存在"
+  id: ""
+  name: "source_property_name不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: "non_existent_attr"
+      target_property:
+        name: "test_string"
+  expected_status: 400
+  note: "source_property.name不存在应该失败"
+
+- case_name: "创建关系类-source_property.name为空"
+  id: ""
+  name: "source_property_name为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: ""
+      target_property:
+        name: "test_string"
+  expected_status: 400
+  note: "source_property.name为空字符串应该失败"
+
+## 3.4 target_property相关测试
+- case_name: "创建关系类-target_property.name不存在"
+  id: ""
+  name: "target_property_name不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: "test_string"
+      target_property:
+        name: "non_existent_attr"
+  expected_status: 400
+  note: "target_property.name不存在应该失败"
+
+- case_name: "创建关系类-target_property.name为空"
+  id: ""
+  name: "target_property_name为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: "test_string"
+      target_property:
+        name: ""
+  expected_status: 400
+  note: "target_property.name为空字符串应该失败"
+
+- case_name: "创建关系类-property多组且重复"
+  id: ""
+  name: "target_property_name为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        name: "test_string"
+      target_property:
+        name: "test_string"
+    - source_property:
+        name: "test_string"
+      target_property:
+        name: "test_string"
+  expected_status: 400
+  note: "target_property.name为空字符串应该失败"
+
+
+# ==================================================
+# 4. 类型相关参数校验
+# ==================================================
+
+## 4.1 type参数校验
+- case_name: "创建关系类-type为空"
+  id: ""
+  name: "type为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: ""
+  expected_status: 400
+  note: "type为空字符串应该失败"
+
+- case_name: "创建关系类-type为无效值"
+  id: ""
+  name: "type为无效值"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "invalid_type"
+  mapping_rules:
+    - relation_table:
+        name: "test_relation_table"
+      source_property:
+        name: "source_id"
+      target_property:
+        name: "target_id"
+  expected_status: 400
+  note: "type为invalid_type应该失败"
+
+## 4.2 data_view类型相关测试
+- case_name: "创建关系类-type为data_view但缺少数据源"
+  id: ""
+  name: "缺少数据源"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "data_view"
+  mapping_rules:
+    - source_property:
+        name: "source_id"
+      target_property:
+        name: "target_id"
+  expected_status: 400
+  note: "type为data_view但缺少数据源应该失败"
+
+## 4.3 module_type类型相关测试
+- case_name: "创建关系类-module_type为无效值"
+  id: ""
+  name: "测试关系类"
+  module_type: "invalid_module"
+  expected_status: 403
+  note: "module_type为无效值应该失败"
+# ==================================================
+# 5.排除必传参数校验
+# ==================================================
+- case_name: "创建关系类-不传name参数"
+  id: ""
+  name: "不传name参数"
+  exclude_fields: ["name"]
+  expected_status: 400
+  note: "不传name参数应该失败"
+
+- case_name: "创建关系类-不传type参数"
+  id: ""
+  name: "不传type参数"
+  exclude_fields: ["type"]
+  expected_status: 400
+  note: "不传type参数应该失败"
+
+- case_name: "创建关系类-不传source_object_type_id参数"
+  id: ""
+  name: "不传source_object_type_id参数"
+  exclude_fields: ["source_object_type_id"]
+  expected_status: 400
+  note: "不传source_object_type_id参数应该失败" 
+
+- case_name: "创建关系类-不传target_object_type_id参数"
+  id: ""
+  name: "不传target_object_type_id参数"
+  exclude_fields: ["target_object_type_id"]
+  expected_status: 400
+  note: "不传target_object_type_id参数应该失败"
+# ==================================================
+# 6. 注释掉的测试用例
+# ==================================================
+
+# ## 3.1 mapping_rules参数校验
+# - case_name: "创建关系类-mapping_rules为空"
+#   id: ""
+#   name: "mapping_rules为空"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "direct"
+#   mapping_rules: []
+#   expected_status: 400
+#   note: "mapping_rules为空应该失败"
+# - case_name: "创建关系类-不传mapping_rules参数"
+#   id: ""
+#   name: "不传mapping_rules参数"
+#   exclude_fields: ["mapping_rules"]
+#   expected_status: 400
+#   note: "不传mapping_rules参数应该失败"
+## 5.1 data_view类型相关测试
+# - case_name: "创建关系类-view_table.name不存在"
+#   id: ""
+#   name: "测试关系类"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "data_view"
+#   mapping_rules:
+#     - view_table:
+#         name: "non_existent_view_table"
+#       source_property:
+#         name: "source_id"
+#       target_property:
+#         name: "target_id"
+#   expected_status: 400
+#   note: "view_table.name不存在应该失败"
+
+## 5.2 module_type参数校验
+# - case_name: "创建关系类-module_type为无效值"
+#   id: ""
+#   name: "测试关系类"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "direct"
+#   mapping_rules:
+#     - relation_table:
+#         name: "test_relation_table"
+#       source_property:
+#         name: "source_id"
+#       target_property:
+#         name: "target_id"
+#   module_type: "invalid_module"
+#   expected_status: 400
+#   note: "module_type为无效值应该失败"
+
+## 5.3 branch参数校验
+# - case_name: "创建关系类-branch为空"
+#   id: ""
+#   name: "测试关系类"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "direct"
+#   mapping_rules:
+#     - relation_table:
+#         name: "test_relation_table"
+#       source_property:
+#         name: "source_id"
+#       target_property:
+#         name: "target_id"
+#   branch: ""
+#   expected_status: 400
+#   note: "branch为空应该失败"
+
+## 5.4 import_mode参数校验
+# - case_name: "创建关系类-import_mode为无效值"
+#   id: ""
+#   name: "测试关系类"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "direct"
+#   mapping_rules:
+#     - relation_table:
+#         name: "test_relation_table"
+#       source_property:
+#         name: "source_id"
+#       target_property:
+#         name: "target_id"
+#   import_mode: "invalid_mode"
+#   expected_status: 400
+#   note: "import_mode为无效值应该失败"
+
+## 5.5 重复创建测试
+# - case_name: "创建关系类-id已存在"
+#   id: "existing_id"
+#   name: "测试关系类"
+#   source_object_type_id: "object1"
+#   target_object_type_id: "object2"
+#   type: "direct"
+#   mapping_rules:
+#     - relation_table:
+#         name: "test_relation_table"
+#       source_property:
+#         name: "source_id"
+#       target_property:
+#         name: "target_id"
+#   expected_status: 400
+#   note: "id已存在应该失败"

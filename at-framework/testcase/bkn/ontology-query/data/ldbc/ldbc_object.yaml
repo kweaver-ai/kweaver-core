@@ -1,0 +1,31 @@
+- case_name: "ldbc对象类创建-person"
+  object_name: "用户"
+  object_id: "person"
+
+- case_name: "ldbc对象类创建-forum"
+  object_name: "论坛"
+  object_id: "forum"
+
+- case_name: "ldbc对象类创建-tagclass"
+  object_name: "标签分类"
+  object_id: "tagclass"
+
+- case_name: "ldbc对象类创建-organisation"
+  object_name: "组织"
+  object_id: "organisation"
+
+- case_name: "ldbc对象类创建-place"
+  object_name: "地点"
+  object_id: "place"
+
+- case_name: "ldbc对象类创建-tag"
+  object_name: "标签"
+  object_id: "tag"
+
+- case_name: "ldbc对象类创建-comment"
+  object_name: "评论"
+  object_id: "comment"
+
+- case_name: "ldbc对象类创建-post"
+  object_name: "帖子"
+  object_id: "post"

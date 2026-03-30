@@ -1,0 +1,124 @@
+- case_name: 查询场景-ldbc-基于起点查询,正向1跳
+  source_object_type_id: tag
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: forward
+  path_length: 1
+  condition:
+    operation: "=="
+    field: t_tagid
+    value: 1
+
+- case_name: 查询场景-ldbc-基于起点查询,正向2跳
+  source_object_type_id: tag
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: forward
+  path_length: 2
+  condition:
+    operation: "=="
+    field: t_tagid
+    value: 1
+
+
+- case_name: 查询场景-ldbc-基于起点查询,反向1跳
+  source_object_type_id: tag
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: backward
+  path_length: 1
+  condition:
+    operation: "=="
+    field: t_tagid
+    value: 1
+
+
+- case_name: 查询场景-ldbc-基于起点查询,反向2跳
+  source_object_type_id: tag
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: backward
+  path_length: 2
+  condition:
+    operation: "=="
+    field: t_tagid
+    value: 1
+
+- case_name: 查询场景-ldbc-基于起点查询,双向
+  source_object_type_id: tag
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: bidirectional
+  path_length: 1
+  condition:
+    operation: "=="
+    field: t_tagid
+    value: 1
+  
+
+- case_name: 查询场景-ldbc-正确性验证-起点post=3,正向一跳
+  source_object_type_id: post
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: forward
+  path_length: 1
+  condition:
+    operation: "=="
+    field: ps_postid
+    value: 3
+  assert_data:
+    - ps_postid: 3
+    - p_personid: 933
+    - t_tagid: 59
+    - t_tagid: 565
+    - t_tagid: 1767
+    - t_tagid: 1936
+    - t_tagid: 1989
+    - t_tagid: 2855
+    - p_placeid: 100
+
+
+- case_name: 查询场景-ldbc-正确性验证-起点post=3,反向一跳
+  source_object_type_id: post
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: forward
+  path_length: 1
+  condition:
+    operation: "=="
+    field: ps_postid
+    value: 3
+  assert_data:
+    - ps_postid: 3
+    - f_forumid: 0
+
+
+- case_name: 查询场景-ldbc-正确性验证-起点post=3,双向一跳
+  source_object_type_id: post
+  limit: 10
+  need_total: true
+  ignoring_store_cache: false
+  direction: forward
+  path_length: 1
+  condition:
+    operation: "=="
+    field: ps_postid
+    value: 3
+  assert_data:
+    - ps_postid: 3
+    - f_forumid: 0
+    - p_personid: 933
+    - t_tagid: 59
+    - t_tagid: 565
+    - t_tagid: 1767
+    - t_tagid: 1936
+    - t_tagid: 1989
+    - t_tagid: 2855
+    - p_placeid: 100

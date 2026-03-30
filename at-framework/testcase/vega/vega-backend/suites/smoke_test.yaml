@@ -1,0 +1,43 @@
+# 冒烟测试套件：vega-backend 模块
+
+cases:
+  - case_id: "smoke_001"
+    suite: "vega-backend 冒烟测试"
+    switch: y
+    name: "健康检查"
+    description: "验证服务健康检查接口"
+    api_name: "健康检查"
+    tags:
+      - smoke
+      - health
+    expect:
+      status_code: 200
+
+  - case_id: "smoke_002"
+    suite: "vega-backend 冒烟测试"
+    switch: y
+    name: "获取资源列表"
+    description: "验证资源列表接口可用"
+    api_name: "获取资源列表"
+    tags:
+      - smoke
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+
+  - case_id: "smoke_003"
+    suite: "vega-backend 冒烟测试"
+    switch: y
+    name: "执行查询"
+    description: "验证查询执行接口可用"
+    api_name: "执行查询"
+    tags:
+      - smoke
+      - query
+    body:
+      query: "SELECT * FROM test LIMIT 10"
+    expect:
+      status_code: 200

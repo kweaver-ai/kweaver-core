@@ -1,0 +1,152 @@
+# ==================================================
+# 行动类编辑 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+- 验证行动类编辑接口对各种有效参数的处理能力
+- 确保接口能够正确编辑行动类并返回成功状态
+- 覆盖所有正常使用场景的参数组合
+
+### 测试用例分类
+1. **基本参数测试**：包含必填字段的基本编辑场景
+2. **边界值测试**：参数的最大长度、空值等边界情况
+3. **可选参数测试**：tags、comment、condition等可选参数的编辑场景
+4. **完整参数测试**：包含所有可能参数的编辑场景
+5. **不同类型测试**：验证不同action_type的编辑场景
+
+### 使用说明
+- 所有测试用例均为正向测试，验证接口对有效参数的处理
+- 测试用例按类别分组，便于维护和理解
+- 每个测试用例包含：
+  - case_name：测试用例名称
+  - 相关参数：需要测试的参数
+  - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本参数测试
+# ==================================================
+
+- case_name: "编辑行动类-基本参数测试-更新名称"
+  action_id: "existing_action_id"
+  action_name: "更新后的行动类名称-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  note: "基本参数测试，更新行动类名称"
+
+- case_name: "编辑行动类-基本参数测试-更新类型"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "modify"
+  object_type_id: "person"
+  note: "基本参数测试，更新行动类类型"
+
+
+# ==================================================
+# 2. 边界值测试
+# ==================================================
+
+- case_name: "编辑行动类-边界值测试-name最大长度"
+  action_id: "existing_action_id"
+  action_name: "${random_str(40)}"
+  action_type: "add"
+  object_type_id: "person"
+  note: "action_name使用最大允许长度40字符"
+
+- case_name: "编辑行动类-边界值测试-comment最大长度"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  comment: "${random_str(255)}"
+  note: "comment使用最大允许长度255字符"
+
+
+# ==================================================
+# 3. 可选参数测试
+# ==================================================
+
+- case_name: "编辑行动类-可选参数测试-更新tags"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  tags: ["测试", "更新", "行动类"]
+  note: "更新tags参数的行动类编辑"
+
+- case_name: "编辑行动类-可选参数测试-更新comment"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  comment: "这是更新后的测试行动类备注"
+  note: "更新comment参数的行动类编辑"
+
+- case_name: "编辑行动类-可选参数测试-更新condition"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  condition:
+    operation: "=="
+    field: "p_personid"
+    object_type_id: "person"
+    value: 100
+  note: "更新condition参数的行动类编辑"
+
+- case_name: "编辑行动类-可选参数测试-更新affect"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  affect: "post"
+  note: "更新affect参数的行动类编辑"
+
+
+# ==================================================
+# 4. 完整参数测试
+# ==================================================
+
+- case_name: "编辑行动类-完整参数测试"
+  action_id: "existing_action_id"
+  action_name: "完整参数测试-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  tags: ["测试", "完整参数", "更新"]
+  comment: "这是一个带有完整参数的测试行动类更新"
+  condition:
+    operation: "=="
+    field: "p_personid"
+    object_type_id: "person"
+    value: 94
+  affect: "comment"
+  module_type: "action_type"
+  note: "带有完整参数的行动类编辑"
+
+
+# ==================================================
+# 5. 不同类型测试
+# ==================================================
+
+- case_name: "编辑行动类-不同类型测试-更新为add类型"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "add"
+  object_type_id: "person"
+  note: "更新行动类类型为add"
+
+- case_name: "编辑行动类-不同类型测试-更新为modify类型"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "modify"
+  object_type_id: "person"
+  note: "更新行动类类型为modify"
+
+- case_name: "编辑行动类-不同类型测试-更新为delete类型"
+  action_id: "existing_action_id"
+  action_name: "测试行动类-${random_str}"
+  action_type: "delete"
+  object_type_id: "person"
+  note: "更新行动类类型为delete"

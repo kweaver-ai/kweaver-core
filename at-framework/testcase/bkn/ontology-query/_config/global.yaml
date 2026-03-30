@@ -1,23 +1,8 @@
-# 全局变量配置：bkn/ontology-query 模块
-
-# ==================== 环境配置 ====================
-business_domain: "${env:ADP_BUSINESS_DOMAIN}"
-host: "${env:ADP_HOST}"
-token: "${env:ADP_TOKEN}"
-timestamp: "${timestamp}"
-
-# ==================== 知识网络测试数据 ====================
-test_kn_id: ""
-test_kn_branch: "main"
-
-# ==================== 对象类测试数据 ====================
-test_object_type_id: ""
-test_object_type_name: "测试对象类型"
-
-# ==================== 行动类测试数据 ====================
-test_action_id: ""
-test_action_name: "测试行动"
-
-# ==================== 查询测试数据 ====================
-test_search_query: "测试搜索"
-test_subgraph_root_id: ""
+kn_id: test_kn_001
+object_id: test_object_001
+action_id: test_action_001
+groups_id: test_group_001
+objects_id: test_object_001
+ot_id: test_ot_001
+id: test_id_001
+rt_ids: test_rt_001

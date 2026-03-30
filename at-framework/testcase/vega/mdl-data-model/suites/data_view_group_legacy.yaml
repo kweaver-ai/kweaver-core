@@ -1,0 +1,75 @@
+cases:
+  - case_id: "dvg_legacy_001"
+    suite: "data_view_group 迁移套件"
+    switch: n
+    name: "创建数据视图分组"
+    description: "迁移自 test_data_view_group/test_group_create.py"
+    api_name: "create_data_view_group"
+    tags:
+      - data-view
+      - group
+      - legacy
+    body:
+      name: "迁移数据视图分组_${timestamp}"
+    expect:
+      status_code: 201
+      extract:
+        - type: json_path
+          source: "$.id"
+          var_name: "group_id"
+
+  - case_id: "dvg_legacy_002"
+    suite: "data_view_group 迁移套件"
+    switch: n
+    name: "查询数据视图分组列表"
+    description: "迁移自 test_data_view_group/test_group_list.py"
+    api_name: "list_data_view_groups"
+    tags:
+      - data-view
+      - group
+      - legacy
+    expect:
+      status_code: 200
+
+  - case_id: "dvg_legacy_003"
+    suite: "data_view_group 迁移套件"
+    switch: n
+    name: "更新数据视图分组"
+    description: "迁移自 test_data_view_group/test_group_update.py"
+    api_name: "update_data_view_group"
+    tags:
+      - data-view
+      - group
+      - legacy
+    body:
+      name: "迁移数据视图分组更新_${timestamp}"
+    expect:
+      status_code: 204
+
+  - case_id: "dvg_legacy_004"
+    suite: "data_view_group 迁移套件"
+    switch: n
+    name: "按分组导出数据视图"
+    description: "迁移自 test_data_view_group/test_group_export.py"
+    api_name: "export_data_views_by_group"
+    tags:
+      - data-view
+      - group
+      - export
+      - legacy
+    expect:
+      status_code: 200
+
+  - case_id: "dvg_legacy_005"
+    suite: "data_view_group 迁移套件"
+    switch: n
+    name: "删除数据视图分组"
+    description: "迁移自 test_data_view_group/test_group_delete.py"
+    api_name: "delete_data_view_group"
+    tags:
+      - data-view
+      - group
+      - cleanup
+      - legacy
+    expect:
+      status_code: 204

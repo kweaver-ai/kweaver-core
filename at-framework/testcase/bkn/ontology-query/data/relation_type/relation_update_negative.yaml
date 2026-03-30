@@ -1,0 +1,342 @@
+# ==================================================
+# 关系类更新 - 负向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证关系类更新接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验场景
+
+# ### 测试用例分类
+# 1. **基础参数校验**:id、name、tags、comment 等基本参数
+# 2. **关联对象参数校验**:source_object_type_id、target_object_type_id 等
+# 3. **映射规则参数校验**:mapping_rules、source_property、target_property 等
+# 4. **类型相关参数校验**:type 参数、data_view 类型特殊要求
+# 5. **排除必传参数校验**:验证不传必传参数的情况
+
+# ### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - relation_id：关系类ID
+#   - relation_u_name：更新后的名称（可能无效）
+#   - 其他参数：根据测试场景而定
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基础参数校验
+# ==================================================
+
+
+## 1.2 name参数校验
+- case_name: "更新关系类-name为空"
+  relation_c_name: "name为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: ""
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+- case_name: "更新关系类-name超过最大长度"
+  relation_c_name: "name超过最大长度"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "${random_str(41)}"
+  expected_status: 400
+  note: "name超过40个字符应该失败"
+
+## 1.3 tags参数校验
+- case_name: "更新关系类-tags超过最大数量"
+  relation_c_name: "tags超过最大数量"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "tags超过最大数量"
+  tags: ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6"]
+  expected_status: 400
+  note: "tags超过5个应该失败"
+
+- case_name: "更新关系类-tag超过最大长度"
+  relation_c_name: "tag超过最大长度"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "tag超过最大长度"
+  tags: ["${random_str(41)}"]
+  expected_status: 400
+  note: "单个tag超过40个字符应该失败"
+
+- case_name: "更新关系类-tag包含特殊字符"
+  relation_c_name: "tag包含特殊字符"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "tag包含特殊字符"
+  tags: ["tag@#$"]
+  expected_status: 400
+  note: "tag包含特殊字符应该失败"
+
+- case_name: "更新关系类-tag名称为空字符串"
+  relation_c_name: "tag名称为空字符串"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "tag名称为空字符串"
+  tags: [""]
+  expected_status: 400
+  note: "tag名称为空字符串应该失败"
+
+## 1.4 comment参数校验
+- case_name: "更新关系类-comment超过最大长度"
+  relation_c_name: "comment超过最大长度"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "comment超过最大长度"
+  comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "comment超过1000个字符应该失败"
+
+
+# ==================================================
+# 2. 关联对象参数校验
+# ==================================================
+
+## 2.1 source_object_type_id参数校验
+- case_name: "更新关系类-source_object_type_id为空"
+  relation_c_name: "source_object_type_id为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "source_object_type_id为空"
+  source_object_type_id: ""
+  target_object_type_id: "object2"
+  expected_status: 400
+  note: "source_object_type_id为空应该失败"
+
+- case_name: "更新关系类-source_object_type_id不存在"
+  relation_c_name: "source_object_type_id不存在"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "source_object_type_id不存在"
+  source_object_type_id: "non_existent_object_id"
+  target_object_type_id: "object2"
+  expected_status: 500
+  note: "source_object_type_id不存在应该失败"
+
+## 2.2 target_object_type_id参数校验
+- case_name: "更新关系类-target_object_type_id为空"
+  relation_c_name: "target_object_type_id为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "target_object_type_id为空"
+  source_object_type_id: "object1"
+  target_object_type_id: ""
+  expected_status: 400
+  note: "target_object_type_id为空应该失败"
+
+- case_name: "更新关系类-target_object_type_id不存在"
+  relation_c_name: "target_object_type_id不存在"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "target_object_type_id不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "non_existent_object_id"
+  expected_status: 500
+  note: "target_object_type_id不存在应该失败"
+
+
+# ==================================================
+# 3. 映射规则参数校验
+# ==================================================
+
+## 3.1 direct类型mapping_rules校验
+- case_name: "更新关系类-type为direct但mapping_rules缺少source_property"
+  relation_c_name: "缺少source_property"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "缺少source_property"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - target_property:
+        relation_u_name: "test_string"
+  expected_status: 400
+  note: "type为direct但mapping_rules缺少source_property应该失败"
+
+- case_name: "更新关系类-type为direct但mapping_rules缺少target_property"
+  relation_c_name: "缺少target_property"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "缺少target_property"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "test_string"
+  expected_status: 400
+  note: "type为direct但mapping_rules缺少target_property应该失败"
+
+## 3.2 source_property相关测试
+- case_name: "更新关系类-source_property.name不存在"
+  relation_c_name: "source_property.name不存在"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "source_property_name不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "non_existent_attr"
+      target_property:
+        relation_u_name: "test_string"
+  expected_status: 400
+  note: "source_property.name不存在应该失败"
+
+- case_name: "更新关系类-source_property.name为空"
+  relation_c_name: "source_property.name为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "source_property_name为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: ""
+      target_property:
+        relation_u_name: "test_string"
+  expected_status: 400
+  note: "source_property.name为空字符串应该失败"
+
+## 3.3 target_property相关测试
+- case_name: "更新关系类-target_property.name不存在"
+  relation_c_name: "target_property.name不存在"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "target_property_name不存在"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "test_string"
+      target_property:
+        relation_u_name: "non_existent_attr"
+  expected_status: 400
+  note: "target_property.name不存在应该失败"
+
+- case_name: "更新关系类-target_property.name为空"
+  relation_c_name: "target_property.name为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "target_property_name为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "test_string"
+      target_property:
+        relation_u_name: ""
+  expected_status: 400
+  note: "target_property.name为空字符串应该失败"
+
+- case_name: "更新关系类-property多组且重复"
+  relation_c_name: "property多组且重复"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "property多组且重复"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "direct"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "test_string"
+      target_property:
+        relation_u_name: "test_string"
+    - source_property:
+        relation_u_name: "test_string"
+      target_property:
+        relation_u_name: "test_string"
+  expected_status: 400
+  note: "property多组且重复应该失败"
+
+
+# ==================================================
+# 4. 类型相关参数校验
+# ==================================================
+
+## 4.1 type参数校验
+- case_name: "更新关系类-type为空"
+  relation_c_name: "type为空"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "type为空"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: ""
+  expected_status: 400
+  note: "type为空字符串应该失败"
+
+- case_name: "更新关系类-type为无效值"
+  relation_c_name: "type为无效值"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "type为无效值"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "invalid_type"
+  mapping_rules:
+    - relation_table:
+        relation_u_name: "test_relation_table"
+      source_property:
+        relation_u_name: "source_id"
+      target_property:
+        relation_u_name: "target_id"
+  expected_status: 400
+  note: "type为invalid_type应该失败"
+
+## 4.2 data_view类型相关测试
+- case_name: "更新关系类-type为data_view但缺少数据源"
+  relation_c_name: "type为data_view但缺少数据源"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "缺少数据源"
+  source_object_type_id: "object1"
+  target_object_type_id: "object2"
+  type: "data_view"
+  mapping_rules:
+    - source_property:
+        relation_u_name: "source_id"
+      target_property:
+        relation_u_name: "target_id"
+  expected_status: 400
+  note: "type为data_view但缺少数据源应该失败"
+
+## 4.3 module_type类型相关测试
+# - case_name: "更新关系类-module_type为无效值"
+#   relation_c_name: "module_type为无效值"
+#   relation_id: "${random_str(10)}"
+#   relation_u_name: "测试关系类"
+#   module_type: "invalid_module"
+#   expected_status: 400
+#   note: "module_type为无效值应该失败"
+
+
+# ==================================================
+# 5. 排除必传参数校验
+# ==================================================
+- case_name: "更新关系类-不传name参数"
+  relation_c_name: "不传name参数"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "不传name参数"
+  exclude_fields: ["name"]
+  expected_status: 400
+  note: "不传name参数应该失败"
+
+- case_name: "更新关系类-不传type参数"
+  relation_c_name: "不传type参数"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "不传type参数"
+  exclude_fields: ["type"]
+  expected_status: 400
+  note: "不传type参数应该失败"
+
+- case_name: "更新关系类-不传source_object_type_id参数"
+  relation_c_name: "不传source_object_type_id参数"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "不传source_object_type_id参数"
+  exclude_fields: ["source_object_type_id"]
+  expected_status: 400
+  note: "不传source_object_type_id参数应该失败"
+
+- case_name: "更新关系类-不传target_object_type_id参数"
+  relation_c_name: "不传target_object_type_id参数"
+  relation_id: "${random_str(10)}"
+  relation_u_name: "不传target_object_type_id参数"
+  exclude_fields: ["target_object_type_id"]
+  expected_status: 400
+  note: "不传target_object_type_id参数应该失败"
+

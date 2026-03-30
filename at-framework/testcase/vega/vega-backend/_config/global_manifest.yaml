@@ -1,0 +1,32 @@
+# 全局变量清单：vega-backend 模块
+
+variables:
+  - name: query_id
+    description: 查询会话 ID
+    type: string
+    example: "query-xxx-xxx-xxx"
+    required: true
+
+  - name: resource_id
+    description: 资源 ID
+    type: string
+    example: "res-xxx-xxx-xxx"
+    required: false
+
+  - name: resource_name
+    description: 资源名称
+    type: string
+    example: "test-resource"
+    required: false
+
+  - name: user_id
+    description: 用户 ID
+    type: string
+    example: "user-xxx-xxx-xxx"
+    required: false
+
+  - name: permission_type
+    description: 权限类型
+    type: string
+    example: "read"
+    required: false

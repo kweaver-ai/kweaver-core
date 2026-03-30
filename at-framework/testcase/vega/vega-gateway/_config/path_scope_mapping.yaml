@@ -1,0 +1,31 @@
+# 路径 → 作用域/标签/建议套件 映射：vega-gateway 模块
+
+mappings:
+  - paths:
+      - "vega/vega-gateway/**"
+    scope: "vega-gateway"
+    tags:
+      - "gateway"
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
+
+  - paths:
+      - "vega/vega-gateway/src/main/java/com/eisoo/gateway/controller/RouteController.java"
+      - "vega/vega-gateway/src/main/java/com/eisoo/gateway/service/RouteService.java"
+    scope: "route"
+    tags:
+      - "route"
+      - "crud"
+    suggested_suites:
+      - "route_crud.yaml"
+
+  - paths:
+      - "vega/vega-gateway/src/main/java/com/eisoo/gateway/controller/RatelimitController.java"
+      - "vega/vega-gateway/src/main/java/com/eisoo/gateway/service/RatelimitService.java"
+    scope: "ratelimit"
+    tags:
+      - "ratelimit"
+      - "throttle"
+    suggested_suites:
+      - "ratelimit_test.yaml"

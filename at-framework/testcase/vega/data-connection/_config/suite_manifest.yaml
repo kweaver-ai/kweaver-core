@@ -1,0 +1,48 @@
+# 套件清单：data-connection 模块
+# 列出所有可用的测试套件及其说明
+
+suites:
+  - name: smoke_test.yaml
+    description: 冒烟测试 - 验证基础功能正常
+    priority: high
+    estimated_duration: "5m"
+
+  - name: datasource_crud.yaml
+    description: 数据源增删改查测试
+    priority: high
+    estimated_duration: "10m"
+
+  - name: datasource_connection.yaml
+    description: 数据源连接测试
+    priority: high
+    estimated_duration: "8m"
+
+  - name: metadata_scan.yaml
+    description: 元数据扫描测试
+    priority: medium
+    estimated_duration: "15m"
+
+  - name: opensearch_metadata.yaml
+    description: OpenSearch 元数据获取测试
+    priority: high
+    estimated_duration: "12m"
+
+  - name: field_mapping.yaml
+    description: 字段映射配置测试（含字段特征 #137）
+    priority: high
+    estimated_duration: "10m"
+
+  - name: field_feature.yaml
+    description: 字段特征功能测试（keyword、ignore_above 等）
+    priority: medium
+    estimated_duration: "8m"
+
+  - name: view_crud.yaml
+    description: 视图增删改查测试
+    priority: medium
+    estimated_duration: "10m"
+
+  - name: view_sync.yaml
+    description: 视图元数据同步测试
+    priority: medium
+    estimated_duration: "12m"

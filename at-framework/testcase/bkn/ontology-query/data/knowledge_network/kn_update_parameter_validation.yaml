@@ -1,0 +1,200 @@
+# 业务知识网络更新 - 参数校验测试用例
+
+# 必填参数缺失测试
+- case_name: "参数校验-更新时缺少name参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "negative"
+  exclude_fields: ["name"]
+  expected_status: 400
+  note: "name是必填参数，不传应该失败"
+
+- case_name: "参数校验-更新时缺少branch参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["branch"]
+  expected_status: 204
+
+- case_name: "参数校验-更新时缺少base_branch参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["base_branch"]
+  expected_status: 204
+
+- case_name: "参数校验-更新时缺少多个必填参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "negative"
+  exclude_fields: ["name", "branch"]
+  expected_status: 400
+  note: "同时缺少name和branch参数"
+
+# 参数类型校验
+- case_name: "参数校验-更新name为空字符串"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: ""
+  kn_id: "${ts_uuid}"
+  test_type: "negative"
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+# 边界值测试
+- case_name: "参数校验-更新name为最短有效字符串"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "A"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  expected_status: 204
+  note: "name为单个字符应该成功"
+
+# 特殊字符测试
+- case_name: "参数校验-更新name包含特殊字符"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新@#$%^&*()网络"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  expected_status: 204
+  note: "name可以包含特殊字符"
+
+- case_name: "参数校验-更新name包含emoji"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新😀网络"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  expected_status: 204
+  note: "name可以包含emoji"
+
+- case_name: "参数校验-更新name包含空格"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新 网络"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  expected_status: 204
+  note: "name可以包含空格"
+
+# 可选参数测试
+- case_name: "参数校验-更新时不传可选参数tags"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["tags"]
+  expected_status: 204
+  note: "tags是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数comment"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["comment"]
+  expected_status: 204
+  note: "comment是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数icon"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["icon"]
+  expected_status: 204
+  note: "icon是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传可选参数color"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["color"]
+  expected_status: 204
+  note: "color是可选参数，不传应该成功"
+
+- case_name: "参数校验-更新时不传所有可选参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  exclude_fields: ["tags", "comment", "icon", "color"]
+  expected_status: 204
+  note: "不传所有可选参数应该成功"
+
+# tags参数校验
+- case_name: "参数校验-更新tags为空数组"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  tags: []
+  expected_status: 204
+  note: "tags为空数组应该成功"
+
+- case_name: "参数校验-更新tags包含特殊字符"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "negative"
+  tags: ["测试@#$", "标签2"]
+  expected_status: 400
+  note: "tags可以包含特殊字符"
+
+# comment参数校验
+- case_name: "参数校验-更新comment为空字符串"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  comment: ""
+  expected_status: 204
+  note: "comment为空字符串应该成功"
+
+- case_name: "参数校验-更新comment为超长字符串"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  comment: "这是一个超长的备注${random_str(200)}"
+  expected_status: 204
+  note: "comment为超长字符串应该成功"
+
+# 正常更新测试
+- case_name: "参数校验-正常更新name"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新后的网络名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  expected_status: 204
+  note: "正常更新name应该成功"
+
+- case_name: "参数校验-正常更新tags"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  tags: ["新标签1", "新标签2", "新标签3"]
+  expected_status: 204
+  note: "正常更新tags应该成功"
+
+- case_name: "参数校验-正常更新comment"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  comment: "这是更新后的备注信息"
+  expected_status: 204
+  note: "正常更新comment应该成功"
+
+- case_name: "参数校验-同时更新多个参数"
+  kn_c_name: "原始网络-${random_str}"
+  kn_u_name: "更新网络-${random_str}"
+  kn_id: "${ts_uuid}"
+  test_type: "positive"
+  tags: ["标签A", "标签B"]
+  comment: "同时更新多个参数"
+  expected_status: 204
+  note: "同时更新多个参数应该成功"

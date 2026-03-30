@@ -1,0 +1,7 @@
+# 全局变量：vega-gateway-pro 模块
+
+loadbalancer_id: "lb-test-001"
+loadbalancer_name: "test-lb"
+circuitbreaker_id: "cb-test-001"
+failure_threshold: 5
+tracing_enabled: true

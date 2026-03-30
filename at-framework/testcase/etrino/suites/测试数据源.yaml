@@ -1,0 +1,400 @@
+feature: Datasource Tests
+story: 测试数据源
+switch: y
+cases:
+- name: Positive_测试数据源连接_MySQL数据源_请求成功
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": true\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Positive_测试数据源连接_MySQL数据源_冗余参数_请求成功
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": true\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库类型不匹配_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"postgresql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_连接协议不匹配_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库地址错误_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库端口错误_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库用户名错误_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库密码错误_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_使用明文密码_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_数据库不存在_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_type缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_type缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"bin_data\": ${bin_data_template_mysql}\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_type非string类型_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": [\"mysql\"],\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_type非string类型_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": 0,\n  \"bin_data\": ${bin_data_template_mysql}\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_type非string类型_请求失败__var03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": true,\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_type非枚举值类型_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"undefined\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {}\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata非object_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": [${bin_data_template_mysql}]\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata非object_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": \"\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata非object_请求失败__var03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": 0\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_bindata非object_请求失败__var04
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": true\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_protocol缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_protocol缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"host\": \"${mysql_host}\"\
+    ,\n    \"port\": ${mysql_port},\n    \"account\": \"${mysql_user}\",\n    \"password\"\
+    : \"${mysql_password}\",\n    \"database_name\": \"${mysql_db_1}\"\n  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_protocol非string类型_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_protocol非string类型_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_protocol非string类型_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_protocol非枚举值_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_host缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_host缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"connect_protocol\"\
+    : \"jdbc\",\n    \"port\": ${mysql_port},\n    \"account\": \"${mysql_user}\"\
+    ,\n    \"password\": \"${mysql_password}\",\n    \"database_name\": \"${mysql_db_1}\"\
+    \n  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_host非string_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_host非string_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_host非string_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port缺省_请求失败
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"connect_protocol\"\
+    : \"jdbc\",\n    \"host\": \"${mysql_host}\",\n    \"account\": \"${mysql_user}\"\
+    ,\n    \"password\": \"${mysql_password}\",\n    \"database_name\": \"${mysql_db_1}\"\
+    \n  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_port非integer_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port非integer_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port非integer_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port非integer_请求失败__var01__dup04
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port超出正常范围_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port超出正常范围_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_port超出正常范围_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_account缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_account缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"connect_protocol\"\
+    : \"jdbc\",\n    \"host\": \"${mysql_host}\",\n    \"port\": ${mysql_port},\n\
+    \    \"password\": \"${mysql_password}\",\n    \"database_name\": \"${mysql_db_1}\"\
+    \n  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_account非string_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_account非string_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_account非string_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_password缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_password缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"connect_protocol\"\
+    : \"jdbc\",\n    \"host\": \"${mysql_host}\",\n    \"port\": ${mysql_port},\n\
+    \    \"account\": \"${mysql_user}\",\n    \"database_name\": \"${mysql_db_1}\"\
+    \n  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_password非string_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_password非string_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_password非string_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_database缺省_请求失败__var01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_database缺省_请求失败__var02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": {\n    \"connect_protocol\"\
+    : \"jdbc\",\n    \"host\": \"${mysql_host}\",\n    \"port\": ${mysql_port},\n\
+    \    \"account\": \"${mysql_user}\",\n    \"password\": \"${mysql_password}\"\n\
+    \  }\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源'
+- name: Negative_测试数据源连接_参数校验_database非string_请求失败__var01__dup01
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_database非string_请求失败__var01__dup02
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'
+- name: Negative_测试数据源连接_参数校验_database非string_请求失败__var01__dup03
+  url: 测试数据源连接
+  body_params: "{\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 测试数据源; body update in excel not auto-merged'

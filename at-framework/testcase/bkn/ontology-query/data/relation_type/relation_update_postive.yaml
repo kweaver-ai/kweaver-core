@@ -1,0 +1,175 @@
+# ==================================================
+# 关系类更新 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证关系类更新接口对各种有效参数的处理能力
+# - 确保接口能够正确更新关系类并返回成功状态
+# - 覆盖所有正常使用场景的参数组合
+
+### 测试用例分类
+# 1. **基本参数测试**：更新关系类的基本参数
+# 2. **边界值测试**：参数的最大长度、空值等边界情况
+# 3. **可选参数测试**：tags、comment等可选参数的更新
+# 4. **完整参数测试**：更新所有可能的参数
+
+### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - relation_id：关系类ID
+#   - relation_c_name：创建时的名称
+#   - relation_u_name：更新后的名称
+#   - 其他参数：根据测试场景而定
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本参数测试
+# ==================================================
+
+- case_name: "更新关系类-基本参数测试"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "更新-${random_str}"
+  note: "基本参数测试，更新关系类名称"
+
+
+# ==================================================
+# 2. 边界值测试
+# ==================================================
+
+## 2.1 name参数边界值测试
+- case_name: "更新关系类-name最大长度"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "${random_str(40)}"
+  note: "name使用最大允许长度40字符"
+
+
+# ==================================================
+# 3. 可选参数测试
+# ==================================================
+
+## 3.1 tags参数测试
+- case_name: "更新关系类-带tags参数"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "带tags参数-${random_str}"
+  tags: ["tag1", "tag2", "tag3"]
+  note: "带tags参数的关系类更新"
+
+## 3.2 comment参数测试
+- case_name: "更新关系类-带comment参数"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "带comment参数-${random_str}"
+  comment: "这是一个测试关系类的注释"
+  note: "带comment参数的关系类更新"
+
+- case_name: "更新关系类-comment最大长度"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "带comment参数-${random_str}"
+  comment: "${random_str(1000)}"
+  note: "comment使用最大允许长度1000字符"
+
+
+# ==================================================
+# 4. 完整参数测试
+# ==================================================
+
+- case_name: "更新关系类-完整参数测试"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "参数测试-${random_str}"
+  tags: ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  comment: "这是一个带有完整参数的测试关系类"
+  note: "带有完整参数的关系类更新"
+
+# ==================================================
+# 4. 修改起点、终点、属性
+# ==================================================
+
+- case_name: "更新关系类-修改起点"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "修改起点-${random_str}"
+  type: "direct"
+  target_object_type_id: "object2"
+  source_object_type_id: "object3"
+  mapping_rules:
+  - source_property:
+      name: "test_string"
+    target_property:
+      name: "test_string"
+  note: "带有完整参数的关系类更新"
+
+
+- case_name: "更新关系类-修改终点"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "修改终点-${random_str}"
+  type: "direct"
+  target_object_type_id: "object3"
+  source_object_type_id: "object1"
+  mapping_rules:
+  - source_property:
+      name: "test_string"
+    target_property:
+      name: "test_string"
+  note: "带有完整参数的关系类更新"
+
+- case_name: "更新关系类-修改起点属性"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "修改起点属性-${random_str}"
+  type: "direct"
+  target_object_type_id: "object2"
+  source_object_type_id: "object1"
+  mapping_rules:
+  - source_property:
+      name: "test_integer"
+    target_property:
+      name: "test_string"
+  note: "带有完整参数的关系类更新"
+
+
+- case_name: "更新关系类-修改终点属性"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "修改终点属性-${random_str}"
+  type: "direct"
+  target_object_type_id: "object2"
+  source_object_type_id: "object1"
+  mapping_rules:
+  - source_property:
+      name: "test_string"
+    target_property:
+      name: "test_integer"
+  note: "带有完整参数的关系类更新"
+
+
+- case_name: "更新关系类-同时修改起点终点属性"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "同时修改起点终点属性-${random_str}"
+  type: "direct"
+  target_object_type_id: "object1"
+  source_object_type_id: "object2"
+  mapping_rules:
+  - source_property:
+      name: "test_integer"
+    target_property:
+      name: "test_integer"
+  note: "带有完整参数的关系类更新"
+
+
+- case_name: "更新关系类-同时修改新增一组数据属性"
+  relation_c_name: "创建-${random_str}"
+  relation_u_name: "新增一组数据属性-${random_str}"
+  type: "direct"
+  target_object_type_id: "object2"
+  source_object_type_id: "object1"
+  mapping_rules:
+  - source_property:
+      name: "test_integer"
+    target_property:
+      name: "test_integer"
+  - source_property:
+      name: "test_string"
+    target_property:
+      name: "test_string"
+  note: "带有完整参数的关系类更新"

@@ -1,0 +1,31 @@
+# 路径 → 作用域/标签/建议套件 映射：agent-backend 模块
+
+mappings:
+  - paths:
+      - "agent-backend/**"
+    scope: "agent-backend"
+    tags:
+      - "agent"
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
+
+  - paths:
+      - "agent-backend/src/main/java/com/eisoo/agent/controller/AgentController.java"
+      - "agent-backend/src/main/java/com/eisoo/agent/service/AgentService.java"
+    scope: "agent"
+    tags:
+      - "agent"
+      - "crud"
+    suggested_suites:
+      - "agent_crud.yaml"
+
+  - paths:
+      - "agent-backend/src/main/java/com/eisoo/agent/controller/TaskController.java"
+      - "agent-backend/src/main/java/com/eisoo/agent/service/TaskService.java"
+    scope: "task"
+    tags:
+      - "task"
+      - "execution"
+    suggested_suites:
+      - "task_test.yaml"

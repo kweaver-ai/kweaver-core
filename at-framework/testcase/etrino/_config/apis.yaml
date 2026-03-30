@@ -1,0 +1,28 @@
+- name: 查询数据源列表
+  url: /api/data-connection/v1/datasource
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 查询数据源详情
+  url: /api/data-connection/v1/datasource/${id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 新增数据源
+  url: /api/data-connection/v1/datasource
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 更新数据源
+  url: /api/data-connection/v1/datasource/${id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 删除数据源
+  url: /api/data-connection/v1/datasource/${id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 测试数据源连接
+  url: /api/data-connection/v1/datasource/test
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: 查询所有支持数据源
+  url: /api/data-connection/v1/datasource/connectors
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

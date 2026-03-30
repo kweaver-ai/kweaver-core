@@ -1,0 +1,8 @@
+# 全局变量：agent-backend 模块
+
+agent_id: "agent-test-001"
+agent_name: "test-agent"
+agent_type: "decision"
+task_id: "task-test-001"
+task_status: "running"
+agent_status: "active"

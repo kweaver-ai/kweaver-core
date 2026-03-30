@@ -1,0 +1,38 @@
+# 正向测试用例
+- case_name: 正常修改分组名称
+  new_name: 修改后的分组_${ts_uuid}
+  new_comment: 修改后的备注
+  expected_status: 204
+  test_type: positive
+
+- case_name: 仅修改分组名称
+  new_name: 仅修改名称_${ts_uuid}
+  expected_status: 204
+  test_type: positive
+
+- case_name: 仅修改分组备注
+  new_comment: 仅修改备注的测试
+  expected_status: 400
+  test_type: positive
+
+- case_name: 修改为长名称
+  new_name: 这是一个非常长的修改后的指标模型分组名称_${ts_uuid}
+  new_comment: 长名称测试
+  expected_status: 204
+  test_type: positive
+
+# 负向测试用例
+- case_name: 修改为空名称
+  new_name: ""
+  expected_status: 400
+  test_type: negative
+
+- case_name: 修改为重复名称
+  new_name: 已存在的分组名称
+  expected_status: 403
+  test_type: negative
+
+- case_name: 修改为特殊字符名称
+  new_name: "特殊字符@#$%^&*()名称_${ts_uuid}"
+  expected_status: 400
+  test_type: negative

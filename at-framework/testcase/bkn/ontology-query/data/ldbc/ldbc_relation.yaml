@@ -1,0 +1,482 @@
+- case_name: "ldbc关系类创建-评论的创建用户"
+  relation_name: "评论创建者"
+  relation_id: "comment_hascreator_person"
+  source_object_type_id: "comment"
+  target_object_type_id: "person"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid
+    target_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+
+- case_name: "ldbc关系类创建-评论包含标签"
+  relation_name: "评论关联标签"
+  relation_id: "comment_hastag_tag"
+  source_object_type_id: "comment"
+  target_object_type_id: "tag"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid
+    target_mapping_rules:
+      - source_property:
+          name: t_tagid
+        target_property:
+          name: t_tagid
+
+
+- case_name: "ldbc关系类创建-评论位于某地"
+  relation_name: "评论发布地点"
+  relation_id: "comment_islocatedin_place"
+  source_object_type_id: "comment"
+  target_object_type_id: "place"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid
+    target_mapping_rules:
+      - source_property:
+          name: p_placeid
+        target_property:
+          name: p_placeid
+
+
+- case_name: "ldbc关系类创建-评论来源评论"
+  relation_name: "评论来源评论"
+  relation_id: "comment_replyof_comment"
+  source_object_type_id: "comment"
+  target_object_type_id: "comment"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid1
+    target_mapping_rules:
+      - source_property:
+          name: c_commentid2
+        target_property:
+          name: c_commentid
+
+
+- case_name: "ldbc关系类创建-评论来源帖子"
+  relation_name: "评论来源帖子"
+  relation_id: "comment_replyof_post"
+  source_object_type_id: "comment"
+  target_object_type_id: "post"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid
+    target_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+
+
+- case_name: "ldbc关系类创建-论坛包含帖子"
+  relation_name: "论坛包含帖子"
+  relation_id: "forum_containerof_post"
+  source_object_type_id: "forum"
+  target_object_type_id: "post"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: f_forumid
+        target_property:
+          name: f_forumid
+    target_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+
+
+- case_name: "ldbc关系类创建-论坛包含成员"
+  relation_name: "论坛包含成员"
+  relation_id: "forum_hasmember_person"
+  source_object_type_id: "forum"
+  target_object_type_id: "person"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: f_forumid
+        target_property:
+          name: f_forumid
+    target_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+
+
+- case_name: "ldbc关系类创建-论坛包含管理员"
+  relation_name: "论坛包含管理员"
+  relation_id: "forum_hasmoderator_person"
+  source_object_type_id: "forum"
+  target_object_type_id: "person"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: f_forumid
+        target_property:
+          name: f_forumid
+    target_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+
+
+- case_name: "ldbc关系类创建-论坛关联标签"
+  relation_name: "论坛关联标签"
+  relation_id: "forum_hastag_tag"
+  source_object_type_id: "forum"
+  target_object_type_id: "tag"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: f_forumid
+        target_property:
+          name: f_forumid
+    target_mapping_rules:
+      - source_property:
+          name: t_tagid
+        target_property:
+          name: t_tagid
+
+
+- case_name: "ldbc关系类创建-组织地点"
+  relation_name: "组织地点"
+  relation_id: "organisation_islocatedin_place"
+  source_object_type_id: "organisation"
+  target_object_type_id: "place"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: o_organisationid
+        target_property:
+          name: o_organisationid
+    target_mapping_rules:
+      - source_property:
+          name: p_placeid
+        target_property:
+          name: p_placeid
+
+
+- case_name: "ldbc关系类创建-用户关联兴趣标签"
+  relation_name: "用户关联兴趣标签"
+  relation_id: "person_hasinterest_tag"
+  source_object_type_id: "person"
+  target_object_type_id: "tag"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: t_tagid
+        target_property:
+          name: t_tagid
+
+
+- case_name: "ldbc关系类创建-用户地点"
+  relation_name: "用户地点"
+  relation_id: "person_islocatedin_place"
+  source_object_type_id: "person"
+  target_object_type_id: "place"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: p_placeid
+        target_property:
+          name: p_placeid
+
+
+- case_name: "ldbc关系类创建-好友关系"
+  relation_name: "好友关系"
+  relation_id: "person_knows_person"
+  source_object_type_id: "person"
+  target_object_type_id: "person"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_person1id
+    target_mapping_rules:
+      - source_property:
+          name: p_person2id
+        target_property:
+          name: p_personid
+
+
+- case_name: "ldbc关系类创建-用户点赞评论"
+  relation_name: "用户点赞评论"
+  relation_id: "person_likes_comment"
+  source_object_type_id: "person"
+  target_object_type_id: "comment"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: c_commentid
+        target_property:
+          name: c_commentid
+
+
+- case_name: "ldbc关系类创建-用户点赞帖子"
+  relation_name: "用户点赞帖子"
+  relation_id: "person_likes_post"
+  source_object_type_id: "person"
+  target_object_type_id: "post"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+
+
+
+- case_name: "ldbc关系类创建-用户就读于"
+  relation_name: "用户就读于"
+  relation_id: "person_studyat_organisation"
+  source_object_type_id: "person"
+  target_object_type_id: "organisation"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: o_organisationid
+        target_property:
+          name: o_organisationid
+
+
+- case_name: "ldbc关系类创建-用户就职于"
+  relation_name: "用户就职于"
+  relation_id: "person_workat_organisation"
+  source_object_type_id: "person"
+  target_object_type_id: "organisation"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+    target_mapping_rules:
+      - source_property:
+          name: o_organisationid
+        target_property:
+          name: o_organisationid
+
+
+- case_name: "ldbc关系类创建-地点从属关系"
+  relation_name: "地点从属关系"
+  relation_id: "place_ispartof_place"
+  source_object_type_id: "place"
+  target_object_type_id: "place"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: p_placeid
+        target_property:
+          name: p_placeid1
+    target_mapping_rules:
+      - source_property:
+          name: p_placeid2
+        target_property:
+          name: p_placeid
+
+
+- case_name: "ldbc关系类创建-帖子创建者"
+  relation_name: "帖子创建者"
+  relation_id: "post_hascreator_person"
+  source_object_type_id: "post"
+  target_object_type_id: "person"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+    target_mapping_rules:
+      - source_property:
+          name: p_personid
+        target_property:
+          name: p_personid
+
+
+- case_name: "ldbc关系类创建-帖子关联标签"
+  relation_name: "帖子关联标签"
+  relation_id: "post_hastag_tag"
+  source_object_type_id: "post"
+  target_object_type_id: "tag"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+    target_mapping_rules:
+      - source_property:
+          name: t_tagid
+        target_property:
+          name: t_tagid
+
+
+- case_name: "ldbc关系类创建-帖子发布地点"
+  relation_name: "帖子发布地点"
+  relation_id: "post_islocatedin_place"
+  source_object_type_id: "post"
+  target_object_type_id: "place"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: ps_postid
+        target_property:
+          name: ps_postid
+    target_mapping_rules:
+      - source_property:
+          name: p_placeid
+        target_property:
+          name: p_placeid
+
+
+- case_name: "ldbc关系类创建-标签归属分类"
+  relation_name: "标签归属分类"
+  relation_id: "tag_hastype_tagclass"
+  source_object_type_id: "tag"
+  target_object_type_id: "tagclass"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: t_tagid
+        target_property:
+          name: t_tagid
+    target_mapping_rules:
+      - source_property:
+          name: tc_tagclassid
+        target_property:
+          name: tc_tagclassid
+
+
+- case_name: "ldbc关系类创建-分类从属关系"
+  relation_name: "分类从属关系"
+  relation_id: "tagclass_issubclassof_tagclass"
+  source_object_type_id: "tagclass"
+  target_object_type_id: "tagclass"
+  mapping_rules:
+    backing_data_source:
+      type: data_view
+      id: 
+    source_mapping_rules:
+      - source_property:
+          name: tc_tagclassid
+        target_property:
+          name: tc_tagclassid1
+    target_mapping_rules:
+      - source_property:
+          name: tc_tagclassid2
+        target_property:
+          name: tc_tagclassid
+

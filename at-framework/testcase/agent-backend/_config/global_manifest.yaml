@@ -1,0 +1,38 @@
+# 全局变量清单：agent-backend 模块
+
+variables:
+  - name: agent_id
+    description: Agent ID
+    type: string
+    example: "agent-xxx-xxx-xxx"
+    required: true
+
+  - name: agent_name
+    description: Agent 名称
+    type: string
+    example: "test-agent"
+    required: true
+
+  - name: agent_type
+    description: Agent 类型
+    type: string
+    example: "decision"
+    required: false
+
+  - name: task_id
+    description: 任务 ID
+    type: string
+    example: "task-xxx-xxx-xxx"
+    required: false
+
+  - name: task_status
+    description: 任务状态
+    type: string
+    example: "running"
+    required: false
+
+  - name: agent_status
+    description: Agent 状态
+    type: string
+    example: "active"
+    required: false

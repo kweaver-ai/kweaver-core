@@ -1,0 +1,64 @@
+# 路径 → 作用域/标签/建议套件 映射：mdl-data-model 模块
+
+mappings:
+  - paths:
+      - "vega/mdl-data-model/**"
+    scope: "mdl-data-model"
+    tags:
+      - "model"
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
+      - "metric_model_legacy.yaml"
+
+  - paths:
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/controller/ModelController.java"
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/service/ModelService.java"
+    scope: "model"
+    tags:
+      - "model"
+      - "crud"
+    suggested_suites:
+      - "model_crud.yaml"
+      - "metric_model_legacy.yaml"
+
+  - paths:
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/controller/FieldController.java"
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/service/FieldService.java"
+    scope: "field"
+    tags:
+      - "field"
+      - "crud"
+    suggested_suites:
+      - "field_crud.yaml"
+      - "row_column_rule_legacy.yaml"
+
+  - paths:
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/controller/VersionController.java"
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/service/VersionService.java"
+    scope: "version"
+    tags:
+      - "version"
+      - "publish"
+    suggested_suites:
+      - "version_test.yaml"
+
+  - paths:
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/controller/DataViewGroupController.java"
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/service/DataViewGroupService.java"
+    scope: "data-view-group"
+    tags:
+      - "data-view"
+      - "group"
+    suggested_suites:
+      - "data_view_group_legacy.yaml"
+
+  - paths:
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/controller/DataViewRowColumnRuleController.java"
+      - "vega/mdl-data-model/src/main/java/com/eisoo/mdl/service/DataViewRowColumnRuleService.java"
+    scope: "row-column-rule"
+    tags:
+      - "data-view"
+      - "row-column-rule"
+    suggested_suites:
+      - "row_column_rule_legacy.yaml"

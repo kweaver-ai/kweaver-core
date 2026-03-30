@@ -1,0 +1,59 @@
+- case_name: "概念分组-测试添加对象类-绑定单个对象类"
+  objects:
+    - forum
+  test_type: "add"
+  expected_status: 201
+  should_exist_in_db: true
+
+- case_name: "概念分组-测试添加对象类-绑定多对象类"
+  objects:
+    - person
+    - post
+    - comment
+  test_type: "add"
+  expected_status: 201
+  should_exist_in_db: true
+
+
+- case_name: "概念分组-测试添加对象类-绑定单个已存在对象类"
+  objects:
+    - forum
+  test_type: "add"
+  expected_status: 404
+  should_exist_in_db: true
+
+- case_name: "概念分组-测试添加对象类-绑定多个对象类中存在已绑定的对象类"
+  objects:
+    - forum
+    - tag
+    - tagclass
+  test_type: "add"
+  expected_status: 404
+  should_exist_in_db: true
+
+
+
+- case_name: "概念分组-测试移除对象类-移除单个对象类"
+  objects:
+    - forum
+  test_type: "remove"
+  expected_status: 204
+  should_exist_in_db: true
+
+- case_name: "概念分组-测试移除对象类-移除不存在的对象类"
+  objects:
+    - place
+  test_type: "remove"
+  expected_status: 404
+  should_exist_in_db: true
+
+
+- case_name: "概念分组-测试移除对象类-移除多个对象类"
+  objects:
+    - tag
+    - tagclass
+    - person
+  test_type: "remove"
+  expected_status: 204
+  should_exist_in_db: true
+

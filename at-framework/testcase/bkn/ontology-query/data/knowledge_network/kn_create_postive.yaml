@@ -1,0 +1,242 @@
+# ==================================================
+# 业务知识网络创建 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证业务知识网络创建接口对各种有效参数的处理能力
+# - 确保接口能够正确创建业务知识网络并返回成功状态
+# - 覆盖所有可能的成功创建场景
+
+### 测试用例分类
+# 1. **基本功能测试**：验证基本创建功能，包括不同名称格式和最小必填字段
+# 2. **ID字段测试**：验证不同ID格式的有效性，包括空ID、小写字母ID等
+# 3. **name字段测试**：验证名称字段的各种有效格式
+# 4. **tags字段测试**：验证标签字段的各种有效格式
+# 5. **comment字段测试**：验证备注字段的各种有效格式
+# 6. **branch字段测试**：验证分支字段的各种有效格式
+# 7. **可选参数测试**：验证不传可选参数的情况
+# 8. **边界值测试**：验证各种字段的边界值
+# 9. **特殊场景测试**：验证特殊场景下的创建功能
+
+### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - kn_id：业务知识网络ID
+#   - kn_name：业务知识网络名称
+#   - 其他可选参数：tags、comment、branch等
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本功能测试
+# ==================================================
+
+- case_name: "基本功能-正常创建-中文名称"
+  kn_id: "${ts_uuid}"
+  kn_name: "${fake_cn_name}"
+  note: "使用中文名称正常创建业务知识网络"
+
+- case_name: "基本功能-正常创建-英文名称"
+  kn_id: "${ts_uuid}"
+  kn_name: "${random_str}"
+  note: "使用英文名称正常创建业务知识网络"
+
+- case_name: "基本功能-正常创建-纯数字名称"
+  kn_id: "${ts_uuid}"
+  kn_name: "${random_int}"
+  note: "使用纯数字名称正常创建业务知识网络"
+
+- case_name: "基本功能-正常创建-混合名称"
+  kn_id: "${ts_uuid}"
+  kn_name: "${fake_cn_name}${random_int}${random_str}"
+  note: "使用中文、数字、英文混合名称正常创建业务知识网络"
+
+- case_name: "基本功能-最小必填字段创建"
+  kn_id: "${ts_uuid}_min"
+  kn_name: "最小字段-${random_str}"
+  note: "使用最小必填字段正常创建业务知识网络"
+
+
+# ==================================================
+# 2. ID字段测试
+# ==================================================
+
+- case_name: "ID字段-ID为空字符串"
+  kn_id: ""
+  kn_name: "测试网络${random_str}"
+  note: "ID为空字符串是允许的，系统会自动生成"
+
+- case_name: "ID字段-使用小写字母ID"
+  kn_id: "${random_str}"
+  kn_name: "小写字母-${random_str}"
+  note: "使用小写字母ID正常创建业务知识网络"
+
+- case_name: "ID字段-使用下划线连字符ID"
+  kn_id: "${random_str}-_"
+  kn_name: "下划线连字符-${random_str}"
+  note: "使用包含下划线和连字符的ID正常创建业务知识网络"
+
+- case_name: "ID字段-使用数字、下划线和连字符组合"
+  kn_id: "test-id_123"
+  kn_name: "测试网络${random_str}"
+  note: "ID包含数字、下划线和连字符应该成功"
+
+
+# ==================================================
+# 3. name字段测试
+# ==================================================
+
+- case_name: "name字段-包含特殊字符"
+  kn_id: "${ts_uuid}_special"
+  kn_name: "特殊字符@#$%^&*()测试-${random_str}"
+  note: "name包含特殊字符应该成功"
+
+
+# ==================================================
+# 4. tags字段测试
+# ==================================================
+
+- case_name: "tags字段-tags为空数组"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  tags: []
+  note: "tags为空数组应该成功"
+
+- case_name: "tags字段-单标签成功"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  tags: ["单标签测试"]
+  note: "单个标签应该成功"
+
+- case_name: "tags字段-多个标签成功"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  tags: ["标签1", "标签2", "标签3"]
+  note: "多个标签应该成功"
+
+
+# ==================================================
+# 5. comment字段测试
+# ==================================================
+
+- case_name: "comment字段-包含特殊字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  comment: "这是一个包含特殊字符的备注：@#$%^&*()_+-=[]{}|;':,.<>?/！@#￥%……&*（）—+【】{}|；：’。，《》？"
+  note: "comment包含特殊字符应该成功"
+
+
+# ==================================================
+# 6. branch字段测试
+# ==================================================
+
+- case_name: "branch字段-包含下划线连字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  branch: "main-branch_123"
+  note: "branch包含下划线和连字符应该成功"
+
+- case_name: "branch字段-branch为空"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  branch: ""
+  note: "branch可以为空"
+
+- case_name: "branch字段-branch包含特殊字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  branch: "main@#$%^&*()"
+  note: "branch包含特殊字符"
+
+
+# ==================================================
+# 7. 可选参数测试
+# ==================================================
+
+- case_name: "可选参数-不传可选参数id"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["id"]
+  note: "id是可选参数，不传应该成功"
+
+- case_name: "可选参数-不传可选参数tags"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["tags"]
+  note: "tags是可选参数，不传应该成功"
+
+- case_name: "可选参数-不传可选参数comment"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["comment"]
+  note: "comment是可选参数，不传应该成功"
+
+- case_name: "可选参数-不传可选参数icon"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["icon"]
+  note: "icon是可选参数，不传应该成功"
+
+- case_name: "可选参数-不传可选参数color"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["color"]
+  note: "color是可选参数，不传应该成功"
+
+- case_name: "可选参数-不传所有可选参数"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  exclude_fields: ["id", "tags", "comment", "icon", "color"]
+  note: "不传所有可选参数应该成功"
+
+
+# ==================================================
+# 8. 边界值测试
+# ==================================================
+
+- case_name: "边界值-ID最大长度40字符"
+  kn_id: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+  kn_name: "测试网络${random_str}"
+  note: "ID长度为40个字符应该成功"
+
+- case_name: "边界值-name最大长度40字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络名称测试网络名称测试网络名称测试网络名称123"
+  note: "name长度为40个字符应该成功"
+
+- case_name: "边界值-tags包含5个元素"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  tags: ["自动化", "示例", "测试", "对象类型", "性能测试"]
+  note: "tags包含5个元素应该成功"
+
+- case_name: "边界值-tag名称最大长度40字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  tags: ["标签名称长度刚好四十个字符标签名称长度刚好四十"]
+  note: "tag名称长度为40个字符应该成功"
+
+- case_name: "边界值-comment最大长度1000字符"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  comment: "${random_str(1000)}"
+  note: "comment长度为1000个字符应该成功"
+
+
+# ==================================================
+# 9. 特殊场景测试
+# ==================================================
+
+- case_name: "特殊场景-使用已存在ID重新创建"
+  kn_id: "${ts_uuid}"
+  kn_name: "测试网络${random_str}"
+  note: "使用已存在的ID重新创建业务知识网络"
+
+- case_name: "特殊场景-使用系统自动生成ID"
+  kn_id: ""
+  kn_name: "ID为空-${random_str}"
+  note: "不提供ID，使用系统自动生成ID创建业务知识网络"

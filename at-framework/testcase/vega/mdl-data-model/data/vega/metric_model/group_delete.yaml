@@ -1,0 +1,27 @@
+# 正向测试用例
+- case_name: 删除空分组
+  force: false
+  expected_status: 204
+  test_type: positive
+
+- case_name: 强制删除非空分组
+  force: true
+  expected_status: 204
+  test_type: positive
+
+# 负向测试用例
+- case_name: 删除非空分组不强制
+  force: false
+  expected_status: 403
+  test_type: negative
+
+- case_name: 删除不存在的分组
+  group_id: "999999999"
+  force: false
+  expected_status: 404
+  test_type: negative
+
+- case_name: 无效的force参数
+  force: "invalid"
+  expected_status: 400
+  test_type: negative

@@ -1,0 +1,21 @@
+# 数据视图分组更新测试数据
+
+# 正向测试用例
+- case_name: 正常更新数据视图分组
+  group_id: "{group_id}"  # 这里会通过fixture注入
+  new_name: 更新后的测试分组_20260115_001
+  expected_status: 204
+  test_type: positive
+
+# 负向测试用例
+- case_name: 更新不存在的分组
+  group_id: non_existent_group
+  new_name: 测试更新不存在的分组_20260115_001
+  expected_status: 404
+  test_type: negative
+
+- case_name: 空名称更新分组
+  group_id: "{group_id}"  # 这里会通过fixture注入
+  new_name: ""
+  expected_status: 400
+  test_type: negative

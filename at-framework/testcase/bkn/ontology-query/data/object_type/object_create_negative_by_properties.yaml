@@ -1,0 +1,265 @@
+# ==================================================
+# 对象类创建 - 数据属性校验错误测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类创建接口对数据属性各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的数据属性校验失败场景
+
+### 测试用例分类
+# 1. **数据属性名称错误测试**：验证属性名称的各种无效格式
+# 2. **数据属性类型错误测试**：验证属性类型的各种无效情况
+# 3. **display_name 非空测试**：验证display_name字段的非空要求
+# 4. **长度超限测试**：验证各字段的长度限制
+# 5. **type 相关测试**：验证type字段的有效性
+# 6. **mapped_field 相关测试**：验证mapped_field字段的有效性
+# 7. **data_property.name 补充测试**：验证属性名称的其他无效情况
+
+### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效数据属性的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的数据属性
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 数据属性名称错误测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-属性名称无效-@开头"
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效-@开头"
+  data_properties:
+    name: "@invalid_property_name"
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称包含无效字符应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性名称无效--开头"
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效--开头"
+  data_properties:
+    name: "-invalid_property_name"
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称包含无效字符应该失败"
+  
+- case_name: "创建对象类-数据属性校验错误-属性名称无效-_开头"
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效-_开头"
+  data_properties:
+    name: "_invalid_property_name"
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称包含无效字符应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性名称无效-包含."
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效-包含."
+  data_properties:
+    name: "invalid.property.name"
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称包含无效字符应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性名称无效-为空"
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效-为空"
+  data_properties:
+    name: ""
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称为空应该失败"
+
+
+# ==================================================
+# 2. 数据属性类型错误测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-属性类型无效-int"
+  object_id: "${ts_uuid}"
+  object_name: "属性类型无效"
+  data_properties:
+    name: "test"
+    type: "int"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性类型int应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性类型无效-varchar"
+  object_id: "${ts_uuid}"
+  object_name: "属性类型无效"
+  data_properties:
+    name: "test"
+    type: "varchar"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性类型varchar应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性类型无效-test"
+  object_id: "${ts_uuid}"
+  object_name: "属性类型无效"
+  data_properties:
+    name: "test"
+    type: "test"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性类型test应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性类型无效-enum"
+  object_id: "${ts_uuid}"
+  object_name: "属性类型无效"
+  data_properties:
+    name: "test"
+    type: "enum"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性类型enum应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性类型无效-INTEGER"
+  object_id: "${ts_uuid}"
+  object_name: "属性类型无效"
+  data_properties:
+    name: "test"
+    type: "INTEGER"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性类型INTEGER应该失败"
+
+
+# ==================================================
+# 3. display_name 非空测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-display_name为空"
+  object_id: "${ts_uuid}"
+  object_name: "display_name为空"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: ""
+  expected_status: 400
+  note: "display_name为空应该失败"
+
+
+# ==================================================
+# 4. 长度超限测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-comment长度超限"
+  object_id: "${ts_uuid}"
+  object_name: "comment长度超限"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+    comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "comment长度超过1000个字符应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-display_name长度超限"
+  object_id: "${ts_uuid}"
+  object_name: "属性长度超限"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "${random_str(41)}"
+  expected_status: 400
+  note: "display_name长度超限应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-属性名称无效-超过40个字符"
+  object_id: "${ts_uuid}"
+  object_name: "属性名称无效-超过40个字符"
+  data_properties:
+    name: "${random_str(41)}"
+    type: "string"
+    display_name: "invalid_property_name"
+  expected_status: 400
+  note: "数据属性名称包含无效字符应该失败"
+
+
+# ==================================================
+# 5. type 相关测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-type为空"
+  object_id: "${ts_uuid}"
+  object_name: "type为空"
+  data_properties:
+    name: "test"
+    type: ""
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "type为空应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-type无效类型"
+  object_id: "${ts_uuid}"
+  object_name: "type无效类型"
+  data_properties:
+    name: "test"
+    type: "invalid_type"
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "type为无效类型应该失败"
+
+
+# ==================================================
+# 6. mapped_field 相关测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-mapped_field.name为空"
+  object_id: "${ts_uuid}"
+  object_name: "mapped_field.name为空"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field: ""
+  expected_status: 400
+  note: "mapped_field.name为空应该失败"
+
+
+# ==================================================
+# 7. data_property.name 补充测试
+# ==================================================
+
+- case_name: "创建对象类-数据属性校验错误-name包含中文"
+  object_id: "${ts_uuid}"
+  object_name: "name包含中文"
+  data_properties:
+    name: "中文属性名"
+    type: "string"
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "数据属性名称包含中文应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-name包含特殊字符"
+  object_id: "${ts_uuid}"
+  object_name: "name包含特殊字符"
+  data_properties:
+    name: "test@property"
+    type: "string"
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "数据属性名称包含特殊字符应该失败"
+
+- case_name: "创建对象类-数据属性校验错误-name包含空格"
+  object_id: "${ts_uuid}"
+  object_name: "name包含空格"
+  data_properties:
+    name: "test property"
+    type: "string"
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "数据属性名称包含空格应该失败"

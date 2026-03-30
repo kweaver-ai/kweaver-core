@@ -1,0 +1,17 @@
+cases:
+- case_id: import_export_001
+  suite: Import Export (legacy migration)
+  switch: n
+  name: import_export
+  description: 导入导出本体数据 / Import and export ontology data
+  api_name: list_knowledge_networks
+  tags:
+  - ontology
+  - legacy
+  - api:list_knowledge_networks
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0

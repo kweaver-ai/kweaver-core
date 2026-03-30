@@ -1,0 +1,32 @@
+# 全局变量清单：vega-gateway 模块
+
+variables:
+  - name: route_id
+    description: 路由 ID
+    type: string
+    example: "route-xxx-xxx-xxx"
+    required: true
+
+  - name: route_name
+    description: 路由名称
+    type: string
+    example: "test-route"
+    required: true
+
+  - name: route_path
+    description: 路由路径
+    type: string
+    example: "/api/test"
+    required: false
+
+  - name: ratelimit_id
+    description: 限流配置 ID
+    type: string
+    example: "rl-xxx-xxx-xxx"
+    required: false
+
+  - name: requests_per_second
+    description: 每秒请求数限制
+    type: integer
+    example: 100
+    required: false

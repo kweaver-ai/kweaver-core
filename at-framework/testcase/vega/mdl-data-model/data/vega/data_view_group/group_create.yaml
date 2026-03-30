@@ -1,0 +1,28 @@
+# 数据视图分组创建测试数据
+
+# 正向测试用例
+- case_name: 正常创建数据视图分组
+  name: 测试分组_${ts_uuid}
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+- case_name: 创建内置分组
+  name: 内置测试分组_${ts_uuid}
+  builtin: true
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+# 负向测试用例
+- case_name: 空名称创建分组
+  name: ""
+  expected_status: 400
+  should_exist_in_db: false
+  test_type: negative
+
+- case_name: 重复名称创建分组
+  name: 测试分组
+  expected_status: 403  # 重复名称返回403 Forbidden
+  should_exist_in_db: false
+  test_type: negative

@@ -1,0 +1,42 @@
+feature: Datasource Tests
+story: 删除数据源
+switch: y
+cases:
+- name: 添加数据连接_MySQL数据源
+  url: 新增数据源
+  body_params: "{\n  \"name\": \"{{ '新增数据源_AutoCase-%s' | format(random_string(6,\
+    \ 8)) }}\",\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
+    }"
+  code_check: '200'
+  resp_values: "{\n  \"catalog_id\": \"$.id\",\n  \"catalog_name\": \"$.name\"\n}"
+  description: 'from excel sheet: 删除数据源'
+- name: Positive_删除数据连接_请求成功
+  url: 删除数据源
+  path_params: "{\n  \"id\": \"${catalog_id}\"\n}"
+  code_check: '200'
+  prev_case: 添加数据连接_MySQL数据源
+  description: 'from excel sheet: 删除数据源'
+- name: Negative_删除数据连接_id已删除_请求失败
+  url: 删除数据源
+  path_params: "{\n  \"id\": \"${catalog_id}\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 删除数据源'
+- name: Negative_删除数据连接_id不存在_请求失败
+  url: 删除数据源
+  path_params: "{\n  \"id\": \"00000000-0000-0000-000000000000\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 删除数据源'
+- name: Negative_删除数据连接_id格式错误_请求失败
+  url: 删除数据源
+  path_params: "{\n  \"id\": \"00000000\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 删除数据源'
+- name: Negative_删除数据连接_id为内置数据源_请求失败
+  url: 删除数据源
+  path_params: "{\n  \"id\": \"${buildin_catalog_id}\"\n}"
+  code_check: '400'
+  resp_check: "{\n  \"$.code\": \"Public.BadRequest\"\n}"
+  description: 'from excel sheet: 删除数据源'

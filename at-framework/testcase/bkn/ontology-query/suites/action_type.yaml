@@ -1,0 +1,96 @@
+cases:
+- case_id: action_type_001
+  suite: Action Type (legacy migration)
+  switch: n
+  name: action_create
+  description: 创建动作类型 / Create action type
+  api_name: create_action_type
+  tags:
+  - ontology
+  - legacy
+  - api:create_action_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: action_id
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: action_type_${timestamp}
+    display_name: ActionType_${timestamp}
+    description: auto migrated action type
+- case_id: action_type_002
+  suite: Action Type (legacy migration)
+  switch: n
+  name: action_delete
+  description: 删除动作类型 / Delete action type
+  api_name: delete_action_type
+  tags:
+  - ontology
+  - legacy
+  - api:delete_action_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: action_id
+    value: ${action_id}
+- case_id: action_type_003
+  suite: Action Type (legacy migration)
+  switch: n
+  name: action_list
+  description: 查询动作类型列表 / List action types
+  api_name: list_action_types
+  tags:
+  - ontology
+  - legacy
+  - api:list_action_types
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+- case_id: action_type_004
+  suite: Action Type (legacy migration)
+  switch: n
+  name: action_update
+  description: 更新动作类型 / Update action type
+  api_name: create_action_type
+  tags:
+  - ontology
+  - legacy
+  - api:create_action_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: action_type_${timestamp}
+    display_name: ActionType_${timestamp}
+    description: auto migrated action type

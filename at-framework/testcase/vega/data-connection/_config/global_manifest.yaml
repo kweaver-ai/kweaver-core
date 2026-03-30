@@ -1,0 +1,86 @@
+# 全局变量清单：data-connection 模块
+# 供智能体/测试用例使用的变量定义
+
+variables:
+  # ========== 数据源相关 ==========
+  - name: datasource_id
+    description: 数据源 ID
+    type: string
+    example: "ds-xxx-xxx-xxx"
+    required: true
+
+  - name: datasource_name
+    description: 数据源名称
+    type: string
+    example: "test-opensearch-ds"
+    required: true
+
+  - name: datasource_type
+    description: 数据源类型
+    type: string
+    example: "opensearch"
+    required: true
+
+  # ========== 表相关 ==========
+  - name: table_id
+    description: 表 ID
+    type: string
+    example: "tbl-xxx-xxx-xxx"
+    required: false
+
+  - name: table_name
+    description: 表名称
+    type: string
+    example: "test-table"
+    required: false
+
+  - name: index_name
+    description: OpenSearch 索引名称
+    type: string
+    example: "test-index"
+    required: false
+
+  # ========== 视图相关 ==========
+  - name: view_id
+    description: 视图 ID
+    type: string
+    example: "view-xxx-xxx-xxx"
+    required: false
+
+  - name: view_name
+    description: 视图名称
+    type: string
+    example: "test-view"
+    required: false
+
+  # ========== 扫描任务相关 ==========
+  - name: scan_task_id
+    description: 扫描任务 ID
+    type: string
+    example: "scan-xxx-xxx-xxx"
+    required: false
+
+  - name: scan_status
+    description: 扫描状态
+    type: string
+    example: "completed"
+    required: false
+
+  # ========== 字段相关 ==========
+  - name: field_id
+    description: 字段 ID
+    type: string
+    example: "field-xxx-xxx-xxx"
+    required: false
+
+  - name: field_name
+    description: 字段名称
+    type: string
+    example: "test_field"
+    required: false
+
+  - name: field_type
+    description: 字段类型
+    type: string
+    example: "keyword"
+    required: false

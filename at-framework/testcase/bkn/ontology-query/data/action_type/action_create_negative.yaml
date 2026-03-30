@@ -1,0 +1,141 @@
+# ==================================================
+# 行动类创建 - 负向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证行动类创建接口对各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的参数校验场景
+
+# ### 测试用例分类
+# 1. **基础参数校验错误测试**：id、name、type等基本参数的无效情况
+# 2. **可选参数校验错误测试**：tags、comment、condition等可选参数的无效情况
+# 3. **导入模式校验错误测试**：import_mode参数的无效情况
+# 4. **重复创建测试**：id或name已存在的情况
+
+# ### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基础参数校验错误测试
+# ==================================================
+
+- case_name: "创建行动类-参数校验错误-id超过最大长度"
+  id: "${random_str(41)}"
+  name: "id超过最大长度"
+  action_type: "add"
+  object_type_id: "person"
+  expected_status: 400
+  note: "id超过40个字符应该失败"
+
+- case_name: "创建行动类-参数校验错误-name超过最大长度"
+  id: ""
+  name: "${random_str(41)}"
+  action_type: "add"
+  object_type_id: "person"
+  expected_status: 400
+  note: "name超过40个字符应该失败"
+
+- case_name: "创建行动类-参数校验错误-action_type为空"
+  id: ""
+  name: "action_type为空"
+  action_type: ""
+  object_type_id: "person"
+  expected_status: 400
+  note: "action_type为空字符串应该失败"
+
+- case_name: "创建行动类-参数校验错误-action_type为无效值"
+  id: ""
+  name: "action_type为无效值"
+  action_type: "invalid_type"
+  object_type_id: "person"
+  expected_status: 400
+  note: "action_type为无效值应该失败"
+
+- case_name: "创建行动类-参数校验错误-object_type_id为空"
+  id: ""
+  name: "object_type_id为空"
+  action_type: "add"
+  object_type_id: ""
+  expected_status: 400
+  note: "object_type_id为空字符串应该失败"
+
+- case_name: "创建行动类-参数校验错误-object_type_id不存在"
+  id: ""
+  name: "object_type_id不存在"
+  action_type: "add"
+  object_type_id: "non_existent_object"
+  expected_status: 500
+  note: "object_type_id不存在应该失败"
+
+
+# ==================================================
+# 2. 可选参数校验错误测试
+# ==================================================
+
+- case_name: "创建行动类-参数校验错误-tags超过最大数量"
+  id: ""
+  name: "tags超过最大数量"
+  action_type: "add"
+  object_type_id: "person"
+  tags: ["标签1", "标签2", "标签3", "标签4", "标签5", "标签6"]
+  expected_status: 400
+  note: "tags超过5个元素应该失败"
+
+- case_name: "创建行动类-参数校验错误-tag超过最大长度"
+  id: ""
+  name: "tag超过最大长度"
+  action_type: "add"
+  object_type_id: "person"
+  tags: ["${random_str(41)}"]
+  expected_status: 400
+  note: "单个tag超过40个字符应该失败"
+
+- case_name: "创建行动类-参数校验错误-comment超过最大长度"
+  id: ""
+  name: "comment超过最大长度"
+  action_type: "add"
+  object_type_id: "person"
+  comment: "${random_str(1001)}"
+  expected_status: 400
+  note: "comment超过1000个字符应该失败"
+
+- case_name: "创建行动类-参数校验错误-condition格式错误"
+  id: ""
+  name: "condition格式错误"
+  action_type: "add"
+  object_type_id: "person"
+  condition: "invalid_condition"
+  expected_status: 400
+  note: "condition格式错误应该失败"
+
+
+
+# ==================================================
+# 4. 重复创建测试
+# ==================================================
+
+- case_name: "创建行动类-参数校验错误-id已存在"
+  id: "existing_id"
+  name: "id已存在"
+  action_type: "add"
+  object_type_id: "person"
+  expected_status: 400
+  note: "重复ID/name"
+
+- case_name: "创建行动类-参数校验错误-name已存在"
+  id: ""
+  name: "name已存在"
+  action_type: "add"
+  object_type_id: "person"
+  expected_status: 403
+  note: "重复ID/name"

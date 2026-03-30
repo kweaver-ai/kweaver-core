@@ -1,0 +1,27 @@
+- case_name: 正常创建指标模型分组
+  name: "${ts_uuid}_测试分组"
+  comment: 这是一个测试分组
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+- case_name: 创建带注释的指标模型分组
+  name: "${ts_uuid}_带注释分组"
+  comment: 这是一个带注释的测试分组
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+- case_name: 空名称创建分组
+  name: ""
+  comment: 这是一个测试分组
+  expected_status: 400
+  should_exist_in_db: false
+  test_type: negative
+
+- case_name: 重复名称创建分组
+  name: 固定重复测试分组
+  comment: 这是一个测试分组
+  expected_status: 403
+  should_exist_in_db: false
+  test_type: negative

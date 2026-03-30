@@ -1,0 +1,7 @@
+# 全局变量：vega-backend 模块
+
+query_id: "query-test-001"
+resource_id: "res-test-001"
+resource_name: "test-resource"
+user_id: "user-test-001"
+permission_type: "read"

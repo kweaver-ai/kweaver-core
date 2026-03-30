@@ -1,0 +1,38 @@
+- case_name: 正常更新数据视图行列权限
+  rule_id: "{rule_id}"
+  rule_data:
+    name: 更新规则_${ts_uuid}
+    tags:
+      - test
+      - update
+    comment: 更新后的权限规则
+    fields:
+      - field1
+      - field2
+      - field3
+  expected_status: 204
+  test_type: positive
+
+- case_name: 使用不存在rule_id更新
+  rule_id: non-existent-rule-id
+  rule_data:
+    name: 不存在规则更新
+    tags:
+      - test
+    comment: 目标规则不存在
+    fields:
+      - field1
+  expected_status: 404
+  test_type: negative
+
+- case_name: 缺少必填字段更新
+  rule_id: "{rule_id}"
+  rule_data:
+    name: ""
+    tags:
+      - test
+    comment: 空名称更新
+    fields:
+      - field1
+  expected_status: 400
+  test_type: negative

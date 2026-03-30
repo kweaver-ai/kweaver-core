@@ -1,0 +1,17 @@
+# 套件清单：vega-gateway 模块
+
+suites:
+  - name: smoke_test.yaml
+    description: 冒烟测试
+    priority: high
+    estimated_duration: "5m"
+
+  - name: route_crud.yaml
+    description: 路由增删改查测试
+    priority: high
+    estimated_duration: "10m"
+
+  - name: ratelimit_test.yaml
+    description: 限流配置测试
+    priority: medium
+    estimated_duration: "8m"

@@ -1,0 +1,42 @@
+# 路径 → 作用域/标签/建议套件 映射：vega-backend 模块
+
+mappings:
+  - paths:
+      - "vega/vega-backend/**"
+    scope: "vega-backend"
+    tags:
+      - "backend"
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
+
+  - paths:
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/controller/QueryController.java"
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/service/QueryService.java"
+    scope: "query"
+    tags:
+      - "query"
+      - "execute"
+      - "session"
+    suggested_suites:
+      - "query_test.yaml"
+
+  - paths:
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/controller/ResourceController.java"
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/service/ResourceService.java"
+    scope: "resource"
+    tags:
+      - "resource"
+      - "crud"
+    suggested_suites:
+      - "resource_crud.yaml"
+
+  - paths:
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/controller/PermissionController.java"
+      - "vega/vega-backend/src/main/java/com/eisoo/vega/service/PermissionService.java"
+    scope: "permission"
+    tags:
+      - "permission"
+      - "access-control"
+    suggested_suites:
+      - "permission_test.yaml"

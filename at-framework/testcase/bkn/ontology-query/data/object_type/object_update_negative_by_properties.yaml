@@ -1,0 +1,212 @@
+# ==================================================
+# 对象类更新 - 数据属性错误测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证对象类更新接口对数据属性各种异常参数的处理能力
+# - 确保接口能够正确返回适当的错误状态码和提示信息
+# - 覆盖所有可能的数据属性校验失败场景
+
+### 测试用例分类
+# 1. **display_name 校验测试**：验证display_name字段的非空要求
+# 2. **comment 长度校验测试**：验证comment字段的长度限制
+# 3. **type 校验测试**：验证type字段的有效性
+# 4. **mapped_field 校验测试**：验证mapped_field字段的有效性
+# 5. **name 校验测试**：验证属性名称的各种无效情况
+# 6. **mapped_field 缺失测试**：验证mapped_field字段的必填要求
+
+### 使用说明
+# - 所有测试用例均为负向测试，验证接口对无效数据属性的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的数据属性
+#   - expected_status：期望的HTTP状态码
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. display_name 校验测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-display_name为空"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: ""
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "display_name为空字符串应该失败"
+
+
+# ==================================================
+# 2. comment 长度校验测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-comment超过最大长度"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+    comment: "${random_str(256)}"
+  expected_status: 400
+  note: "comment超过255个字符应该失败"
+
+
+# ==================================================
+# 3. type 校验测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-type为空"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: ""
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "type为空字符串应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-type为无效类型"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "invalid_type"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "type为无效类型应该失败"
+
+
+# ==================================================
+# 4. mapped_field 校验测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-mapped_field.name不存在"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "non_existent_field"
+  expected_status: 400
+  note: "mapped_field.name在视图中不存在应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-mapped_field.name为空"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: ""
+  expected_status: 400
+  note: "mapped_field.name为空字符串应该失败"
+
+
+# ==================================================
+# 5. name 校验测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-name包含中文"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "测试属性"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "name包含中文应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-name包含特殊字符"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test_property!@#$%^&*()"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "name包含特殊字符应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-name包含空格"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test property"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "name包含空格应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-name为空"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: ""
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "name为空字符串应该失败"
+
+- case_name: "更新对象类-数据属性校验错误-name超过最大长度"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "${random_str(256)}"
+    type: "string"
+    display_name: "test_display_name"
+    mapped_field:
+      name: "id"
+  expected_status: 400
+  note: "name超过255个字符应该失败"
+
+
+# ==================================================
+# 6. mapped_field 缺失测试
+# ==================================================
+
+- case_name: "更新对象类-数据属性校验错误-mapped_field缺失"
+  object_c_name: "原始对象类-${random_str}"
+  object_id: "${ts_uuid}"
+  object_u_name: "更新对象类-${random_str}"
+  data_properties:
+    name: "test"
+    type: "string"
+    display_name: "test_display_name"
+  expected_status: 400
+  note: "mapped_field缺失应该失败"

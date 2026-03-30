@@ -1,0 +1,137 @@
+# 数据源 CRUD 测试套件：data-connection 模块
+
+cases:
+  - case_id: "ds_001"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "创建 OpenSearch 数据源"
+    description: "创建 OpenSearch 类型数据源"
+    api_name: "新增数据源"
+    tags:
+      - datasource
+      - opensearch
+    body:
+      name: "test-opensearch-${timestamp}"
+      type: "opensearch"
+      host: "${datasource_host}"
+      port: 9200
+      account: "admin"
+      password: "test123"
+      connectProtocol: "http"
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+        - type: json_path
+          path: "$.data.id"
+          expected_type: string
+      extract:
+        - type: json_path
+          source: "$.data.id"
+          var_name: "created_datasource_id"
+
+  - case_id: "ds_002"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "查询数据源列表"
+    description: "验证创建的数据源在列表中"
+    api_name: "查询数据源列表"
+    tags:
+      - datasource
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+        - type: json_path
+          path: "$.data.list"
+          expected_type: array
+
+  - case_id: "ds_003"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "查询数据源详情"
+    description: "验证数据源详情正确"
+    api_name: "查询数据源详情"
+    tags:
+      - datasource
+    setup:
+      - type: set_var
+        var_name: id
+        value: "${created_datasource_id}"
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+        - type: json_path
+          path: "$.data.name"
+          expected_contains: "test-opensearch"
+
+  - case_id: "ds_004"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "测试数据源连接"
+    description: "验证数据源连接正常"
+    api_name: "测试数据源连接"
+    tags:
+      - datasource
+      - connection
+    body:
+      datasourceId: "${created_datasource_id}"
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+        - type: json_path
+          path: "$.data.connected"
+          expected: true
+
+  - case_id: "ds_005"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "更新数据源"
+    description: "更新数据源配置"
+    api_name: "更新数据源"
+    tags:
+      - datasource
+    setup:
+      - type: set_var
+        var_name: id
+        value: "${created_datasource_id}"
+    body:
+      name: "test-opensearch-updated"
+      host: "${datasource_host}"
+      port: 9200
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0
+
+  - case_id: "ds_006"
+    suite: "数据源增删改查测试"
+    switch: y
+    name: "删除数据源"
+    description: "清理测试数据源"
+    api_name: "删除数据源"
+    tags:
+      - datasource
+      - cleanup
+    setup:
+      - type: set_var
+        var_name: id
+        value: "${created_datasource_id}"
+    expect:
+      status_code: 200
+      response_checks:
+        - type: json_path
+          path: "$.code"
+          expected: 0

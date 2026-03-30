@@ -1,0 +1,159 @@
+# ==================================================
+# 关系类创建 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证关系类创建接口对各种有效参数的处理能力
+# - 确保接口能够正确创建关系类并返回成功状态
+# - 覆盖所有正常使用场景的参数组合
+
+# ### 测试用例分类
+# 1. **基本参数测试**：包含必填字段的基本创建场景
+# 2. **边界值测试**：参数的最大长度、空值等边界情况
+# 3. **可选参数测试**：tags、comment等可选参数的使用
+# 4. **完整参数测试**：包含所有可能参数的创建场景
+# 5. **排除字段测试**：测试exclude_fields参数的使用
+
+# ### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - 相关参数：需要测试的参数
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本参数测试
+# ==================================================
+
+- case_name: "创建关系类-基本参数测试"
+  id: "test_relation_${random_str(10)}"
+  name: "基本参数测试"
+  note: "基本参数测试，包含必填字段"
+
+
+# ==================================================
+# 2. 边界值测试
+# ==================================================
+
+## 2.1 id参数边界值测试
+- case_name: "创建关系类-id最大长度"
+  id: "${random_str(40)}"
+  name: "id最大长度"
+  note: "id使用最大允许长度40字符"
+
+- case_name: "创建关系类-id为空"
+  id: ""
+  name: "id为空"
+  note: "id为空字符串应该成功"
+
+- case_name: "创建关系类-id以数字开头"
+  id: "1test_relation"
+  name: "id以数字开头"
+  note: "id以数字开头应该成功"
+
+## 2.2 name参数边界值测试
+- case_name: "创建关系类-name最大长度"
+  id: "test_relation_${random_str(10)}"
+  name: "${random_str(40)}"
+  note: "name使用最大允许长度40字符"
+
+
+# ==================================================
+# 3. 可选参数测试
+# ==================================================
+
+## 3.1 tags参数测试
+- case_name: "创建关系类-带tags参数"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-带tags"
+  tags: ["tag1", "tag2", "tag3"]
+  note: "带tags参数的关系类创建"
+
+## 3.2 comment参数测试
+- case_name: "创建关系类-带comment参数"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-带comment"
+  comment: "这是一个测试关系类的注释"
+  note: "带comment参数的关系类创建"
+
+- case_name: "创建关系类-comment最大长度"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-comment最大长度"
+  comment: "${random_str(1000)}"
+  note: "comment使用最大允许长度1000字符"
+
+
+# ==================================================
+# 4. 完整参数测试
+# ==================================================
+
+- case_name: "创建关系类-完整参数测试"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-完整参数"
+  tags: ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  comment: "这是一个带有完整参数的测试关系类"
+  module_type: "relation_type"
+  branch: "main"
+  note: "带有完整参数的关系类创建"
+
+- case_name: "创建关系类-多组属性"
+  id: ""
+  name: "测试关系类-多组属性"
+  module_type: "relation_type"
+  type: "direct"
+  target_object_type_id: "object2"
+  source_object_type_id: "object1"
+  mapping_rules:
+  - source_property:
+      name: "test_string"
+    target_property:
+      name: "test_string"
+  - source_property:
+      name: "test_integer"
+    target_property:
+      name: "test_integer"
+  - source_property:
+      name: "test_float"
+    target_property:
+      name: "test_float"
+  branch: "main"
+  note: "带有完整参数的关系类创建"
+
+
+# ==================================================
+# 5. 排除字段测试
+# ==================================================
+
+- case_name: "创建关系类-排除字段测试-tags"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-排除字段tags"
+  exclude_fields: ["tags"]
+  note: "创建关系类时排除tags字段"
+
+- case_name: "创建关系类-排除字段测试-comment"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-comment"
+  exclude_fields: ["comment"]
+  note: "创建关系类时排除comment字段"
+
+- case_name: "创建关系类-排除字段测试-branch"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-branch"
+  exclude_fields: ["branch"]
+  note: "创建关系类时排除branch字段"
+
+- case_name: "创建关系类-排除字段测试-module_type"
+  id: "test_relation_${random_str(10)}"
+  name: "测试关系类-module_type"
+  exclude_fields: ["module_type"]
+  note: "创建关系类时排除module_type字段"
+
+- case_name: "创建关系类-排除字段测试-id"
+  id: ""
+  name: "测试关系类-id"
+  exclude_fields: ["id"]
+  note: "创建关系类时排除id字段"

@@ -1,0 +1,50 @@
+# 正向测试用例
+- case_name: 正常创建指标模型分组
+  name: 测试分组_${ts_uuid}
+  comment: 这是一个测试分组
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+- case_name: 创建带备注的指标模型分组
+  name: 带备注分组_${ts_uuid}
+  comment: 这是带备注的指标模型分组，用于测试备注功能
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+- case_name: 创建长名称分组
+  name: 长分组_${ts_uuid}
+  comment: 测试长名称分组
+  expected_status: 201
+  should_exist_in_db: true
+  test_type: positive
+
+# 负向测试用例
+- case_name: 空名称创建分组
+  name: ""
+  comment: 空名称分组
+  expected_status: 400
+  should_exist_in_db: false
+  test_type: negative
+
+- case_name: 重复名称创建分组
+  name: 重复测试分组_${ts_uuid}
+  comment: 测试重复名称
+  expected_status: 403
+  should_exist_in_db: false
+  test_type: negative
+
+- case_name: 创建特殊字符名称分组
+  name: "测试@#$%^&*()分组_${ts_uuid}"
+  comment: 特殊字符分组
+  expected_status: 400
+  should_exist_in_db: false
+  test_type: negative
+
+- case_name: 创建超长名称分组
+  name: "这是一个超过四十个字符限制的指标模型分组名称这是一个超过四十个字符限制的指标模型分组名称_${ts_uuid}"
+  comment: 测试超长名称
+  expected_status: 400
+  should_exist_in_db: false
+  test_type: negative

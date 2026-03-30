@@ -1,0 +1,56 @@
+path_context:
+  source_root: ${SOURCE_REPO_ROOT}
+  target_root: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model
+migrated_from:
+- test_case/test_vega/test_metric_model
+- test_case/test_vega/test_data_view_group
+- test_case/test_vega/test_data_view_row_column_rule
+- test_data/vega/metric_model
+- test_data/vega/data_view_group
+- test_data/vega/data_view_row_column_rule
+legacy_archive_root: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy
+migration_items:
+- category: test_case
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_metric_model
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_metric_model
+  status: migrated
+- category: test_case
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_data_view_group
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_data_view_group
+  status: migrated
+- category: test_case
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_data_view_row_column_rule
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_data_view_row_column_rule
+  status: migrated
+- category: conftest
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_metric_model/conftest.py
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_metric_model/conftest.py
+  status: migrated
+- category: conftest
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_data_view_group/conftest.py
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_data_view_group/conftest.py
+  status: migrated
+- category: conftest
+  source: ${SOURCE_REPO_ROOT}/test_case/test_vega/test_data_view_row_column_rule/conftest.py
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_legacy/test_case/test_vega/test_data_view_row_column_rule/conftest.py
+  status: migrated
+- category: data
+  source: ${SOURCE_REPO_ROOT}/test_data/vega/metric_model
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/data/vega/metric_model
+  status: migrated
+- category: data
+  source: ${SOURCE_REPO_ROOT}/test_data/vega/data_view_group
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/data/vega/data_view_group
+  status: migrated
+- category: data
+  source: ${SOURCE_REPO_ROOT}/test_data/vega/data_view_row_column_rule
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/data/vega/data_view_row_column_rule
+  status: migrated
+- category: data
+  source: ${SOURCE_REPO_ROOT}/test_data/vega/data_view_row_column_rule/rule_update.yaml
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/data/vega/data_view_row_column_rule/rule_update.yaml
+  status: reconstructed
+- category: api_config
+  source: ${SOURCE_REPO_ROOT}/src/api/mdl/metric_model_api.py + ${SOURCE_REPO_ROOT}/src/api/vega/data_views_api.py
+  target: ${WORKSPACE_ROOT}/testcase/vega/mdl-data-model/_config/apis.yaml
+  status: migrated

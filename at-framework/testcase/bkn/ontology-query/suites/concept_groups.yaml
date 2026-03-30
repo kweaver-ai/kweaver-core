@@ -1,0 +1,78 @@
+cases:
+- case_id: concept_groups_001
+  suite: Concept Groups (legacy migration)
+  switch: n
+  name: add_remove_object
+  description: 在概念分组中添加和移除对象 / Add and remove objects in concept group
+  api_name: add_group_objects
+  tags:
+  - ontology
+  - legacy
+  - api:add_group_objects
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: groups_id
+    value: ${groups_id}
+  body:
+    object_type_ids:
+    - ${object_id}
+- case_id: concept_groups_002
+  suite: Concept Groups (legacy migration)
+  switch: n
+  name: concept_groups_add
+  description: 新增概念分组 / Add concept group
+  api_name: create_concept_group
+  tags:
+  - ontology
+  - legacy
+  - api:create_concept_group
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: groups_id
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: concept_group_${timestamp}
+    display_name: ConceptGroup_${timestamp}
+    description: auto migrated concept group
+- case_id: concept_groups_003
+  suite: Concept Groups (legacy migration)
+  switch: n
+  name: concept_groups_delete
+  description: 删除概念分组 / Delete concept group
+  api_name: delete_concept_group
+  tags:
+  - ontology
+  - legacy
+  - api:delete_concept_group
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: groups_id
+    value: ${groups_id}

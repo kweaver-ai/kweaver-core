@@ -1,0 +1,29 @@
+# 全局变量：data-connection 模块
+# 实际测试中使用的变量值
+
+# 数据源配置
+datasource_id: "ds-test-001"
+datasource_name: "test-opensearch-ds"
+datasource_type: "opensearch"
+datasource_host: "10.4.111.209"
+datasource_port: "9200"
+datasource_account: "admin"
+datasource_password: "test123"
+
+# 表/索引配置
+table_id: "tbl-test-001"
+table_name: "test-table"
+index_name: "test-index"
+
+# 视图配置
+view_id: "view-test-001"
+view_name: "test-view"
+
+# 扫描任务配置
+scan_task_id: "scan-test-001"
+scan_status: "completed"
+
+# 字段配置
+field_id: "field-test-001"
+field_name: "test_field"
+field_type: "keyword"

@@ -1,0 +1,95 @@
+cases:
+  - case_id: "rcr_legacy_001"
+    suite: "row_column_rule 迁移套件"
+    switch: n
+    name: "创建行列权限规则"
+    description: "迁移自 test_data_view_row_column_rule/test_rule_create.py"
+    api_name: "create_row_column_rule"
+    tags:
+      - data-view
+      - row-column-rule
+      - legacy
+    body:
+      - name: "迁移规则_${timestamp}"
+        view_id: "${model_id}"
+        tags:
+          - migration
+        comment: "legacy migration case"
+        fields:
+          - field1
+          - field2
+    expect:
+      status_code: 201
+      extract:
+        - type: json_path
+          source: "$[0].id"
+          var_name: "rule_id"
+
+  - case_id: "rcr_legacy_002"
+    suite: "row_column_rule 迁移套件"
+    switch: n
+    name: "查询行列权限规则列表"
+    description: "迁移自 test_data_view_row_column_rule/test_rule_list.py"
+    api_name: "list_row_column_rules"
+    tags:
+      - data-view
+      - row-column-rule
+      - legacy
+    expect:
+      status_code: 200
+
+  - case_id: "rcr_legacy_003"
+    suite: "row_column_rule 迁移套件"
+    switch: n
+    name: "更新行列权限规则"
+    description: "迁移自 test_data_view_row_column_rule/test_rule_update.py"
+    api_name: "update_row_column_rule"
+    tags:
+      - data-view
+      - row-column-rule
+      - legacy
+    body:
+      name: "迁移规则更新_${timestamp}"
+      tags:
+        - migration
+        - update
+      comment: "legacy updated case"
+      fields:
+        - field1
+    expect:
+      status_code: 204
+
+  - case_id: "rcr_legacy_004"
+    suite: "row_column_rule 迁移套件"
+    switch: n
+    name: "查询行列权限规则详情"
+    description: "迁移自 test_data_view_row_column_rule/test_rule_detail.py"
+    api_name: "get_row_column_rule"
+    tags:
+      - data-view
+      - row-column-rule
+      - legacy
+    setup:
+      - type: set_var
+        var_name: "rule_ids"
+        value: "${rule_id}"
+    expect:
+      status_code: 200
+
+  - case_id: "rcr_legacy_005"
+    suite: "row_column_rule 迁移套件"
+    switch: n
+    name: "删除行列权限规则"
+    description: "迁移自 test_data_view_row_column_rule/test_rule_delete.py"
+    api_name: "delete_row_column_rule"
+    tags:
+      - data-view
+      - row-column-rule
+      - cleanup
+      - legacy
+    setup:
+      - type: set_var
+        var_name: "rule_ids"
+        value: "${rule_id}"
+    expect:
+      status_code: 204

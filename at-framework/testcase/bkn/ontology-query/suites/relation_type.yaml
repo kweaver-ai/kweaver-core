@@ -1,0 +1,99 @@
+cases:
+- case_id: relation_type_001
+  suite: Relation Type (legacy migration)
+  switch: n
+  name: relation_create
+  description: 创建关系类型 / Create relation type
+  api_name: create_relation_type
+  tags:
+  - ontology
+  - legacy
+  - api:create_relation_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+    extract:
+    - type: json_path
+      source: $.id
+      var_name: id
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  body:
+    name: relation_type_${timestamp}
+    display_name: RelationType_${timestamp}
+    description: auto migrated relation type
+- case_id: relation_type_002
+  suite: Relation Type (legacy migration)
+  switch: n
+  name: relation_delete
+  description: 删除关系类型 / Delete relation type
+  api_name: delete_relation_type
+  tags:
+  - ontology
+  - legacy
+  - api:delete_relation_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: rt_ids
+    value: ${rt_ids}
+- case_id: relation_type_003
+  suite: Relation Type (legacy migration)
+  switch: n
+  name: relation_list
+  description: 查询关系类型列表 / List relation types
+  api_name: list_relation_types
+  tags:
+  - ontology
+  - legacy
+  - api:list_relation_types
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+- case_id: relation_type_004
+  suite: Relation Type (legacy migration)
+  switch: n
+  name: relation_update
+  description: 更新关系类型 / Update relation type
+  api_name: update_relation_type
+  tags:
+  - ontology
+  - legacy
+  - api:update_relation_type
+  expect:
+    status_code: 200
+    response_checks:
+    - type: json_path
+      path: $.code
+      expected: 0
+  setup:
+  - type: set_var
+    var_name: kn_id
+    value: ${kn_id}
+  - type: set_var
+    var_name: id
+    value: ${id}
+  body:
+    name: relation_type_updated_${timestamp}
+    display_name: RelationTypeUpdated_${timestamp}
+    description: auto migrated relation update

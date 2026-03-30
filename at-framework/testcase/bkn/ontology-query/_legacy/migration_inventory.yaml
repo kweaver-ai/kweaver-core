@@ -1,0 +1,11 @@
+path_context:
+  source_root: ${SOURCE_REPO_ROOT}
+  target_root: ${WORKSPACE_ROOT}/testcase/bkn/ontology-query
+data_files_total: 32
+test_scripts_total: 32
+api_scripts_total: 7
+migrated:
+  data_root: ${WORKSPACE_ROOT}/testcase/bkn/ontology-query/data
+  suite_root: ${WORKSPACE_ROOT}/testcase/bkn/ontology-query/suites
+  config_root: ${WORKSPACE_ROOT}/testcase/bkn/ontology-query/_config
+  legacy_root: ${WORKSPACE_ROOT}/testcase/bkn/ontology-query/_legacy

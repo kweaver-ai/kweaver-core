@@ -1,0 +1,153 @@
+# ==================================================
+# 业务知识网络更新 - 正向测试用例
+# ==================================================
+
+## 测试文件说明
+
+### 测试目的
+# - 验证业务知识网络更新接口对各种有效参数的处理能力
+# - 确保接口能够正确更新业务知识网络并返回成功状态
+# - 覆盖所有可能的成功更新场景
+
+### 测试用例分类
+# 1. **基本功能测试**：验证基本更新功能，包括不同名称格式的更新
+# 2. **名称更新测试**：验证名称字段的各种有效更新场景
+# 3. **tags字段更新测试**：验证标签字段的各种有效更新场景
+# 4. **comment字段更新测试**：验证备注字段的各种有效更新场景
+# 5. **综合更新测试**：验证多个字段同时更新的场景
+
+### 使用说明
+# - 所有测试用例均为正向测试，验证接口对有效参数的处理
+# - 测试用例按类别分组，便于维护和理解
+# - 每个测试用例包含：
+#   - case_name：测试用例名称
+#   - kn_c_name：创建时的名称
+#   - kn_id：业务知识网络ID
+#   - kn_u_name：更新后的名称
+#   - 其他参数：根据测试场景而定
+#   - note：测试用例说明
+
+
+# ==================================================
+# 1. 基本功能测试
+# ==================================================
+
+- case_name: "基本功能-更新为中文名称"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-${fake_cn_name}"
+  note: "将业务知识网络名称更新为中文名称"
+
+- case_name: "基本功能-更新为英文名称"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "update-${random_str}"
+  note: "将业务知识网络名称更新为英文名称"
+
+- case_name: "基本功能-更新为纯数字名称"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "update-${random_int}"
+  note: "将业务知识网络名称更新为纯数字名称"
+
+- case_name: "基本功能-更新为混合名称"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "${fake_cn_name}${random_int}${random_str}"
+  note: "将业务知识网络名称更新为中文、数字、英文混合名称"
+
+
+# ==================================================
+# 2. 名称更新测试
+# ==================================================
+
+- case_name: "名称更新-包含特殊字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新@#$%^&*()测试-${random_str}"
+  note: "更新名称包含特殊字符"
+
+- case_name: "名称更新-包含emoji"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新😀测试-${random_str}"
+  note: "更新名称包含emoji"
+
+- case_name: "名称更新-边界值长度40字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新名称长度刚好四十个字符更新名称长度刚好四十"
+  note: "更新名称长度为40个字符"
+
+
+# ==================================================
+# 3. tags字段更新测试
+# ==================================================
+
+- case_name: "tags更新-添加tags"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: ["更新标签1", "更新标签2"]
+  note: "为业务知识网络添加tags"
+
+- case_name: "tags更新-更新tags内容"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-tags内容-${random_str}"
+  kn_c_tags: ["旧标签1", "旧标签2"]
+  kn_u_tags: ["新标签1", "新标签2"]
+  note: "更新业务知识网络的tags内容"
+
+- case_name: "tags更新-删除所有tags"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-删除tags-${random_str}"
+  kn_c_tags: ["旧标签1", "旧标签2"]
+  kn_u_tags: []
+  note: "删除业务知识网络的所有tags"
+
+
+# ==================================================
+# 4. comment字段更新测试
+# ==================================================
+
+- case_name: "comment更新-添加备注"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-comment-${random_str}"
+  kn_c_comment: ""
+  kn_u_comment: "这是添加的备注内容"
+  note: "为业务知识网络添加备注"
+
+- case_name: "comment更新-更新备注"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-comment-${random_str}"
+  kn_c_comment: "旧的备注内容"
+  kn_u_comment: "更新后的备注内容"
+  note: "更新业务知识网络的备注内容"
+
+- case_name: "comment更新-边界值1000字符"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "更新-comment-${random_str}"
+  kn_c_comment: ""
+  kn_u_comment: "${random_str(1000)}"
+  note: "更新备注长度为1000个字符"
+
+
+# ==================================================
+# 5. 综合更新测试
+# ==================================================
+
+- case_name: "综合更新-同时更新名称、tags和备注"
+  kn_c_name: "创建名称-${random_str}"
+  kn_id: "${ts_uuid}"
+  kn_u_name: "综合更新-${random_str}"
+  kn_c_tags: []
+  kn_u_tags: ["综合标签1", "综合标签2"]
+  kn_c_comment: ""
+  kn_u_comment: "综合更新的备注内容"
+  note: "同时更新业务知识网络的名称、tags和备注"

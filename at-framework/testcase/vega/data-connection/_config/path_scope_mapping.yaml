@@ -1,0 +1,73 @@
+# 路径 → 作用域/标签/建议套件 映射：data-connection 模块
+# 用于提交监听时自动识别受影响的测试用例
+
+mappings:
+  # ========== 数据源相关 ==========
+  - paths:
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/datasource/**"
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/controller/DataSourceController.java"
+    scope: "datasource"
+    tags:
+      - "datasource"
+      - "crud"
+    suggested_suites:
+      - "datasource_crud.yaml"
+      - "datasource_connection.yaml"
+
+  - paths:
+      - "vega/data-connection/dc-common/src/main/java/com/eisoo/dc/common/util/jdbc/db/impl/OpenSearchClient.java"
+      - "vega/data-connection/dc-common/src/main/java/com/eisoo/dc/common/util/CommonUtil.java"
+    scope: "opensearch"
+    tags:
+      - "opensearch"
+      - "metadata"
+      - "field-mapping"
+    suggested_suites:
+      - "opensearch_metadata.yaml"
+      - "field_mapping.yaml"
+
+  # ========== 元数据扫描相关 ==========
+  - paths:
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/metadata/**"
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/controller/MetadataController.java"
+    scope: "metadata-scan"
+    tags:
+      - "metadata"
+      - "scan"
+    suggested_suites:
+      - "metadata_scan.yaml"
+
+  # ========== 视图相关 ==========
+  - paths:
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/view/**"
+      - "vega/data-connection/dc-main/src/main/java/com/eisoo/dc/controller/ViewController.java"
+    scope: "view"
+    tags:
+      - "view"
+      - "crud"
+      - "sync"
+    suggested_suites:
+      - "view_crud.yaml"
+      - "view_sync.yaml"
+
+  # ========== 字段特征相关（最新功能 #137） ==========
+  - paths:
+      - "vega/data-connection/dc-common/src/main/java/com/eisoo/dc/common/metadata/entity/FieldScanEntity.java"
+      - "vega/data-connection/dc-common/src/main/java/com/eisoo/dc/common/vo/FieldFeature.java"
+    scope: "field-feature"
+    tags:
+      - "field-feature"
+      - "keyword"
+      - "mapping-config"
+    suggested_suites:
+      - "field_feature.yaml"
+      - "opensearch_metadata.yaml"
+
+  # ========== 通用变更 ==========
+  - paths:
+      - "vega/data-connection/**"
+    scope: "data-connection"
+    tags:
+      - "smoke"
+    suggested_suites:
+      - "smoke_test.yaml"
