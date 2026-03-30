@@ -143,7 +143,13 @@ dnf install containerd.io
 # 指定配置文件
 
 ./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
-# 从指定 Helm 仓库安装指定版本
+# 安装 0.4.0；如果 deploy/release-manifests/0.4.0/kweaver-core.yaml 存在，会自动按 manifest 解析每个 chart 的精确版本
+
+./deploy.sh kweaver-core download --version=0.4.0
+# 通过 deploy/release-manifests/0.4.0/kweaver-core.yaml 自动解析 0.4.0 对应的精确 chart 版本并下载
+
+./deploy.sh kweaver-core download --version=0.4.0 --version_file=./release-manifests/0.4.0/kweaver-core.yaml
+# 与上面相同，但显式指定 manifest 文件路径
 
 ./deploy.sh kweaver-core download --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
 # 从指定 Helm 仓库预下载指定版本 chart
@@ -180,12 +186,52 @@ dnf install containerd.io
 - 共享缓存目录默认是 `deploy/.tmp/charts`
 - `download` 如果检测不到 `helm`，会先自动安装 `helm`
 - `download` 默认增量刷新，不会每次全量重下
-- 如果指定 `--version`，脚本只检查该版本是否已存在；不存在才下载
+- 如果指定 `--version`，且存在 `deploy/release-manifests/<version>/<product>.yaml`，聚合模块会从该 embedded manifest 解析每个 release 的精确 chart 版本
+- 如果指定 `--version_file`，会显式覆盖 embedded manifest 路径
+- 如果没有 embedded manifest，也没有传 `--version_file`，则保持旧行为：直接把 `--version` 当作 chart 版本使用
 - 如果不指定 `--version`，脚本会比较 Helm repo 最新版本和本地缓存的最新版本，仅在 repo 更新时下载
 - `kweaver-core download` 默认会连同 ISF 一起下载；可用 `--enable-isf=false` 关闭
 - `kweaver-dip download` 会自动下载 DIP、KWeaver Core、ISF 的完整依赖 chart
 - 只有 `download` 会创建或更新默认共享缓存目录 `deploy/.tmp/charts`
 - `install` 不会自动读取 `deploy/.tmp/charts`；如果要使用预下载的本地 `.tgz`，请显式传入 `--charts_dir=<目录>`
+
+内嵌 release manifest 目录：
+
+```text
+deploy/release-manifests/
+├── 0.4.0/
+│   ├── isf.yaml
+│   ├── kweaver-core.yaml
+│   └── kweaver-dip.yaml
+└── 0.5.0/
+    ├── isf.yaml
+    ├── kweaver-core.yaml
+    └── kweaver-dip.yaml
+```
+
+这些 manifest 由人工维护，并和 deploy 脚本一起提交。采用“版本优先”目录结构，是为了从部署视角能直接看到某个版本完整的发布物料清单。
+
+### SQL 按版本初始化
+
+- SQL 按聚合版本和产品维度存放在 `deploy/scripts/sql/<version>/<product>/`
+- `isf install --version=<x>` 会执行 `deploy/scripts/sql/<x>/isf/` 下存在的 `.sql` 文件
+- `kweaver-core install --version=<x>` 会执行 `deploy/scripts/sql/<x>/kweaver-core/` 下各模块目录
+- `kweaver-dip install --version=<x>` 只会在 `deploy/scripts/sql/<x>/kweaver-dip/` 存在且包含 `.sql` 文件时执行
+- 缺失的 SQL 目录会被跳过，不会导致安装失败
+- 当前默认 SQL 版本为 `0.5.0`
+
+SQL 目录示例：
+
+```text
+deploy/scripts/sql/
+├── 0.4.0/
+│   ├── isf/
+│   ├── kweaver-core/
+│   └── kweaver-dip/
+└── 0.5.0/
+    ├── isf/
+    └── kweaver-core/
+```
 
 ### 验证部署
 
@@ -223,7 +269,7 @@ depServices:
 
 1. 将 `source_type` 改为 `external`
 2. 配置外部数据库连接信息
-3. 手动执行 SQL 初始化脚本（位于 `scripts/sql/` 目录）
+3. 手动执行 `deploy/scripts/sql/<version>/<product>/` 下对应版本的 SQL 初始化脚本
 
 ## 📁 Project Structure
 
@@ -242,10 +288,12 @@ deploy/
     │   ├── mariadb.sh
     │   ├── mongodb.sh
     │   └── ...
-    └── sql/                # SQL 初始化脚本
-        ├── isf/
-        ├── studio/
-        └── ...
+    └── sql/                # 按版本组织的 SQL 初始化脚本
+        ├── 0.4.0/
+        │   ├── isf/
+        │   ├── kweaver-core/
+        │   └── kweaver-dip/
+        └── 0.5.0/
 ```
 
 ## 🗑️ Uninstall
