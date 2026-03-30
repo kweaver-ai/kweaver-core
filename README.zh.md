@@ -10,9 +10,11 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
+KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
+
 KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基础平台。它将分散的数据、知识、工具和策略转化为受治理的上下文、安全的执行和可验证的反馈闭环。通过语义建模、实时访问、运行时管控和 TraceAI，帮助 AI 系统在复杂企业环境中可靠地推理、适应和行动。
 
-KWeaver 项目包含 KWeaver Core 与 KWeaver DIP。
+KWeaver DIP 是一个 AI 原生的数字员工开发与管理平台，基于业务知识网络实现可理解、可执行、可治理的企业智能。
 
 ## 📚 快速链接
 
