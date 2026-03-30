@@ -31,6 +31,7 @@ DIP_NAMESPACE="${DIP_NAMESPACE:-kweaver-ai}"
 
 # Default local DIP charts directory (relative to deploy root)
 DIP_LOCAL_CHARTS_DIR="${DIP_LOCAL_CHARTS_DIR:-}"
+DIP_VERSION_MANIFEST_FILE="${DIP_VERSION_MANIFEST_FILE:-}"
 
 # Parse dip command arguments
 parse_dip_args() {
@@ -70,6 +71,14 @@ parse_dip_args() {
                 ;;
             --charts_dir)
                 DIP_LOCAL_CHARTS_DIR="$2"
+                shift 2
+                ;;
+            --version_file=*)
+                DIP_VERSION_MANIFEST_FILE="${1#*=}"
+                shift
+                ;;
+            --version_file)
+                DIP_VERSION_MANIFEST_FILE="$2"
                 shift 2
                 ;;
             --force-refresh)
@@ -120,6 +129,20 @@ _dip_ensure_kweaver_core() {
     local missing_isf=false
     local missing_core=false
     local release_name
+    local original_chart_version="${HELM_CHART_VERSION:-}"
+    local original_core_manifest="${CORE_VERSION_MANIFEST_FILE:-}"
+    local original_isf_manifest="${ISF_VERSION_MANIFEST_FILE:-}"
+    local core_dependency_manifest=""
+    local core_dependency_version="${HELM_CHART_VERSION:-}"
+    local isf_dependency_manifest=""
+    local isf_dependency_version="${HELM_CHART_VERSION:-}"
+
+    if [[ -n "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        core_dependency_manifest="$(_dip_resolve_core_dependency_manifest)"
+        core_dependency_version="$(_dip_resolve_core_dependency_version)"
+        isf_dependency_manifest="$(_dip_resolve_isf_dependency_manifest)"
+        isf_dependency_version="$(_dip_resolve_isf_dependency_version)"
+    fi
 
     if [[ ${#ISF_RELEASES[@]} -gt 0 ]]; then
         for release_name in "${ISF_RELEASES[@]}"; do
@@ -150,18 +173,38 @@ _dip_ensure_kweaver_core() {
     done
 
     if [[ "${missing_isf}" == "true" ]]; then
+        if [[ -n "${isf_dependency_manifest}" ]]; then
+            ISF_VERSION_MANIFEST_FILE="${isf_dependency_manifest}"
+            HELM_CHART_VERSION="${isf_dependency_version}"
+        fi
         if ! install_isf; then
+            HELM_CHART_VERSION="${original_chart_version}"
+            CORE_VERSION_MANIFEST_FILE="${original_core_manifest}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest}"
             log_error "Failed to install kweaver-core module: ISF"
             return 1
         fi
+        HELM_CHART_VERSION="${original_chart_version}"
+        CORE_VERSION_MANIFEST_FILE="${original_core_manifest}"
+        ISF_VERSION_MANIFEST_FILE="${original_isf_manifest}"
     fi
 
     if [[ "${missing_core}" == "true" ]]; then
         log_info "Installing missing KWeaver Core releases..."
+        if [[ -n "${core_dependency_manifest}" ]]; then
+            CORE_VERSION_MANIFEST_FILE="${core_dependency_manifest}"
+            HELM_CHART_VERSION="${core_dependency_version}"
+        fi
         if ! install_core; then
+            HELM_CHART_VERSION="${original_chart_version}"
+            CORE_VERSION_MANIFEST_FILE="${original_core_manifest}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest}"
             log_error "Failed to install missing KWeaver Core releases"
             return 1
         fi
+        HELM_CHART_VERSION="${original_chart_version}"
+        CORE_VERSION_MANIFEST_FILE="${original_core_manifest}"
+        ISF_VERSION_MANIFEST_FILE="${original_isf_manifest}"
     fi
 
     if [[ "${missing_isf}" == "false" && "${missing_core}" == "false" ]]; then
@@ -190,6 +233,88 @@ _dip_download_charts_dir() {
     ensure_charts_dir "$(resolve_shared_charts_dir)"
 }
 
+_dip_auto_resolve_version_manifest() {
+    if [[ -n "${DIP_VERSION_MANIFEST_FILE:-}" || -z "${HELM_CHART_VERSION:-}" ]]; then
+        return 0
+    fi
+
+    local embedded_manifest
+    embedded_manifest="$(resolve_embedded_release_manifest "kweaver-dip" "${HELM_CHART_VERSION}")"
+    if [[ -n "${embedded_manifest}" ]]; then
+        DIP_VERSION_MANIFEST_FILE="${embedded_manifest}"
+    fi
+}
+
+_dip_resolve_release_version() {
+    local release_name="$1"
+    resolve_release_chart_version "${DIP_VERSION_MANIFEST_FILE:-}" "kweaver-dip" "${HELM_CHART_VERSION:-}" "${release_name}" "${HELM_CHART_VERSION:-}"
+}
+
+_dip_resolve_core_dependency_version() {
+    if [[ -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        echo "${HELM_CHART_VERSION:-}"
+        return 0
+    fi
+
+    get_release_manifest_dependency_version "${DIP_VERSION_MANIFEST_FILE}" "kweaver-core"
+}
+
+_dip_resolve_core_dependency_manifest() {
+    if [[ -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 0
+    fi
+
+    get_release_manifest_dependency_manifest "${DIP_VERSION_MANIFEST_FILE}" "kweaver-core"
+}
+
+_dip_has_direct_dependency() {
+    local dependency_product="$1"
+
+    if [[ -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 1
+    fi
+
+    [[ -n "$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${DIP_VERSION_MANIFEST_FILE}" "${dependency_product}" "version")")" ]]
+}
+
+_dip_resolve_isf_dependency_version() {
+    if [[ -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        echo "${HELM_CHART_VERSION:-}"
+        return 0
+    fi
+
+    if _dip_has_direct_dependency "isf"; then
+        get_release_manifest_dependency_version "${DIP_VERSION_MANIFEST_FILE}" "isf"
+        return 0
+    fi
+
+    local core_manifest
+    core_manifest="$(_dip_resolve_core_dependency_manifest)"
+    if [[ -n "${core_manifest}" ]]; then
+        get_release_manifest_dependency_version "${core_manifest}" "isf"
+        return 0
+    fi
+
+    echo "${HELM_CHART_VERSION:-}"
+}
+
+_dip_resolve_isf_dependency_manifest() {
+    if [[ -z "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        return 0
+    fi
+
+    if _dip_has_direct_dependency "isf"; then
+        get_release_manifest_dependency_manifest "${DIP_VERSION_MANIFEST_FILE}" "isf"
+        return 0
+    fi
+
+    local core_manifest
+    core_manifest="$(_dip_resolve_core_dependency_manifest)"
+    if [[ -n "${core_manifest}" ]]; then
+        get_release_manifest_dependency_manifest "${core_manifest}" "isf"
+    fi
+}
+
 # Find a local tgz for a chart name inside a directory (picks the first match)
 _dip_find_local_chart() {
     local charts_dir="$1"
@@ -208,9 +333,23 @@ _dip_show_access_hints() {
     log_info "Access KWeaver studio: ${base_url}/studio"
 }
 
+init_dip_database() {
+    local sql_dir
+    sql_dir="$(resolve_versioned_sql_dir "kweaver-dip" "${HELM_CHART_VERSION:-}")"
+
+    if ! is_rds_internal; then
+        warn_external_rds_sql_required "KWeaver DIP" "${sql_dir}"
+        log_warn "Skipping automatic KWeaver DIP database initialization (external RDS)"
+        return 0
+    fi
+
+    init_module_database_if_present "kweaver-dip" "${sql_dir}" "KWeaver DIP"
+}
+
 # Install DIP services via Helm
 install_dip() {
     log_info "Installing KWeaver DIP services via Helm..."
+    _dip_auto_resolve_version_manifest
 
     local charts_dir
     charts_dir="$(_dip_resolve_charts_dir)"
@@ -234,6 +373,11 @@ install_dip() {
         return 1
     fi
 
+    if ! init_dip_database; then
+        log_error "Failed to initialize KWeaver DIP database"
+        return 1
+    fi
+
     # Resolve namespace
     local namespace
     namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
@@ -249,6 +393,9 @@ install_dip() {
         fi
         log_info "No explicit local DIP charts directory provided, using Helm repo."
         log_info "  Version:   ${HELM_CHART_VERSION:-latest}"
+        if [[ -n "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+            log_info "  Version Manifest: ${DIP_VERSION_MANIFEST_FILE}"
+        fi
         log_info "  Helm Repo: ${HELM_CHART_REPO_NAME} -> ${HELM_CHART_REPO_URL}"
         ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
     fi
@@ -256,21 +403,24 @@ install_dip() {
     log_info "Target namespace: ${namespace}"
 
     local release_name
+    local release_version
 
     for release_name in "${DIP_PRERELEASES[@]}"; do
+        release_version="$(_dip_resolve_release_version "${release_name}")"
         if [[ "${use_local}" == "true" ]]; then
             _install_dip_release_local "${release_name}" "${charts_dir}" "${namespace}"
         else
-            _install_dip_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
+            _install_dip_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${release_version}"
         fi
     done
 
     # Install each release
     for release_name in "${DIP_RELEASES[@]}"; do
+        release_version="$(_dip_resolve_release_version "${release_name}")"
         if [[ "${use_local}" == "true" ]]; then
             _install_dip_release_local "${release_name}" "${charts_dir}" "${namespace}"
         else
-            _install_dip_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${HELM_CHART_VERSION}"
+            _install_dip_release_repo "${release_name}" "${namespace}" "${HELM_CHART_REPO_NAME}" "${release_version}"
         fi
     done
 
@@ -281,6 +431,7 @@ install_dip() {
 download_dip() {
     log_info "Downloading KWeaver DIP charts..."
     ensure_helm_available
+    _dip_auto_resolve_version_manifest
 
     HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
     HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
@@ -291,20 +442,32 @@ download_dip() {
     local original_core_charts_dir="${CORE_LOCAL_CHARTS_DIR:-}"
     local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
     local original_enable_isf="${ENABLE_ISF:-}"
+    local original_chart_version="${HELM_CHART_VERSION:-}"
+    local original_core_manifest="${CORE_VERSION_MANIFEST_FILE:-}"
     CORE_LOCAL_CHARTS_DIR="${charts_dir}"
     ISF_LOCAL_CHARTS_DIR="${charts_dir}"
     ENABLE_ISF="true"
 
     ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
+    if [[ -n "${DIP_VERSION_MANIFEST_FILE:-}" ]]; then
+        CORE_VERSION_MANIFEST_FILE="$(_dip_resolve_core_dependency_manifest)"
+        HELM_CHART_VERSION="$(_dip_resolve_core_dependency_version)"
+    fi
     download_core
+    HELM_CHART_VERSION="${original_chart_version}"
+    CORE_VERSION_MANIFEST_FILE="${original_core_manifest}"
 
     local release_name
     for release_name in "${DIP_PRERELEASES[@]}"; do
-        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+        local release_version
+        release_version="$(_dip_resolve_release_version "${release_name}")"
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${release_version}" "${FORCE_REFRESH_CHARTS:-false}"
     done
 
     for release_name in "${DIP_RELEASES[@]}"; do
-        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${HELM_CHART_VERSION}" "${FORCE_REFRESH_CHARTS:-false}"
+        local release_version
+        release_version="$(_dip_resolve_release_version "${release_name}")"
+        download_chart_to_cache "${charts_dir}" "${HELM_CHART_REPO_NAME}" "${release_name}" "${release_version}" "${FORCE_REFRESH_CHARTS:-false}"
     done
 
     CORE_LOCAL_CHARTS_DIR="${original_core_charts_dir}"
@@ -317,9 +480,17 @@ _install_dip_release_local() {
     local release_name="$1"
     local charts_dir="$2"
     local namespace="$3"
+    local requested_version
 
-    local chart_tgz
-    chart_tgz="$(_dip_find_local_chart "${charts_dir}" "${release_name}")"
+    requested_version="$(_dip_resolve_release_version "${release_name}")"
+
+    local chart_tgz=""
+    if [[ -n "${requested_version}" ]]; then
+        chart_tgz="$(find_cached_chart_tgz_by_version "${charts_dir}" "${release_name}" "${requested_version}" || true)"
+    fi
+    if [[ -z "${chart_tgz}" ]]; then
+        chart_tgz="$(_dip_find_local_chart "${charts_dir}" "${release_name}")"
+    fi
 
     if [[ -z "${chart_tgz}" ]]; then
         log_error "✗ Local chart not found for ${release_name} in ${charts_dir}"
@@ -327,7 +498,10 @@ _install_dip_release_local() {
     fi
 
     local target_version
-    target_version=$(get_local_chart_version "${chart_tgz}")
+    target_version="${requested_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version="$(get_local_chart_version "${chart_tgz}")"
+    fi
     if should_skip_upgrade_same_chart_version "${release_name}" "${namespace}" "${release_name}" "${target_version}"; then
         return 0
     fi

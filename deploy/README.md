@@ -143,7 +143,13 @@ The deployment scripts need access to the following domains:
 # Use a specific config file
 
 ./deploy.sh kweaver-core install --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
-# Install a specific version from a specific Helm repo
+# Install 0.4.0; when deploy/release-manifests/0.4.0/kweaver-core.yaml exists, deploy resolves exact chart versions from it automatically
+
+./deploy.sh kweaver-core download --version=0.4.0
+# Auto-resolve 0.4.0 through deploy/release-manifests/0.4.0/kweaver-core.yaml, then download the exact chart versions
+
+./deploy.sh kweaver-core download --version=0.4.0 --version_file=./release-manifests/0.4.0/kweaver-core.yaml
+# Same as above, but with an explicit manifest override path
 
 ./deploy.sh kweaver-core download --helm_repo=https://acr.aishu.cn/chartrepo/public --version=0.4.0
 # Pre-download a specific chart version from a specific Helm repo
@@ -179,12 +185,52 @@ The deployment scripts need access to the following domains:
 - The shared chart cache directory defaults to `deploy/.tmp/charts`
 - If `download` cannot find `helm`, it installs `helm` first
 - `download` uses incremental refresh by default instead of re-downloading everything
-- If `--version` is set, the script only checks whether that exact chart version is already cached
+- If `--version` is set and `deploy/release-manifests/<version>/<product>.yaml` exists, aggregate modules resolve each release's exact chart version from that embedded manifest
+- If `--version_file` is set, it overrides the embedded manifest path explicitly
+- If neither an embedded manifest nor `--version_file` is present, the old behavior remains: the script applies `--version` directly to charts
 - If `--version` is not set, the script compares the repo latest chart version with the newest cached local version and only downloads when the repo is newer
 - `kweaver-core download` includes ISF charts by default; use `--enable-isf=false` to skip them
 - `kweaver-dip download` automatically downloads the full DIP + KWeaver Core + ISF dependency chart set
 - `download` is the only path that creates or updates the default shared cache in `deploy/.tmp/charts`
 - `install` does not auto-use `deploy/.tmp/charts`; pass `--charts_dir=<dir>` when you want to install from pre-downloaded local `.tgz` files
+
+Embedded release manifest tree:
+
+```text
+deploy/release-manifests/
+├── 0.4.0/
+│   ├── isf.yaml
+│   ├── kweaver-core.yaml
+│   └── kweaver-dip.yaml
+└── 0.5.0/
+    ├── isf.yaml
+    ├── kweaver-core.yaml
+    └── kweaver-dip.yaml
+```
+
+These manifests are edited manually and committed with the deploy scripts. The version-first layout is intentional: it makes one release directory show the full deployment bill of materials directly.
+
+### Versioned SQL initialization
+
+- SQL is resolved by aggregate version and product under `deploy/scripts/sql/<version>/<product>/`
+- `isf install --version=<x>` executes `deploy/scripts/sql/<x>/isf/` when that directory contains `.sql` files
+- `kweaver-core install --version=<x>` executes module directories under `deploy/scripts/sql/<x>/kweaver-core/`
+- `kweaver-dip install --version=<x>` executes `deploy/scripts/sql/<x>/kweaver-dip/` only when that directory exists and contains `.sql` files
+- Missing SQL directories are skipped cleanly instead of failing the install
+- The current default SQL version is `0.5.0`
+
+Example SQL tree:
+
+```text
+deploy/scripts/sql/
+├── 0.4.0/
+│   ├── isf/
+│   ├── kweaver-core/
+│   └── kweaver-dip/
+└── 0.5.0/
+    ├── isf/
+    └── kweaver-core/
+```
 
 ### Verify deployment
 
@@ -222,7 +268,7 @@ If you use an external database:
 
 1. Change `source_type` to `external`
 2. Configure external DB connection settings
-3. Manually run the SQL initialization scripts under `scripts/sql/`
+3. Manually run the SQL initialization scripts under `deploy/scripts/sql/<version>/<product>/`
 
 ## 📁 Project Structure
 
@@ -241,10 +287,12 @@ deploy/
     │   ├── mariadb.sh
     │   ├── mongodb.sh
     │   └── ...
-    └── sql/                     # SQL init scripts
-        ├── isf/
-        ├── studio/
-        └── ...
+    └── sql/                     # Versioned SQL init scripts
+        ├── 0.4.0/
+        │   ├── isf/
+        │   ├── kweaver-core/
+        │   └── kweaver-dip/
+        └── 0.5.0/
 ```
 
 ## 🗑️ Uninstall
