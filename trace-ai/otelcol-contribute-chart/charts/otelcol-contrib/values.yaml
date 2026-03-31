@@ -4,9 +4,9 @@ fullnameOverride: ""
 mode: deployment
 
 image:
-  repository: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
+  repository: swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
-  tag: "0.145.0"
+  tag: "0.148.0"
 
 replicaCount: 1
 
