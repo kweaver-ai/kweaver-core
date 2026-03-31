@@ -1,0 +1,16 @@
+DocSourceField:
+  type: object
+  required:
+    - name
+    - path
+    - source
+  properties:
+    name:
+      type: string
+      description: 字段名称
+    path:
+      type: string
+      description: 字段路径
+    source:
+      type: string
+      description: 字段来源

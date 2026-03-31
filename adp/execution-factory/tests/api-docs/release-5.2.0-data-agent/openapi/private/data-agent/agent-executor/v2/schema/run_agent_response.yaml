@@ -1,0 +1,24 @@
+run_agent_response:
+  properties:
+    answer:
+      type: object
+      title: answer
+      description: agent最终输出，包含dolphin输出的全部内容
+    status:
+      type: string
+      title: status
+      description: '"True": 流式信息已结束; "False": 流式信息未结束，正在返回; "Error": 失败'
+    ask:
+      description: 需要用户进行干预的工具信息
+      $ref: './tool_interrupt_info.yaml#/tool_interrupt_info'
+    error:
+      description: 错误信息
+      $ref: './error_response.yaml#/error_response'
+    ttft:
+      description: time to first token（毫秒）
+      type: integer
+  type: object
+  required:
+  - answer
+  - status
+  title: RunAgentResponse

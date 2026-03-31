@@ -1,0 +1,12 @@
+publish_upsert_req:
+  type: object
+  properties:
+    business_domain_id:
+      type: string
+      description: 业务域ID
+    category_ids:
+      type: array
+      description: agent分类ID
+      items:
+        type: string
+

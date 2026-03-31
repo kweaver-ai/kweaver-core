@@ -1,0 +1,5152 @@
+---
+openapi: 3.0.2
+info:
+  title: ontology-query
+  version: 0.2.0
+paths:
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/object-types/{ot_id}:
+    summary: 检索指定对象类的对象的详细数据
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/FirstQueryWithSearchAfter'
+              - $ref: '#/components/schemas/PageTurnQueryWithSearchAfter'
+            examples:
+              获取指定对象类的对象实例-第一次请求-含属性计算参数-含对象类信息:
+                value:
+                  condition:
+                    operation: and
+                    sub_conditions:
+                    - field: pod_namespace
+                      operation: ==
+                      value: anyshare
+                      value_from: const
+                    - field: pod_status
+                      operation: ==
+                      value: Running
+                      value_from: const
+                  need_total: true
+                  limit: 10
+              获取指定对象类的对象实例-非第一次请求-含属性计算参数-含对象类信息:
+                value:
+                  search_after:
+                  - 20250922_020907_00027_qe7sf
+                  - xdb6f0e5f5ba7449ab94822da9f008386
+                  - "1"
+                  condition:
+                    operation: and
+                    sub_conditions:
+                    - field: pod_namespace
+                      operation: ==
+                      value: anyshare
+                      value_from: const
+                    - field: pod_status
+                      operation: ==
+                      value: Running
+                      value_from: const
+                  need_total: true
+                  limit: 10
+        required: true
+      parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: ot_id
+        description: 对象类ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: include_type_info
+        description: "是否包含对象类信息, 默认false，不包含"
+        schema:
+          type: boolean
+        in: query
+      - name: include_logic_params
+        description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
+        schema:
+          type: boolean
+        in: query
+      - name: exclude_system_properties
+        description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["_instance_id", "_instance_identity", "_display"]
+        style: form
+        explode: true
+        in: query
+        required: false
+      - name: ignoring_store_cache
+        description: 是否忽略索引查询，默认false，不忽略，即走索引查询
+        schema:
+          type: boolean
+        in: query
+        required: false
+      - name: X-HTTP-Method-Override
+        description: 重载 post，实际上是 get 方法
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectDataResponse'
+              examples:
+                获取指定对象类的对象实例-第一次请求-含属性计算参数-含对象类信息:
+                  value:
+                    object_type:
+                      id: pod_has_metric_and_operator
+                      name: pod_has_metric_and_operator
+                      tags: []
+                      comment: ""
+                      icon: icon-dip-suanziguanli
+                      color: '#0e5fc5'
+                      branch: main
+                      detail: ""
+                      kn_id: topologytest
+                      data_source:
+                        type: data_view
+                        id: d3riul5r3eoemkcu9sn0
+                      data_properties:
+                      - name: component
+                        display_name: component
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: component
+                          type: varchar
+                          display_name: component
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: id
+                        display_name: id
+                        type: int
+                        comment: ""
+                        mapped_field:
+                          name: id
+                          type: int
+                          display_name: id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: node_id
+                        display_name: node_id
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: node_id
+                          type: varchar
+                          display_name: node_id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_cluster_id
+                        display_name: pod_cluster_id
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_cluster_id
+                          type: varchar
+                          display_name: pod_cluster_id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_create_time
+                        display_name: pod_create_time
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_create_time
+                          type: varchar
+                          display_name: pod_create_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_delete_time
+                        display_name: pod_delete_time
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_delete_time
+                          type: varchar
+                          display_name: pod_delete_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_ip
+                        display_name: pod_ip
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_ip
+                          type: varchar
+                          display_name: pod_ip
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_name
+                        display_name: pod_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_name
+                          type: varchar
+                          display_name: pod_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_namespace
+                        display_name: pod_namespace
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_namespace
+                          type: varchar
+                          display_name: pod_namespace
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_node_name
+                        display_name: pod_node_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_node_name
+                          type: varchar
+                          display_name: pod_node_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_port
+                        display_name: pod_port
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_port
+                          type: varchar
+                          display_name: pod_port
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_status
+                        display_name: pod_status
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_status
+                          type: varchar
+                          display_name: pod_status
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: s_create_time
+                        display_name: s_create_time
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: s_create_time
+                          type: timestamp
+                          display_name: s_create_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: s_update_time
+                        display_name: s_update_time
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: s_update_time
+                          type: timestamp
+                          display_name: s_update_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: service_ip
+                        display_name: service_ip
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: service_ip
+                          type: varchar
+                          display_name: service_ip
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: service_name
+                        display_name: service_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: service_name
+                          type: varchar
+                          display_name: service_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: timestamp
+                        display_name: timestamp
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: timestamp
+                          type: timestamp
+                          display_name: timestamp
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      logic_properties:
+                      - name: operator_test
+                        display_name: operator_test
+                        type: operator
+                        comment: pod的算子
+                        index: false
+                        data_source:
+                          type: operator
+                          id: 657a114e-2061-4314-8853-f84afecc5113
+                        parameters:
+                        - name: Authorization
+                          value_from: input
+                        - name: string
+                          value_from: property
+                          value: pod_ip
+                      - name: metric_test
+                        display_name: metric_test
+                        type: metric
+                        comment: pod的指标
+                        index: false
+                        data_source:
+                          type: metric
+                          id: pod_metric
+                        parameters:
+                        - name: pod_ip
+                          value_from: property
+                          value: pod_ip
+                        - name: pod_name
+                          value_from: property
+                          value: pod_name
+                        - name: instant
+                          value_from: input
+                        - name: start
+                          value_from: input
+                        - name: end
+                          value_from: input
+                        - name: step
+                          value_from: input
+                      - name: a_action
+                        display_name: _action
+                        type: varchar
+                        comment: ""
+                        index: false
+                        data_source:
+                          type: ""
+                          id: ""
+                      primary_keys: []
+                      display_key: ""
+                      creator: d5cf219c-a7fd-11f0-9094-f63c61a25eef
+                      create_time: 1761717480956
+                      updater: e584a6d8-b550-11f0-a6f7-f63c61a25eef
+                      update_time: 1761882424382
+                      IfNameModify: false
+                      module_type: object_type
+                    datas:
+                    - pod_cluster_id: ""
+                      timestamp: 2025-06-20 11:15:53.000
+                      pod_port: "9998"
+                      s_update_time: 2025-08-26 11:21:01.000
+                      service_ip: ""
+                      service_name: aladdin-tika-deploy
+                      s_create_time: 2025-06-20 11:15:53.000
+                      pod_node_name: node-111-175
+                      pod_create_time: "1750389421667"
+                      operator_test:
+                        property_type: operator
+                        mapping_source_id: 657a114e-2061-4314-8853-f84afecc5113
+                        has_any_unfilled_params: false
+                        parameters:
+                          string: 192.169.37.17
+                        dynamic_params: {}
+                      metric_test:
+                        property_type: metric
+                        mapping_source_id: pod_metric
+                        has_any_unfilled_params: false
+                        parameters:
+                          filters:
+                          - name: pod_ip
+                            operation: ""
+                            value: 192.169.37.17
+                          - name: pod_name
+                            operation: ""
+                            value: aladdin-tika-deploy-6564c49fbb-2nb9k
+                        dynamic_params: {}
+                      id: 1471
+                      pod_delete_time: ""
+                      pod_name: aladdin-tika-deploy-6564c49fbb-2nb9k
+                      pod_namespace: anyshare
+                      pod_ip: 192.169.37.17
+                      pod_status: Running
+                      component: aladdin-tika-2.7.0
+                    total_count: 1
+                    search_after:
+                    - 20251103_070016_00004_5pjz5
+                    - x6f100cb5d44b4bb19facd4036759b509
+                    - "1"
+                获取指定对象类的对象实例-非第一次请求-含属性计算参数-含对象类信息:
+                  value:
+                    object_type:
+                      id: pod_has_metric_and_operator
+                      name: pod_has_metric_and_operator
+                      tags: []
+                      comment: ""
+                      icon: icon-dip-suanziguanli
+                      color: '#0e5fc5'
+                      branch: main
+                      detail: ""
+                      kn_id: topologytest
+                      data_source:
+                        type: data_view
+                        id: d3riul5r3eoemkcu9sn0
+                      data_properties:
+                      - name: component
+                        display_name: component
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: component
+                          type: varchar
+                          display_name: component
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: id
+                        display_name: id
+                        type: int
+                        comment: ""
+                        mapped_field:
+                          name: id
+                          type: int
+                          display_name: id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: node_id
+                        display_name: node_id
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: node_id
+                          type: varchar
+                          display_name: node_id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_cluster_id
+                        display_name: pod_cluster_id
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_cluster_id
+                          type: varchar
+                          display_name: pod_cluster_id
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_create_time
+                        display_name: pod_create_time
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_create_time
+                          type: varchar
+                          display_name: pod_create_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_delete_time
+                        display_name: pod_delete_time
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_delete_time
+                          type: varchar
+                          display_name: pod_delete_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_ip
+                        display_name: pod_ip
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_ip
+                          type: varchar
+                          display_name: pod_ip
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_name
+                        display_name: pod_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_name
+                          type: varchar
+                          display_name: pod_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_namespace
+                        display_name: pod_namespace
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_namespace
+                          type: varchar
+                          display_name: pod_namespace
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_node_name
+                        display_name: pod_node_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_node_name
+                          type: varchar
+                          display_name: pod_node_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_port
+                        display_name: pod_port
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_port
+                          type: varchar
+                          display_name: pod_port
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: pod_status
+                        display_name: pod_status
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: pod_status
+                          type: varchar
+                          display_name: pod_status
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: s_create_time
+                        display_name: s_create_time
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: s_create_time
+                          type: timestamp
+                          display_name: s_create_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: s_update_time
+                        display_name: s_update_time
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: s_update_time
+                          type: timestamp
+                          display_name: s_update_time
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: service_ip
+                        display_name: service_ip
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: service_ip
+                          type: varchar
+                          display_name: service_ip
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: service_name
+                        display_name: service_name
+                        type: varchar
+                        comment: ""
+                        mapped_field:
+                          name: service_name
+                          type: varchar
+                          display_name: service_name
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      - name: timestamp
+                        display_name: timestamp
+                        type: timestamp
+                        comment: ""
+                        mapped_field:
+                          name: timestamp
+                          type: timestamp
+                          display_name: timestamp
+                        fulltext_config:
+                          analyzer: ""
+                          field_keyword: false
+                        vector_config:
+                          dimension: 0
+                      logic_properties:
+                      - name: operator_test
+                        display_name: operator_test
+                        type: operator
+                        comment: pod的算子
+                        index: false
+                        data_source:
+                          type: operator
+                          id: 657a114e-2061-4314-8853-f84afecc5113
+                        parameters:
+                        - name: Authorization
+                          value_from: input
+                        - name: string
+                          value_from: property
+                          value: pod_ip
+                      - name: metric_test
+                        display_name: metric_test
+                        type: metric
+                        comment: pod的指标
+                        index: false
+                        data_source:
+                          type: metric
+                          id: pod_metric
+                        parameters:
+                        - name: pod_ip
+                          value_from: property
+                          value: pod_ip
+                        - name: pod_name
+                          value_from: property
+                          value: pod_name
+                        - name: instant
+                          value_from: input
+                        - name: start
+                          value_from: input
+                        - name: end
+                          value_from: input
+                        - name: step
+                          value_from: input
+                      - name: a_action
+                        display_name: _action
+                        type: varchar
+                        comment: ""
+                        index: false
+                        data_source:
+                          type: ""
+                          id: ""
+                      primary_keys: []
+                      display_key: ""
+                      creator: d5cf219c-a7fd-11f0-9094-f63c61a25eef
+                      create_time: 1761717480956
+                      updater: e584a6d8-b550-11f0-a6f7-f63c61a25eef
+                      update_time: 1761882424382
+                      IfNameModify: false
+                      module_type: object_type
+                    datas:
+                    - pod_cluster_id: ""
+                      timestamp: 2025-06-20 11:15:53.000
+                      pod_port: "9998"
+                      s_update_time: 2025-08-26 11:21:01.000
+                      service_ip: ""
+                      service_name: aladdin-tika-deploy
+                      s_create_time: 2025-06-20 11:15:53.000
+                      pod_node_name: node-111-175
+                      pod_create_time: "1750389421667"
+                      operator_test:
+                        property_type: operator
+                        mapping_source_id: 657a114e-2061-4314-8853-f84afecc5113
+                        has_any_unfilled_params: false
+                        parameters:
+                          string: 192.169.37.17
+                        dynamic_params: {}
+                      metric_test:
+                        property_type: metric
+                        mapping_source_id: pod_metric
+                        has_any_unfilled_params: false
+                        parameters:
+                          filters:
+                          - name: pod_ip
+                            operation: ""
+                            value: 192.169.37.17
+                          - name: pod_name
+                            operation: ""
+                            value: aladdin-tika-deploy-6564c49fbb-2nb9k
+                        dynamic_params: {}
+                      id: 1471
+                      pod_delete_time: ""
+                      pod_name: aladdin-tika-deploy-6564c49fbb-2nb9k
+                      pod_namespace: anyshare
+                      pod_ip: 192.169.37.17
+                      pod_status: Running
+                      component: aladdin-tika-2.7.0
+                    total_count: 1
+                    search_after:
+                    - 20251103_070016_00004_5pjz5
+                    - x6f100cb5d44b4bb19facd4036759b509
+                    - "1"
+          description: ok
+      summary: 检索指定对象类的对象的详细数据
+    parameters:
+    - name: kn_id
+      description: 业务知识网络ID
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: ot_id
+      description: 对象类ID
+      schema:
+        type: string
+      in: path
+      required: true
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-types/{at_id}/:
+    summary: 行动查询
+    description: 获取相关行动的具体行动详情，可支持获取多个对象的行动详情
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceIdentities'
+            examples:
+              行动查询-request:
+                value:
+                  _instance_identities:
+                  - c_commentid: "32485"
+                  - c_commentid: "32696"
+        required: true
+      parameters:
+      - name: kn_id
+        description: 业务知识网络id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: at_id
+        description: 行动类id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: include_type_info
+        description: "是否包含行动类信息, 默认false，不包含"
+        schema:
+          type: boolean
+        in: query
+      - name: exclude_system_properties
+        description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["_instance_id", "_instance_identity", "_display"]
+        style: form
+        explode: true
+        in: query
+        required: false
+      - name: x-http-method-override
+        description: 重载POST
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actions'
+              examples:
+                行动查询-response:
+                  value:
+                    action_type:
+                      id: comment_update
+                      name: comment_update
+                      action_type: modify
+                      object_type_id: comment
+                      condition:
+                        object_type_id: comment
+                        field: c_browserused
+                        operation: ==
+                        value_from: const
+                        value: Firefox
+                      action_source:
+                        type: tool
+                        box_id: 939bb1db-9239-43f5-8100-ba03eed683db
+                        tool_id: 13d6a740-2d04-4834-8b09-ed047cd2391f
+                      parameters:
+                      - name: props.data_source
+                        type: object
+                        source: Body
+                        value_from: property
+                        value: c_commentid
+                      - name: props.headers
+                        type: object
+                        source: Body
+                        value_from: input
+                      - name: query
+                        type: string
+                        source: Body
+                        value_from: const
+                        value: asasddd
+                      schedule:
+                        type: ""
+                        expression: ""
+                    action_source:
+                      type: tool
+                      box_id: 939bb1db-9239-43f5-8100-ba03eed683db
+                      tool_id: 13d6a740-2d04-4834-8b09-ed047cd2391f
+                    actions:
+                    - parameters:
+                        props:
+                          data_source: 32485
+                        query: asasddd
+                      dynamic_params:
+                        props: {}
+                    total_count: 1
+                    overall_ms: 1163
+          description: ok
+      summary: 行动查询
+    parameters:
+    - name: kn_id
+      description: 业务知识网络id
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: at_id
+      description: 行动类id
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: include_type_info
+      description: "是否包含行动类信息, 默认false，不包含"
+      schema:
+        type: boolean
+      in: query
+    - name: exclude_system_properties
+      description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+      schema:
+        type: array
+        items:
+          type: string
+          enum: ["_instance_id", "_instance_identity", "_display"]
+      style: form
+      explode: true
+      in: query
+      required: false
+    - name: x-http-method-override
+      description: 重载POST
+      schema:
+        enum:
+        - GET
+        type: string
+      in: header
+      required: true
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/subgraph:
+    summary: 获取对象子图
+    post:
+      requestBody:
+        description: 子图查询请求体
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/SubGraphQueryBaseOnSource'
+              - $ref: '#/components/schemas/SubGraphQueryBaseOnTypePath'
+            examples:
+              基于起点、方向和路径长度获取对象子图-request:
+                value:
+                  source_object_type_id: comment
+                  direction: forward
+                  path_length: 2
+                  need_total: true
+                  limit: 2
+              基于路径获取对象子图-request:
+                value:
+                  relation_type_paths:
+                  - object_types:
+                    - condition:
+                        operation: and
+                        sub_conditions:
+                        - field: c_browserused
+                          operation: like
+                          value: '%Firefox%'
+                      id: comment
+                      need_total: true
+                      limit: 10
+                    - condition:
+                        operation: and
+                        sub_conditions:
+                        - field: c_commentid
+                          operation: ==
+                          value: 32492
+                      id: comment
+                      need_total: true
+                      limit: 10
+                    - condition:
+                        operation: and
+                        sub_conditions:
+                        - field: c_commentid
+                          operation: ==
+                          value: 32489
+                      id: comment
+                      need_total: true
+                      limit: 10
+                    relation_types:
+                    - relation_type_id: comment_replyof_comment
+                      source_object_type_id: comment
+                      target_object_type_id: comment
+                    - relation_type_id: comment_replyof_comment
+                      source_object_type_id: comment
+                      target_object_type_id: comment
+        required: true
+      parameters:
+      - name: kn_id
+        in: path
+        required: true
+      - name: include_logic_params
+        description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
+        schema:
+          type: boolean
+        in: query
+      - name: exclude_system_properties
+        description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["_instance_id", "_instance_identity", "_display"]
+        style: form
+        explode: true
+        in: query
+        required: false
+      - name: query_type
+        description: 查询类型，默认是子图探索，即基于起点、方向和路径长度获取对象子图；若是relation_path，则表示基于路径获取对象子图
+        schema:
+          enum:
+          - ""
+          - relation_path
+          type: string
+        in: query
+        required: false
+      - name: ignoring_store_cache
+        description: 是否忽略索引查询，默认false，不忽略，即走索引查询
+        schema:
+          type: boolean
+        in: query
+        required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/ObjectSubGraphResponse'
+                - $ref: '#/components/schemas/PathEntries'
+              examples:
+                基于起点、方向和路径长度获取对象子图-response:
+                  value:
+                    objects:
+                      person-870:
+                        id: person-870
+                        _instance_identities:
+                          p_personid: 870
+                        object_type_id: person
+                        object_type_name: person
+                        display: male
+                        properties:
+                          p_creationdate: 2010-02-22 00:14:54.000
+                          p_locationip: 91.216.206.97
+                          p_browserused: Firefox
+                          p_personid: 870
+                          p_firstname: Dionysis
+                          p_lastname: Karvelas
+                          p_gender: male
+                          p_birthday: 1987-05-23
+                      place-78:
+                        id: place-78
+                        _instance_identities:
+                          p_placeid: 78
+                        object_type_id: place
+                        object_type_name: place
+                        display: Greece
+                        properties:
+                          p_placeid: 78
+                          p_name: Greece
+                          p_url: http://dbpedia.org/resource/Greece
+                          p_type: country
+                      post-4.81036361318e+11:
+                        id: post-4.81036361318e+11
+                        _instance_identities:
+                          ps_postid: 481036361318
+                        object_type_id: post
+                        object_type_name: post
+                        display: ""
+                        properties:
+                          ps_creationdate: 2011-04-27 04:12:24.000
+                          ps_locationip: 31.216.154.26
+                          ps_browserused: Chrome
+                          ps_language: ""
+                          ps_content: ""
+                          ps_length: 0
+                          ps_postid: 481036361318
+                          ps_imagefile: photo481036361318.jpg
+                      post-4.12316884425e+11:
+                        id: post-4.12316884425e+11
+                        _instance_identities:
+                          ps_postid: 412316884425
+                        object_type_id: post
+                        object_type_name: post
+                        display: ""
+                        properties:
+                          ps_content: ""
+                          ps_length: 0
+                          ps_postid: 412316884425
+                          ps_imagefile: photo412316884425.jpg
+                          ps_creationdate: 2011-03-05 14:51:46.000
+                          ps_locationip: 31.216.154.26
+                          ps_browserused: Chrome
+                          ps_language: ""
+                      comment-2.06158448803e+11:
+                        id: comment-2.06158448803e+11
+                        _instance_identities:
+                          c_commentid: 206158448803
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: "About Titian, stic manner cAbout Leona Lewis, tively.\
+                          \ A mulAbout Walt Disney, fornia, constAbout Sarah Palin,\
+                          \ i"
+                        properties:
+                          c_commentid: 206158448803
+                          c_creationdate: 2010-07-24 00:04:01.000
+                          c_locationip: 186.169.83.109
+                          c_browserused: Firefox
+                          c_content: "About Titian, stic manner cAbout Leona Lewis,\
+                            \ tively. A mulAbout Walt Disney, fornia, constAbout Sarah\
+                            \ Palin, i"
+                          c_length: 111
+                      comment-7.55914262659e+11:
+                        id: comment-7.55914262659e+11
+                        _instance_identities:
+                          c_commentid: 755914262659
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: "Original of the Species is a song by rock band U2\
+                          \ and the tenth track from their 2004 album, How to Dismantle\
+                          \ an Atomic Bomb.About Original of the Spec"
+                        properties:
+                          c_length: 151
+                          c_commentid: 755914262659
+                          c_creationdate: 2011-12-12 12:04:24.000
+                          c_locationip: 186.169.83.109
+                          c_browserused: Firefox
+                          c_content: "Original of the Species is a song by rock band\
+                            \ U2 and the tenth track from their 2004 album, How to\
+                            \ Dismantle an Atomic Bomb.About Original of the Spec"
+                      comment-1.030792168521e+12:
+                        id: comment-1.030792168521e+12
+                        _instance_identities:
+                          c_commentid: 1030792168521
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: "About Polish–Lithuanian Commonwealth, 1573; however,\
+                          \ the degree of religious freedom var"
+                        properties:
+                          c_commentid: 1030792168521
+                          c_creationdate: 2012-08-02 04:19:17.000
+                          c_locationip: 213.55.122.73
+                          c_browserused: Firefox
+                          c_content: "About Polish–Lithuanian Commonwealth, 1573;\
+                            \ however, the degree of religious freedom var"
+                          c_length: 88
+                      comment-32485:
+                        id: comment-32485
+                        _instance_identities:
+                          c_commentid: 32485
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: great
+                        properties:
+                          c_locationip: 62.217.119.183
+                          c_browserused: Firefox
+                          c_content: great
+                          c_length: 5
+                          c_commentid: 32485
+                          c_creationdate: 2010-01-23 06:20:25.000
+                      post-32484:
+                        id: post-32484
+                        _instance_identities:
+                          ps_postid: 32484
+                        object_type_id: post
+                        object_type_name: post
+                        display: "About Augustine of Hippo,  also considered a saint,\
+                          \ his feast day being celebrated on 15 June.. He carries\
+                          \ the additional"
+                        properties:
+                          ps_imagefile: ""
+                          ps_creationdate: 2010-01-23 06:20:15.000
+                          ps_locationip: 1.4.5.106
+                          ps_browserused: Firefox
+                          ps_language: uz
+                          ps_content: "About Augustine of Hippo,  also considered\
+                            \ a saint, his feast day being celebrated on 15 June..\
+                            \ He carries the additional"
+                          ps_length: 121
+                          ps_postid: 32484
+                      person-555:
+                        id: person-555
+                        _instance_identities:
+                          p_personid: 555
+                        object_type_id: person
+                        object_type_name: person
+                        display: female
+                        properties:
+                          p_birthday: 1981-11-08
+                          p_creationdate: 2010-01-08 06:41:35.000
+                          p_locationip: 1.4.5.106
+                          p_browserused: Firefox
+                          p_personid: 555
+                          p_firstname: Chen
+                          p_lastname: Yang
+                          p_gender: female
+                      place-1456:
+                        id: place-1456
+                        _instance_identities:
+                          p_placeid: 1456
+                        object_type_id: place
+                        object_type_name: place
+                        display: Europe
+                        properties:
+                          p_name: Europe
+                          p_url: http://dbpedia.org/resource/Europe
+                          p_type: continent
+                          p_placeid: 1456
+                      tag-1672:
+                        id: tag-1672
+                        _instance_identities:
+                          t_tagid: 1672
+                        object_type_id: tag
+                        object_type_name: tag
+                        display: Nicholas_II_of_Russia
+                        properties:
+                          t_tagid: 1672
+                          t_name: Nicholas_II_of_Russia
+                          t_url: http://dbpedia.org/resource/Nicholas_II_of_Russia
+                      post-3.43597402501e+11:
+                        id: post-3.43597402501e+11
+                        _instance_identities:
+                          ps_postid: 343597402501
+                        object_type_id: post
+                        object_type_name: post
+                        display: ""
+                        properties:
+                          ps_creationdate: 2011-01-02 19:20:12.000
+                          ps_locationip: 31.177.57.251
+                          ps_browserused: Firefox
+                          ps_language: ""
+                          ps_content: ""
+                          ps_length: 0
+                          ps_postid: 343597402501
+                          ps_imagefile: photo343597402501.jpg
+                      comment-32486:
+                        id: comment-32486
+                        _instance_identities:
+                          c_commentid: 32486
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: ok
+                        properties:
+                          c_length: 2
+                          c_commentid: 32486
+                          c_creationdate: 2010-01-23 08:14:18.000
+                          c_locationip: 62.217.119.183
+                          c_browserused: Firefox
+                          c_content: ok
+                      tag-6:
+                        id: tag-6
+                        _instance_identities:
+                          t_tagid: 6
+                        object_type_id: tag
+                        object_type_name: tag
+                        display: Augustine_of_Hippo
+                        properties:
+                          t_name: Augustine_of_Hippo
+                          t_url: http://dbpedia.org/resource/Augustine_of_Hippo
+                          t_tagid: 6
+                      person-143:
+                        id: person-143
+                        _instance_identities:
+                          p_personid: 143
+                        object_type_id: person
+                        object_type_name: person
+                        display: female
+                        properties:
+                          p_locationip: 62.217.119.183
+                          p_browserused: Firefox
+                          p_personid: 143
+                          p_firstname: Maria
+                          p_lastname: Alkaios
+                          p_gender: female
+                          p_birthday: 1983-01-06
+                          p_creationdate: 2010-01-06 07:19:10.000
+                      person-345:
+                        id: person-345
+                        _instance_identities:
+                          p_personid: 345
+                        object_type_id: person
+                        object_type_name: person
+                        display: male
+                        properties:
+                          p_lastname: Herzigová
+                          p_gender: male
+                          p_birthday: 1985-03-17
+                          p_creationdate: 2010-02-27 10:35:06.000
+                          p_locationip: 31.222.0.232
+                          p_browserused: Internet Explorer
+                          p_personid: 345
+                          p_firstname: David
+                      tag-273:
+                        id: tag-273
+                        _instance_identities:
+                          t_tagid: 273
+                        object_type_id: tag
+                        object_type_name: tag
+                        display: Aung_San_Suu_Kyi
+                        properties:
+                          t_name: Aung_San_Suu_Kyi
+                          t_url: http://dbpedia.org/resource/Aung_San_Suu_Kyi
+                          t_tagid: 273
+                      tag-779:
+                        id: tag-779
+                        _instance_identities:
+                          t_tagid: 779
+                        object_type_id: tag
+                        object_type_name: tag
+                        display: George_Frideric_Handel
+                        properties:
+                          t_url: http://dbpedia.org/resource/George_Frideric_Handel
+                          t_tagid: 779
+                          t_name: George_Frideric_Handel
+                      tag-1024:
+                        id: tag-1024
+                        _instance_identities:
+                          t_tagid: 1024
+                        object_type_id: tag
+                        object_type_name: tag
+                        display: George_Orwell
+                        properties:
+                          t_tagid: 1024
+                          t_name: George_Orwell
+                          t_url: http://dbpedia.org/resource/George_Orwell
+                      post-6.87194784952e+11:
+                        id: post-6.87194784952e+11
+                        _instance_identities:
+                          ps_postid: 687194784952
+                        object_type_id: post
+                        object_type_name: post
+                        display: ""
+                        properties:
+                          ps_content: ""
+                          ps_length: 0
+                          ps_postid: 687194784952
+                          ps_imagefile: photo687194784952.jpg
+                          ps_creationdate: 2011-10-08 07:00:36.000
+                          ps_locationip: 196.32.227.213
+                          ps_browserused: Firefox
+                          ps_language: ""
+                      comment-3.43597407147e+11:
+                        id: comment-3.43597407147e+11
+                        _instance_identities:
+                          c_commentid: 343597407147
+                        object_type_id: comment
+                        object_type_name: comment
+                        display: "About Stevie Wonder,  also include Talking Book,\
+                          \ Innervisions and Songs in the Key of Life"
+                        properties:
+                          c_browserused: Firefox
+                          c_content: "About Stevie Wonder,  also include Talking Book,\
+                            \ Innervisions and Songs in the Key of Life"
+                          c_length: 90
+                          c_commentid: 343597407147
+                          c_creationdate: 2010-12-19 21:58:28.000
+                          c_locationip: 41.138.42.48
+                      person-318:
+                        id: person-318
+                        _instance_identities:
+                          p_personid: 318
+                        object_type_id: person
+                        object_type_name: person
+                        display: female
+                        properties:
+                          p_browserused: Internet Explorer
+                          p_personid: 318
+                          p_firstname: Claude
+                          p_lastname: Radafison
+                          p_gender: female
+                          p_birthday: 1989-04-17
+                          p_creationdate: 2010-01-30 23:52:35.000
+                          p_locationip: 41.188.54.178
+                      organisation-2941:
+                        id: organisation-2941
+                        _instance_identities:
+                          o_organisationid: 2941
+                        object_type_id: organisation
+                        object_type_name: organisation
+                        display: National_and_Kapodistrian_University_of_Athens
+                        properties:
+                          o_organisationid: 2941
+                          o_type: university
+                          o_name: National_and_Kapodistrian_University_of_Athens
+                          o_url: http://dbpedia.org/resource/National_and_Kapodistrian_University_of_Athens
+                      place-1142:
+                        id: place-1142
+                        _instance_identities:
+                          p_placeid: 1142
+                        object_type_id: place
+                        object_type_name: place
+                        display: Athens
+                        properties:
+                          p_url: http://dbpedia.org/resource/Athens
+                          p_type: city
+                          p_placeid: 1142
+                          p_name: Athens
+                      place-1:
+                        id: place-1
+                        _instance_identities:
+                          p_placeid: 1
+                        object_type_id: place
+                        object_type_name: place
+                        display: China
+                        properties:
+                          p_type: country
+                          p_placeid: 1
+                          p_name: China
+                          p_url: http://dbpedia.org/resource/China
+                    relation_paths:
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32485
+                        target_object_id: post-32484
+                      - relation_type_id: post_hastag_tag
+                        relation_type_name: post_hastag_tag
+                        source_object_id: post-32484
+                        target_object_id: tag-6
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32486
+                        target_object_id: post-32484
+                      - relation_type_id: post_hastag_tag
+                        relation_type_name: post_hastag_tag
+                        source_object_id: post-32484
+                        target_object_id: tag-6
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-318
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-345
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-555
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-870
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-318
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-345
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-555
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_knows_person
+                        relation_type_name: person_knows_person
+                        source_object_id: person-143
+                        target_object_id: person-870
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_islocatedin_place
+                        relation_type_name: comment_islocatedin_place
+                        source_object_id: comment-32485
+                        target_object_id: place-78
+                      - relation_type_id: place_ispartof_place
+                        relation_type_name: place_ispartof_place
+                        source_object_id: place-78
+                        target_object_id: place-1456
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_islocatedin_place
+                        relation_type_name: comment_islocatedin_place
+                        source_object_id: comment-32486
+                        target_object_id: place-78
+                      - relation_type_id: place_ispartof_place
+                        relation_type_name: place_ispartof_place
+                        source_object_id: place-78
+                        target_object_id: place-1456
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-273
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-779
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-1024
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-1672
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-273
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-779
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-1024
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_hasinterest_tag
+                        relation_type_name: person_hasinterest_tag
+                        source_object_id: person-143
+                        target_object_id: tag-1672
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_studyat_organisation
+                        relation_type_name: person_studyat_organisation
+                        source_object_id: person-143
+                        target_object_id: organisation-2941
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_studyat_organisation
+                        relation_type_name: person_studyat_organisation
+                        source_object_id: person-143
+                        target_object_id: organisation-2941
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_islocatedin_place
+                        relation_type_name: person_islocatedin_place
+                        source_object_id: person-143
+                        target_object_id: place-1142
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_islocatedin_place
+                        relation_type_name: person_islocatedin_place
+                        source_object_id: person-143
+                        target_object_id: place-1142
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32485
+                        target_object_id: post-32484
+                      - relation_type_id: post_islocatedin_place
+                        relation_type_name: post_islocatedin_place
+                        source_object_id: post-32484
+                        target_object_id: place-1
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32486
+                        target_object_id: post-32484
+                      - relation_type_id: post_islocatedin_place
+                        relation_type_name: post_islocatedin_place
+                        source_object_id: post-32484
+                        target_object_id: place-1
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-3.43597402501e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-4.12316884425e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-4.81036361318e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-6.87194784952e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-3.43597402501e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-4.12316884425e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-4.81036361318e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_post
+                        relation_type_name: person_likes_post
+                        source_object_id: person-143
+                        target_object_id: post-6.87194784952e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32485
+                        target_object_id: post-32484
+                      - relation_type_id: post_hascreator_person
+                        relation_type_name: post_hascreator_person
+                        source_object_id: post-32484
+                        target_object_id: person-555
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_replyof_post
+                        relation_type_name: comment_replyof_post
+                        source_object_id: comment-32486
+                        target_object_id: post-32484
+                      - relation_type_id: post_hascreator_person
+                        relation_type_name: post_hascreator_person
+                        source_object_id: post-32484
+                        target_object_id: person-555
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-2.06158448803e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-3.43597407147e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-7.55914262659e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32485
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-1.030792168521e+12
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-2.06158448803e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-3.43597407147e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-7.55914262659e+11
+                      length: 2
+                    - relations:
+                      - relation_type_id: comment_hascreator_person
+                        relation_type_name: comment_hascreator_person
+                        source_object_id: comment-32486
+                        target_object_id: person-143
+                      - relation_type_id: person_likes_comment
+                        relation_type_name: person_likes_comment
+                        source_object_id: person-143
+                        target_object_id: comment-1.030792168521e+12
+                      length: 2
+                    total_count: 151043
+                    search_after:
+                    - 20251111_011029_00002_5pjz5
+                    - xf97a0a1dcbab4f26b1944122eed84b98
+                    - "2"
+                    current_path_number: 44
+                    overall_ms: 4204
+                基于路径获取对象子图-response:
+                  value:
+                    entries:
+                    - objects:
+                        comment-32487:
+                          id: comment-32487
+                          _instance_identities:
+                            c_commentid: 32487
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: thanks
+                          properties:
+                            c_creationdate: 2010-01-23 07:15:07.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: thanks
+                            c_length: 6
+                            c_commentid: 32487
+                        comment-32489:
+                          id: comment-32489
+                          _instance_identities:
+                            c_commentid: 32489
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: "About Johnny Depp, . Depp has gained acclaim for\
+                            \ his portrayals of people such as Ed Woo"
+                          properties:
+                            c_commentid: 32489
+                            c_creationdate: 2010-01-23 08:17:35.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: "About Johnny Depp, . Depp has gained acclaim\
+                              \ for his portrayals of people such as Ed Woo"
+                            c_length: 88
+                        comment-32490:
+                          id: comment-32490
+                          _instance_identities:
+                            c_commentid: 32490
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: right
+                          properties:
+                            c_browserused: Firefox
+                            c_content: right
+                            c_length: 5
+                            c_commentid: 32490
+                            c_creationdate: 2010-01-23 17:39:22.000
+                            c_locationip: 62.217.119.183
+                        comment-32492:
+                          id: comment-32492
+                          _instance_identities:
+                            c_commentid: 32492
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: "About Gold Cobra, which featured the single Shotgun\
+                            \ and received mixed to p"
+                          properties:
+                            c_commentid: 32492
+                            c_creationdate: 2010-01-23 08:17:45.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: "About Gold Cobra, which featured the single\
+                              \ Shotgun and received mixed to p"
+                            c_length: 75
+                        comment-32486:
+                          id: comment-32486
+                          _instance_identities:
+                            c_commentid: 32486
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: ok
+                          properties:
+                            c_commentid: 32486
+                            c_creationdate: 2010-01-23 08:14:18.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: ok
+                            c_length: 2
+                        comment-32485:
+                          id: comment-32485
+                          _instance_identities:
+                            c_commentid: 32485
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: great
+                          properties:
+                            c_commentid: 32485
+                            c_creationdate: 2010-01-23 06:20:25.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: great
+                            c_length: 5
+                        comment-32488:
+                          id: comment-32488
+                          _instance_identities:
+                            c_commentid: 32488
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: "About Charlton Heston,  later supported conservative\
+                            \ Republican policies and w"
+                          properties:
+                            c_content: "About Charlton Heston,  later supported conservative\
+                              \ Republican policies and w"
+                            c_length: 78
+                            c_commentid: 32488
+                            c_creationdate: 2010-01-23 07:05:10.000
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                        comment-32491:
+                          id: comment-32491
+                          _instance_identities:
+                            c_commentid: 32491
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: great
+                          properties:
+                            c_content: great
+                            c_length: 5
+                            c_commentid: 32491
+                            c_creationdate: 2010-01-23 11:50:25.000
+                            c_locationip: 175.103.89.192
+                            c_browserused: Firefox
+                        comment-32494:
+                          id: comment-32494
+                          _instance_identities:
+                            c_commentid: 32494
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: right
+                          properties:
+                            c_browserused: Firefox
+                            c_content: right
+                            c_length: 5
+                            c_commentid: 32494
+                            c_creationdate: 2010-01-23 07:06:10.000
+                            c_locationip: 62.217.119.183
+                        comment-32493:
+                          id: comment-32493
+                          _instance_identities:
+                            c_commentid: 32493
+                          object_type_id: comment
+                          object_type_name: comment
+                          display: "About Gold Cobra,  full original lineup since\
+                            \ 2000's Chocolate StarfisAbout 12 X 5, ure R&B covers;\
+                            \ how"
+                          properties:
+                            c_locationip: 62.217.119.183
+                            c_browserused: Firefox
+                            c_content: "About Gold Cobra,  full original lineup since\
+                              \ 2000's Chocolate StarfisAbout 12 X 5, ure R&B covers;\
+                              \ how"
+                            c_length: 103
+                            c_commentid: 32493
+                            c_creationdate: 2010-01-23 11:17:59.000
+                      relation_paths:
+                      - relations:
+                        - relation_type_id: comment_replyof_comment
+                          relation_type_name: comment_replyof_comment
+                          source_object_id: comment-32493
+                          target_object_id: comment-32492
+                        - relation_type_id: comment_replyof_comment
+                          relation_type_name: comment_replyof_comment
+                          source_object_id: comment-32492
+                          target_object_id: comment-32489
+                        length: 2
+                      total_count: 58415
+                      search_after:
+                      - 20251111_011249_00079_5pjz5
+                      - xec0f2bb02b7a46e99548d56096dad813
+                      - "1"
+                      current_path_number: 1
+                      overall_ms: 0
+          description: 对象子图
+      summary: 子图查询
+      description: 子图查询，可以是基于起点、方向和路径长度获取对象子图，有可以是基于路径获取对象子图，查询请求方式和返回体不同
+    parameters:
+    - name: query_type
+      description: 查询类型，默认是子图探索，即基于起点、方向和路径长度获取对象子图；若是relation_path，则表示基于路径获取对象子图
+      schema:
+        enum:
+        - ""
+        - relation_path
+        type: string
+      in: query
+      required: false
+    - name: include_logic_params
+      description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
+      schema:
+        type: boolean
+      in: query
+    - name: kn_id
+      in: path
+      required: true
+    - name: x-http-method-override
+      description: "\r\n重载请求头"
+      schema:
+        enum:
+        - GET
+        type: string
+      in: header
+      required: true
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/subgraph/objects:
+    summary: 基于一组对象实例组织关系子图
+    post:
+      requestBody:
+        description: 基于一组对象实例探索关系子图的请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubGraphQueryBaseOnObjects'
+            examples:
+              基于一组对象探索关系子图-request:
+                value:
+                  entries:
+                  - object_type_id: comment
+                    _instance_identity:
+                      c_commentid: 206158448803
+                  - object_type_id: comment
+                    _instance_identity:
+                      c_commentid: 755914262659
+                  - object_type_id: post
+                    _instance_identity:
+                      ps_postid: 481036361318
+        required: true
+      parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: branch
+        description: 分支名称
+        schema:
+          type: string
+        in: query
+        required: false
+      - name: include_type_info
+        description: 是否包含对象类信息，默认false，不包含
+        schema:
+          type: boolean
+        in: query
+        required: false
+      - name: include_logic_params
+        description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
+        schema:
+          type: boolean
+        in: query
+        required: false
+      - name: ignoring_store_cache
+        description: 是否忽略索引查询，默认是false，不忽略，即走索引查询
+        schema:
+          type: boolean
+        in: query
+        required: false
+      - name: exclude_system_properties
+        description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["_instance_id", "_instance_identity", "_display"]
+        style: form
+        explode: true
+        in: query
+        required: false
+      responses:
+        "200":
+          description: 成功返回关系子图
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectSubGraphResponse'
+              examples:
+                基于一组对象探索关系子图-response:
+                  value:
+                    objects:
+                      comment-2.06158448803e+11:
+                        _instance_id: comment-2.06158448803e+11
+                        _instance_identity:
+                          c_commentid: 206158448803
+                        object_type_id: comment
+                        object_type_name: comment
+                        _display: "About Titian, stic manner cAbout Leona Lewis..."
+                        properties:
+                          c_commentid: 206158448803
+                          c_creationdate: 2010-07-24 00:04:01.000
+                          c_locationip: 186.169.83.109
+                          c_browserused: Firefox
+                          c_content: "About Titian, stic manner cAbout Leona Lewis..."
+                          c_length: 111
+                      comment-7.55914262659e+11:
+                        _instance_id: comment-7.55914262659e+11
+                        _instance_identity:
+                          c_commentid: 755914262659
+                        object_type_id: comment
+                        object_type_name: comment
+                        _display: "Original of the Species is a song by rock band U2..."
+                        properties:
+                          c_commentid: 755914262659
+                          c_creationdate: 2011-12-12 12:04:24.000
+                          c_locationip: 186.169.83.109
+                          c_browserused: Firefox
+                          c_content: "Original of the Species is a song by rock band U2..."
+                          c_length: 151
+                    isolated_objects:
+                      post-4.81036361318e+11:
+                        _instance_id: post-4.81036361318e+11
+                        _instance_identity:
+                          ps_postid: 481036361318
+                        object_type_id: post
+                        object_type_name: post
+                        _display: ""
+                        properties:
+                          ps_postid: 481036361318
+                          ps_creationdate: 2011-04-27 04:12:24.000
+                          ps_locationip: 31.216.154.26
+                          ps_browserused: Chrome
+                          ps_language: ""
+                          ps_content: ""
+                          ps_length: 0
+                    relation_paths:
+                    - relations:
+                      - relation_type_id: comment_replyof_comment
+                        relation_type_name: comment_replyof_comment
+                        source_object_id: comment-2.06158448803e+11
+                        target_object_id: comment-7.55914262659e+11
+                      length: 1
+                    overall_ms: 150
+      summary: 基于一组对象实例组织关系子图
+      description: 给定一组对象实例，按概念定义的关系，组织这些对象实例的关系子图
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/object-types/{ot_id}/properties:
+    post:
+      requestBody:
+        description: 属性查询请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyQueryBody'
+            examples:
+              含指标、算子的属性值查询:
+                value:
+                  _instance_identities:
+                  - id: 1479
+                    pod_ip: 192.169.37.60
+                  - id: 1480
+                    pod_ip: 192.169.37.72
+                  properties:
+                  - pod_name
+                  - pod_status
+                  - metric_test
+                  - a_action
+                  dynamic_params:
+                    metric_test:
+                      start: 1731460342241
+                      end: 1762996342241
+                      instant: false
+                      step: month
+                      analysis_dimensions:
+                      - pod_name
+                      - pod_node_name
+                      order_by_fields:
+                      - name: __value
+                        type: number
+                        direction: desc
+                      having_condition:
+                        field: __value
+                        operation: '>'
+                        value: 100
+                      metrics:
+                        type: sameperiod
+                        sameperiod_config:
+                          method:
+                            - growth_rate
+                          offset: 1
+                          time_granularity: day
+                    a_action:
+                      Authorization: aasssdffgg
+        required: true
+      parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: ot_id
+        description: 对象类ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: exclude_system_properties
+        description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["_instance_id", "_instance_identity", "_display"]
+        style: form
+        explode: true
+        in: query
+        required: false
+      - name: x-http-method-override
+        description: 重载 post，实际上是 get 方法
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectPropertiesValuesResponse'
+              examples:
+                请求指标属性和算子属性:
+                  value:
+                    datas:
+                    - id: 1479
+                      pod_status: Succeeded
+                      pod_name: communication-config-679xd
+                      pod_ip: 192.169.37.60
+                      metric_test:
+                        model:
+                          unit_type: numUnit
+                          unit: none
+                        datas:
+                        - labels:
+                            pod_name: ar-k8s-event-executor-6ffcc7884c-9wgsb
+                            pod_node_name: node-111-175
+                            pod_ip: 192.169.37.60
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        - labels:
+                            pod_name: communication-config-679xd
+                            pod_node_name: node-111-175
+                            pod_ip: 192.169.37.60
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        step: month
+                        is_variable: false
+                        is_calendar: false
+                      a_action: {}
+                    - id: 1480
+                      metric_test:
+                        model:
+                          unit_type: numUnit
+                          unit: none
+                        datas:
+                        - labels:
+                            pod_ip: 192.169.37.72
+                            pod_name: content-data-lake-dm-pre-verify-gr2gj
+                            pod_node_name: node-111-175
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        step: month
+                        is_variable: false
+                        is_calendar: false
+                      pod_name: content-data-lake-dm-pre-verify-gr2gj
+                      pod_ip: 192.169.37.72
+                      pod_status: Succeeded
+                      a_action: {}
+                    overall_ms: 2588
+          description: ok
+      summary: 对象属性值查询
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-types/{at_id}/execute:
+    summary: 执行指定行动类的行动
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActionExecutionRequest"
+            examples:
+              执行行动-多个对象:
+                value:
+                  _instance_identities:
+                    - pod_ip: "192.168.1.1"
+                      id: 1
+                    - pod_ip: "192.168.1.2"
+                      id: 2
+                  dynamic_params:
+                    Authorization: "Bearer xxx"
+        required: true
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: at_id
+          description: 行动类ID
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionExecutionResponse"
+              examples:
+                执行行动-成功提交:
+                  value:
+                    execution_id: "cqq2g8h4d2fg00fvm8dg"
+                    status: "pending"
+                    message: "Action execution started"
+                    created_at: 1704067200000
+          description: accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 请求参数错误
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 行动类不存在
+      summary: 执行行动类
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-executions/{execution_id}:
+    summary: 获取行动执行状态
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: execution_id
+          description: 执行ID
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionExecution"
+              examples:
+                获取执行状态-已完成:
+                  value:
+                    id: "cqq2g8h4d2fg00fvm8dg"
+                    kn_id: "kn_xxx"
+                    action_type_id: "at_xxx"
+                    action_type_name: "restart_pod"
+                    action_source_type: "tool"
+                    object_type_id: "ot_xxx"
+                    trigger_type: "manual"
+                    status: "completed"
+                    total_count: 2
+                    success_count: 1
+                    failed_count: 1
+                    results:
+                      - instance_identity:
+                          pod_ip: "192.168.1.1"
+                          id: 1
+                        status: "success"
+                        parameters:
+                          pod_ip: "192.168.1.1"
+                        result:
+                          message: "Pod restarted successfully"
+                        duration_ms: 1200
+                      - instance_identity:
+                          pod_ip: "192.168.1.2"
+                          id: 2
+                        status: "failed"
+                        parameters:
+                          pod_ip: "192.168.1.2"
+                        error_message: "Connection timeout"
+                        duration_ms: 5000
+                    executor_id: "user_xxx"
+                    executor:
+                      id: "user_xxx"
+                      type: "user"
+                      name: "张三"
+                    start_time: 1704067200000
+                    end_time: 1704067206200
+                    duration_ms: 6200
+          description: ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 执行记录不存在
+      summary: 获取行动执行状态
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-logs:
+    summary: 查询行动执行日志
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: action_type_id
+          description: 行动类ID（可选）
+          schema:
+            type: string
+          in: query
+        - name: status
+          description: 执行状态（可选）
+          schema:
+            enum:
+              - pending
+              - running
+              - completed
+              - failed
+              - cancelled
+            type: string
+          in: query
+        - name: trigger_type
+          description: 触发类型（可选）
+          schema:
+            enum:
+              - manual
+              - scheduled
+            type: string
+          in: query
+        - name: start_time_from
+          description: 开始时间范围-起始（毫秒时间戳，可选）
+          schema:
+            type: integer
+            format: int64
+          in: query
+        - name: start_time_to
+          description: 开始时间范围-结束（毫秒时间戳，可选）
+          schema:
+            type: integer
+            format: int64
+          in: query
+        - name: limit
+          description: 返回数量限制，默认20，最大1000
+          schema:
+            type: integer
+            default: 20
+          in: query
+        - name: need_total
+          description: 是否需要返回总数
+          schema:
+            type: boolean
+            default: false
+          in: query
+        - name: search_after
+          description: 分页游标（逗号分隔字符串，如 "1704067200000,cqq2g8h4d2fg00fvm8dg"）
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionExecutionList"
+              examples:
+                查询执行日志-成功:
+                  value:
+                    entries:
+                      - id: "cqq2g8h4d2fg00fvm8dg"
+                        action_type_id: "at_xxx"
+                        action_type_name: "restart_pod"
+                        status: "completed"
+                        trigger_type: "manual"
+                        total_count: 2
+                        success_count: 2
+                        failed_count: 0
+                        start_time: 1704067200000
+                        duration_ms: 6200
+                    total_count: 100
+                    search_after:
+                      - 1704067200000
+                      - "cqq2g8h4d2fg00fvm8dg"
+          description: ok
+      summary: 查询行动执行日志
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-logs/{log_id}:
+    summary: 获取单条行动执行日志
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: log_id
+          description: 日志ID (即执行ID)
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: results_limit
+          description: results 分页大小，默认100，最大1000
+          schema:
+            type: integer
+            default: 100
+          in: query
+        - name: results_offset
+          description: results 偏移量，默认0
+          schema:
+            type: integer
+            default: 0
+          in: query
+        - name: results_status
+          description: 按 results 中的状态过滤（可选）
+          schema:
+            enum:
+              - success
+              - failed
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionExecution"
+          description: ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 日志不存在
+      summary: 获取单条行动执行日志
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-logs/{log_id}/cancel:
+    summary: 取消正在执行的任务
+    post:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: log_id
+          description: 日志ID (即执行ID)
+          schema:
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelExecutionRequest"
+        required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelExecutionResponse"
+              examples:
+                取消成功:
+                  value:
+                    execution_id: "cqq2g8h4d2fg00fvm8dg"
+                    status: "cancelled"
+                    message: "任务已取消"
+                    cancelled_count: 5
+                    completed_count: 10
+          description: ok
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 任务已完成或已取消，无法取消
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+          description: 执行记录不存在
+      summary: 取消正在执行的任务
+
+components:
+  schemas:
+    Object:
+      description: 对象的json，字段不定，随对象实例动态变化
+      type: object
+    ObjectTypeNode:
+      description: 节点（对象类）信息
+      required:
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          description: 节点(对象类)ID
+          type: string
+        name:
+          description: 节点（对象类）名称
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件。当在当前节点上有过滤条件时才需要填入。
+    Sort:
+      description: 排序字段
+      required:
+      - field
+      - direction
+      type: object
+      properties:
+        field:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+          - desc
+          - asc
+          type: string
+    ObjectQueryBaseOnObjectType:
+      description: 对象实例查询请求体
+      required:
+      - sort
+      - limit
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          $ref: '#/components/schemas/Sort'
+          description: 排序字段，默认使用 @timestamp排序，排序方向为 desc
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+    FirstQueryWithSearchAfter:
+      description: 分页查询的第一次查询请求
+      required:
+      - limit
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          description: 排序字段，默认使用 _score 倒序，主键字段正序
+          type: array
+          items:
+            $ref: '#/components/schemas/Sort'
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        properties:
+          description: 指定需要输出的属性集。默认为全部数据属性
+          type: array
+          items:
+            type: string
+    FulltextConfig:
+      description: 全文索引的配置
+      required:
+      - analyzer
+      - field_keyword
+      type: object
+      properties:
+        analyzer:
+          description: 分词器
+          enum:
+          - standard
+          - ik_max_word
+          type: string
+        field_keyword:
+          description: 是否保留原始字符串，保留原始字符串可用于精确匹配。默认是false
+          type: boolean
+    DataSource:
+      description: 数据来源
+      required:
+      - type
+      - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型为数据视图
+          enum:
+          - data_view
+          type: string
+        id:
+          description: 数据视图ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    MetricProperty:
+      description: 指标属性
+      required:
+      - property_type
+      - mapping_source_id
+      - has_any_unfilled_params
+      - parameters
+      - dynamic_params
+      type: object
+      properties:
+        property_type:
+          description: 属性类型
+          enum:
+          - metric
+          type: string
+        mapping_source_id:
+          description: 映射的指标模型id
+          type: string
+        has_any_unfilled_params:
+          description: 是否有未填充的参数，默认是false
+          type: boolean
+        parameters:
+          $ref: '#/components/schemas/MetricFilters'
+          description: 实例化了的参数
+        dynamic_params:
+          $ref: '#/components/schemas/MetricRequiredParams'
+          description: 动态参数
+    MetricFilters:
+      description: 指标模型属性的计算参数
+      required:
+      - Filters
+      type: object
+      properties:
+        Filters:
+          description: 指标模型过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/Filter'
+    Filter:
+      description: 过滤条件
+      required:
+      - name
+      - value
+      - operation
+      type: object
+      properties:
+        name:
+          description: 过滤字段名称
+          type: string
+        value:
+          description: "过滤的值。当 operation 是 in 时，value 为任意基本类型的数组，且长度大于等于1；当 operation\
+            \ 是 = 或 != 时，value 为任意基本类型的值；当 operation 是 range 时，value 是个由范围的下边界和上边界\
+            组成的长度为 2 的数值型数组。当 operation 是 out_range 时, value 是一个长度为 2 的数组，对应过滤条件时是\
+            \ 字段 < value[0] || 字段 >= value[1]"
+          type: array
+          items: {}
+        operation:
+          description: 操作符。
+          enum:
+          - in
+          - '='
+          - '!='
+          - range
+          - out_range
+          - like
+          - not_like
+          - '>'
+          - '>='
+          - '<'
+          - '<='
+          type: string
+    MetricRequiredParams:
+      description: 指标模型查询的动态参数
+      required:
+      - instant
+      - start
+      - end
+      type: object
+      properties:
+        instant:
+          description: 是否即时查询。默认为false，非即时查询，即为趋势查询
+          type: boolean
+        start:
+          description: 开始时间戳
+          type: integer
+        end:
+          description: 结束时间戳
+          type: integer
+    MetricPropertyDynamicParams:
+      description: |
+        指标属性的 dynamic_params 结构。当属性是指标属性时，dynamic_params 应遵循此 schema。
+        包含时间参数、分析参数以及指标属性配置中定义的其他动态参数。
+      type: object
+      properties:
+        start:
+          description: "指标查询的开始时间。start=< unix_timestamp >，单位到毫秒。例如: 1646360670123"
+          format: int64
+          type: integer
+        end:
+          description: "指标查询的结束时间。end=< unix_timestamp >，单位到毫秒。例如: 1646471470123"
+          format: int64
+          type: integer
+        instant:
+          description: |
+            是否是即时查询。可选，默认为 false。当 instant = true 时，表示即时查询；当 instant = false 时，表示范围查询。
+          type: boolean
+        step:
+          description: |
+            范围查询的步长。当 instant 为 false 时，建议提供。step=< time_durations >，用一个数字，后面跟时间单位来定义。
+            若不填单位，则默认按秒计算。时间单位可以是如下之一：ms - 毫秒；s - 秒；m - 分钟；h - 小时；d - 天；w - 周；y - 年；
+          type: string
+        analysis_dimensions:
+          description: 分析维度。即在指标查询时可指定的下钻维度集合
+          type: array
+          items:
+            type: string
+        order_by_fields:
+          description: 排序字段。即在指标查询时可指定的排序字段集合
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderField'
+        having_condition:
+          $ref: '#/components/schemas/HavingCondition'
+          description: having值过滤。即在指标查询时可指定的值过滤的过滤条件
+        metrics:
+          $ref: '#/components/schemas/Metrics'
+          description: 同环比、占比分析
+      additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+    OrderField:
+      description: 排序字段
+      required:
+      - name
+      - direction
+      type: object
+      properties:
+        name:
+          description: 字段名
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+          - asc
+          - desc
+          type: string
+    HavingCondition:
+      description: having值数据过滤
+      required:
+      - operation
+      - value
+      - field
+      type: object
+      properties:
+        field:
+          description: 字段名称。只有 __value
+          enum:
+          - __value
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - ==
+          - '!='
+          - '>'
+          - '>='
+          - <
+          - <=
+          - in
+          - not_in
+          - range
+          - out_range
+          type: string
+        value:
+          description: 字段值
+    Metrics:
+      description: 同环比、占比分析
+      required:
+      - type
+      type: object
+      properties:
+        type:
+          description: 同环比占比类型。同环比：sameperiod；占比：proportion
+          enum:
+          - sameperiod
+          - proportion
+          type: string
+        sameperiod_config:
+          $ref: '#/components/schemas/SameperiodConfig'
+          description: 同环比配置
+    SameperiodConfig:
+      description: 同环比配置
+      required:
+      - offset
+      - time_granularity
+      type: object
+      properties:
+        method:
+          description: 计算方法，增长值或增长率
+          type: array
+          default:
+            - growth_value
+            - growth_rate
+          items:
+            type: string
+            enum:
+              - growth_value
+              - growth_rate
+        offset:
+          description: 偏移量
+          type: integer
+        time_granularity:
+          description: 时间粒度
+          enum:
+          - day
+          - month
+          - quarter
+          - year
+          type: string
+    ObjectTypeDetail:
+      description: 节点（对象类）信息
+      required:
+      - id
+      - name
+      - comment
+      - tags
+      - kn_id
+      - groups
+      - data_source
+      - data_properties
+      - primary_keys
+      - display_key
+      - type
+      - module_type
+      - branch
+      - color
+      - icon
+      - logic_properties
+      - concept_groups
+      - creator
+      - update_time
+      - updater
+      - create_time
+      - detail
+      type: object
+      properties:
+        id:
+          description: 对象类ID
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络id
+          type: string
+        concept_groups:
+          description: 概念分组id
+          type: array
+          items:
+            $ref: '#/components/schemas/ConceptGroup'
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+          description: 数据来源
+        data_properties:
+          description: 数据属性
+          type: array
+          items:
+            $ref: '#/components/schemas/DataProperty'
+        logic_properties:
+          description: 逻辑属性
+          type: array
+          items:
+            $ref: '#/components/schemas/LogicProperty'
+        primary_keys:
+          description: 主键
+          type: array
+          items:
+            type: string
+        display_key:
+          description: 对象实例的显示属性
+          type: string
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+          - object_type
+          type: string
+    ConceptGroup:
+      description: 概念分组
+      required:
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          description: 概念分组ID
+          type: string
+        name:
+          description: 概念分组名称
+          type: string
+    DataProperty:
+      description: 数据属性
+      required:
+      - name
+      - display_name
+      - type
+      - comment
+      - mapped_field
+      - index
+      - fulltext_config
+      - vector_config
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        mapped_field:
+          $ref: '#/components/schemas/ViewField'
+          description: 属性映射到数据来源中的字段名
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        fulltext_config:
+          $ref: '#/components/schemas/FulltextConfig'
+          description: 全文索引的配置
+        vector_config:
+          $ref: '#/components/schemas/VectorConfig'
+          description: 向量索引的配置
+    ViewField:
+      description: 视图字段信息
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          description: 字段名称
+          type: string
+        display_name:
+          description: 字段显示名.查看时有此字段
+          type: string
+        type:
+          description: 视图字段类型，查看时有此字段
+          type: string
+    VectorConfig:
+      description: 向量索引的配置
+      required:
+      - dimension
+      type: object
+      properties:
+        dimension:
+          description: 向量维度
+          type: integer
+    LogicProperty:
+      description: 逻辑属性
+      required:
+      - name
+      - data_source
+      - parameters
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        data_source:
+          $ref: '#/components/schemas/LogicSource'
+          description: 逻辑来源
+        parameters:
+          description: 逻辑所需的参数
+          type: array
+          items:
+            $ref: '#/components/schemas/Parameter'
+    LogicSource:
+      description: 数据来源
+      required:
+      - type
+      - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型
+          enum:
+          - metric
+          - operator
+          type: string
+        id:
+          description: 数据来源ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    Parameter:
+      oneOf:
+      - $ref: '#/components/schemas/Parameter4Operator'
+      - $ref: '#/components/schemas/Parameter4Metric'
+      description: 逻辑/指标参数
+      type: object
+    Parameter4Operator:
+      description: 逻辑参数
+      required:
+      - name
+      - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    Parameter4Metric:
+      description: 逻辑参数
+      required:
+      - name
+      - value_from
+      - operation
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+        operation:
+          description: 操作符。映射指标模型的属性时，此字段必须
+          enum:
+          - in
+          - '='
+          - '!='
+          - '>'
+          - '>='
+          - '<'
+          - '<='
+          type: string
+    PageTurnQueryWithSearchAfter:
+      description: 分页查询的第一次查询请求
+      required:
+      - limit
+      - search_after
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          description: 排序字段，默认使用 _score 倒序，主键字段正序
+          type: array
+          items:
+            $ref: '#/components/schemas/Sort'
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        search_after:
+          description: 上次查询返回的最后一个文档的排序值。
+          type: array
+          items: {}
+        properties:
+          description: 指定需要输出的属性集。默认为全部数据属性
+          type: array
+          items:
+            type: string
+    RelationPath:
+      description: 对象的关系路径
+      required:
+      - relations
+      - length
+      type: object
+      properties:
+        relations:
+          description: 路径的边集合，沿着路径顺序出现的边
+          type: array
+          items:
+            $ref: '#/components/schemas/Relation'
+        length:
+          description: 当前路径的长度
+          type: integer
+    Relation:
+      description: 一度关系（边）
+      required:
+      - relation_type_id
+      - relation_type_name
+      - source_object_id
+      - target_object_id
+      type: object
+      properties:
+        relation_type_id:
+          description: 关系类id
+          type: string
+        relation_type_name:
+          description: 关系类名称
+          type: string
+        source_object_id:
+          description: 起点对象id
+          type: string
+        target_object_id:
+          description: 终点对象id
+          type: string
+    ObjectTypeOnPath:
+      description: 路径中的对象类信息
+      required:
+      - id
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 当前对象类的过滤条件
+        sort:
+          description: 对当前对象类的排序字段
+          type: array
+          items:
+            $ref: '#/components/schemas/Sort'
+        limit:
+          description: "对象类获取对象数量的限制,默认10"
+          type: integer
+    TypeEdge:
+      description: 路径中的边信息。通过关系类id确定边，通过路径的起点和终点来确定当前路径的方向为正向还是反向，与关系类的起终点一致为正向，相反则为反向。
+      required:
+      - relation_type_id
+      - source_object_type_id
+      - target_object_type_id
+      type: object
+      properties:
+        relation_type_id:
+          description: 关系类id
+          type: string
+        source_object_type_id:
+          description: 路径的起点对象类
+          type: string
+        target_object_type_id:
+          description: 路径的终点对象类id
+          type: string
+    RelationTypePath:
+      description: 基于路径获取对象子图
+      required:
+      - source_object_type_id
+      - direction
+      - path_length
+      - relation_types
+      - object_types
+      type: object
+      properties:
+        object_types:
+          description: 路径中的对象类集合，顺序跟路径中节点出现顺序保持一致。
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectTypeOnPath'
+        relation_types:
+          description: 路径的边集合，沿着路径顺序出现的边
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeEdge'
+        limit:
+          description: 当前路径返回的路径数量的限制。默认10
+          type: integer
+    ObjectSubGraphResponse:
+      description: 对象子图
+      required:
+      - objects
+      - relation_paths
+      - total_count
+      - search_after
+      type: object
+      properties:
+        objects:
+          description: 子图中参与关系的对象map，key是对象id，value是对象信息。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ObjectInfoInSubgraph'
+        relation_paths:
+          description: 对象的关系路径集合
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationPath'
+        isolated_objects:
+          description: 子图中未建立关系的孤立对象map，key是对象id，value是对象信息。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ObjectInfoInSubgraph'
+        total_count:
+          description: 起点对象类的总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个起点类对象的排序值，获取这个用于下一次 search_after 分页
+          type: array
+          items: {}
+    ObjectSubGraphWithTypePathsResponse:
+      description: 基于路径获取对象子图的返回体
+      type: array
+      items:
+        $ref: '#/components/schemas/ObjectSubGraphResponse'
+    ToolSource:
+      description: 行动资源
+      required:
+      - box_id
+      - tool_id
+      - type
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+          - tool
+          type: string
+        box_id:
+          description: 工具箱ID
+          type: string
+        tool_id:
+          description: 工具ID
+          type: string
+    Affect:
+      description: 行动影响
+      required: []
+      type: object
+      properties:
+        comment:
+          description: 影响描述
+          type: string
+        object_type_id:
+          description: 影响的对象类ID
+          type: string
+    Schedule:
+      description: 执行频率配置项
+      required:
+      - time_type
+      - frequency
+      - expression
+      - type
+      type: object
+      properties:
+        type:
+          description: 执行类型。枚举，支持配置固定频率(FIX_RATE)和配置crontab表达式（CRON）
+          enum:
+          - FIX_RATE
+          - CRON
+          type: string
+        expression:
+          description: |-
+            执行表达式。
+
+            1.固定频率指以固定周期执行持久化, frequency=< time_durations >, 用一个数字, 后面跟时间单位来定义。时间单位可以是如下之一: m - 分钟; h - 小时; d - 天
+          type: string
+    ActionTypeParams:
+      description: 行动类绑定的行动资源参数
+      required:
+      - name
+      - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          - const
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    PathEntries:
+      description: 路径子图返回体
+      required:
+      - entries
+      type: object
+      properties:
+        entries:
+          description: 路径子图
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectSubGraphResponse'
+    SubGraphQueryBaseOnTypePath:
+      description: 基于路径获取对象子图
+      required:
+      - source_object_type_id
+      - direction
+      - path_length
+      - relation_paths
+      type: object
+      properties:
+        relation_type_paths:
+          description: 关系类路径集合
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationTypePath'
+    MetricPropertyValue:
+      description: 指标属性值
+      required:
+      - model
+      - datas
+      type: object
+      properties:
+        model:
+          $ref: '#/components/schemas/MetricModel'
+          description: 指标模型的信息
+        datas:
+          description: 指标数据
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricData'
+    MetricModel:
+      description: 指标模型信息
+      required:
+      - unit_type
+      - unit
+      type: object
+      properties:
+        unit_type:
+          description: 单位类型
+          enum:
+          - numUnit
+          - storeUnit
+          - percent
+          - transmissionRate
+          - timeUnit
+          - currencyUnit
+          - percentageUnit
+          - countUnit
+          - weightUnit
+          - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+          - none
+          - K
+          - Mil
+          - Bil
+          - Tri
+          - bit
+          - Byte
+          - KB
+          - MB
+          - GB
+          - TB
+          - PB
+          - bps
+          - Kbps
+          - Mbps
+          - μs
+          - ms
+          - s
+          - m
+          - h
+          - day
+          - week
+          - month
+          - year
+          - quarter
+          - Fen
+          - Jiao
+          - CNY
+          - 10K_CNY
+          - 1M_CNY
+          - 100M_CNY
+          - US_Cent
+          - USD
+          - EUR_Cent
+          - '%'
+          - ‰
+          - household
+          - transaction
+          - piece
+          - item
+          - times
+          - man_day
+          - family
+          - hand
+          - sheet
+          - packet
+          - ton
+          - kg
+          - rank
+          type: string
+    ObjectDataResponse:
+      description: 节点（对象类）信息
+      required:
+      - groups
+      - type
+      - datas
+      - search_after
+      type: object
+      properties:
+        object_type:
+          $ref: '#/components/schemas/ObjectTypeDetail'
+          description: 对象类信息
+        datas:
+          description: 对象实例数据。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectInfo'
+        total_count:
+          description: 总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个文档的排序值，获取这个用于下一次 search_after 分页
+          type: array
+          items: {}
+    ObjectPropertiesValuesResponse:
+      description: 节点（对象类）信息
+      required:
+      - groups
+      - type
+      - datas
+      type: object
+      properties:
+        datas:
+          description: 对象实例数据。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectPropertyValue'
+    ActionParam:
+      description: 行动参数
+      required:
+      - parameters
+      type: object
+      properties:
+        parameters:
+          description: 实例化了的参数。是个map
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+            - type: object
+        dynamic_params:
+          description: 动态参数。是个map
+          type: object
+          additionalProperties: {}
+        _instance_id:
+          description: 对象实例id：对象类id-根据联合主键生成的对象id。默认返回，当 exclude_system_properties 排除时，不返回。
+          type: string
+        _instance_identity:
+          $ref: '#/components/schemas/InstanceIdentity'
+          description: 对象实例标识。key为属性名称，value为属性值。id是主键的字符串表现形式。默认返回，当 exclude_system_properties 排除时，不返回。
+        _display:
+          description: 对象实例的显示属性值。显示属性只选一个，所以这里直接展示值即可。默认返回，当 exclude_system_properties 排除时，不返回。
+    ObjectInfo:
+      description: 对象信息
+      required: []
+      type: object
+      properties:
+        _instance_id:
+          description: 实例id。默认返回，当 exclude_system_properties 排除时，不返回。
+          type: string
+        _instance_identity:
+          $ref: '#/components/schemas/InstanceIdentity'
+          description: 实例标识。默认返回，当 exclude_system_properties 排除时，不返回。
+        _display:
+          description: 对象的显示属性值。默认返回，当 exclude_system_properties 排除时，不返回。
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: integer
+        - $ref: '#/components/schemas/MetricProperty'
+        - $ref: '#/components/schemas/OperatorProperty'
+    ObjectInfoInSubgraph:
+      description: 子图中的对象信息
+      required:
+      - object_type_id
+      - object_type_name
+      - properties
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID
+          type: string
+        object_type_name:
+          description: 对象类名称
+          type: string
+        properties:
+          description: 属性值列表。map中key是属性名，value是属性值
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+            - $ref: '#/components/schemas/MetricProperty'
+            - $ref: '#/components/schemas/OperatorProperty'
+        _instance_id:
+          description: 对象实例id：对象类id-根据联合主键生成的对象id。默认返回，当 exclude_system_properties 排除时，不返回。
+          type: string
+        _display:
+          description: 对象实例的显示属性值。显示属性只选一个，所以这里直接展示值即可。默认返回，当 exclude_system_properties 排除时，不返回。
+        _instance_identity:
+          $ref: '#/components/schemas/InstanceIdentity'
+          description: 对象实例标识。key为属性名称，value为属性值。id是主键的字符串表现形式。默认返回，当 exclude_system_properties 排除时，不返回。
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+    ObjectPropertyValue:
+      description: 对象的属性值
+      type: object
+      properties:
+        _instance_id:
+          description: 对象实例id：对象类id-根据联合主键生成的对象id。默认返回，当 exclude_system_properties 排除时，不返回。
+          type: string
+        _instance_identity:
+          $ref: '#/components/schemas/InstanceIdentity'
+          description: 对象实例标识。key为属性名称，value为属性值。id是主键的字符串表现形式。默认返回，当 exclude_system_properties 排除时，不返回。
+        _display:
+          description: 对象实例的显示属性值。显示属性只选一个，所以这里直接展示值即可。默认返回，当 exclude_system_properties 排除时，不返回。
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: integer
+        - $ref: '#/components/schemas/MetricPropertyValue'
+        - type: object
+    OperatorProperty:
+      description: 算子属性
+      required:
+      - property_type
+      - mapping_source_id
+      - has_any_unfilled_params
+      - parameters
+      - dynamic_params
+      type: object
+      properties:
+        property_type:
+          description: 属性类型
+          enum:
+          - metric
+          type: string
+        mapping_source_id:
+          description: 映射的指标模型id
+          type: string
+        has_any_unfilled_params:
+          description: 是否有未填充的参数，默认是false
+          type: boolean
+        parameters:
+          description: 实例化了的参数。是个map
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+            - type: object
+        dynamic_params:
+          description: 动态参数。是个map
+          type: object
+          additionalProperties: {}
+    MetricData:
+      description: 指标模型的指标数据计算结果
+      required:
+      - labels
+      - times
+      - time_strs
+      - values
+      type: object
+      properties:
+        labels:
+          description: 普通维度 label 的 map，key 为字段名，value 为字段值，键值的类型都是 string
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+        times:
+          description: 时间值数组。为字符串或者数值类型
+          type: array
+          items:
+            type: object
+        time_strs:
+          description: 时间字符串数组。
+          type: array
+          items:
+            type: object
+        values:
+          description: 度量值数组。数值类型
+          type: array
+          items:
+            type: number
+        growth_values:
+          description: 增长值。当请求了同环比分析时才有此字段。
+          type: array
+          items:
+            type: number
+        growth_rates:
+          description: 增长率。当请求了同环比分析时才有此字段。
+          type: array
+          items:
+            type: number
+        proportions:
+          description: 占比。当请求了占比分析时才有此字段。
+          type: array
+          items:
+            type: number
+    PropertyQueryBody:
+      description: 属性查询请求体
+      required:
+      - properties
+      - __instance_identities
+      type: object
+      properties:
+        __instance_identities:
+          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+          type: array
+          items:
+            $ref: '#/components/schemas/InstanceIdentity'
+        properties:
+          description: 属性列表
+          type: array
+          items:
+            type: string
+        dynamic_params:
+          description: |
+            各个逻辑属性所需的动态参数。是个map，key为属性名称，value为map，其key为参数名，值为赋予的参数值。
+            当属性是指标属性时，dynamic_params 的结构应遵循 MetricPropertyDynamicParams schema，包含：
+            - 时间参数：start（开始时间戳，毫秒）、end（结束时间戳，毫秒）、instant（是否即时查询）、step（步长，如"1m"、"1h"等）
+            - 分析参数：analysis_dimensions（分析维度数组）、order_by_fields（排序字段数组）、having_condition（having值过滤条件）、metrics（同环比、占比分析配置）
+            - 配置的动态参数：指标属性配置中定义的其他动态参数（如 pod_ip、pod_name 等）
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+            - $ref: '#/components/schemas/MetricPropertyDynamicParams'
+    SubGraphQueryBaseOnSource:
+      description: 基于起点、方向和路径长度获取对象子图
+      required:
+      - source_object_type_id
+      - direction
+      - path_length
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组id数组
+          type: array
+          items:
+            type: string
+        source_object_type_id:
+          description: 起点对象类id
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 起点对象类过滤条件
+        direction:
+          description: 探索子图的路径方向
+          enum:
+          - forward
+          - backward
+          - bidirectional
+          type: string
+        path_length:
+          description: 探索子图的路径的最大长度
+          type: integer
+        include_incomplete_path:
+          description: 是否包含不完整的路径。默认是false，不包含，只返回完整的路径
+          type: boolean
+          default: false
+        sort:
+          description: 对起点类的排序字段
+          type: array
+          items:
+            $ref: '#/components/schemas/Sort'
+        limit:
+          description: 对起点类的对象数量的限制。默认是10
+          type: integer
+        need_total:
+          description: 是否需要(起点类)总数，默认false。
+          type: boolean
+        search_after:
+          description: 上次查询返回的最后一个起点类对象的排序值。只对起点类生效。第一次查询不传此字段
+          type: array
+          items: {}
+    SubGraphQueryBaseOnObjects:
+      description: 基于一组对象实例探索关系子图的请求体
+      required:
+      - entries
+      type: object
+      properties:
+        entries:
+          description: 对象实例数组
+          type: array
+          items:
+            $ref: '#/components/schemas/InputObjectInstance'
+    InputObjectInstance:
+      description: 输入的对象实例
+      required:
+      - object_type_id
+      - _instance_identity
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类型ID
+          type: string
+        _instance_identity:
+          description: 对象唯一标识，对应主键字段。key为主键属性名，value为对应的属性值
+          $ref: '#/components/schemas/InstanceIdentity'
+    ActionType:
+      description: 行动类信息
+      required:
+      - action_source
+      - action_type
+      - affect
+      - condition
+      - id
+      - name
+      - object_type_id
+      - parameters
+      - schedule
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+          - add
+          - modify
+          - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        condition:
+          $ref: '#/components/schemas/ActionCondition'
+          description: 行动条件
+        affect:
+          $ref: '#/components/schemas/Affect'
+          description: 行动影响
+        action_source:
+          oneOf:
+          - $ref: '#/components/schemas/ToolSource'
+          - $ref: '#/components/schemas/MCPSource'
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionTypeParams'
+        schedule:
+          $ref: '#/components/schemas/Schedule'
+          description: 行动监听参数配置
+    MCPSource:
+      description: MCP资源
+      required:
+      - type
+      - mcp_id
+      - tool_name
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+          - mcp
+          type: string
+        mcp_id:
+          description: MCP ID
+          type: string
+        tool_name:
+          description: 工具名称
+          type: string
+    Actions:
+      description: 行动查询返回结果
+      required:
+      - action_source
+      - actions
+      type: object
+      properties:
+        action_type:
+          $ref: '#/components/schemas/ActionType'
+          description: 行动类信息
+        action_source:
+          oneOf:
+          - $ref: '#/components/schemas/ToolSource'
+          - $ref: '#/components/schemas/MCPSource'
+          description: 行动资源
+        actions:
+          description: 各对象的实例化后的行动参数，顺序与请求的对象唯一标识数组一致
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionParam'
+    condition_or:
+      description: or 的过滤条件
+      required:
+      - operation
+      - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+          - or
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+    condition_and:
+      description: and的过滤条件
+      required:
+      - operation
+      - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+          - and
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+    condition_eq:
+      description: 等于过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，等于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - ==
+          type: string
+        value:
+          description: 过滤值
+    condition_in:
+      description: 包含过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，包含支持所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_knn:
+      description: "knn 过滤，支持单个字段和*, * 表示\"_vector\""
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: "过滤字段, vector字段或者是构建了向量索引的字段"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - knn
+          type: string
+        value:
+          description: 过滤值。当limit_key为k时，limit_value为整型；当limit_key为max_distance和min_score时，limit_value为浮点型
+          type: number
+        limit_key:
+          description: "执行径向搜索时使用的过滤和评分行为, k:返回最相似的limit_value个结果；max_distance:返回距\
+            离小于等于limit_value的结果；min_score：返回相似度分数大于等于limit_value的结果。默认值为k"
+          enum:
+          - k
+          - max_distance
+          - min_score
+          type: string
+          default: k
+        limit_value:
+          description: "执行径向搜索使用的值。默认值为100"
+          type: number
+          default: 100
+        sub_conditions:
+          description: knn下的子查询
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+    condition_like:
+      description: like过滤
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，相似支持的字段类型：字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_multi_match:
+      description: 多字段全文匹配
+      required:
+      - operation
+      - value
+      type: object
+      properties:
+        fields:
+          description: "过滤字段数组，多字段全文匹配支持的字段类型：text字符串或者构建了全文索引的字段。为空时，用opensearch中\
+            \ index.default_field 配置的字段进行查询。当需要对所有字段进行匹配时，此参数传 [\"*\"]."
+          type: array
+          items:
+            type: string
+        operation:
+          description: 操作符
+          enum:
+          - multi_match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+        match_type:
+          description: 全文匹配类型，默认是 best_fields
+          enum:
+          - best_fields
+          - most_fields
+          - cross_fields
+          - phrase
+          - phrase_prefix
+          - bool_prefix
+          type: string
+    condition_match_phrase:
+      description: "match_phrase 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，短语匹配支持的字段类型：text字符串或者构建了全文索引的字段
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - match_phrase
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_match:
+      description: "match 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，全文匹配支持的字段类型：text字符串或者构建了全文索引的字段
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_not_eq:
+      description: 不等于的过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不等于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '!='
+          type: string
+        value:
+          description: 过滤值
+    condition_not_in:
+      description: not_in过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，支持所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - not_in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_not_like:
+      description: not_like过滤
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不相似支持的字段类型：string字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - not_like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_regex:
+      description: regex过滤
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，正则支持的字段类型：string字符串或构建了关键字索引的字符串字段
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - regex
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_lt:
+      description: 小于过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，小于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '<'
+          type: string
+        value:
+          description: 过滤值
+    condition_gte:
+      description: 大于等于过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，大于等于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '>='
+          type: string
+        value:
+          description: 过滤值
+    condition_gt:
+      description: 大于过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，大于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '>'
+          type: string
+        value:
+          description: 过滤值
+    condition_lte:
+      description: 小于等于过滤条件
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，小于等于支持的字段类型：数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - <=
+          type: string
+        value:
+          description: 过滤值
+    condition_range:
+      description: 范围内过滤。右侧值为长度为 2 的数组，边界为左闭右开
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_out_range:
+      description: "范围外过滤。右侧值为长度为2的数组，边界为左闭右开, 即 [ value[0],  value[1] )。此种情况下，符合过\
+        滤条件的值的区间为 (-inf, value[0] ) & [ value[1], +inf )，即左侧指定字段＜value[0] 或 ≥value[1]\
+        \ 的值。"
+      required:
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_exist:
+      description: 存在过滤
+      required:
+      - field
+      - operation
+      type: object
+      properties:
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - exist
+          type: string
+    condition_not_exist:
+      description: 不存在过滤
+      required:
+      - field
+      - operation
+      type: object
+      properties:
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - not_exist
+          type: string
+    Condition:
+      oneOf:
+      - $ref: '#/components/schemas/condition_and'
+      - $ref: '#/components/schemas/condition_or'
+      - $ref: '#/components/schemas/condition_eq'
+      - $ref: '#/components/schemas/condition_not_eq'
+      - $ref: '#/components/schemas/condition_gt'
+      - $ref: '#/components/schemas/condition_gte'
+      - $ref: '#/components/schemas/condition_lt'
+      - $ref: '#/components/schemas/condition_lte'
+      - $ref: '#/components/schemas/condition_in'
+      - $ref: '#/components/schemas/condition_not_in'
+      - $ref: '#/components/schemas/condition_like'
+      - $ref: '#/components/schemas/condition_not_like'
+      - $ref: '#/components/schemas/condition_range'
+      - $ref: '#/components/schemas/condition_out_range'
+      - $ref: '#/components/schemas/condition_exist'
+      - $ref: '#/components/schemas/condition_not_exist'
+      - $ref: '#/components/schemas/condition_regex'
+      - $ref: '#/components/schemas/condition_match'
+      - $ref: '#/components/schemas/condition_match_phrase'
+      - $ref: '#/components/schemas/condition_knn'
+      - $ref: '#/components/schemas/condition_multi_match'
+    ActionCondition:
+      oneOf:
+      - $ref: '#/components/schemas/action_condition_and'
+      - $ref: '#/components/schemas/action_condition_or'
+      - $ref: '#/components/schemas/action_condition_eq'
+      - $ref: '#/components/schemas/action_condition_not_eq'
+      - $ref: '#/components/schemas/action_condition_gt'
+      - $ref: '#/components/schemas/action_condition_gte'
+      - $ref: '#/components/schemas/action_condition_lt'
+      - $ref: '#/components/schemas/action_condition_lte'
+      - $ref: '#/components/schemas/action_condition_in'
+      - $ref: '#/components/schemas/action_condition_not_in'
+      - $ref: '#/components/schemas/action_condition_range'
+      - $ref: '#/components/schemas/action_condition_out_range'
+      - $ref: '#/components/schemas/action_condition_exist'
+      - $ref: '#/components/schemas/action_condition_not_exist'
+    action_condition_and:
+      description: and的过滤条件
+      required:
+      - operation
+      - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+          - and
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionCondition'
+    action_condition_or:
+      description: or 的过滤条件
+      required:
+      - operation
+      - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+          - or
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionCondition'
+    action_condition_eq:
+      description: 等于过滤条件
+      required:
+      - object_type_id
+      - operation
+      - value
+      - field
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - ==
+          type: string
+        value:
+          description: 过滤值
+    action_condition_not_eq:
+      description: 不等于的过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '!='
+          type: string
+        value:
+          description: 过滤值
+    action_condition_gt:
+      description: 大于的过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '>'
+          type: string
+        value:
+          description: 过滤值
+    action_condition_lt:
+      description: 小于的过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '<'
+          type: string
+        value:
+          description: 过滤值
+    action_condition_gte:
+      description: 大于等于的过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - '>='
+          type: string
+        value:
+          description: 过滤值
+    action_condition_lte:
+      description: 大于等于的过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - <=
+          type: string
+        value:
+          description: 过滤值
+    action_condition_in:
+      description: 包含过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_not_in:
+      description: 不包含过滤条件
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - not_in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_out_range:
+      description: "范围外过滤。右侧值为长度为2的数组，边界为左闭右开, 即 [ value[0],  value[1] )。此种情况下，符合过\
+        滤条件的值的区间为 (-inf, value[0] ) & [ value[1], +inf )，即左侧指定字段＜value[0] 或 ≥value[1]\
+        \ 的值。"
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_exist:
+      description: 存在过滤
+      required:
+      - object_type_id
+      - field
+      - operation
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - exist
+          type: string
+    action_condition_range:
+      description: 范围内过滤。右侧值为长度为 2 的数组，边界为左闭右开
+      required:
+      - object_type_id
+      - field
+      - operation
+      - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_not_exist:
+      description: 不存在过滤
+      required:
+      - object_type_id
+      - field
+      - operation
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - not_exist
+          type: string
+    InstanceIdentity:
+      description: 唯一标识。
+      type: object
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: integer
+    InstanceIdentities:
+      description: 对象唯一标识
+      required:
+      - __instance_identities
+      type: object
+      properties:
+        __instance_identities:
+          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+          type: array
+          items:
+            $ref: '#/components/schemas/InstanceIdentity'
+        dynamic_params:
+          description: 动态参数，用于填充行动参数
+          type: object
+          additionalProperties: true
+
+    ActionExecutionResponse:
+      description: 行动执行响应（异步）
+      type: object
+      properties:
+        execution_id:
+          description: 执行ID
+          type: string
+        status:
+          description: 执行状态
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+          type: string
+        message:
+          description: 提示消息
+          type: string
+        created_at:
+          description: 创建时间（毫秒时间戳）
+          type: integer
+          format: int64
+
+    ActionExecution:
+      description: 行动执行详情
+      type: object
+      properties:
+        id:
+          description: 执行ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        action_type_id:
+          description: 行动类ID
+          type: string
+        action_type_name:
+          description: 行动类名称
+          type: string
+        action_source_type:
+          description: 行动源类型
+          enum:
+            - tool
+            - mcp
+          type: string
+        object_type_id:
+          description: 对象类ID
+          type: string
+        trigger_type:
+          description: 触发类型
+          enum:
+            - manual
+            - scheduled
+          type: string
+        status:
+          description: 执行状态
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+          type: string
+        total_count:
+          description: 对象总数
+          type: integer
+        success_count:
+          description: 成功数量
+          type: integer
+        failed_count:
+          description: 失败数量
+          type: integer
+        results:
+          description: 每个对象的执行结果（分页返回）
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectExecutionResult"
+        results_total:
+          description: results 总数（用于分页）
+          type: integer
+        results_offset:
+          description: 当前 results 偏移量
+          type: integer
+        results_limit:
+          description: 当前 results 分页大小
+          type: integer
+        dynamic_params:
+          description: 动态参数
+          type: object
+          additionalProperties: true
+        executor_id:
+          description: 执行者ID（已废弃，请使用 executor）
+          type: string
+          deprecated: true
+        executor:
+          description: 执行者信息
+          type: object
+          properties:
+            id:
+              description: 执行者ID
+              type: string
+            type:
+              description: 执行者类型
+              type: string
+            name:
+              description: 执行者名称
+              type: string
+        start_time:
+          description: 开始时间（毫秒时间戳）
+          type: integer
+          format: int64
+        end_time:
+          description: 结束时间（毫秒时间戳）
+          type: integer
+          format: int64
+        duration_ms:
+          description: 执行耗时（毫秒）
+          type: integer
+          format: int64
+        action_type_snapshot:
+          description: 执行时的行动类配置快照（与 ontology-manager 返回一致）
+          type: object
+          additionalProperties: true
+
+    ObjectExecutionResult:
+      description: 单个对象的执行结果
+      type: object
+      properties:
+        instance_identity:
+          description: 对象实例标识
+          type: object
+          additionalProperties: true
+        status:
+          description: 执行状态
+          enum:
+            - pending
+            - success
+            - failed
+            - cancelled
+          type: string
+        parameters:
+          description: 解析后的执行参数
+          type: object
+          additionalProperties: true
+        result:
+          description: 执行结果
+          type: object
+          additionalProperties: true
+        error_message:
+          description: 错误消息
+          type: string
+        duration_ms:
+          description: 执行耗时（毫秒）
+          type: integer
+          format: int64
+
+    ActionLogQuery:
+      description: 行动执行日志查询
+      type: object
+      properties:
+        action_type_id:
+          description: 行动类ID（可选）
+          type: string
+        status:
+          description: 执行状态（可选）
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+          type: string
+        trigger_type:
+          description: 触发类型（可选）
+          enum:
+            - manual
+            - scheduled
+          type: string
+        start_time_range:
+          description: 开始时间范围 [起始, 结束]（毫秒时间戳）
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 2
+          maxItems: 2
+        limit:
+          description: 返回数量限制，默认20，最大1000
+          type: integer
+          default: 20
+        need_total:
+          description: 是否需要返回总数
+          type: boolean
+          default: false
+        search_after:
+          description: 分页游标
+          type: array
+          items: {}
+
+    ActionExecutionList:
+      description: 行动执行日志列表
+      type: object
+      properties:
+        entries:
+          description: 执行记录列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionExecution"
+        total_count:
+          description: 总数（当 need_total 为 true 时返回）
+          type: integer
+        search_after:
+          description: 下一页游标
+          type: array
+          items: {}
+
+    CancelExecutionRequest:
+      description: 取消执行请求
+      type: object
+      properties:
+        reason:
+          description: 取消原因（可选）
+          type: string
+
+    CancelExecutionResponse:
+      description: 取消执行响应
+      type: object
+      properties:
+        execution_id:
+          description: 执行ID
+          type: string
+        status:
+          description: 执行状态
+          enum:
+            - cancelled
+          type: string
+        message:
+          description: 提示消息
+          type: string
+        cancelled_count:
+          description: 被取消的对象数量（原本 pending 状态的对象）
+          type: integer
+        completed_count:
+          description: 已完成的对象数量（取消前已执行完成的对象）
+          type: integer

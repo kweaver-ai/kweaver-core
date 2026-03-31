@@ -1,0 +1,16 @@
+RetrieverDataSource:
+  type: object
+  properties:
+    kg:
+      type: array
+      items:
+        $ref: './kg_source.yaml#/KgSource'
+      description: 图谱类型数据源
+    doc:
+      type: array
+      items:
+        $ref: './doc_source.yaml#/DocSource'
+      description: 文档类型数据源
+    advanced_config:
+      $ref: './retriever_advanced_config.yaml#/RetrieverAdvancedConfig'
+      description: 召回高级配置

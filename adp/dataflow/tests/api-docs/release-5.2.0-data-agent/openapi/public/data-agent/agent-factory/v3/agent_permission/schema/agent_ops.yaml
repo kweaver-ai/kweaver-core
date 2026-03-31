@@ -1,0 +1,24 @@
+agent_ops:
+  type: object
+  properties:
+    edit:
+      type: boolean
+      description: 是否有编辑权限
+    copy:
+      type: boolean
+      description: 是否有复制权限
+    copy2tpl:
+      type: boolean
+      description: 是否有复制为模板权限
+    delete:
+      type: boolean
+      description: 是否有删除权限
+    use:
+      type: boolean
+      description: 是否有使用权限
+    publish:
+      type: boolean
+      description: 是否有发布权限
+    
+    
+  

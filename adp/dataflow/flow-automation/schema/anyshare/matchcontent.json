@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "匹配文件内容",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "matchtype": {
+                    "type": "string",
+                    "enum": [
+                        "CN_ID_CARD",
+                        "CN_PHONE_NUMBER",
+                        "CN_BANK_CARD_NUMBER",
+                        "CN_BANK_ACCOUNT_NUMBER",
+                        "KEYWORD",
+                        "REG"
+                    ]
+                },
+                "keyword": {
+                    "type": "string",
+                    "maxLength": 126
+                },
+                "reg": {
+                    "type": "string",
+                    "maxLength": 2048
+                }
+            },
+            "required": [
+                "docid",
+                "matchtype"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

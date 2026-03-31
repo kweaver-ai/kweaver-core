@@ -1,0 +1,39 @@
+DebugRequest:
+  type: object
+  properties:
+    input:
+      $ref: '../../components/schema/debug_input.yaml#/DebugInput'
+    agent_version:
+      type: string
+      description: agent_version
+      required: true
+    agent_id:
+      type: string
+      description: agent_id
+      required: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

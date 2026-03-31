@@ -1,0 +1,15 @@
+PublishInfo:
+  type: object
+  properties:
+    is_api_agent:
+      type: integer
+      description: 是否为API Agent
+    is_sdk_agent:
+      type: integer
+      description: 是否为SDK Agent
+    is_skill_agent:
+      type: integer
+      description: 是否为Skill Agent
+    is_data_flow_agent:
+      type: integer
+      description: 是否为Data Flow Agent

@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "批量按指定字段获取dag信息",
+    "description": "post /api/automation/v2/dags/{fields}",
+    "type": "object",
+    "properties": {
+        "method": {
+            "enum": ["GET"]
+        },
+        "dag_ids": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "pattern": "^[0-9]{18}$"
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        }
+    },
+    "required": [
+        "method",
+        "dag_ids"
+    ],
+    "additionalProperties": false
+}

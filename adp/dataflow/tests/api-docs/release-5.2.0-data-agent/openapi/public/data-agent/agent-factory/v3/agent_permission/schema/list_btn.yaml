@@ -1,0 +1,16 @@
+list_btn:
+  type: object
+  properties:
+    agent_ops:
+      type: array
+      items:
+        $ref: './agent_ops.yaml#/agent_ops'
+    agent_tpl_ops:
+      type: array
+      items:
+        $ref: './agent_tpl_ops.yaml#/agent_tpl_ops'
+    # built_in_agent_ops:
+    #   type: array
+    #   items:
+    #     $ref: './built_in_agent_ops.yaml#/built_in_agent_ops'
+      

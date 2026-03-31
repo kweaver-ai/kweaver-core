@@ -1,0 +1,104 @@
+[VegaBackend.Resource.InvalidParameter]
+Description = "无效的数据资源参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InvalidParameter.Type]
+Description = "无效的数据资源类型"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InvalidParameter.Name]
+Description = "无效的数据资源名称"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InvalidParameter.CatalogID]
+Description = "目录ID为必填项"
+Solution = "请提供有效的目录ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.LengthExceeded.Name]
+Description = "数据资源名称长度超限"
+Solution = "请缩短名称"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.LengthExceeded.Description]
+Description = "数据资源描述长度超限"
+Solution = "请缩短描述"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.NotFound]
+Description = "数据资源不存在"
+Solution = "请检查数据资源ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.NameExists]
+Description = "数据资源名称已存在于该目录"
+Solution = "请使用其他名称"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.IDExists]
+Description = "数据资源ID已存在"
+Solution = "请使用其他ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.CatalogNotFound]
+Description = "数据资源所属目录不存在"
+Solution = "请检查目录ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.IsDisabled]
+Description = "数据资源已禁用"
+Solution = "请先启用数据资源"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.AlreadyEnabled]
+Description = "数据资源已处于启用状态"
+Solution = "无需操作"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.AlreadyDisabled]
+Description = "数据资源已处于禁用状态"
+Solution = "无需操作"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError]
+Description = "数据资源内部错误"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.CreateFailed]
+Description = "创建数据资源失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.GetFailed]
+Description = "获取数据资源失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.UpdateFailed]
+Description = "更新数据资源失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.DeleteFailed]
+Description = "删除数据资源失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.SyncFailed]
+Description = "同步数据资源失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.InvalidCategory]
+Description = "无效的数据资源分类"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Resource.InternalError.GetAccountNamesFailed]
+Description = "获取账户名称失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"

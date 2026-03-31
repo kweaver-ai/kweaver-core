@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "密级信息",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "csfinfo": {
+            "type": "object",
+            "properties": {
+                "scope": {
+                    "type": "string"
+                },
+                "screason": {
+                    "type": "string"
+                },
+                "secrecyperiod": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        },
+        "csflevel": {
+            "type": "integer"
+        }
+    }
+}

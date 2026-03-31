@@ -1,0 +1,19 @@
+copy_res:
+  type: object
+  properties:
+    id:
+      type: string
+      description: agent id
+      example: xxx
+    key:
+      type: string
+      description: agent 标识
+      example: xxx
+    version:
+      type: string
+      description: agent 版本
+      example: v0
+    name:
+      type: string
+      description: agent 名称
+      example: xxx

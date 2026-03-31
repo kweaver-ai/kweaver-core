@@ -1,0 +1,81 @@
+MiddleAnswer:
+  type: object
+  properties:
+    doc_retrieval:
+      $ref: ./doc_retrieval.yaml#/DocRetrieval
+    graph_retrieval:
+      type: object
+      description: 图谱召回结果
+    middle_output_vars:
+      description: 中间结果
+      $ref: ./middle_output_vars.yaml#/MiddleOutputVars
+    other_variables:
+      type: object
+      description: 用于存储配置中output.variables.other_vars配置的其他变量
+    progress:
+      type: array
+      items:
+        $ref: ./progress.yaml#/Progress
+      description: dolphin执行过程
+      example:
+        progress:
+          - agent_name: main
+            stage: llm
+            answer: |
+              斐波那契数列的定义是从0和1开始，后面的每个数字是前面两个数字之和。因此，第100个位置的数字可以通过计算得到。
+
+              我将使用Python来计算这个值。
+            think: ""
+            status: completed
+            skill_info: null
+            block_answer: ""
+            input_message:
+              - role: user
+                content: 斐波那契数列第 100 个位置是几
+            interrupted: false
+          - agent_name: execPython
+            stage: llm
+            answer: "354224848179261915075"
+            think: ""
+            status: completed
+            skill_info:
+              type: TOOL
+              name: execPython
+              args:
+                - name: cmd
+                  type: str
+                  value: |-
+                    def fibonacci(n):
+                        a, b = 0, 1
+                        for _ in range(n):
+                            a, b = b, a + b
+                        return a
+
+                    print(fibonacci(100))
+              checked: true
+            block_answer: "354224848179261915075"
+            input_message: ""
+            interrupted: false
+          - agent_name: main
+            stage: llm
+            answer: 斐波那契数列的第100个位置的值是354224848179261915075。如果还有其他问题，请随时告诉我！
+            think: ""
+            status: completed
+            skill_info: null
+            block_answer: ""
+            input_message:
+              - role: user
+                content: 斐波那契数列第 100 个位置是几
+              - role: assistant
+                content: |
+                  
+                  斐波那契数列的定义是从0和1开始，后面的每个数字是前面两个数字之和。因此，第100个位置的数字可以通过计算得到。
+
+                  我将使用Python来计算这个值。
+
+                  工具执行结果：354224848179261915075
+              - role: user
+                content: |-
+                  1.处理当前任务过程中，已经调用过execPython工具，如果上次调用成功且非必要情况下不要立刻连续调用。
+                  2.如果你已经回答完毕直接结束回答，如果没有回答完毕则接着上一个答案继续回答。
+            interrupted: false

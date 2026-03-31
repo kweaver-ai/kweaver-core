@@ -1,0 +1,539 @@
+openapi: 3.0.2
+info:
+  title: 数据视图行列权限
+  version: 0.1.0
+servers:
+  - url: "http://mdl-data-model-svc:13020/api"
+    description: ""
+paths:
+  /mdl-data-model/v1/data-view-row-column-rules:
+    post:
+      summary: 创建数据视图行列权限
+      description: 创建一个或多个数据视图行列权限规则
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/DataViewRowColumnRuleCreate"
+        required: true
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: 规则ID
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+    get:
+      summary: 分页获取数据视图行列权限列表
+      description: 分页获取数据视图行列权限规则列表
+      parameters:
+        - name: name
+          in: query
+          description: 规则名称精确匹配
+          schema:
+            type: string
+        - name: name_pattern
+          in: query
+          description: 规则名称模糊匹配
+          schema:
+            type: string
+        - name: view_id
+          in: query
+          description: 数据视图ID
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: 标签
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: 开始响应的项目的偏移量，范围需大于等于0，默认值0
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          description: 每页最多可返回的项目数；分页可选1-1000，-1表示不分页；默认值10
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          description: 排序类型，默认是update_time
+          schema:
+            type: string
+            enum:
+              - update_time
+              - name
+        - name: direction
+          in: query
+          description: 排序方向,可选asc、desc。默认desc
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataViewRowColumnRuleListResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+  /mdl-data-model/v1/data-view-row-column-rules/{rule_ids}:
+    get:
+      summary: 获取数据视图行列权限详情
+      description: 根据规则ID获取数据视图行列权限规则详情
+      parameters:
+        - name: rule_ids
+          in: path
+          description: 规则ID，多个ID用逗号分隔
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataViewRowColumnRule"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+    delete:
+      summary: 删除数据视图行列权限
+      description: 根据规则ID删除数据视图行列权限规则
+      parameters:
+        - name: rule_ids
+          in: path
+          description: 规则ID，多个ID用逗号分隔
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 删除成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+  /mdl-data-model/v1/data-view-row-column-rules/{rule_id}:
+    put:
+      summary: 更新数据视图行列权限
+      description: 根据规则ID更新数据视图行列权限规则
+      parameters:
+        - name: rule_id
+          in: path
+          description: 规则ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataViewRowColumnRuleUpdate"
+        required: true
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+  /mdl-data-model/in/v1/data-view-row-column-rules:
+    post:
+      summary: 创建数据视图行列权限(内部)
+      description: 创建一个或多个数据视图行列权限规则(内部接口)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/DataViewRowColumnRuleCreate"
+        required: true
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: 规则ID
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+    get:
+      summary: 分页获取数据视图行列权限列表(内部)
+      description: 分页获取数据视图行列权限规则列表(内部接口)
+      parameters:
+        - name: name
+          in: query
+          description: 规则名称精确匹配
+          schema:
+            type: string
+        - name: name_pattern
+          in: query
+          description: 规则名称模糊匹配
+          schema:
+            type: string
+        - name: view_id
+          in: query
+          description: 数据视图ID
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: 标签
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: 开始响应的项目的偏移量，范围需大于等于0，默认值0
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          description: 每页最多可返回的项目数；分页可选1-1000，-1表示不分页；默认值10
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          description: 排序类型，默认是update_time
+          schema:
+            type: string
+            enum:
+              - update_time
+              - name
+        - name: direction
+          in: query
+          description: 排序方向,可选asc、desc。默认desc
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataViewRowColumnRuleListResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+  /mdl-data-model/in/v1/data-view-row-column-rules/{rule_ids}:
+    get:
+      summary: 获取数据视图行列权限详情(内部)
+      description: 根据规则ID获取数据视图行列权限规则详情(内部接口)
+      parameters:
+        - name: rule_ids
+          in: path
+          description: 规则ID，多个ID用逗号分隔
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataViewRowColumnRule"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+    delete:
+      summary: 删除数据视图行列权限(内部)
+      description: 根据规则ID删除数据视图行列权限规则(内部接口)
+      parameters:
+        - name: rule_ids
+          in: path
+          description: 规则ID，多个ID用逗号分隔
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: 删除成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+  /mdl-data-model/in/v1/data-view-row-column-rules/{rule_id}:
+    put:
+      summary: 更新数据视图行列权限(内部)
+      description: 根据规则ID更新数据视图行列权限规则(内部接口)
+      parameters:
+        - name: rule_id
+          in: path
+          description: 规则ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataViewRowColumnRuleUpdate"
+        required: true
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+components:
+  schemas:
+    DataViewRowColumnRule:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 规则ID
+        name:
+          type: string
+          description: 规则名称
+        view_id:
+          type: string
+          description: 数据视图ID
+        view_name:
+          type: string
+          description: 数据视图名称
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签列表
+        comment:
+          type: string
+          description: 备注
+        create_time:
+          type: integer
+          format: int64
+          description: 创建时间
+        update_time:
+          type: integer
+          format: int64
+          description: 更新时间
+        creator:
+          $ref: "#/components/schemas/AccountInfo"
+        updater:
+          $ref: "#/components/schemas/AccountInfo"
+        fields:
+          type: array
+          items:
+            type: string
+          description: 字段列表
+        row_filters:
+          $ref: "#/components/schemas/CondCfg"
+        operations:
+          type: array
+          items:
+            type: string
+          description: 操作权限
+      required:
+        - id
+        - name
+        - view_id
+        - tags
+        - comment
+        - create_time
+        - update_time
+        - creator
+        - updater
+        - fields
+    DataViewRowColumnRuleCreate:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 规则ID(可选)
+        name:
+          type: string
+          description: 规则名称
+        view_id:
+          type: string
+          description: 数据视图ID
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签列表
+        comment:
+          type: string
+          description: 备注
+        fields:
+          type: array
+          items:
+            type: string
+          description: 字段列表
+        row_filters:
+          $ref: "#/components/schemas/CondCfg"
+      required:
+        - name
+        - view_id
+        - tags
+        - comment
+        - fields
+    DataViewRowColumnRuleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 规则名称
+        view_id:
+          type: string
+          description: 数据视图ID
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签列表
+        comment:
+          type: string
+          description: 备注
+        fields:
+          type: array
+          items:
+            type: string
+          description: 字段列表
+        row_filters:
+          $ref: "#/components/schemas/CondCfg"
+    DataViewRowColumnRuleListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataViewRowColumnRule"
+        total_count:
+          type: integer
+          format: int64
+          description: 总数量
+    AccountInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 账户ID
+        type:
+          type: string
+          description: 账户类型
+        name:
+          type: string
+          description: 账户名称
+      required:
+        - id
+        - type
+    CondCfg:
+      type: object
+      properties:
+        field:
+          type: string
+          description: 字段名
+        operation:
+          type: string
+          description: 操作符
+        sub_conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CondCfg"
+          description: 子条件
+        value_from:
+          type: string
+          description: 值来源
+        value:
+          description: 值
+    Error:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 错误描述
+        error_code:
+          type: string
+          description: 错误码
+        error_detail:
+          type: string
+          description: 错误详情
+        error_link:
+          type: string
+          description: 错误链接
+        solution:
+          type: string
+          description: 处理建议
+      required:
+        - description
+        - error_code
+        - error_detail
+        - error_link
+        - solution
+  responses:
+    "400BadRequest":
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    "404NotFound":
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    "500InternalServerError":
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

@@ -1,0 +1,85 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "description": "目标用户",
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "user"
+                                    ]
+                                },
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "type",
+                                "id",
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "scale_size": {
+                    "description": "扩容大小",
+                    "oneOf": [
+                        {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "user",
+                "scale_size"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

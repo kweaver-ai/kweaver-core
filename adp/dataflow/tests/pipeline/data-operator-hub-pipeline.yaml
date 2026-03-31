@@ -1,0 +1,112 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+# resources:
+#   pipelines:
+#   - pipeline: Deploy_X86_AT
+#     source: Deploy-X86-AT
+#     trigger:
+#       stages:
+#       - Test_End
+
+parameters:
+  - name: host
+    displayName: 服务器ssh ip
+    type: string
+    default: 192.168.232.15
+
+  - name: password
+    displayName: 服务器ssh password
+    type: string
+    default: eisoo.com123
+
+  - name: testdir
+    displayName: 需要运行的测试用例目录
+    type: string
+    default: testcases/api/data-operator-hub
+
+pool:
+  name: DIP-Test
+
+stages:
+- stage: checkout
+  displayName: checkout
+  jobs:
+    - job: checkout
+      displayName: checkout
+      workspace:
+        clean: all
+      steps:
+      - checkout: self
+
+- stage: API_Test
+  displayName: 算子平台AT测试
+  dependsOn:
+  - checkout
+  condition: succeeded('checkout')
+  jobs:
+    - job: AutoTest
+      displayName: 自动化测试
+      timeoutInMinutes: 500
+      steps:
+      - task: CmdLine@2
+        displayName: 执行算子平台接口测试用例
+        inputs:
+          script: |
+            set -xe
+            echo '$(system.defaultworkingdirectory)'
+            cd $(system.defaultworkingdirectory)
+            sed -i 's/ssh_host =.*$/ssh_host = ${{ parameters.host }}/g' ./config/env.ini
+            sed -i 's/testdir:*$/testdir: "${{ parameters.testdir }}"/g' ./helm/values.yaml
+            chmod +x ./common/sshpass
+
+            ssh_cmd="./common/sshpass -p ${{ parameters.password }} ssh -o StrictHostKeyChecking=no root@${{ parameters.host }}"
+            ssh_scp="./common/sshpass -p ${{ parameters.password }} scp -r -o StrictHostKeyChecking=no"
+
+            ${ssh_cmd} "rm -rf /root/agent-AT; mkdir -p /root/agent-AT"
+            ${ssh_scp} ./ root@${{ parameters.host }}:/root/agent-AT
+
+            ${ssh_cmd} "chmod +x /root/agent-AT/scripts/operator-run.sh"
+            ${ssh_cmd} "bash /root/agent-AT/scripts/operator-run.sh"            
+
+            ${ssh_scp} root@${{ parameters.host }}:/root/agent-AT/allure-results ./
+            ${ssh_scp} root@${{ parameters.host }}:/root/agent-AT/allure-report ./
+            cp ./allure-results/agent-AT.xml '$(Build.SourcesDirectory)'/
+
+      - task: PublishTestResults@2
+        displayName: 'Publish Test XML Report'
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '*.xml'
+          mergeTestResults: true
+
+      - task: CmdLine@2
+        displayName: 更新构建标识号
+        inputs:
+          script: |
+            echo '##vso[build.updatebuildnumber]$(System.TeamProject)-$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber)-$(Build.BuildId)'
+
+      - task: FtpUpload@2
+        displayName: 上传测试报告
+        inputs:
+          credentialsOption: 'serviceEndpoint'
+          serverEndpoint: 'TestReportFTP'
+          rootDirectory: 'allure-report/'
+          filePatterns: '**'
+          remoteDirectory: '/$(Build.BuildNumber)/'
+          clean: false
+          cleanContents: false
+          preservePaths: true
+          trustSSL: false
+
+- stage: Test_End
+  condition: always()
+  jobs:
+    - job: end
+      steps:
+      - checkout: none
+      - script: echo The End!

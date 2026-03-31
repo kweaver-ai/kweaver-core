@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.moduleName }}-cm
+  namespace: {{ .Values.namespace }}
+data:
+  ontology-query-config.yaml: |
+    server:
+      {{- toYaml .Values.config.server | nindent 6 }}
+    log:
+      {{- toYaml .Values.config.log | nindent 6 }}
+    observability:
+      {{- toYaml .Values.config.observability | nindent 6 }}
+    depServices: 
+      {{- toYaml .Values.depServices | nindent 6 }}

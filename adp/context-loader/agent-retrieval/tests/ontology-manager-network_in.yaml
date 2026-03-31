@@ -1,0 +1,108 @@
+openapi: 3.0.2
+info:
+  title: 业务知识网络工具箱
+  version: 1.0.0
+servers:
+  - url: http://bkn-backend-svc:13014
+
+paths:
+  /api/bkn-backend/in/v1/knowledge-networks/{kn_id}:
+    get:
+      parameters:
+        - name: include_detail
+          description: 是否包含说明书信息，默认false，不包含。
+          schema:
+            type: boolean
+          in: query
+        - name: mode
+          description: 查询模式，当前支持export。默认是只查知识网络的详情，不返回包含的子类。
+          schema:
+            enum:
+              - ""
+              - export
+            type: string
+          in: query
+        - name: kn_id
+          required: true
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+        - name: x-user
+          required: true
+          description: 用户ID
+          schema:
+            type: string
+          in: header
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeNetworkDetail"
+          description: ok
+      summary: 获取业务知识网络详情
+      description: 获取本体模型详情，按需包含说明书内容
+components:
+  schemas:
+    KnowledgeNetworkDetail:
+      description: 业务知识网络详情
+      required:
+        - id
+        - name
+        - comment
+        - creator
+        - create_time
+        - tags
+        - updator
+        - update_time
+        - base_branch
+        - branch
+        - color
+        - icon
+        - updater
+      type: object
+      properties:
+        id:
+          description: 业务知识网络ID
+          type: string
+        name:
+          description: 业务知识网络名称
+          type: string
+        tags:
+          description: 标签，可为空
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注，可为空
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        base_branch:
+          description: 来源版本
+          type: string
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表时不返回此字段
+          type: string

@@ -1,0 +1,30 @@
+Error:
+  type: object
+  required:
+    - description
+    - error_code
+    - error_detail
+    - error_link
+    - solution
+  properties:
+    description:
+      type: string
+      description: 错误描述
+    error_code:
+      type: string
+      description: 错误码
+    error_detail:
+      type: string
+      description: 错误详情
+    error_link:
+      type: string
+      description: 错误链接
+    solution:
+      type: string
+      description: 处理建议
+  example:
+    description: some text
+    error_code: some text
+    error_detail: some text
+    error_link: some text
+    solution: some text

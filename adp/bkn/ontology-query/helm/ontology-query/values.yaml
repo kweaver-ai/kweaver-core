@@ -1,0 +1,115 @@
+namespace: dip
+moduleName: ontology-query
+
+# 环境变量：语言/时区/执行限制
+env:
+  timezone: Asia/Shanghai
+  language: en_US.UTF-8
+  actionExecutionMaxObjects: 10000  # Maximum objects allowed in a single action execution
+
+replicaCount: 1
+
+# 节点选择器
+nodeSelector: {}
+
+image:
+  registry: acr.aishu.cn
+  repository: dip/ontology-query
+  tag: tag
+  pullPolicy: IfNotPresent
+
+service:
+  ontologyQuery:
+    type: ClusterIP
+    port: 13018
+    nodePort: 31018
+    ingress:
+      enabled: true
+      interface:
+        path:
+          - /api/ontology-query/v1
+
+# 反亲和性设置
+antiAffinity:
+  enabled: true
+  rule: "soft" # 可选参数 hard, soft
+
+# 认证开关
+auth:
+  enabled: true
+
+# 微服务通信依赖配置
+depServices:
+  class-443:
+    ingressClass: class-443
+  hydra-admin:
+    host: hydra-admin
+    port: 4445
+    protocol: http
+  opensearch:
+    host: opensearch-master.resource.svc.cluster.local.
+    port: 9200
+    protocol: http
+    user: admin
+    password: eisoo.com123
+  bkn-backend:
+    host: bkn-backend-svc
+    port: 13014
+    protocol: http
+  uniquery:
+    host: mdl-uniquery-svc
+    port: 13011
+    protocol: http
+  agent-operator-integration:
+    host: agent-operator-integration
+    port: 9000
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+
+config:
+  server:
+    runMode: release
+    httpPort: 13018
+    language: zh-CN
+    readTimeOut: 120
+    writeTimeOut: 120
+    viewDataTimeout: 5m
+    defaultSmallModelEnabled: true
+  log:
+    logLevel: info
+    developMode: false
+    maxAge: 100
+    maxBackups: 20
+    maxSize: 100
+  observability:
+    logEnabled: false
+    traceEnabled: false
+    metricEnabled: false
+    logExporter: console
+    traceProvider: http
+    metricProvider: http
+    logLoadInternal: 1
+    logLoadMaxLog: 10
+    traceMaxQueueSize: 50000
+    metricIntervalSecond: 60
+    httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+    httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+    httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+    grpcTraceFeedIngesterUrl: feed-ingester-service:30013
+    grpcTraceJobId: dip-o11y-trace-grpc
+
+# 资源配置
+resources:
+  requests:
+    cpu: 0
+    memory: 0Gi
+  limits:
+    cpu: 4
+    memory: 32Gi

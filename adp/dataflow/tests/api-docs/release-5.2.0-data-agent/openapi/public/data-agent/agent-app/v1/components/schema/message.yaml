@@ -1,0 +1,28 @@
+Message:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 消息ID
+    conversation_id:
+      type: string
+      description: 会话ID
+    role:
+      type: string
+      description: 角色 user, assistant
+    content:
+      $ref: './content.yaml#/Content'
+    content_type:
+      type: string
+      description: 内容类型
+    status:
+      type: string
+      description: 消息状态
+    reply_id:
+      type: string
+      description: 回复ID,用于关联问答消息
+    agent_info:
+      $ref: './agent_info.yaml#/AgentInfo'
+    index:
+      type: integer
+      description: 消息下标,用于标记消息在整个会话中的位置、顺序，比如基于 index 正序在前端按照时间线展示对话消息

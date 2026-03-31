@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "内部接口修改流程",
+    "description": "inner operate flow",
+    "type": "object",
+    "properties": {
+        "ids": {
+            "description": "流程id列表",
+            "type": "array",
+            "items": {
+                "type":"string",
+                "description": "流程id"
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        },
+        "userid": {
+            "description": "用户id",
+            "type": "string"
+        }
+    },
+    "required": [
+        "ids",
+        "userid"
+    ],
+    "additionalProperties": false
+}

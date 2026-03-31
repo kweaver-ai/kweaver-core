@@ -1,0 +1,12 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_action_schedule",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_unique_identities",
+        "new_name": "f_instance_identities",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "JSON array of target object instance identities"
+    }
+]

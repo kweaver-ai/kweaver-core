@@ -1,0 +1,728 @@
+openapi: 3.0.3
+info:
+  title: MCP服务公共接口
+  version: 2.0.0
+  description: |
+    本OpenAPI文档包含MCP服务器配置管理接口、MCP服务市场接口、MCP服务代理接口，涵盖服务端与代理端所有RESTful接口，便于统一查阅与开发。
+servers:
+  - url: http://localhost:8080
+security:
+  - BearerAuth: []
+tags:
+  - name: MCP服务管理
+    description: MCP Server 的注册、解析、删除、查询、详情、更新等接口
+  - name: MCP服务市场
+    description: MCP服务市场管理接口
+paths:
+  # 服务端接口
+  /api/agent-operator-integration/v1/mcp/parse/sse:
+    post:
+      tags: [MCP服务管理]
+      summary: 解析SSE_MCPServer
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPParseSSERequest'
+      responses:
+        '200':
+          description: 成功返回工具列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPParseSSEResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/agent-operator-integration/v1/mcp:
+    post:
+      tags: [MCP服务管理]
+      summary: 添加MCP_Server配置
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerRegisterRequest'
+      responses:
+        '200':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: MCP Server名称
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/agent-operator-integration/v1/mcp/list:
+    get:
+      tags: [MCP服务管理]
+      summary: 获取MCP_Server列表
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: page
+          in: query
+          description: 页码，从1开始，默认为1
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: 每页数量，默认为10，最大为100，当page_size为-1时，返回所有信息
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: status
+          in: query
+          description: 状态，draft:草稿，未发布; published:已发布; offline:已下线; editing:发布编辑中
+          schema:
+            type: string
+            enum: [draft, published, offline, editing]
+        - name: mode
+          in: query
+          description: 运行模式，stdio, sse, stream
+          schema:
+            type: string
+            enum: [stdio, sse, stream]
+        - name: name
+          in: query
+          description: MCP Server名称
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: 分类
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回MCP Server列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServerListResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/agent-operator-integration/v1/mcp/{mcp_id}:
+    get:
+      tags: [MCP服务管理]
+      summary: 获取MCP_Server详情
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: mcp_id
+          in: path
+          required: true
+          description: MCP Server ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功返回MCP服务器配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServerDetailResponse'
+        '404':
+          description: 未找到MCP服务器
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [MCP服务管理]
+      summary: 编辑MCP_Server配置
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: mcp_id
+          in: path
+          required: true
+          description: MCP Server ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerUpdateRequest'
+      responses:
+        '200':
+          description: 更新成功
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到MCP服务信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [MCP服务管理]
+      summary: 删除MCP_Server配置
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: mcp_id
+          in: path
+          required: true
+          description: MCP Server ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mcp_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: MCP Server ID列表
+              required: [mcp_ids]
+      responses:
+        '200':
+          description: 删除成功
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/agent-operator-integration/v1/mcp/{mcp_id}/tool/{name}/debug:
+    post:
+      tags: [MCP服务管理]
+      summary: MCP工具调试
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: mcp_id
+          in: path
+          required: true
+          description: MCP Server ID
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          description: 工具名称
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPToolDebugRequest'
+      responses:
+        '200':
+          description: 工具调试结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPToolDebugResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # 服务市场接口
+  /api/agent-operator-integration/v1/mcp/market/list:
+    get:
+      tags: [MCP服务市场]
+      summary: 获取MCP服务市场列表
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: page
+          in: query
+          description: 页码，从1开始，默认为1
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: 每页数量，默认为10，最大为100，当page_size为-1时，返回所有信息
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: name
+          in: query
+          description: MCP Server名称
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: 分类
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回MCP服务市场列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServerReleaseListResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误描述
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接
+    Tool:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 工具名称
+        description:
+          type: string
+          description: 工具描述
+        inputSchema:
+          $ref: '#/components/schemas/ToolInputSchema'
+          description: 工具参数输入Schema，符合JSON Schema规范。详见ToolInputSchema结构说明。
+        annotations:
+          type: object
+          description: 工具注解信息
+          properties:
+            title:
+              type: string
+              description: 工具标题
+            destructiveHint:
+              type: boolean
+              description: 是否有破坏性
+            idempotentHint:
+              type: boolean
+              description: 是否幂等
+    ToolInputSchema:
+      type: object
+      description: 工具参数输入Schema，采用JSON Schema规范，便于前端自动生成参数填写表单、校验参数等。
+      properties:
+        type:
+          type: string
+          description: 参数类型，通常为object
+        properties:
+          type: object
+          description: 参数属性定义，key为参数名，value为参数schema（支持type、enum、description等JSON Schema字段）
+          additionalProperties: true
+        required:
+          type: array
+          items:
+            type: string
+          description: 必填参数名列表
+    TextContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: string
+    ImageContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [image]
+        data:
+          type: string
+        mimeType:
+          type: string
+    AudioContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [audio]
+        data:
+          type: string
+        mimeType:
+          type: string
+    EmbeddedResource:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [resource]
+        resource:
+          type: object
+    MCPServerRegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+          enum: [stdio_uv, stdio_npx, sse]
+        command:
+          type: string
+          description: 运行命令
+        args:
+          type: array
+          items:
+            type: string
+          description: 运行参数
+        url:
+          type: string
+          description: 服务URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: 请求头
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: 环境变量
+        source:
+          type: string
+          description: 来源，内置/自定义，默认为自定义
+        category:
+          type: string
+          description: 分类
+      required: [name, mode]
+    MCPServerUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+          enum: [stdio_uv, stdio_npx, sse]
+        url:
+          type: string
+          description: 服务URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        command:
+          type: string
+          description: 运行命令
+        env:
+          type: object
+          description: 环境变量
+          additionalProperties:
+            type: string
+        args:
+          type: array
+          items:
+            type: string
+          description: 运行参数
+        source:
+          type: string
+          description: 来源
+        category:
+          type: string
+          description: 分类
+      required: [mode]
+    MCPServerConfigInfo:
+      type: object
+      description: mcp server基本信息
+      properties:
+        id:
+          type: integer
+          description: MCP Server ID
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+        url:
+          type: string
+          description: 服务URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: 请求头
+        command:
+          type: string
+          description: 运行命令
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: 环境变量
+        args:
+          type: array
+          items:
+            type: string
+          description: 运行参数
+        status:
+          type: string
+          description: 状态
+          enum: [draft, published, offline, editing]
+        source:
+          type: string
+          description: 来源
+        category:
+          type: string
+          description: 分类
+        create_user:
+          type: string
+          description: 创建用户
+        create_time:
+          type: integer
+          description: 创建时间
+        update_user:
+          type: string
+          description: 更新用户
+        update_time:
+          type: integer
+          description: 更新时间
+    MCPServerReleaseInfo:
+      type: object
+      description: 已发布的MCP Server信息
+      properties:
+        id:
+          type: string
+          description: MCP Server ID
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+        source:
+          type: string
+          description: 来源
+        category:
+          type: string
+          description: 分类
+        create_user:
+          type: string
+          description: 创建用户
+        create_time:
+          type: integer
+          description: 创建时间
+    MCPServerListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 总数
+        page:
+          type: integer
+          description: 页码
+        page_size:
+          type: integer
+          description: 每页数量
+        total_pages:
+          type: integer
+          description: 总页数
+        has_next:
+          type: boolean
+          description: 是否有下一页
+        has_pre:
+          type: boolean
+          description: 是否有上一页
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPServerConfigInfo'
+    MCPServerDetailResponse:
+      type: object
+      properties:
+        base_info:
+          $ref: '#/components/schemas/MCPServerConfigInfo'
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+    MCPServerReleaseListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 总数
+        page:
+          type: integer
+          description: 页码
+        page_size:
+          type: integer
+          description: 每页数量
+        total_pages:
+          type: integer
+          description: 总页数
+        has_next:
+          type: boolean
+          description: 是否有下一页
+        has_pre:
+          type: boolean
+          description: 是否有上一页
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPServerReleaseInfo'
+    MCPServerReleaseDetailResponse:
+      type: object
+      properties:
+        base_info:
+          $ref: '#/components/schemas/MCPServerReleaseInfo'
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+    MCPToolDebugRequest:
+      type: object
+      properties:
+        parameters:
+          type: object
+          additionalProperties: true
+          description: 工具请求参数
+      required: [parameters]
+    MCPToolDebugResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: 工具调用结果内容
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TextContent'
+              - $ref: '#/components/schemas/ImageContent'
+              - $ref: '#/components/schemas/AudioContent'
+              - $ref: '#/components/schemas/EmbeddedResource'
+        isError:
+          type: boolean
+          description: 是否为错误
+    MCPParseSSERequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          description: 运行模式
+          enum: [stdio_uv, stdio_npx, sse]
+        url:
+          type: string
+          description: 请求URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: 请求头
+      required: [mode, url, headers]
+    MCPParseSSEResponse:
+      type: object
+      properties:
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'

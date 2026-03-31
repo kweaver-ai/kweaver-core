@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "文本分割",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string"
+                },
+                "separator": {
+                    "enum": [
+                        "custom",
+                        "，",
+                        ",",
+                        "；",
+                        ";",
+                        " "
+                    ]
+                },
+                "custom": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "text",
+                "separator"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

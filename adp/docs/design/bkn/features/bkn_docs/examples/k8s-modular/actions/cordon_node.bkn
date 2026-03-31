@@ -1,0 +1,62 @@
+---
+type: action
+id: cordon_node
+name: 隔离节点
+version: 1.0.0
+spec_version: 1.0.0
+network: k8s-modular
+namespace: k8s
+owner: platform
+action_type: modify
+enabled: false
+risk_level: high
+requires_approval: true
+tags: [运维操作, 节点管理]
+---
+
+# 隔离节点
+
+将故障节点标记为不可调度，防止新 Pod 被调度到该节点。
+
+## 绑定实体
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| node | modify |
+
+## 触发条件
+
+```yaml
+condition:
+  object_type_id: node
+  field: node_status
+  operation: ==
+  value: NotReady
+```
+
+> 当 Node 状态为 NotReady 时触发
+
+## 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| node | 标记节点不可调度 |
+
+## 工具配置
+
+| 类型 | MCP ID | 工具名称 |
+|------|--------|----------|
+| mcp | kubernetes-mcp | cordon_node |
+
+## 参数绑定
+
+| 参数 | 来源 | 绑定 |
+|------|------|------|
+| node | property | node_name |
+
+## 执行说明
+
+1. 执行 `kubectl cordon` 标记节点
+2. 现有 Pod 继续运行
+3. 新 Pod 不调度到该节点
+4. 恢复后需手动 `kubectl uncordon`

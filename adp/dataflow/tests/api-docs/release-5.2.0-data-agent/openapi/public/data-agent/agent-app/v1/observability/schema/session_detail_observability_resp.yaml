@@ -1,0 +1,32 @@
+SessionDetailObservabilityResp:
+  type: object
+  properties:
+    session_id:
+      type: string
+      description: Session ID
+    start_time:
+      type: integer
+      format: int64
+      description: 开始时间
+    end_time:
+      type: integer
+      format: int64
+      description: 结束时间
+    session_run_count:
+      type: integer
+      description: Session运行次数
+    session_duration:
+      type: integer
+      description: Session时长，单位毫秒
+    avg_run_execute_duration:
+      type: integer
+      description: 平均运行执行时长
+    avg_run_ttft_duration:
+      type: integer
+      description: 平均运行首token响应时间
+    run_error_count:
+      type: integer
+      description: 运行错误次数
+    tool_fail_count:
+      type: integer
+      description: 工具失败次数

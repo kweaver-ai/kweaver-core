@@ -1,0 +1,31 @@
+# 通用认证Header定义
+# 支持两种引用方式：
+# - common_auth_header/parameters/x-account-id
+# - CommonAuthHeaderParams/parameters/x-account-id
+
+common_auth_header:
+  parameters:
+    x-account-id:
+      name: x-account-id
+      in: header
+      required: true
+      schema:
+        type: string
+      description: |
+        - 用户ID/应用账号ID
+        - 当 x-account-type 为 app 时，x-account-id 为应用账号ID
+        - 当 x-account-type 为 user 时，x-account-id 为用户ID
+
+    x-account-type:
+      name: x-account-type
+      in: header
+      description: |
+        - 账号类型
+        - user-普通用户
+        - app-应用账号
+      enum:
+        - user
+        - app
+      required: true
+      schema:
+        type: string

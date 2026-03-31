@@ -1,0 +1,68 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "运行安全策略流程",
+    "description": "put /api/automation/v1/security-policy/procs",
+    "type": "object",
+    "properties": {
+        "user_id": {
+            "description": "用户ID",
+            "type": "string"
+        },
+        "flow_id": {
+            "description": "流程ID",
+            "type": "string"
+        },
+        "source": {
+            "description": "触发数据",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "数据类型",
+                            "type": "string",
+                            "enum": ["file", "folder"]
+                        },
+                        "id": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "rev": {
+                            "type": "string"
+                        },
+                        "size": {
+                            "type": "integer"
+                        },
+                        "path": {
+                            "type": "string"
+                        }
+                    },
+                    "required": ["type", "name", "id", "size", "path"],
+                    "additionalProperties": true
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "数据类型",
+                            "type": "string",
+                            "enum": ["file", "folder"]
+                        },
+                        "object_id": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": true,
+                    "required": ["type", "object_id"]
+                }
+            ]
+        },
+        "values": {
+            "description": "运行数据",
+            "type": "object"
+        }
+    },
+    "required": ["user_id", "flow_id", "source"]
+}

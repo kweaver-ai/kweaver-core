@@ -1,0 +1,59 @@
+{{- if .Values.components.streamDataPipeline.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.serviceAccountName }}-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccountName }}
+    namespace: {{ .Values.namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ .Values.serviceAccountName }}-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.serviceAccountName }}-cluster-role
+  labels:
+    module: "{{ .Release.Name }}"
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccountName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: "{{ .Release.Name }}"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dataflow-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: dataflow-service-account
+    namespace: {{ .Values.namespace }}
+roleRef:
+  kind: ClusterRole
+  name: dataflow-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dataflow-cluster-role
+  labels:
+    module: "{{ .Release.Name }}"
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get","list","watch"]
+{{- end }}

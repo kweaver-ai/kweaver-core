@@ -1,0 +1,29 @@
+ListMemoryReqParams: 
+  parameters:
+    user_id:
+      name: user_id
+      description: 用户ID ( 请求参数中必须包含 user_id, agent_id, run_id 中的至少一个参数)
+      in: query
+      type: string
+      schema:
+        type: string
+      required: false
+    agent_id:
+      name: agent_id
+      in: query
+      schema:
+        type: string
+      description: Agent ID
+    run_id:
+      name: run_id
+      in: query
+      schema:
+        type: string
+      description: Run ID
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 100
+      description: 返回条数

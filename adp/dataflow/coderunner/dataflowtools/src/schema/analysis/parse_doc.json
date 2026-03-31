@@ -1,0 +1,15 @@
+{
+    "description": "提取文档中模板的槽位参数校验",
+    "type": "object",
+    "properties": {
+        "docid": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 32
+        }
+    },
+    "required": [
+        "docid"
+    ],
+    "additionalProperties": false
+}

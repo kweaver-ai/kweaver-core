@@ -1,0 +1,9 @@
+AugmentDataSource:
+  type: object
+  properties:
+    kg:
+      type: array
+      items:
+        $ref: './kg_source.yaml#/KgSource'
+      description: 图谱类型数据源
+      minItems: 1

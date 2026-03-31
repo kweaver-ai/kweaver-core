@@ -1,0 +1,72 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "先择列举指定文件夹下的文件或文件夹",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "docids": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                            },
+                            {
+                                "type": "string",
+                                "pattern": "^{{__.*}}$"
+                            },
+                            {
+                                "type": "string",
+                                "enum": ["knowledge_doc_lib", "department_doc_lib", "custom_doc_lib"]
+                            }
+                        ]
+                    }
+                },
+                "depth": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

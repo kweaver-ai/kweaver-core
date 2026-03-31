@@ -1,0 +1,23 @@
+Input:
+  type: object
+  required:
+    - fields
+  properties:
+    fields:
+      type: array
+      items:
+        $ref: './field.yaml#/Field'
+      description: 参数列表
+    rewrite:
+      $ref: './rewrite.yaml#/Rewrite'
+      description: query重写
+    augment:
+      $ref: './augment.yaml#/Augment'
+      description: query增强
+    is_temp_zone_enabled:
+      type: string
+      enum: [enabled, disabled]
+      description: 是否启用临时区
+    temp_zone_config:
+      $ref: './temp_zone_config.yaml#/TempZoneConfig'
+      description: 临时区配置

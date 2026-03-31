@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "自定义模型提取参数校验",
+    "description": "post /api/automation/v1/uie/infer",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^\\d+$"
+        }
+    },
+    "required": [
+        "id"
+    ],
+    "additionalProperties": false
+}

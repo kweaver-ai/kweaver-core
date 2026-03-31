@@ -1,0 +1,110 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建动作",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "maxLength": 256
+        },
+        "description": {
+            "type": "string",
+            "maxLength": 256
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "python"
+            ]
+        },
+        "inputs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z]+$"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 256
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 1024
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "string",
+                            "number",
+                            "datetime",
+                            "asFile",
+                            "asFolder",
+                            "multipleFiles"
+                        ]
+                    },
+                    "required": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "key",
+                    "name",
+                    "type"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "outputs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z]+$"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 256
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "string",
+                            "number",
+                            "datetime",
+                            "asFile",
+                            "asFolder",
+                            "multipleFiles"
+                        ]
+                    }
+                },
+                "required": [
+                    "key",
+                    "name",
+                    "type"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "config": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "code"
+            ],
+            "additionalProperties": true
+        }
+    },
+    "required": [
+        "name",
+        "type"
+    ]
+}

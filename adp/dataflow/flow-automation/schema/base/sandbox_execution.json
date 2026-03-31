@@ -1,0 +1,65 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Sandbox Execution",
+    "description": "post /api/automation/v1/sandbox-execution",
+    "type": "object",
+    "properties": {
+        "code": {
+            "type": "string",
+            "description": "Code to execute"
+        },
+        "language": {
+            "type": "string",
+            "description": "Programming language",
+            "example": "python",
+            "enum": ["python"]
+        },
+        "event": {
+            "type": "object",
+            "description": "Event data passed to the code",
+            "additionalProperties": true
+        },
+        "timeout": {
+            "type": "integer",
+            "description": "Execution timeout in seconds"
+        },
+        "sandbox_config": {
+            "type": "object",
+            "description": "Sandbox session configuration",
+            "properties": {
+                "template_id": {
+                    "type": "string",
+                    "description": "Sandbox template ID",
+                    "example": "python-basic"
+                },
+                "cpu": {
+                    "type": "string",
+                    "description": "CPU resource limit",
+                    "example": "1"
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "Memory limit",
+                    "example": "512Mi"
+                },
+                "disk": {
+                    "type": "string",
+                    "description": "Disk limit",
+                    "example": "1Gi"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Session timeout in seconds",
+                    "minimum": 1,
+                    "example": 300
+                }
+            },
+            "required": ["template_id"],
+            "additionalProperties": false
+        }
+    },
+    "required": [
+        "code"
+    ],
+    "additionalProperties": false
+}

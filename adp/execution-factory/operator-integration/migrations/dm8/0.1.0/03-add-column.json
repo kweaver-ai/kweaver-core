@@ -1,0 +1,11 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_toolbox",
+        "object_type": "COLUMN",
+        "operation_type": "ADD",
+        "object_name": "f_metadata_type",
+        "object_property": "VARCHAR(50 CHAR) NOT NULL DEFAULT 'openapi'",
+        "object_comment": "工具箱内工具的类型"
+    }
+]

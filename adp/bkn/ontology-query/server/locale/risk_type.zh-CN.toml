@@ -1,0 +1,20 @@
+# RiskType（ontology-query 评估）
+[OntologyQuery.RiskType.RiskLevelExceedsMaxAcceptable]
+Description = "评估得到的风险等级超过该风险类允许的最大等级"
+Solution = "请调整入参或风险配置，或改用评估风险更低的操作。"
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.RiskTypeNotFound]
+Description = "引用的风险类不存在"
+Solution = "请确认操作类型配置中的 risk_type_id 与已存在的风险类一致。"
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.InternalError.GetRiskTypesByIDsFailed]
+Description = "加载风险类失败"
+Solution = "请稍后重试；若持续失败请联系技术支持。"
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.InternalError.ExecuteRiskAssessmentToolFailed]
+Description = "风险评估工具执行失败"
+Solution = "请检查风险函数关联的工具配置后重试。"
+ErrorLink = "N/A"

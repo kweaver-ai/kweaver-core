@@ -1,0 +1,30 @@
+role_create_req:
+  title: 角色创建请求
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: 角色名称
+      maxLength: 50
+    key:
+      type: string
+      description: |
+        - 角色唯一标识
+          - 页面上暂时没有，前端不需要传
+      maxLength: 50
+    profile:
+      type: string
+      description: 角色简介
+      maxLength: 100
+    members:
+      type: array
+      description: 角色成员
+      items:
+        $ref: './member_req.yaml#/role_member_req'
+    # resources:
+    #   type: array
+    #   description: 角色资源
+    #   items:
+    #     $ref: './resource_req.yaml#/role_resource_req'

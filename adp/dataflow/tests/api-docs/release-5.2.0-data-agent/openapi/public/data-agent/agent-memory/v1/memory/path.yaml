@@ -1,0 +1,137 @@
+paths:
+  /api/agent-memory/v1/memory: 
+    # post:
+    #   summary: 构建记忆
+    #   tags:
+    #     - 记忆构建&召回
+    #   requestBody:
+    #     required: true
+    #     content:
+    #       application/json:
+    #         schema:
+    #           $ref: '../schema/create_memory_req.yaml#/CreateMemoryReq'
+    #   responses:
+    #     '204':
+    #       description: 记忆构建成功
+    #     '400':
+    #       $ref: '../components/components.yaml#/components/responses/400'  
+    #     '500':
+    #       $ref: '../components/components.yaml#/components/responses/500'
+    get:
+      summary: 记忆列表
+      tags:
+        - 记忆管理
+      parameters:
+        - $ref: '../schema/list_memory_req.yaml#/ListMemoryReqParams/parameters/user_id'
+        - $ref: '../schema/list_memory_req.yaml#/ListMemoryReqParams/parameters/agent_id'
+        - $ref: '../schema/list_memory_req.yaml#/ListMemoryReqParams/parameters/run_id'
+        - $ref: '../schema/list_memory_req.yaml#/ListMemoryReqParams/parameters/limit'
+
+      responses:
+        '200':
+          description: 记忆列表
+          content:
+            application/json:
+              schema:
+                $ref: '../schema/list_memory_resp.yaml#/ListMemoryResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+  /api/agent-memory/v1/memory/{memory_id}: 
+    put:
+      summary: 修改记忆
+      tags:
+        - 记忆管理
+      parameters:
+        - memory_id:
+          name: memory_id
+          in: path
+          schema:
+            type: string
+            required: true
+          description: 记忆ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: 记忆内容
+
+      responses:
+        '204':
+          description: 更新成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    delete:
+      summary: 删除记忆
+      tags:
+        - 记忆管理
+      parameters:
+        - memory_id:
+          name: memory_id
+          in: path
+          schema:
+            type: string
+            required: true
+          description: 记忆ID
+      responses:
+        '204':
+          description: 删除成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+  /api/agent-memory/v1/memory/{memory_id}/history:
+    get:
+      summary: 获取记忆历史
+      tags:
+        - 记忆管理
+      parameters:
+        - memory_id:
+          name: memory_id
+          in: path
+          schema:
+            type: string
+            description: 记忆ID
+      responses:
+        '200':
+          description: 记忆历史
+          content:
+            application/json:
+              schema:
+                $ref: '../schema/memory_history_resp.yaml#/MemoryHistoryResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+ 
+  /api/agent-memory/v1/search:
+    post:
+      summary: 记忆召回
+      tags:
+        - 记忆构建&召回
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schema/search_memory_req.yaml#/SearchMemoryReq'
+      responses:
+        '200':
+          description: 记忆召回结果
+          content:
+            application/json:
+               schema:
+                 $ref: '../schema/search_memory_resp.yaml#/SearchMemoryResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'

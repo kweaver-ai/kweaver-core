@@ -1,0 +1,21 @@
+agent_tpl_ops:
+  type: object
+  properties:
+    copy:
+      type: boolean
+      description: 是否有复制权限
+    delete:
+      type: boolean
+      description: 是否有删除权限
+    edit:
+      type: boolean
+      description: 是否有编辑权限
+    use:
+      type: boolean
+      description: 是否有使用权限（基于模板来创建agent）
+    publish:
+      type: boolean
+      description: 是否有发布权限
+    
+    
+  

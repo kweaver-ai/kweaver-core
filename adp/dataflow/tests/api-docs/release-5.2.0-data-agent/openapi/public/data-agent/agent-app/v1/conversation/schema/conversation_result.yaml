@@ -1,0 +1,152 @@
+# ConversationDetail:
+#   description: 会话完整结果
+#   type: object
+#   properties:
+#     $ref: './conversation_intro.yaml#/ConversationIntro'
+# ConversationResult:
+#   description: 会话完整结果
+#   type: object
+#   properties:
+#     agent_id:
+#       type: string
+#       description: agentID
+#     agent_version:
+#       type: string
+#       description: agent版本
+#     display_name:
+#       type: string
+#       description: 显示名称
+#     description:
+#       type: string
+#       description: 描述
+#     agent_availability:
+#       type: boolean
+#       description: agent可用性
+#     answer:
+#       type: object
+#       properties:
+#         text:
+#           type: string
+#           description: 回答文本
+#         cites:
+#           type: array
+#           items:
+#             $ref: '../../components/schema/cite.yaml#/Cite'
+#           description: 引用信息
+#     thinking:
+#       type: string
+#       description: 思考过程
+#     skills_process:
+#       type: array
+#       items:
+#         $ref: '../../components/schema/skill_process.yaml#/SkillProcess'
+#     answer_attribution:
+#       type: string
+#       description: 答案归属
+#     effective:
+#       type: boolean
+#       description: 是否有效
+#     has_permission:
+#       type: boolean
+#       description: 是否有权限
+#     qa_id:
+#       type: string
+#       description: 问答ID
+#     query_str:
+#       type: string
+#       description: 查询字符串
+#     question_attribution:
+#       type: string
+#       description: 问题归属
+#     related_queries:
+#       type: array
+#       items:
+#         $ref: '../../components/schema/related_query.yaml#/RelatedQuery'
+#     source_ranges:
+#       type: array
+#       items:
+#         $ref: '../../components/schema/source_range.yaml#/SourceRange'
+#     status:
+#       $ref: '../../components/schema/resp_status.yaml#/RespStatus'
+#     regeneration:
+#       type: object
+#       nullable: true
+#       description: 重新生成信息
+
+# #new add
+#     ask:
+#       $ref: '../../components/schema/ask.yaml#/Ask'
+#     doc_retrieval:
+#       $ref: '../../components/schema/doc_retrieval.yaml#/DocRetrieval'
+#     graph_retrieval:
+#       type: object
+#       description: 图谱检索（暂时没有用到）
+#       properties:
+#         text:
+#           type: string
+#           description: 图谱检索文本
+#         cites:
+#           type: object
+#           description: 引用信息
+#         kg_id:
+#           type: string
+#           description: 知识图谱ID
+#         kg_name:
+#           type: string
+#           description: 知识图谱名称
+#         subgraph:
+#           type: object
+#           description: 子图信息
+#     answer_type:
+#       $ref: '../../components/schema/answer_type.yaml#/AnswerType'
+#     answer_type_other:
+#       type: any
+#       description: 当answer_type为other时使用的数据
+#     other_variables:
+#       type: object
+#       description: 用于存储配置中output.variables.other_vars配置的其他变量
+#     middle_output_var_res:
+#       type: object
+#       description: 中间输出变量
+#       $ref: '../../components/schema/middle_output_var_res.yaml#/MiddleOutputVarRes'
+#     original_response:
+#       type: object
+#       description: 原始response（来自agent-executor）
+#       properties:
+#         answer:
+#           type: object
+#           description: |
+#             - 回答
+#             - 这个是外层结构体，里面包含具体的回答内容
+#         user_define:
+#           type: object
+#           description: 用户定义的一些内容，这里好像是直接返回接受到的内容
+#         ask:
+#           type: object
+#           description: 中断相关信息
+#         status:
+#           type: string
+#           description: |
+#             - 状态
+#             - True: 流式响应结束
+#             - False: 流式响应中
+#             - Error: 错误
+#           enum:
+#             - True
+#             - False
+#             - Error
+#         error:
+#           type: object
+#           description: 错误
+#     error:
+#       type: object
+#       properties:
+#         type:
+#           type: string
+#           description: 错误类型
+#           enum:
+#             - agent_factory
+#             - agent_executor
+#         error:
+#           type: any
+#           description: 错误信息，根据type不同，error的内容不同

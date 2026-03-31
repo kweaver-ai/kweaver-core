@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建安全策略流程",
+    "description": "post /api/automation/v1/security-policy/flows",
+    "type": "object",
+    "properties": {
+        "policy_type": {
+            "description": "策略类型",
+            "type": "string",
+            "enum": [
+                "upload",
+                "perm",
+                "delete",
+                "rename",
+                "copy",
+                "move",
+                "modify_folder_property"
+            ]
+        },
+        "steps": {
+            "description": "自动化流程定义",
+            "type": "array",
+            "items": {
+                "type": "object"
+            },
+            "minItems": 2,
+            "uniqueItems": true
+        }
+    },
+    "required": [
+        "steps",
+        "policy_type"
+    ],
+    "additionalProperties": false
+}

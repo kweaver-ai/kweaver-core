@@ -1,0 +1,28 @@
+{{- if .Values.service.agentOperatorIntegration.ingress.enabled -}}
+{{ if .Values.service.agentOperatorIntegration.ingress.interface }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.moduleName }}-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 2048m
+spec:
+{{- if index .Values.depServices "class-443" "ingressClass" }}
+  ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" }}
+{{- end }}
+  rules:
+  - http:
+      paths:
+        {{- range .Values.service.agentOperatorIntegration.ingress.interface.path }}
+        - path: {{ . }}
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ $.Values.moduleName }}
+              port:
+                number: {{ $.Values.service.port }}
+        {{- end }}
+{{ end }}
+{{- end }}

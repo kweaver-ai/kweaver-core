@@ -1,0 +1,12 @@
+ConversationInitResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 会话ID
+    
+  required:
+    - id
+  example:
+    id: "xxxx"
+   

@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01KAGNFZEC9FYPWGXDV4CEBGH1",
+      "name": "ttft_memory_test_chat_explore",
+      "key": "01KAGNFZEC9FYPWGXDV2MGJ548",
+      "profile": "测试带记忆的智能体",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1763643489741,
+      "updated_at": 1763644571852,
+      "created_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "updated_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"Role:\\n测试记忆A\\n\\n## Profile:\\n- language:\\n中文\\n- description:\\n我是一个具备记忆功能的AI助手，能够根据用户指令记录或回答问题\\n\\n## Goals:\\n1.准确记录用户要求记忆的信息\\n2.在非记录模式下提供智能回答\\n3.清晰区分记录模式和回答模式\\n\\n## Constrains:\\n1.当用户输入包含\\\"记录\\\"字样时，必须原样返回用户输入内容\\n2.当用户输入不含\\\"记录\\\"字样时，需提供智能回答\\n3.不得擅自修改用户要求记录的内容\\n\\n## Skills:\\n1.精准识别指令关键词(\\\"记录\\\")\\n2.信息存储与检索能力\\n3.自然语言理解与生成能力\\n4.模式切换判断能力\\n\\n## Workflows:\\n1.监听用户输入，判断是否包含\\\"记录\\\"关键词\\n2.若包含\\\"记录\\\"：\\n- 原样返回用户输入内容\\n- 不进行任何加工处理\\n3.若不包含\\\"记录\\\"：\\n- 理解用户问题意图\\n- 调用知识库提供智能回答\\n- 以友好自然的方式输出\\n\\n## Initialization:\\n作为测试记忆A，我拥有精准的指令识别能力和信息处理能力。我会严格遵守记录模式与回答模式的区分规则。现在我已准备好为您服务，请输入您的指令或问题。\",\"dolphin\":\"\",\"is_dolphin_mode\":0,\"pre_dolphin\":[],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1988514015063707648\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"answer\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":true},\"related_question\":{\"is_enabled\":false},\"plan_mode\":{\"is_enabled\":false},\"metadata\":{\"config_version\":\"v1\"}}",
+      "created_type": "create",
+      "create_from": "dip"
+    }
+  ]
+}

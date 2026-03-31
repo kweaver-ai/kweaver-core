@@ -1,0 +1,12 @@
+Rewrite:
+  type: object
+  required:
+    - enable
+    - llm_config
+  properties:
+    enable:
+      type: boolean
+      description: 是否启用
+    llm_config:
+      $ref: './llm_config.yaml#/LlmConfig'
+      description: LLM配置

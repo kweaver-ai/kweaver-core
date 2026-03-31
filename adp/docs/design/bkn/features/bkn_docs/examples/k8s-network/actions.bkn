@@ -1,0 +1,116 @@
+---
+type: fragment
+id: k8s-actions
+name: Kubernetes行动定义
+parent: index.bkn
+version: 1.0.0
+---
+
+# 行动定义
+
+本文件定义 Kubernetes 网络中的运维行动。
+
+---
+
+## Action: restart_pod
+
+**重启Pod** - 当 Pod 状态异常时，自动执行重启操作
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| pod | modify |
+
+### 触发条件
+
+```yaml
+condition:
+  object_type_id: pod
+  field: pod_status
+  operation: in
+  value:
+    - Unknown
+    - Failed
+```
+
+> 当 Pod 状态为 Unknown 或 Failed 时触发
+
+### 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| pod | 删除并重建 Pod，恢复服务状态 |
+
+### 工具配置
+
+| 类型 | 工具箱ID | 工具ID |
+|------|----------|--------|
+| tool | k8s_toolbox | kubectl_delete_pod |
+
+### 参数绑定
+
+| 参数 | 来源 | 绑定 | 说明 |
+|------|------|------|------|
+| pod | property | pod_name | Pod 名称 |
+| namespace | property | pod_namespace | 命名空间 |
+| grace_period | const | 30 | 优雅终止等待秒数 |
+| force | input | - | 是否强制删除 |
+
+### 调度配置
+
+| 类型 | 表达式 |
+|------|--------|
+| FIX_RATE | 5m |
+
+### 执行流程
+
+1. 确认 Pod 状态仍为异常
+2. 执行删除操作
+3. 等待控制器自动重建
+4. 验证新 Pod 状态
+
+---
+
+## Action: cordon_node
+
+**隔离节点** - 将故障节点标记为不可调度
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| node | modify |
+
+### 触发条件
+
+```yaml
+condition:
+  object_type_id: node
+  field: node_status
+  operation: ==
+  value: NotReady
+```
+
+> 当 Node 状态为 NotReady 时触发
+
+### 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| node | 标记节点为不可调度状态 |
+
+### 工具配置
+
+| 类型 | MCP ID | 工具名称 |
+|------|--------|----------|
+| mcp | kubernetes-mcp | cordon_node |
+
+### 参数绑定
+
+| 参数 | 来源 | 绑定 |
+|------|------|------|
+| node | property | node_name |
+
+### 执行说明
+
+1. 执行 `kubectl cordon` 标记节点不可调度
+2. 现有 Pod 继续运行
+3. 新 Pod 不会调度到该节点
+4. 节点恢复后手动 `kubectl uncordon` 解除

@@ -1,0 +1,195 @@
+DebugResponse:
+  type: object
+  properties:
+    answer:
+      type: object
+      properties:
+        answer:
+          type: object
+          nullable: true
+          properties:
+            ask:
+              $ref: '../../components/schema/ask_tool.yaml#/AskTool'
+    block_answer:
+      type: string
+    debug_info:
+      type: object
+      properties:
+        input:
+          $ref: '../../components/schema/debug_input.yaml#/DebugInput'
+        llm:
+          type: object
+          properties:
+            debug_info:
+              type: object
+              properties:
+                execute_time:
+                  type: number
+            llm_answer:
+              type: object
+              properties:
+                usage:
+                  type: object
+                  properties:
+                    completion_tokens:
+                      type: integer
+                    prompt_tokens:
+                      type: integer
+                    total_tokens:
+                      type: integer
+                status:
+                  type: object
+                  properties:
+                    assign_time:
+                      type: integer
+                    explore_time:
+                      type: integer
+                    judge_time:
+                      type: integer
+                    prompt_time:
+                      type: integer
+                    tool_time:
+                      type: integer
+        output:
+          type: object
+          nullable: true
+    llm_block_mode:
+      type: string
+    status:
+      type: string
+    step:
+      type: string
+  required:
+    - status
+    - step
+  example:
+    answer:
+      answer: null
+      ask:
+        session_id: agent-session-1923245172842434560
+        tool_args:
+          - key: markdown_text
+            type: string
+            value: |-
+              这个故事充满了温馨和友谊，它向我们展示了帮助他人不仅能够带来内心的满足感，还能促进人与人之间的联系。小明在公园里遇到了迷路的小猫小花，他没有犹豫，而是选择伸出援手，帮助小花找到了回家的路。这一善举不仅让小花感到温暖和感激，也让小明收获了新的朋友。
+
+              故事中的小猫小花，虽然是一只动物，但它能够说话，这在现实生活中是不可能的，但在童话故事中，这样的设定增加了故事的趣味性和想象力。小花的家在公园里的一棵大树下，那里有一座小桥，这样的描述让读者仿佛置身于一个充满魔法和奇迹的世界。
+
+              小明和小花的友谊，是通过共同的经历和相互的帮助建立起来的。他们一起在公园里寻找线索，共同面对困难，这种经历加深了他们之间的感情。小明的善良和乐于助人的品质，让他成为了小花心中的英雄，而小花的感激之情，也让小明感受到了帮助他人的快乐。
+
+              这个故事告诉我们，帮助他人是一件快乐的事情，它不仅能让我们感到内心的满足，还能让我们结交到更多的朋友。在这个过程中，我们不仅能够传递爱和善意，还能收获友谊和快乐。正如小明和小花的故事所展现的那样，当我们伸出援手，帮助那些需要帮助的人或动物时，我们不仅能够改变他们的命运，还能让自己的生活变得更加美好。
+          - key: filename
+            type: null
+            value: agent_story
+        tool_name: 文本转PDF_post
+    block_answer: ""
+    debug_info:
+      input:
+        history:
+          - content: 你好
+            role: user
+        query: 你好
+        tool:
+          session_id: agent-session-1923245172842434560
+          tool_args:
+            - key: query
+              type: string
+              value: 在一个风和日丽的下午，小明在公园里散步，突然听到一声“你好”。他回头一看，发现是一只会说话的小猫。小猫说：“你好，我是小花，我迷路了，你能帮我找到回家的路吗？”小明惊讶之余，还是答应了小猫的请求。他们一起在公园里寻找线索，小猫告诉小明，它的家就在一棵大树下，那里有一座小桥。经过一番努力，他们终于找到了小猫的家。小猫感激地对小明说：“谢谢你，你真是个好人。”小明微笑着回答：“不用谢，这是我应该做的。”从此，小明和小猫成了好朋友，经常一起在公园里玩耍。这个故事告诉我们，帮助别人是一件快乐的事情，也能让我们结交到更多的朋友。
+          tool_name: 扩写小能手
+      llm:
+        debug_info:
+          execute_time: 18.299253925
+        llm_answer:
+          history:
+            - content: 你好
+              role: user
+          intervention_tool_block_vars:
+            tool_call_info:
+              args:
+                filename: agent_story
+                markdown_text: |-
+                  这个故事充满了温馨和友谊，它向我们展示了帮助他人不仅能够带来内心的满足感，还能促进人与人之间的联系。小明在公园里遇到了迷路的小猫小花，他没有犹豫，而是选择伸出援手，帮助小花找到了回家的路。这一善举不仅让小花感到温暖和感激，也让小明收获了新的朋友。
+
+                  故事中的小猫小花，虽然是一只动物，但它能够说话，这在现实生活中是不可能的，但在童话故事中，这样的设定增加了故事的趣味性和想象力。小花的家在公园里的一棵大树下，那里有一座小桥，这样的描述让读者仿佛置身于一个充满魔法和奇迹的世界。
+
+                  小明和小花的友谊，是通过共同的经历和相互的帮助建立起来的。他们一起在公园里寻找线索，共同面对困难，这种经历加深了他们之间的感情。小明的善良和乐于助人的品质，让他成为了小花心中的英雄，而小花的感激之情，也让小明感受到了帮助他人的快乐。
+
+                  这个故事告诉我们，帮助他人是一件快乐的事情，它不仅能让我们感到内心的满足，还能让我们结交到更多的朋友。在这个过程中，我们不仅能够传递爱和善意，还能收获友谊和快乐。正如小明和小花的故事所展现的那样，当我们伸出援手，帮助那些需要帮助的人或动物时，我们不仅能够改变他们的命运，还能让自己的生活变得更加美好。
+              assign_type: ->
+              output_var: result
+              tool_name: 文本转PDF_post
+            tool_name: 文本转PDF_post
+          output_optimize:
+            answer:
+              answer:
+                - agent_name: main
+                  answer: |-
+                    这个故事充满了温馨和友谊，它向我们展示了帮助他人不仅能够带来内心的满足感，还能促进人与人之间的联系。小明在公园里遇到了迷路的小猫小花，他没有犹豫，而是选择伸出援手，帮助小花找到了回家的路。这一善举不仅让小花感到温暖和感激，也让小明收获了新的朋友。
+
+                    故事中的小猫小花，虽然是一只动物，但它能够说话，这在现实生活中是不可能的，但在童话故事中，这样的设定增加了故事的趣味性和想象力。小花的家在公园里的一棵大树下，那里有一座小桥，这样的描述让读者仿佛置身于一个充满魔法和奇迹的世界。
+
+                    小明和小花的友谊，是通过共同的经历和相互的帮助建立起来的。他们一起在公园里寻找线索，共同面对困难，这种经历加深了他们之间的感情。小明的善良和乐于助人的品质，让他成为了小花心中的英雄，而小花的感激之情，也让小明感受到了帮助他人的快乐。
+
+                    这个故事告诉我们，帮助他人是一件快乐的事情，它不仅能让我们感到内心的满足，还能让我们结交到更多的朋友。在这个过程中，我们不仅能够传递爱和善意，还能收获友谊和快乐。正如小明和小花的故事所展现的那样，当我们伸出援手，帮助那些需要帮助的人或动物时，我们不仅能够改变他们的命运，还能让自己的生活变得更加美好。
+                  block_answer: ""
+                  input_message:
+                    - content: 在一个风和日丽的下午，小明在公园里散步，突然听到一声“你好”。他回头一看，发现是一只会说话的小猫。小猫说：“你好，我是小花，我迷路了，你能帮我找到回家的路吗？”小明惊讶之余，还是答应了小猫的请求。他们一起在公园里寻找线索，小猫告诉小明，它的家就在一棵大树下，那里有一座小桥。经过一番努力，他们终于找到了小猫的家。小猫感激地对小明说：“谢谢你，你真是个好人。”小明微笑着回答：“不用谢，这是我应该做的。”从此，小明和小猫成了好朋友，经常一起在公园里玩耍。这个故事告诉我们，帮助别人是一件快乐的事情，也能让我们结交到更多的朋友。
+                      role: user
+                  interrupted: false
+                  status: completed
+                  think: ""
+              previous_status:
+                assign_time: 0
+                explore_time: 0
+                judge_time: 0
+                prompt_time: 0
+                tool_time: 0
+              query: 在一个风和日丽的下午，小明在公园里散步，突然听到一声“你好”。他回头一看，发现是一只会说话的小猫。小猫说：“你好，我是小花，我迷路了，你能帮我找到回家的路吗？”小明惊讶之余，还是答应了小猫的请求。他们一起在公园里寻找线索，小猫告诉小明，它的家就在一棵大树下，那里有一座小桥。经过一番努力，他们终于找到了小猫的家。小猫感激地对小明说：“谢谢你，你真是个好人。”小明微笑着回答：“不用谢，这是我应该做的。”从此，小明和小猫成了好朋友，经常一起在公园里玩耍。这个故事告诉我们，帮助别人是一件快乐的事情，也能让我们结交到更多的朋友。
+              status:
+                assign_time: 0
+                explore_time: 1
+                judge_time: 0
+                prompt_time: 0
+                tool_time: 0
+              usage:
+                completion_tokens: 610
+                prompt_tokens: 130
+                total_tokens: 740
+            status: "True"
+          output_origin:
+            answer: 在一个风和日丽的下午，小明在公园里散步，突然听到一声“你好”。他回头一看，发现是一只会说话的小猫。小猫说：“你好，我是小花，我迷路了，你能帮我找到回家的路吗？”小明惊讶之余，还是答应了小猫的请求。他们一起在公园里寻找线索，小猫告诉小明，它的家就在一棵大树下，那里有一座小桥。经过一番努力，他们终于找到了小猫的家。小猫感激地对小明说：“谢谢你，你真是个好人。”小明微笑着回答：“不用谢，这是我应该做的。”从此，小明和小猫成了好朋友，经常一起在公园里玩耍。这个故事告诉我们，帮助别人是一件快乐的事情，也能让我们结交到更多的朋友。
+            think: ""
+          previous_status:
+            assign_time: 0
+            explore_time: 0
+            judge_time: 0
+            prompt_time: 1
+            tool_time: 0
+          query: 你好
+          status:
+            assign_time: 0
+            explore_time: 0
+            judge_time: 0
+            prompt_time: 2
+            tool_time: 1
+          to_transfer_text:
+            answer: |-
+              这个故事充满了温馨和友谊，它向我们展示了帮助他人不仅能够带来内心的满足感，还能促进人与人之间的联系。小明在公园里遇到了迷路的小猫小花，他没有犹豫，而是选择伸出援手，帮助小花找到了回家的路。这一善举不仅让小花感到温暖和感激，也让小明收获了新的朋友。
+
+              故事中的小猫小花，虽然是一只动物，但它能够说话，这在现实生活中是不可能的，但在童话故事中，这样的设定增加了故事的趣味性和想象力。小花的家在公园里的一棵大树下，那里有一座小桥，这样的描述让读者仿佛置身于一个充满魔法和奇迹的世界。
+
+              小明和小花的友谊，是通过共同的经历和相互的帮助建立起来的。他们一起在公园里寻找线索，共同面对困难，这种经历加深了他们之间的感情。小明的善良和乐于助人的品质，让他成为了小花心中的英雄，而小花的感激之情，也让小明感受到了帮助他人的快乐。
+
+              这个故事告诉我们，帮助他人是一件快乐的事情，它不仅能让我们感到内心的满足，还能让我们结交到更多的朋友。在这个过程中，我们不仅能够传递爱和善意，还能收获友谊和快乐。正如小明和小花的故事所展现的那样，当我们伸出援手，帮助那些需要帮助的人或动物时，我们不仅能够改变他们的命运，还能让自己的生活变得更加美好。
+            think: ""
+          usage:
+            completion_tokens: 958
+            prompt_tokens: 810
+            total_tokens: 1768
+      output: null
+    llm_block_mode: ""
+    status: "True"
+    step: llm
+
+
+

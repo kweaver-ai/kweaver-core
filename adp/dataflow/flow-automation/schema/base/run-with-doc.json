@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "右键运行安全策略流程",
+    "description": "put /api/automation/v1/security-policy/procs",
+    "type": "object",
+    "properties": {
+        "docid": {
+            "type": "string"
+        },
+        "data": {
+            "description": "运行数据",
+            "type": "object"
+        }
+    },
+    "required": ["docid"]
+}

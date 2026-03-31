@@ -1,0 +1,118 @@
+# ------------------------------------
+# components 定义
+components:
+  parameters:
+    ID:
+      name: id
+      description: ID
+      in: path
+      schema:
+        type: string
+      required: true
+    KEY:
+      name: key
+      description: 对象的标识（key）
+      in: path
+      schema:
+        type: string
+      required: true
+    agentKey:
+      name: agent_key
+      description: data agent key
+      in: path
+      schema:
+        type: string
+      required: true
+    pageOffset:
+      name: page
+      description: 分页页码
+      in: query
+      schema:
+        type: integer
+        default: 1
+      required: false
+    pageLimit:
+      name: size
+      description: 每页返回条数
+      in: query
+      schema:
+        type: integer
+        default: 10
+      required: false
+  responses:
+    '400':
+      description: 错误的请求
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    '401':
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    '403':
+      description: 请求被拒绝
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    '404':
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    '409':
+      description: 资源冲突
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    '500':
+      description: 内部错误
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    502:
+      description: 网关错误
+      content:
+        application/json:
+          schema:
+            $ref: './schema/error.yaml#/Error'
+    BadRequestError:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: './schema/bad_request_error.yaml#/BadRequestError'
+    NotFoundError:
+      description: 资源未找到
+      content:
+        application/json:
+          schema:
+            $ref: './schema/not_found_error.yaml#/NotFoundError'
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: './schema/internal_server_error.yaml#/InternalServerError'
+  schemas:
+    Error:
+      $ref: './schema/error.yaml#/Error'
+    BadRequestError:
+      $ref: './schema/bad_request_error.yaml#/BadRequestError'
+    InternalServerError:
+      $ref: './schema/internal_server_error.yaml#/InternalServerError'
+    NotFoundError:
+      $ref: './schema/not_found_error.yaml#/NotFoundError'
+    SourceRange:
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization

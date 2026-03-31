@@ -1,0 +1,203 @@
+@token = Bearer ory_at_qMFyP6uU_eBteXQ5mkbh94gNL_osGvsDE_Bik7TX_go.UiJ0HpOAaImKv7advwrQx-bCpAg933B3NuqiIc5StJE
+
+### 解析SSE-自定义local mcp server
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/parse/sse
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "mode": "sse",
+    "url": "http://localhost:8080/sse"
+}
+
+### 解析SSE-amap-sse-server
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/parse/sse
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "mode": "sse",
+  "url": "https://mcp.amap.com/sse?key=4402d421c6333f99f01e751816590472"
+}
+
+### 注册MCP服务，sse模式
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "name": "my-mcp-server-test-2",
+    "description": "这个一段测试描述,用于描述MCP服务的信息",
+    "mode": "sse",
+    "url": "http://localhost:8080/sse",
+    "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer 1234567890",
+        "X-Custom-Header": "custom-value"
+    },
+    "source": "custom",
+    "category": "test"
+}
+
+### 注册MCP服务，tool_imported模式
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "name": "my_mcp_server_test_3",
+    "description": "这个一段测试描述,用于描述MCP服务的信息",
+    "mode": "stream",
+    "source": "custom",
+    "category": "other_category",
+    "creation_type": "tool_imported",
+    "tool_configs": [
+        {
+            "box_id": "5abc17a0-92e2-438b-b1ce-ea086419f115",
+            "tool_id": "d3841a74-e0eb-46a8-b538-7281f0335af1"
+        }
+    ]
+}
+
+
+### 注册MCP服务，sse模式 , remote mcp server
+POST http://127.0.0.1:9000/api/agent-operator-integration/v1/mcp
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "name": "amap-sse-server-test1",
+  "description": "这是高德地图sse mcp server",
+  "mode": "sse",
+  "url": "https://mcp.amap.com/sse?key=4402d421c6333f99f01e751816590472",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234567890",
+    "X-Custom-Header": "custom-value"
+  },
+  "source": "custom",
+  "category": "test"
+}
+
+
+### 注册MCP服务，sse模式 , remote mcp server
+POST https://10.4.175.99/api/agent-operator-integration/v1/mcp
+Content-Type: application/json
+Authorization: Bearer ory_at_kiPd1RdefgUa87II7tc6gMaFYZR_ccb36MB6_Dk530M.6lrHvbMhTjWPcso-x3ll0Dkf3Al9GfEHldPTGRMD5l4
+
+{
+  "name": "my-mcp-server-test-2",
+  "description": "这个一段测试描述,用于描述MCP服务的信息",
+  "mode": "sse",
+  "url": "http://10.4.111.182:8080/sse",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234567890",
+    "X-Custom-Header": "custom-value"
+  },
+  "source": "custom",
+  "category": "test"
+}
+
+### 调用MCP工具 - local mcp server
+POST http://localhost:9000/api/agent-operator-integration/internal-v1/mcp/proxy/37b7c422-599d-401e-ac97-069705faebb4/tool/call
+Content-Type: application/json
+
+{
+   "tool_name": "maps_direction_bicycling",
+   "parameters": {
+       "destination": "121.517861,31.077043",
+       "origin": "121.510594,31.073567sfsfse"
+    }
+}
+
+### 分页查询MCP服务列表
+GET http://localhost:9000/api/agent-operator-integration/v1/mcp/list?page=1&page_size=10
+Content-Type: application/json
+Authorization: {{token}}
+
+
+### 获取单个MCP服务详情信息
+GET http://localhost:9000/api/agent-operator-integration/v1/mcp/e592206c-c2a8-4caf-aa72-e42b2f287fa4
+Content-Type: application/json
+Authorization: {{token}}
+
+### 删除MCP服务
+DELETE http://localhost:9000/api/agent-operator-integration/v1/mcp/e592206c-c2a8-4caf-aa72-e42b2f287fa4
+Content-Type: application/json
+Authorization: {{token}}
+
+### 编辑MCP服务
+PUT http://localhost:9000/api/agent-operator-integration/v1/mcp/37b7c422-599d-401e-ac97-069705faebb4
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "name": "amap-sse-server-test2",
+  "description": "这是高德地图sse mcp server",
+  "mode": "sse",
+  "url": "https://mcp.amap.com/sse?key=4402d421c6333f99f01e751816590472",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234567890",
+    "X-Custom-Header": "custom-value"
+  },
+  "source": "custom",
+  "category": "test"
+}
+
+### 发布MCP服务
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/release-action
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "id": "37b7c422-599d-401e-ac97-069705faebb4",
+  "action": "publish"
+}
+
+### 发布MCP服务-远程
+POST https://10.4.175.99/api/agent-operator-integration/v1/mcp/release-action
+Content-Type: application/json
+Authorization: Bearer ory_at_8n0w-VJ0F2Lc7efeuYJb1BEqQvlN340BH2gPnnKl9WQ.No70fBSdY7scpDJlI5xthsvaCYdFDKxquVIVQT5sY4M
+
+{
+  "mcp_id": "526e2e56-38d8-4ccc-8a78-9a65e22dc56b",
+  "action": "publish"
+}
+
+### 下架MCP服务
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/release-action
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "id": "37b7c422-599d-401e-ac97-069705faebb4",
+  "action": "unpublish"
+}
+
+### 获取MCP工具列表
+GET http://10.4.175.99:9000/api/agent-operator-integration/internal-v1/mcp/proxy/29b878b5-a189-4773-8b29-2c9d1b8fef0e/tools
+
+### 调试MCP工具
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/8068e7a5-26be-44af-8174-dc7873eb68af/tool/echo/debug
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+  "parameters": {
+      "message": "这是一个测试工具"
+  }
+}
+
+### 获取MCP服务市场列表
+GET http://localhost:9000/api/agent-operator-integration/v1/mcp/market/list?page=1&page_size=10
+Content-Type: application/json
+Authorization: {{token}}
+
+
+### 获取MCP服务市场详情
+GET http://localhost:9000/api/agent-operator-integration/v1/mcp/market/8068e7a5-26be-44af-8174-dc7873eb68af
+Content-Type: application/json
+Authorization: {{token}}
+

@@ -1,0 +1,40 @@
+# 公共错误码
+[OntologyQuery.InvalidParameter.Condition]
+Description = "过滤条件无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.InvalidParameter.OverrideMethod]
+Description = "重载方法无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.NullParameter.OverrideMethod]
+Description = "重载方法为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.InvalidRequestHeader.ContentType]
+Description = "无效的ContentType"
+Solution = "请检查Http请求头"
+ErrorLink = "暂无"
+
+[OntologyQuery.InternalError]
+Description = "服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.MarshalDataFailed]
+Description = "序列化数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.UnMarshalDataFailed]
+Description = "反序列化数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.SearchDataFromOpensearchFailed]
+Description = "从opensearch中获取数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 

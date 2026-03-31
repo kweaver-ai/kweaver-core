@@ -1,0 +1,51 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "response_format": {
+        "type": "string",
+        "enum": ["json", "toon"],
+        "default": "toon",
+        "description": "文本格式：json 或 toon，默认 toon"
+      },
+      "ot_id": {
+        "type": "string",
+        "description": "对象类型ID"
+      },
+      "include_logic_params": {
+        "type": "boolean",
+        "description": "是否返回逻辑属性计算参数"
+      },
+      "condition": {
+        "type": "object",
+        "description": "过滤条件结构，用于构建对象实例的查询筛选。支持多层嵌套：含 field（属性名）、operation（操作符，如 and/or/==/!=/in/like 等）、value 与 value_from（常量值，须同时使用）、以及 sub_conditions（子条件数组）。当 operation 为 and 或 or 时，通过 sub_conditions 递归嵌套同结构的条件，实现组合查询。",
+        "additionalProperties": true
+      },
+      "limit": {
+        "type": "integer",
+        "description": "返回数量限制，默认 10，范围 1-10000"
+      },
+      "properties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "指定返回的对象属性字段列表，默认返回所有属性"
+      }
+    },
+    "required": ["ot_id"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "datas": {
+        "type": "array",
+        "description": "实例列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

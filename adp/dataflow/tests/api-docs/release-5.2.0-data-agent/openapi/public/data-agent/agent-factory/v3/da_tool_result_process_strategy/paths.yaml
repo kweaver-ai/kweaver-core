@@ -1,0 +1,86 @@
+paths:
+  /agent-factory/v3/tool-result-process-strategy/category:
+    get:
+      summary: 获取结果处理策略分类列表
+      description: 获取结果处理策略分类列表
+      tags:
+        - 工具结果处理策略
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 分类ID
+                        name:
+                          type: string
+                          description: 分类名称
+                        description:
+                          type: string
+                          description: 分类描述
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+  /agent-factory/v3/tool-result-process-strategy/category/{category_id}/strategy:
+    get:
+      summary: 根据分类获取结果处理策略列表
+      description: 根据分类获取结果处理策略列表
+      tags:
+        - 工具结果处理策略
+      parameters:
+        - in: path
+          name: category_id
+          required: true
+          schema:
+            type: string
+            description: 策略分类
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 策略ID
+                        name:
+                          type: string
+                          description: 策略名称
+                        description:
+                          type: string
+                          description: 策略描述
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'

@@ -1,0 +1,259 @@
+
+paths:
+  /agent-factory/v3/published/agent:
+    post:
+      operationId: getPublishedAgentList_Post
+      summary: 已发布智能体列表
+      description: 获取广场中的智能体列表
+      tags:
+        - 已发布
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/published_agent_list_req.yaml#/published_agent_list_req'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/published_agent_list.yaml#/published_agent_list'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+  /agent-factory/v3/published/agent-list-cache-status:
+    get:
+      operationId: getListCacheStatusMarkdownStr_Get
+      summary: 获取智能体列表缓存状态
+      description: 获取智能体列表缓存状态
+      tags:
+        - 已发布-internal
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: string
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+
+  /agent-factory/v3/published/agent-tpl:
+      get:
+        operationId: getPublishedAgentTplList_Get
+        summary: 已发布模板列表
+        description: 已发布模板列表
+        tags:
+          - 已发布
+          - 模板
+        parameters:
+          - $ref: '../components/components.yaml#/components/parameters/name'
+          - $ref: '../components/components.yaml#/components/parameters/categoryID'
+          - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+          - name: pagination_marker_str
+            in: query
+            description: |
+              - 分页marker（用于获取下一页数据）
+              - base64编码的json字符串
+              - base64编码前的json格式：
+                ```
+                {
+                  "last_pubed_tpl_id": 111
+                }
+                ```
+            schema:
+              type: string
+            example: eyJwdWJsaXNoZWRfYXQiOjE3MTg3NzQ0MDAxMjMsImxhc3RfcmVsZWFzZV9pZCI6IjE0In0=
+        responses:
+          '200':
+            description: 成功
+            content:
+              application/json:
+                schema:
+                  $ref: './schema/published_tpl_list.yaml#/published_tpl_list'
+          '400':
+            $ref: '../components/components.yaml#/components/responses/400'
+          '401':
+            $ref: '../components/components.yaml#/components/responses/401'
+          '403':
+            $ref: '../components/components.yaml#/components/responses/403'
+          '500':
+            $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/published/agent-tpl/{tpl_id}:
+    get:
+      summary: 已发布模板详情
+      description: 已发布模板详情
+      tags:
+        - 已发布
+      parameters:
+        - in: path
+          name: tpl_id
+          description: 模板id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/published_tpl_detail.yaml#/published_tpl_detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+  # /published/agent-tpl
+  /agent-factory/v3/published/agent-info-list:
+    post:
+      summary: 已发布智能体信息列表
+      description: 已发布智能体信息列表
+      tags:
+        - 已发布
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_keys:
+                  type: array
+                  description: agent key数组
+                  maxItems: 1000
+                  items:
+                    type: string
+                    description: agent key
+                need_config_fields:
+                  type: array
+                  description: |
+                    - 需要返回的config下的子字段
+                    - 目前支持：
+                      - "input"
+                  items:
+                    type: string
+                    description: config下的子字段
+                  default: ["input"]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/published_agent_info_list.yaml#/published_agent_info_list'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+  /agent-factory/v3/agent-market/agent/{agent_id}/version/{version}:
+    get:
+      summary: 智能体详情（已发布或未发布）
+      description: |
+        - 智能体详情
+          - 包含已发布和未发布
+      tags:
+        - 已发布
+        - agent-internal
+      parameters:
+        - in: path
+          name: agent_id
+          description: agent ID / agent key
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: version
+          description: agent 版本
+          required: true
+          schema:
+            type: string
+        - custom_space_id:
+          in: query
+          name: custom_space_id
+          description: 自定义空间ID（当从自定义空间访问agent时传入）
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '../components/components.yaml#/components/schemas/AgentMarketAgentInfoResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+  /agent-factory/v3/agent/{agent_id}/release-history:
+    get:
+      operationId: getReleaseHistory
+      summary: 获取发布历史记录列表
+      description: 获取发布历史记录列表
+      tags:
+        - 已发布
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          description: agent id
+          schema:
+            type: string
+        # - $ref: '../components/components.yaml#/components/parameters/page'
+        # - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    $ref: '../components/components.yaml#/components/schemas/ReleaseHistoryListItemResp'
+                  # total:
+                  #   type: integer
+                  #   description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+
+

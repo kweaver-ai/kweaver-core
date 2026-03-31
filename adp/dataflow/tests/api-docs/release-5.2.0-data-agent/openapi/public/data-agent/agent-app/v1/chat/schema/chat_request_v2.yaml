@@ -1,0 +1,106 @@
+ChatRequest:
+    type: object
+    properties:
+      agent_id:
+        type: string
+        description: agent ID
+      agent_version:
+        type: string
+        description: agent_version，可以指定版本，默认值为latest
+      stream:
+        type: boolean
+        description: 是否流式返回
+      inc_stream:
+        type: boolean
+        description: 是否增量流式返回，仅在stream为true时有效
+      conversation_id:
+        type: string
+        description: 会话ID
+      temporary_area_id:
+        type: string
+        description: 临时区域ID
+      temp_files:
+        type: array
+        description: 临时文件，输入配置中配置了文件变量，可以传入临时文件
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: 文档ID
+            type:
+              type: string
+              description: 类型(doc)
+            name:
+              type: string
+              description: 文档名称
+      query:
+        type: string
+        description: 用户提问问题
+      custom_querys:
+        type: object
+        description: 输入配置中的自定义输入变量，map[string]any
+      
+      tool:
+        type: object
+        description: 仅在中断时传入，中断处理，如果是中断操作，tool 不为空
+        $ref: '../../components/schema/ask_tool.yaml#/AskTool'
+      interrupted_assistant_message_id:
+        type: string
+        description: 中断的助手信息ID
+      chat_mode:
+        type: string
+        description: 聊天模式，deep_thinking 深度思考，normal 正常
+      confirm_plan:
+        type: boolean
+        description: 默认为true， 在中断处理中告诉agent-app下次是否要弹出“确认计划”提示，仅在中断时传入
+      regenerate_user_message_id:
+        type: string
+        description: 编辑问题时，用户消息ID，不可以同时传入regenerate_assistant_message_id
+      regenerate_assistant_message_id:
+        type: string
+        description: 重新生成时，助手消息ID，不可以同时传入regenerate_user_message_id
+
+      history:
+        type: array
+        description: 历史消息, 可以传入用户自己维护的历史消息，若不传，则根据conversation_id查询历史消息，若conversation_id为空，则为新会话，历史记录为空
+        items:
+          type: object
+          $ref: '../../components/schema/llm_history.yaml#/LLMHistory'
+      # llm_config:
+      #   type: object
+      #   description: llm配置, 可以传入llm配置，也可以不传，不传时会根据agent_version查询llm配置
+      #   $ref: '../../components/schema/llm_config.yaml#/LlmConfig'
+      # data_source:
+      #   type: object
+      #   description: 数据源, 可以传入数据源，也可以不传，不传时会根据agent_version查询数据源
+      #   $ref: '../../components/schema/retriever_data_source.yaml#/RetrieverDataSource'
+    required:
+      - query
+      - agent_id
+      - stream
+    example:
+      conversation_id: "conv_123"
+      temporary_area_id: "temp_456"
+      temp_files:
+        - id: "789"
+          type: "doc"
+          name: "技术文档"
+      query: "如何使用这个功能？"
+      custom_querys:
+        query1: "value1"
+        query2: "value2"
+        query3: 
+          key1: "value3"
+          key2: "value4"
+      tool:
+        session_id: "session_123"
+        tool_name: "tool_123"
+        tool_args:
+          - key: "key_123"
+            value: "value_123"
+      interrupted_assistant_message_id: "msg_123"
+      chat_mode: "deep_thinking"
+      confirm_plan: true
+      regenerate_user_message_id: "msg_123"
+      regenerate_assistant_message_id: "msg_456"

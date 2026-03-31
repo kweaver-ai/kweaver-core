@@ -1,0 +1,12 @@
+role_member_req:
+  type: object
+  required:
+    - obj_type
+    - obj_id
+  properties:
+    obj_type:
+      type: string
+      description: 组织对象类型，如：user（用户）、dept（部门）
+    obj_id:
+      type: string
+      description: 组织对象ID

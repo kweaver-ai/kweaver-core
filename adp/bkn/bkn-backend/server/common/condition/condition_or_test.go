@@ -1,0 +1,314 @@
+// Copyright The kweaver.ai Authors.
+//
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file in the project root for details.
+
+package condition
+
+import (
+	"context"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	dtype "bkn-backend/interfaces/data_type"
+)
+
+func TestNewOrCond(t *testing.T) {
+	Convey("Test newOrCond", t, func() {
+		ctx := context.Background()
+		fieldsMap := map[string]*ViewField{
+			"field1": {
+				Name: "field1",
+				Type: dtype.DATATYPE_STRING,
+			},
+			"field2": {
+				Name: "field2",
+				Type: dtype.DATATYPE_STRING,
+			},
+		}
+
+		Convey("empty sub conditions should return error", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds:  []*CondCfg{},
+			}
+			cond, err := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			So(err, ShouldNotBeNil)
+			So(cond, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "sub condition size is 0")
+		})
+
+		Convey("sub conditions exceed MaxSubCondition should return error", func() {
+			subConds := make([]*CondCfg, MaxSubCondition+1)
+			for i := 0; i <= MaxSubCondition; i++ {
+				subConds[i] = &CondCfg{
+					Operation: OperationEq,
+					Name:      "field1",
+					ValueOptCfg: ValueOptCfg{
+						ValueFrom: ValueFrom_Const,
+						Value:     "value1",
+					},
+				}
+			}
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds:  subConds,
+			}
+			cond, err := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			So(err, ShouldNotBeNil)
+			So(cond, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "sub condition size limit")
+		})
+
+		Convey("valid sub conditions should create OrCond", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+					{
+						Operation: OperationEq,
+						Name:      "field2",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value2",
+						},
+					},
+				},
+			}
+			cond, err := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			So(err, ShouldBeNil)
+			So(cond, ShouldNotBeNil)
+			orCond, ok := cond.(*OrCond)
+			So(ok, ShouldBeTrue)
+			So(len(orCond.mSubConds), ShouldEqual, 2)
+		})
+
+		Convey("nil sub condition should still be added", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+				},
+			}
+			cond, err := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			So(err, ShouldBeNil)
+			So(cond, ShouldNotBeNil)
+		})
+
+		Convey("error in sub condition should propagate", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "nonexistent",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+				},
+			}
+			cond, err := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			So(err, ShouldNotBeNil)
+			So(cond, ShouldBeNil)
+		})
+	})
+}
+
+func TestOrCond_Convert(t *testing.T) {
+	Convey("Test OrCond.Convert", t, func() {
+		ctx := context.Background()
+		fieldsMap := map[string]*ViewField{
+			"field1": {
+				Name: "field1",
+				Type: dtype.DATATYPE_STRING,
+			},
+			"field2": {
+				Name: "field2",
+				Type: dtype.DATATYPE_STRING,
+			},
+		}
+
+		Convey("single sub condition should work", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+				},
+			}
+			cond, _ := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			orCond := cond.(*OrCond)
+
+			vectorizer := func(ctx context.Context, words []string) ([]*VectorResp, error) {
+				return nil, nil
+			}
+
+			dsl, err := orCond.Convert(ctx, vectorizer)
+			So(err, ShouldBeNil)
+			So(dsl, ShouldNotBeEmpty)
+		})
+
+		Convey("multiple sub conditions should be joined", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+					{
+						Operation: OperationEq,
+						Name:      "field2",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value2",
+						},
+					},
+				},
+			}
+			cond, _ := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			orCond := cond.(*OrCond)
+
+			vectorizer := func(ctx context.Context, words []string) ([]*VectorResp, error) {
+				return nil, nil
+			}
+
+			dsl, err := orCond.Convert(ctx, vectorizer)
+			So(err, ShouldBeNil)
+			So(dsl, ShouldNotBeEmpty)
+			So(dsl, ShouldContainSubstring, "bool")
+			So(dsl, ShouldContainSubstring, "should")
+		})
+
+		Convey("error in sub condition Convert should propagate", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationKNN,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+						RemainCfg: map[string]any{
+							"limit_key":   "k",
+							"limit_value": 10,
+						},
+					},
+				},
+			}
+			cond, _ := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			orCond := cond.(*OrCond)
+
+			vectorizer := func(ctx context.Context, words []string) ([]*VectorResp, error) {
+				return nil, context.DeadlineExceeded
+			}
+
+			dsl, err := orCond.Convert(ctx, vectorizer)
+			So(err, ShouldNotBeNil)
+			So(dsl, ShouldBeEmpty)
+		})
+	})
+}
+
+func TestOrCond_Convert2SQL(t *testing.T) {
+	Convey("Test OrCond.Convert2SQL", t, func() {
+		ctx := context.Background()
+		fieldsMap := map[string]*ViewField{
+			"field1": {
+				Name: "field1",
+				Type: dtype.DATATYPE_STRING,
+			},
+			"field2": {
+				Name: "field2",
+				Type: dtype.DATATYPE_STRING,
+			},
+		}
+
+		Convey("single sub condition should work", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+				},
+			}
+			cond, _ := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			orCond := cond.(*OrCond)
+
+			sql, err := orCond.Convert2SQL(ctx)
+			So(err, ShouldBeNil)
+			So(sql, ShouldNotBeEmpty)
+			So(sql, ShouldContainSubstring, "field1")
+			So(sql, ShouldContainSubstring, "(")
+		})
+
+		Convey("multiple sub conditions should be joined with OR", func() {
+			cfg := &CondCfg{
+				Operation: OperationOr,
+				SubConds: []*CondCfg{
+					{
+						Operation: OperationEq,
+						Name:      "field1",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value1",
+						},
+					},
+					{
+						Operation: OperationEq,
+						Name:      "field2",
+						ValueOptCfg: ValueOptCfg{
+							ValueFrom: ValueFrom_Const,
+							Value:     "value2",
+						},
+					},
+				},
+			}
+			cond, _ := newOrCond(ctx, cfg, CUSTOM, fieldsMap)
+			orCond := cond.(*OrCond)
+
+			sql, err := orCond.Convert2SQL(ctx)
+			So(err, ShouldBeNil)
+			So(sql, ShouldNotBeEmpty)
+			So(sql, ShouldContainSubstring, "OR")
+			So(sql, ShouldContainSubstring, "field1")
+			So(sql, ShouldContainSubstring, "field2")
+			So(sql, ShouldContainSubstring, "(")
+		})
+	})
+}

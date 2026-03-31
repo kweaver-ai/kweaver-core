@@ -1,0 +1,57 @@
+#配置文件路径/sysvol/conf/service_conf/cronsvr.yaml
+lang: zh_CN #系统语言
+job_failures: 3 #任务执行失败次数上限
+webhook: /api/cronsvr/v1/namespaces/common/executionresult #任务结果监听地址
+analysis_service_id: cf5ea9c0-72e2-4530-a444-cac02fb45999 #分析服务ID
+management_service_id: 1bd6ec27-fd13-4ae5-b31c-7184926c6f23 #管理服务ID
+
+#消费队列
+mq_host: nsqlookupd.proton-mq.svc.cluster.local
+mq_port: 4161
+mq_lookupd_host: nsqd.proton-mq.svc.cluster.local
+mq_lookupd_port: 4150
+mq_connector_type: nsq
+
+#定时服务，multi_node=true表示定时服务可以多节点运行，端口号动态选择
+cron_addr: 0.0.0.0
+cron_port: 12345
+cron_protocol: http
+multi_node: false
+
+#数据库
+db_addr: 10.2.145.25
+db_port: 3309
+db_name: ecron
+user_name: root
+user_pwd: 123456
+db_format: utf8
+timeout: 10
+read_timeout: 10
+write_timeout: 10
+max_open_conns: 30
+
+#SSL证书
+ssl_on: false
+cert_file: /sysvol/conf/ecron.crt
+key_file: /sysvol/conf/ecron.key
+
+#sleep时间，单位秒
+analysis_load_sleep: 10
+analysis_refresh_sleep: 10
+job_status_refresh_sleep: 10
+msmq_client_op_sleep: 10
+db_client_ping_sleep: 30
+lost_immediate_job_sleep: 10
+token_refresh_sleep: 10
+
+#授权服务
+oauth_public_addr: 127.0.0.1
+oauth_public_port: 4444
+oauth_public_protocol: http
+oauth_admin_addr: 127.0.0.1
+oauth_admin_port: 4445
+oauth_admin_protocol: http
+
+
+
+

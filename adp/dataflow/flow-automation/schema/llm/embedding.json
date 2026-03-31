@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "LLM Embedding",
+    "description": "DataFlow Embedding 节点参数",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "input": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "model",
+                "input"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

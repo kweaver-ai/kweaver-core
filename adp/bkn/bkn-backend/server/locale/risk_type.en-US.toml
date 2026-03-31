@@ -1,0 +1,65 @@
+# RiskType
+[BknBackend.RiskType.Duplicated.IDInFile]
+Description = "Same Risk Type ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.Duplicated.Name]
+Description = "Same Risk Type Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.InvalidParameter]
+Description = "Invalid Request Parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeIDExisted]
+Description = "Same Risk Type ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeNameExisted]
+Description = "Same Risk Type Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskFunctionToolNotFound]
+Description = "Risk assessment tool not found or unreachable"
+Solution = "Verify box_id and tool_id are registered with agent-operator-integration and reachable."
+ErrorLink = "None"
+
+[BknBackend.RiskType.InvalidMaxAcceptableLevel]
+Description = "Invalid Max Acceptable Level"
+Solution = "Please use one of: safe, low, medium, high, critical."
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError.CheckRiskTypeIfExistFailed]
+Description = "Check Risk Type Exist Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError.GetRiskTypesByIDsFailed]
+Description = "Get Risk Type By IDs Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeNotFound]
+Description = "The Risk Type Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RiskType.NullParameter.Name]
+Description = "Risk Type Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RiskType.LengthExceeded.Name]
+Description = "The Length of Risk Type Name Out of Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"

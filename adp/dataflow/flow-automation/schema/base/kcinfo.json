@@ -1,0 +1,86 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "kc用户信息更新触发",
+    "description": "post /api/automation/v1/trigger/kc-userinfo",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "用户ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "name": {
+            "type": "string",
+            "description": "用户名",
+            "example": "xx"
+        },
+        "old_name": {
+            "type": "string",
+            "description": "用户旧名称",
+            "example": "xx"
+        },
+        "operate_type": {
+            "type": "string",
+            "description": "操作类型，create代表新增，delete代表删除，modify代表修改",
+            "example": "create"
+        },
+        "email": {
+            "type": "string",
+            "description": "邮件",
+            "example": "xx"
+        },
+        "tags": {
+            "type": "string",
+            "description": "标签列表;使用 json 字符串",
+            "example": "[\"官方标签/学术\"]"
+        },
+        "is_expert": {
+            "type": "boolean",
+            "description": "是否专家",
+            "example": false
+        },
+        "verification_info": {
+            "type": "string",
+            "description": "认证信息",
+            "example": ""
+        },
+        "university": {
+            "type": "string",
+            "description": "毕业院校",
+            "example": ""
+        },
+        "contact": {
+            "type": "string",
+            "description": "联系方式",
+            "example": ""
+        },
+        "position": {
+            "type": "string",
+            "description": "职位",
+            "example": ""
+        },
+        "work_at": {
+            "type": "string",
+            "description": "工作地点",
+            "example": ""
+        },
+        "is_delete": {
+            "type": "integer",
+            "description": "是否删除  0为正常，1为删除",
+            "example": 0
+        },
+        "status": {
+            "type": "integer",
+            "description": "用户状态  0为启用，1为禁用，2为删除",
+            "example": 0
+        },
+        "professional": {
+            "type": "string",
+            "description": "专业领域",
+            "example": ""
+        }
+    },
+    "required": [
+    ],
+    "additionalProperties": false
+}

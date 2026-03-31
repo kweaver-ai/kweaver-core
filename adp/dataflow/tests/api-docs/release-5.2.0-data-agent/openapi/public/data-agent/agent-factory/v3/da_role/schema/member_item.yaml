@@ -1,0 +1,18 @@
+role_member_item:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: 成员关联ID
+    space_id:
+      type: string
+      description: 角色ID
+    obj_type:
+      type: string
+      description: 组织对象类型，枚举值：user-个人，dept-部门，user_group-用户组
+    obj_id:
+      type: string
+      description: 组织对象的唯一标识
+    obj_name:
+      type: string
+      description: 组织对象名称

@@ -1,0 +1,26 @@
+# AT测试配置文件模板
+# 复制此文件为 test-config.yaml 并填入实际连接信息
+
+# VEGA Backend服务配置
+vega_backend:
+  # VEGA Backend HTTP服务地址
+  # 测试运行前必须先启动VEGA Backend服务
+  base_url: http://localhost:8080
+
+# 测试目标MariaDB配置
+# 用于测试catalog连接功能
+target_mariadb:
+  host: localhost
+  port: 3306
+  database: testdb
+  username: root
+  password: your_password_here
+
+# 测试目标OpenSearch配置
+# 用于测试OpenSearch类型的catalog
+target_opensearch:
+  host: localhost
+  port: 9200
+  username: admin
+  password: your_password_here
+  use_ssl: false

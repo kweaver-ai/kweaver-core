@@ -1,0 +1,64 @@
+openapi: 3.0.0
+info:
+  title: Test-box
+  description: Vectorize the file chunks result.
+  version: 1.0.0
+servers:
+  - url: http://192.168.152.11:8006
+    description: Local server
+tags:
+  - name: projects
+paths:
+  /embedded:
+    post:
+      tags:
+        - projects
+      summary: Chenshu-test-Vectorize
+      description: Vectorize the slices of content by embedding their textual data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chunks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      slice_content:
+                        type: string
+                        description: The textual content of a slice.
+                    required:
+                      - slice_content
+              required:
+                - chunks
+      responses:
+        "200":
+          description: Successful response containing the vectorized chunks.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    slice_content:
+                      type: string
+                      description: The textual content of a slice.
+                    embedding:
+                      type: array
+                      items:
+                        type: number
+                      description: The vectorized representation of the slice content.
+        "500":
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message describing the failure.

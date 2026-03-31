@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "手动触发器",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "dataSource": {
+            "oneOf": [
+                {
+                    "type": "object"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "cron": {
+                    "type": "string",
+                    "pattern": "(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\\d+(ns|us|µs|ms|s|m|h))+)|((((\\d+,)+\\d+|(\\d+(\/|-)\\d+)|\\d+|\\*|\\?) ?){5,7})"
+                }
+            },
+            "additionalProperties": false
+        },
+        "cron": {
+            "type": "string",
+            "pattern": "(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\\d+(ns|us|µs|ms|s|m|h))+)|((((\\d+,)+\\d+|(\\d+(\/|-)\\d+)|\\d+|\\*|\\?) ?){5,7})"
+        }
+    },
+    "required": [
+        "id",
+        "operator"
+    ],
+    "additionalProperties": false
+}

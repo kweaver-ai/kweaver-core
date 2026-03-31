@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "密级信息",
+    "description": "",
+    "type": "object",
+    "patternProperties": {
+        "^template_\\w+$": {
+            "type": "object",
+            "patternProperties": {
+                "^field_\\w+$": {
+                    "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "object",
+                        "array",
+                        "null"
+                    ]
+                }
+            }
+        }
+    }
+}

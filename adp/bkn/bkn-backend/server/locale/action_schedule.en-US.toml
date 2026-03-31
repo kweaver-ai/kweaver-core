@@ -1,0 +1,55 @@
+# Action Schedule
+[BknBackend.ActionSchedule.InvalidParameter]
+Description = "Invalid parameter"
+Solution = "Please check if the parameters are correct."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.InvalidCronExpression]
+Description = "Invalid cron expression"
+Solution = "Please check if the cron expression format is correct."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.InvalidStatus]
+Description = "Invalid status value"
+Solution = "Please check if the status value is correct."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.ActionTypeNotFound]
+Description = "Action type not found"
+Solution = "Please check if the action type ID is correct."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.NotFound]
+Description = "Action schedule not found"
+Solution = "Please check if the action schedule ID is correct."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.InternalError]
+Description = "Internal error"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.CreateFailed]
+Description = "Failed to create action schedule"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.UpdateFailed]
+Description = "Failed to update action schedule"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.DeleteFailed]
+Description = "Failed to delete action schedule"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.GetFailed]
+Description = "Failed to get action schedule"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ActionSchedule.GetActionTypeFailed]
+Description = "Failed to get action type"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "None"

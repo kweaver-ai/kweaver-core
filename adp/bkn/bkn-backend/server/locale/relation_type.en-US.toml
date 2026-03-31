@@ -1,0 +1,70 @@
+# RelationType
+[BknBackend.RelationType.Duplicated.IDInFile]
+Description = "Same Relation Type ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InvalidParameter.ConceptCondition]
+Description = "Invalid Concept Condition Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.RelationTypeIDExisted]
+Description = "Same ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.LengthExceeded.Name]
+Description = "The Length of Relation Type Name Out of Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.NullParameter.Name]
+Description = "Relation Type Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.RelationType.RelationTypeNotFound]
+Description = "The Relation Type Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.BeginTransactionFailed]
+Description = "Begin Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.MissingTransaction]
+Description = "Missing Transaction"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.CheckRelationTypeIfExistFailed]
+Description = "Check Relation Type Exist Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.GetDataViewByIDFailed]
+Description = "Get DataView By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.GetRelationTypesByIDsFailed]
+Description = "Get Relation Type By IDs Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.RelationType.InternalError.InsertOpenSearchDataFailed]
+Description = "Insert Relation Type Data Into OpenSearch Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

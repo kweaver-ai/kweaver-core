@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+data:
+  agent-operator-integration.yaml: |
+    project:
+      language: {{ .Values.service.language | quote }}
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      logger_level: {{ .Values.service.loggerLevel }}
+      name: {{ .Values.service.name | quote }}
+      pod_id: {{ .Values.service.podID | quote }}
+      machine_id: {{ .Values.service.machineID | quote }}
+      debug: {{ .Values.service.debug }}
+    operator:
+      import_file_size_limit: {{ .Values.service.operator.importFileSizeLimit }}
+      import_operator_max_count: {{ .Values.service.operator.importOperatorMaxCount }}
+      operator_description_length_limit: {{ .Values.service.operator.descriptionLengthLimit }}
+    mcp:
+      conn_timeout: {{ .Values.service.mcp.connTimeout }}
+      max_instances: {{ .Values.service.mcp.maxInstances }}
+      instance_ttl: {{ .Values.service.mcp.instanceTTL }}
+      cleanup_interval: {{ .Values.service.mcp.cleanupInterval }}
+    category:
+      init_switch: {{ .Values.service.category.initSwitch }}
+    proxy_module:
+      default_timeout: {{ .Values.service.proxyModule.defaultTimeout }}
+      max_timeout: {{ .Values.service.proxyModule.maxTimeout }}
+      max_clients: {{ .Values.service.proxyModule.maxClients }}
+      client_lifetime: {{ .Values.service.proxyModule.clientLifetime }}
+    oauth:
+      public_host: {{ .Values.depServices.hydra.publicHost | quote }}
+      public_port: {{ .Values.depServices.hydra.publicPort }}
+      public_protocol: {{ .Values.depServices.hydra.publicProtocol | quote }}
+      admin_host: {{ .Values.depServices.hydra.administrativeHost | quote }}
+      admin_port: {{ .Values.depServices.hydra.administrativePort }}
+      admin_protocol: {{ .Values.depServices.hydra.administrativeProtocol | quote }}
+      admin_prefix: {{ .Values.depServices.hydra.administrativePrefix | quote }}
+    user_management:
+      private_protocol: {{ index .Values "depServices" "user-management" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "user-management" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "user-management" "privatePort" }}
+    authorization:
+      private_protocol: {{ .Values.depServices.authorization.privateProtocol | quote }}
+      private_host: {{ .Values.depServices.authorization.privateHost | quote }}
+      private_port: {{ .Values.depServices.authorization.privatePort }}
+    business-system-service:
+      private_protocol: {{ index .Values "depServices" "business-system-service" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "business-system-service" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "business-system-service" "privatePort" }}
+    db:
+      conn_timeout: {{ .Values.depServices.rds.connTimeout }}
+      read_timeout: {{ .Values.depServices.rds.readTimeout }}
+      write_timeout: {{ .Values.depServices.rds.writeTimeout }}
+      max_open_conns: {{ .Values.depServices.rds.maxConnections }}
+      system_id: {{ .Values.depServices.rds.system_id | quote }}
+    redis:
+      connectType: {{ .Values.depServices.redis.connectType | quote }}
+      enableSSL: {{ .Values.depServices.redis.enableSSL }}
+      secretName: {{ .Values.depServices.redis.secretName | quote }}
+      caName: {{ .Values.depServices.redis.caName | quote }}
+      certName: {{ .Values.depServices.redis.certName | quote }}
+      keyName: {{ .Values.depServices.redis.keyName | quote }}
+      poolSize: {{ .Values.depServices.redis.connectInfo.poolSize }}
+    flow-automation:
+      private_protocol: {{ index .Values "depServices" "flow-automation" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "flow-automation" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "flow-automation" "privatePort" }}
+    sandbox-control-plane:
+      private_protocol: {{ index .Values "depServices" "sandbox-control-plane" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "sandbox-control-plane" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "sandbox-control-plane" "privatePort" }}
+      template_id: {{ index .Values "depServices" "sandbox-control-plane" "templateID" | quote }}
+      session_resources:
+        cpu: {{ index .Values "depServices" "sandbox-control-plane" "sessionResources" "cpu" | quote }}
+        memory: {{ index .Values "depServices" "sandbox-control-plane" "sessionResources" "memory" | quote }}
+        disk: {{ index .Values "depServices" "sandbox-control-plane" "sessionResources" "disk" | quote }}
+        timeout: {{ index .Values "depServices" "sandbox-control-plane" "sessionResources" "timeout" }}
+      max_sessions: {{ index .Values "depServices" "sandbox-control-plane" "maxSessions" }}
+      active_sessions: {{ index .Values "depServices" "sandbox-control-plane" "activeSessions" }}
+      max_concurrent_tasks: {{ index .Values "depServices" "sandbox-control-plane" "maxConcurrentTasks" }}
+    mf-model-api:
+      private_protocol: {{ index .Values "depServices" "mf-model-api" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "mf-model-api" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "mf-model-api" "privatePort" }}
+    mf-model-manager:
+      private_protocol: {{ index .Values "depServices" "mf-model-manager" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "mf-model-manager" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "mf-model-manager" "privatePort" }}
+    ai_generation_config:
+      python_function_generator_prompt_id: {{ .Values.depServices.aiGenerationConfig.pythonFunctionGeneratorPromptID | quote }}
+      metadata_param_generator_prompt_id: {{ .Values.depServices.aiGenerationConfig.metadataParamGeneratorPromptID | quote }}
+      llm:
+        model: {{ .Values.depServices.aiGenerationConfig.llm.model | quote }}
+        max_tokens: {{ .Values.depServices.aiGenerationConfig.llm.maxTokens }}
+        temperature: {{ .Values.depServices.aiGenerationConfig.llm.temperature }}
+        top_k: {{ .Values.depServices.aiGenerationConfig.llm.topK }}
+        top_p: {{ .Values.depServices.aiGenerationConfig.llm.topP }}
+        frequency_penalty: {{ .Values.depServices.aiGenerationConfig.llm.frequencyPenalty }}
+        presence_penalty: {{ .Values.depServices.aiGenerationConfig.llm.presencePenalty }}
+    oss-gateway-backend:
+      private_protocol: {{ index .Values "depServices" "oss-gateway-backend" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "oss-gateway-backend" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "oss-gateway-backend" "privatePort" }}
+      storage_id: {{ index .Values "depServices" "oss-gateway-backend" "storageID" | quote }}
+      internal_request: {{ index .Values "depServices" "oss-gateway-backend" "internalRequest" }}
+      expires: {{ index .Values "depServices" "oss-gateway-backend" "expires" }}
+
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}
+
+  observability.yaml: |
+    # 可观测相关配置
+    traceType: {{ .Values.observability.traceType | quote }}
+    logEnabled: {{ .Values.observability.logEnabled }}
+    traceEnabled: {{ .Values.observability.traceEnabled }}
+    metricEnabled: {{ .Values.observability.metricEnabled }}
+    logExporter: {{ .Values.observability.logExporter | quote }}
+    traceProvider: {{ .Values.observability.traceProvider | quote }}
+    metricProvider: {{ .Values.observability.metricProvider | quote }}
+    logLoadInternal: {{ .Values.observability.logLoadInternal }}
+    logLoadMaxLog: {{ .Values.observability.logLoadMaxLog }}
+    traceMaxQueueSize: {{ .Values.observability.traceMaxQueueSize }}
+    metricIntervalSecond: {{ .Values.observability.metricIntervalSecond }}
+    httpLogFeedIngesterUrl: {{ .Values.observability.httpLogFeedIngesterUrl | quote }}
+    httpTraceFeedIngesterUrl: {{ .Values.observability.httpTraceFeedIngesterUrl | quote }}
+    httpMetricFeedIngesterUrl: {{ .Values.observability.httpMetricFeedIngesterUrl | quote }}
+    grpcTraceFeedIngesterUrl: {{ .Values.observability.grpcTraceFeedIngesterUrl | quote }}
+    grpcTraceJobId: {{ .Values.observability.grpcTraceJobId | quote }}

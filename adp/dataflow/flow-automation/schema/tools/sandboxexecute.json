@@ -1,0 +1,69 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Sandbox代码执行",
+    "description": "在沙箱环境中执行代码",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "要执行的代码"
+                },
+                "language": {
+                    "type": "string",
+                    "description": "代码语言，如 python、javascript"
+                },
+                "event": {
+                    "type": "object",
+                    "description": "传递给代码的事件数据"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "执行超时时间，单位秒"
+                },
+                "cache_result": {
+                    "type": "boolean",
+                    "description": "是否缓存执行结果"
+                },
+                "interval_sec": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "轮询执行结果的间隔时间，单位秒"
+                },
+                "sandbox_config": {
+                    "type": "object",
+                    "description": "沙箱配置"
+                }
+            },
+            "required": [
+                "code",
+                "language",
+                "event"
+            ]
+        },
+        "settings": {
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ]
+}

@@ -1,0 +1,43 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config
+*.local.yaml
+*.local.yml
+*.pem
+# Logs
+*.log
+logs/
+
+# Test configuration (contains sensitive data like passwords)
+tests/at/testdata/test-config.yaml
+test-config.yaml
+__debug_bin*
+
+.claude
+
+go.work
+go.work.sum

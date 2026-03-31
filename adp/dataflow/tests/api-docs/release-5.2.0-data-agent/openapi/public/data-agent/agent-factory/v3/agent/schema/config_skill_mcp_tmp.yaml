@@ -1,0 +1,25 @@
+mcp:
+  type: object
+  properties:
+    mcp_tool_name:
+      type: string
+      description: mcp工具名称
+    mcp_server_id:
+      type: string
+      description: mcp server id
+    mcp_input:
+      type: array
+      description: 输入参数配置
+      items:
+        $ref: './tool_input.yaml#/tool_input'
+    intervention:
+      type: boolean
+      description: 是否启用干预
+  required:
+    - mcp_server_id
+    - mcp_tool_name
+  description: MCP 类型技能 可选
+mcps:
+  type: array
+  items:
+    $ref: '#/mcp'

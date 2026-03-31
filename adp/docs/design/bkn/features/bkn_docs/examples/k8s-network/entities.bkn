@@ -1,0 +1,80 @@
+---
+type: fragment
+id: k8s-entities
+name: Kubernetes实体定义
+parent: index.bkn
+version: 1.0.0
+---
+
+# 实体定义
+
+本文件定义 Kubernetes 网络中的核心实体类。
+
+---
+
+## Entity: pod
+
+**Pod实例** - Kubernetes 中的最小部署单元
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dis0 | pod_info_view |
+
+> **主键**: `id` | **显示属性**: `pod_name`
+
+### 属性覆盖
+
+| 属性名 | 显示名 | 索引配置 | 说明 |
+|--------|--------|----------|------|
+| pod_status | 状态 | fulltext + vector | 支持全文和语义搜索 |
+| pod_name | Pod名称 | keyword + fulltext | 支持精确和模糊匹配 |
+
+### 逻辑属性
+
+#### pod_metrics
+
+- **类型**: metric
+- **来源**: pod_metric (metric-model)
+- **说明**: Pod的监控指标
+
+| 参数名 | 来源 | 绑定值 |
+|--------|------|--------|
+| id | property | id |
+| pod_name | property | pod_name |
+| instant | input | - |
+
+---
+
+## Entity: node
+
+**Node节点** - Kubernetes 集群中的工作节点
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380disg | node_info_view |
+
+> **主键**: `id` | **显示属性**: `node_name`
+
+### 属性覆盖
+
+| 属性名 | 显示名 | 说明 |
+|--------|--------|------|
+| node_status | 节点状态 | Ready/NotReady/Unknown |
+
+---
+
+## Entity: service
+
+**Service服务** - Kubernetes 服务抽象层
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dith | service_info_view |
+
+> **主键**: `id` | **显示属性**: `service_name`

@@ -1,0 +1,4083 @@
+---
+openapi: 3.0.0
+info:
+  title: uniquery-for-dataview
+  version: "1.0"
+servers:
+  - url: http://mdl-uniquery-svc:13011
+    description: ""
+paths:
+  /api/mdl-uniquery/in/v1/data-view-pits:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/deletePitsRequestBody"
+            examples:
+              批量根据 id 删除 pit:
+                value:
+                  pit_ids:
+                    - o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAEWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+                    - o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAIWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+              删除全部 pit:
+                value:
+                  pit_ids:
+                    - __all
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载 POST 变为 DELETE
+          schema:
+            enum:
+              - DELETE
+            type: string
+          in: header
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/deletePitsResps"
+              examples:
+                exp:
+                  value:
+                    pits:
+                      - successful: true
+                        pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAEWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+                      - successful: false
+                        pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAIWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest_DataView"
+        "500":
+          $ref: "#/components/responses/500InternalError_DataView"
+      summary: （内部接口）删除视图 pit
+      description: "根据 pit_id 列表批量删除，或删除全部 pit。 "
+    parameters:
+      - name: x-account-id
+        description: 账号id
+        schema:
+          type: string
+        in: header
+        required: true
+      - name: x-account-type
+        description: 账号类型
+        schema:
+          enum:
+            - user
+            - app
+          type: string
+        in: header
+        required: true
+  /api/mdl-uniquery/in/v1/data-views/{ids}:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqDataView_V2"
+            examples:
+              查询最近1小时 - 请求单个视图:
+                value:
+                  start: 1689228477228
+                  end: 1689232077228
+                  sort:
+                    - field: "@timestamp"
+                      direction: asc
+                  offset: 0
+                  limit: 2
+                  need_total: true
+                  use_search_after: false
+              查询最近1小时 - 请求多个视图:
+                value:
+                  - start: 1689228477228
+                    end: 1689232077228
+                    sort:
+                      - field: "@timestamp"
+                        direction: desc
+                    offset: 0
+                    limit: 2
+                    need_total: true
+                    use_search_after: false
+                  - start: 1689228477228
+                    end: 1689232077228
+                    sort:
+                      - field: "@timestamp"
+                        direction: desc
+                    offset: 0
+                    limit: 5
+                    need_total: true
+                    use_search_after: false
+                    filters:
+                      operation: and
+                      sub_conditions:
+                        - field: labels.host
+                          display_name: labels.host
+                          operation: in
+                          value_from: const
+                          value:
+                            - 10.2.12.23
+                            - 10.21.2.3
+                        - field: labels.job
+                          display_name: labels.job
+                          operation: "="
+                          value_from: const
+                          value: prometheus
+                        - field: labels.namespace
+                          display_name: 命名空间
+                          operation: "!="
+                          value_from: const
+                          value: as
+                        - field: metrics.node_cpu_seconds_total
+                          display_name: metrics.node_cpu_seconds_total
+                          operation: range
+                          value_from: const
+                          value:
+                            - 0
+                            - 5
+                        - field: metrics.node_memory_MemTotal_bytes
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          operation: out_range
+                          value_from: const
+                          value:
+                            - 1024
+                            - 2048
+              查询单个视图 - search after 翻页查询 - 第一次:
+                value:
+                  start: 1696918575688
+                  end: 1699596975688
+                  limit: 10000
+                  sort:
+                    - field: __id
+                      direction: asc
+                    - field: "@timestamp"
+                      direction: asc
+                  format: original
+                  need_total: true
+                  use_search_after: true
+              查询单个视图 - search after 翻页查询 - 非第一次:
+                value:
+                  limit: 10000
+                  sort:
+                    - field: __id
+                      direction: asc
+                    - field: "@timestamp"
+                      direction: asc
+                  search_after:
+                    - "32634"
+                    - 1699568108000
+                  format: original
+                  need_total: false
+                  use_search_after: true
+              SQL类视图search_after翻页第一次:
+                value:
+                  format: flat
+                  need_total: true
+                  use_search_after: true
+              SQL类视图search_after后续翻页:
+                value:
+                  need_total: false
+                  use_search_after: true
+                  search_after:
+                    - 20250828_080455_08878_bn4jr
+                    - x791f3a9e227946c48e79bfa4b5a49f7f
+                    - "1"
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载 POST变为 GET
+          schema:
+            enum:
+              - GET
+            type: string
+          in: header
+          required: true
+        - name: include_view
+          description: 控制返回体是否包含视图对象，默认为 false，不返回视图对象
+          schema:
+            type: boolean
+          in: query
+        - name: allow_non_exist_field
+          description: allow_non_exist_field 为 true时，当全局过滤条件使用的字段不在视图的字段列表里时，返回空数据，而不是报错。默认为false。
+          schema:
+            type: boolean
+          in: query
+        - name: timeout
+          description: '超时参数，格式示例为 "60s", "5m"'
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViewResults_V2"
+              examples:
+                查询最近1小时 - 请求单个视图:
+                  value:
+                    total_count: 8888
+                    entries:
+                      - "@timestamp": 2023-07-14T03:13:25.913Z
+                        __index: cnao_metric_node_exporter-2023.07-0
+                        __id: Q39jUokBFKY-NXt3q_Pb
+                        __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                        __category: metric
+                      - "@timestamp": 2023-07-14T03:13:24.948Z
+                        __index: cnao_metric_node_exporter-2023.07-0
+                        __id: 0X9jUokBFKY-NXt3m-87
+                        __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                        __category: metric
+                    view:
+                      id: "423434553492783889"
+                      name: view1
+                      technical_name: view1
+                      tags:
+                        - a
+                        - b
+                      comment: ""
+                      type: meta
+                      status: new
+                      query_type: DSL
+                      data_source:
+                        type: index_base
+                        index_base:
+                          - base_type: type1
+                            name: name1
+                            comment: ""
+                      fields:
+                        - comment: 时间戳
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: 索引
+                          display_name: __index
+                          type: keyword
+                          name: __index
+                        - comment: 文档ID
+                          display_name: __id
+                          type: keyword
+                          name: __id
+                        - comment: 标签对
+                          display_name: __label_str
+                          type: keyword
+                          name: __label_str
+                        - comment: 数据类别
+                          display_name: __category
+                          type: keyword
+                          name: __category
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                查询最近1小时 - 请求多个视图:
+                  value:
+                    - total_count: 8888
+                      entries:
+                        - "@timestamp": 2023-07-14T03:13:25.913Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: Q39jUokBFKY-NXt3q_Pb
+                          __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:24.948Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: 0X9jUokBFKY-NXt3m-87
+                          __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                          __category: metric
+                      view:
+                        id: "423434553492783889"
+                        name: view1
+                        technical_name: view1
+                        tags:
+                          - a
+                          - b
+                        comment: ""
+                        type: meta
+                        status: new
+                        query_type: DSL
+                        data_source:
+                          type: index_base
+                          index_base:
+                            - base_type: type1
+                              name: name1
+                              comment: ""
+                        fields:
+                          - comment: 时间戳
+                            display_name: "@timestamp"
+                            type: date
+                            name: "@timestamp"
+                          - comment: 索引
+                            display_name: __index
+                            type: keyword
+                            name: __index
+                          - comment: 文档ID
+                            display_name: __id
+                            type: keyword
+                            name: __id
+                          - comment: 标签对
+                            display_name: __label_str
+                            type: keyword
+                            name: __label_str
+                          - comment: 数据类别
+                            display_name: __category
+                            type: keyword
+                            name: __category
+                        group_id: xde458976ghjtf345kj2
+                        group_name: 操作系统
+                        create_time: 1731046817390
+                        update_time: 1731046829397
+                        creator: emm
+                        updater: emm
+                        module_type: data_view
+                    - total_count: 8888
+                      entries:
+                        - "@timestamp": 2023-07-14T03:13:25.913Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: Q39jUokBFKY-NXt3q_Pb
+                          __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:24.948Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: 0X9jUokBFKY-NXt3m-87
+                          __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:23.900Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: MClQcYkB8tXEOa51s-5a
+                          __label_str: "namespace=resource,instance=10.4.283.28"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:22.888Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: NSlQcYkB8tXEOa51s-5a
+                          __label_str: "cluster=kafka,job=prometheus"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:21.846Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: NylQcYkB8tXEOa51yO5t
+                          __label_str: namespace=anyrobot
+                          __category: metric
+                      view:
+                        id: "523434553492783889"
+                        name: view2
+                        technical_name: view2
+                        tags:
+                          - a
+                          - b
+                        comment: ""
+                        type: meta
+                        status: new
+                        query_type: DSL
+                        data_source:
+                          type: index_base
+                          index_base:
+                            - base_type: type1
+                              name: name1
+                              comment: ""
+                        fields:
+                          - comment: 时间戳
+                            display_name: "@timestamp"
+                            type: date
+                            name: "@timestamp"
+                          - comment: 索引
+                            display_name: __index
+                            type: keyword
+                            name: __index
+                          - comment: 文档ID
+                            display_name: __id
+                            type: keyword
+                            name: __id
+                          - comment: 标签对
+                            display_name: __label_str
+                            type: keyword
+                            name: __label_str
+                          - comment: 数据类别
+                            display_name: __category
+                            type: keyword
+                            name: __category
+                        group_id: xde458976ghjtf345kj2
+                        group_name: 操作系统
+                        create_time: 1731046817390
+                        update_time: 1731046829397
+                        creator: emm
+                        updater: emm
+                        module_type: data_view
+                查询单个视图 - search_after 翻页查询 - 第一次返回:
+                  value:
+                    pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFnNOWU43ckt3U3IyaFVpbGE1UWEtMncAFjFyeXBsRGJmVFM2RTB6eVg1aVVqQncAAAAAAAAAAAIWcDVrM3ZIX0pRNS1XejE5YXRPRFhzUQEWc05ZTjdyS3dTcjJoVWlsYTVRYS0ydwAA==
+                    search_after:
+                      - "32634"
+                      - 1699568108000
+                    total_count: 13000
+                    entries:
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: z_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str:
+                          "cmdline=/usr/bin/containerd-shim-runc-v2 -namespace\
+                          \ moby -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0\
+                          \ -address /run/containerd/containerd.sock,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=RSS,process_id=19130,process_name=containerd-shim-runc-v2"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.058Z
+                        category: metric
+                        labels:
+                          cmdline:
+                            /usr/bin/containerd-shim-runc-v2 -namespace moby
+                            -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0
+                            -address /run/containerd/containerd.sock
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: RSS
+                          process_id: "19130"
+                          process_name: containerd-shim-runc-v2
+                        metrics:
+                          node_processes_memory_bytes_total: 10813440
+                        type: systemmetric_zd
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: 0_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str: "cmdline=,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=VMS,process_id=19283,process_name=kworker/29:0-mm_percpu_wq"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.059Z
+                        category: metric
+                        labels:
+                          cmdline: ""
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: VMS
+                          process_id: "19283"
+                          process_name: kworker/29:0-mm_percpu_wq
+                        metrics:
+                          node_processes_memory_bytes_total: 0
+                        type: systemmetric_zd
+                    view:
+                      id: "486357905516266244"
+                      name: metric222
+                      technical_name: metric222
+                      tags:
+                        - metric
+                      comment: ""
+                      type: meta
+                      query_type: DSL
+                      data_source:
+                        index_base:
+                          - base_type: systemmetric_sy
+                            comment: ""
+                            name: systemmetric_sy
+                        type: index_base
+                      fields:
+                        - comment: ""
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: ""
+                          display_name: __data_type
+                          type: keyword
+                          name: __data_type
+                        - comment: ""
+                          display_name: __index_base
+                          type: keyword
+                          name: __index_base
+                        - comment: ""
+                          display_name: __labels_str
+                          type: keyword
+                          name: __labels_str
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: category
+                          type: keyword
+                          name: category
+                        - comment: ""
+                          display_name: tags
+                          type: keyword
+                          name: tags
+                        - comment: ""
+                          display_name: type
+                          type: keyword
+                          name: type
+                        - comment: ""
+                          display_name: __writeTime
+                          type: date
+                          name: __writeTime
+                        - comment: ""
+                          display_name: __routing
+                          type: text
+                          name: __routing
+                        - comment: ""
+                          display_name: "@version"
+                          type: text
+                          name: "@version"
+                        - comment: ""
+                          display_name: labels.host_ip
+                          type: text
+                          name: labels.host_ip
+                        - comment: ""
+                          display_name: labels.job_id
+                          type: text
+                          name: labels.job_id
+                        - comment: ""
+                          display_name: labels.domainname
+                          type: text
+                          name: labels.domainname
+                        - comment: ""
+                          display_name: labels.release
+                          type: text
+                          name: labels.release
+                        - comment: ""
+                          display_name: labels.sysname
+                          type: text
+                          name: labels.sysname
+                        - comment: ""
+                          display_name: labels.machine
+                          type: text
+                          name: labels.machine
+                        - comment: ""
+                          display_name: labels.nodename
+                          type: text
+                          name: labels.nodename
+                        - comment: ""
+                          display_name: labels.state
+                          type: text
+                          name: labels.state
+                        - comment: ""
+                          display_name: labels.host_name
+                          type: text
+                          name: labels.host_name
+                        - comment: ""
+                          display_name: labels.process_id
+                          type: text
+                          name: labels.process_id
+                        - comment: ""
+                          display_name: labels.cpu
+                          type: text
+                          name: labels.cpu
+                        - comment: ""
+                          display_name: labels.device
+                          type: text
+                          name: labels.device
+                        - comment: ""
+                          display_name: labels.version
+                          type: text
+                          name: labels.version
+                        - comment: ""
+                          display_name: labels.cpu_mode
+                          type: text
+                          name: labels.cpu_mode
+                        - comment: ""
+                          display_name: labels.process_name
+                          type: text
+                          name: labels.process_name
+                        - comment: ""
+                          display_name: labels.mountpoint
+                          type: text
+                          name: labels.mountpoint
+                        - comment: ""
+                          display_name: labels.mode
+                          type: text
+                          name: labels.mode
+                        - comment: ""
+                          display_name: labels.cmdline
+                          type: text
+                          name: labels.cmdline
+                        - comment: ""
+                          display_name: labels.memory_stat
+                          type: text
+                          name: labels.memory_stat
+                        - comment: ""
+                          display_name: labels.fstype
+                          type: text
+                          name: labels.fstype
+                        - comment: ""
+                          display_name: type
+                          type: text
+                          name: type
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: metrics.node_load1
+                          type: float
+                          name: metrics.node_load1
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_inuse
+                          type: float
+                          name: metrics.node_sockstat_TCP_inuse
+                        - comment: ""
+                          display_name: metrics.node_disk_read_bytes_total
+                          type: float
+                          name: metrics.node_disk_read_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_processes_cpu_seconds_total
+                          type: float
+                          name: metrics.node_processes_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_write_bytes
+                          type: float
+                          name: metrics.node_processes_io_write_bytes
+                        - comment: ""
+                          display_name: metrics.node_time_zone_offset_seconds
+                          type: float
+                          name: metrics.node_time_zone_offset_seconds
+                        - comment: ""
+                          display_name: metrics.node_memory_Buffers_bytes
+                          type: float
+                          name: metrics.node_memory_Buffers_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_free_bytes
+                          type: float
+                          name: metrics.node_filesystem_free_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_now
+                          type: float
+                          name: metrics.node_disk_io_now
+                        - comment: ""
+                          display_name: metrics.node_cpu_seconds_total
+                          type: float
+                          name: metrics.node_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemAvailable_bytes
+                          type: float
+                          name: metrics.node_memory_MemAvailable_bytes
+                        - comment: ""
+                          display_name: metrics.node_load5
+                          type: float
+                          name: metrics.node_load5
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_ActiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_ActiveOpens
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_errors_total
+                          type: float
+                          name: metrics.node_network_transmit_errors_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_read_bytes
+                          type: float
+                          name: metrics.node_processes_io_read_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_avail_bytes
+                          type: float
+                          name: metrics.node_filesystem_avail_bytes
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_PassiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_PassiveOpens
+                        - comment: ""
+                          display_name: metrics.node_disk_read_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_read_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_host_boot_time_seconds
+                          type: float
+                          name: metrics.node_host_boot_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files
+                          type: float
+                          name: metrics.node_filesystem_files
+                        - comment: ""
+                          display_name: metrics.node_time_seconds
+                          type: float
+                          name: metrics.node_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_network_receive_errors_total
+                          type: float
+                          name: metrics.node_network_receive_errors_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_tw
+                          type: float
+                          name: metrics.node_sockstat_TCP_tw
+                        - comment: ""
+                          display_name: metrics.node_network_receive_dropped_total
+                          type: float
+                          name: metrics.node_network_receive_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_filefd_allocated
+                          type: float
+                          name: metrics.node_filefd_allocated
+                        - comment: ""
+                          display_name: metrics.node_disk_written_bytes_total
+                          type: float
+                          name: metrics.node_disk_written_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_CurrEstab
+                          type: float
+                          name: metrics.node_netstat_Tcp_CurrEstab
+                        - comment: ""
+                          display_name: metrics.node_memory_Cached_bytes
+                          type: float
+                          name: metrics.node_memory_Cached_bytes
+                        - comment: ""
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          type: float
+                          name: metrics.node_memory_MemTotal_bytes
+                        - comment: ""
+                          display_name: metrics.node_host_uname
+                          type: float
+                          name: metrics.node_host_uname
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_dropped_total
+                          type: float
+                          name: metrics.node_network_transmit_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_disk_write_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_write_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_total
+                          type: float
+                          name: metrics.node_processes_total
+                        - comment: ""
+                          display_name: metrics.node_network_receive_bytes_total
+                          type: float
+                          name: metrics.node_network_receive_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_size_bytes
+                          type: float
+                          name: metrics.node_filesystem_size_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_io_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files_free
+                          type: float
+                          name: metrics.node_filesystem_files_free
+                        - comment: ""
+                          display_name: metrics.node_load15
+                          type: float
+                          name: metrics.node_load15
+                        - comment: ""
+                          display_name: metrics.node_disk_reads_completed_total
+                          type: float
+                          name: metrics.node_disk_reads_completed_total
+                        - comment: ""
+                          display_name: metrics.node_disk_writes_completed_total
+                          type: float
+                          name: metrics.node_disk_writes_completed_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemFree_bytes
+                          type: float
+                          name: metrics.node_memory_MemFree_bytes
+                        - comment: ""
+                          display_name: metrics.node_processes_memory_bytes_total
+                          type: float
+                          name: metrics.node_processes_memory_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_bytes_total
+                          type: float
+                          name: metrics.node_network_transmit_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_alloc
+                          type: float
+                          name: metrics.node_sockstat_TCP_alloc
+                        - comment: ""
+                          display_name: metrics.node_filefd_maxmium
+                          type: float
+                          name: metrics.node_filefd_maxmium
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                查询单个视图 - search_after 翻页查询 - 非第一次:
+                  value:
+                    pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFnNOWU43ckt3U3IyaFVpbGE1UWEtMncAFjFyeXBsRGJmVFM2RTB6eVg1aVVqQncAAAAAAAAAAAIWcDVrM3ZIX0pRNS1XejE5YXRPRFhzUQEWc05ZTjdyS3dTcjJoVWlsYTVRYS0ydwAA==
+                    search_after:
+                      - "32666"
+                      - 1699568108000
+                    entries:
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: z_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str:
+                          "cmdline=/usr/bin/containerd-shim-runc-v2 -namespace\
+                          \ moby -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0\
+                          \ -address /run/containerd/containerd.sock,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=RSS,process_id=19130,process_name=containerd-shim-runc-v2"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.058Z
+                        category: metric
+                        labels:
+                          cmdline:
+                            /usr/bin/containerd-shim-runc-v2 -namespace moby
+                            -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0
+                            -address /run/containerd/containerd.sock
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: RSS
+                          process_id: "19130"
+                          process_name: containerd-shim-runc-v2
+                        metrics:
+                          node_processes_memory_bytes_total: 10813440
+                        type: systemmetric_zd
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: 0_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str: "cmdline=,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=VMS,process_id=19283,process_name=kworker/29:0-mm_percpu_wq"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.059Z
+                        category: metric
+                        labels:
+                          cmdline: ""
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: VMS
+                          process_id: "19283"
+                          process_name: kworker/29:0-mm_percpu_wq
+                        metrics:
+                          node_processes_memory_bytes_total: 0
+                        type: systemmetric_zd
+                    view:
+                      id: "486357905516266244"
+                      name: metric222
+                      tags:
+                        - metric
+                      type: meta
+                      query_type: DSL
+                      status: new
+                      comment: ""
+                      data_source:
+                        index_base:
+                          - base_type: systemmetric_sy
+                            comment: ""
+                            name: systemmetric_sy
+                        type: index_base
+                      fields:
+                        - comment: ""
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: ""
+                          display_name: __data_type
+                          type: keyword
+                          name: __data_type
+                        - comment: ""
+                          display_name: __index_base
+                          type: keyword
+                          name: __index_base
+                        - comment: ""
+                          display_name: __labels_str
+                          type: keyword
+                          name: __labels_str
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: category
+                          type: keyword
+                          name: category
+                        - comment: ""
+                          display_name: tags
+                          type: keyword
+                          name: tags
+                        - comment: ""
+                          display_name: type
+                          type: keyword
+                          name: type
+                        - comment: ""
+                          display_name: __writeTime
+                          type: date
+                          name: __writeTime
+                        - comment: ""
+                          display_name: __routing
+                          type: text
+                          name: __routing
+                        - comment: ""
+                          display_name: "@version"
+                          type: text
+                          name: "@version"
+                        - comment: ""
+                          display_name: labels.host_ip
+                          type: text
+                          name: labels.host_ip
+                        - comment: ""
+                          display_name: labels.job_id
+                          type: text
+                          name: labels.job_id
+                        - comment: ""
+                          display_name: labels.domainname
+                          type: text
+                          name: labels.domainname
+                        - comment: ""
+                          display_name: labels.release
+                          type: text
+                          name: labels.release
+                        - comment: ""
+                          display_name: labels.sysname
+                          type: text
+                          name: labels.sysname
+                        - comment: ""
+                          display_name: labels.machine
+                          type: text
+                          name: labels.machine
+                        - comment: ""
+                          display_name: labels.nodename
+                          type: text
+                          name: labels.nodename
+                        - comment: ""
+                          display_name: labels.state
+                          type: text
+                          name: labels.state
+                        - comment: ""
+                          display_name: labels.host_name
+                          type: text
+                          name: labels.host_name
+                        - comment: ""
+                          display_name: labels.process_id
+                          type: text
+                          name: labels.process_id
+                        - comment: ""
+                          display_name: labels.cpu
+                          type: text
+                          name: labels.cpu
+                        - comment: ""
+                          display_name: labels.device
+                          type: text
+                          name: labels.device
+                        - comment: ""
+                          display_name: labels.version
+                          type: text
+                          name: labels.version
+                        - comment: ""
+                          display_name: labels.cpu_mode
+                          type: text
+                          name: labels.cpu_mode
+                        - comment: ""
+                          display_name: labels.process_name
+                          type: text
+                          name: labels.process_name
+                        - comment: ""
+                          display_name: labels.mountpoint
+                          type: text
+                          name: labels.mountpoint
+                        - comment: ""
+                          display_name: labels.mode
+                          type: text
+                          name: labels.mode
+                        - comment: ""
+                          display_name: labels.cmdline
+                          type: text
+                          name: labels.cmdline
+                        - comment: ""
+                          display_name: labels.memory_stat
+                          type: text
+                          name: labels.memory_stat
+                        - comment: ""
+                          display_name: labels.fstype
+                          type: text
+                          name: labels.fstype
+                        - comment: ""
+                          display_name: type
+                          type: text
+                          name: type
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: metrics.node_load1
+                          type: float
+                          name: metrics.node_load1
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_inuse
+                          type: float
+                          name: metrics.node_sockstat_TCP_inuse
+                        - comment: ""
+                          display_name: metrics.node_disk_read_bytes_total
+                          type: float
+                          name: metrics.node_disk_read_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_processes_cpu_seconds_total
+                          type: float
+                          name: metrics.node_processes_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_write_bytes
+                          type: float
+                          name: metrics.node_processes_io_write_bytes
+                        - comment: ""
+                          display_name: metrics.node_time_zone_offset_seconds
+                          type: float
+                          name: metrics.node_time_zone_offset_seconds
+                        - comment: ""
+                          display_name: metrics.node_memory_Buffers_bytes
+                          type: float
+                          name: metrics.node_memory_Buffers_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_free_bytes
+                          type: float
+                          name: metrics.node_filesystem_free_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_now
+                          type: float
+                          name: metrics.node_disk_io_now
+                        - comment: ""
+                          display_name: metrics.node_cpu_seconds_total
+                          type: float
+                          name: metrics.node_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemAvailable_bytes
+                          type: float
+                          name: metrics.node_memory_MemAvailable_bytes
+                        - comment: ""
+                          display_name: metrics.node_load5
+                          type: float
+                          name: metrics.node_load5
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_ActiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_ActiveOpens
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_errors_total
+                          type: float
+                          name: metrics.node_network_transmit_errors_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_read_bytes
+                          type: float
+                          name: metrics.node_processes_io_read_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_avail_bytes
+                          type: float
+                          name: metrics.node_filesystem_avail_bytes
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_PassiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_PassiveOpens
+                        - comment: ""
+                          display_name: metrics.node_disk_read_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_read_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_host_boot_time_seconds
+                          type: float
+                          name: metrics.node_host_boot_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files
+                          type: float
+                          name: metrics.node_filesystem_files
+                        - comment: ""
+                          display_name: metrics.node_time_seconds
+                          type: float
+                          name: metrics.node_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_network_receive_errors_total
+                          type: float
+                          name: metrics.node_network_receive_errors_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_tw
+                          type: float
+                          name: metrics.node_sockstat_TCP_tw
+                        - comment: ""
+                          display_name: metrics.node_network_receive_dropped_total
+                          type: float
+                          name: metrics.node_network_receive_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_filefd_allocated
+                          type: float
+                          name: metrics.node_filefd_allocated
+                        - comment: ""
+                          display_name: metrics.node_disk_written_bytes_total
+                          type: float
+                          name: metrics.node_disk_written_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_CurrEstab
+                          type: float
+                          name: metrics.node_netstat_Tcp_CurrEstab
+                        - comment: ""
+                          display_name: metrics.node_memory_Cached_bytes
+                          type: float
+                          name: metrics.node_memory_Cached_bytes
+                        - comment: ""
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          type: float
+                          name: metrics.node_memory_MemTotal_bytes
+                        - comment: ""
+                          display_name: metrics.node_host_uname
+                          type: float
+                          name: metrics.node_host_uname
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_dropped_total
+                          type: float
+                          name: metrics.node_network_transmit_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_disk_write_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_write_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_total
+                          type: float
+                          name: metrics.node_processes_total
+                        - comment: ""
+                          display_name: metrics.node_network_receive_bytes_total
+                          type: float
+                          name: metrics.node_network_receive_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_size_bytes
+                          type: float
+                          name: metrics.node_filesystem_size_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_io_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files_free
+                          type: float
+                          name: metrics.node_filesystem_files_free
+                        - comment: ""
+                          display_name: metrics.node_load15
+                          type: float
+                          name: metrics.node_load15
+                        - comment: ""
+                          display_name: metrics.node_disk_reads_completed_total
+                          type: float
+                          name: metrics.node_disk_reads_completed_total
+                        - comment: ""
+                          display_name: metrics.node_disk_writes_completed_total
+                          type: float
+                          name: metrics.node_disk_writes_completed_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemFree_bytes
+                          type: float
+                          name: metrics.node_memory_MemFree_bytes
+                        - comment: ""
+                          display_name: metrics.node_processes_memory_bytes_total
+                          type: float
+                          name: metrics.node_processes_memory_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_bytes_total
+                          type: float
+                          name: metrics.node_network_transmit_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_alloc
+                          type: float
+                          name: metrics.node_sockstat_TCP_alloc
+                        - comment: ""
+                          display_name: metrics.node_filefd_maxmium
+                          type: float
+                          name: metrics.node_filefd_maxmium
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                SQL类视图search_after翻页第一次:
+                  value:
+                    search_after:
+                      - 20250828_080455_08878_bn4jr
+                      - x791f3a9e227946c48e79bfa4b5a49f7f
+                      - "1"
+                    entries:
+                      - 职称等级: 初级
+                        职务序列: 后端开发工程师
+                        必备知识: |-
+                          一、流程规范：
+                          1、爱数软件工程规范；
+                          二、基础技术知识：
+                          1、操作系统基本原理及常用命令；
+                          2、研发流程中各类工具的使用方法；
+                          三、专业技术知识：
+                          1、开发语言及其开发规范和常用框架的基础知识；
+                          2、代码调试常用技巧及常见问题排查方法；
+                          3、单元测试及持续集成基础知识，以及相关框架的使用方法；
+                          4、数据库或存储系统的基本原理及常用接口协议的使用方法，以及相关数据结构设计基础知识。
+                        职类: 技术
+                        职级: G1-G3
+                        职务描述: 理解问题：理解用户使用场景、理解问题、理解设计、交付Story
+                        职务名称: 初级后端开发工程师
+                        学历: ">=本科"
+                        工作经验: 无要求
+                      - 职级: G4-G6
+                        职称等级: 中级
+                        职务序列: 后端开发工程师
+                        工作经验: |-
+                          本科-2年以上
+                          硕士-1年以上
+                          博士-无要求
+                        职务名称: 中级后端开发工程师
+                        职类: 技术
+                        学历: ">=本科"
+                        职务描述: 理解业务：分析需求、理解需求面向客户的业务价值、发掘客户潜在需求、交付需求
+                        必备知识: |-
+                          一、基础技术知识：
+                          1、软件工程基础理论及质量属性基础知识；
+                          2、网络及安全基础知识；
+                          3、Windows或Linux编程原理、系
+                          统兼容性原理、软件运行时原理；
+                          4、常用设计模式、数据结构及算法的应用场景知识；
+                          5、UML等软件建模方法；
+                          二、专业技术知识：
+                          1、常见后端性能问题的排查定位及调优方法；
+                          2、安全、性能、网络问题等测试分析工具的使用方法；
+                          3、系统兼容性差异；
+                          4、后端服务的常见安全编程知识；
+                          5、持续集成配置及脚本撰写方法；
+                          6、python、shell等脚本语言。
+                      - 学历: ">=本科"
+                        工作经验: |-
+                          本科-4年以上
+                          硕士-3年以上
+                          博士-1年以上
+                        必备知识: |-
+                          一、基础技术知识：
+                          1、领域建模知识；
+                          2、产品逻辑设计方法及规范；
+                          二、专业技术知识：
+                          1、开发语言语法细节及编译原理、开发规范定义原则及标准；
+                          2、特定业务技术领域的技术原理、架构搭建原理、设计思想；
+                          3、服务间通信框架及原理知识、协议设计原则及规范；
+                          4、数据库及存储系统的技术特点、数据结构及兼容性设计原则。
+                        职务序列: 后端开发工程师
+                        职级: G7-G9
+                        职务描述: 懂业务：分析产品及竞品、理解产品价值、根据客户痛点规划和落地特性、评估需求价值及优先级
+                        职务名称: 高级后端开发工程师
+                        职类: 技术
+                        职称等级: 高级
+                      - 职级: G10-G12
+                        职务描述: 懂领域：洞察领域技术发展发现市场机会、规划技术方案/架构并取得领先优势成果、通过技术的创新与应用创造产品价值
+                        职类: 技术
+                        职务名称: 资深后端开发工程师
+                        职称等级: 资深
+                        学历: ">=本科"
+                        职务序列: 后端开发工程师
+                        工作经验: |-
+                          本科-7年以上
+                          硕士-5年以上
+                          博士-3年以上
+                        必备知识: |-
+                          1、多种后端开发语言的原理特性及技术差异；
+                          2、特定后端开发框架的技术原理和实现细节；
+                          3、后端服务质量标准，全方位的非功能性技术领域知识；
+                          4、后端全栈开发技术知识，行业技术现状及发展方向。
+                      - 学历: ">=本科"
+                        职类: 技术
+                        职称等级: 专家
+                        职务序列: 后端开发工程师
+                        职级: G13-G14
+                        职务描述: 具备行业影响力：作为公司内外公认的某领域专家，参与技术战略制定并对产品/领域成功负责、通过技术顶层设计建立技术壁垒
+                        工作经验: |-
+                          本科-10年以上
+                          硕士-8年以上
+                          博士-7年以上
+                        必备知识: |-
+                          1、专业领域内主流开源项目的技术原理、发展方向；
+                          2、前端、后端、测试、设计全领域研发知识体系；
+                          3、行业发展现状及趋势；
+                          4、多元思维模型。
+                        职务名称: 专家后端开发工程师
+                    total_count: 5
+                SQL类视图search_after后续翻页:
+                  value:
+                    entries: []
+                    total_count: 0
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest_DataView"
+        "500":
+          $ref: "#/components/responses/500InternalError_DataView"
+      summary: （内部接口）根据视图 id 查询数据
+      description: 根据数据视图 id 查询视图数据
+    parameters:
+      - name: ids
+        description: 数据视图id，多个用逗号分隔
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: x-account-id
+        description: 账号id
+        schema:
+          type: string
+        in: header
+        required: true
+      - name: x-account-type
+        description: 账号类型
+        schema:
+          enum:
+            - user
+            - app
+          type: string
+        in: header
+        required: true
+      - name: Content-Type
+        description: 内容类型
+        schema:
+          enum:
+            - application/json
+          type: string
+        in: header
+  /api/mdl-uniquery/v1/data-view-pits:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/deletePitsRequestBody"
+            examples:
+              批量根据 id 删除 pit:
+                value:
+                  pit_ids:
+                    - o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAEWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+                    - o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAIWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+              删除全部 pit:
+                value:
+                  pit_ids:
+                    - __all
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载 POST 变为 DELETE
+          schema:
+            enum:
+              - DELETE
+            type: string
+          in: header
+          required: true
+        - name: Authorization
+          description: token认证
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: Content-Type
+          description: 内容类型
+          schema:
+            enum:
+              - application/json
+            type: string
+          in: header
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/deletePitsResps"
+              examples:
+                exp:
+                  value:
+                    pits:
+                      - successful: true
+                        pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAEWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+                      - successful: false
+                        pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFkhGN09fMVlPUkVPLXh6MUExZ1hpaEEAFjBGbmVEZHdGU1EtaFhhUFc4ZkR5cWcAAAAAAAAAAAIWaXBPNVJtZEhTZDZXTWFFR05waXdWZwEWSEY3T18xWU9SRU8teHoxQTFnWGloQQAA
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest_DataView"
+        "500":
+          $ref: "#/components/responses/500InternalError_DataView"
+      summary: 删除视图 pit
+      description: "根据 pit_id 列表批量删除，或删除全部 pit。 "
+    parameters:
+      - name: Content-Type
+        description: 内容类型
+        schema:
+          enum:
+            - application/json
+          type: string
+        in: header
+      - name: Authorization
+        description: token认证
+        schema:
+          type: string
+        in: header
+        required: true
+  /api/mdl-uniquery/v1/data-views:
+    summary: 预览视图数据
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Request_DataViewSimulate"
+            examples:
+              查询最近1小时:
+                value:
+                  data_scope:
+                    views:
+                      - id: view1
+                        condition:
+                          operation: and
+                          sub_conditions:
+                            - field: order_date
+                              operation: ">="
+                              value: 2023-01-01
+                              value_from: const
+                            - field: status
+                              operation: ==
+                              value: completed
+                              value_from: const
+                        field_scope: 0
+                        fields:
+                          - original_name: customer_id
+                            name: customer_id
+                            display_name: 顾客id
+                            type: string
+                            comment: ""
+                          - original_name: order_date
+                            name: order_date
+                            display_name: 订购日期
+                            type: date
+                            comment: ""
+                          - original_name: total_amount
+                            name: total_amount
+                            display_name: 总金额
+                            type: int
+                            comment: ""
+                      - id: view2
+                        condition:
+                          field: country
+                          operation: in
+                          value:
+                            - US
+                            - CA
+                            - UK
+                          value_from: const
+                        field_scope: 0
+                        fields:
+                          - original_name: customer_id
+                            name: customer_id
+                            display_name: 顾客id
+                            type: string
+                            comment: ""
+                          - original_name: customer_name
+                            name: customer_name
+                            display_name: 顾客名称
+                            type: string
+                            comment: ""
+                          - original_name: country
+                            name: country
+                            display_name: 国家
+                            type: string
+                            comment: ""
+                    relation:
+                      type: join
+                      config:
+                        join_type: inner
+                        "on":
+                          - left_view: view1
+                            left_field: customer_id
+                            operator: "="
+                            right_view: view2
+                            right_field: customer_id
+                  fields:
+                    - original_name: customer_id
+                      name: customer_id
+                      display_name: 顾客id
+                      type: string
+                      comment: ""
+                    - original_name: order_date
+                      name: order_date
+                      display_name: 订购日期
+                      type: date
+                      comment: ""
+                    - original_name: total_amount
+                      name: total_amount
+                      display_name: 总金额
+                      type: int
+                      comment: ""
+                    - original_name: customer_name
+                      name: customer_name
+                      display_name: 顾客名称
+                      type: string
+                      comment: ""
+                    - original_name: country
+                      name: country
+                      display_name: 国家
+                      type: string
+                      comment: ""
+                    - name: aa
+                      display_name: aa
+                      comment: ""
+                    - name: bb
+                      display_name: bb
+                      comment: ""
+                    - name: timestamp
+                      display_name: timestamp
+                      comment: ""
+                  data_processors:
+                    template_data: []
+                    processors:
+                      - title: parse nginx message
+                        enabled: true
+                        type: grok
+                        config:
+                          input: message
+                          match_rules:
+                            - xx
+                            - yy
+                          pattern_definitions:
+                            xx: xx
+                        output_fields:
+                          - name: aa
+                            display_name: aa
+                            comment: ""
+                          - name: bb
+                            display_name: bb
+                            comment: ""
+                      - title: parse date
+                        enabled: true
+                        type: date
+                        config:
+                          input: timestamp
+                          format:
+                            - YYYY-MM-DD
+                            - YYYY-MM-DD HH:mm:ss
+                          timezone: ""
+                        output_fields:
+                          - name: timestamp
+                            display_name: timestamp
+                            comment: ""
+                      - title: if-else
+                        enabled: true
+                        type: if-else
+                        config:
+                          if_conditions:
+                            - title: if-condition1
+                              processors: []
+                            - title: if-condition2
+                              processors: []
+                          else_condition:
+                            title: if-condition2
+                            processors:
+                              - title: switch
+                                enabled: true
+                                type: switch
+                                config:
+                                  input: ""
+                                  cases:
+                                    - case_key: xx
+                                      processors: []
+                                    - case_key: yy
+                                      processors: []
+                                    - case_key: zz
+                                      processors: []
+                                  default_processors: []
+                  sort:
+                    - field: "@timestamp"
+                      direction: desc
+                  start: 1689228477228
+                  end: 1689232077228
+                  offset: 0
+                  limit: 2
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载 post，实际上是 get 方法
+          schema:
+            enum:
+              - GET
+            type: string
+          in: header
+          required: true
+        - name: Authorization
+          description: token认证
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: Content-Type
+          description: 内容类型
+          schema:
+            enum:
+              - application/json
+            type: string
+          in: header
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViewResults_Simulate"
+              examples:
+                查询最近1小时:
+                  value:
+                    view:
+                      id: ""
+                      name: ""
+                      technical_name: ""
+                      type: custom
+                      query_type: SQL
+                      tags: []
+                      comment: ""
+                      data_scope:
+                        views:
+                          - id: view1
+                            condition:
+                              operation: and
+                              sub_conditions:
+                                - field: order_date
+                                  operation: ">="
+                                  value: 2023-01-01
+                                  value_from: const
+                                - field: status
+                                  operation: ==
+                                  value: completed
+                                  value_from: const
+                            field_scope: 0
+                            fields:
+                              - original_name: customer_id
+                                name: customer_id
+                                display_name: 顾客id
+                                type: string
+                                comment: ""
+                              - original_name: order_date
+                                name: order_date
+                                display_name: 订购日期
+                                type: date
+                                comment: ""
+                              - original_name: total_amount
+                                name: total_amount
+                                display_name: 总金额
+                                type: int
+                                comment: ""
+                          - id: view2
+                            condition:
+                              field: country
+                              operation: in
+                              value:
+                                - US
+                                - CA
+                                - UK
+                              value_from: const
+                            field_scope: 0
+                            fields:
+                              - original_name: customer_id
+                                name: customer_id
+                                display_name: 顾客id
+                                type: string
+                                comment: ""
+                              - original_name: customer_name
+                                name: customer_name
+                                display_name: 顾客名称
+                                type: string
+                                comment: ""
+                              - original_name: country
+                                name: country
+                                display_name: 国家
+                                type: string
+                                comment: ""
+                        relation:
+                          type: join
+                          config:
+                            join_type: inner
+                            "on":
+                              - left_view: view1
+                                left_field: customer_id
+                                operator: "="
+                                right_view: view2
+                                right_field: customer_id
+                      fields:
+                        - original_name: customer_id
+                          name: customer_id
+                          display_name: 顾客id
+                          type: string
+                          comment: ""
+                        - original_name: order_date
+                          name: order_date
+                          display_name: 订购日期
+                          type: date
+                          comment: ""
+                        - original_name: total_amount
+                          name: total_amount
+                          display_name: 总金额
+                          type: int
+                          comment: ""
+                        - original_name: customer_name
+                          name: customer_name
+                          display_name: 顾客名称
+                          type: string
+                          comment: ""
+                        - original_name: country
+                          name: country
+                          display_name: 国家
+                          type: string
+                          comment: ""
+                        - name: aa
+                          display_name: aa
+                          type: string
+                          comment: ""
+                        - name: bb
+                          display_name: bb
+                          type: string
+                          comment: ""
+                        - name: timestamp
+                          display_name: timestamp
+                          type: date
+                          comment: ""
+                      data_processors:
+                        template_data: []
+                        processors:
+                          - title: parse nginx message
+                            enabled: true
+                            type: grok
+                            config:
+                              input: message
+                              match_rules:
+                                - xx
+                                - yy
+                              pattern_definitions:
+                                xx: xx
+                            output_fields:
+                              - name: aa
+                                display_name: aa
+                                comment: ""
+                              - name: bb
+                                display_name: bb
+                                comment: ""
+                          - title: parse date
+                            enabled: true
+                            type: date
+                            config:
+                              input: timestamp
+                              format:
+                                - YYYY-MM-DD
+                                - YYYY-MM-DD HH:mm:ss
+                              timezone: ""
+                            output_fields:
+                              - name: timestamp
+                                display_name: timestamp
+                                comment: ""
+                          - title: if-else
+                            enabled: true
+                            type: if-else
+                            config:
+                              if_conditions:
+                                - title: if-condition1
+                                  processors: []
+                                - title: if-condition2
+                                  processors: []
+                              else_condition:
+                                title: if-condition2
+                                processors:
+                                  - title: switch
+                                    enabled: true
+                                    type: switch
+                                    config:
+                                      input: ""
+                                      cases:
+                                        - case_key: xx
+                                          processors: []
+                                        - case_key: yy
+                                          processors: []
+                                        - case_key: zz
+                                          processors: []
+                                      default_processors: []
+                    entries:
+                      - timestamp: 2023-07-14T03:13:25.913Z
+                        order_date: 2023-07-14T03:13:25.913Z
+                        custom_id: cnao_metric_node_exporter-2023.07-0
+                        custom_name: emmmm
+                        country: CN
+                        total_amount: Q39jUokBFKY-NXt3q_Pb
+                        aa: "component=apiserver,kube_job=kubernetes-apiservers"
+                        bb: metric
+                      - timestamp: 2023-07-14T03:13:25.913Z
+                        order_date: 2023-07-14T03:13:25.913Z
+                        custom_id: cnao_metric_node_exporter-2023.07-0
+                        custom_name: emmmm
+                        country: CN
+                        total_amount: Q39jUokBFKY-NXt3q_Pb
+                        aa: "component=apiserver,kube_job=kubernetes-apiservers"
+                        bb: metric
+                    total_count: 13791
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest_DataView"
+        "500":
+          $ref: "#/components/responses/500InternalError_DataView"
+      summary: 预览视图数据
+      description: 基于数据视图的数据预览
+  /api/mdl-uniquery/v1/data-views/{ids}:
+    summary: 根据视图 id 查询数据
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqDataView_V2"
+            examples:
+              查询最近1小时 - 请求单个视图:
+                value:
+                  start: 1689228477228
+                  end: 1689232077228
+                  sort:
+                    - field: "@timestamp"
+                      direction: asc
+                  offset: 0
+                  limit: 2
+                  need_total: true
+                  use_search_after: false
+              查询最近1小时 - 请求多个视图:
+                value:
+                  - start: 1689228477228
+                    end: 1689232077228
+                    sort:
+                      - field: "@timestamp"
+                        direction: desc
+                    offset: 0
+                    limit: 2
+                    need_total: true
+                    use_search_after: false
+                  - start: 1689228477228
+                    end: 1689232077228
+                    sort:
+                      - field: "@timestamp"
+                        direction: desc
+                    offset: 0
+                    limit: 5
+                    need_total: true
+                    use_search_after: false
+                    filters:
+                      operation: and
+                      sub_conditions:
+                        - field: labels.host
+                          display_name: labels.host
+                          operation: in
+                          value_from: const
+                          value:
+                            - 10.2.12.23
+                            - 10.21.2.3
+                        - field: labels.job
+                          display_name: labels.job
+                          operation: "="
+                          value_from: const
+                          value: prometheus
+                        - field: labels.namespace
+                          display_name: 命名空间
+                          operation: "!="
+                          value_from: const
+                          value: as
+                        - field: metrics.node_cpu_seconds_total
+                          display_name: metrics.node_cpu_seconds_total
+                          operation: range
+                          value_from: const
+                          value:
+                            - 0
+                            - 5
+                        - field: metrics.node_memory_MemTotal_bytes
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          operation: out_range
+                          value_from: const
+                          value:
+                            - 1024
+                            - 2048
+              查询单个视图 - search after 翻页查询 - 第一次:
+                value:
+                  start: 1696918575688
+                  end: 1699596975688
+                  limit: 10000
+                  sort:
+                    - field: __id
+                      direction: asc
+                    - field: "@timestamp"
+                      direction: asc
+                  format: original
+                  need_total: true
+                  use_search_after: true
+              查询单个视图 - search after 翻页查询 - 非第一次:
+                value:
+                  limit: 10000
+                  sort:
+                    - field: __id
+                      direction: asc
+                    - field: "@timestamp"
+                      direction: asc
+                  search_after:
+                    - "32634"
+                    - 1699568108000
+                  format: original
+                  need_total: false
+                  use_search_after: true
+              SQL类视图search_after翻页第一次:
+                value:
+                  format: flat
+                  need_total: true
+                  use_search_after: true
+              SQL类视图search_after后续翻页:
+                value:
+                  search_after:
+                    - 20250828_080455_08878_bn4jr
+                    - x791f3a9e227946c48e79bfa4b5a49f7f
+                    - "1"
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载 POST变为 GET
+          schema:
+            enum:
+              - GET
+            type: string
+          in: header
+          required: true
+        - examples:
+            ex:
+              value: Bearer ory_at_DnhZEGHWiSHEw-z8j0Ke0JpZ_By6RMNm3ly-9q7W6-E.XJypeQY-gljf_nu1oso-hL3TbuuUioy-qbOB0zwhXqA
+          name: Authorization
+          description: token认证
+          schema:
+            type: string
+          in: header
+          required: true
+        - name: Content-Type
+          description: 内容类型
+          schema:
+            enum:
+              - application/json
+            type: string
+          in: header
+        - name: include_view
+          description: 控制返回体是否包含视图对象，默认为 false，不返回视图对象
+          schema:
+            type: boolean
+          in: query
+        - name: allow_non_exist_field
+          description: allow_non_exist_field 为 true时，当全局过滤条件使用的字段不在视图的字段列表里时，返回空数据，而不是报错。默认为false。
+          schema:
+            type: boolean
+          in: query
+        - name: timeout
+          description: '超时参数，格式示例为 "60s", "5m"'
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViewResults_V2"
+              examples:
+                查询最近1小时 - 请求单个视图:
+                  value:
+                    total_count: 8888
+                    entries:
+                      - "@timestamp": 2023-07-14T03:13:25.913Z
+                        __index: cnao_metric_node_exporter-2023.07-0
+                        __id: Q39jUokBFKY-NXt3q_Pb
+                        __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                        __category: metric
+                      - "@timestamp": 2023-07-14T03:13:24.948Z
+                        __index: cnao_metric_node_exporter-2023.07-0
+                        __id: 0X9jUokBFKY-NXt3m-87
+                        __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                        __category: metric
+                    view:
+                      id: "423434553492783889"
+                      name: view1
+                      technical_name: view1
+                      tags:
+                        - a
+                        - b
+                      comment: ""
+                      type: meta
+                      status: new
+                      query_type: DSL
+                      data_source:
+                        type: index_base
+                        index_base:
+                          - base_type: type1
+                            name: name1
+                            comment: ""
+                      fields:
+                        - comment: 时间戳
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: 索引
+                          display_name: __index
+                          type: keyword
+                          name: __index
+                        - comment: 文档ID
+                          display_name: __id
+                          type: keyword
+                          name: __id
+                        - comment: 标签对
+                          display_name: __label_str
+                          type: keyword
+                          name: __label_str
+                        - comment: 数据类别
+                          display_name: __category
+                          type: keyword
+                          name: __category
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                查询最近1小时 - 请求多个视图:
+                  value:
+                    - total_count: 8888
+                      entries:
+                        - "@timestamp": 2023-07-14T03:13:25.913Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: Q39jUokBFKY-NXt3q_Pb
+                          __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:24.948Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: 0X9jUokBFKY-NXt3m-87
+                          __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                          __category: metric
+                      view:
+                        id: "423434553492783889"
+                        name: view1
+                        technical_name: view1
+                        tags:
+                          - a
+                          - b
+                        comment: ""
+                        type: meta
+                        status: new
+                        query_type: DSL
+                        data_source:
+                          type: index_base
+                          index_base:
+                            - base_type: type1
+                              name: name1
+                              comment: ""
+                        fields:
+                          - comment: 时间戳
+                            display_name: "@timestamp"
+                            type: date
+                            name: "@timestamp"
+                          - comment: 索引
+                            display_name: __index
+                            type: keyword
+                            name: __index
+                          - comment: 文档ID
+                            display_name: __id
+                            type: keyword
+                            name: __id
+                          - comment: 标签对
+                            display_name: __label_str
+                            type: keyword
+                            name: __label_str
+                          - comment: 数据类别
+                            display_name: __category
+                            type: keyword
+                            name: __category
+                        group_id: xde458976ghjtf345kj2
+                        group_name: 操作系统
+                        create_time: 1731046817390
+                        update_time: 1731046829397
+                        creator: emm
+                        updater: emm
+                        module_type: data_view
+                    - total_count: 8888
+                      entries:
+                        - "@timestamp": 2023-07-14T03:13:25.913Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: Q39jUokBFKY-NXt3q_Pb
+                          __label_str: "component=apiserver,kube_job=kubernetes-apiservers"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:24.948Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: 0X9jUokBFKY-NXt3m-87
+                          __label_str: "cluster=opensearch,index=metric_prometheus-2023.07-0,instance=135.31.22.5:9108,job=prometheus"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:23.900Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: MClQcYkB8tXEOa51s-5a
+                          __label_str: "namespace=resource,instance=10.4.283.28"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:22.888Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: NSlQcYkB8tXEOa51s-5a
+                          __label_str: "cluster=kafka,job=prometheus"
+                          __category: metric
+                        - "@timestamp": 2023-07-14T03:13:21.846Z
+                          __index: cnao_metric_node_exporter-2023.07-0
+                          __id: NylQcYkB8tXEOa51yO5t
+                          __label_str: namespace=anyrobot
+                          __category: metric
+                      view:
+                        id: "523434553492783889"
+                        name: view2
+                        technical_name: view2
+                        tags:
+                          - a
+                          - b
+                        comment: ""
+                        type: meta
+                        status: new
+                        query_type: DSL
+                        data_source:
+                          type: index_base
+                          index_base:
+                            - base_type: type1
+                              name: name1
+                              comment: ""
+                        fields:
+                          - comment: 时间戳
+                            display_name: "@timestamp"
+                            type: date
+                            name: "@timestamp"
+                          - comment: 索引
+                            display_name: __index
+                            type: keyword
+                            name: __index
+                          - comment: 文档ID
+                            display_name: __id
+                            type: keyword
+                            name: __id
+                          - comment: 标签对
+                            display_name: __label_str
+                            type: keyword
+                            name: __label_str
+                          - comment: 数据类别
+                            display_name: __category
+                            type: keyword
+                            name: __category
+                        group_id: xde458976ghjtf345kj2
+                        group_name: 操作系统
+                        create_time: 1731046817390
+                        update_time: 1731046829397
+                        creator: emm
+                        updater: emm
+                        module_type: data_view
+                查询单个视图 - search_after 翻页查询 - 第一次返回:
+                  value:
+                    pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFnNOWU43ckt3U3IyaFVpbGE1UWEtMncAFjFyeXBsRGJmVFM2RTB6eVg1aVVqQncAAAAAAAAAAAIWcDVrM3ZIX0pRNS1XejE5YXRPRFhzUQEWc05ZTjdyS3dTcjJoVWlsYTVRYS0ydwAA==
+                    search_after:
+                      - "32634"
+                      - 1699568108000
+                    total_count: 13000
+                    entries:
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: z_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str:
+                          "cmdline=/usr/bin/containerd-shim-runc-v2 -namespace\
+                          \ moby -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0\
+                          \ -address /run/containerd/containerd.sock,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=RSS,process_id=19130,process_name=containerd-shim-runc-v2"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.058Z
+                        category: metric
+                        labels:
+                          cmdline:
+                            /usr/bin/containerd-shim-runc-v2 -namespace moby
+                            -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0
+                            -address /run/containerd/containerd.sock
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: RSS
+                          process_id: "19130"
+                          process_name: containerd-shim-runc-v2
+                        metrics:
+                          node_processes_memory_bytes_total: 10813440
+                        type: systemmetric_zd
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: 0_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str: "cmdline=,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=VMS,process_id=19283,process_name=kworker/29:0-mm_percpu_wq"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.059Z
+                        category: metric
+                        labels:
+                          cmdline: ""
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: VMS
+                          process_id: "19283"
+                          process_name: kworker/29:0-mm_percpu_wq
+                        metrics:
+                          node_processes_memory_bytes_total: 0
+                        type: systemmetric_zd
+                    view:
+                      id: "486357905516266244"
+                      name: metric222
+                      technical_name: metric222
+                      tags:
+                        - metric
+                      comment: ""
+                      type: meta
+                      query_type: DSL
+                      data_source:
+                        index_base:
+                          - base_type: systemmetric_sy
+                            comment: ""
+                            name: systemmetric_sy
+                        type: index_base
+                      fields:
+                        - comment: ""
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: ""
+                          display_name: __data_type
+                          type: keyword
+                          name: __data_type
+                        - comment: ""
+                          display_name: __index_base
+                          type: keyword
+                          name: __index_base
+                        - comment: ""
+                          display_name: __labels_str
+                          type: keyword
+                          name: __labels_str
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: category
+                          type: keyword
+                          name: category
+                        - comment: ""
+                          display_name: tags
+                          type: keyword
+                          name: tags
+                        - comment: ""
+                          display_name: type
+                          type: keyword
+                          name: type
+                        - comment: ""
+                          display_name: __writeTime
+                          type: date
+                          name: __writeTime
+                        - comment: ""
+                          display_name: __routing
+                          type: text
+                          name: __routing
+                        - comment: ""
+                          display_name: "@version"
+                          type: text
+                          name: "@version"
+                        - comment: ""
+                          display_name: labels.host_ip
+                          type: text
+                          name: labels.host_ip
+                        - comment: ""
+                          display_name: labels.job_id
+                          type: text
+                          name: labels.job_id
+                        - comment: ""
+                          display_name: labels.domainname
+                          type: text
+                          name: labels.domainname
+                        - comment: ""
+                          display_name: labels.release
+                          type: text
+                          name: labels.release
+                        - comment: ""
+                          display_name: labels.sysname
+                          type: text
+                          name: labels.sysname
+                        - comment: ""
+                          display_name: labels.machine
+                          type: text
+                          name: labels.machine
+                        - comment: ""
+                          display_name: labels.nodename
+                          type: text
+                          name: labels.nodename
+                        - comment: ""
+                          display_name: labels.state
+                          type: text
+                          name: labels.state
+                        - comment: ""
+                          display_name: labels.host_name
+                          type: text
+                          name: labels.host_name
+                        - comment: ""
+                          display_name: labels.process_id
+                          type: text
+                          name: labels.process_id
+                        - comment: ""
+                          display_name: labels.cpu
+                          type: text
+                          name: labels.cpu
+                        - comment: ""
+                          display_name: labels.device
+                          type: text
+                          name: labels.device
+                        - comment: ""
+                          display_name: labels.version
+                          type: text
+                          name: labels.version
+                        - comment: ""
+                          display_name: labels.cpu_mode
+                          type: text
+                          name: labels.cpu_mode
+                        - comment: ""
+                          display_name: labels.process_name
+                          type: text
+                          name: labels.process_name
+                        - comment: ""
+                          display_name: labels.mountpoint
+                          type: text
+                          name: labels.mountpoint
+                        - comment: ""
+                          display_name: labels.mode
+                          type: text
+                          name: labels.mode
+                        - comment: ""
+                          display_name: labels.cmdline
+                          type: text
+                          name: labels.cmdline
+                        - comment: ""
+                          display_name: labels.memory_stat
+                          type: text
+                          name: labels.memory_stat
+                        - comment: ""
+                          display_name: labels.fstype
+                          type: text
+                          name: labels.fstype
+                        - comment: ""
+                          display_name: type
+                          type: text
+                          name: type
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: metrics.node_load1
+                          type: float
+                          name: metrics.node_load1
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_inuse
+                          type: float
+                          name: metrics.node_sockstat_TCP_inuse
+                        - comment: ""
+                          display_name: metrics.node_disk_read_bytes_total
+                          type: float
+                          name: metrics.node_disk_read_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_processes_cpu_seconds_total
+                          type: float
+                          name: metrics.node_processes_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_write_bytes
+                          type: float
+                          name: metrics.node_processes_io_write_bytes
+                        - comment: ""
+                          display_name: metrics.node_time_zone_offset_seconds
+                          type: float
+                          name: metrics.node_time_zone_offset_seconds
+                        - comment: ""
+                          display_name: metrics.node_memory_Buffers_bytes
+                          type: float
+                          name: metrics.node_memory_Buffers_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_free_bytes
+                          type: float
+                          name: metrics.node_filesystem_free_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_now
+                          type: float
+                          name: metrics.node_disk_io_now
+                        - comment: ""
+                          display_name: metrics.node_cpu_seconds_total
+                          type: float
+                          name: metrics.node_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemAvailable_bytes
+                          type: float
+                          name: metrics.node_memory_MemAvailable_bytes
+                        - comment: ""
+                          display_name: metrics.node_load5
+                          type: float
+                          name: metrics.node_load5
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_ActiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_ActiveOpens
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_errors_total
+                          type: float
+                          name: metrics.node_network_transmit_errors_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_read_bytes
+                          type: float
+                          name: metrics.node_processes_io_read_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_avail_bytes
+                          type: float
+                          name: metrics.node_filesystem_avail_bytes
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_PassiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_PassiveOpens
+                        - comment: ""
+                          display_name: metrics.node_disk_read_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_read_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_host_boot_time_seconds
+                          type: float
+                          name: metrics.node_host_boot_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files
+                          type: float
+                          name: metrics.node_filesystem_files
+                        - comment: ""
+                          display_name: metrics.node_time_seconds
+                          type: float
+                          name: metrics.node_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_network_receive_errors_total
+                          type: float
+                          name: metrics.node_network_receive_errors_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_tw
+                          type: float
+                          name: metrics.node_sockstat_TCP_tw
+                        - comment: ""
+                          display_name: metrics.node_network_receive_dropped_total
+                          type: float
+                          name: metrics.node_network_receive_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_filefd_allocated
+                          type: float
+                          name: metrics.node_filefd_allocated
+                        - comment: ""
+                          display_name: metrics.node_disk_written_bytes_total
+                          type: float
+                          name: metrics.node_disk_written_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_CurrEstab
+                          type: float
+                          name: metrics.node_netstat_Tcp_CurrEstab
+                        - comment: ""
+                          display_name: metrics.node_memory_Cached_bytes
+                          type: float
+                          name: metrics.node_memory_Cached_bytes
+                        - comment: ""
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          type: float
+                          name: metrics.node_memory_MemTotal_bytes
+                        - comment: ""
+                          display_name: metrics.node_host_uname
+                          type: float
+                          name: metrics.node_host_uname
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_dropped_total
+                          type: float
+                          name: metrics.node_network_transmit_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_disk_write_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_write_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_total
+                          type: float
+                          name: metrics.node_processes_total
+                        - comment: ""
+                          display_name: metrics.node_network_receive_bytes_total
+                          type: float
+                          name: metrics.node_network_receive_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_size_bytes
+                          type: float
+                          name: metrics.node_filesystem_size_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_io_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files_free
+                          type: float
+                          name: metrics.node_filesystem_files_free
+                        - comment: ""
+                          display_name: metrics.node_load15
+                          type: float
+                          name: metrics.node_load15
+                        - comment: ""
+                          display_name: metrics.node_disk_reads_completed_total
+                          type: float
+                          name: metrics.node_disk_reads_completed_total
+                        - comment: ""
+                          display_name: metrics.node_disk_writes_completed_total
+                          type: float
+                          name: metrics.node_disk_writes_completed_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemFree_bytes
+                          type: float
+                          name: metrics.node_memory_MemFree_bytes
+                        - comment: ""
+                          display_name: metrics.node_processes_memory_bytes_total
+                          type: float
+                          name: metrics.node_processes_memory_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_bytes_total
+                          type: float
+                          name: metrics.node_network_transmit_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_alloc
+                          type: float
+                          name: metrics.node_sockstat_TCP_alloc
+                        - comment: ""
+                          display_name: metrics.node_filefd_maxmium
+                          type: float
+                          name: metrics.node_filefd_maxmium
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                查询单个视图 - search_after 翻页查询 - 非第一次:
+                  value:
+                    pit_id: o463QQEPbXktaW5kZXgtMDAwMDAxFnNOWU43ckt3U3IyaFVpbGE1UWEtMncAFjFyeXBsRGJmVFM2RTB6eVg1aVVqQncAAAAAAAAAAAIWcDVrM3ZIX0pRNS1XejE5YXRPRFhzUQEWc05ZTjdyS3dTcjJoVWlsYTVRYS0ydwAA==
+                    search_after:
+                      - "32666"
+                      - 1699568108000
+                    entries:
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: z_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str:
+                          "cmdline=/usr/bin/containerd-shim-runc-v2 -namespace\
+                          \ moby -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0\
+                          \ -address /run/containerd/containerd.sock,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=RSS,process_id=19130,process_name=containerd-shim-runc-v2"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.058Z
+                        category: metric
+                        labels:
+                          cmdline:
+                            /usr/bin/containerd-shim-runc-v2 -namespace moby
+                            -id 0a09923385533eafa02d901fe0f41df5a6c5e3d304b5773baa9a9a673f2379b0
+                            -address /run/containerd/containerd.sock
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: RSS
+                          process_id: "19130"
+                          process_name: containerd-shim-runc-v2
+                        metrics:
+                          node_processes_memory_bytes_total: 10813440
+                        type: systemmetric_zd
+                      - "@timestamp": 2023-11-10T06:15:08.000Z
+                        "@version": "1"
+                        __data_type: systemmetric_zd
+                        __id: 0_Tet4sBJo2gv9ayu0tt
+                        __index: ar-systemmetric_sy-2023.11.01-000000
+                        __index_base: systemmetric_sy
+                        __labels_str: "cmdline=,host_ip=10.4.67.160,host_name=node160,job_id=job-ecde3f1a8e454665,memory_stat=VMS,process_id=19283,process_name=kworker/29:0-mm_percpu_wq"
+                        __routing: "944220"
+                        __write_time: 2023-11-10T06:15:08.059Z
+                        category: metric
+                        labels:
+                          cmdline: ""
+                          host_ip: 10.4.67.160
+                          host_name: node160
+                          job_id: job-ecde3f1a8e454665
+                          memory_stat: VMS
+                          process_id: "19283"
+                          process_name: kworker/29:0-mm_percpu_wq
+                        metrics:
+                          node_processes_memory_bytes_total: 0
+                        type: systemmetric_zd
+                    view:
+                      id: "486357905516266244"
+                      name: metric222
+                      tags:
+                        - metric
+                      type: meta
+                      query_type: DSL
+                      status: new
+                      comment: ""
+                      data_source:
+                        index_base:
+                          - base_type: systemmetric_sy
+                            comment: ""
+                            name: systemmetric_sy
+                        type: index_base
+                      fields:
+                        - comment: ""
+                          display_name: "@timestamp"
+                          type: date
+                          name: "@timestamp"
+                        - comment: ""
+                          display_name: __data_type
+                          type: keyword
+                          name: __data_type
+                        - comment: ""
+                          display_name: __index_base
+                          type: keyword
+                          name: __index_base
+                        - comment: ""
+                          display_name: __labels_str
+                          type: keyword
+                          name: __labels_str
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: category
+                          type: keyword
+                          name: category
+                        - comment: ""
+                          display_name: tags
+                          type: keyword
+                          name: tags
+                        - comment: ""
+                          display_name: type
+                          type: keyword
+                          name: type
+                        - comment: ""
+                          display_name: __writeTime
+                          type: date
+                          name: __writeTime
+                        - comment: ""
+                          display_name: __routing
+                          type: text
+                          name: __routing
+                        - comment: ""
+                          display_name: "@version"
+                          type: text
+                          name: "@version"
+                        - comment: ""
+                          display_name: labels.host_ip
+                          type: text
+                          name: labels.host_ip
+                        - comment: ""
+                          display_name: labels.job_id
+                          type: text
+                          name: labels.job_id
+                        - comment: ""
+                          display_name: labels.domainname
+                          type: text
+                          name: labels.domainname
+                        - comment: ""
+                          display_name: labels.release
+                          type: text
+                          name: labels.release
+                        - comment: ""
+                          display_name: labels.sysname
+                          type: text
+                          name: labels.sysname
+                        - comment: ""
+                          display_name: labels.machine
+                          type: text
+                          name: labels.machine
+                        - comment: ""
+                          display_name: labels.nodename
+                          type: text
+                          name: labels.nodename
+                        - comment: ""
+                          display_name: labels.state
+                          type: text
+                          name: labels.state
+                        - comment: ""
+                          display_name: labels.host_name
+                          type: text
+                          name: labels.host_name
+                        - comment: ""
+                          display_name: labels.process_id
+                          type: text
+                          name: labels.process_id
+                        - comment: ""
+                          display_name: labels.cpu
+                          type: text
+                          name: labels.cpu
+                        - comment: ""
+                          display_name: labels.device
+                          type: text
+                          name: labels.device
+                        - comment: ""
+                          display_name: labels.version
+                          type: text
+                          name: labels.version
+                        - comment: ""
+                          display_name: labels.cpu_mode
+                          type: text
+                          name: labels.cpu_mode
+                        - comment: ""
+                          display_name: labels.process_name
+                          type: text
+                          name: labels.process_name
+                        - comment: ""
+                          display_name: labels.mountpoint
+                          type: text
+                          name: labels.mountpoint
+                        - comment: ""
+                          display_name: labels.mode
+                          type: text
+                          name: labels.mode
+                        - comment: ""
+                          display_name: labels.cmdline
+                          type: text
+                          name: labels.cmdline
+                        - comment: ""
+                          display_name: labels.memory_stat
+                          type: text
+                          name: labels.memory_stat
+                        - comment: ""
+                          display_name: labels.fstype
+                          type: text
+                          name: labels.fstype
+                        - comment: ""
+                          display_name: type
+                          type: text
+                          name: type
+                        - comment: ""
+                          display_name: __write_time
+                          type: date
+                          name: __write_time
+                        - comment: ""
+                          display_name: metrics.node_load1
+                          type: float
+                          name: metrics.node_load1
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_inuse
+                          type: float
+                          name: metrics.node_sockstat_TCP_inuse
+                        - comment: ""
+                          display_name: metrics.node_disk_read_bytes_total
+                          type: float
+                          name: metrics.node_disk_read_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_processes_cpu_seconds_total
+                          type: float
+                          name: metrics.node_processes_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_write_bytes
+                          type: float
+                          name: metrics.node_processes_io_write_bytes
+                        - comment: ""
+                          display_name: metrics.node_time_zone_offset_seconds
+                          type: float
+                          name: metrics.node_time_zone_offset_seconds
+                        - comment: ""
+                          display_name: metrics.node_memory_Buffers_bytes
+                          type: float
+                          name: metrics.node_memory_Buffers_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_free_bytes
+                          type: float
+                          name: metrics.node_filesystem_free_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_now
+                          type: float
+                          name: metrics.node_disk_io_now
+                        - comment: ""
+                          display_name: metrics.node_cpu_seconds_total
+                          type: float
+                          name: metrics.node_cpu_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemAvailable_bytes
+                          type: float
+                          name: metrics.node_memory_MemAvailable_bytes
+                        - comment: ""
+                          display_name: metrics.node_load5
+                          type: float
+                          name: metrics.node_load5
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_ActiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_ActiveOpens
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_errors_total
+                          type: float
+                          name: metrics.node_network_transmit_errors_total
+                        - comment: ""
+                          display_name: metrics.node_processes_io_read_bytes
+                          type: float
+                          name: metrics.node_processes_io_read_bytes
+                        - comment: ""
+                          display_name: metrics.node_filesystem_avail_bytes
+                          type: float
+                          name: metrics.node_filesystem_avail_bytes
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_PassiveOpens
+                          type: float
+                          name: metrics.node_netstat_Tcp_PassiveOpens
+                        - comment: ""
+                          display_name: metrics.node_disk_read_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_read_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_host_boot_time_seconds
+                          type: float
+                          name: metrics.node_host_boot_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files
+                          type: float
+                          name: metrics.node_filesystem_files
+                        - comment: ""
+                          display_name: metrics.node_time_seconds
+                          type: float
+                          name: metrics.node_time_seconds
+                        - comment: ""
+                          display_name: metrics.node_network_receive_errors_total
+                          type: float
+                          name: metrics.node_network_receive_errors_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_tw
+                          type: float
+                          name: metrics.node_sockstat_TCP_tw
+                        - comment: ""
+                          display_name: metrics.node_network_receive_dropped_total
+                          type: float
+                          name: metrics.node_network_receive_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_filefd_allocated
+                          type: float
+                          name: metrics.node_filefd_allocated
+                        - comment: ""
+                          display_name: metrics.node_disk_written_bytes_total
+                          type: float
+                          name: metrics.node_disk_written_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_netstat_Tcp_CurrEstab
+                          type: float
+                          name: metrics.node_netstat_Tcp_CurrEstab
+                        - comment: ""
+                          display_name: metrics.node_memory_Cached_bytes
+                          type: float
+                          name: metrics.node_memory_Cached_bytes
+                        - comment: ""
+                          display_name: metrics.node_memory_MemTotal_bytes
+                          type: float
+                          name: metrics.node_memory_MemTotal_bytes
+                        - comment: ""
+                          display_name: metrics.node_host_uname
+                          type: float
+                          name: metrics.node_host_uname
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_dropped_total
+                          type: float
+                          name: metrics.node_network_transmit_dropped_total
+                        - comment: ""
+                          display_name: metrics.node_disk_write_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_write_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_processes_total
+                          type: float
+                          name: metrics.node_processes_total
+                        - comment: ""
+                          display_name: metrics.node_network_receive_bytes_total
+                          type: float
+                          name: metrics.node_network_receive_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_size_bytes
+                          type: float
+                          name: metrics.node_filesystem_size_bytes
+                        - comment: ""
+                          display_name: metrics.node_disk_io_time_seconds_total
+                          type: float
+                          name: metrics.node_disk_io_time_seconds_total
+                        - comment: ""
+                          display_name: metrics.node_filesystem_files_free
+                          type: float
+                          name: metrics.node_filesystem_files_free
+                        - comment: ""
+                          display_name: metrics.node_load15
+                          type: float
+                          name: metrics.node_load15
+                        - comment: ""
+                          display_name: metrics.node_disk_reads_completed_total
+                          type: float
+                          name: metrics.node_disk_reads_completed_total
+                        - comment: ""
+                          display_name: metrics.node_disk_writes_completed_total
+                          type: float
+                          name: metrics.node_disk_writes_completed_total
+                        - comment: ""
+                          display_name: metrics.node_memory_MemFree_bytes
+                          type: float
+                          name: metrics.node_memory_MemFree_bytes
+                        - comment: ""
+                          display_name: metrics.node_processes_memory_bytes_total
+                          type: float
+                          name: metrics.node_processes_memory_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_network_transmit_bytes_total
+                          type: float
+                          name: metrics.node_network_transmit_bytes_total
+                        - comment: ""
+                          display_name: metrics.node_sockstat_TCP_alloc
+                          type: float
+                          name: metrics.node_sockstat_TCP_alloc
+                        - comment: ""
+                          display_name: metrics.node_filefd_maxmium
+                          type: float
+                          name: metrics.node_filefd_maxmium
+                      group_id: xde458976ghjtf345kj2
+                      group_name: 操作系统
+                      create_time: 1731046817390
+                      update_time: 1731046829397
+                      creator: emm
+                      updater: emm
+                      module_type: data_view
+                SQL类视图search_after翻页第一次:
+                  value:
+                    search_after:
+                      - 20250828_080455_08878_bn4jr
+                      - x791f3a9e227946c48e79bfa4b5a49f7f
+                      - "1"
+                    entries:
+                      - 职称等级: 初级
+                        职务序列: 后端开发工程师
+                        必备知识: |-
+                          一、流程规范：
+                          1、爱数软件工程规范；
+                          二、基础技术知识：
+                          1、操作系统基本原理及常用命令；
+                          2、研发流程中各类工具的使用方法；
+                          三、专业技术知识：
+                          1、开发语言及其开发规范和常用框架的基础知识；
+                          2、代码调试常用技巧及常见问题排查方法；
+                          3、单元测试及持续集成基础知识，以及相关框架的使用方法；
+                          4、数据库或存储系统的基本原理及常用接口协议的使用方法，以及相关数据结构设计基础知识。
+                        职类: 技术
+                        职级: G1-G3
+                        职务描述: 理解问题：理解用户使用场景、理解问题、理解设计、交付Story
+                        职务名称: 初级后端开发工程师
+                        学历: ">=本科"
+                        工作经验: 无要求
+                      - 职级: G4-G6
+                        职称等级: 中级
+                        职务序列: 后端开发工程师
+                        工作经验: |-
+                          本科-2年以上
+                          硕士-1年以上
+                          博士-无要求
+                        职务名称: 中级后端开发工程师
+                        职类: 技术
+                        学历: ">=本科"
+                        职务描述: 理解业务：分析需求、理解需求面向客户的业务价值、发掘客户潜在需求、交付需求
+                        必备知识: |-
+                          一、基础技术知识：
+                          1、软件工程基础理论及质量属性基础知识；
+                          2、网络及安全基础知识；
+                          3、Windows或Linux编程原理、系
+                          统兼容性原理、软件运行时原理；
+                          4、常用设计模式、数据结构及算法的应用场景知识；
+                          5、UML等软件建模方法；
+                          二、专业技术知识：
+                          1、常见后端性能问题的排查定位及调优方法；
+                          2、安全、性能、网络问题等测试分析工具的使用方法；
+                          3、系统兼容性差异；
+                          4、后端服务的常见安全编程知识；
+                          5、持续集成配置及脚本撰写方法；
+                          6、python、shell等脚本语言。
+                      - 学历: ">=本科"
+                        工作经验: |-
+                          本科-4年以上
+                          硕士-3年以上
+                          博士-1年以上
+                        必备知识: |-
+                          一、基础技术知识：
+                          1、领域建模知识；
+                          2、产品逻辑设计方法及规范；
+                          二、专业技术知识：
+                          1、开发语言语法细节及编译原理、开发规范定义原则及标准；
+                          2、特定业务技术领域的技术原理、架构搭建原理、设计思想；
+                          3、服务间通信框架及原理知识、协议设计原则及规范；
+                          4、数据库及存储系统的技术特点、数据结构及兼容性设计原则。
+                        职务序列: 后端开发工程师
+                        职级: G7-G9
+                        职务描述: 懂业务：分析产品及竞品、理解产品价值、根据客户痛点规划和落地特性、评估需求价值及优先级
+                        职务名称: 高级后端开发工程师
+                        职类: 技术
+                        职称等级: 高级
+                      - 职级: G10-G12
+                        职务描述: 懂领域：洞察领域技术发展发现市场机会、规划技术方案/架构并取得领先优势成果、通过技术的创新与应用创造产品价值
+                        职类: 技术
+                        职务名称: 资深后端开发工程师
+                        职称等级: 资深
+                        学历: ">=本科"
+                        职务序列: 后端开发工程师
+                        工作经验: |-
+                          本科-7年以上
+                          硕士-5年以上
+                          博士-3年以上
+                        必备知识: |-
+                          1、多种后端开发语言的原理特性及技术差异；
+                          2、特定后端开发框架的技术原理和实现细节；
+                          3、后端服务质量标准，全方位的非功能性技术领域知识；
+                          4、后端全栈开发技术知识，行业技术现状及发展方向。
+                      - 学历: ">=本科"
+                        职类: 技术
+                        职称等级: 专家
+                        职务序列: 后端开发工程师
+                        职级: G13-G14
+                        职务描述: 具备行业影响力：作为公司内外公认的某领域专家，参与技术战略制定并对产品/领域成功负责、通过技术顶层设计建立技术壁垒
+                        工作经验: |-
+                          本科-10年以上
+                          硕士-8年以上
+                          博士-7年以上
+                        必备知识: |-
+                          1、专业领域内主流开源项目的技术原理、发展方向；
+                          2、前端、后端、测试、设计全领域研发知识体系；
+                          3、行业发展现状及趋势；
+                          4、多元思维模型。
+                        职务名称: 专家后端开发工程师
+                    total_count: 5
+                SQL类视图search_after后续翻页:
+                  value:
+                    entries: []
+                    total_count: 0
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest_DataView"
+        "500":
+          $ref: "#/components/responses/500InternalError_DataView"
+      summary: 根据视图 id 查询数据
+      description: 根据数据视图 id 查询视图数据
+    parameters:
+      - name: ids
+        description: 数据视图id，多个用逗号分隔
+        schema:
+          type: string
+        in: path
+        required: true
+components:
+  schemas:
+    errorCode:
+      description: 错误信息返回格式
+      required:
+        - error
+        - status
+      type: object
+      properties:
+        error:
+          description: 错误体
+          required:
+            - type
+            - reason
+          type: object
+          properties:
+            root_cause:
+              description: 根错误信息
+              type: array
+              items:
+                type: object
+            type:
+              description: 错误类型
+              minLength: 1
+              type: string
+            reason:
+              description: 原因
+              minLength: 1
+              type: string
+            failed_shards:
+              description: 失败的分片及其原因
+              type: array
+              items:
+                type: object
+            caused_by:
+              description: 详细的错误信息
+              type: object
+        status:
+          description: 状态码
+          type: number
+      x-examples:
+        example-1:
+          error:
+            root_cause: []
+            type: x_content_parse_exception
+            reason: "[1:438] [bool] failed to parse field [must]"
+            failed_shareds: []
+            caused_by: {}
+          status: 400
+    UniqueryErrorCode:
+      description: ""
+      required:
+        - description
+        - error_code
+        - error_detail
+        - error_link
+        - solution
+      type: object
+      properties:
+        description:
+          description: 错误描述
+          type: string
+        error_code:
+          description: 错误码
+          type: string
+        error_detail:
+          description: 错误详情
+          type: string
+        error_link:
+          description: 错误链接
+          type: string
+        solution:
+          description: 处理建议
+          type: string
+      example:
+        description: some text
+        error_code: some text
+        error_detail: some text
+        error_link: some text
+        solution: some text
+    Error:
+      description: ""
+      required:
+        - description
+        - error_code
+        - error_detail
+        - error_link
+        - solution
+      type: object
+      properties:
+        description:
+          description: 错误描述
+          type: string
+        error_code:
+          description: 错误码
+          type: string
+        error_detail:
+          description: 错误详情
+          type: string
+        error_link:
+          description: 错误链接
+          type: string
+        solution:
+          description: 处理建议
+          type: string
+      example:
+        description: some text
+        error_code: some text
+        error_detail: some text
+        error_link: some text
+        solution: some text
+    DataViewDataSourceResponse:
+      title: DataViewDataSource
+      description: 视图来源数据
+      required:
+        - type
+        - index_base
+      type: object
+      properties:
+        type:
+          description: 数据源类型，当前使用索引库
+          enum:
+            - index_base
+          type: string
+        index_base:
+          description: 索引库列表
+          type: array
+          items:
+            $ref: "#/components/schemas/singleIndexBaseResponse"
+    FieldStruct:
+      title: FieldStruct
+      description: 单个字段结构
+      required:
+        - type
+        - name
+        - comment
+        - display_name
+        - original_name
+      type: object
+      properties:
+        type:
+          description: 字段类型
+          type: string
+        name:
+          description: 字段名称
+          type: string
+        comment:
+          description: 字段备注
+          type: string
+        display_name:
+          description: 显示名
+          type: string
+        original_name:
+          description: 原始字段名
+          type: string
+      example:
+        name: _index
+        type: text
+    ReqDataView:
+      description: 基于数据视图的视图数据查询请求体
+      required: []
+      type: object
+      properties:
+        start:
+          format: int64
+          description: "查询的开始时间。 start=< unix_timestamp >，单位到毫秒。 例如: 1646360670123"
+          type: integer
+        end:
+          format: int64
+          description: "查询的结束时间。end=< unix_timestamp >，单位到毫秒。例如: 1646471470123"
+          type: integer
+        filters:
+          $ref: "#/components/schemas/GlobalFilter"
+          description: 全局过滤条件。可为空。当存在全局过滤条件时，过滤条件对象的字段都必须在视图字段列表里。
+        sort:
+          description: |
+            排序字段，默认是@timestamp
+          type: string
+        direction:
+          description: 排序结果方向，可选asc、desc。默认 desc
+          enum:
+            - asc
+            - desc
+          type: string
+        offset:
+          description: 查询的起始位置，默认值 0。offset 需大于等于0，并且 offset + limit 不能超过 10000。
+          type: integer
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000，并且 offset + limit 不能超过 10000。
+          type: integer
+        scroll:
+          description: |-
+            指定搜索为滚动分页查询，保留分页搜索上下文的有效时间（支持数字+时间单位s,m,h）最长不超过24h。
+            注意当使用 scroll 时，不能传递 offset 参数。
+          type: string
+        scroll_id:
+          description:
+            分页查询id。当前数据源是OpenSearch，scroll_id 由是OpenSearch返回；如果是其他数据源，当使用scroll
+            分页的话由视图查询服务内存里自己维护srcoll_id，以此保持 scroll 接口在不同数据源间具有通用性。
+          type: string
+        format:
+          description:
+            数据输出格式，如果是 original，返回的是原始数据结构。如果为 flat，返回的是将多层级嵌套字段打平后的数据结构。默认为
+            flat。
+          enum:
+            - original
+            - flat
+          type: string
+    singleIndexBaseResponse:
+      description: 单个索引库信息
+      required:
+        - name
+        - base_type
+        - comment
+      type: object
+      properties:
+        name:
+          description: 索引库名称
+          type: string
+        comment:
+          description: 备注
+          type: string
+        base_type:
+          description: 索引库类型
+          type: string
+    ViewData:
+      description: 视图数据查询结果
+      required:
+        - values
+      type: object
+      properties:
+        values:
+          description: 视图数据
+          type: array
+          items:
+            $ref: "#/components/schemas/Object"
+        total:
+          description: |-
+            不分页情况下的数据总数。
+
+            offset+limit 分页查询会返回 total。
+
+            scroll 翻页查询，只在第一次翻页返回 total，后续翻页不返回。
+          type: integer
+    ViewResults:
+      description: 基于数据视图的查询结果
+      required:
+        - datas
+      type: object
+      properties:
+        datas:
+          description: 视图数据
+          type: array
+          items:
+            $ref: "#/components/schemas/ViewData"
+        view:
+          $ref: "#/components/schemas/DataView"
+          description: 数据视图基本信息
+        scroll_id:
+          description: 翻页查询 id
+          type: string
+    GlobalFilter:
+      title: FilterStruct
+      description: 全局过滤条件，仪表盘场景需要使用这个全局过滤条件加到模型上。
+      required:
+        - operation
+      type: object
+      properties:
+        value:
+          description: 字段值
+        operation:
+          description: 操作符
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - like
+            - not_like
+            - contain
+            - not_contain
+            - range
+            - out_range
+            - exist
+            - not_exist
+            - regex
+            - match
+            - match_phrase
+            - empty
+            - not_empty
+            - prefix
+            - not_prefix
+            - "true"
+            - "false"
+            - before
+            - current
+            - distinct
+          type: string
+        field:
+          description: 字段名称
+          type: string
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+            - field
+            - user
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/GlobalFilter"
+    ReqDataView_V2:
+      description: 基于数据视图的视图数据查询请求体
+      required: []
+      type: object
+      properties:
+        start:
+          format: int64
+          description: "查询的开始时间。 start=< unix_timestamp >，单位到毫秒。 例如: 1646360670123"
+          type: integer
+        end:
+          format: int64
+          description: "查询的结束时间。end=< unix_timestamp >，单位到毫秒。例如: 1646471470123"
+          type: integer
+        filters:
+          $ref: "#/components/schemas/GlobalFilter"
+          description: 全局过滤条件。可为空。当存在全局过滤条件时，过滤条件对象的字段都必须在视图字段列表里。
+        sort:
+          description: |
+            排序字段，默认使用 @timestamp排序，排序方向为 desc
+          type: array
+          items:
+            $ref: "#/components/schemas/sort"
+        offset:
+          description: 查询的起始位置，默认值 0。offset 需大于等于0，并且 offset + limit 不能超过 10000。
+          type: integer
+        limit:
+          description: |-
+            返回的数量，默认值 10。范围 1-10000，并且 offset + limit 不能超过 10000。
+
+            limit 这个最大值由 OpenSearch 的索引级别配置 index.max_result_window 决定。
+          type: integer
+        format:
+          description:
+            数据输出格式，如果是 original，返回的是原始数据结构。如果为 flat，返回的是将多层级嵌套字段打平后的数据结构。默认为
+            flat。
+          enum:
+            - original
+            - flat
+          type: string
+        search_after:
+          description: 上次查询返回的最后一个文档的排序值。仅当应用排序时，才能使用search_after。
+          type: array
+          items: {}
+        pit_id:
+          description: |-
+            point_in_time 的 id，point_in_time（PIT）是一种用于在特定时间点对索引数据进行搜索和分析的功能。它允许用户在不断变化的索引数据上获取一个一致的视图，就好像数据在那个特定时间点被 “冻结” 了一样。
+
+            带有 search_after 的时间点（PIT）这种分页方法在时间上冻结的数据集上运行，它不绑定到查询，支持前后一致的分页，PIT 适用于查询保证数据一致性的场景。
+
+            使用 search_after with point_in_time 时，第一次查询传入 pit_keep_alive、limit、sort，由视图自动生成 pit_id，创建 pit_id 时 pit_keep_alive 为必需参数。
+
+            后续的数据获取需要传入 pit_id、limit、sort、search_after，保持相同的 sort 和 pit_id，使用可选的 pit_keep_alive 参数来延长 PIT 时间。
+
+            最后，数据获取完之后，及时删掉 PIT。Openseach 默认允许最大 300 个同时打开的 PIT上下文。
+          type: string
+        pit_keep_alive:
+          description: |-
+            用于指定 point_in_time 的存活时间。具体来说，它定义了从创建 point_in_time 标识开始，这个标识在 OpenSearch 中保持有效的时长。
+
+            最大值 24h。
+          type: string
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        use_search_after:
+          description: 是否使用search after 翻页，默认false，search after 翻页用于获取全量数据场景
+          type: boolean
+        date_field:
+          description: "时间字段，和start,end配合使用，用于按照时间范围过滤"
+          type: string
+        sql:
+          description: 自定义sql查询，适用于查询类型为SQL的视图，如果自定义sql，会覆盖视图本身的sql
+          type: string
+    point_in_time:
+      description: |-
+        point_in_time（PIT）是一种用于在特定时间点对索引数据进行搜索和分析的功能。它允许用户在不断变化的索引数据上获取一个一致的视图，就好像数据在那个特定时间点被 “冻结” 了一样。
+
+        带有 search_after 的时间点（PIT）是OpenSearch中首选的分页方法，特别是对于深度分页。它绕过了所有其他方法的局限性，因为它在时间上冻结的数据集上运行，它不绑定到查询，并且支持前后一致的分页。
+
+        使用 point_in_time 时，第一次只传入keep_alive，由视图自动生成 pit_id，后续的数据获取需要同时传入 pit_id 和 keep_alive。
+      required:
+        - keep_alive
+      type: object
+      properties:
+        id:
+          description: point_in_time 的 id，即 pit_id
+          type: string
+        keep_alive:
+          description:
+            keep_alive 参数用于指定 point_in_time 的存活时间。具体来说，它定义了从创建 point_in_time
+            标识开始，这个标识在 OpenSearch 中保持有效的时长。
+          type: string
+    FilterOfSimulate:
+      title: FilterStruct
+      description: 视图的过滤条件，当存在过滤条件时，过滤条件对象的字段都是必须的。如果视图的过滤条件使用的字段不在视图的字段列表里，查询报错。
+      required:
+        - operation
+      type: object
+      properties:
+        value:
+          description: 字段值
+        operation:
+          description: 操作符
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - like
+            - not_like
+            - contain
+            - not_contain
+            - range
+            - out_range
+            - exist
+            - not_exist
+            - regex
+            - match
+            - match_phrase
+            - empty
+            - not_empty
+          type: string
+        field:
+          description: 字段名称
+          type: string
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+            - field
+            - user
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ConditionStruct"
+        display_name:
+          description: 显示名
+          type: string
+    ViewResults_V2:
+      description: 基于数据视图的查询结果
+      required:
+        - entries
+      type: object
+      properties:
+        view:
+          $ref: "#/components/schemas/DataView"
+          description: 数据视图对象信息
+        entries:
+          description: 视图数据
+          type: array
+          items:
+            $ref: "#/components/schemas/Object"
+        total_count:
+          description: 不分页情况下的数据总数。
+          type: integer
+        pit_id:
+          description: point_in_time 的 id
+          type: string
+        search_after:
+          description: "开启分页时返回，表示返回的最后一个文档的排序值，获取这个用于下一次 search_after 分页\r\n"
+          type: array
+          items: {}
+    Object:
+      description: 键值对
+      type: object
+    sort:
+      description: 排序字段和方向
+      type: object
+      properties:
+        field:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          type: string
+    ViewResults_Simulate:
+      description: 基于数据视图的查询结果
+      required:
+        - entries
+      type: object
+      properties:
+        view:
+          $ref: "#/components/schemas/DataView"
+          description: 数据视图对象信息
+        entries:
+          description: 视图数据
+          type: array
+          items:
+            $ref: "#/components/schemas/Object"
+        total_count:
+          description: 不分页情况下的数据总数
+          type: integer
+    deletePitsResps:
+      description: ""
+      type: object
+      properties:
+        pits:
+          description: ""
+          type: array
+          items:
+            $ref: "#/components/schemas/deletePitResp"
+    deletePitResp:
+      description: ""
+      type: object
+      properties:
+        successful:
+          description: 这个pit是否删除成功
+          type: boolean
+        pit_id:
+          description: 删除的pit_id
+          type: string
+    deletePitsRequestBody:
+      description: 删除 pits
+      required:
+        - pit_ids
+      type: object
+      properties:
+        pit_ids:
+          description: point in time id 列表
+          type: array
+          items:
+            type: string
+    Request_DataViewSimulate:
+      description: 自定义视图数据预览
+      required:
+        - data_view_name
+        - fields
+        - data_scope
+      type: object
+      properties:
+        start:
+          format: int64
+          description: "查询的开始时间。 start=< unix_timestamp >，单位到毫秒。 例如: 1646360670123"
+          type: integer
+        end:
+          format: int64
+          description: "查询的结束时间。end=< unix_timestamp >，单位到毫秒。例如: 1646471470123"
+          type: integer
+        fields:
+          description: 视图的字段列表
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldStruct"
+        sort:
+          description: 排序字段
+          type: array
+          items:
+            $ref: "#/components/schemas/sort"
+        offset:
+          description: 查询的起始位置，默认值 0。offset 需大于等于0，并且 offset + limit 不能超过 10000。
+          type: integer
+        limit:
+          description: "\t\r\n返回的数量，默认值 10。范围 1-10000，并且 offset + limit 不能超过 10000。"
+          type: integer
+        data_scope:
+          $ref: "#/components/schemas/DataScope"
+          description: 数据范围
+        data_processors:
+          $ref: "#/components/schemas/DataProcessors"
+          description: 读时解析配置
+    DataSource_SingleDataView:
+      description: 单个视图的信息
+      type: object
+      properties:
+        id:
+          description: 数据视图 id
+          type: string
+    DataSourceResponse_SingleVegaDataSource:
+      description: 单个vega数据源的信息
+      required: []
+      type: object
+      properties:
+        source_type:
+          description: 数据源类型
+          type: string
+        id:
+          description: 数据源id
+          type: string
+        file_name:
+          description: 文件名称
+          type: string
+    DataSource:
+      title: DataViewDataSource
+      description: 视图来源数据
+      required:
+        - type
+      type: object
+      properties:
+        type:
+          description:
+            "数据源类型，index_base: 索引库，vega_data_source: vega数据源，data_view:\
+            \ 视图"
+          enum:
+            - index_base
+            - vega_data_source
+            - data_view
+          type: string
+        index_base:
+          description: 索引库列表
+          type: array
+          items:
+            $ref: "#/components/schemas/DataSource_SingleIndexBase"
+        vega_data_source:
+          description: vega数据源
+          type: array
+          items:
+            $ref: "#/components/schemas/DataSourceResponse_SingleVegaDataSource"
+        data_view:
+          description: 视图
+          type: array
+          items:
+            $ref: "#/components/schemas/DataSource_SingleDataView"
+    DataSource_SingleIndexBase:
+      description: 单个索引库信息
+      required:
+        - base_type
+      type: object
+      properties:
+        base_type:
+          description: 索引库类型
+          type: string
+    DataScope:
+      description: 数据范围
+      required:
+        - views
+        - relation
+        - config
+      type: object
+      properties:
+        views:
+          description: 数据视图列表
+          type: array
+          items:
+            $ref: "#/components/schemas/DataScope_DataView"
+        relation:
+          description: 定义输入视图之间的关系，join：数据连接，union：数据合并，sql：自定义sql语句
+          enum:
+            - join
+            - union
+            - sql
+          type: string
+        config:
+          $ref: "#/components/schemas/Map"
+          description: 关系类型的具体配置
+    DataScope_DataView:
+      description: ""
+      required:
+        - id
+        - fields
+        - field_scope
+      type: object
+      properties:
+        id:
+          description: 视图id
+          type: string
+        condition:
+          $ref: "#/components/schemas/ConditionStruct"
+          description: 过滤条件
+        fields:
+          description: 字段列表
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldStruct"
+        field_scope:
+          description: 字段范围
+          enum:
+            - "0"
+            - "1"
+          type: string
+    Map:
+      description: ""
+      type: object
+    ConditionStruct:
+      title: FilterStruct
+      description: 过滤条件
+      required:
+        - operation
+      type: object
+      properties:
+        value:
+          description: 字段值
+        operation:
+          description: 操作符
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - like
+            - not_like
+            - contain
+            - not_contain
+            - range
+            - out_range
+            - exist
+            - not_exist
+            - regex
+            - match
+            - match_phrase
+            - empty
+            - not_empty
+            - prefix
+            - not_prefix
+            - "true"
+            - "false"
+            - before
+            - current
+            - distinct
+          type: string
+        field:
+          description: 字段名称
+          type: string
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+            - field
+            - user
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ConditionStruct"
+    DataProcessors:
+      description: ""
+      required:
+        - template_data
+        - processors_cfg
+      type: object
+      properties:
+        template_data:
+          description: 样例数据
+          type: array
+          items:
+            type: string
+        processors_cfg:
+          description: 解析模板配置
+          type: array
+          items:
+            $ref: "#/components/schemas/processorCfg"
+    processorCfg:
+      description: 单个解析规则配置
+      required:
+        - enable
+        - type
+        - config
+        - output_fields
+      type: object
+      properties:
+        title:
+          description: 解析规则标题
+          type: string
+        enable:
+          description: 是否开启当前解析规则
+          type: boolean
+        type:
+          description: 解析类型
+          enum:
+            - if-else
+            - switch
+            - json
+            - date
+            - key_value
+            - csv
+            - xml
+            - grok
+            - syslog_pri
+            - geo_ip
+            - url
+            - user-agent
+            - add_field
+            - remove_field
+            - replace_field
+            - convert_type
+            - math_operations
+            - calc_weight
+            - time_diff
+            - http
+            - metric_model
+            - data_dict
+            - static_form
+            - data_desensitization
+            - data_splitting
+            - data_discarding
+          type: string
+        config:
+          $ref: "#/components/schemas/Map"
+          description: 解析类型的具体配置
+        pre_condition:
+          $ref: "#/components/schemas/ConditionStruct"
+          description: 前置条件
+        output_fields:
+          description: 当前解析类型的输出字段
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldStruct"
+    DataView:
+      description: 根据id获取单个视图信息返回
+      required: []
+      type: object
+      properties:
+        id:
+          description: 数据视图 id
+          type: string
+        name:
+          description: 数据视图名称
+          type: string
+        fields:
+          description: 数据视图的字段列表
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldStruct"
+        update_time:
+          description: 更新时间
+          type: integer
+        tags:
+          description: 标签（可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 数据视图备注
+          type: string
+        group_id:
+          description: 数据视图分组ID
+          type: string
+        group_name:
+          description: "\t\r\n分组名称，对于默认分组，查询返回结果为空字符串，由前端根据语言环境进行展示"
+          type: string
+        create_time:
+          description: 创建时间
+          type: integer
+        module_type:
+          description: 模块类型，值为 data_view
+          enum:
+            - data_view
+          type: string
+        query_type:
+          description: 查询类型
+          enum:
+            - DSL
+            - SQL
+          type: string
+        creator:
+          description: 创建人id
+          type: string
+        updater:
+          description: 更新人id
+          type: string
+        status:
+          description: 视图状态（扫描结果）
+          enum:
+            - '""'
+            - new
+            - modify
+            - delete
+            - no_change
+          type: string
+        technical_name:
+          description: 视图技术名称
+          type: string
+        type:
+          description: 视图类型
+          enum:
+            - atomic
+            - custom
+          type: string
+        data_scope:
+          $ref: "#/components/schemas/DataScope"
+          description: 数据范围
+        data_processors:
+          $ref: "#/components/schemas/DataProcessors"
+          description: 读时解析配置
+        builtin:
+          description: 是否是内置视图
+          type: boolean
+        data_source_type:
+          description: 数据源类型
+          type: string
+        data_source_id:
+          description: 数据源id
+          type: string
+        data_source_name:
+          description: 数据源名称
+          type: string
+        file_name:
+          description: excel文件名
+          type: string
+        operations:
+          description: 视图可操作权限
+          type: array
+          items:
+            type: string
+        excel_config:
+          $ref: "#/components/schemas/Request_DataView_ExcelConfig"
+          description: excel配置
+        primary_keys:
+          description: 主键列表
+          type: array
+          items:
+            type: string
+        sql_str:
+          description: 视图对应的sql，仅仅查询类型为SQL的有值
+          type: string
+    Request_DataView_ExcelConfig:
+      description: ""
+      type: object
+      properties:
+        sheet:
+          description: sheet页，逗号分隔
+          type: string
+        sheet_as_new_column:
+          description: 是否将sheet作为新列
+          type: boolean
+        has_headers:
+          description: 是否首行作为列名
+          type: boolean
+        start_cell:
+          description: 开始单元格
+          type: string
+        end_cell:
+          description: 结束单元格
+          type: string
+  responses:
+    "400BadRequest":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: Invalid Parameter
+                error_code: DataModel.MetricModel.InvalidParameter
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 参数错误
+    "500InternalError":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: internel server error
+                error_code: DataModel.MetricModel.InternalError
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 内部错误
+    "400BadRequest_DataView":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: Invalid Parameter
+                error_code: Uniquery.DataView.InvalidParameter
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 参数错误
+    "500InternalError_DataView":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: internel server error
+                error_code: Uniquery.DataView.InternalError
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 内部错误

@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01K8WBMTK9NATK4MRGQ16GA135",
+      "name": "TTFT测试之简单对话explore",
+      "key": "01K800F9PYPDXDN0K9SMBW039C",
+      "profile": "TTFT测试之简单对话explore",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1761888332393,
+      "updated_at": 1762332925772,
+      "created_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "updated_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"\",\"dolphin\":\"/prompt/回答用户的问题:$query -\\u003e answer\",\"is_dolphin_mode\":0,\"pre_dolphin\":[{\"key\":\"context_organize\",\"name\":\"上下文组织模块\",\"value\":\"\\n{\\\"query\\\": \\\"用户的问题为: \\\"+$query} -\\u003e context\\n\",\"enabled\":true,\"edited\":false}],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1981196845543723008\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"answer\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":false},\"related_question\":{\"is_enabled\":false},\"plan_mode\":null,\"metadata\":{\"config_version\":\"v1\"}}",
+      "created_type": "import",
+      "create_from": "dip"
+    }
+  ]
+}

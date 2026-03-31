@@ -1,0 +1,119 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "列举任务",
+    "description": "get /api/automation/v1/operators",
+    "type": "object",
+    "properties": {
+        "page": {
+            "description": "页码，默认值为0",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "limit": {
+            "description": "每页显示条目数，默认值为20，有效值在1-100之间",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                {
+                    "const": -1
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "sortby": {
+            "description": "排序字段，默认为update_time,仅支持name、create_time和update_time",
+            "enum": [
+                null,
+                "name",
+                "create_time",
+                "update_time"
+            ]
+        },
+        "order": {
+            "description": "排序规则。默认为desc，仅支持desc和asc",
+            "enum": [
+                null,
+                "asc",
+                "desc"
+            ]
+        },
+        "operator_id": {
+            "description": "算子id",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "name": {
+            "description": "算子名称",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "status": {
+            "description": "算子状态",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "version": {
+            "description": "算子版本",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "category": {
+            "description": "算子分类",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "user_id": {
+            "description": "创建人id",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    }
+}

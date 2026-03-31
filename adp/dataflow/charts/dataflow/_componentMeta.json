@@ -1,0 +1,383 @@
+{
+    "conponentDefineType": "helm/service",
+    "name": "flow-automation",
+    "version": "1.0.0",
+    "configSchema": {
+        "title": "flow-automation",
+        "description": "组件配置定义",
+        "type": "object",
+        "properties": {
+            "resources": {
+                "type": "object",
+                "title": "容器资源控制",
+                "properties": {
+                    "requests": {
+                        "type": "object",
+                        "description": "容器运行需要的最小资源分配",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    },
+                    "limits": {
+                        "type": "object",
+                        "description": "容器运行最大资源限制",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    }
+                }
+            },
+            "replicaCount": {
+                "type": "number",
+                "title": "服务副本数"
+            },
+            "depServices": {
+                "type": "object",
+                "title": "依赖服务配置",
+                "properties": {
+                    "speech-model": {
+                        "type": "object",
+                        "title": "音频转换服务配置",
+                        "properties": {
+                            "privateHost": {
+                                "type": "string",
+                                "title": "服务器地址",
+                                "description": "域名或IP地址"
+                            },
+                            "privatePort": {
+                                "type": "number",
+                                "title": "服务器端口",
+                                "description": "默认端口为8680"
+                            }
+                        }
+                    },
+                    "uie": {
+                        "type": "object",
+                        "title": "自定义文本提取服务配置",
+                        "properties": {
+                            "privateHost": {
+                                "type": "string",
+                                "title": "服务器地址",
+                                "description": "域名或IP地址"
+                            },
+                            "privatePort": {
+                                "type": "number",
+                                "title": "服务器端口",
+                                "description": "默认端口为6466"
+                            }
+                        }
+                    },
+                    "observability": {
+                        "type": "object",
+                        "title": "可观测性链路配置",
+                        "properties": {
+                            "trace_enabled": {
+                                "type": "boolean",
+                                "title": "链路追踪开关",
+                                "description": "是否开启链路追踪",
+                                "default": false
+                            }
+                        }
+                    },
+                    "ocr": {
+                        "type": "object",
+                        "title": "OCR 小模型服务配置",
+                        "properties": {
+                            "privateHost": {
+                                "type": "string",
+                                "title": "服务器地址",
+                                "description": "域名或IP地址"
+                            },
+                            "privatePort": {
+                                "type": "number",
+                                "title": "服务器端口",
+                                "description": "默认端口为12349"
+                            }
+                        }
+                    },
+                    "structure-extractor": {
+                        "type": "object",
+                        "title": "文档结构化解析服务",
+                        "properties": {
+                            "useMineru": {
+                                "type": "boolean",
+                                "title": "是否使用 Mineru 官方服务",
+                                "description": "如果开启，结构化解析服务将使用 Mineru 官方提供的 API 接口，关闭则使用内部部署的服务",
+                                "default": false
+                            },
+                            "mineruBaseURL": {
+                                "type": "string",
+                                "title": "Mineru 服务地址",
+                                "description": "当 useMineru 为 true 时有效，默认为 https://mineru.net"
+                            },
+                            "mineruToken": {
+                                "type": "string",
+                                "title": "Mineru 访问令牌",
+                                "description": "当 useMineru 为 true 时有效，需要提供有效的访问令牌以调用 Mineru API"
+                            },
+                            "privateHost": {
+                                "type": "string",
+                                "title": "服务器地址",
+                                "description": "域名或IP地址"
+                            },
+                            "privatePort": {
+                                "type": "number",
+                                "title": "服务器端口",
+                                "description": "默认端口为12349"
+                            },
+                            "outputDir": {
+                                "type": "string",
+                                "title": "Output Dir",
+                                "description": "默认值为 ./output"
+                            },
+                            "backend": {
+                                "type": "string",
+                                "title": "Backend",
+                                "description": "默认值为 vlm-http-client"
+                            },
+                            "serverUrl": {
+                                "type": "string",
+                                "title": "Server Url",
+                                "description": "默认值为 http://127.0.0.1:8088"
+                            },
+                            "fileHost": {
+                                "type": "string",
+                                "title": "File Host",
+                                "description": "文件服务地址"
+                            },
+                            "filePort": {
+                                "type": "number",
+                                "title": "File Port",
+                                "description": "文件服务端口"
+                            }
+                        }
+                    }
+                }
+            },
+            "flowAutomation": {
+                "type": "object",
+                "title": "工作流配置",
+                "properties": {
+                    "service": {
+                        "type": "object",
+                        "title": "工作流配置",
+                        "properties": {
+                            "highestExecutorCount": {
+                                "type": "number",
+                                "title": "安全策略流程最大并行任务数",
+                                "default": 200
+                            },
+                            "highExecutorCount": {
+                                "type": "number",
+                                "title": "图谱构建（管理员）流程最大并行任务数",
+                                "default": 200
+                            },
+                            "lowestExecutorCount": {
+                                "type": "number",
+                                "title": "工作中心流程最大并行任务数",
+                                "default": 200
+                            },
+                            "listdagCount": {
+                                "type": "number",
+                                "title": "每次调度最大流程数",
+                                "default": 500
+                            },
+                            "executorTimeout": {
+                                "type": "number",
+                                "title": "节点默认执行超时事件",
+                                "default": 600
+                            },
+                            "scheduleTimeout": {
+                                "type": "number",
+                                "title": "流程默认调度超时事件",
+                                "default": 150
+                            },
+                            "keepHistory": {
+                                "type": "string",
+                                "title": "最近历史运行记录保留时间",
+                                "description": "支持按天或按小时配置 7d:保留近七天的记录 7h:保留近7小时的运行记录, 不支持的值默认保留最近7天",
+                                "default": "7d"
+                            },
+                            "mongoMaxInlineSize": {
+                                "type": "integer",
+                                "title": "Mongo 最大内联流程运行过程数据比特数",
+                                "description": "超过此大小的 sharedata、dump 上传到对象存储, 默认 256K",
+                                "default": 262144
+                            },
+                            "storagePrefix": {
+                                "type": "string",
+                                "title": "流程运行数据上传到对象存储路径前缀",
+                                "default": "29376f25-1aad-4a03-91d4-901c5ee4b905"
+                            },
+                            "deleteExtDataCron": {
+                                "type": "string",
+                                "title": "定期清理已删除流程过程数据 CRON 表达式",
+                                "default": "0 1 * * *"
+                            },
+                            "deleteExpiredTaskCacheCron": {
+                                "type": "string",
+                                "title": "定期清理过期任务缓存 CRON 表达式",
+                                "default": "0 3 * * *"
+                            },
+                            "dagInstanceEventMaxInlineSize": {
+                                "type": "integer",
+                                "title": "DagInstanceEvent 最大内联数据比特数",
+                                "description": "超过此大小的事件数据上传到对象存储, 默认 256K, 设置为 -1 则始终内联",
+                                "default": 262144
+                            },
+                            "dagInstanceEventArchivePolicy": {
+                                "title": "DagInstanceEvent 归档策略",
+                                "description": "运行完成后将事件归档到对象存储, never - 从不, successOnly - 仅归档执行成功的, 默认 successOnly",
+                                "type": "string",
+                                "enum": [
+                                    "never",
+                                    "successOnly"
+                                ],
+                                "default": "successOnly"
+                            },
+                            "dbType": {
+                                "type": "string",
+                                "title": "服务使用数据库类型",
+                                "description": "支持服务使用的数据库类型, 默认为 mysql, 目前支持取值: mysql、mongodb",
+                                "enum": [
+                                    "mysql",
+                                    "mongodb"
+                                ],
+                                "default": "mysql"
+                            }
+                        }
+                    },
+                    "s3": {
+                        "type": "object",
+                        "title": "S3 配置",
+                        "properties": {
+                            "default": {
+                                "type": "string",
+                                "title": "默认 S3 连接名称"
+                            },
+                            "connections": {
+                                "type": "array",
+                                "title": "S3 连接配置",
+                                "items": {
+                                    "type": "object",
+                                    "title": "S3 连接",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "title": "连接名称"
+                                        },
+                                        "endpoint": {
+                                            "type": "string",
+                                            "title": "S3 服务端地址"
+                                        },
+                                        "region": {
+                                            "type": "string",
+                                            "title": "S3 区域"
+                                        },
+                                        "accessKeyID": {
+                                            "type": "string",
+                                            "title": "S3 访问密钥 ID"
+                                        },
+                                        "secretAccessKey": {
+                                            "type": "string",
+                                            "title": "S3 访问密钥"
+                                        },
+                                        "bucketName": {
+                                            "type": "string",
+                                            "title": "S3 存储桶名称"
+                                        },
+                                        "skipVerify": {
+                                            "type": "boolean",
+                                            "title": "是否跳过证书验证",
+                                            "default": true
+                                        },
+                                        "disableHTTPS": {
+                                            "type": "boolean",
+                                            "title": "是否禁用 HTTPS",
+                                            "default": false
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "endpoint",
+                                    "accessKeyID",
+                                    "secretAccessKey",
+                                    "bucketName",
+                                    "skipVerify",
+                                    "disableHTTPS"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "default",
+                            "connections"
+                        ]
+                    }
+                }
+            },
+            "image": {
+                "type": "object",
+                "title": "镜像配置",
+                "properties": {
+                    "registry": {
+                        "type": "string",
+                        "title": "镜像注册地址"
+                    },
+                    "repository": {
+                        "type": "string",
+                        "title": "镜像仓库"
+                    },
+                    "tag": {
+                        "type": "string",
+                        "title": "镜像版本"
+                    },
+                    "pullPolicy": {
+                        "type": "string",
+                        "title": "镜像拉取策略"
+                    }
+                }
+            }
+        }
+    },
+    "dependence": [
+        {
+            "name": "dataflow-dm-pre"
+        },
+        {
+            "name": "mongodb"
+        },
+        {
+            "name": "mq"
+        },
+        {
+            "name": "redis"
+        },
+        {
+            "name": "rds"
+        },
+        {
+            "name": "opensearch"
+        },
+        {
+            "name": "hydra"
+        },
+        {
+            "name": "business-system-service"
+        }
+    ]
+}

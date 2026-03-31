@@ -1,0 +1,29 @@
+conversation_session_response:
+  type: object
+  required:
+    - conversation_session_id
+    - ttl
+    - created_at
+  properties:
+    conversation_session_id:
+      type: string
+      title: conversation_session_id
+      description: |
+        - 对话Session ID
+        - 格式：user_id:visitor_type:conversation_id
+    ttl:
+      type: integer
+      title: ttl
+      description: 会话有效期（秒）
+      example: 600
+    created_at:
+      type: string
+      format: date-time
+      title: created_at
+      description: 创建时间
+      example: "2024-10-21T10:30:00Z"
+    cache_data:
+      type: object
+      title: cache_data
+      description: session缓存的数据（debug模式下有效）
+  title: ConversationSessionInitResponse

@@ -1,0 +1,15 @@
+class UserInfo:
+    def __init__(self, **kwargs):
+        self.active = kwargs.get('active')
+        self.scope = kwargs.get('scope')
+        self.client_id = kwargs.get('client_id')
+        self.user_id = kwargs.get('sub')
+        self.ext = kwargs.get('ext')
+        self.user_name = kwargs.get('user_name')
+        self.account_type = kwargs.get('account_type')
+        self.parent_deps = kwargs.get('parent_deps')
+        self.roles = kwargs.get('roles')
+        self.account_type = kwargs.get('account_type')
+        self.visitor_type = kwargs.get('visitor_type')
+        self.login_ip = kwargs.get('login_ip')
+        self.user_agent = kwargs.get('user_agent')

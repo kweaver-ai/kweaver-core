@@ -1,0 +1,138 @@
+paths:
+  /agent-factory/v3/product:
+    get:
+      summary: 获取产品列表
+      description: 获取产品列表
+      tags:
+        - 产品
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: './schema/product_list_item.yaml#/product_list_item'
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    post:
+      summary: 创建产品
+      deprecated: false
+      description: 创建产品
+      tags:
+        - 产品
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/product_create_req.yaml#/product_create_req'
+            example:
+              name: "智能客服产品"
+              profile: "这是一个智能客服产品"
+      responses:
+        201:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key:
+                    type: string
+                    description: 产品标识
+                  id:
+                    type: integer
+                    description: 产品 id
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/product/{id}:
+    get:
+      summary: 获取产品详情
+      deprecated: false
+      description: 获取产品详情
+      tags:
+        - 产品
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/product_detail.yaml#/product_detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    put:
+      summary: 编辑产品
+      deprecated: false
+      description: 编辑产品
+      tags:
+        - 产品
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/product_update_req.yaml#/product_update_req'
+            example:
+              name: "智能客服产品更新版"
+              profile: "这是一个更新后的智能客服产品"
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    delete:
+      summary: 删除产品
+      deprecated: false
+      description: 删除产品
+      tags:
+        - 产品
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/IDInt'
+
+

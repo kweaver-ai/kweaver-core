@@ -1,0 +1,12 @@
+resource_type:
+  type: array
+  description: 资源类型
+  items:
+    type: string
+    description: |
+      - 资源类型
+        - agent: agent
+    enum: 
+      - agent
+    example:
+      - agent

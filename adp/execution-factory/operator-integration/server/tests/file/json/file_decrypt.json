@@ -1,0 +1,587 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "open-doc服务外部接口协议",
+    "version": "7.0.x",
+    "description": "open-doc服务外部接口RESTful API集合"
+  },
+  "servers": [
+    {
+      "url": "https://{host}:{port}",
+      "description": "open-doc服务外部接口地址",
+      "variables": {
+        "host": {
+          "default": "anyshare.aishu.cn",
+          "description": "open-doc服务地址或IP，地址默认为anyshare.aishu.cn 命名空间为 anyshare， 跨站点访问时，使用主分站点地址及外部端口"
+        },
+        "port": {
+          "default": "443",
+          "description": "默认端口443"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/open-doc/v1/file-decrypt": {
+      "post": {
+        "summary": "文件解密aaaa",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Bearer token for authentication",
+            "example": "Bearer ory_at_IKq3mERzPhVI0KN3SJdAzI1KxDGhV3Hg9ujPj8KtgGc.WKFvSGnOR8ojQ10FTP13fAHWsO9vUvVSRrwHfJVpC7I"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecryptFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "请求成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecryptFileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "副文档类型不存在或请求文档不存在或加解密服务未安装",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "返回错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer ory_at_IKq3mERzPhVI0KN3SJdAzI1KxDGhV3Hg9ujPj8KtgGc.WKFvSGnOR8ojQ10FTP13fAHWsO9vUvVSRrwHfJVpC7I'"
+      }
+    },
+    "schemas": {
+      "DecryptFileRequest": {
+        "required": [
+          "doc_id",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "主文档ID ，GNS最后一段，32位"
+          },
+          "version": {
+            "type": "string",
+            "description": "主文档版本"
+          },
+          "user_custom_attr": {
+            "type": "object",
+            "description": "用户自定义属性",
+            "properties": {
+              "security_domain": {
+                "type": "object",
+                "description": "安全域信息",
+                "properties": {
+                  "user_security_domain": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "用户所属安全域列表"
+                  },
+                  "policy_security_domain": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "策略安全域列表"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DecryptFileResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonResponse"
+          },
+          {
+            "properties": {
+              "oss_id": {
+                "type": "string",
+                "description": "OSS ID"
+              },
+              "object_key": {
+                "type": "string",
+                "description": "对象键"
+              },
+              "is_encrypted": {
+                "type": "boolean",
+                "description": "是否加密"
+              }
+            }
+          }
+        ]
+      },
+      "SubdocReq": {
+        "description": "副文档统一获取请求",
+        "required": [
+          "doc_id"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "description": "文档ID, gns路径最后一截32位ID",
+            "type": "string",
+            "example": "524F18822F0B492A80E03BD42D6C28BF"
+          },
+          "version": {
+            "description": "主文档版本ID",
+            "type": "string",
+            "example": "8330FD0CF1A04F73BDE8146CF6EA7D4D"
+          },
+          "type": {
+            "description": "副文档类型, full_text: 纯文本, graph_info: 图谱信息",
+            "enum": [
+              "full_text",
+              "graph_info"
+            ],
+            "type": "string"
+          },
+          "custom": {
+            "description": "自定义参数",
+            "type": "object"
+          }
+        }
+      },
+      "SubdocResp": {
+        "description": "副文档结果",
+        "required": [
+          "doc_id",
+          "version",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "description": "主文档GNS最后一段",
+            "type": "string",
+            "example": "524F18822F0B492A80E03BD42D6C28BF"
+          },
+          "version": {
+            "description": "版本ID",
+            "type": "string",
+            "example": "8330FD0CF1A04F73BDE8146CF6EA7D4D"
+          },
+          "status": {
+            "description": "任务状态, processing: 正在处理, completed: 完成, failed: 失败",
+            "enum": [
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "url": {
+            "description": "副文档下载地址",
+            "type": "string",
+            "example": "https://10.4.48.113/bkt23/1d2ba655-722d-4bc7-af7e-3b0338093c4a/8330FD0CF1A04F73BDE8146CF6EA7D4D/sub/2fc708f36982c94cf9967c0dc494c656e2?response-content-disposition=attachment%3B%20filename%2A%3Dutf-8%27%27Codered2.zip&AWSAccessKeyId=u1&Expires=1700707279&Signature=TV4uI%2f5FE5UINEsUlC1oElAhDcs%3d"
+          },
+          "err_msg": {
+            "description": "错误信息",
+            "type": "string",
+            "example": ""
+          }
+        }
+      },
+      "Error": {
+        "description": "接口调用错误信息结构基类，具体错误情况可查看新增的字段detail",
+        "required": [
+          "cause",
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "cause": {
+            "description": "导致此错误的原因，也可用于给接口调用者提示解决此错误的办法，相同的code可对应不同的cause",
+            "type": "string"
+          },
+          "code": {
+            "format": "int64",
+            "description": "业务错误码，前三位为 HTTP标准状态码，中间三位为系统内全局唯一的微服务错误码标识号，后三位为自定义状态码",
+            "type": "integer"
+          },
+          "detail": {
+            "description": "错误辅助信息",
+            "type": "object",
+            "additionalProperties": true
+          },
+          "message": {
+            "description": "业务错误信息，与code一一对应",
+            "type": "string"
+          }
+        }
+      },
+      "CommonResponse": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "主文档ID ，GNS最后一段，32位"
+          },
+          "version": {
+            "type": "string",
+            "description": "主文档版本"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "processing",
+              "failed"
+            ],
+            "description": "处理状态：completed已完成;processing处理中;failed处理失败"
+          },
+          "err_msg": {
+            "type": "string",
+            "description": "副文档处理失败错误信息"
+          }
+        }
+      },
+      "FullTextSubdocRequest": {
+        "description": "副文档统一获取请求",
+        "required": [
+          "doc_id"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "description": "文档ID, gns路径最后一截32位ID",
+            "type": "string",
+            "example": "524F18822F0B492A80E03BD42D6C28BF"
+          },
+          "version": {
+            "description": "主文档版本ID",
+            "type": "string",
+            "example": "8330FD0CF1A04F73BDE8146CF6EA7D4D"
+          },
+          "type": {
+            "description": "副文档类型",
+            "type": "string",
+            "enum": [
+              "full_text"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "url",
+              "oss",
+              "raw"
+            ],
+            "default": "url",
+            "description": "默认返回格式为url"
+          }
+        }
+      },
+      "FullTextSubdocResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "文档内容"
+          }
+        }
+      },
+      "FullStructuredTextRequest": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "文档ID"
+          }
+        },
+        "required": [
+          "doc_id"
+        ]
+      },
+      "FullStructuredTextResponse": {
+        "type": "object",
+        "properties": {
+          "structuredText": {
+            "type": "string",
+            "description": "结构化文本内容"
+          }
+        }
+      },
+      "PloyDocMetadataRequest": {
+        "description": "聚合文档元数据请求",
+        "required": [
+          "doc_id",
+          "ploy_doc_md"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "description": "文档ID, gns路径最后一截32位ID",
+            "type": "string"
+          },
+          "version": {
+            "description": "主文档版本ID",
+            "type": "string"
+          },
+          "ploy_doc_md": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "abstract",
+                "tags"
+              ]
+            }
+          },
+          "max_segments": {
+            "type": "integer",
+            "description": "总结分段数",
+            "default": 5
+          },
+          "limit": {
+            "type": "integer",
+            "description": "片段数量（标签使用）"
+          },
+          "tag_version": {
+            "type": "string",
+            "description": "标签规则版本（标签使用）"
+          },
+          "only_leaf": {
+            "type": "boolean",
+            "description": "是否只提供叶节点结果而不包含全路径（标签使用）"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "url",
+              "oss",
+              "raw",
+              "content"
+            ],
+            "default": "content",
+            "description": "默认返回格式为content"
+          }
+        }
+      },
+      "PloyDocMetadataResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommonResponse"
+          },
+          {
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "description": "片段总数"
+                  },
+                  "index_type": {
+                    "type": "string",
+                    "enum": [
+                      "timestamp",
+                      "pageseqtamp"
+                    ],
+                    "description": "索引类型"
+                  },
+                  "data": {
+                    "type": "array",
+                    "description": "数据内容",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "index": {
+                          "type": "object",
+                          "description": "内容索引"
+                        },
+                        "content": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "data": {
+                                "type": "object",
+                                "description": "数据内容"
+                              },
+                              "err_msg": {
+                                "type": "string",
+                                "description": "错误信息"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DocFormatConvertRequest": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "文档ID"
+          },
+          "target_format": {
+            "type": "string",
+            "description": "目标格式"
+          }
+        },
+        "required": [
+          "doc_id",
+          "target_format"
+        ]
+      },
+      "DocFormatConvertResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "转换是否成功"
+          },
+          "convertedFile": {
+            "type": "string",
+            "description": "转换后的文件URL"
+          }
+        }
+      },
+      "ThumbnailRequest": {
+        "description": "缩略图请求",
+        "required": [
+          "doc_id",
+          "data_source_type"
+        ],
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "description": "文档ID, gns路径最后一截32位ID",
+            "type": "string"
+          },
+          "version": {
+            "description": "主文档版本ID",
+            "type": "string"
+          },
+          "seq": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "第N张图片"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "url",
+              "oss",
+              "raw",
+              "content"
+            ],
+            "default": "content",
+            "description": "默认返回格式为content"
+          },
+          "width": {
+            "type": "integer",
+            "default": 24,
+            "description": "图片宽度"
+          },
+          "height": {
+            "type": "integer",
+            "default": 24,
+            "description": "图片高度"
+          },
+          "quality": {
+            "type": "integer",
+            "default": 75,
+            "minimum": 0,
+            "maximum": 100,
+            "description": "图片质量"
+          },
+          "data_source_type": {
+            "type": "string",
+            "enum": [
+              "doc_image"
+            ],
+            "description": "缩略图数据来源:doc_image(文档内部图片)"
+          }
+        }
+      },
+      "ThumbnailResponse": {
+        "type": "object",
+        "properties": {
+          "thumbnailUrl": {
+            "type": "string",
+            "description": "缩略图URL"
+          }
+        }
+      }
+    }
+  }
+}

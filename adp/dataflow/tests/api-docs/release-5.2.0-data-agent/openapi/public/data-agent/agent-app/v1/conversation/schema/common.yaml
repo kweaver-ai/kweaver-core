@@ -1,0 +1,8 @@
+components:
+  PathAppKey:
+    in: path
+    name: app_key
+    schema:
+      type: string
+    required: true
+    description: agent app key(通用agent传入 agent id/agent key，超级助手传入字符串:super_assistant)

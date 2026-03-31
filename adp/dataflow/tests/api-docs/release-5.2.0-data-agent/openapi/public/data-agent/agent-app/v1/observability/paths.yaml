@@ -1,0 +1,252 @@
+paths:
+  /api/agent-app/v1/observability/agent/{agent_id}/detail:
+    post:
+      summary: 查询指定Agent的可观测信息
+      description: 查询指定Agent的可观测信息，返回结果包含Agent的配置信息以及可观测性的指标，支持时间过滤
+      operationId: getAgentObservability
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/agent_observability_req.yaml#/AgentObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回Agent可观测信息
+          content:
+            application/json:
+              schema:
+                $ref: './schema/agent_observability_resp.yaml#/AgentObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/observability/agent/{agent_key}/conversation:
+    post:
+      summary: 查询Agent下的所有对话列表
+      description: 查询Agent下的所有对话列表，支持分页和根据对话title模糊查询
+      operationId: getConversationList
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/conversation_list_observability_req.yaml#/ConversationListObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回对话列表
+          content:
+            application/json:
+              schema:
+                $ref: './schema/conversation_list_observability_resp.yaml#/ConversationListObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session:
+    post:
+      summary: 获取指定对话的session列表
+      description: 获取指定对话的session列表，包含session的详细信息
+      operationId: getSessionList
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 对话ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/session_list_observability_req.yaml#/SessionListObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回session列表
+          content:
+            application/json:
+              schema:
+                $ref: './schema/session_list_observability_resp.yaml#/SessionListObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail:
+    post:
+      summary: 获取指定session的详情信息
+      description: 获取指定session的详情信息，包含多个指标
+      operationId: getSessionDetail
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 对话ID
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/session_detail_observability_req.yaml#/SessionDetailObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回session详情
+          content:
+            application/json:
+              schema:
+                $ref: './schema/session_detail_observability_resp.yaml#/SessionDetailObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run:
+    post:
+      summary: 获取指定session下的run列表
+      description: 获取指定对话的session下的run列表，返回每个run的详情列表
+      operationId: getRunList
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 对话ID
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/run_list_observability_req.yaml#/RunListObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回run列表
+          content:
+            application/json:
+              schema:
+                $ref: './schema/run_list_observability_resp.yaml#/RunListObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail:
+    post:
+      summary: 获取指定run的详情信息
+      description: 获取指定run的详情信息，包含run的完整信息
+      operationId: getRunDetail
+      tags:
+        - 可观测性
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 对话ID
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Run ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/run_detail_observability_req.yaml#/RunDetailObservabilityReq'
+      responses:
+        '200':
+          description: 成功返回run详情
+          content:
+            application/json:
+              schema:
+                $ref: './schema/run_detail_observability_resp.yaml#/RunDetailObservabilityResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'

@@ -1,0 +1,12 @@
+.idea
+build
+tmp
+.vscode
+__debug*
+coverage_report
+.nocalhost*
+.ktctl*
+specs*
+.specify*
+.claude*
+

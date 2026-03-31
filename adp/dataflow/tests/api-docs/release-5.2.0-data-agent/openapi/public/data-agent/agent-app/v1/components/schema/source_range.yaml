@@ -1,0 +1,12 @@
+SourceRange:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 文档ID
+    type:
+      type: string
+      description: 类型(doc)
+    name:
+      type: string
+      description: 文档名称

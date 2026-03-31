@@ -1,0 +1,47 @@
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "dataflow.name" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" }}
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: {{ include "dataflow.flowAutomation.fullname" . }}
+            port:
+              number: {{ .Values.flowAutomation.service.port }}
+        path: /api/automation
+        pathType: Prefix
+      - backend:
+          service:
+            name: dataflowtools-public
+            port:
+              number: 8682
+        path: /api/coderunner/v1
+        pathType: Prefix
+      - backend:
+          service:
+            name: ecron-management
+            port:
+              number: 32345
+        path: /api/ecron-management
+        pathType: Prefix
+      - backend:
+          service:
+            name: flow-stream-data-pipeline-svc
+            port:
+              number: 13012
+        path: /api/flow-stream-data-pipeline/v1
+        pathType: Prefix
+      - backend:
+          service:
+            name: flow-web
+            port:
+              number: 3045
+        path: /flow-web
+        pathType: Prefix
+{{- end }}

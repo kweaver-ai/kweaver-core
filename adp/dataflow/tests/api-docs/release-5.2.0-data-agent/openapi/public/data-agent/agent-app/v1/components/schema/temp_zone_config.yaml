@@ -1,0 +1,47 @@
+TempZoneConfig:
+  type: object
+  required:
+    - tmp_file_use_type
+    - single_file_size_limit
+    - single_file_size_limit_unit
+    - support_data_type
+    - allowed_file_categories
+  properties:
+    name:
+      type: string
+      description: 区域名称
+    tmp_file_use_type:
+      type: string
+      description: 临时文件使用类型
+    max_file_count:
+      type: integer
+      minimum: 1
+      maximum: 50
+      description: 最大文件数量
+    single_chat_max_select_file_count:
+      type: integer
+      minimum: 1
+      maximum: 5
+      description: 单次对话中支持选择的文件个数
+    single_file_size_limit:
+      type: integer
+      description: 单文件大小限制
+    single_file_size_limit_unit:
+      type: string
+      enum: [KB, MB, GB]
+      description: 单文件大小限制单位
+    support_data_type:
+      type: array
+      items:
+        type: string
+      description: 支持的数据类型
+    allowed_file_types:
+      type: array
+      items:
+        type: string
+      description: 允许的文件类型
+    allowed_file_categories:
+      type: array
+      items:
+        type: string
+      description: 允许的文件类别

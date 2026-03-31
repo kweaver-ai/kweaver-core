@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<properties>
+
+    <parsers>
+
+        <!--
+            默认解析器：
+            Tika 会先通过 DefaultParser 按文件类型分发到具体解析器。
+            这里通过 parser-exclude 排除一些不需要的解析器，减少无用解析、降低风险并节省资源。
+        -->
+        <parser class="org.apache.tika.parser.DefaultParser">
+
+            <!-- 排除 TesseractOCRParser：
+                 避免在默认分发链里自动触发 OCR，
+                 由下面单独定义的 TesseractOCRParser 按明确参数控制。 -->
+            <parser-exclude class="org.apache.tika.parser.ocr.TesseractOCRParser"/>
+
+            <!-- 排除 ExecutableParser：
+                 不解析可执行文件，避免无意义的二进制解析，也更安全。 -->
+            <parser-exclude class="org.apache.tika.parser.executable.ExecutableParser"/>
+
+            <!-- 排除 AdobeFontMetricParser：
+                 不解析 AFM（Adobe Font Metric）字体度量文件，通常业务中很少需要。 -->
+            <parser-exclude class="org.apache.tika.parser.font.AdobeFontMetricParser"/>
+
+            <!-- 排除 TrueTypeParser：
+                 不解析 TrueType 字体文件，减少字体类文件处理开销。 -->
+            <parser-exclude class="org.apache.tika.parser.font.TrueTypeParser"/>
+
+        </parser>
+
+
+        <!--
+            PDF 解析器：
+            用于控制 PDF 文本提取、注释提取、OCR 触发策略以及内存使用等行为。
+        -->
+        <parser class="org.apache.tika.parser.pdf.PDFParser">
+            <params>
+
+                <!-- OCR 策略：
+                     AUTO = 自动判断是否需要 OCR。
+                     一般表示：如果 PDF 本身有可提取文本，就优先直接提取；
+                     如果是扫描件/图片型 PDF，则触发 OCR。 -->
+                <param name="ocrStrategy" type="string">no_ocr</param>
+
+                <!-- 是否按页面坐标排序文本：
+                     true = 尽量按照页面上的视觉位置排序文本，
+                     对多栏文档、表格、版面复杂 PDF 往往更友好。 -->
+                <param name="sortByPosition" type="bool">true</param>
+
+                <!-- 是否提取 PDF 注释中的文本：
+                     true = 提取批注、高亮注释、评论等附加文本内容。 -->
+                <param name="extractAnnotationText" type="bool">true</param>
+
+                <!-- 是否提取书签中的文本：
+                     true = 把 PDF 大纲/书签标题内容也提取出来。 -->
+                <param name="extractBookmarksText" type="bool">true</param>
+
+                <!-- 是否提取 PDF 内嵌图片：
+                     false = 不把 PDF 内嵌图片单独抽取出来，
+                     可减少 IO 和内存占用。
+                     注意：这不等同于“禁用 OCR”，OCR 仍可能针对页面图像进行处理。 -->
+                <param name="extractInlineImages" type="bool">false</param>
+
+                <!-- 是否提取 PDF 动作（Action）信息：
+                     false = 不提取如跳转、脚本、链接动作等行为信息，
+                     一般文本抽取场景不需要。 -->
+                <param name="extractActions" type="bool">false</param>
+
+                <!-- PDF 解析主内存上限（字节）：
+                     104857600 = 100MB
+                     用于限制 PDFBox/Tika 在主内存中处理 PDF 时的阈值，
+                     超过后可能转为临时文件或采取其他降内存策略。 -->
+                <param name="maxMainMemoryBytes" type="long">104857600</param>
+
+                <!-- 是否启用 KCMS 颜色管理：
+                     true = 使用 Java 的 KCMS 颜色管理能力，
+                     某些图像/色彩转换场景下性能更好。 -->
+                <param name="setKCMS" type="bool">true</param>
+
+            </params>
+        </parser>
+
+    </parsers>
+
+    <detectors>
+
+        <!--
+            默认类型检测器：
+            根据文件头、MIME、扩展名等信息自动判断文件类型，
+            决定后续交给哪个解析器处理。
+        -->
+        <detector class="org.apache.tika.detect.DefaultDetector"/>
+
+    </detectors>
+
+    <resource-limits>
+
+        <!-- 最大递归深度：
+             限制嵌套文档解析深度，例如压缩包套压缩包、文档嵌套附件等。
+             10 表示最多递归 10 层，防止过深嵌套导致资源耗尽。 -->
+        <max-recursion-depth>10</max-recursion-depth>
+
+        <!-- 最大字符串长度：
+             -1 = 不限制解析输出的字符串长度。
+             适合需要完整提取文本的场景，但要注意超大文档可能带来内存压力。 -->
+        <max-string-length>-1</max-string-length>
+
+        <!-- 最大可用内存（字节）：
+             2147483648 = 2GB
+             用于限制 Tika 整体资源使用上限，防止解析超大文件时 OOM。 -->
+        <max-memory-in-bytes>2147483648</max-memory-in-bytes>
+
+    </resource-limits>
+
+
+    <!--
+        Service Loader 配置：
+        dynamic="true" 表示允许运行时动态加载服务实现；
+        loadErrorHandler="WARN" 表示加载服务失败时只记录警告，不直接中断启动。
+    -->
+    <service-loader dynamic="true" loadErrorHandler="WARN"/>
+
+</properties>

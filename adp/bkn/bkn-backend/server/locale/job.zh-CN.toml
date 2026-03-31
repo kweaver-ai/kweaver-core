@@ -1,0 +1,85 @@
+# Job
+[BknBackend.Job.InvalidParameter]
+Description = "任务参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidParameter.JobType]
+Description = "任务类型参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidParameter.JobState]
+Description = "任务状态参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidParameter.JobConceptConfig]
+Description = "任务概念配置参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidParameter.TaskState]
+Description = "子任务状态参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidParameter.ConceptType]
+Description = "概念类型参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.NullParameter.Name]
+Description = "任务名称为空"
+Solution = "请提供非空的任务名称。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.LengthExceeded.Name]
+Description = "任务名称长度超限"
+Solution = "请缩短任务名称长度。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.NoneConceptType]
+Description = "当前任务未包含任何可构建概念"
+Solution = "请检查任务配置是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InvalidObjectType]
+Description = "对象类参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.CreateConflict]
+Description = "任务创建冲突"
+Solution = "请检查任务配置是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.JobRunning]
+Description = "任务正在运行"
+Solution = "请稍后重试。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.JobNotFound]
+Description = "任务不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InternalError.BeginTransactionFailed]
+Description = "数据库事务开启失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InternalError.CommitTransactionFailed]
+Description = "数据库事务提交失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.Job.InternalError.MissingTransaction]
+Description = "缺少事务"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

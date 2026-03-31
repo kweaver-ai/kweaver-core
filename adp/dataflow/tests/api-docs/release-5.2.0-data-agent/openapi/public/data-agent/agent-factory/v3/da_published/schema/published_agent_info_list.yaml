@@ -1,0 +1,12 @@
+published_agent_info_list:
+  type: object
+  description: 已发布智能体列表
+  properties:
+    entries:
+      type: array
+      description: 已发布智能体列表
+      items:
+        $ref: './published_agent_info_list_item.yaml#/published_agent_info_list_item'
+    # total:
+    #   type: integer
+    #   description: 总数

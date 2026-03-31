@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "通过消息更新安全策略流程状态",
+    "description": "default.as.automation.security_policy_proc_status",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "流程实例ID",
+            "type": "string"
+        },
+        "status": {
+            "description": "运行状态",
+            "type": "string",
+            "enum": ["canceled"]
+        }
+    },
+    "required": ["id", "status"]
+}

@@ -1,0 +1,74 @@
+[VegaBackend.ConnectorType.InvalidParameter]
+Description = "Invalid connector type parameter"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InvalidParameter.Type]
+Description = "Invalid connector type"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InvalidParameter.Name]
+Description = "Invalid connector type name"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InvalidParameter.Mode]
+Description = "Invalid connector type mode"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InvalidParameter.Category]
+Description = "Invalid connector type category"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InvalidParameter.Endpoint]
+Description = "Invalid connector type endpoint"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.BadRequest]
+Description = "Invalid connector type parameter"
+Solution = "Please check the parameter"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.NotFound]
+Description = "Connector type not found"
+Solution = "Please check the connector type ID"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.TypeExists]
+Description = "Connector type already exists"
+Solution = "Please use a different type"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.NameExists]
+Description = "Connector type name already exists"
+Solution = "Please use a different name"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InternalError]
+Description = "Connector type internal error"
+Solution = "Please contact the administrator"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InternalError.RegisterFailed]
+Description = "Failed to reqister connector type"
+Solution = "Please contact the administrator"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InternalError.GetFailed]
+Description = "Failed to get connector type"
+Solution = "Please contact the administrator"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InternalError.UpdateFailed]
+Description = "Failed to update connector type"
+Solution = "Please contact the administrator"
+ErrorLink = "None"
+
+[VegaBackend.ConnectorType.InternalError.DeleteFailed]
+Description = "Failed to delete connector type"
+Solution = "Please contact the administrator"
+ErrorLink = "None"

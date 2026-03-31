@@ -1,0 +1,50 @@
+---
+type: entity
+id: {entity_id}
+name: {实体名称}
+version: 1.0.0
+spec_version: 1.0.0
+network: {network_id}
+namespace: {namespace}
+owner: {owner}
+tags: [{标签1}, {标签2}]
+---
+
+# {实体名称}
+
+{详细描述}
+
+## 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | {view_id} | {view_name} |
+
+> **主键**: `{primary_key}` | **显示属性**: `{display_key}`
+
+## 属性覆盖
+
+<!-- 可选：仅声明需要特殊配置的属性 -->
+
+| 属性名 | 显示名 | 索引配置 | 说明 |
+|--------|--------|----------|------|
+| {property} | {显示名} | {索引配置} | {说明} |
+
+## 逻辑属性
+
+<!-- 可选：指标、算子等扩展属性 -->
+
+### {logic_property_name}
+
+- **类型**: metric | operator
+- **来源**: {source_id} ({source_type})
+- **说明**: {说明}
+
+| 参数名 | 来源 | 绑定值 |
+|--------|------|--------|
+| {param} | property | {property_name} |
+| {param} | input | - |
+
+## 业务语义
+
+{业务含义说明}

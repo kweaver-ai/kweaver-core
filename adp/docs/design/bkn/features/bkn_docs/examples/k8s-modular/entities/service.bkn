@@ -1,0 +1,32 @@
+---
+type: entity
+id: service
+name: Service服务
+version: 1.0.0
+network: k8s-modular
+tags: [拓扑架构, 网络, Kubernetes]
+---
+
+# Service服务
+
+Kubernetes 服务抽象层，提供稳定的访问入口。
+
+## 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dith | service_info_view |
+
+> **主键**: `id` | **显示属性**: `service_name`
+
+## 业务语义
+
+Service 为一组 Pod 提供统一的访问入口和负载均衡。
+
+### 服务类型
+
+| 类型 | 说明 |
+|------|------|
+| ClusterIP | 集群内部访问 |
+| NodePort | 节点端口暴露 |
+| LoadBalancer | 外部负载均衡 |

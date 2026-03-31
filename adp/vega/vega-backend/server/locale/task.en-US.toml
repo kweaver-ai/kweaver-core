@@ -1,0 +1,19 @@
+[VegaBackend.Task.NotFound]
+Description = "Task not found"
+Solution = "Please check the parameters"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.CreateFailed]
+Description = "Failed to create build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.GetFailed]
+Description = "Failed to get build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.Exist]
+Description = "Build task already exists"
+Solution = "Please check if the resource already has a build task"
+ErrorLink = "No solution"

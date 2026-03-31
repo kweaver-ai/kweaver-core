@@ -1,0 +1,64 @@
+{
+    "description": "新建文件参数校验",
+    "type": "object",
+    "properties": {
+        "type": {
+            "type": "string",
+            "enum": [
+                "docx",
+                "xlsx",
+                "pdf",
+                "md"
+            ]
+        },
+        "name": {
+            "type": "string",
+            "pattern": "^[^#\\/:*?\"<>|]+"
+        },
+        "docid": {
+            "type": "string",
+            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+        },
+        "ondup": {
+            "enum": [
+                1,
+                2,
+                3
+            ]
+        },
+        "new_type": {
+            "type": "string",
+            "enum": [
+                "new_row",
+                "new_col"
+            ]
+        },
+        "source_type": {
+            "type": "string",
+            "enum": [
+                "full_text",
+                "url"
+            ]
+        },
+        "content": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "type": "string"
+                }
+            ]
+        }
+    },
+    "required": [
+        "type",
+        "name",
+        "docid",
+        "ondup"
+    ],
+    "additionalProperties": false
+}

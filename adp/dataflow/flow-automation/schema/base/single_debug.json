@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "添加管理员",
+    "description": "post /api/automation/v1/admin",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "operator": {
+            "type": "string",
+            "allOf": [
+                {
+                    "not": {
+                        "pattern": "^@trigger/|^@anyshare-trigger/"
+                    }
+                },
+                {
+                    "not": {
+                        "enum": [
+                            "@tools/return",
+                            "@control/flow/loop",
+                            "@control/flow/branchs"
+                        ]
+                    }
+                }
+            ]
+        },
+        "parameters": {
+            "type": "object"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

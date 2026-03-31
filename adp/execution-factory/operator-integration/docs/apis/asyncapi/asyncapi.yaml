@@ -1,0 +1,51 @@
+asyncapi: 2.6.0
+info:
+  title: 算子平台异步消息接口
+  version: 1.0.0
+  description: 算子删除事件通知接口规范
+
+servers:
+  production:
+    url: kafka://{host}:{port}
+    protocol: kafka
+    description: 生产环境消息队列
+
+channels:
+  agent_operator_integration.operator.delete:
+    subscribe:
+      message:
+        $ref: "#/components/messages/OperatorDeleteMessage"
+
+components:
+  messages:
+    OperatorDeleteMessage:
+      payload:
+        type: object
+        properties:
+          operator_id:
+            type: string
+            format: uuid
+          version:
+            type: string
+            format: uuid
+          status:
+            type: string
+            enum:
+              - offline
+              - unpublish
+              - published
+              - editing
+          is_internal:
+            type: boolean
+          is_data_source:
+            type: boolean
+          extend_info:
+            type: object
+            properties:
+              dag_id:
+                type: string
+          operator_type:
+            type: string
+            enum:
+              - composite
+              - basic

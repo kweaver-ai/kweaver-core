@@ -1,0 +1,14 @@
+fulltext:
+  expireSec: 86400
+
+docformatconvert:
+  expireSec: 86400
+
+fileparse:
+  expireSec: 86400
+
+ocr:
+  expireSec: 86400
+
+audiotransfer:
+  expireSec: 86400

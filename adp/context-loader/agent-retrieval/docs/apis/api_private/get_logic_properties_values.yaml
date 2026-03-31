@@ -1,0 +1,189 @@
+openapi: 3.0.2
+info:
+  title: 逻辑属性解析服务
+  version: 1.0.0
+  description: 批量查询对象的逻辑属性值（metric/operator），自动生成 dynamic_params。
+servers:
+  - url: http://agent-retrieval:30779
+paths:
+  /api/agent-retrieval/in/v1/kn/logic-property-resolver:
+    post:
+      summary: get_logic_properties_values
+      description: 根据 query 生成 dynamic_params，批量查询指定对象的逻辑属性值。
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - toon
+            default: json
+          description: 响应格式：json 或 toon，默认 json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveLogicPropertiesRequest'
+            examples:
+              示例:
+                value:
+                  kn_id: kn_medical
+                  ot_id: company
+                  query: 最近一年这些药企的药品上市数量和健康度
+                  _instance_identities:
+                    - company_id: company_000001
+                  properties:
+                    - approved_drug_count
+                    - business_health_score
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveLogicPropertiesResponse'
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    ResolveLogicPropertiesRequest:
+      type: object
+      required:
+        - kn_id
+        - ot_id
+        - query
+        - _instance_identities
+        - properties
+      properties:
+        kn_id:
+          type: string
+          description: 知识网络ID。例 kn_medical
+        ot_id:
+          type: string
+          description: 对象类ID。例 company、drug
+        query:
+          type: string
+          description: 用户查询，需含时间（如"最近一年"）、统计维度、业务上下文，用于生成 dynamic_params
+        _instance_identities:
+          type: array
+          description: 对象实例标识数组。**必须从上游提取，不可臆造。** 流程：先调 query_object_instance 或 query_instance_subgraph → 从每个对象的 _instance_identity 字段取值 → 按原顺序组成数组传入。
+          items:
+            type: object
+            additionalProperties:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+                - type: integer
+          example:
+            - company_id: company_000001
+        properties:
+          type: array
+          description: 逻辑属性名列表（metric/operator）。自动生成 dynamic_params 并查询。
+          items:
+            type: string
+        additional_context:
+          type: string
+          description: 可选。补充上下文，如 timezone、instant、step、对象属性等，帮助生成 dynamic_params。
+        options:
+          $ref: '#/components/schemas/ResolveOptions'
+    ResolveOptions:
+      type: object
+      description: |
+        【可选配置】控制接口行为的高级选项
+      properties:
+        return_debug:
+          type: boolean
+          description: 是否返回 debug（dynamic_params、warnings 等）。默认 false
+    ResolveLogicPropertiesResponse:
+      description: 成功返回 datas；缺参时返回 error_code、missing（含 hint）
+      oneOf:
+        - $ref: '#/components/schemas/ObjectPropertiesValuesResponse'
+        - $ref: '#/components/schemas/MissingParamsError'
+    MissingParamsError:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        missing:
+          type: array
+          items:
+            type: object
+            properties:
+              property:
+                type: string
+              params:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    hint:
+                      type: string
+    ObjectPropertiesValuesResponse:
+      type: object
+      required:
+        - datas
+      properties:
+        datas:
+          type: array
+          description: 与 _instance_identities 顺序对齐，每项含主键和请求的 properties
+          items:
+            type: object
+            additionalProperties: true
+        debug:
+          $ref: '#/components/schemas/ResolveDebugInfo'
+    ResolveDebugInfo:
+      type: object
+      properties:
+        dynamic_params:
+          type: object
+          additionalProperties: true
+        now_ms:
+          type: integer
+        warnings:
+          type: array
+          items:
+            type: string
+        trace_id:
+          type: string
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+

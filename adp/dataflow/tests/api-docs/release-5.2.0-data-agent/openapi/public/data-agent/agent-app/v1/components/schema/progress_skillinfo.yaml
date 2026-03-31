@@ -1,0 +1,20 @@
+SkillInfo:
+  type: object
+  properties:
+    name:
+      type: string
+      description: 技能/工具名称
+    type:
+      type: string
+      description: 技能类型
+      enum:
+        - TOOL
+        - AGENT
+        - MCP
+    args:
+      type: array
+      items:
+        $ref: './progress_skillinfo_arg.yaml#/Arg'
+    checked:
+      type: boolean
+      description: 参数是否已验证

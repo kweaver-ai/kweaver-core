@@ -1,0 +1,33 @@
+ConversationListObservabilityReq:
+  type: object
+  required:
+    - agent_id
+    - agent_version
+    - start_time
+    - end_time
+  properties:
+    agent_id :
+      type: string
+      description: Agent id 
+    agent_version:
+      type: string
+      description: Agent版本
+    title:
+      type: string
+      description: 对话标题，默认为空查询全部，支持模糊查询
+    start_time:
+      type: integer
+      format: int64
+      description: 开始时间戳，单位精确到毫秒。例如:1646360670123
+    end_time:
+      type: integer
+      format: int64
+      description: 结束时间戳，单位精确到毫秒。例如:1646360670123
+    page:
+      type: integer
+      description: 分页页码
+      default: 1
+    size:
+      type: integer
+      description: 分页大小
+      default: 10

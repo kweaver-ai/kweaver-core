@@ -1,0 +1,395 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "音频转文字 API",
+        "version": "1.0.0",
+        "description": "音频转文字 API相关文档",
+        "contact": {
+            "email": "siyu.chen@aishu.cn"
+        }
+    },
+    "tags": [
+        {
+            "name": "音频转文字"
+        }
+    ],
+    "servers": [
+        {
+            "url": "http://127.0.0.1:80/api/speech-model",
+            "description": "音频转文字 API相关文档",
+            "variables": {
+                "host": {
+                    "default": "host",
+                    "description": "主机或域名"
+                }
+            }
+        }
+    ],
+    "paths": {
+        "/v1/convert-timestamp/task": {
+            "post": {
+                "description": "创建音频转换任务带时间戳",
+                "tags": [
+                    "音频转文字"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConvertTimestampTask"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "example": {
+                                        "id": "a4eda296ec614db7a0064d65a457f26e"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                }
+            }
+        },
+        "/v1/convert-timestamp/result/{id}": {
+            "get": {
+                "description": "获取音频转换任务带时间戳结果",
+                "tags": [
+                    "音频转文字"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "description": "任务唯一标识",
+                        "in": "path",
+                        "schema": {
+                            "example": "a4eda296ec614db7a0064d65a457f26e",
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConvertTimestampTaskRes"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "responses": {
+            "400": {
+                "description": "非法请求",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "examples": {
+                            "InvalidParameter": {
+                                "value": {
+                                    "code": 400000000,
+                                    "description": "传入参数不正确",
+                                    "solution": "请检查参数",
+                                    "detail": {
+                                        "params": [
+                                            "xxx: Does not match pattern '^([a-zA-Z0-9]+[-_]?)+[/]([-_]?[a-zA-Z0-9])+$'"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "401": {
+                "description": "未授权",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "examples": {
+                            "UnauthorizedAccess": {
+                                "value": {
+                                    "code": 401000000,
+                                    "description": "登录已过期",
+                                    "solution": "请重新登录",
+                                    "detail": {
+                                        "auth": "token expired"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "403": {
+                "description": "权限禁止",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "examples": {
+                            "PermissionDenied": {
+                                "value": {
+                                    "code": 403000000,
+                                    "description": "没有权限执行此操作",
+                                    "solution": "请确认是否拥有权限执行此操作",
+                                    "detail": "your permission is insufficient"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "404": {
+                "description": "资源不存在",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "examples": {
+                            "SourceNotFound": {
+                                "value": {
+                                    "code": 404000000,
+                                    "description": "对象不存在",
+                                    "solution": "请确认对象id是否正确",
+                                    "detail": null
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "500": {
+                "description": "内部错误",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "examples": {
+                            "InternalError": {
+                                "value": {
+                                    "code": 500000000,
+                                    "description": "请求因服务器内部错误导致异常",
+                                    "solution": "请提交工单或联系技术支持工程师",
+                                    "detail": "InternalError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Error": {
+                "description": "接口调用错误信息结构基类",
+                "required": [
+                    "code",
+                    "description",
+                    "solution"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "错误码",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "description": "错误描述",
+                        "type": "string"
+                    },
+                    "cause": {
+                        "description": "错误处理",
+                        "type": "string"
+                    },
+                    "detail": {
+                        "description": "错误细节",
+                        "type": "object"
+                    }
+                }
+            },
+            "ConvertTimestampTask": {
+                "type": "object",
+                "required": [
+                    "object"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "format": "uri",
+                                "description": "待转换音视频oss下载地址"
+                            },
+                            "name": {
+                                "type": "string",
+                                "pattern": "^[^/:\\\\*?\\\"<>\\\\|]+$",
+                                "maxLength": 255,
+                                "description": "待转换音视频文件名称"
+                            },
+                            "size": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "description": "待转换音视频文件大小"
+                            }
+                        },
+                        "required": [
+                            "url",
+                            "name",
+                            "size"
+                        ]
+                    },
+                    "web_hook": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "音频转文字结果回调地址"
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "description": "模型提示prompt"
+                    },
+                    "biz_id": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "description": "任务id, 非必需无实际意义"
+                    }
+                },
+                "example": {
+                    "object": {
+                        "url": "https://xxxxxxx/318D5681947A4EF8BBE2B72EC5E92AC7/4DFB09201FD0473CA1C4EEBF388DC2DF?response-content-disposition=attachment%3B%20filename%2A%3Dutf-8%27%27out%255f6005751EDXK160430.wav&AWSAccessKeyId=xxxx&Expires=1728889908&Signature=xxxxxxxx",
+                        "name": "6005751EDXK160430.mp3",
+                        "size": 3406161
+                    }
+                }
+            },
+            "ConvertTimestampTaskRes": {
+                "type": "object",
+                "required": [
+                    "code",
+                    "result"
+                ],
+                "properties": {
+                    "code": {
+                        "description": "音频转文字结果状态码\r\n- 200: 转换成功\r\n- 500: 转换失败",
+                        "enum": [
+                            200,
+                            500
+                        ]
+                    },
+                    "result": {
+                        "type": "object",
+                        "required": [
+                            "text",
+                            "start",
+                            "end"
+                        ],
+                        "properties": {
+                            "text": {
+                                "type": "string",
+                                "description": "音频转文字全文"
+                            },
+                            "segments": {
+                                "type": "array",
+                                "description": "音频转文字按时间戳分段列表",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string",
+                                            "description": "音频转文字分段结果"
+                                        },
+                                        "start": {
+                                            "type": "number",
+                                            "description": "音频转文字分段开始时间"
+                                        },
+                                        "end": {
+                                            "type": "number",
+                                            "description": "音频转文字分段结束时间"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "example": {
+                    "result": {
+                        "text": "把昨天都作废，现在你在我眼前，我想爱，请给我机会。如果我错了也承担，认定你就是答案，我不怕谁嘲笑我极端相信自己的直觉，顽固的人不很累，爱上你我不撤退。我说过，我不闪躲，我非要这么做，讲不定别偏要爱，没有别的路能走，你决定要不要陪我。将不停偏爱，靠我感觉爱，等你的依赖。追你偏爱，爱，痛也甘愉快，把昨天都作废，现在你在我眼前，我想爱 请给我机会。如果我错了也清单，认定你就是答案，我不怕谁嘲笑我极端相信自己的直觉，顽固的人不害累，爱上你我不撤退。我说过 不闪躲，我非要这么做，想不停别变要爱，的努力爱没有别的路能走，你决定要不要陪我，脚步停点拍，靠我感觉爱，定理的依赖，定理的爱 爱 爱 爱 爱痛也愉快 爱 爱 爱 爱",
+                        "segments": [
+                            {
+                                "text": "把昨天都作废，现在你在我眼前，我想爱，请给我机会。如果我错了也承担，认定你就是答案，我不怕谁嘲笑我极端",
+                                "start": 14.633,
+                                "end": 40.333
+                            },
+                            {
+                                "text": "相信自己的直觉，顽固的人不很累，爱上你我不撤退。我说过，我不闪躲，我非要这么做，讲不定别偏要爱，",
+                                "start": 42.073,
+                                "end": 63.763
+                            },
+                            {
+                                "text": "没有别的路能走，你决定要不要陪我。将不停偏爱，靠我感觉爱，等你的依赖。追你偏爱，爱，痛也甘愉快，",
+                                "start": 68.677,
+                                "end": 90.794
+                            },
+                            {
+                                "text": "把昨天都作废，现在你在我眼前，我想爱 请给我机会。如果我错了也清单，认定你就是答案，我不怕谁嘲笑我极端",
+                                "start": 97.039,
+                                "end": 122.773
+                            },
+                            {
+                                "text": "相信自己的直觉，顽固的人不害累，爱上你我不撤退。我说过 不闪躲，我非要这么做，想不停别变要爱，的努力爱",
+                                "start": 124.326,
+                                "end": 147.312
+                            },
+                            {
+                                "text": "没有别的路能走，你决定要不要陪我，脚步停点拍，靠我感觉爱，定理的依赖，定理的爱 爱 爱 爱 爱痛也愉快 爱 爱 爱 爱",
+                                "start": 178.456,
+                                "end": 203.933
+                            }
+                        ]
+                    },
+                    "code": "200"
+                }
+            }
+        }
+    }
+}

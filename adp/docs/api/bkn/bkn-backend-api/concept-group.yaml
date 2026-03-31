@@ -1,0 +1,1169 @@
+---
+openapi: 3.0.2
+info:
+  title: ConceptGroup
+  version: 0.1.0
+  description: 概念分组管理接口
+paths:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/concept-groups/{group_id}:
+    get:
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+        - name: group_id
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填是则使用 main 分支
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConceptGroupDetail"
+          description: ok
+      summary: 获取概念分组详情
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConceptGroup"
+        required: true
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+        - name: group_id
+          in: path
+          required: true
+      responses:
+        "204":
+          description: ok
+      summary: 修改概念分组
+    delete:
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+        - name: group_id
+          in: path
+          required: true
+      responses:
+        "204":
+          description: ok
+      summary: 删除概念分组，单个删除
+    parameters:
+      - name: kn_id
+        in: path
+        required: true
+      - name: group_id
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/concept-groups:
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: name_pattern
+          description: 根据络名称模糊查询，默认为空
+          schema:
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，默认是update_time
+          schema:
+            enum:
+              - update_time
+              - name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: tag
+          description: 根据标签精准查询，默认为空.
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListConceptGroups"
+          description: ok
+      summary: 获取概念分组列表
+    post:
+      parameters:
+        - name: branch
+          description: 分支，不填是则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: import_mode
+          description: 导入模式，可选normal、ignore、overwrite，默认为normal
+          schema:
+            enum:
+              - normal
+              - ignore
+              - overwrite
+            type: string
+          in: query
+        - name: validate_dependency
+          description: 是否需要校验依赖，默认为true。为true时，需要校验对象类的视图是否存在、关系类的视图是否存在；为false时，依赖不存在不报错
+          schema:
+            type: boolean
+            default: true
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqConceptGroup"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ID"
+          description: 新增/导入成功
+      summary: 创建概念分组
+      description: 创建概念分组
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/concept-groups/{group_id}/object-types:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddObjectTypeToGroup"
+        required: true
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+        - name: group_id
+          in: path
+          required: true
+      responses:
+        "201":
+          description: 添加成功
+      summary: 添加对象类
+    parameters:
+      - name: kn_id
+        in: path
+        required: true
+      - name: group_id
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/concept-groups/{group_id}/object-types/{ot_ids}:
+    delete:
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+        - name: group_id
+          in: path
+          required: true
+        - name: ot_ids
+          in: path
+          required: true
+      responses:
+        "204":
+          description: 移除成功
+      summary: 移除对象类
+    parameters:
+      - name: kn_id
+        in: path
+        required: true
+      - name: group_id
+        in: path
+        required: true
+      - name: ot_ids
+        in: path
+        required: true
+components:
+  schemas:
+    ReqConceptGroup:
+      description: 概念分组信息
+      required:
+        - name
+        - branch
+      type: object
+      properties:
+        id:
+          description: ID.新建后不可修改，只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签。用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+    ID:
+      description: id
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: id
+          type: string
+    ListConceptGroups:
+      description: 概念分组列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptGroup"
+        total_count:
+          description: 总条数
+          type: integer
+    ConceptGroup:
+      description: 列表页的概念分组
+      required:
+        - branch
+        - color
+        - comment
+        - create_time
+        - creator
+        - detail
+        - icon
+        - id
+        - name
+        - statistics
+        - tags
+        - update_time
+        - updator
+      type: object
+      properties:
+        id:
+          description: ID
+          type: string
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签，可为空
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注，可为空
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        statistics:
+          $ref: "#/components/schemas/Statistics"
+          description: 概念统计信息
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updator:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。
+          type: string
+    Statistics:
+      description: 概念统计信息
+      required:
+        - object_type_totals
+        - relation_type_totals
+        - action_type_totals
+        - action_types_total
+        - object_types_total
+        - relation_types_total
+      type: object
+      properties:
+        object_types_total:
+          description: 对象类数量
+          type: integer
+        relation_types_total:
+          description: 关系类数量
+          type: integer
+        action_types_total:
+          description: 行动类数量
+          type: integer
+    DataSource:
+      description: 资源来源
+      required:
+        - type
+        - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型
+          enum:
+            - data_view
+          type: string
+        id:
+          description: 数据来源ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    ActionTypeDetail:
+      description: 行动类
+      required:
+        - action_source
+        - action_type
+        - affect
+        - branch
+        - color
+        - comment
+        - condition
+        - create_time
+        - creator
+        - detail
+        - icon
+        - id
+        - kn_id
+        - module_type
+        - name
+        - object_type
+        - object_type_id
+        - parameters
+        - schedule
+        - tags
+        - update_time
+        - updater
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 行动类所绑定的对象类名称.
+        condition:
+          $ref: "#/components/schemas/ActionCondition"
+          description: 行动条件
+        affect:
+          $ref: "#/components/schemas/AffectDetail"
+          description: 行动影响
+        action_source:
+          $ref: "#/components/schemas/ToolSource"
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 行动监听参数配置
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+            - action_type
+          type: string
+    ToolSource:
+      description: 数据来源
+      required:
+        - type
+        - tool_id
+        - box_id
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+            - tool
+          type: string
+        box_id:
+          description: 工具箱ID
+          type: string
+        tool_id:
+          description: 工具ID
+          type: string
+    AffectDetail:
+      description: 行动影响
+      required:
+        - object_type
+        - comment
+        - object_type_id
+      type: object
+      properties:
+        comment:
+          description: 影响描述
+          type: string
+        object_type_id:
+          description: 影响的对象类ID
+          type: string
+        object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 对象类信息
+    SimpleObjectType:
+      description: ""
+      required:
+        - id
+        - name
+        - icon
+        - color
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        icon:
+          description: 对象类图标
+          type: string
+        color:
+          description: 对象类颜色
+          type: string
+    ActionCondition:
+      description: 行动条件
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 字段名称，也即对象类的属性名称
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - range
+            - out_range
+            - exist
+            - not_exist
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionCondition"
+        value:
+          description: 字段值
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+          type: string
+    Parameter:
+      description: 工具参数
+      required:
+        - name
+        - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+            - property
+            - input
+            - const
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    Schedule:
+      description: 执行频率配置项
+      required:
+        - expression
+        - type
+      type: object
+      properties:
+        type:
+          description: 执行类型。枚举，支持配置固定频率(FIX_RATE)和配置crontab表达式（CRON）
+          enum:
+            - FIX_RATE
+            - CRON
+          type: string
+        expression:
+          description: |-
+            执行表达式。
+
+            1.固定频率指以固定周期执行持久化，frequency=< time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天
+          type: string
+    ObjectTypeDetail:
+      description: 节点（对象类）信息
+      required:
+        - branch
+        - color
+        - comment
+        - concept_groups
+        - create_time
+        - creator
+        - data_properties
+        - data_source
+        - detail
+        - display_key
+        - icon
+        - id
+        - kn_id
+        - logic_properties
+        - module_type
+        - name
+        - primary_keys
+        - tags
+        - update_time
+        - updater
+      type: object
+      properties:
+        id:
+          description: 对象类ID
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络id
+          type: string
+        concept_groups:
+          description: 概念分组id
+          type: array
+          items:
+            $ref: "#/components/schemas/SimpleConceptGroup"
+        data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源
+        data_properties:
+          description: 数据属性
+          type: array
+          items:
+            $ref: "#/components/schemas/DataProperty"
+        logic_properties:
+          description: 逻辑属性
+          type: array
+          items:
+            $ref: "#/components/schemas/LogicProperty"
+        primary_keys:
+          description: 主键
+          type: array
+          items:
+            type: string
+        display_key:
+          description: 对象实例的显示属性
+          type: string
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+            - object_type
+          type: string
+    DataProperty:
+      description: 数据属性
+      required:
+        - name
+        - display_name
+        - type
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        mapped_field:
+          $ref: "#/components/schemas/ViewField"
+          description: 属性映射到数据来源中的字段名
+        index_config:
+          $ref: "#/components/schemas/IndexConfig"
+          description: 索引配置
+        condition_operations:
+          description: "字符串类型的属性能支持的过滤条件。字符串类型有string, text。"
+          type: array
+          items:
+            type: string
+    IndexConfig:
+      title: Root Type for IndexConfig
+      description: 索引配置
+      type: object
+      properties:
+        keyword_config:
+          $ref: "#/components/schemas/KeywordConfig"
+          description: 关键字检索配置
+        fulltext_config:
+          $ref: "#/components/schemas/FulltextConfig"
+          description: 全文检索配置
+        vector_config:
+          $ref: "#/components/schemas/VectorConfig"
+          description: 向量检索配置
+      example:
+        keyword_config:
+          enabled: true
+          ignore_above_len: 76
+        fulltext_config:
+          analyzer: standard
+          enabled: true
+        vector_config:
+          enabled: true
+          model_id: some text
+    FulltextConfig:
+      description: 全文索引的配置
+      required:
+        - analyzer
+        - enabled
+      type: object
+      properties:
+        analyzer:
+          description: 分词器
+          enum:
+            - standard
+            - ik_max_word
+          type: string
+        enabled:
+          description: 是否启用
+          type: boolean
+      example:
+        analyzer: standard
+        enabled: true
+    KeywordConfig:
+      title: Root Type for KeywordConfig
+      description: 关键字检索配置
+      type: object
+      properties:
+        enabled:
+          description: 是否启用
+          type: boolean
+        ignore_above_len:
+          format: int32
+          description: 忽略数据的长度上限
+          type: integer
+      example:
+        enabled: true
+        ignore_above_len: 52
+    VectorConfig:
+      description: 向量索引的配置
+      required:
+        - enabled
+      type: object
+      properties:
+        enabled:
+          description: 是否启用
+          type: boolean
+        model_id:
+          description: 向量模型ID
+          type: string
+      example:
+        enabled: true
+        model_id: some text
+    ViewField:
+      description: 视图字段信息
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: 字段名称
+          type: string
+        display_name:
+          description: 字段显示名.查看时有此字段
+          type: string
+        type:
+          description: 视图字段类型，查看时有此字段
+          type: string
+    LogicProperty:
+      description: 逻辑属性
+      required:
+        - name
+        - data_source
+        - parameters
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        data_source:
+          $ref: "#/components/schemas/LogicSource"
+          description: 逻辑来源
+        parameters:
+          description: 逻辑所需的参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+    LogicSource:
+      description: 数据来源
+      required:
+        - type
+        - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型
+          enum:
+            - metric
+            - operator
+          type: string
+        id:
+          description: 数据来源ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    RelationTypeDetail:
+      description: 关系类
+      required:
+        - branch
+        - color
+        - comment
+        - create_time
+        - creator
+        - detail
+        - icon
+        - id
+        - kn_id
+        - mapping_rules
+        - name
+        - source_object_type
+        - source_object_type_id
+        - tags
+        - target_object_type
+        - target_object_type_id
+        - type
+        - update_time
+        - updater
+      type: object
+      properties:
+        id:
+          description: 关系类ID
+          type: string
+        name:
+          description: 关系类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        source_object_type_id:
+          description: 起点象类ID
+          type: string
+        source_object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 起点象类名称，当查看详情时，此字段才会返回。
+        target_object_type_id:
+          description: 终点对象类ID
+          type: string
+        target_object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 终点对象类名称，当查看详情时，此字段才会返回
+        type:
+          description: 关系类型
+          enum:
+            - direct
+            - data_view
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+          description: 关联的匹配规则。直接映射时，是Mapping的数组；间接关联时参考DataViewMappingRule
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段。
+          type: string
+    DirectMappingRules:
+      description: 直接关联
+      type: array
+      items:
+        $ref: "#/components/schemas/Mapping"
+    DataViewMappingRule:
+      description: 关系类型为 data_view 时的匹配规则
+      required:
+        - backing_data_source
+        - source_mapping_rules
+        - target_mapping_rules
+      type: object
+      properties:
+        backing_data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源视图
+        source_mapping_rules:
+          description: 起点对象类与数据集的匹配规则
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+        target_mapping_rules:
+          description: 终点对象类与数据集匹配规则
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+    Mapping:
+      description: 关联规则
+      required:
+        - target_property
+        - source_property
+      type: object
+      properties:
+        target_property:
+          $ref: "#/components/schemas/SimpleProperty"
+          description: 起点属性
+        source_property:
+          $ref: "#/components/schemas/SimpleProperty"
+          description: 终点属性
+    SimpleProperty:
+      description: 属性简单信息
+      required:
+        - name
+        - display_name
+      type: object
+      properties:
+        name:
+          description: 属性名称
+          type: string
+        display_name:
+          description: 属性显示名。当查看详情时会返回此字段
+          type: string
+    AddObjectTypeToGroup:
+      description: 添加对象类到概念分组
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 添加对象类
+          type: array
+          items:
+            $ref: "#/components/schemas/AddObjectType"
+    AddObjectType:
+      description: 添加对象类
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+    UpdateConceptGroup:
+      description: 更新概念分组
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签。用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+    SimpleConceptGroup:
+      description: 概念分组简单信息
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 概念分组id
+          type: string
+        name:
+          description: 概念分组名称
+          type: string
+    ConceptGroupDetail:
+      description: 概念分组详情
+      required:
+        - action_types
+        - branch
+        - color
+        - comment
+        - create_time
+        - creator
+        - detail
+        - icon
+        - id
+        - name
+        - object_types
+        - relation_types
+        - tags
+        - update_time
+        - updator
+        - kn_id
+      type: object
+      properties:
+        id:
+          description: ID
+          type: string
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签，可为空
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注，可为空
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        object_types:
+          description: 对象类
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectTypeDetail"
+        relation_types:
+          description: 关系类
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationTypeDetail"
+        action_types:
+          description: 行动类
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionTypeDetail"
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updator:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。
+          type: string

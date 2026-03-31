@@ -1,0 +1,228 @@
+DebugConfig:
+  type: object
+  required:
+    - input
+    - output
+  properties:
+    input:
+      $ref: './input.yaml#/Input'
+      description: 输入参数
+    system_prompt:
+      type: string
+      description: 系统提示词
+    dolphin:
+      type: string
+      description: Dolphin语句
+    is_dolphin_mode:
+      type: string
+      enum: [enabled, disabled]
+      description: 是否是dolphin模式
+    data_source:
+      $ref: './retriever_data_source.yaml#/RetrieverDataSource'
+      description: 数据源
+    tools:
+      type: array
+      items:
+        $ref: './tool.yaml#/Tool'
+      description: 工具
+    llms:
+      type: array
+      items:
+        $ref: './llm_item.yaml#/LlmItem'
+      description: LLM配置
+    is_data_flow_set_enabled:
+      type: integer
+      enum: [0, 1]
+      description: 是否启用数据流设置
+    opening_remark_config:
+      $ref: './opening_remark_config.yaml#/OpeningRemarkConfig'
+      description: 开场白配置
+    preset_questions:
+      type: array
+      items:
+        $ref: './preset_question.yaml#/PresetQuestion'
+      description: 预设问题列表
+    output:
+      $ref: './output.yaml#/Output'
+      description: 输出结果
+  example:
+    input:
+      fields:
+        - name: query
+          type: string
+      rewrite:
+        enable: false
+        llm_config:
+          id: ""
+          name: test
+          model_type: llm
+          temperature: 0.5
+          top_p: 0.5
+          top_k: 0
+          frequency_penalty: 0
+          presence_penalty: 0
+          max_tokens: 1000
+      augment:
+        enable: false
+        data_source:
+          kg: []
+      is_temp_zone_enabled: 0
+      temp_zone_config: null
+    system_prompt: ""
+    dolphin: "/prompt/(model=\"Tome-pro\")帮我根据$query写个小故事,字数要求必须100个以上 ->
+      output_origin\r
+
+      @扩写小能手(query=$output_origin.answer) -> output_optimize\r
+
+      /prompt/帮忙解析$output_optimize，这是一个json，帮忙提取其中最后一个answer字段对应的值, 不要多余的内容。->
+      to_transfer_text\r
+
+      @文本转PDF_post(markdown_text=$to_transfer_text.answer)->result\r
+
+      /prompt/帮忙解析$result,
+      这是一个json，其中有一个file_url字段，帮忙输出为一个下载字样的链接，用户点击下载链接可访问->answer\r\n"
+    is_dolphin_mode: 1
+    data_source:
+      kg: []
+      doc: []
+      advanced_config:
+        kg: null
+        doc: null
+    tools:
+      - tool_type: tool
+        tool_id: "1919629565622222848"
+        tool_name: 文本转PDF_post
+        tool_box_id: "1919629565618028544"
+        tool_use_description: 将提供的文本内容转换为PDF文件，并指定文件名
+        tool_input:
+          - input_name: markdown_text
+            input_type: string
+            input_desc: 要转换的Markdown格式文本内容
+            map_type: auto
+            enable: true
+          - input_name: filename
+            input_type: string
+            input_desc: 生成的PDF文件名（不包含扩展名）
+            map_type: fixedValue
+            map_value: agent_story
+            enable: true
+        intervention: true
+      - tool_type: agent
+        tool_id: 01JTQA1A1A07336HJE6R841MNB
+        tool_name: 扩写小能手
+        tool_box_id: built-in-agent
+        tool_use_description: 帮助用户扩写内容
+        tool_input:
+          - input_name: appid
+            input_type: string
+            input_desc: AnyDATA用户鉴权
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: as-user-ip
+            input_type: string
+            input_desc: AnyShare用户鉴权
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: as-user-id
+            input_type: string
+            input_desc: AnyShare用户鉴权
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: as-visitor-type
+            input_type: string
+            input_desc: AnyShare用户鉴权
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: as-client-type
+            input_type: string
+            input_desc: AnyShare用户鉴权
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: _options
+            input_type: object
+            children:
+              - input_name: debug
+                input_type: boolean
+                input_desc: 是否输出调试信息
+                map_type: auto
+                map_value: ""
+                enable: false
+              - input_name: retry
+                input_type: boolean
+                input_desc: 是否重新生成，若为true，会增加大模型块的随机性
+                map_type: auto
+                map_value: ""
+                enable: false
+              - input_name: stream
+                input_type: boolean
+                input_desc: 是否流式输出
+                map_type: auto
+                map_value: ""
+                enable: false
+          - input_name: history
+            input_type: string
+            input_desc: 上下文历史记录
+            map_type: auto
+            map_value: ""
+            enable: false
+          - input_name: query
+            input_type: string
+            input_desc: 用户输入的问题
+            map_type: auto
+            map_value: ""
+            enable: true
+        intervention: true
+    llms:
+      - is_default: true
+        llm_config:
+          id: "1922491455683825664"
+          name: Tome-pro
+          model_type: llm
+          temperature: 1
+          top_p: 1
+          top_k: 1
+          frequency_penalty: 0
+          presence_penalty: 0
+          max_tokens: 1000
+      - is_default: false
+        llm_config:
+          id: "1922495291181895680"
+          name: deepseek-r1
+          model_type: rlm
+          temperature: 1
+          top_p: 1
+          top_k: 1
+          frequency_penalty: 0
+          presence_penalty: 0
+          max_tokens: 1000
+    is_data_flow_set_enabled: 0
+    opening_remark_config:
+      type: fixed
+      fixed_opening_remark: |-
+        欢迎使用写故事小能手！
+        我是写故事小能手，一个专门根据用户输入的主题创作故事的AI助手。
+        我的知识来源广泛，包括但不限于文学作品、历史事件、民间传说以及各种创意素材。
+        这使我能够为用户提供丰富多样的故事创作服务。
+        ##      我的技能包括：
+        -📝根据用户提供的主题创作故事-🔍深入挖掘主题背后的故事元素-💡创造性地构思情节和角色-❓回答用户关于故事创作的问题-🔄将故事内容转换为不同的风格和格式无论你是需要一个奇幻冒险的故事，还是一个温馨的家庭故事，我都能根据你的需求为你量身定制。
+        欢迎随时向我提问，让我帮你开启一段精彩的创作之旅！
+      dynamic_opening_remark_prompt: ""
+    preset_questions:
+      - question: 写故事小能手能帮我创作一个奇幻小说的开头吗？
+      - question: 写故事小能手可以提供哪些类型的写作指导？
+      - question: 写故事小能手如何帮助我提高写作技巧？
+      - question: 写故事小能手能否根据我的需求定制故事内容？
+    output:
+      variables:
+      answer_var: answer
+      doc_retrieval_var: ""
+      graph_retrieval_var: ""
+      related_questions_var: ""
+      other_vars: null
+      middle_output_vars: null
+    default_format: markdown

@@ -1,0 +1,63 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "获取相对时间",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "old_time": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "relative_value": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "relative_type": {
+                    "type": "string",
+                    "enum": ["add", "sub"]
+                },
+                "relative_unit": {
+                    "type": "string",
+                    "enum": ["year", "month", "day", "hour", "minute"]
+                }
+            },
+            "required": ["old_time", "relative_value", "relative_type", "relative_unit"],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": ["id", "operator", "parameters"],
+    "additionalProperties": false
+}

@@ -1,0 +1,26 @@
+SessionListObservabilityReq:
+  type: object
+  required:
+    - agent_version
+    - start_time
+    - end_time
+  properties:
+    agent_version:
+      type: string
+      description: Agent版本
+    start_time:
+      type: integer
+      format: int64
+      description: 开始时间戳，单位精确到毫秒。例如:1646360670123
+    end_time:
+      type: integer
+      format: int64
+      description: 结束时间戳，单位精确到毫秒。例如:1646360670123
+    page:
+      type: integer
+      description: 分页页码
+      default: 1
+    size:
+      type: integer
+      description: 分页大小
+      default: 10

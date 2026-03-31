@@ -1,0 +1,71 @@
+[
+  {
+    "id": "1",
+    "title": "",
+    "operator": "@internal/json/set",
+    "parameters": {
+      "fields": [
+        {
+          "key": "a",
+          "type": "string",
+          "value": "{{__0.fields.str}}"
+        }
+      ],
+      "json": "{}"
+    }
+  },
+  {
+    "id": "2",
+    "title": "",
+    "operator": "@internal/json/get",
+    "parameters": {
+      "fields": [
+        {
+          "key": "aa",
+          "type": "string",
+          "value": "{{__1.json}}"
+        }
+      ],
+      "json": "{{__1.json}}"
+    }
+  },
+  {
+    "id": "3",
+    "title": "",
+    "operator": "@internal/json/template",
+    "parameters": {
+      "json": "{{__2.fields._0}}",
+      "template": "{}"
+    }
+  },
+  {
+    "id": "4",
+    "title": "",
+    "operator": "@internal/json/set",
+    "parameters": {
+      "fields": [
+        {
+          "key": "b",
+          "type": "string",
+          "value": "{{__0.fields.str}}"
+        }
+      ],
+      "json": "{}"
+    }
+  },
+  {
+    "id": "5",
+    "title": "",
+    "operator": "@internal/json/set",
+    "parameters": {
+      "fields": [
+        {
+          "key": "c",
+          "type": "string",
+          "value": "{{__0.fields.str}}"
+        }
+      ],
+      "json": "{}"
+    }
+  }
+] 

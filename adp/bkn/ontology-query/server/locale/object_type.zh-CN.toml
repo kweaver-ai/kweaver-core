@@ -1,0 +1,80 @@
+# 对象类
+[OntologyQuery.ObjectType.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InvalidParameter.IncludeTypeInfo]
+Description = "是否包含类信息参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InvalidParameter.IgnoringStoreCache]
+Description = "是否忽略索引数据的参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InvalidParameter.SmallModel]
+Description = "小模型参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InvalidParameter.DynamicParams]
+Description = "动态参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.UnsupportLogicPropertyParameterSource]
+Description = "不支持的逻辑属性的参数来源"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.ObjectTypeNotFound]
+Description = "对象类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.SmallModelNotFound]
+Description = "小模型不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.ExecuteOperatorFailed]
+Description = "算子执行失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.GetAgentOperatorByIDFailed]
+Description = "按id获取算子详情失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.GetMetricDataByIDFailed]
+Description = "按id获取指标数据失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.GetViewDataByIDFailed]
+Description = "按id获取视图数据失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.GetObjectTypesByIDFailed]
+Description = "按id获取对象类信息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.ObjectType.InternalError.GetSmallModelByIDFailed]
+Description = "按ID获取小模型失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ObjectType.InternalError.ProcessLogicPropertiesFailed]
+Description = "处理逻辑属性失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 

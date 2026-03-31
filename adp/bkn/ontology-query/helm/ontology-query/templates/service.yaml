@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.moduleName }}-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.moduleName }}
+spec:
+  selector:
+    module: {{ .Values.moduleName }}
+  type: {{ .Values.service.ontologyQuery.type }}
+  ports:
+    - name: {{ .Values.moduleName }}
+      port: {{ .Values.service.ontologyQuery.port }}
+      protocol: TCP
+      targetPort: query
+      {{- if eq .Values.service.ontologyQuery.type "NodePort" }}
+      nodePort: {{ .Values.service.ontologyQuery.nodePort }}
+      {{- end }}

@@ -1,0 +1,30 @@
+---
+type: relation
+id: service_routes_pod
+name: Service路由Pod
+version: 1.0.0
+network: k8s-modular
+tags: [拓扑架构, 网络]
+---
+
+# Service路由Pod
+
+Service 到 Pod 的流量路由关系。
+
+## 关联定义
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| service | pod | direct |
+
+## 映射规则
+
+| 起点属性 (Service) | 终点属性 (Pod) |
+|--------------------|----------------|
+| service_name | service_name |
+
+## 业务语义
+
+Service 通过 selector 匹配 Pod，将流量路由到后端 Pod。
+
+- **基数**: N:M (一个 Service 可路由多个 Pod)

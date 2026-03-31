@@ -1,0 +1,101 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "更新文件内容",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "docx",
+                        "xlsx",
+                        "md"
+                    ]
+                },
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "new_type": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "new_row",
+                                "new_col"
+                            ]
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "insert_type": {
+                    "enum": [
+                        "append",
+                        "append_before",
+                        "append_after",
+                        "cover"
+                    ]
+                },
+                "insert_pos": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "content": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "docid",
+                "insert_type",
+                "content"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

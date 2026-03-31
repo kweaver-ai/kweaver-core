@@ -1,0 +1,86 @@
+published_tpl_list_item:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: 发布ID（模板发布表的id）
+      example: xxx
+    key:
+      type: string
+      description: agent 标识
+      example: xxx
+    tpl_id:
+      type: string
+      description: 模板id
+      example: xxx
+    is_built_in:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否内置
+          - 0: 否
+          - 1: 是
+      example: 0
+    name:
+      type: string
+      description: 名字
+      example: agent1
+    profile:
+      type: string
+      description: agent 简介
+      example: agent1 profile
+    avatar_type:
+      type: integer
+      description: |
+        - 头像类型
+          - 1: 内置头像
+          - 2: 用户上传头像
+          - 3: AI生成头像
+      example: 1
+    avatar:
+      type: string
+      description: |
+        - 头像信息
+          - 当头像类型为1时，为内置头像标识(如1-10等)
+          - 当头像类型为2时，为头像存储信息
+          - 当头像类型为3时，为头像存储信息
+      example: 1
+      
+    published_at:
+      type: integer
+      description: 发布时间
+      example: 1672502400000
+    published_by:
+      type: string
+      description: 发布者uid
+      example: xxx
+    published_by_name:
+      type: string
+      description: 发布者名称
+      example: xxx
+
+    pagination_marker_str:
+      type: string
+      description: |
+        - 分页marker（用于获取下一页数据）
+        - base64编码的json字符串
+        - base64编码前的json格式：
+          ```
+          {
+            "last_pubed_tpl_id": 111
+          }
+          ```
+      example: eyJwdWJsaXNoZWRfYXQiOjE3MTg3NzQ0MDAxMjMsImxhc3RfcmVsZWFzZV9pZCI6IjE0In0=
+    is_last_page:
+      type: boolean
+      description: |
+        - 是否是最后一页
+        - 当查询不到数据时，也是最后一页
+      example: true
+      
+
+
+    
+
+    
+      

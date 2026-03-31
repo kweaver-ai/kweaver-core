@@ -1,0 +1,75 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "列举任务",
+    "description": "get /api/automation/v1/observability",
+    "type": "object",
+    "properties": {
+        "page": {
+            "description": "页码，默认值为0",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "limit": {
+            "description": "每页显示条目数，默认值为20，有效值在1-100之间",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "start_time": {
+            "description": "开始时间"
+        },
+        "end_time": {
+            "description": "结束时间"
+        },
+        "type": {
+            "description": "类型",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "enum": ["combo-operator", "data-flow"]
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "keyword": {
+            "description": "关键字，用于搜索筛选任务名称",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "trigger": {
+            "description": "触发器类型",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "enum": ["manually", "event", "cron", ""]
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    },
+    "additionalProperties": true
+}

@@ -1,0 +1,154 @@
+definitions:
+  interfaces.Column:
+    properties:
+      name:
+        type: string
+    type: object
+  interfaces.FetchQueryReq:
+    properties:
+      batch_size:
+        description: 批次大小
+        example: 100
+        maximum: 10000
+        minimum: 1
+        type: integer
+      data_source_id:
+        description: 数据源ID
+        example: ""
+        type: string
+      sql:
+        description: 查询语句
+        example: select * from table
+        type: string
+      timeout:
+        description: 超时时间（秒）
+        example: 60
+        maximum: 1800
+        minimum: 1
+        type: integer
+      type:
+        description: 查询类型 1-同步查询 2-流式查询
+        example: 1
+        type: integer
+    required:
+      - data_source_id
+      - sql
+      - type
+    type: object
+  interfaces.FetchResp:
+    properties:
+      columns:
+        items:
+          $ref: "#/definitions/interfaces.Column"
+        type: array
+      entries:
+        items:
+          items: {}
+          type: array
+        type: array
+      next_uri:
+        type: string
+      total_count:
+        type: integer
+    type: object
+  rest.BaseError:
+    properties:
+      description:
+        description: 错误描述
+        type: string
+      error_code:
+        description: 错误码
+        type: string
+      error_details:
+        description: 详细内容
+      error_link:
+        description: 错误链接
+        type: string
+      solution:
+        description: 解决方法
+        type: string
+    type: object
+  rest.HTTPError:
+    properties:
+      baseError:
+        $ref: "#/definitions/rest.BaseError"
+      httpcode:
+        type: integer
+      language:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /fetch:
+    post:
+      consumes:
+        - application/json
+      description: 查询数据
+      parameters:
+        - description: 查询数据请求
+          in: body
+          name: req
+          required: true
+          schema:
+            $ref: "#/definitions/interfaces.FetchQueryReq"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 查询数据响应
+          schema:
+            $ref: "#/definitions/interfaces.FetchResp"
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: "#/definitions/rest.HTTPError"
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: "#/definitions/rest.HTTPError"
+      tags:
+        - fetch
+  /fetch/{query_id}/{slug}/{token}:
+    get:
+      consumes:
+        - application/json
+      description: 查询下一页数据
+      parameters:
+        - description: 查询ID
+          in: path
+          name: query_id
+          required: true
+          type: string
+        - description: 查询签名
+          in: path
+          name: slug
+          required: true
+          type: string
+        - description: 查询令牌
+          in: path
+          name: token
+          required: true
+          type: string
+        - description: 每页数据量
+          in: query
+          name: batch_size
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 查询下一页数据响应
+          schema:
+            $ref: "#/definitions/interfaces.FetchResp"
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: "#/definitions/rest.HTTPError"
+        "500":
+          description: 内部服务器错误
+          schema:
+            $ref: "#/definitions/rest.HTTPError"
+      tags:
+        - fetch
+swagger: "2.0"

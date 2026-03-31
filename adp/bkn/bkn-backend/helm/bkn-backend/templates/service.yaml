@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.moduleName }}-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.moduleName }}
+spec:
+  selector:
+    module: {{ .Values.moduleName }}
+  type: {{ .Values.service.bknBackend.type }}
+  ports:
+    - name: {{ .Values.moduleName }}
+      port: {{ .Values.service.bknBackend.port }}
+      protocol: TCP
+      targetPort: backend
+      {{- if eq .Values.service.bknBackend.type "NodePort" }}
+      nodePort: {{ .Values.service.bknBackend.nodePort }}
+      {{- end }}

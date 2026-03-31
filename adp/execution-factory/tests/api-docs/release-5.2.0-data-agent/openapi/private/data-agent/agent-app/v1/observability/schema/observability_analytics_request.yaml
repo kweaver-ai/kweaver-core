@@ -1,0 +1,25 @@
+components:
+  schemas:
+    AnalyticsQueryRequest:
+      type: object
+      required:
+        - analysis_level
+        - id
+        - start_time
+        - end_time
+      properties:
+        analysis_level:
+          type: string
+          enum: ["agent", "session", "run"]
+          description: 分析类型
+        id:
+          type: string
+          description: 分析对象ID（Agent ID / Session ID / Run ID）
+        start_time:
+          type: integer
+          format: int64
+          description: 开始时间（Unix时间戳）
+        end_time:
+          type: integer
+          format: int64
+          description: 结束时间（Unix时间戳）

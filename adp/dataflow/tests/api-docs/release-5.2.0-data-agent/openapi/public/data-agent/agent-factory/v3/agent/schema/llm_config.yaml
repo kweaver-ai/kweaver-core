@@ -1,0 +1,59 @@
+llm_config:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 模型id
+    name:
+      type: string
+      description: 模型名
+      example: deepseek-v3
+    model_type:
+      type: string
+      description: |
+        - 模型类型
+          - llm: 非推理模型
+          - rlm: 推理模型（可能是reasoning model）
+      default: llm
+      enum:
+        - llm
+        - rlm
+      example: llm
+
+    temperature:
+      type: number
+      description: 随机性
+      minimum: 0
+      maximum: 2
+    top_p:
+      type: number
+      description: 核采样
+      minimum: 0
+      maximum: 1
+    top_k:
+      type: integer
+      description: 前k采样
+      minimum: 0
+    frequency_penalty:
+      type: number
+      description: 频率惩罚度
+      minimum: -2
+      maximum: 2
+
+    presence_penalty:
+      type: number
+      description: 话题新鲜度
+      minimum: -2
+      maximum: 2
+    max_tokens:
+      type: integer
+      description: 单次回复限制
+      default: 500
+      minimum: 0
+#    retrieval_max_tokens:
+#      type: integer
+#      description: 召回的最大token数量（单位K）
+  required:
+    - name
+#    - retrieval_max_tokens
+  description: 大模型配置

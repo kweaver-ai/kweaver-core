@@ -1,0 +1,74 @@
+[VegaBackend.ConnectorType.InvalidParameter]
+Description = "无效的连接器类型参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InvalidParameter.Type]
+Description = "无效的连接器类型"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InvalidParameter.Name]
+Description = "无效的连接器类型名称"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InvalidParameter.Mode]
+Description = "无效的连接器类型模式"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InvalidParameter.Category]
+Description = "无效的连接器类型分类"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InvalidParameter.Endpoint]
+Description = "无效的连接器类型端点"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.BadRequest]
+Description = "参数无效"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.NotFound]
+Description = "连接器类型不存在"
+Solution = "请检查连接器类型ID"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.TypeExists]
+Description = "连接器类型已存在"
+Solution = "请使用其他类型"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.NameExists]
+Description = "连接器类型名称已存在"
+Solution = "请使用其他名称"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InternalError]
+Description = "连接器类型内部错误"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InternalError.RegisterFailed]
+Description = "注册连接器类型失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InternalError.GetFailed]
+Description = "获取连接器类型失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InternalError.UpdateFailed]
+Description = "更新连接器类型失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.ConnectorType.InternalError.DeleteFailed]
+Description = "删除连接器类型失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"

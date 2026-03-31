@@ -1,0 +1,26 @@
+### 检索对象类（通过 bkn-backend）
+POST http://bkn-backend-svc.anyshare:13014/api/bkn-backend/in/v1/knowledge-networks/kn_chemical/object-types
+x-user: sdfsdfsd
+x-http-method-override: GET
+Content-Type: application/json
+
+{
+    "condition": {
+        "operation": "or",
+        "sub_conditions": [
+            {
+                "field": "*",
+                "operation": "match",
+                "value": "6-氨基己睛加氢制己二胺的反应物是什么，哪些企业能生产该物质",
+                "value_from": "const"
+            },
+            {
+                "field": "*",
+                "operation": "knn",
+                "value": ["6-氨基己睛加氢制己二胺的反应物是什么，哪些企业能生产该物质", 300],
+                "value_from": "const"
+            }
+        ]
+    },
+    "limit": 10
+}

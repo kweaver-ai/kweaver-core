@@ -1,0 +1,104 @@
+[VegaBackend.Catalog.InvalidParameter]
+Description = "无效的目录参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InvalidParameter.Type]
+Description = "无效的目录类型"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InvalidParameter.Name]
+Description = "无效的目录名称"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InvalidParameter.ConnectorType]
+Description = "无效的连接类型"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InvalidParameter.ConnectorConfig]
+Description = "无效的连接配置"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.LengthExceeded.Name]
+Description = "目录名称长度超限"
+Solution = "请缩短名称"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.LengthExceeded.Description]
+Description = "目录描述长度超限"
+Solution = "请缩短描述"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.NotFound]
+Description = "目录不存在"
+Solution = "请检查目录ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.NameExists]
+Description = "目录名称已存在"
+Solution = "请使用其他名称"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.IDExists]
+Description = "目录ID已存在"
+Solution = "请使用其他ID"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.HasAssets]
+Description = "目录下存在资产，无法删除"
+Solution = "请先删除目录下的所有资产"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.IsDisabled]
+Description = "目录已禁用"
+Solution = "请先启用目录"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError]
+Description = "目录内部错误"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.CreateFailed]
+Description = "创建目录失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.CreateResourcesFailed]
+Description = "创建目录资源权限失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.GetFailed]
+Description = "获取目录失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.UpdateFailed]
+Description = "更新目录失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.DeleteFailed]
+Description = "删除目录失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.TestConnectionFailed]
+Description = "测试目录连接失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InternalError.EncryptFailed]
+Description = "加密失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.InvalidParameter.SensitiveFieldNotEncrypted]
+Description = "敏感字段未正确加密"
+Solution = "请使用公钥加密敏感字段后再提交"
+ErrorLink = "暂无"

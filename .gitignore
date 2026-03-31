@@ -4,3 +4,6 @@
 /kw-studio/report
 
 .DS_Store
+
+.claude
+.vscode

@@ -1,0 +1,37 @@
+agent_input:
+  properties:
+    query:
+      type: string
+      title: Query
+      description: 用户输入
+    history:
+      type: array
+      items:
+        type: object
+        properties:
+          role:
+            type: string
+            description: 角色
+          content:
+            type: string
+            description: 内容
+      title: History
+      description: 历史记录
+    tool:
+      $ref: './tool_interrupt_info.yaml#/tool_interrupt_info'
+      title: Tool
+      description: 发生中断时，需要用户进行干预的工具信息
+    header:
+      type: object
+      title: Header
+      description: 请求头
+    # self_config:
+    #   type: object
+    #   title: Self Config
+    #   description: 当前agent的配置信息
+  additionalProperties: true
+  type: object
+  required:
+  - query
+  title: AgentInput
+  description: Agent输入模型

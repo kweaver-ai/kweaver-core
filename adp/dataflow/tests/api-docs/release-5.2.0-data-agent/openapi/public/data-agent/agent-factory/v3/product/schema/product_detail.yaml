@@ -1,0 +1,21 @@
+product_detail:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: 产品ID
+    name:
+      type: string
+      description: 产品名称
+    key:
+      type: string
+      description: 产品标识
+    profile:
+      type: string
+      description: 产品简介
+    created_at:
+      type: integer
+      description: 创建时间（时间戳，单位：ms）
+    updated_at:
+      type: integer
+      description: 更新时间（时间戳，单位：ms）

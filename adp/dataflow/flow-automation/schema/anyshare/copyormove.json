@@ -1,0 +1,72 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "复制或移动",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "destparent": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "ondup": {
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
+                }
+            },
+            "required": [
+                "docid",
+                "destparent",
+                "ondup"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

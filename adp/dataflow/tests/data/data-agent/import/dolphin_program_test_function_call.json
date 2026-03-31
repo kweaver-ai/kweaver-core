@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01KACTM52R48HSHJZQCRZ1JV3K",
+      "name": "dolphin_program_test_function_call",
+      "key": "01KACTM52R48HSHJZQCSXG6CGV",
+      "profile": "测试函数调用,工具是zhipu_search_tool，api_key通过参数传递",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1763514651737,
+      "updated_at": 1763515007769,
+      "created_by": "1ced8576-a66b-11f0-a5c5-52328408123a",
+      "updated_by": "1ced8576-a66b-11f0-a5c5-52328408123a",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"\",\"dolphin\":\"/prompt/请输出：我将调用智普联网搜索回答你的问题...不要输出其他内容 -\\u003e welcome\\r\\n\\\"1828616286d4c94b26071585e1f93009.negnhMi3D5KVuc7h\\\" -\\u003e key\\r\\n@zhipu_search_tool(query=$query,api_key=$key)-\\u003eresult\\r\\n/explore/用户的问题：$query\\r\\n参考信息：$result\\r\\n回答 -\\u003e answer\",\"is_dolphin_mode\":1,\"pre_dolphin\":[{\"key\":\"context_organize\",\"name\":\"上下文组织模块\",\"value\":\"\\n{\\\"query\\\": \\\"用户的问题为: \\\"+$query} -\\u003e context\\n\",\"enabled\":true,\"edited\":false}],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[{\"tool_id\":\"zhipu_search_tool\",\"tool_box_id\":\"939bb1db-9239-43f5-8100-ba03eed683db\",\"tool_timeout\":300,\"tool_input\":[{\"input_name\":\"api_key\",\"input_type\":\"string\",\"input_desc\":\"智谱API密钥\",\"map_type\":\"auto\",\"map_value\":\"\",\"enable\":true},{\"input_name\":\"query\",\"input_type\":\"string\",\"input_desc\":\"搜索查询词\",\"map_type\":\"auto\",\"map_value\":\"\",\"enable\":true}],\"intervention\":false,\"result_process_strategies\":null}],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1976903244600971264\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"answer\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":false},\"related_question\":{\"is_enabled\":false},\"plan_mode\":null,\"metadata\":{\"config_version\":\"v1\"}}",
+      "created_type": "copy",
+      "create_from": "dip"
+    }
+  ]
+}

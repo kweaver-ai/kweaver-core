@@ -1,0 +1,26 @@
+{
+  "kn_search": {
+    "name": "kn_search",
+    "description": "知识网络检索 v2。根据 query 召回相关概念（对象类/关系类/动作类）及可选语义实例。适用于探索发现：不确定有哪些对象类/关系类/动作类时。"
+  },
+  "kn_schema_search": {
+    "name": "kn_schema_search",
+    "description": "语义检索概念（Schema）。当不确定有哪些对象类/关系类/动作类时使用，返回相关 concepts。"
+  },
+  "query_object_instance": {
+    "name": "query_object_instance",
+    "description": "单对象类实例过滤查询。已知对象类与过滤条件时，查询实例列表。"
+  },
+  "query_instance_subgraph": {
+    "name": "query_instance_subgraph",
+    "description": "沿关系路径拉取实例子图，支持多跳关系查询。"
+  },
+  "get_logic_properties_values": {
+    "name": "get_logic_properties_values",
+    "description": "逻辑属性解析（指标/算子）。针对实例批量计算逻辑属性值。"
+  },
+  "get_action_info": {
+    "name": "get_action_info",
+    "description": "行动信息召回。针对对象实例返回可执行行动的工具定义。"
+  }
+}

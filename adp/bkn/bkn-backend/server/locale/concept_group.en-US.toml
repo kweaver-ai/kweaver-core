@@ -1,0 +1,185 @@
+# ConceptGroup
+[BknBackend.ConceptGroup.Duplicated.Name]
+Description = "Same Konwledge Network Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter.ConceptCondition]
+Description = "Invalid Concept Condition Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter.Direction]
+Description = "Invalid Direction Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter.IncludeStatistics]
+Description = "Invalid Include Statistics Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter.IncludeTypeInfo]
+Description = "Invalid Include Type Info Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InvalidParameter.PathLength]
+Description = "Invalid Path Length Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ConceptGroupIDExisted]
+Description = "Same ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ConceptGroupNameExisted]
+Description = "Same Concept Group Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ConceptGroupRelationExisted]
+Description = "Same Concept Group Relation Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ConceptGroupRelationNotExisted]
+Description = "Same Concept Group Relation Not Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.LengthExceeded.Name]
+Description = "The Length of Concept Group Name Out of Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.NullParameter.Direction]
+Description = "Direction Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.NullParameter.Name]
+Description = "Concept Group Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.NullParameter.SourceObjectTypeId]
+Description = "Source Object Type Id Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ConceptGroupNotFound]
+Description = "The Concept Group Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.ObjectTypeNotFound]
+Description = "The Object Type Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.AddObjectTypesToConceptGroupFailed]
+Description = "Add Object Types To Group Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.MissingTransaction]
+Description = "Missing Transaction"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.BeginTransactionFailed]
+Description = "Begin Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.BindBusinessDomainFailed]
+Description = "Bind Business Domain Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.UnbindBusinessDomainFailed]
+Description = "Unbind Business Domain Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CheckConceptGroupIfExistFailed]
+Description = "Check Concept Group Exist Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.GetConceptGroupByIDFailed]
+Description = "Get Concept Group By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.UpdateConceptGroupFailed]
+Description = "Update Concept Group Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateConceptGroupFailed]
+Description = "Create Concept Group Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateConceptGroupRelationFailed]
+Description = "Create Concept Group Relation Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateResourcesFailed]
+Description = "Create Concept Group Resources Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.GetActionTypesTotalFailed]
+Description = "Get Action Types Total Failed Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.GetConceptIDsByConceptGroupIDsFailed]
+Description = "Get Concept IDs By Concept Group ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.GetRelationTypesTotalFailed]
+Description = "Get Relation Types Total In Concept Group Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.GetVectorFailed]
+Description = "Get Concept Group Vector Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.InsertOpenSearchDataFailed]
+Description = "Insert Concept Group Data Into OpenSearch Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateObjectTypesFailed]
+Description = "Failed to create object types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateRelationTypesFailed]
+Description = "Failed to create relation types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ConceptGroup.InternalError.CreateActionTypesFailed]
+Description = "Failed to create action types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

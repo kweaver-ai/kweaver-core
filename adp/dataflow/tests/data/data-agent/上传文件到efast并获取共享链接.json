@@ -1,0 +1,59 @@
+[
+    {
+    "tool_id": "5141613b-3ecf-41cb-ab9e-bebfbeb1e2e4",
+    "tool_box_id": "d8332414-e923-4a46-9437-62d2c8847d7c",
+    "tool_timeout": 300,
+    "tool_input": [
+        {
+        "input_name": "session_id",
+        "input_type": "string",
+        "input_desc": "",
+        "map_type": "var",
+        "map_value": "self_config.conversation_id",
+        "enable": true
+        },
+        {
+        "input_name": "efast_url",
+        "input_type": "string",
+        "input_desc": "URL(可选,如果不提供则使用settings中的默认值)",
+        "map_type": "fixedValue",
+        "map_value": "https://192.168.232.11",
+        "enable": true
+        },
+        {
+        "input_name": "file_path",
+        "input_type": "string",
+        "input_desc": "文件路径(相对于session_dir,包含文件名)",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+        },
+        {
+        "input_name": "folder_id",
+        "input_type": "string",
+        "input_desc": "目标文件夹ID",
+        "map_type": "var",
+        "map_value": "docid",
+        "enable": true
+        },
+        {
+        "input_name": "timeout",
+        "input_type": "integer",
+        "input_desc": "超时时间(秒,可选)",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "token",
+        "input_type": "string",
+        "input_desc": "认证令牌(可选,如果不提供则使用settings中的默认值)",
+        "map_type": "var",
+        "map_value": "header.token",
+        "enable": true
+        }
+    ],
+    "intervention": false,
+    "result_process_strategies": null
+    }
+]

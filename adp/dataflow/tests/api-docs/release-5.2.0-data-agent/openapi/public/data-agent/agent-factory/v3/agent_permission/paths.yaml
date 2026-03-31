@@ -1,0 +1,123 @@
+
+paths:
+  /agent-factory/v3/agent-permission/list-btn:
+    get:
+      operationId: pmsListBtn
+      summary: 获取列表中有权限的操作按钮
+      description: |
+        - 获取列表中有权限的操作按钮
+          - 这里暂时不针对某个具体的资源实例，而是针对资源类型和所处的场景
+            - 管理权限和具体的资源实例无关，使用权限和数据权限统一（没有使用权限的不展示在列表中）
+      tags:
+        - 权限-ignore
+      parameters:
+        - name: resource_type
+          in: query
+          description: |
+            - 资源类型
+              - agent: agent  
+              - agent_tpl: agent模板
+          schema:
+            type: string
+            enum: [agent, agent_tpl]
+          required: true
+        - name: from
+          in: query
+          description: |
+            - 来自（场景）
+              - personal_space: 个人空间
+              - custom_space: 自定义空间
+              - square: 广场
+            - 目前resource_type=agent_tpl时，from只能是square和personal_space
+          schema:
+            type: string
+            enum: [personal_space, custom_space, square]
+          required: true
+        - name: custom_space_id
+          in: query
+          description: 自定义空间id（from=custom_space时有效）
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/list_btn.yaml#/list_btn'  
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent-permission/execute:
+    post:
+      operationId: pmsExecute
+      summary: 检查某个agent是否有执行（使用）权限
+      deprecated: false
+      description: |
+        - 检查某个agent是否有执行（使用）权限
+        - 此接口有`内部接口`和`外部接口`
+      tags:
+        - 权限
+        - 权限-internal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/check_run_req.yaml#/check_run_req'
+
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_allowed:
+                    type: boolean
+                    description: 是否有执行（使用）权限
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent-permission/management/user-status:
+    get:
+      operationId: pmsUserStatus
+      summary: 获取用户拥有的管理权限状态
+      description: |
+        - 获取用户拥有的管理权限状态
+          - 这里暂时不针对某个具体的资源实例，而是针对资源类型
+            - 管理权限和具体的资源实例无关
+      tags:
+        - 权限
+        - 权限-internal
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/user_status.yaml#/user_status'  
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      

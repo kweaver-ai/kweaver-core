@@ -1,0 +1,104 @@
+publish_info:
+  type: object
+  properties:
+#    category_id:
+#      type: string
+#      description: 分类 ID
+#    category_name:
+#      type: string
+#      description: 分类名称
+    categories:
+      type: array
+      description: 分类列表
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: 分类 ID
+          name:
+            type: string
+            description: 分类名称
+    description:
+      type: string
+      description: 发布描述
+    publish_to_where:
+      $ref: './publish_to_where.yaml#/publish_to_where'
+    # custom_spaces:
+    #   type: array
+    #   description: 自定义空间ID列表，当publish_to包含custom_space时有效
+    #   items:
+    #     type: object
+    #     properties:
+    #       space_id:
+    #         type: string
+    #         description: 自定义空间ID
+    #       space_name:
+    #         type: string
+    #         description: 自定义空间名称
+    pms_control:  
+      type: object
+      description: 权限控制信息
+      properties:
+        roles:
+          type: array
+          description: 角色列表
+          items:
+            type: object
+            properties:
+              role_id:
+                type: string
+                description: 角色ID
+              role_name:
+                type: string
+                description: 角色名称
+        user:
+          type: array
+          description: 用户列表
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                description: 用户ID
+              username:
+                type: string
+                description: 用户名称
+        user_group:
+          type: array
+          description: 用户组列表
+          items:
+            type: object
+            properties:
+              user_group_id:
+                type: string
+                description: 用户组ID
+              user_group_name:
+                type: string
+                description: 用户组名称
+        department:
+          type: array
+          description: 部门列表
+          items:
+            type: object
+            properties:
+              department_id:
+                type: string
+                description: 部门ID
+              department_name:
+                type: string
+                description: 部门名称
+        app_account:
+          type: array
+          description: 应用账号列表
+          items:
+            type: object
+            properties:
+              app_account_id:
+                type: string
+                description: 应用账号ID
+              app_account_name:
+                type: string
+                description: 应用账号名称
+    publish_to_bes:
+      $ref: './publish_to_bes.yaml#/publish_to_bes'

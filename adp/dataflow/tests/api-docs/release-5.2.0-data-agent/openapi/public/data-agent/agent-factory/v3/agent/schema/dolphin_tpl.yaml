@@ -1,0 +1,41 @@
+dolphin_tpl_req:
+  type: object
+  description: dolphin块的配置
+  properties:
+    key:
+      type: string
+      description: dolphin块的key
+    name:
+      type: string
+      description: dolphin块的名称
+    value:
+      type: string
+      description: dolphin块的dolphin语句
+    enabled:
+      type: boolean
+      description: 是否启用
+      default: true
+    edited:
+       type: boolean
+       description: 是否编辑过
+       default: false
+  required:
+    - key
+    - value
+
+dolphin_tpl_res:
+  type: object
+  description: dolphin块的配置
+  properties:
+    key:
+      type: string
+      description: dolphin块的key
+    name:
+      type: string
+      description: dolphin块的名称
+    value:
+      type: string
+      description: dolphin块的dolphin语句
+  required:
+    - key
+    - value

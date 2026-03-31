@@ -1,0 +1,513 @@
+openapi: 3.0.3
+info:
+  title: MCP服务内部接口
+  version: 1.0.1
+  description: |
+    本OpenAPI文档包含MCP服务市场接口、MCP服务执行接口，涵盖服务端与执行端所有RESTful接口，便于统一查阅与开发。
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration/internal-v1
+security:
+  - BearerAuth: []
+tags:
+  - name: MCP Server Execute
+    description: 执行MCP服务下的工具列表与调用接口
+  - name: MCP Server Proxy
+    description: MCP服务代理接口
+  - name: MCP Server Builtin Manage
+    description: 内置MCP服务管理接口
+paths:
+  /mcp/execute/tool/:mcp_tool_id:
+    post:
+      tags: [MCP Server Execute]
+      summary: MCP工具执行接口
+      description: MCP工具执行接口，作为MCP Server ToolHandler的实际执行方，执行工具的实际逻辑
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+        - name: mcp_tool_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MCP工具ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/APIProxyRequest"
+      responses:
+        "200":
+          description: 成功返回工具调用结果（CallToolResult结构）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyResponse"
+        "400":
+          description: 工具调用参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 工具执行或服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  # 代理端接口
+  /mcp/proxy/{mcp_id}/tools:
+    get:
+      tags: [MCP Server Proxy]
+      summary: 代理获取MCP工具列表
+      description: 通过代理的方式，获取指定MCP服务的工具列表，作为MCP Client的代理方，上游调用方不需要使用MCP Client，直接调用此接口获取工具列表
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+        - name: user_id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 用户ID
+        - name: mcp_id
+          in: path
+          description: MCP Server ID
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功返回工具列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpProxyToolListResponse"
+        "404":
+          description: 未找到MCP服务
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /mcp/proxy/{mcp_id}/tool/call:
+    post:
+      tags: [MCP Server Proxy]
+      summary: 代理调用MCP工具
+      description: 通过代理的方式，调用指定MCP服务的工具，作为MCP Client的代理方，上游调用方不需要使用MCP Client，直接调用此接口调用工具
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+        - name: user_id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 用户ID
+        - name: mcp_id
+          in: path
+          description: MCP Server ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/McpProxyCallToolRequest"
+      responses:
+        "200":
+          description: 成功返回工具调用结果（CallToolResult结构）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/McpProxyCallToolResponse"
+        "400":
+          description: 工具调用参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 工具执行或服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /mcp/intcomp/register:
+    post:
+      tags: [MCP Server Builtin Manage]
+      summary: 注册内置MCP服务
+      description: 注册内置MCP服务
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MCPBuiltinRegisterRequest"
+      responses:
+        "200":
+          description: 成功返回注册结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mcp_id:
+                    type: string
+                    description: MCP Server ID
+                  status:
+                    type: string
+                    enum: [unpublish, published, offline, editing]
+                    description: |
+                      状态：
+                      unpublish: 未发布
+                      published: 已发布
+                      offline: 已下架
+        "400":
+          description: 注册参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 注册失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /mcp/intcomp/unregister/{mcp_id}:
+    post:
+      tags: [MCP Server Builtin Manage]
+      summary: 注销内置MCP服务
+      parameters:
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+        - name: mcp_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 成功返回注销结果
+        "400":
+          description: 注销参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 注销失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Tool:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 工具名称
+        description:
+          type: string
+          description: 工具描述
+        inputSchema:
+          $ref: "#/components/schemas/ToolInputSchema"
+          description: 工具参数输入Schema，符合JSON Schema规范。详见ToolInputSchema结构说明。
+        annotations:
+          type: object
+          description: 工具注解信息
+          properties:
+            title:
+              type: string
+              description: 工具标题
+            readOnlyHint:
+              type: boolean
+              description: 是否只读
+            destructiveHint:
+              type: boolean
+              description: 是否有破坏性
+            idempotentHint:
+              type: boolean
+              description: 是否幂等
+            openWorldHint:
+              type: boolean
+              description: 是否与外部世界交互
+    ToolInputSchema:
+      type: object
+      description: 工具参数输入Schema，采用JSON Schema规范，便于前端自动生成参数填写表单、校验参数等。
+      properties:
+        type:
+          type: string
+          description: 参数类型，通常为object
+        properties:
+          type: object
+          description: 参数属性定义，key为参数名，value为参数schema（支持type、enum、description等JSON Schema字段）
+          additionalProperties: true
+        required:
+          type: array
+          items:
+            type: string
+          description: 必填参数名列表
+        $defs:
+          type: object
+          description: JSON Schema定义，用于定义可重用的schema片段，支持$ref引用
+          additionalProperties: true
+    TextContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: string
+    ImageContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [image]
+        data:
+          type: string
+        mimeType:
+          type: string
+    AudioContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [audio]
+        data:
+          type: string
+        mimeType:
+          type: string
+    EmbeddedResource:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [resource]
+        resource:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误描述
+        detail:
+          type: object
+          description: 错误详情
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接
+    McpProxyCallToolRequest:
+      type: object
+      properties:
+        tool_name:
+          type: string
+          description: 工具名称
+        parameters:
+          type: object
+          additionalProperties: true
+          description: 工具请求参数
+      required: [mcp_id, tool_name, parameters]
+    McpProxyCallToolResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: 工具调用结果内容
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/TextContent"
+              - $ref: "#/components/schemas/ImageContent"
+              - $ref: "#/components/schemas/AudioContent"
+              - $ref: "#/components/schemas/EmbeddedResource"
+        isError:
+          type: boolean
+          description: 是否为错误
+    McpProxyToolListResponse:
+      type: object
+      properties:
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tool"
+    MCPServerUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+          enum: [sse, stream]
+        url:
+          type: string
+          description: 服务URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        command:
+          type: string
+          description: 运行命令
+        env:
+          type: object
+          description: 环境变量
+          additionalProperties:
+            type: string
+        args:
+          type: array
+          items:
+            type: string
+          description: 运行参数
+        source:
+          type: string
+          description: "工具来源"
+          default: "internal"
+          enum: ["custom", "internal"]
+        category:
+          type: string
+          description: 分类
+      required: [mode]
+    MCPBuiltinRegisterRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MCPServerUpdateRequest"
+        - type: object
+          properties:
+            mcp_id:
+              type: string
+              description: MCP Server ID， 业务方需要保证唯一性
+            protected_flag:
+              type: boolean
+              description: 手动配置保护锁，当前版本周期内保护标志，如果开启锁保护，禁止自动更新操作
+            config_version:
+              type: string
+              description: 配置版本
+            config_source:
+              type: string
+              description: 配置更新方式：(auto自动/manual手动)
+              enum: [auto, manual]
+
+          required:
+            - config_version
+            - name
+            - description
+            - mode
+            - source
+            - category
+            - config_source
+            - mcp_id
+    MCPBuiltinUnregisterRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MCPServerDeleteRequest"
+    MCPServerDeleteRequest:
+      type: object
+      properties:
+        mcp_id:
+          type: string
+          description: MCP Server ID
+      required:
+        - mcp_id
+    APIProxyRequest:
+      type: object
+      required:
+        - execution_mode
+      properties:
+        header:
+          type: object
+          description: "请求头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "请求体参数"
+        query:
+          type: object
+          description: "查询参数"
+          additionalProperties:
+            type: string
+        path:
+          type: object
+          description: "路径参数"
+          additionalProperties:
+            type: string
+    APIProxyResponse:
+      type: object
+      properties:
+        status_code:
+          type: integer
+          description: "HTTP状态码"
+        headers:
+          type: object
+          description: "响应头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "响应体"
+          format: binary
+        error:
+          type: string
+          description: "错误信息"
+      required:
+        - status_code

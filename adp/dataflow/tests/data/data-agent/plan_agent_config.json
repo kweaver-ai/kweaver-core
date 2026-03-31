@@ -1,0 +1,48 @@
+[
+    {
+        "agent_key": "Plan_Agent",
+        "agent_version": "v0",
+        "agent_input": [
+            {
+                "enable": true,
+                "input_name": "query",
+                "input_type": "string",
+                "map_type": "auto",
+                "input_desc": "query变量"
+            }
+        ],
+        "intervention": false,
+        "data_source_config": {
+            "type": "self_configured"
+        },
+        "llm_config": {
+            "type": "self_configured"
+        },
+        "details": {
+            "tool_type": "agent",
+            "tool_id": "Plan_Agent",
+            "tool_name": "Plan_Agent",
+            "tool_box_id": "built-in-agent",
+            "tool_box_name": "Agent",
+            "tool_desc": "负责规划任务的Agent",
+            "intervention": false,
+            "tool_input": [
+                {
+                    "enable": true,
+                    "input_name": "query",
+                    "input_type": "string",
+                    "map_type": "auto",
+                    "input_desc": "query变量"
+                }
+            ],
+            "agent_version": "v0",
+            "agent_key": "Plan_Agent",
+            "data_source_config": {
+                "type": "self_configured"
+            },
+            "llm_config": {
+                "type": "self_configured"
+            }
+        }
+    }
+]

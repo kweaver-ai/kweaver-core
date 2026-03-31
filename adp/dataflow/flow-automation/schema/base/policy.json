@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "服务开关",
+    "description": "put /switch",
+    "type": "object",
+    "properties": {
+        "status": {
+            "description": "开关状态",
+            "type": "boolean"
+        }
+    },
+    "required": ["status"],
+    "additionalProperties": false
+}

@@ -1,0 +1,52 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_knowledge_network",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_detail",
+        "new_name": "f_bkn_raw_content",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "BKNRawContent"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_object_type",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_detail",
+        "new_name": "f_bkn_raw_content",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "BKNRawContent"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_relation_type",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_detail",
+        "new_name": "f_bkn_raw_content",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "BKNRawContent"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_action_type",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_detail",
+        "new_name": "f_bkn_raw_content",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "BKNRawContent"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_concept_group",
+        "object_type": "COLUMN",
+        "operation_type": "RENAME",
+        "object_name": "f_detail",
+        "new_name": "f_bkn_raw_content",
+        "object_property": "MEDIUMTEXT DEFAULT NULL",
+        "object_comment": "BKNRawContent"
+    }
+]

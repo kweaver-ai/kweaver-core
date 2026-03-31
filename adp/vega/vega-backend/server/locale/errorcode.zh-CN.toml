@@ -1,0 +1,190 @@
+[VegaBackend.InvalidParameter.Name]
+Description = "无效的名称"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Tag]
+Description = "无效的标签"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Description]
+Description = "无效的描述"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.RequestBody]
+Description = "无效的请求体"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Limit]
+Description = "无效的分页限制参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Offset]
+Description = "无效的分页偏移参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Sort]
+Description = "无效的排序参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Direction]
+Description = "无效的排序方向参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.ID]
+Description = "无效的ID参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.OverrideMethod]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Format]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.FilterCondition]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.FilterConditionValue]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.FilterConditionValueFrom]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.NullParameter.FilterConditionName]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.NullParameter.FilterConditionValue]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.NullParameter.FilterConditionOperation]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.CountExceeded.FilterConditionSubConds]
+Description = "无效的参数"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.UnsupportFilterConditionOperation]
+Description = "不支持的过滤器操作符"
+Solution = "请检查参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidRequestHeader.ContentType]
+Description = "不支持的Content-Type请求头"
+Solution = "请检查请求头"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.BeginTransactionFailed]
+Description = "开启事务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.CommitTransactionFailed]
+Description = "提交事务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.MarshalDataFailed]
+Description = "序列化数据失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.UnMarshalDataFailed]
+Description = "反序列化数据失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.CheckPermissionFailed]
+Description = "权限检查失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.CreateResourcesFailed]
+Description = "创建资源权限失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.DeleteResourcesFailed]
+Description = "删除资源权限失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.FilterResourcesFailed]
+Description = "过滤资源权限失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.InternalError.UpdateResourceFailed]
+Description = "更新资源权限失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+# Query 模块错误码
+[VegaBackend.Query.InvalidParameter]
+Description = "查询参数非法"
+Solution = "请检查请求参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.InvalidParameter.QueryIDRequired]
+Description = "query_id 为必填项"
+Solution = "请提供 query_id"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.InvalidParameter.LimitExceeded]
+Description = "limit 不能超过 10000"
+Solution = "请调整 limit 参数"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.InvalidParameter.JoinTableNotInTables]
+Description = "JOIN 中的表别名不在 tables 中"
+Solution = "请检查 joins 配置"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.CatalogNotFound]
+Description = "Catalog 不存在"
+Solution = "请检查 catalog_id"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.ResourceNotFound]
+Description = "Resource 不存在"
+Solution = "请检查 resource_id"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.SessionExpired]
+Description = "查询 session 已过期"
+Solution = "请重新执行查询"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.MultiCatalogNotSupported]
+Description = "暂不支持多数据源 JOIN"
+Solution = "计划使用 Trino/DuckDB 实现"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.ExecuteFailed]
+Description = "执行查询失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"

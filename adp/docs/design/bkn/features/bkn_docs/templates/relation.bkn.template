@@ -1,0 +1,34 @@
+---
+type: relation
+id: {relation_id}
+name: {关系名称}
+version: 1.0.0
+spec_version: 1.0.0
+network: {network_id}
+namespace: {namespace}
+owner: {owner}
+tags: [{标签1}, {标签2}]
+---
+
+# {关系名称}
+
+{详细描述}
+
+## 关联定义
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| {source_entity} | {target_entity} | direct |
+
+## 映射规则
+
+| 起点属性 | 终点属性 |
+|----------|----------|
+| {source_prop} | {target_prop} |
+
+## 业务语义
+
+{关系的业务含义说明}
+
+- **基数**: N:1 | 1:N | N:M
+- **生命周期**: {生命周期说明}

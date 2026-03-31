@@ -1,0 +1,73 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "设置密级",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "templates": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        },
+                        {
+                            "type": "object",
+                            "patternProperties": {
+                                "^template_\\w+$": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^field_\\w+$": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "boolean",
+                                                "object",
+                                                "array",
+                                                "null"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "required": ["docid", "templates"],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": ["id", "operator", "parameters"],
+    "additionalProperties": false
+}

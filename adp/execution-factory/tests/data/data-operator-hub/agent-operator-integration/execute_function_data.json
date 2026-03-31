@@ -1,0 +1,156 @@
+[
+    {
+        "title": "函数块执行，传参正确，执行成功",
+        "code": "def main(event):\n    result = event.get('input', '')\n    return {'output': result}",
+        "event": {
+            "input": "test_function_execution"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，字典合并操作，执行成功",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    \"\"\"\n    处理字典数据，支持合并、提取、转换等操作。\n    \"\"\"\n    data1 = event.get(\"data1\", {})\n    data2 = event.get(\"data2\", {})\n    operation = event.get(\"operation\", \"merge\")\n    \n    if operation == \"merge\":\n        # 合并两个字典\n        result = {**data1, **data2}\n    elif operation == \"extract\":\n        # 提取指定键的值\n        keys = event.get(\"keys\", [])\n        result = {k: data1.get(k) for k in keys if k in data1}\n    elif operation == \"keys\":\n        # 获取所有键\n        result = list(data1.keys())\n    elif operation == \"values\":\n        # 获取所有值\n        result = list(data1.values())\n    else:\n        result = data1\n    \n    return {\n        \"statusCode\": 200,\n        \"body\": {\n            \"operation\": operation,\n            \"result\": result\n        }\n    }",
+        "event": {
+            "data1": {
+                "name": "Alice",
+                "age": 30,
+                "city": "Beijing"
+            },
+            "data2": {
+                "country": "China",
+                "age": 31
+            },
+            "operation": "merge"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，字典提取操作，执行成功",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data1 = event.get(\"data1\", {})\n    operation = event.get(\"operation\", \"extract\")\n    \n    if operation == \"extract\":\n        keys = event.get(\"keys\", [])\n        result = {k: data1.get(k) for k in keys if k in data1}\n    else:\n        result = data1\n    \n    return {\n        \"statusCode\": 200,\n        \"body\": {\n            \"operation\": operation,\n            \"result\": result\n        }\n    }",
+        "event": {
+            "data1": {
+                "name": "Bob",
+                "age": 25,
+                "city": "Shanghai",
+                "email": "bob@example.com"
+            },
+            "operation": "extract",
+            "keys": ["name", "email"]
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，获取字典所有键，执行成功",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data1 = event.get(\"data1\", {})\n    operation = event.get(\"operation\", \"keys\")\n    \n    if operation == \"keys\":\n        result = list(data1.keys())\n    else:\n        result = data1\n    \n    return {\n        \"statusCode\": 200,\n        \"body\": {\n            \"operation\": operation,\n            \"result\": result\n        }\n    }",
+        "event": {
+            "data1": {
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3"
+            },
+            "operation": "keys"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，获取字典所有值，执行成功",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data1 = event.get(\"data1\", {})\n    operation = event.get(\"operation\", \"values\")\n    \n    if operation == \"values\":\n        result = list(data1.values())\n    else:\n        result = data1\n    \n    return {\n        \"statusCode\": 200,\n        \"body\": {\n            \"operation\": operation,\n            \"result\": result\n        }\n    }",
+        "event": {
+            "data1": {
+                "a": 1,
+                "b": 2,
+                "c": 3
+            },
+            "operation": "values"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，code为空，执行失败",
+        "code": "",
+        "event": {
+            "input": "test"
+        },
+        "expected_status": 400
+    },
+    {
+        "title": "函数块执行，event为空，执行成功",
+        "code": "def main(event):\n    return {'output': 'default'}",
+        "event": {},
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，code语法错误，执行失败",
+        "code": "def main(event):\n    return {'output': 'test'  # 缺少右括号",
+        "event": {
+            "input": "test"
+        },
+        "expected_status": 400
+    },
+    {
+        "title": "函数块执行，函数返回复杂对象，执行成功",
+        "code": "def main(event):\n    return {\n        'output': event.get('input', ''),\n        'list': [1, 2, 3],\n        'dict': {'key': 'value'}\n    }",
+        "event": {
+            "input": "test_complex"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，必填参数code不传，执行失败",
+        "code": null,
+        "event": {
+            "input": "test"
+        },
+        "expected_status": 400
+    },
+    {
+        "title": "函数块执行，必填参数event不传，执行失败",
+        "code": "def main(event):\n    return {'output': 'test'}",
+        "event": null,
+        "expected_status": 400
+    },
+    {
+        "title": "函数块执行，处理列表数据，执行成功",
+        "code": "def main(event):\n    data_list = event.get('list', [])\n    operation = event.get('operation', 'sum')\n    \n    if operation == 'sum':\n        result = sum(data_list)\n    elif operation == 'max':\n        result = max(data_list) if data_list else None\n    elif operation == 'min':\n        result = min(data_list) if data_list else None\n    elif operation == 'length':\n        result = len(data_list)\n    else:\n        result = data_list\n    \n    return {\n        'operation': operation,\n        'result': result\n    }",
+        "event": {
+            "list": [1, 2, 3, 4, 5],
+            "operation": "sum"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，字符串处理操作，执行成功",
+        "code": "def main(event):\n    text = event.get('text', '')\n    operation = event.get('operation', 'upper')\n    \n    if operation == 'upper':\n        result = text.upper()\n    elif operation == 'lower':\n        result = text.lower()\n    elif operation == 'reverse':\n        result = text[::-1]\n    elif operation == 'length':\n        result = len(text)\n    else:\n        result = text\n    \n    return {\n        'operation': operation,\n        'result': result\n    }",
+        "event": {
+            "text": "Hello World",
+            "operation": "upper"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，数据过滤操作，执行成功",
+        "code": "def main(event):\n    data_list = event.get('data', [])\n    filter_key = event.get('filter_key', '')\n    filter_value = event.get('filter_value', '')\n    \n    if filter_key and filter_value:\n        result = [item for item in data_list if item.get(filter_key) == filter_value]\n    else:\n        result = data_list\n    \n    return {\n        'filtered_count': len(result),\n        'result': result\n    }",
+        "event": {
+            "data": [
+                {"name": "Alice", "age": 30, "city": "Beijing"},
+                {"name": "Bob", "age": 25, "city": "Shanghai"},
+                {"name": "Charlie", "age": 30, "city": "Beijing"}
+            ],
+            "filter_key": "city",
+            "filter_value": "Beijing"
+        },
+        "expected_status": 200
+    },
+    {
+        "title": "函数块执行，数据转换操作，执行成功",
+        "code": "def main(event):\n    data = event.get('data', {})\n    transform_type = event.get('transform_type', 'to_list')\n    \n    if transform_type == 'to_list':\n        result = list(data.items())\n    elif transform_type == 'to_string':\n        result = str(data)\n    elif transform_type == 'keys_to_list':\n        result = list(data.keys())\n    elif transform_type == 'values_to_list':\n        result = list(data.values())\n    else:\n        result = data\n    \n    return {\n        'transform_type': transform_type,\n        'result': result\n    }",
+        "event": {
+            "data": {
+                "key1": "value1",
+                "key2": "value2"
+            },
+            "transform_type": "to_list"
+        },
+        "expected_status": 200
+    }
+]

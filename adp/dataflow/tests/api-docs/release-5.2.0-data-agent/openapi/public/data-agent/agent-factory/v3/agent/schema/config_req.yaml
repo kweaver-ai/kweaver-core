@@ -1,0 +1,103 @@
+config:
+  type: object
+  properties:
+    input:
+      $ref: './input.yaml#/input'
+    system_prompt:
+      type: string
+      description: 系统提示词
+    dolphin:
+      type: string
+      description: dolphin语句
+    pre_dolphin:
+      type: array
+      items:
+        $ref: './dolphin_tpl.yaml#/dolphin_tpl_req'
+      description: 在用户自定义dolphin之前执行的内置dolphin语句
+    post_dolphin:
+      type: array
+      items:
+        $ref: './dolphin_tpl.yaml#/dolphin_tpl_req'
+      description: 在用户自定义dolphin之后执行的内置dolphin语句
+    is_dolphin_mode:
+      type: integer
+      description: 是否是dolphin模式
+      enum: [ 0, 1 ]
+      default: 0
+    data_source:
+      description: 数据源
+      $ref: './retriever_data_source.yaml#/retriever_data_source'
+    skills:
+      type: object
+      properties:
+        tools:
+          $ref: './config_skill_tool.yaml#/tools'
+        agents:
+          $ref: './config_skill_agent.yaml#/agents'
+        mcps:
+          $ref: './config_skill_mcp.yaml#/mcps'
+    llms:
+      type: array
+      items:
+        type: object
+        properties:
+          is_default:
+            type: boolean
+            description: 是否默认（从选择的所有llm中选择一个为默认llm）
+          llm_config:
+            $ref: './llm_config.yaml#/llm_config'
+    is_data_flow_set_enabled:
+      type: integer
+      description: 是否启用数据流设置
+      enum: [ 0, 1 ]
+      example: 0
+    opening_remark_config:
+      type: object
+      required:
+        - type
+      description: 开场白配置
+      properties:
+        type:
+          type: string
+          description: 开场白类型（固定/动态）
+          enum: [ "fixed", "dynamic" ]
+          example: "fixed"
+        fixed_opening_remark:
+          type: string
+          description: 固定开场白
+          example: ""
+        dynamic_opening_remark_prompt:
+          type: string
+          description: 动态开场白提示语
+          example: ""
+      example: ""
+    preset_questions:
+      type: array
+      description: |
+        - 预设问题列表
+      items:
+        type: object
+        required:
+          - question
+        properties:
+          question:
+            type: string
+            description: 问题内容
+            example: ""
+    output:
+      $ref: './output.yaml#/output'
+    built_in_can_edit_fields:
+      $ref: './built_in_can_edit_fields.yaml#/built_in_can_edit_fields'
+    memory:
+      $ref: './memory.yaml#/memory'
+    related_question:
+      $ref: './related_question.yaml#/related_question'
+    plan_mode:
+      $ref: './plan_mode.yaml#/plan_mode'
+    config_metadata:
+      $ref: './config_metadata.yaml#/config_metadata'
+  required:
+    - input
+    - llms
+    - output
+  description: data agent配置

@@ -1,0 +1,36 @@
+# 审计日志-loglevel
+ID_AUDIT_LEVEL_INFO = "信息"
+
+ID_AUDIT_LEVEL_WARNING = "警告"
+
+
+# 审计日志-logtype
+ID_AUDIT_ACCESS_LOG = "访问日志"
+
+ID_AUDIT_MANAGEMENT_LOG = "管理日志"
+
+ID_AUDIT_ACTION_LOG = "操作日志"
+
+# 审计日志-action
+ID_AUDIT_ACTION_CREATE = "新建"
+
+ID_AUDIT_ACTION_DELETE = "删除"
+
+ID_AUDIT_ACTION_UPDATE = "修改"
+
+ID_AUDIT_ACTION_PAUSE = "暂停"
+
+ID_AUDIT_ACTION_START = "启动"
+
+# 审计日志-结果
+ID_AUDIT_SUCCESS = "成功"
+
+ID_AUDIT_FAILED = "失败"
+
+# 审计日志-对象类型
+ID_AUDIT_STREAM_DATA_PIPELINE = "流式数据管道"
+
+# 审计日志-公共部分
+ID_AUDIT_UNKNOWN_USER = "未知用户"
+
+ID_AUDIT_UNKNOWN_IP = "未知IP"

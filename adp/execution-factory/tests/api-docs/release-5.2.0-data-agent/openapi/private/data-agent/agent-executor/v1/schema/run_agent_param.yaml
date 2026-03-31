@@ -1,0 +1,28 @@
+run_agent_param:
+  properties:
+    id:
+      type: string
+      title: id
+      description: agent id
+      example: '1830930776523276288'
+    config:
+      allOf:
+      - $ref: './agent_config.yaml#/agent_config'
+      title: config
+      description: agent配置
+    input:
+      allOf:
+      - $ref: './agent_input.yaml#/agent_input'
+      title: input
+      description: agent输入
+      example:
+        query: 你好
+    _options:
+      allOf:
+      - $ref: './agent_options.yaml#/agent_options'
+      title: options
+      description: Agent运行选项
+  type: object
+  required:
+    - input
+  title: RunAgentParam
