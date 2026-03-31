@@ -10,11 +10,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
-The KWeaver project includes KWeaver Core and KWeaver DIP.
-
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliable in complex enterprises.
-
-KWeaver DIP is an AI-native platform for developing and managing digital employees, built on business knowledge networks for understandable, executable, and governable enterprise intelligence.
 
 ## 📚 Quick Links
 
@@ -80,8 +76,6 @@ kubectl get pods -A
 │  ┌───────────────────────────────────────┐  │
 │  │           KWeaver SDK                 │  │
 │  ├───────────────────────────────────────┤  │
-│  │           KWeaver DIP                 │  │
-│  ├───────────────────────────────────────┤  │
 │  │           KWeaver Core                │  │
 │  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
@@ -92,7 +86,6 @@ kubectl get pods -A
 | Sub-project | Description | Repository |
 | --- | --- | --- |
 | **KWeaver SDK** | CLI and SDK (TypeScript/Python) for AI agents and developers to access KWeaver knowledge networks and Decision Agents programmatically | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
-| **KWeaver DIP** | Include AI application and component marketplace, DIP Studio - Visual development and management interface | [AI Store](https://github.com/kweaver-ai/ai-store)<br>[DIP Studio](https://github.com/kweaver-ai/studio)|
 | **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
 
 ## KWeaver SDK
@@ -363,22 +356,6 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 | **TCO Reduction** | 70% lower with integrated platform |
 | **BKN Build Efficiency** | 300% improvement in knowledge network construction |
 | **Token Cost Savings** | 50% reduction through context optimization and compression |
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](rules/CONTRIBUTING.md) for details on how to contribute to this project.
-
-Quick start:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.
 
 ## 💬 Community
 
