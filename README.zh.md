@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/dark.png" />
-    <source media="(prefers-color-scheme: light)" srcset="assets/logo/light.png" />
-    <img alt="KWeaver" src="assets/logo/light.png" width="320" />
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="./assets/logo/light.png" />
+    <img alt="KWeaver" src="./assets/logo/light.png" width="320" />
   </picture>
 </p>
 
@@ -17,6 +17,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 - 🌐 [在线体验](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - 在线试用 KWeaver（用户名：`kweaver`，密码：`111111`）
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
+- 📘 [产品文档](docs/) - 产品文档与使用指南
 - 📝 [博客](https://kweaver-ai.github.io/kweaver/) - KWeaver 技术文章与更新
 - 🚀 [发布规范](rules/RELEASE.zh.md) - 版本管理与发布流程
 - 🏗️ [架构规范](rules/ARCHITECTURE.zh.md) - 架构设计规范
@@ -68,6 +69,8 @@ kubectl get pods -A
    - 部署工作台：`https://<节点IP>/deploy`，账号 `admin`，初始密码 `eisoo.com`
    - KWeaver 页面：`https://<节点IP>/studio`
 
+> **尚未部署？** 可先使用[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)快速体验（用户名：`kweaver`，密码：`111111`）。
+
 ### 核心子系统
 
 | 子项目 | 描述 | 仓库地址 |
@@ -113,6 +116,42 @@ kweaver auth login https://your-kweaver-instance.com
 > ```bash
 > kweaver auth login https://your-kweaver-instance.com -k
 > ```
+
+### 使用 Demo 环境快速体验
+
+无需部署 — 将 AI Agent 连接到[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)即可立即上手：
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
+  --skill kweaver-core --skill create-bkn
+
+npm install -g @kweaver-ai/kweaver-sdk
+kweaver auth login https://dip-poc.aishu.cn
+```
+
+然后在 AI 编程助手（Cursor、Claude Code 等）中通过自然语言提问：
+
+```
+列出所有知识网络
+这个知识网络里面有什么
+搜索业务知识网络中关于"供应链风险"的内容
+查看两个客户的样例
+有哪些 Agent
+跟 Agent xxx 对话，问他"当前库存情况"
+```
+
+或使用 `/kweaver-core` 斜杠命令（skill 会自动接管）：
+
+```
+/kweaver-core 列出所有知识网络
+/kweaver-core 这个知识网络里面有什么
+/kweaver-core 搜索业务知识网络中关于"供应链风险"的内容
+/kweaver-core 查看两个客户的样例
+/kweaver-core 有哪些 Agent
+/kweaver-core 跟 Agent xxx 对话，问他"当前库存情况"
+```
+
+> **Demo 账号**：用户名 `kweaver`，密码 `111111`
 
 ### 无浏览器环境登录（SSH、CI、容器等）
 

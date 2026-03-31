@@ -68,18 +68,7 @@ kubectl get pods -A
    - Deployment console: `https://<node-ip>/deploy`, account `admin`, initial password `eisoo.com`
    - KWeaver Studio: `https://<node-ip>/studio`
 
-## Platform Architecture
-
-```text
-┌─────────────────────────────────────────────┐
-│                 KWeaver                     │
-│  ┌───────────────────────────────────────┐  │
-│  │           KWeaver SDK                 │  │
-│  ├───────────────────────────────────────┤  │
-│  │           KWeaver Core                │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
+> **No deployment yet?** Try the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) first (username: `kweaver`, password: `111111`).
 
 ### Core Subsystems
 
@@ -126,6 +115,42 @@ kweaver auth login https://your-kweaver-instance.com
 > ```bash
 > kweaver auth login https://your-kweaver-instance.com -k
 > ```
+
+### Try with Demo Environment
+
+No deployment needed — connect your AI agent to the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) and start exploring immediately:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
+  --skill kweaver-core --skill create-bkn
+
+npm install -g @kweaver-ai/kweaver-sdk
+kweaver auth login https://dip-poc.aishu.cn -k
+```
+
+Then ask your AI agent (Cursor, Claude Code, etc.) using natural language:
+
+```
+List all knowledge networks
+What object types are in the supply chain knowledge network?
+Search the supply chain knowledge network for "supply chain risks"
+Show 2 sample customer records
+List all Decision Agents
+Chat with Agent xxx, ask "What is the current inventory status?"
+```
+
+Or use `/kweaver-core` slash commands (the skill takes over automatically):
+
+```
+/kweaver-core List all knowledge networks
+/kweaver-core What's in the supply chain knowledge network?
+/kweaver-core Search knowledge network for "supply chain risks"
+/kweaver-core Show 2 sample customer records from the knowledge network
+/kweaver-core List all Decision Agents
+/kweaver-core Chat with Agent <agent-id>, ask "What is the current inventory status?"
+```
+
+> **Demo credentials**: username `kweaver`, password `111111`
 
 ### Headless login (SSH, CI, containers — no browser)
 
