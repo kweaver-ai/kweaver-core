@@ -1,0 +1,15 @@
+Content:
+  type: object
+  properties:
+    text:
+      type: string
+    temp_files:
+      type: array
+      items:
+        $ref: './temp_file.yaml#/TempFile'
+    final_answer:
+      $ref: './final_answer.yaml#/FinalAnswer'
+    middle_answer:
+      type: array
+      items:
+        $ref: './middle_answer.yaml#/MiddleAnswer'

@@ -1,0 +1,108 @@
+.ad-universal-modal {
+  .ad-universal-modal-custom-content {
+    padding: 0 !important;
+  }
+
+  .agent-web-modal-close {
+    top: 8px;
+  }
+
+  .agent-web-modal-close-x {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    // height: 48px;
+    height: 32px;
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.65);
+    font-style: normal;
+    //line-height: 48px;
+    text-align: center;
+    text-transform: none;
+    text-rendering: auto;
+    // padding-right: 16px;
+  }
+
+  .agent-web-modal-content {
+    position: relative;
+    //background-color: unset;
+  }
+
+  .agent-web-modal-body {
+    padding: 0;
+  }
+
+  .ad-universal-modal-header {
+    height: 48px !important;
+    border-bottom: 1px solid var(--dip-line-color);
+  }
+
+  .ad-universal-modal-content {
+    min-height: 120px;
+    max-height: 552px;
+    padding: 20px 24px 28px;
+  }
+
+  .ad-universal-modal-footer {
+    position: static !important;
+    text-align: right;
+    width: 100%;
+    height: 56px;
+    padding: 12px 24px;
+    border-top: 1px solid var(--dip-line-color);
+
+    button {
+      min-width: 72px;
+      height: 32px !important;
+      margin-left: 10px !important;
+    }
+  }
+}
+
+.agent-web-modal-wrap {
+  &.ad-modal-fullScreen {
+    overflow: hidden;
+
+    .agent-web-modal {
+      height: 100%;
+      padding: 24px;
+      margin: 0 auto;
+      top: 0;
+      max-width: unset;
+
+      .agent-web-modal-content {
+        height: 100%;
+
+        .agent-web-modal-body {
+          height: 100%;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+
+          .ad-universal-modal-content {
+            flex: 1;
+            height: 0;
+            min-height: unset;
+            max-height: unset;
+            padding: 0;
+          }
+        }
+      }
+
+      &.ad-modal-adaptive {
+        height: auto;
+
+        .agent-web-modal-content {
+          height: auto;
+
+          .agent-web-modal-body {
+            .ad-universal-modal-content {
+              //overflow: auto;
+              //position: relative;
+            }
+          }
+        }
+      }
+    }
+  }
+}

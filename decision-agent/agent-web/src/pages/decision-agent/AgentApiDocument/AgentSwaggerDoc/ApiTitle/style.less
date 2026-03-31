@@ -1,0 +1,130 @@
+.rest-api-title-header {
+  .header-name {
+    min-width: 65px;
+    display: inline-block;
+  }
+
+  .header-name-span {
+    display: inline-block;
+    max-height: 40px;
+    overflow: hidden;
+    white-space: wrap;
+    text-overflow: ellipsis;
+  }
+
+  .api-service {
+    min-width: 65px;
+  }
+
+  .app-description {
+    text-decoration: underline;
+  }
+
+  .agent-web-divider-horizontal.agent-web-divider-with-text {
+    margin: 0 !important;
+  }
+
+  .app-acquire {
+    min-width: 70px;
+    max-width: 150px;
+  }
+
+  .api-header-box {
+    margin-bottom: -30px;
+    width: 100%;
+    overflow: hidden;
+
+    .agent-web-select-single:not(.agent-web-select-customize-input) .agent-web-select-selector {
+      height: 39px;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .agent-web-select-single .agent-web-select-selector .agent-web-select-selection-item {
+      line-height: 39px;
+    }
+
+    .api-header-url {
+      height: 39px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-left: unset;
+      border-radius: 0 4px 4px 0;
+      flex: 1;
+      overflow: hidden;
+
+      .api-get-post {
+        width: 69px;
+        color: #0288d1;
+        font-weight: 600;
+        line-height: 20px;
+        text-align: center;
+      }
+
+      .api-url-style {
+        color: rgba(0, 0, 0, 0.65);
+        flex: 1;
+        font-weight: 400;
+        font-size: 16px;
+      }
+
+      .api-header-copy {
+        width: 40px;
+        border-left: 1px solid var(--dip-border-color) !important;
+        height: 39px;
+        opacity: 0.45;
+      }
+    }
+
+    .api-header {
+      padding: 8px 0px;
+      width: 120px;
+      height: 38px;
+      border-radius: var(--dip-border-radius);
+
+      &:hover {
+        background: var(--dip-hover-bg-color) !important;
+      }
+    }
+  }
+
+  .api-header-box .agent-web-select-single {
+    height: 100%;
+  }
+
+  .table-tbody {
+    position: relative;
+    height: calc(100% - 44px);
+    overflow: auto;
+  }
+
+  .tb-row {
+    min-height: 48px;
+    display: flex;
+    border-bottom: 1px solid var(--ad-line-color);
+
+    &::after {
+      content: '';
+      display: inline-block;
+      position: absolute;
+      width: 1px;
+      height: 100%;
+      left: 35%;
+      background: #d9d9d9;
+    }
+
+    .row-key,
+    .row-value {
+      padding: 13px 20px;
+      word-break: break-all;
+      color: var(--ad-heading-color);
+    }
+
+    .row-key {
+      width: 35%;
+      align-self: center;
+    }
+  }
+}
+
+.api-header-box-select-popup {
+  padding: 0 !important;
+}

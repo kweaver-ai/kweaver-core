@@ -1,0 +1,35 @@
+.card {
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  // 卡片内容
+  .content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    // 卡片顶部
+    .main {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .info {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    // 卡片底部
+    .bottom {
+      margin-top: auto;
+    }
+  }
+}

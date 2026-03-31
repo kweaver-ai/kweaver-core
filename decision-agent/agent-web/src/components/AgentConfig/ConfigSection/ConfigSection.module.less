@@ -1,0 +1,844 @@
+.modal-content p {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Common component styles */
+.add-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: transparent;
+  color: #126ee3;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-button.small {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.add-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Right controls */
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tooltip-icon {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Input configuration panel */
+.input-config {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.empty-config {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.input-config-table {
+  width: 100%;
+}
+
+.input-config-table .ant-table-thead > tr > th {
+  background-color: transparent;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.input-config-table .ant-table-tbody > tr > td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Remove table cell borders */
+.input-config-table .ant-table-cell {
+  border: none !important;
+}
+
+.delete-icon {
+  color: rgba(0, 0, 0, 0.45);
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 16px;
+}
+
+/* Model config */
+.model-config {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.model-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.select-with-buttons {
+  position: relative;
+  width: 100%;
+}
+
+.model-selection .ant-select {
+  width: 100%;
+}
+
+/* Models list styles */
+.models-list {
+  position: relative;
+
+  .model-item {
+    position: relative;
+    padding: 12px;
+
+    .model-content {
+      display: flex;
+      justify-content: space-between;
+
+      .ant-select {
+        width: 200px !important;
+        margin-right: 10px;
+      }
+
+      .model-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .settings-button,
+        .delete-button {
+          margin-left: 8px;
+        }
+      }
+    }
+  }
+}
+
+.loading-models {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 10px;
+}
+
+.test-button {
+  padding: 0;
+  color: #126ee3;
+}
+
+.test-button:hover {
+  background-color: transparent;
+  color: #4291f0;
+}
+
+.settings-button {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 16px;
+  border: none;
+  padding: 6px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button:hover {
+  color: rgba(0, 0, 0, 0.85);
+  background-color: transparent;
+}
+
+/* Keep the old model-select for backwards compatibility */
+.model-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  padding: 6px 12px;
+  width: fit-content;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.model-select:hover {
+  border-color: #1677ff;
+}
+
+.model-icon {
+  width: 16px;
+  height: 16px;
+  background-color: #126ee3;
+  border-radius: 4px;
+}
+
+/* Format config */
+.format-config {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.format-select {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1890ff;
+}
+
+/* Knowledge config */
+.knowledge-config {
+  width: 100%;
+  // max-height: 500px;
+  // overflow-y: auto;
+  // overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  z-index: 1;
+  border-radius: 4px;
+
+  :global {
+    .agent-web-collapse-header {
+      padding-right: 8px !important;
+    }
+  }
+}
+
+.knowledge-sources-list {
+  width: 100%;
+
+  .knowledge-sources-header {
+    display: flex;
+    margin-bottom: 0;
+    height: 55px;
+    font-weight: 500;
+    background: #fafafa;
+    align-items: center;
+
+    .column-title {
+      padding: 0 16px;
+      position: relative;
+
+      &::before {
+        position: absolute;
+        top: 50%;
+        inset-inline-end: 0;
+        width: 1px;
+        height: 1.6em;
+        background-color: #f0f0f0;
+        transform: translateY(-50%);
+        transition: background-color 0.2s;
+        content: '';
+      }
+    }
+
+    .column-title:nth-child(1) {
+      width: 140px;
+    }
+
+    .column-title:nth-child(2) {
+      width: 220px;
+    }
+
+    .column-title:nth-child(3) {
+      flex: 1;
+    }
+
+    .column-title:nth-child(4) {
+      width: 62px;
+      text-align: center;
+    }
+  }
+
+  .knowledge-source-row {
+    display: flex;
+    margin-bottom: 0;
+    align-items: flex-start;
+    min-height: 65px;
+
+    .knowledge-source-type {
+      width: 140px;
+      padding: 16px;
+    }
+
+    .knowledge-source-name {
+      width: 220px;
+      padding: 16px;
+    }
+
+    .knowledge-source-scope {
+      flex: 1;
+      padding: 16px;
+    }
+
+    .knowledge-source-operation {
+      width: 62px;
+      padding: 16px;
+
+      .delete-button {
+        color: rgba(0, 0, 0, 0.45);
+        font-size: 16px !important;
+        width: 30px !important;
+        height: 30px !important;
+        margin-right: 8px;
+      }
+
+      .delete-button:hover {
+        color: rgba(0, 0, 0, 0.88);
+      }
+    }
+
+    .empty-scope-message {
+      color: rgba(0, 0, 0, 0.45);
+      font-style: italic;
+      padding: 8px 0;
+    }
+  }
+
+  .add-knowledge-button {
+    margin-bottom: 12px;
+    color: #126ee3;
+  }
+}
+
+.knowledge-category {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 4px;
+}
+
+.knowledge-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.knowledge-source-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.knowledge-source-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.knowledge-source-name {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.config-icon {
+  color: rgba(0, 0, 0, 0.45) !important;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Skills config */
+.skills-config {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.skills-table {
+  width: 100%;
+
+  :global {
+    .agent-web-table-header .agent-web-table-cell {
+      white-space: nowrap;
+    }
+  }
+}
+
+.skills-table .ant-table-thead > tr > th {
+  background-color: transparent;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.skills-table .ant-table-tbody > tr > td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.skills-table .ant-table-cell {
+  border: none !important;
+}
+
+.skill-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skill-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+}
+
+.skill-icon.plan-expert,
+.skill-icon.data-analysis {
+  background-color: #1677ff;
+}
+
+.skill-icon.chart-generation,
+.skill-icon.translation {
+  background-color: #52c41a;
+}
+
+.skill-role {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.skill-description {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skills-table .ant-table-tbody > tr:hover > td {
+  background-color: transparent;
+}
+
+/* 展开按钮样式优化 */
+.skills-table .ant-table-row-expand-icon-cell {
+  width: 50px !important;
+  min-width: 50px !important;
+  padding-right: 16px !important;
+}
+
+.skills-table .ant-table-row-expand-icon {
+  margin-right: 8px !important;
+}
+
+.skills-table .ant-table-tbody > tr > td:first-child {
+  padding-left: 8px !important;
+}
+
+/* Welcome message config */
+.welcome-config {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #fff;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.welcome-textarea {
+  resize: none;
+  border-radius: 4px;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.header-ai-button {
+  color: #1890ff;
+}
+
+.preset-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+}
+
+.preset-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preset-buttons .small {
+  font-size: 12px;
+  padding: 2px 6px;
+  height: 24px;
+}
+
+.delete-button {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.delete-button:hover {
+  color: #ff4d4f;
+}
+
+.instruction-button {
+  color: #1890ff;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  transition: background-color 0.2s;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch.active .toggle-track {
+  background-color: #1890ff;
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.form-item label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Knowledge sources */
+.knowledge-sources-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.column-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 8px;
+}
+
+.knowledge-source-row {
+  display: flex;
+  justify-content: space-between;
+  // padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+}
+
+.knowledge-source-type,
+.knowledge-source-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.knowledge-sources-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.cascader-dropdown-header {
+  padding: 8px 12px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.ant-cascader-checkbox {
+  margin-right: 8px;
+}
+
+.input-settings-tooltip {
+  color: #1890ff;
+  cursor: pointer;
+}
+
+.input-settings-tooltip-overlay .ant-tooltip-inner {
+  background-color: white;
+  color: rgba(0, 0, 0, 0.85);
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+
+.input-settings-tooltip-overlay .ant-tooltip-arrow {
+  display: none;
+}
+
+.settings-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.setting-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 4px;
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.temp-zone-config {
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  margin-top: 12px;
+  background-color: #fafafa;
+}
+
+.settings-field {
+  margin-bottom: 12px;
+}
+
+.settings-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.settings-field .ant-input,
+.settings-field .ant-select {
+  width: 100%;
+}
+
+.size-limit-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-settings-tooltip-overlay .ant-select-selector {
+  border-radius: 4px;
+}
+
+.input-settings-tooltip-overlay .ant-select-selection-item {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.input-settings-tooltip-overlay .ant-select-multiple .ant-select-selection-item {
+  background-color: #f0f0f0;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.input-settings-tooltip {
+  color: #1890ff;
+  cursor: pointer;
+}
+
+.input-settings-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.disabled-icon {
+  color: rgba(0, 0, 0, 0.25);
+  cursor: not-allowed;
+}
+
+.input-setting-modal {
+  width: 600px !important;
+}
+
+.input-setting-divider {
+  margin: 16px 0;
+}
+
+.input-setting-section {
+  margin-bottom: 16px;
+}
+
+.input-setting-section-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 12px;
+}
+
+.input-setting-section-content {
+  padding: 0 12px;
+}
+
+/* Save button container */
+.save-button-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* Dataflow config */
+.dataflow-config {
+  width: 100%;
+}
+
+.dataflow-content {
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  background-color: #fafafa;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* 全局Input组件样式修复 */
+.ant-input {
+  padding: 4px 11px;
+}
+
+.ant-input-affix-wrapper {
+  padding: 0 11px;
+}
+
+.ant-input-affix-wrapper .ant-input {
+  padding: 4px 0;
+}
+
+/* 文本域样式修复 */
+textarea.ant-input {
+  padding: 4px 11px;
+  min-height: 32px;
+}
+
+/* 确保search input正确显示 */
+.ant-input-search .ant-input {
+  padding-right: 24px;
+}
+
+/* 修复日期选择器的样式 */
+.ant-picker-input input {
+  padding: 4px 11px;
+}
+
+.divider-with-text {
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.advanced-config-section {
+  margin-top: -1px;
+}

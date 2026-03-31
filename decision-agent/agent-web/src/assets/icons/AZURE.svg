@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>AZURE A</title>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组-10" transform="translate(-10.000000, -10.000000)" fill-rule="nonzero">
+            <g id="AZURE-A" transform="translate(10.000000, 10.000000)">
+                <polygon id="路径" fill="#F25022" points="9.51997513e-16 9.51997513e-16 11.4331084 9.51997513e-16 11.4331084 11.4331084 0 11.4331084"></polygon>
+                <polygon id="路径" fill="#80BA01" points="12.5668916 1.21855682e-15 24 1.21855682e-15 24 11.4331084 12.5668916 11.4331084"></polygon>
+                <polygon id="路径" fill="#02A4EF" points="9.51997513e-16 12.5668916 11.4331084 12.5668916 11.4331084 24 0 24"></polygon>
+                <polygon id="路径" fill="#FFB902" points="12.5668916 12.5668916 24 12.5668916 24 24 12.5668916 24"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

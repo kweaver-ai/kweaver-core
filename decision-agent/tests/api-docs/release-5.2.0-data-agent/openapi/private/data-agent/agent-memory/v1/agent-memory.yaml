@@ -1,0 +1,62 @@
+openapi: 3.0.2
+info:
+  title: AGENT-Memory服务 API（内部接口）
+  version: 1.0.0
+  description: |
+    API to access DIP
+
+    如有任何疑问，可到开发者社区提问：https://developers.aishu.cn
+
+servers:
+  - url: 'https://{host}:{port}/api/'
+    description: 'host: DIP服务器IP, port: 默认端口443'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '443'
+        description: https默认端口443
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: 记忆构建&召回
+  - name: 记忆管理
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=267740883)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/764795)
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: AGENT Memory
+    tags:
+      - 记忆管理
+      - 记忆构建&召回
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+paths:
+  /health:
+    get:
+      summary: 健康检查
+      tags:
+        - 系统
+      responses:
+        '200':
+          description: 服务正常
+  /api/agent-memory/internal/v1/memory:
+    $ref: './memory/path.yaml#/paths/~1api~1agent-memory~1v1~1memory'
+  # /api/agent-memory/internal/v1/memory/{memory_id}:
+  #   $ref: './memory/path.yaml#/paths/~1api~1agent-memory~1v1~1memory~1{memory_id}'
+  # /api/agent-memory/v1/memory/{memory_id}/history:
+  #   $ref: './memory/path.yaml#/paths/~1api~1agent-memory~1v1~1memory~1{memory_id}~1history'
+  /api/agent-memory/internal/v1/search:
+    $ref: './memory/path.yaml#/paths/~1api~1agent-memory~1v1~1search'
+security:
+  - ApiKeyAuth: []

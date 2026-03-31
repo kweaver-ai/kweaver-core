@@ -1,0 +1,12 @@
+{
+  "businessDomain": {
+    "currentDomain": "當前業務域",
+    "pleaseSelect": "請選擇",
+    "user": "使用者",
+    "department": "部門",
+    "group": "用戶組",
+    "role": "角色",
+    "app": "應用帳號",
+    "allOrgUsers": "所有組織用戶"
+  }
+}

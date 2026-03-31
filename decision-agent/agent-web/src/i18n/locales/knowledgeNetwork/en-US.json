@@ -1,0 +1,8 @@
+{
+  "knowledge": {
+    "export": "Export Knowledge Graph",
+    "authorityManagement": "Permissions",
+    "delete": "Delete",
+    "total": "Total {total}"
+  }
+}

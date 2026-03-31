@@ -1,0 +1,27 @@
+{
+  "global": {
+    "noData": "No data",
+    "pleaseSelect": "Please select",
+    "testSuccessful": "Test successfully",
+    "test": "Test",
+    "settings": "Settings",
+    "view": "View",
+    "noResult": "Sorry, no results found",
+    "noContent": "No contents yet",
+    "search": "Search",
+    "clearFilter": "Clear",
+    "sort": "Sort",
+    "refresh": "Refresh",
+    "filter": "Filter",
+    "notDes": "[No description]",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "noNull": "The value cannot be null",
+    "required": "Required",
+    "unRequired": "非必填",
+    "enable": "启用",
+    "pleaseEnter": "Please enter",
+    "existTitle": "Are you sure to quit the current operation?",
+    "lenErr": "Enter up to {len} characters"
+  }
+}

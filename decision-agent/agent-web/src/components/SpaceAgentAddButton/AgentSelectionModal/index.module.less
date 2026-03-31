@@ -1,0 +1,41 @@
+.btn {
+  min-width: 72px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.failed-text {
+  color: var(--dip-text-color-45);
+}
+
+.loading {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.variable-size-grid {
+  overflow: hidden !important;
+  transition: overflow-y 0.3s ease;
+
+  &:hover {
+    overflow-y: auto !important;
+  }
+}
+
+.disabled {
+  opacity: 0.25;
+  pointer-events: none;
+  user-select: none;
+}

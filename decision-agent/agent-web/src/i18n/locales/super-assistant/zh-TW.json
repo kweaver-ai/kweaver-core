@@ -1,0 +1,8 @@
+{
+  "superAssistant": {
+    "notConfigured": "超級助手還未配置完成，請聯繫管理員",
+    "placeholder": "有什麼問題儘管問我",
+    "greeting": "Hi!",
+    "welcome": "歡迎"
+  }
+} 

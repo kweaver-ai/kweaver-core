@@ -1,0 +1,67 @@
+.section-panel {
+  background-color: #ffffff;
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+  transition: all 0.3s ease;
+  padding: 24px;
+}
+
+.section-panel-header {
+  display: flex;
+  justify-content: space-between;
+  /* align-items: center; */
+  /* cursor: pointer; */
+}
+
+.section-panel-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.section-panel-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.section-panel-arrow {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s;
+}
+
+.section-panel-arrow img {
+  width: 100%;
+  height: 100%;
+}
+
+.section-panel-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.section-panel-right {
+  display: flex;
+  /* align-items: center; */
+}
+
+.section-panel-right .ant-btn {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: auto !important;
+  padding: 0 8px !important;
+}
+
+.section-panel-content {
+  padding: 12px 0 0 24px;
+}
+
+/* 折叠状态 */
+.section-panel-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  visibility: hidden; /* 隐藏折叠内容 */
+}

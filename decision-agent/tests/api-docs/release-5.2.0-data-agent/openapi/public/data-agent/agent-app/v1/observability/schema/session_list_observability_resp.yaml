@@ -1,0 +1,11 @@
+SessionListObservabilityResp:
+  type: object
+  properties:
+    entries:
+      type: array
+      items:
+        $ref: './session_detail_list.yaml#/SessionDetailList'
+      description: Session详情列表
+    total_count:
+      type: integer
+      description: 不分页情况下的总数量

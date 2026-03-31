@@ -1,0 +1,43 @@
+.item {
+  border-radius: 4px;
+  height: 40px;
+  padding: 0 12px;
+  transition: all 0.2s;
+  margin-top: 4px;
+  cursor: pointer;
+  //color: var(--dip-text-color-45);
+
+  .btn {
+    display: none;
+    margin-left: 12px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    .btn {
+      display: block;
+    }
+  }
+}
+
+.active {
+  //color: var(--dip-text-color-85);
+  background: rgba(var(--dip-primary-color-rgb), 0.06) !important;
+}
+
+.unRead {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dip-error-color);
+  transform: translateY(-100%);
+}
+
+.popConfirm {
+  :global {
+    .agent-web-popover-inner {
+      padding: 12px !important;
+    }
+  }
+}

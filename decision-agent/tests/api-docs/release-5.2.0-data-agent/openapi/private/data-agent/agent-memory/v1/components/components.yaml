@@ -1,0 +1,83 @@
+# components 定义
+components:
+  responses:
+    '400':
+      description: 错误的请求
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '403':
+      description: 请求被拒绝
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '404':
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '409':
+      description: 资源冲突
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '500':
+      description: 内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '502':
+      description: 网关错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      type: object
+      description: 错误信息（统一格式）
+      properties:
+        error_code:
+          type: string
+          description: 业务错误码
+        description:
+          type: string
+          description: 错误描述
+        solution:
+          type: string
+          description: 解决方法
+        error_link:
+          type: string
+          description: 错误链接
+        error_details:
+          description: |
+            - 错误详情（比如当某些数据不存在时，这里可以包含不存在的id）
+            - 任意类型
+          type:
+            - object
+            - "null"
+            - array
+            - string
+            - number
+            - boolean
+          nullable: true
+   
+  securitySchemes: {}
+

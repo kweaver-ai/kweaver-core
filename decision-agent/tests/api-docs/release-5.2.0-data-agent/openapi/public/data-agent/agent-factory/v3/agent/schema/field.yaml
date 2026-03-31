@@ -1,0 +1,27 @@
+field:
+  type: object
+  properties:
+    name:
+      type: string
+      description: 参数（字段）名
+      example: query
+    type:
+      type: string
+      description: | 
+        - 类型
+          - string: 字符串
+          - file: 文件
+          - object: json对象
+      enum:
+        - string
+        - file
+        - object
+      default: string
+      example: string
+    desc:
+      type: string
+      description: 参数描述
+      example: ""
+  required:
+    - name
+  description: agent参数（字段）

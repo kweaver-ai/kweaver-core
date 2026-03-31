@@ -1,0 +1,55 @@
+.debugRoot {
+  background: white;
+  &-progress {
+    width: 200px;
+    &-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      &:hover {
+        background: rgba(var(--dip-primary-color-rgb), 0.06);
+      }
+      &-active {
+        background: rgba(var(--dip-primary-color-rgb), 0.06);
+        position: relative;
+        color: var(--dip-primary-color);
+        &:before {
+          display: block;
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 2px;
+          height: 100%;
+          background: var(--dip-primary-color);
+        }
+      }
+    }
+  }
+  .agent-web-tabs {
+    height: 100% !important;
+    .agent-web-tabs-nav {
+      .agent-web-tabs-tab {
+        padding: 0 16px;
+        &-active {
+        }
+      }
+    }
+    .agent-web-tabs-content-holder {
+      height: 100% !important;
+      .agent-web-tabs-content {
+        height: 100% !important;
+        .agent-web-tabs-tabpane {
+          height: 100% !important;
+        }
+      }
+    }
+  }
+
+  &-title {
+    position: absolute;
+    top: -30px;
+    right: 12px;
+    z-index: 99;
+  }
+}

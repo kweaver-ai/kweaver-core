@@ -1,0 +1,91 @@
+[
+  {
+    "tool_id": "f68c6832-db79-4a3a-87c8-0531a1e9e29e",
+    "tool_box_id": "7fe0fa84-17a0-464d-8ae6-d5a4748a12af",
+    "tool_timeout": 300,
+    "tool_input": [
+      {
+        "input_name": "stream",
+        "input_type": "boolean",
+        "input_desc": "是否流式返回",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "mode",
+        "input_type": "string",
+        "input_desc": "请求模式",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "content",
+        "input_type": "string",
+        "input_desc": "文件内容, 如果 result_cache_key 参数不为空，则无需设置该参数",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+      },
+      {
+        "input_name": "filename",
+        "input_type": "string",
+        "input_desc": "要创建的文件名",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+      },
+      {
+        "input_name": "result_cache_key",
+        "input_type": "string",
+        "input_desc": "之前工具的结果缓存key，可以用于将结果写入到文件中，有此参数则无需设置 content 参数",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "server_url",
+        "input_type": "string",
+        "input_desc": "可选，沙箱服务器URL，默认使用配置文件中的 SANDBOX_URL",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "session_id",
+        "input_type": "string",
+        "input_desc": "沙箱会话ID",
+        "map_type": "var",
+        "map_value": "sessionid",
+        "enable": true
+      },
+      {
+        "input_name": "session_type",
+        "input_type": "string",
+        "input_desc": "会话类型, 可选值为: redis, in_memory, 默认值为 redis",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "timeout",
+        "input_type": "number",
+        "input_desc": "超时时间",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      },
+      {
+        "input_name": "title",
+        "input_type": "string",
+        "input_desc": "对于当前操作的简单描述，便于用户理解",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+      }
+    ],
+    "intervention": false,
+    "result_process_strategies": null
+  }
+]

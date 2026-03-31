@@ -1,0 +1,106 @@
+.result-range-content {
+  display: flex;
+  height: 600px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+
+  // 左侧实体列表面板
+  .entity-list-panel {
+    width: 300px;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    background-color: #fafafa;
+
+    .entity-list-header {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      background-color: #fff;
+      font-weight: 500;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .entity-list-container {
+      flex: 1;
+      overflow: hidden;
+      background-color: #fff;
+
+      .entity-list {
+        height: 560px;
+        overflow-y: auto;
+
+        .entity-item {
+          padding: 4px 16px;
+
+          .entity-content:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+          }
+
+          .selected-entity-content {
+            background: rgba(166, 169, 181, 0.2);
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+  }
+
+  // 右侧数据预览面板
+  .data-preview-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+
+    .data-preview-header {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      background-color: #fff;
+
+      > span {
+        font-weight: 500;
+        font-size: 14px;
+        color: #333;
+      }
+    }
+
+    .table-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      .empty-preview {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .sample-data-info {
+        padding: 8px 12px;
+        background-color: #e6f7ff;
+        border-radius: 6px;
+        border: 1px solid #91d5ff;
+        margin: 16px;
+        margin-bottom: 0;
+
+        span {
+          font-weight: bold;
+          color: #1890ff;
+        }
+      }
+
+      .table-wrapper {
+        flex: 1;
+        padding: 16px;
+        overflow: hidden;
+      }
+    }
+  }
+}

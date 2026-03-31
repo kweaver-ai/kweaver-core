@@ -1,0 +1,21 @@
+.ad-search-input {
+  .ant-input-prefix {
+    margin-right: 8px;
+  }
+
+  .s-input-icon {
+    color: var(--ad-disabled-color);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ad-heading-color);
+    }
+  }
+
+  &.ant-input-affix-wrapper-focused,
+  &.ant-input-affix-wrapper:focus {
+    .s-input-icon {
+      color: var(--ad-heading-color);
+    }
+  }
+}

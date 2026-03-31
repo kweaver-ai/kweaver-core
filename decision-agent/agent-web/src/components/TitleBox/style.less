@@ -1,0 +1,20 @@
+.titleBoxRoot {
+  position: relative;
+  width: auto;
+  height: 40px;
+  font-weight: 600;
+  padding: 0 12px;
+  background-color: rgba(18, 110, 227, 0.06);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 0;
+    height: 0;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 20px solid rgba(18, 110, 227, 0.06);
+  }
+}

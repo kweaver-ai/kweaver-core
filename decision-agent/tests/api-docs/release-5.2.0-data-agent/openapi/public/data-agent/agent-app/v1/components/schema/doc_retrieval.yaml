@@ -1,0 +1,12 @@
+DocRetrieval:
+  description: 文档检索
+  type: object
+  properties:
+    text:
+      type: string
+      description: 查询文本
+    cites:
+      type: array
+      description: 文档引用来源
+      items:
+        $ref: '../../components/schema/cite.yaml#/Cite'

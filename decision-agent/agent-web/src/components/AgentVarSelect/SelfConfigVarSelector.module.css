@@ -1,0 +1,76 @@
+.container {
+  height: 500px;
+
+  .tree-wrapper {
+    padding: 12px 16px 16px 16px;
+    flex: 1;
+    background: rgb(249, 249, 249);
+
+    .tree {
+      .search-hover-bg {
+        background: rgb(253, 255, 10);
+      }
+
+      .type-tag {
+        color: rgb(153, 153, 153);
+        background-color: rgb(248, 249, 250);
+        padding: 1px 4px;
+        border: 1px solid rgb(233, 236, 239);
+      }
+
+      :global {
+        .agent-web-tree-list-scrollbar-thumb {
+          background: #eaeaea !important;
+        }
+      }
+    }
+  }
+
+  .detail {
+    padding: 16px;
+    width: 410px;
+    background: rgb(249, 249, 249);
+
+    .infos {
+      padding: 8px 16px;
+      overflow-y: hidden;
+
+      .radio-group {
+        :global {
+          .agent-web-radio {
+            top: 3px;
+            align-self: flex-start;
+          }
+        }
+      }
+
+      .type {
+        color: rgb(153, 153, 153);
+        background-color: rgb(248, 249, 250);
+        padding: 3px 6px;
+        border: 1px solid rgb(233, 236, 239);
+      }
+
+      .description {
+        color: rgb(89, 89, 89);
+        line-height: 1.5;
+        background-color: rgb(249, 249, 249);
+        padding: 8px;
+        border: 1px solid rgb(240, 240, 240);
+      }
+
+      .path {
+        font-family: Monaco, Menlo, monospace;
+        color: rgb(108, 117, 125);
+        background-color: rgb(248, 249, 250);
+        padding: 8px 26px 8px 8px;
+        border: 1px solid rgb(233, 236, 239);
+        word-break: break-all;
+      }
+
+      &:hover {
+        overflow-y: auto !important;
+      }
+    }
+  }
+}

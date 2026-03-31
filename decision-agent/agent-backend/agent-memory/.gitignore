@@ -1,0 +1,38 @@
+# 忽略生成的文件
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+*.log
+*.lock
+
+# 忽略环境配置
+.env
+.env.*
+.venv/
+
+# 忽略 IDE 配置
+.idea/
+.vscode/
+
+# 忽略数据库文件
+data/
+*.db
+*.sqlite3
+
+# 忽略日志文件
+logs/
+
+# 忽略缓存文件
+.cache/
+.cache_*
+
+# 忽略测试报告
+htmlcov/
+.coverage
+
+# 忽略 macOS 元数据
+.DS_Store
+
+# 忽略特定的依赖安装目录
+node_modules/

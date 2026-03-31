@@ -1,0 +1,17 @@
+product_create_req:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: 产品名称
+      maxLength: 50
+    profile:
+      type: string
+      description: 产品简介
+      maxLength: 100
+    key:
+      type: string
+      description: 产品标识，唯一
+      maxLength: 50

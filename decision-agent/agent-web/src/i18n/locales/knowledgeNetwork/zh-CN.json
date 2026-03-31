@@ -1,0 +1,8 @@
+{
+  "knowledge": {
+    "export": "导出知识图谱",
+    "authorityManagement": "权限管理",
+    "delete": "删除",
+    "total": "共{total}条"
+  }
+}

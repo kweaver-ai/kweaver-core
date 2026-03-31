@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Union</title>
+    <defs>
+        <radialGradient cx="20.8357378%" cy="18.2018756%" fx="20.8357378%" fy="18.2018756%" r="75.1457463%" id="radialGradient-1">
+            <stop stop-color="#FEBD3F" offset="0%"></stop>
+            <stop stop-color="#FF6933" offset="100%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="编组-10" transform="translate(-114.000000, -10.000000)" fill="url(#radialGradient-1)">
+            <g id="编组-5备份" transform="translate(104.000000, 0.000000)">
+                <g id="编组-25备份-4" transform="translate(6.000000, 6.000000)">
+                    <g id="编组备份-8" transform="translate(4.000000, 4.000000)">
+                        <path d="M8.36216784,0 L5.03089263,0 L2.65142125,5.19511773 L2.65142125,18.7317245 L0,24 L5.7787346,24 L8.36216784,18.7317245 L8.36216784,0 Z M10.5379937,0 L16.2487512,0 L16.2487512,24 L10.5379937,24 L10.5379937,0 Z M24,0 L18.2892425,0 L18.2892425,4.97559744 L24,4.97559744 L24,0 Z M24,6.58535025 L18.2892425,6.58535025 L18.2892425,24 L24,24 L24,6.58535025 Z" id="Union"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

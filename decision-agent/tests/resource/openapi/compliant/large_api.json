@@ -1,0 +1,1088 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "大型API文档",
+    "version": "1.0.0",
+    "description": "这是一个大型的OpenAPI文档，包含详细的描述和示例。该文档包含10个API，每个API都有详细的参数定义、响应模式和示例。",
+    "contact": {
+      "name": "API支持团队",
+      "email": "support@example.com",
+      "url": "https://example.com/support"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "具有高可用性和负载均衡的生产服务器。该服务器处理所有生产流量，并针对性能和可靠性进行了优化。它包括自动故障转移和灾难恢复功能。"
+    }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "获取所有用户",
+        "description": "检索系统中的所有用户列表。此端点支持分页、过滤和排序。响应包括详细的用户信息，包括个人详细信息、偏好设置和活动历史记录。",
+        "operationId": "getUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "分页的页码。此参数控制返回哪一页的结果。第一页为1。最大页码由结果总数和限制参数决定。分页系统支持基于偏移量和基于游标的分页。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "每页的项目数。此参数控制每页返回多少结果。最大值为100，以防止大型结果集的性能问题。限制参数与页面参数一起工作以实现分页。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation. Returns a paginated list of users with detailed information about each user, including their profile, preferences, and recent activity. The response includes comprehensive user data, organized in a structured format. Each user object contains complete information about the user's profile, preferences, activity history, and associated resources. The response includes metadata about the pagination, sorting, and filtering applied to the results. The system optimizes the response format based on the requested fields and available data. The response is designed to be easily parseable and processable by clients, with clear documentation of the data structure and field meanings. Error handling and edge cases are clearly documented to help clients handle all possible response scenarios. The response is designed to be highly performant, with support for efficient serialization and deserialization of large datasets. The response includes comprehensive metadata about the query results, including pagination information and filtering details. The response supports various data formats and includes comprehensive error handling and validation. The response is designed to be easily integrated with various client applications and includes comprehensive documentation and examples. The response includes support for various caching strategies and includes comprehensive performance optimization features. The response is designed to be easily extended and includes comprehensive versioning support. The response includes support for various data formats and includes comprehensive documentation and examples.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of users matching the query criteria. This value represents the total count of users that match the specified filters, regardless of pagination. The total count is useful for calculating the total number of pages and implementing pagination controls. The system efficiently calculates this value using optimized counting queries and appropriate indexes. The total count is accurate even when complex filters are applied, ensuring reliable pagination implementation. The value is included in the response to help clients implement proper pagination controls and display accurate result counts to users. The total count is designed to be highly accurate, with support for efficient counting of large datasets. The system includes comprehensive validation and error handling for total count calculations. The total count supports various strategies for handling complex counting requirements, including approximate counting and sampling. The system includes comprehensive documentation and examples for implementing total count in client applications. The total count is designed to be easily integrated with various client applications and includes comprehensive support for different counting strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve total count-related issues. The total count is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient counting of large datasets. The total count is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing total count in various programming languages and frameworks."
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page number. This value indicates which page of results is being returned in the current response. The page number is based on the page parameter specified in the request, with appropriate validation and adjustment if needed. The value is included in the response to help clients track their current position in the paginated results. The page number is always a positive integer, starting from 1 for the first page. The system includes safeguards to ensure the page number is valid and within the available range of pages based on the total count and limit. The page number is designed to be highly accurate, with support for efficient pagination of large datasets. The system includes comprehensive validation and error handling for page number calculations. The page number supports various strategies for handling complex pagination requirements, including cursor-based pagination and offset-based pagination. The system includes comprehensive documentation and examples for implementing page numbers in client applications. The page number is designed to be easily integrated with various client applications and includes comprehensive support for different pagination strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve page number-related issues. The page number is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient pagination of large datasets. The page number is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing page numbers in various programming languages and frameworks."
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Number of items per page. This value indicates how many users are included in each page of results. The limit is based on the limit parameter specified in the request, with appropriate validation and adjustment if needed. The value is included in the response to help clients understand the current pagination configuration. The limit is always a positive integer, with a maximum value as specified in the API documentation. The system may adjust the actual limit value to optimize performance while respecting the maximum limit constraint. The limit is designed to be highly configurable, with support for efficient handling of large datasets. The system includes comprehensive validation and error handling for limit calculations. The limit supports various strategies for handling complex limit requirements, including dynamic adjustment based on query complexity. The system includes comprehensive documentation and examples for implementing limits in client applications. The limit is designed to be easily integrated with various client applications and includes comprehensive support for different limit strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve limit-related issues. The limit is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of limits. The limit is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing limits in various programming languages and frameworks."
+                    },
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      },
+                      "description": "Array of user objects matching the query criteria. Each user object contains complete information about the user's profile, preferences, activity history, and associated resources. The array length is equal to or less than the specified limit, depending on the available results. The users are ordered according to the specified sort criteria, with appropriate optimizations for efficient sorting. The system includes safeguards to ensure the response size remains manageable and performant, even with large numbers of users or complex user objects. The users array is designed to be highly performant, with support for efficient serialization and deserialization of large datasets. The system includes comprehensive validation and error handling for user objects. The users array supports various strategies for handling complex user data, including lazy loading and partial loading. The system includes comprehensive documentation and examples for implementing user arrays in client applications. The users array is designed to be easily integrated with various client applications and includes comprehensive support for different user data strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve user array-related issues. The users array is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of user arrays. The users array is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing user arrays in various programming languages and frameworks."
+                    }
+                  }
+                },
+                "example": {
+                  "total": 1000,
+                  "page": 1,
+                  "limit": 20,
+                  "users": [
+                    {
+                      "id": "user_123",
+                      "username": "john_doe",
+                      "email": "john@example.com",
+                      "profile": {
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "age": 30,
+                        "gender": "male",
+                        "address": {
+                          "street": "123 Main St",
+                          "city": "New York",
+                          "state": "NY",
+                          "zipCode": "10001",
+                          "country": "USA"
+                        },
+                        "phone": "+1-555-123-4567",
+                        "birthDate": "1990-01-01"
+                      },
+                      "preferences": {
+                        "language": "en",
+                        "timezone": "UTC",
+                        "notifications": {
+                          "email": true,
+                          "sms": false,
+                          "push": true,
+                          "frequency": "immediate"
+                        },
+                        "privacy": {
+                          "profileVisibility": "public",
+                          "activityVisibility": "friends"
+                        }
+                      },
+                      "activity": [
+                        {
+                          "type": "login",
+                          "timestamp": "2023-01-01T12:00:00Z",
+                          "details": {
+                            "ip": "192.168.1.1",
+                            "device": "Chrome on Windows",
+                            "location": "New York, USA",
+                            "sessionId": "session_123",
+                            "duration": 3600
+                          }
+                        },
+                        {
+                          "type": "purchase",
+                          "timestamp": "2023-01-02T15:30:00Z",
+                          "details": {
+                            "orderId": "order_456",
+                            "amount": 99.99,
+                            "items": 3,
+                            "paymentMethod": "credit_card"
+                          }
+                        }
+                      ],
+                      "subscriptions": [
+                        {
+                          "id": "sub_789",
+                          "type": "premium",
+                          "startDate": "2023-01-01",
+                          "endDate": "2024-01-01",
+                          "status": "active",
+                          "features": [
+                            "unlimited_storage",
+                            "priority_support",
+                            "advanced_analytics"
+                          ],
+                          "billing": {
+                            "cycle": "monthly",
+                            "amount": 9.99,
+                            "currency": "USD",
+                            "nextBillingDate": "2023-02-01"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create_a_new_user",
+        "description": "Creates a new user in the system. This endpoint accepts detailed user information including personal details, preferences, and initial settings.",
+        "operationId": "createUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              },
+              "example": {
+                "username": "jane_doe",
+                "email": "jane@example.com",
+                "password": "secure_password",
+                "profile": {
+                  "firstName": "Jane",
+                  "lastName": "Doe",
+                  "age": 25,
+                  "gender": "female"
+                },
+                "preferences": {
+                  "language": "en",
+                  "timezone": "UTC",
+                  "notifications": {
+                    "email": true,
+                    "sms": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully. Returns the complete user object including system-generated fields and default values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{userId}": {
+      "get": {
+        "summary": "Get_user_by_ID",
+        "description": "Retrieves detailed information about a specific user by their ID. ",
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of the user. This ID is generated by the system when the user is created and cannot be changed."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation. Returns the complete user object with all associated data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "获取所有产品",
+        "description": "检索系统中的所有产品列表。此端点支持分页、过滤和排序。",
+        "operationId": "getProducts",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "分页的页码。此参数控制返回哪一页的结果。第一页为1。最大页码由结果总数和限制参数决定。分页系统支持基于偏移量和基于游标的分页。使用基于偏移量的分页时，此参数指定页码。系统将返回指定页的结果，每页的项目数由限制参数控制。总页数可以通过将结果总数除以限制来计算。系统包括防止大页码性能问题的保护措施。响应中的分页元数据包括有关当前页、总页数和导航链接的信息。分页系统设计为高性能，支持高效查询大型数据集。系统包括对分页参数的全面验证和错误处理。分页系统支持处理大型结果集的各种策略，包括基于游标的分页和基于偏移量的分页。系统包括在客户端应用程序中实现分页的全面文档和示例。分页系统设计为易于与各种客户端应用程序集成，并包括对不同分页策略的全面支持。系统包括全面的监控和日志记录功能，以帮助诊断和解决分页问题。分页系统设计为高可用性，并包括全面的错误处理和恢复机制。系统包括全面的性能优化功能，以确保高效分页大型数据集。分页系统设计为易于扩展，并包括全面的版本控制支持。系统包括在各种编程语言和框架中实现分页的全面文档和示例。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "每页的项目数。此参数控制每页返回多少结果。最大值为100，以防止大型结果集的性能问题。限制参数与页面参数一起工作以实现分页。较小的限制值会导致更多页面，但每页的响应时间更快。较大的限制值会减少页面数量，但可能会增加响应时间。系统包括优化以有效处理不同的限制值。响应包括有关当前限制和基于查询复杂性和结果集大小的最佳限制值建议的元数据。系统可能会调整实际限制值以优化性能，同时尊重最大限制约束。限制参数设计为高度可配置，允许客户端根据其特定需求优化其查询。系统包括对限制参数的全面验证和错误处理。限制参数支持处理大型结果集的各种策略，包括基于查询复杂性的动态调整。系统包括在客户端应用程序中实现限制参数的全面文档和示例。限制参数设计为易于与各种客户端应用程序集成，并包括对不同限制策略的全面支持。系统包括全面的监控和日志记录功能，以帮助诊断和解决限制相关问题。限制参数设计为高可用性，并包括全面的错误处理和恢复机制。系统包括全面的性能优化功能，以确保高效处理限制参数。限制参数设计为易于扩展，并包括全面的版本控制支持。系统包括在各种编程语言和框架中实现限制的全面文档和示例。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功。返回包含所有产品的分页列表。Successful operation. Returns a paginated list of all products.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "获取所有订单",
+        "description": "检索系统中的所有订单列表。此端点支持分页、过滤和排序。",
+        "operationId": "getOrders",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "分页的页码。此参数控制返回哪一页的结果。第一页为1。最大页码由结果总数和限制参数决定。分页系统支持基于偏移量和基于游标的分页。使用基于偏移量的分页时，此参数指定页码。系统将返回指定页的结果，每页的项目数由限制参数控制。总页数可以通过将结果总数除以限制来计算。系统包括防止大页码性能问题的保护措施。响应中的分页元数据包括有关当前页、总页数和导航链接的信息。分页系统设计为高性能，支持高效查询大型数据集。系统包括对分页参数的全面验证和错误处理。分页系统支持处理大型结果集的各种策略，包括基于游标的分页和基于偏移量的分页。系统包括在客户端应用程序中实现分页的全面文档和示例。分页系统设计为易于与各种客户端应用程序集成，并包括对不同分页策略的全面支持。系统包括全面的监控和日志记录功能，以帮助诊断和解决分页问题。分页系统设计为高可用性，并包括全面的错误处理和恢复机制。系统包括全面的性能优化功能，以确保高效分页大型数据集。分页系统设计为易于扩展，并包括全面的版本控制支持。系统包括在各种编程语言和框架中实现分页的全面文档和示例。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "每页的项目数。此参数控制每页返回多少结果。最大值为100，以防止大型结果集的性能问题。限制参数与页面参数一起工作以实现分页。较小的限制值会导致更多页面，但每页的响应时间更快。较大的限制值会减少页面数量，但可能会增加响应时间。系统包括优化以有效处理不同的限制值。响应包括有关当前限制和基于查询复杂性和结果集大小的最佳限制值建议的元数据。系统可能会调整实际限制值以优化性能，同时尊重最大限制约束。限制参数设计为高度可配置，允许客户端根据其特定需求优化其查询。系统包括对限制参数的全面验证和错误处理。限制参数支持处理大型结果集的各种策略，包括基于查询复杂性的动态调整。系统包括在客户端应用程序中实现限制参数的全面文档和示例。限制参数设计为易于与各种客户端应用程序集成，并包括对不同限制策略的全面支持。系统包括全面的监控和日志记录功能，以帮助诊断和解决限制相关问题。限制参数设计为高可用性，并包括全面的错误处理和恢复机制。系统包括全面的性能优化功能，以确保高效处理限制参数。限制参数设计为易于扩展，并包括全面的版本控制支持。系统包括在各种编程语言和框架中实现限制的全面文档和示例。",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功。返回包含每个订单详细信息的订单分页列表。Successful operation. Returns a paginated list of orders with detailed information about each order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments": {
+      "get": {
+        "summary": "获取所有支付记录",
+        "description": "检索系统中的所有支付记录列表。此端点支持按日期范围、支付方式和状态进行过滤。",
+        "operationId": "getPayments",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "支付历史的开始日期。此参数按交易日期过滤支付记录。日期应为ISO 8601格式。Start date for payment history. This parameter filters payments by their transaction date. The date should be in ISO 8601 format.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "支付历史的结束日期。此参数按交易日期过滤支付记录。日期应为ISO 8601格式。End date for payment history. This parameter filters payments by their transaction date. The date should be in ISO 8601 format.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "payment_method",
+            "in": "query",
+            "description": "支付方式过滤器。此参数按使用的支付方式过滤支付记录。Payment method filter. This parameter filters payments by the payment method used.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["credit_card", "paypal", "bank_transfer"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功。返回包含每个支付详细信息的支付记录分页列表。Successful operation. Returns a paginated list of payments with detailed information about each payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "summary": "获取单个产品详情",
+        "description": "根据产品ID检索特定产品的详细信息。",
+        "operationId": "getProductById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "产品的唯一标识符。此ID由系统生成，用于唯一标识和引用产品。ID格式遵循特定模式，包括前缀、时间戳和随机组件，以确保全局唯一性。ID设计为URL安全，可在各种上下文中使用而无需编码。系统维护严格的验证和安全措施，以防止未经授权的访问或操作。ID用于日志记录、审计和跟踪产品活动。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功。返回包含产品详细信息的完整产品对象。响应包括产品的所有属性、规格、库存状态和关联资源。响应设计为易于解析和处理，具有清晰的数据结构和字段含义文档。错误处理和边缘情况都有明确记录，以帮助客户端处理所有可能的响应场景。响应设计为高性能，支持大型数据集的高效序列化和反序列化。响应包括查询结果的全面元数据，包括过滤详细信息。响应支持各种数据格式，并包括全面的错误处理和验证。响应设计为易于与各种客户端应用程序集成，并包括全面的文档和示例。响应包括对各种缓存策略的支持，并包括全面的性能优化功能。响应设计为易于扩展，并包括全面的版本控制支持。响应包括对各种数据格式的支持，并包括全面的文档和示例。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "summary": "获取单个订单详情",
+        "description": "根据订单ID检索特定订单的详细信息。",
+        "operationId": "getOrderById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "订单的唯一标识符。此ID由系统生成，用于唯一标识和引用订单。ID格式遵循特定模式，包括前缀、时间戳和随机组件，以确保全局唯一性。ID设计为URL安全，可在各种上下文中使用而无需编码。系统维护严格的验证和安全措施，以防止未经授权的访问或操作。ID用于日志记录、审计和跟踪订单活动。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功。返回包含订单详细信息的完整订单对象。响应包括订单的所有属性、状态、支付信息、配送状态和关联资源。响应设计为易于解析和处理，具有清晰的数据结构和字段含义文档。错误处理和边缘情况都有明确记录，以帮助客户端处理所有可能的响应场景。响应设计为高性能，支持大型数据集的高效序列化和反序列化。响应包括查询结果的全面元数据，包括过滤详细信息。响应支持各种数据格式，并包括全面的错误处理和验证。响应设计为易于与各种客户端应用程序集成，并包括全面的文档和示例。响应包括对各种缓存策略的支持，并包括全面的性能优化功能。响应设计为易于扩展，并包括全面的版本控制支持。响应包括对各种数据格式的支持，并包括全面的文档和示例。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "description": "A user in the system. This schema represents a complete user profile with all associated data and preferences. The user object is the central entity in the system, containing all information about a user's identity, preferences, and interactions with the system. This comprehensive schema includes personal information, system preferences, activity history, and subscription details. The schema is designed to be extensible and flexible, allowing for future additions while maintaining backward compatibility. Each field in the schema is carefully documented with detailed descriptions and examples to ensure proper understanding and implementation. The schema supports various use cases including user management, authentication, personalization, and analytics. The structure is optimized for efficient querying and storage while maintaining data integrity and security. The schema includes validation rules and constraints to ensure data quality and consistency. The schema is versioned to support evolution while maintaining compatibility with existing implementations. The schema is designed to be easily integrated with various client applications and systems. The schema includes comprehensive documentation and examples to help developers understand and implement it correctly. The schema is designed to be highly performant, with support for efficient serialization and deserialization. The schema includes comprehensive error handling and validation to ensure data quality. The schema is designed to be easily extended and includes comprehensive versioning support. The schema includes comprehensive monitoring and logging capabilities to help diagnose and resolve issues. The schema is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The schema includes comprehensive performance optimization features to ensure efficient handling of user data. The schema is designed to be easily integrated with various client applications and includes comprehensive support for different data strategies. The schema includes comprehensive documentation and examples for implementing user data in various programming languages and frameworks.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the user. This ID is generated by the system and cannot be changed."
+          },
+          "username": {
+            "type": "string",
+            "description": "User's username. This is a unique identifier that the user uses to log in to the system."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address. This is used for communication and account recovery."
+          },
+          "profile": {
+            "type": "object",
+            "description": "User's personal profile information. This includes basic personal details and demographic information.",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "description": "User's first name. This is used for personalization and communication."
+              },
+              "lastName": {
+                "type": "string",
+                "description": "User's last name. This is used for personalization and communication."
+              },
+              "age": {
+                "type": "integer",
+                "description": "User's age. This is used for demographic analysis and personalization."
+              },
+              "gender": {
+                "type": "string",
+                "enum": ["male", "female", "other"],
+                "description": "User's gender. This is used for demographic analysis and personalization."
+              },
+              "address": {
+                "type": "object",
+                "description": "User's primary address. This is used for shipping and billing purposes.",
+                "properties": {
+                  "street": {
+                    "type": "string",
+                    "description": "Street address"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "State or province"
+                  },
+                  "zipCode": {
+                    "type": "string",
+                    "description": "Postal code"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country name"
+                  }
+                }
+              },
+              "phone": {
+                "type": "string",
+                "description": "User's primary phone number. This is used for communication and verification."
+              },
+              "birthDate": {
+                "type": "string",
+                "format": "date",
+                "description": "User's date of birth. This is used for age verification and personalization."
+              }
+            }
+          },
+          "preferences": {
+            "type": "object",
+            "description": "User's system preferences and settings. These settings control how the user interacts with the system.",
+            "properties": {
+              "language": {
+                "type": "string",
+                "description": "Preferred language for the user interface and communications."
+              },
+              "timezone": {
+                "type": "string",
+                "description": "User's preferred timezone for displaying dates and times."
+              },
+              "notifications": {
+                "type": "object",
+                "description": "User's notification preferences. These settings control how and when the user receives notifications.",
+                "properties": {
+                  "email": {
+                    "type": "boolean",
+                    "description": "Whether the user wants to receive email notifications."
+                  },
+                  "sms": {
+                    "type": "boolean",
+                    "description": "Whether the user wants to receive SMS notifications."
+                  },
+                  "push": {
+                    "type": "boolean",
+                    "description": "Whether the user wants to receive push notifications."
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "enum": ["immediate", "daily", "weekly"],
+                    "description": "How often the user wants to receive notifications."
+                  }
+                }
+              },
+              "privacy": {
+                "type": "object",
+                "description": "User's privacy settings. These settings control what information is visible to other users.",
+                "properties": {
+                  "profileVisibility": {
+                    "type": "string",
+                    "enum": ["public", "friends", "private"],
+                    "description": "Who can see the user's profile."
+                  },
+                  "activityVisibility": {
+                    "type": "string",
+                    "enum": ["public", "friends", "private"],
+                    "description": "Who can see the user's activity."
+                  }
+                }
+              }
+            }
+          },
+          "activity": {
+            "type": "array",
+            "description": "User's activity history. This includes all significant actions the user has taken in the system.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Type of activity. This indicates what kind of action the user performed."
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the activity occurred. This is recorded in UTC."
+                },
+                "details": {
+                  "type": "object",
+                  "description": "Additional details about the activity. The structure varies depending on the activity type."
+                }
+              }
+            }
+          },
+          "subscriptions": {
+            "type": "array",
+            "description": "User's active subscriptions. This includes all services and products the user is currently subscribed to.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the subscription."
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type of subscription."
+                },
+                "startDate": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "When the subscription started."
+                },
+                "endDate": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "When the subscription ends."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["active", "cancelled", "expired"],
+                  "description": "Current status of the subscription."
+                }
+              }
+            }
+          }
+        }
+      },
+      "UserCreate": {
+        "type": "object",
+        "description": "Data required to create a new user. This schema includes all required and optional fields for user creation.",
+        "required": ["username", "email", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Desired username. This must be unique across all users."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address. This must be unique across all users."
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "Account password. This must meet the system's password requirements."
+          },
+          "profile": {
+            "$ref": "#/components/schemas/User/properties/profile"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/User/properties/preferences"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "description": "A product in the catalog. This schema represents a complete product with all its details and specifications. The product object is a fundamental entity in the e-commerce system, containing all information about a product's identity, characteristics, and availability. This comprehensive schema includes basic product information, detailed specifications, inventory data, images, and variants. The schema is designed to support complex product hierarchies and relationships while maintaining data integrity and consistency. Each field in the schema is carefully documented with detailed descriptions and examples to ensure proper understanding and implementation. The schema supports various use cases including product management, catalog browsing, search, and inventory management. The structure is optimized for efficient querying and storage while maintaining data integrity and security. The schema includes validation rules and constraints to ensure data quality and consistency. The schema is versioned to support evolution while maintaining compatibility with existing implementations. The schema is designed to be easily integrated with various client applications and systems. The schema includes comprehensive documentation and examples to help developers understand and implement it correctly. The schema is designed to be highly performant, with support for efficient serialization and deserialization. The schema includes comprehensive error handling and validation to ensure data quality. The schema is designed to be easily extended and includes comprehensive versioning support. The schema includes comprehensive monitoring and logging capabilities to help diagnose and resolve issues. The schema is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The schema includes comprehensive performance optimization features to ensure efficient handling of product data. The schema is designed to be easily integrated with various client applications and includes comprehensive support for different data strategies. The schema includes comprehensive documentation and examples for implementing product data in various programming languages and frameworks.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the product. This ID is generated by the system and cannot be changed. The ID is used throughout the system to uniquely identify and reference the product. It is generated using a secure algorithm that ensures uniqueness and prevents collisions. The ID is immutable and cannot be modified after creation. It is used in all API calls and database operations related to the product. The ID format follows a specific pattern that includes a prefix, timestamp, and random component to ensure global uniqueness. The ID is designed to be URL-safe and can be used in various contexts without encoding. The system maintains strict validation and security measures around the ID to prevent unauthorized access or manipulation. The ID is used in logging, auditing, and tracking product activities throughout the system. It is also used in various integrations and third-party systems that interact with the product data. The ID is designed to be highly performant in database operations and API calls. The system includes comprehensive validation and error handling for ID-related operations. The ID supports various strategies for handling complex identification requirements, including federation and delegation. The system includes comprehensive documentation and examples for implementing ID-based operations in client applications. The ID is designed to be easily integrated with various client applications and includes comprehensive support for different identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve ID-related issues. The ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of ID-based operations. The ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing ID-based operations in various programming languages and frameworks.",
+            "example": "prd_1234567890abcdef1234567890abcdef"
+          },
+          "name": {
+            "type": "string",
+            "description": "Product name. This is displayed to customers and used in search. The name must be unique within its category and must follow specific rules regarding length and character set. It is used in various system operations including product listing, search, and navigation. The name is validated during creation and updates to ensure it meets the system's requirements. The system includes comprehensive validation and error handling for name-related operations. The name supports various strategies for handling complex naming requirements, including internationalization and special characters. The system includes comprehensive documentation and examples for implementing name-based operations in client applications. The name is designed to be easily integrated with various client applications and includes comprehensive support for different naming strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve name-related issues. The name is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of name-based operations. The name is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing name-based operations in various programming languages and frameworks.",
+            "example": "Premium Wireless Headphones with Noise Cancellation",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed product description. This includes features, benefits, and usage instructions. The description must be comprehensive and informative, providing customers with all necessary information about the product. It is used in various system operations including product display, search, and customer support. The description is validated during creation and updates to ensure it meets the system's requirements. The system includes comprehensive validation and error handling for description-related operations. The description supports various strategies for handling complex content requirements, including rich text formatting and media embedding. The system includes comprehensive documentation and examples for implementing description-based operations in client applications. The description is designed to be easily integrated with various client applications and includes comprehensive support for different content strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve description-related issues. The description is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of description-based operations. The description is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing description-based operations in various programming languages and frameworks.",
+            "example": "Experience crystal-clear sound with our premium wireless headphones. Featuring advanced noise cancellation technology, these headphones provide an immersive audio experience. The ergonomic design ensures comfort during extended use, while the long-lasting battery provides up to 30 hours of playback. Includes a premium carrying case and multiple ear tip sizes for the perfect fit. Compatible with all major Bluetooth devices and includes a 3.5mm audio jack for wired connection. The headphones feature intuitive touch controls and voice assistant integration for hands-free operation. The built-in microphone ensures clear calls and voice commands. The headphones are water-resistant and come with a 2-year warranty. The package includes a USB-C charging cable and quick start guide. The headphones are made from premium materials and feature a sleek, modern design. The sound profile can be customized through the companion mobile app, which also provides firmware updates and additional features. The headphones support high-quality audio codecs including AAC and aptX for superior sound quality. The noise cancellation can be adjusted to suit different environments, and the transparency mode allows you to hear your surroundings when needed. The headphones feature fast charging, providing 5 hours of playback from just 10 minutes of charging. The companion app provides detailed battery status and usage statistics. The headphones are designed for both casual listening and professional use, with studio-quality sound reproduction. The package is environmentally friendly and made from recycled materials.",
+            "minLength": 10,
+            "maxLength": 5000
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Product price in the base currency. This is the standard price before any discounts or promotions. The price must be a positive number with appropriate decimal places. It is used in various system operations including order processing, inventory management, and financial reporting. The price is validated during creation and updates to ensure it meets the system's requirements. The system includes comprehensive validation and error handling for price-related operations. The price supports various strategies for handling complex pricing requirements, including dynamic pricing and currency conversion. The system includes comprehensive documentation and examples for implementing price-based operations in client applications. The price is designed to be easily integrated with various client applications and includes comprehensive support for different pricing strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve price-related issues. The price is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of price-based operations. The price is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing price-based operations in various programming languages and frameworks.",
+            "example": 299.99,
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "category": {
+            "type": "string",
+            "description": "Product category. This is used for organization and navigation. The category must be one of the predefined values in the system. It is used in various system operations including product listing, filtering, and analytics. The category is validated during creation and updates to ensure it meets the system's requirements. The system includes comprehensive validation and error handling for category-related operations. The category supports various strategies for handling complex categorization requirements, including hierarchical categories and multiple categories. The system includes comprehensive documentation and examples for implementing category-based operations in client applications. The category is designed to be easily integrated with various client applications and includes comprehensive support for different categorization strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve category-related issues. The category is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of category-based operations. The category is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing category-based operations in various programming languages and frameworks.",
+            "example": "Electronics > Audio > Headphones",
+            "enum": [
+              "Electronics > Audio > Headphones",
+              "Electronics > Audio > Speakers",
+              "Electronics > Computers > Laptops",
+              "Electronics > Computers > Desktops",
+              "Electronics > Mobile > Smartphones",
+              "Electronics > Mobile > Tablets",
+              "Electronics > Gaming > Consoles",
+              "Electronics > Gaming > Accessories",
+              "Electronics > Cameras > DSLR",
+              "Electronics > Cameras > Mirrorless",
+              "Electronics > Cameras > Action",
+              "Electronics > TVs > LED",
+              "Electronics > TVs > OLED",
+              "Electronics > TVs > QLED",
+              "Electronics > Home Theater > Soundbars",
+              "Electronics > Home Theater > Receivers",
+              "Electronics > Smart Home > Security",
+              "Electronics > Smart Home > Lighting",
+              "Electronics > Smart Home > Thermostats",
+              "Electronics > Wearables > Smartwatches",
+              "Electronics > Wearables > Fitness Trackers",
+              "Electronics > Accessories > Cases",
+              "Electronics > Accessories > Chargers",
+              "Electronics > Accessories > Cables",
+              "Electronics > Accessories > Stands",
+              "Electronics > Accessories > Screen Protectors",
+              "Electronics > Accessories > Memory Cards",
+              "Electronics > Accessories > Power Banks",
+              "Electronics > Accessories > Docks",
+              "Electronics > Accessories > Adapters"
+            ]
+          },
+          "specifications": {
+            "type": "object",
+            "description": "Product specifications. These are technical details that vary by product type.",
+            "properties": {
+              "dimensions": {
+                "type": "object",
+                "properties": {
+                  "length": {
+                    "type": "number",
+                    "description": "Product length in centimeters"
+                  },
+                  "width": {
+                    "type": "number",
+                    "description": "Product width in centimeters"
+                  },
+                  "height": {
+                    "type": "number",
+                    "description": "Product height in centimeters"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Product weight in kilograms"
+                  }
+                }
+              },
+              "materials": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Materials used in the product"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Key features of the product"
+              }
+            }
+          },
+          "inventory": {
+            "type": "object",
+            "description": "Product inventory information. This includes stock levels and location data.",
+            "properties": {
+              "quantity": {
+                "type": "integer",
+                "description": "Available quantity in stock"
+              },
+              "location": {
+                "type": "string",
+                "description": "Warehouse location"
+              },
+              "reorderLevel": {
+                "type": "integer",
+                "description": "Quantity at which to reorder"
+              },
+              "reorderQuantity": {
+                "type": "integer",
+                "description": "Quantity to order when reordering"
+              }
+            }
+          },
+          "images": {
+            "type": "array",
+            "description": "Product images. These are displayed in the product catalog and detail pages.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "URL of the image"
+                },
+                "alt": {
+                  "type": "string",
+                  "description": "Alternative text for the image"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["main", "thumbnail", "gallery"],
+                  "description": "Type of image"
+                }
+              }
+            }
+          },
+          "variants": {
+            "type": "array",
+            "description": "Product variants. These are different versions of the same product.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Variant identifier"
+                },
+                "sku": {
+                  "type": "string",
+                  "description": "Stock keeping unit"
+                },
+                "options": {
+                  "type": "object",
+                  "description": "Variant options"
+                },
+                "price": {
+                  "type": "number",
+                  "description": "Variant price"
+                },
+                "inventory": {
+                  "$ref": "#/components/schemas/Product/properties/inventory"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "description": "An order in the system. This schema represents a complete order with all its details and history. The order object is a critical entity in the e-commerce system, containing all information about a customer's purchase, including items, shipping details, payment information, and status history. This comprehensive schema supports complex order scenarios including multiple items, various shipping methods, and different payment options. The schema is designed to track the complete lifecycle of an order from creation to fulfillment while maintaining data integrity and consistency. Each field in the schema is carefully documented with detailed descriptions and examples to ensure proper understanding and implementation. The schema supports various use cases including order management, fulfillment, customer service, and analytics. The structure is optimized for efficient querying and storage while maintaining data integrity and security. The schema includes validation rules and constraints to ensure data quality and consistency. The schema is versioned to support evolution while maintaining compatibility with existing implementations. The schema is designed to be easily integrated with various client applications and systems. The schema includes comprehensive documentation and examples to help developers understand and implement it correctly. The schema is designed to be highly performant, with support for efficient serialization and deserialization. The schema includes comprehensive error handling and validation to ensure data quality. The schema is designed to be easily extended and includes comprehensive versioning support. The schema includes comprehensive monitoring and logging capabilities to help diagnose and resolve issues. The schema is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The schema includes comprehensive performance optimization features to ensure efficient handling of order data. The schema is designed to be easily integrated with various client applications and includes comprehensive support for different data strategies. The schema includes comprehensive documentation and examples for implementing order data in various programming languages and frameworks.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the order. This ID is generated by the system and cannot be changed. The ID is used throughout the system to uniquely identify and reference the order. It is generated using a secure algorithm that ensures uniqueness and prevents collisions. The ID is immutable and cannot be modified after creation. It is used in all API calls and database operations related to the order. The ID format follows a specific pattern that includes a prefix, timestamp, and random component to ensure global uniqueness. The ID is designed to be URL-safe and can be used in various contexts without encoding. The system maintains strict validation and security measures around the ID to prevent unauthorized access or manipulation. The ID is used in logging, auditing, and tracking order activities throughout the system. It is also used in various integrations and third-party systems that interact with the order data. The ID is designed to be highly performant in database operations and API calls. The system includes comprehensive validation and error handling for ID-related operations. The ID supports various strategies for handling complex identification requirements, including federation and delegation. The system includes comprehensive documentation and examples for implementing ID-based operations in client applications. The ID is designed to be easily integrated with various client applications and includes comprehensive support for different identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve ID-related issues. The ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of ID-based operations. The ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing ID-based operations in various programming languages and frameworks.",
+            "example": "ord_1234567890abcdef1234567890abcdef"
+          },
+          "userId": {
+            "type": "string",
+            "description": "ID of the user who placed the order. This field links the order to the user who created it. The user ID is validated during order creation to ensure it exists and is active. The system maintains referential integrity between orders and users, ensuring that all orders have valid user references. The user ID is used in various system operations including order management, customer service, and analytics. The system includes comprehensive validation and error handling for user ID-related operations. The user ID supports various strategies for handling complex user relationships, including guest orders and delegated ordering. The system includes comprehensive documentation and examples for implementing user ID-based operations in client applications. The user ID is designed to be easily integrated with various client applications and includes comprehensive support for different user identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve user ID-related issues. The user ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of user ID-based operations. The user ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing user ID-based operations in various programming languages and frameworks.",
+            "example": "user_1234567890abcdef1234567890abcdef"
+          },
+          "items": {
+            "type": "array",
+            "description": "Items in the order. This includes all products and their quantities. Each item in the order represents a specific product or variant that the customer has purchased. The items array is validated during order creation to ensure all products exist and are available. The system maintains inventory integrity by reserving items when an order is created. Each item includes detailed information about the product, quantity, price, and any selected options. The items array supports various product types and configurations, including simple products, configurable products, and bundled products. The system includes comprehensive validation and error handling for items-related operations. The items array supports various strategies for handling complex product relationships, including parent-child relationships and product bundles. The system includes comprehensive documentation and examples for implementing items-based operations in client applications. The items array is designed to be easily integrated with various client applications and includes comprehensive support for different product strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve items-related issues. The items array is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of items-based operations. The items array is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing items-based operations in various programming languages and frameworks.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "string",
+                  "description": "ID of the ordered product. This field links the order item to the specific product in the catalog. The product ID is validated during order creation to ensure it exists and is available for purchase. The system maintains referential integrity between order items and products, ensuring that all order items have valid product references. The product ID is used in various system operations including inventory management, pricing, and product analytics. The system includes comprehensive validation and error handling for product ID-related operations. The product ID supports various strategies for handling complex product relationships, including product variants and bundles. The system includes comprehensive documentation and examples for implementing product ID-based operations in client applications. The product ID is designed to be easily integrated with various client applications and includes comprehensive support for different product identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve product ID-related issues. The product ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of product ID-based operations. The product ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing product ID-based operations in various programming languages and frameworks.",
+                  "example": "prd_1234567890abcdef1234567890abcdef"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "description": "Quantity ordered. This field specifies how many units of the product the customer has ordered. The quantity is validated during order creation to ensure it is a positive number and does not exceed available inventory. The system maintains inventory integrity by reserving the specified quantity when an order is created. The quantity is used in various system operations including inventory management, pricing calculations, and shipping. The system includes comprehensive validation and error handling for quantity-related operations. The quantity supports various strategies for handling complex quantity requirements, including fractional quantities and bulk ordering. The system includes comprehensive documentation and examples for implementing quantity-based operations in client applications. The quantity is designed to be easily integrated with various client applications and includes comprehensive support for different quantity strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve quantity-related issues. The quantity is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of quantity-based operations. The quantity is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing quantity-based operations in various programming languages and frameworks.",
+                  "example": 2,
+                  "minimum": 1,
+                  "maximum": 999
+                },
+                "price": {
+                  "type": "number",
+                  "description": "Price at time of order. This field records the price of the product when the order was placed. The price is validated during order creation to ensure it matches the current product price and any applicable discounts. The system maintains price integrity by locking in the price at the time of order creation. The price is used in various system operations including order total calculations, financial reporting, and price history tracking. The system includes comprehensive validation and error handling for price-related operations. The price supports various strategies for handling complex pricing requirements, including dynamic pricing and currency conversion. The system includes comprehensive documentation and examples for implementing price-based operations in client applications. The price is designed to be easily integrated with various client applications and includes comprehensive support for different pricing strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve price-related issues. The price is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of price-based operations. The price is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing price-based operations in various programming languages and frameworks.",
+                  "example": 299.99,
+                  "minimum": 0,
+                  "maximum": 1000000
+                }
+              }
+            }
+          },
+          "shipping": {
+            "type": "object",
+            "description": "Shipping information for the order. This includes address and method details.",
+            "properties": {
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "string",
+                    "description": "Street address"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "City name"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "State or province"
+                  },
+                  "zipCode": {
+                    "type": "string",
+                    "description": "Postal code"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Country name"
+                  }
+                }
+              },
+              "method": {
+                "type": "string",
+                "description": "Shipping method selected"
+              },
+              "trackingNumber": {
+                "type": "string",
+                "description": "Shipping tracking number"
+              },
+              "estimatedDelivery": {
+                "type": "string",
+                "format": "date",
+                "description": "Estimated delivery date"
+              },
+              "cost": {
+                "type": "number",
+                "description": "Shipping cost"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "shipped", "delivered", "cancelled"],
+            "description": "Current order status"
+          },
+          "payment": {
+            "type": "object",
+            "description": "Payment information for the order. This includes method and status details.",
+            "properties": {
+              "method": {
+                "type": "string",
+                "description": "Payment method used"
+              },
+              "amount": {
+                "type": "number",
+                "description": "Total amount paid"
+              },
+              "status": {
+                "type": "string",
+                "description": "Payment status"
+              },
+              "transactionId": {
+                "type": "string",
+                "description": "Payment transaction ID"
+              },
+              "currency": {
+                "type": "string",
+                "description": "Payment currency"
+              }
+            }
+          },
+          "history": {
+            "type": "array",
+            "description": "Order status history. This tracks all changes to the order status.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "Status at this point"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the status changed"
+                },
+                "notes": {
+                  "type": "string",
+                  "description": "Additional notes about the status change"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "description": "A payment in the system. This schema represents a complete payment with all its details and history. The payment object is a critical entity in the e-commerce system, containing all information about a financial transaction, including amount, method, status, and transaction details. This comprehensive schema supports various payment methods, currencies, and processing scenarios while maintaining data integrity and security. The schema is designed to track the complete lifecycle of a payment from initiation to completion while maintaining data integrity and consistency. Each field in the schema is carefully documented with detailed descriptions and examples to ensure proper understanding and implementation. The schema supports various use cases including payment processing, reconciliation, reporting, and fraud detection. The structure is optimized for efficient querying and storage while maintaining data integrity and security. The schema includes validation rules and constraints to ensure data quality and consistency. The schema is versioned to support evolution while maintaining compatibility with existing implementations. The schema is designed to be easily integrated with various client applications and systems. The schema includes comprehensive documentation and examples to help developers understand and implement it correctly. The schema is designed to be highly performant, with support for efficient serialization and deserialization. The schema includes comprehensive error handling and validation to ensure data quality. The schema is designed to be easily extended and includes comprehensive versioning support. The schema includes comprehensive monitoring and logging capabilities to help diagnose and resolve issues. The schema is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The schema includes comprehensive performance optimization features to ensure efficient handling of payment data. The schema is designed to be easily integrated with various client applications and includes comprehensive support for different data strategies. The schema includes comprehensive documentation and examples for implementing payment data in various programming languages and frameworks.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the payment. This ID is generated by the system and cannot be changed. The ID is used throughout the system to uniquely identify and reference the payment. It is generated using a secure algorithm that ensures uniqueness and prevents collisions. The ID is immutable and cannot be modified after creation. It is used in all API calls and database operations related to the payment. The ID format follows a specific pattern that includes a prefix, timestamp, and random component to ensure global uniqueness. The ID is designed to be URL-safe and can be used in various contexts without encoding. The system maintains strict validation and security measures around the ID to prevent unauthorized access or manipulation. The ID is used in logging, auditing, and tracking payment activities throughout the system. It is also used in various integrations and third-party systems that interact with the payment data. The ID is designed to be highly performant in database operations and API calls. The system includes comprehensive validation and error handling for ID-related operations. The ID supports various strategies for handling complex identification requirements, including federation and delegation. The system includes comprehensive documentation and examples for implementing ID-based operations in client applications. The ID is designed to be easily integrated with various client applications and includes comprehensive support for different identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve ID-related issues. The ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of ID-based operations. The ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing ID-based operations in various programming languages and frameworks.",
+            "example": "pay_1234567890abcdef1234567890abcdef"
+          },
+          "orderId": {
+            "type": "string",
+            "description": "ID of the associated order. This field links the payment to the specific order it is associated with. The order ID is validated during payment creation to ensure it exists and is valid. The system maintains referential integrity between payments and orders, ensuring that all payments have valid order references. The order ID is used in various system operations including order management, financial reporting, and reconciliation. The system includes comprehensive validation and error handling for order ID-related operations. The order ID supports various strategies for handling complex order relationships, including partial payments and multiple payment methods. The system includes comprehensive documentation and examples for implementing order ID-based operations in client applications. The order ID is designed to be easily integrated with various client applications and includes comprehensive support for different order identification strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve order ID-related issues. The order ID is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of order ID-based operations. The order ID is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing order ID-based operations in various programming languages and frameworks.",
+            "example": "ord_1234567890abcdef1234567890abcdef"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Payment amount in the specified currency. This field records the exact amount of the payment. The amount is validated during payment creation to ensure it is a positive number and matches the order total. The system maintains financial integrity by ensuring the payment amount is accurate and properly recorded. The amount is used in various system operations including financial reporting, reconciliation, and analytics. The system includes comprehensive validation and error handling for amount-related operations. The amount supports various strategies for handling complex payment scenarios, including partial payments and multiple currencies. The system includes comprehensive documentation and examples for implementing amount-based operations in client applications. The amount is designed to be easily integrated with various client applications and includes comprehensive support for different amount strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve amount-related issues. The amount is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of amount-based operations. The amount is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing amount-based operations in various programming languages and frameworks.",
+            "example": 299.99,
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Payment currency code (e.g., USD, EUR). This field specifies the currency in which the payment is made. The currency is validated during payment creation to ensure it is a valid ISO 4217 currency code. The system maintains currency integrity by ensuring all financial operations use the correct currency. The currency is used in various system operations including currency conversion, financial reporting, and international transactions. The system includes comprehensive validation and error handling for currency-related operations. The currency supports various strategies for handling complex currency requirements, including multi-currency support and dynamic conversion. The system includes comprehensive documentation and examples for implementing currency-based operations in client applications. The currency is designed to be easily integrated with various client applications and includes comprehensive support for different currency strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve currency-related issues. The currency is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of currency-based operations. The currency is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing currency-based operations in various programming languages and frameworks.",
+            "example": "USD",
+            "enum": ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "INR", "BRL", "MXN", "SGD", "HKD", "NZD", "SEK", "NOK", "DKK", "ZAR", "RUB", "TRY"]
+          },
+          "method": {
+            "type": "string",
+            "description": "Payment method used (e.g., credit_card, paypal). This field specifies how the payment was made. The method is validated during payment creation to ensure it is a supported payment method. The system maintains payment method integrity by ensuring all payments use valid and supported methods. The method is used in various system operations including payment processing, reporting, and fraud detection. The system includes comprehensive validation and error handling for method-related operations. The method supports various strategies for handling complex payment scenarios, including multiple payment methods and split payments. The system includes comprehensive documentation and examples for implementing method-based operations in client applications. The method is designed to be easily integrated with various client applications and includes comprehensive support for different payment strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve method-related issues. The method is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of method-based operations. The method is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing method-based operations in various programming languages and frameworks.",
+            "example": "credit_card",
+            "enum": ["credit_card", "paypal", "bank_transfer", "apple_pay", "google_pay", "amazon_pay", "alipay", "wechat_pay", "bitcoin", "cash_on_delivery"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "completed", "failed", "refunded", "partially_refunded", "disputed", "cancelled", "expired", "processing", "authorized"],
+            "description": "Current payment status. This field indicates the current state of the payment in the system. The status is updated throughout the payment lifecycle to reflect the latest state. The system maintains status integrity by ensuring all status transitions are valid and properly recorded. The status is used in various system operations including order fulfillment, financial reporting, and customer service. The system includes comprehensive validation and error handling for status-related operations. The status supports various strategies for handling complex payment scenarios, including multi-step processing and asynchronous updates. The system includes comprehensive documentation and examples for implementing status-based operations in client applications. The status is designed to be easily integrated with various client applications and includes comprehensive support for different status strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve status-related issues. The status is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of status-based operations. The status is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing status-based operations in various programming languages and frameworks."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Standard error response format. This schema defines the structure for all error responses in the API. It includes detailed information about the error, including a unique error code, human-readable message, and additional context. The error response is designed to be consistent across all endpoints, making it easier for clients to handle errors uniformly. The schema includes comprehensive documentation and examples to help developers understand and implement error handling correctly. The error response is designed to be easily integrated with various client applications and includes comprehensive support for different error handling strategies. The schema includes comprehensive monitoring and logging capabilities to help diagnose and resolve issues. The error response is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The schema includes comprehensive performance optimization features to ensure efficient handling of error responses. The schema is designed to be easily extended and includes comprehensive versioning support. The schema includes comprehensive documentation and examples for implementing error responses in various programming languages and frameworks.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Unique error code. This code is used to identify the specific type of error that occurred. The code is standardized across the API and documented in the API reference. The code is designed to be easily parseable by clients and used for programmatic error handling. The code is immutable and cannot be changed after creation. The code is used in logging, auditing, and tracking error activities throughout the system. The code is also used in various integrations and third-party systems that interact with the API. The code is designed to be highly performant in error handling operations. The system includes comprehensive validation and error handling for code-related operations. The code supports various strategies for handling complex error scenarios, including error categorization and grouping. The system includes comprehensive documentation and examples for implementing code-based error handling in client applications. The code is designed to be easily integrated with various client applications and includes comprehensive support for different error handling strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve code-related issues. The code is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of code-based operations. The code is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing code-based operations in various programming languages and frameworks.",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message. This message provides a clear explanation of what went wrong and how to fix it. The message is designed to be helpful for both developers and end users. The message is localized based on the user's language preferences. The message is validated during error creation to ensure it meets the system's requirements. The system includes comprehensive validation and error handling for message-related operations. The message supports various strategies for handling complex error scenarios, including dynamic message generation and templating. The system includes comprehensive documentation and examples for implementing message-based error handling in client applications. The message is designed to be easily integrated with various client applications and includes comprehensive support for different message strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve message-related issues. The message is designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of message-based operations. The message is designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing message-based operations in various programming languages and frameworks.",
+            "example": "The request was invalid. Please check your input and try again."
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details. This object contains specific information about the error, including validation errors, field-specific messages, and debugging information. The details are designed to help developers understand and fix the error. The details are validated during error creation to ensure they meet the system's requirements. The system includes comprehensive validation and error handling for details-related operations. The details support various strategies for handling complex error scenarios, including nested errors and error chains. The system includes comprehensive documentation and examples for implementing details-based error handling in client applications. The details are designed to be easily integrated with various client applications and includes comprehensive support for different details strategies. The system includes comprehensive monitoring and logging capabilities to help diagnose and resolve details-related issues. The details are designed to be highly available and includes comprehensive error handling and recovery mechanisms. The system includes comprehensive performance optimization features to ensure efficient handling of details-based operations. The details are designed to be easily extended and includes comprehensive versioning support. The system includes comprehensive documentation and examples for implementing details-based operations in various programming languages and frameworks.",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "Field that caused the error",
+                "example": "email"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Reason for the error",
+                "example": "Invalid email format"
+              },
+              "value": {
+                "type": "string",
+                "description": "Invalid value provided",
+                "example": "invalid-email"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    },
+    {
+      "BearerAuth": []
+    },
+    {
+      "OAuth2": ["read", "write"]
+    }
+  ]
+} 

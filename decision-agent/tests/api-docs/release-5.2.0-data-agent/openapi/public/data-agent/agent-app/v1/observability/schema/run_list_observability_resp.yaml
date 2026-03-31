@@ -1,0 +1,11 @@
+RunListObservabilityResp:
+  type: object
+  properties:
+    entries:
+      type: array
+      items:
+        $ref: './run_detail_list.yaml#/RunDetail'
+      description: Run详情列表
+    total_count:
+      type: integer
+      description: 总数量

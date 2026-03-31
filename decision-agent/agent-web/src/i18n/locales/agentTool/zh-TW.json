@@ -1,0 +1,9 @@
+{
+  "agentTool": {
+    "searchPlaceholder": "搜尋工具名稱",
+    "paramName": "參數名稱",
+    "paramType": "類型",
+    "toolBox": "工具箱",
+    "tool": "工具"
+  }
+}

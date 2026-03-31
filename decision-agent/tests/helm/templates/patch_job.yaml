@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: {{.Release.Namespace}}
+  name: {{ .Release.Name }}
+  annotations:
+    helm.sh/hook-delete-policy: "before-hook-creation"
+    helm.sh/hook: "pre-install, pre-upgrade"
+    helm.sh/weight: "1"
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/testTag: AT
+      containers:
+      - name: patch
+        image: "{{ .Values.image.registry }}/{{ .Values.image.job.repository }}:{{ .Values.image.job.tag }}"
+        command: ["bash", "-c"]
+        args: 
+        - |-
+          cd /app/agent-AT
+          python3 -m pytest ./{{ .Values.dir.testdir }} --alluredir ./allure-results --clean-alluredir --junit-xml=./allure-results/agent-AT.xml
+          allure generate ./allure-results/ --clean
+          echo "Test End"
+        volumeMounts: 
+        - name: atcode
+          mountPath: /app/agent-AT
+        - name: kubeconfig
+          mountPath: /root/.kube/config
+        - name: kubectl
+          mountPath: /usr/bin/kubectl
+      restartPolicy: Never
+      volumes:
+      - name: atcode
+        hostPath: 
+          path: /root/agent-AT
+      - name: kubeconfig
+        hostPath:
+          path: /root/.kube/config
+      - name: kubectl
+        hostPath:
+          path: /usr/bin/kubectl
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600

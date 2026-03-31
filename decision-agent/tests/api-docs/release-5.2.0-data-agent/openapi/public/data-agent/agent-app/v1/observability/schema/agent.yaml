@@ -1,0 +1,44 @@
+Agent:
+  type: object
+  properties:
+    id:
+      type: string
+      description: Agent ID
+    version:
+      type: string
+      description: Agent版本
+    key:
+      type: string
+      description: Agent Key
+    is_built_in:
+      type: integer
+      description: 是否为内置Agent
+    name:
+      type: string
+      description: Agent名称
+    category_id:
+      type: string
+      description: 分类ID
+    category_name:
+      type: string
+      description: 分类名称
+    profile:
+      type: string
+      description: Agent简介
+    config:
+      type: object
+      description: Agent配置信息
+    avatar_type:
+      type: integer
+      description: 头像类型
+    avatar:
+      type: string
+      description: 头像URL
+    product_id:
+      type: integer
+      description: 产品ID
+    product_name:
+      type: string
+      description: 产品名称
+    publish_info:
+      $ref: './publish_info.yaml#/PublishInfo'

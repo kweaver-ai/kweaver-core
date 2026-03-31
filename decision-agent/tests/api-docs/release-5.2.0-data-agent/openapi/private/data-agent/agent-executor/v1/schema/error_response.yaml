@@ -1,0 +1,30 @@
+error_response:
+  properties:
+    description:
+      description: 错误描述
+      title: Description
+      type: string
+    error_code:
+      description: 错误码
+      title: Errorcode
+      type: string
+    error_details:
+      description: 错误详情
+      title: Errordetails
+      type: string
+    error_link:
+      description: 错误链接
+      title: Errorlink
+      type: string
+    solution:
+      description: 解决方法
+      title: Solution
+      type: string
+  required:
+  - description
+  - error_code
+  - error_details
+  - error_link
+  - solution
+  title: ErrorResponse
+  type: object

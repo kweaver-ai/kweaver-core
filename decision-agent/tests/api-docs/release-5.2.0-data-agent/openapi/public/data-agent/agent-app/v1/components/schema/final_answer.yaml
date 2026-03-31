@@ -1,0 +1,25 @@
+FinalAnswer:
+  type: object
+  description: 最终结果
+  properties:
+    query:
+      type: string
+    answer:
+      $ref: './answer.yaml#/Answer'
+    temp_files:
+      type: array
+      items:
+        $ref: './temp_file.yaml#/TempFile'
+    thinking:
+      type: string
+    skill_process:
+      type: array
+      items:
+        $ref: './skill_process.yaml#/SkillProcess'
+    answer_other_type:
+      type: object
+      description: 当content_type为other时，返回的类型
+    output_variables_config:
+      type: object
+      $ref: './final_answer_variable.yaml#/FinalAnswerVariable'
+

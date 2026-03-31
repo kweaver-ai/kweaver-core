@@ -1,0 +1,38 @@
+.modal {
+  color: #fff;
+  :global {
+    .agent-web-modal-mask {
+      backdrop-filter: blur(2px);
+      background: var(--dip-text-color-25) !important;
+    }
+    .dip-modal {
+      width: 80% !important;
+      padding: 48px 0 !important;
+      .agent-web-modal-content {
+        padding: 0 !important;
+        .agent-web-modal-header {
+          padding: 20px 24px 8px 24px !important;
+          margin-bottom: 0 !important;
+        }
+        .agent-web-modal-content {
+        }
+        .agent-web-modal-footer {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.container {
+  height: 100%;
+}
+
+.group {
+  margin-top: 14px;
+}
+
+.active {
+  //color: var(--dip-text-color-85);
+  background: rgba(var(--dip-primary-color-rgb), 0.06) !important;
+}

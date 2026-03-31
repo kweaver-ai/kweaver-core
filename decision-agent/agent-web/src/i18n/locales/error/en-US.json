@@ -1,0 +1,16 @@
+{
+  "error": {
+    "500": "The request failed due to the internal error or wrong configuration.  You can try again later or contact Admin.",
+    "501": "The server doesn't support the request method.  You can try again later or contact Admin.",
+    "502": "The service is currently unavailable due to overload or the network error has been detected. You can try again later.",
+    "503": "The service is currently unavailable due to overload. You can try again later",
+    "504": "Gateway timed out, and cannot connect to the upstream server. You can try again later or contact Admin.",
+    "505": "The current HTTP version is not supported by the server.",
+    "506": "The infinite loop has been detected. You can try again later or contact Admin.",
+    "507": "The server doesn't have sufficient storage space. Please contact Admin.",
+    "508": "The request failed because the server is overloaded. You can try again later or contact Admin.",
+    "networkError": "Cannot connect to network",
+    "serverError": "Cannot connect to Document Domain",
+    "timeoutError": "Request timed out"
+  }
+}

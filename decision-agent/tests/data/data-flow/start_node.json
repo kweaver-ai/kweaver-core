@@ -1,0 +1,64 @@
+[
+  {
+  "id": "0",
+  "operator": "@trigger/form",
+  "parameters": {
+    "fields": [
+      {
+        "type": "string",
+        "key": "str",
+        "description": {
+          "type": "text"
+        }
+      }
+    ]
+  }
+},
+{
+  "id": "0",
+  "operator": "@trigger/form",
+  "parameters": {
+    "fields": [
+      {
+        "type": "string",
+        "key": "str",
+        "name": "字符串",
+        "description": {
+          "text": "str说明",
+          "type": "text"
+        },
+        "required": true
+      },
+      {
+        "type": "number",
+        "key": "num",
+        "name": "数字类型",
+        "description": {
+          "text": "数字说明",
+          "type": "text"
+        },
+        "required": true
+      },
+      {
+        "type": "object",
+        "key": "obj",
+        "name": "obj名称",
+        "description": {
+          "text": "obj说明",
+          "type": "text"
+        },
+        "required": true
+      },
+      {
+        "type": "array",
+        "key": "arr",
+        "name": "arr名称",
+        "description": {
+          "text": "arr说明",
+          "type": "text"
+        },
+        "required": true
+      }
+    ]
+  }
+}]

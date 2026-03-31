@@ -1,0 +1,26 @@
+repos:
+  - repo: local
+    hooks:
+      # ==================== agent-executor ====================
+      - id: agent-executor-lint
+        name: agent-executor lint
+        entry: bash -c 'cd agent-backend/agent-executor && make lint'
+        language: system
+        files: ^agent-backend/agent-executor/
+        pass_filenames: false
+
+      # ==================== agent-factory ====================
+      - id: agent-factory-lint
+        name: agent-factory lint
+        entry: bash -c 'cd agent-backend/agent-factory && make lint'
+        language: system
+        files: ^agent-backend/agent-factory/.*\.go$
+        pass_filenames: false
+
+      # ==================== agent-memory ====================
+      - id: agent-memory-lint
+        name: agent-memory lint
+        entry: bash -c 'cd agent-backend/agent-memory && make lint'
+        language: system
+        files: ^agent-backend/agent-memory/
+        pass_filenames: false

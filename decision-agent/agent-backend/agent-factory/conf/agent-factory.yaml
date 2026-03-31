@@ -1,0 +1,262 @@
+
+switch_fields:
+    # 是否保留老的APP路径
+    keep_legacy_app_path: false
+
+    # 是否禁用权限检查（本地开发时建议设置为true）
+    disable_pms_check: true
+
+    # 是否全局禁用业务域（开启后优先级高于 disable_biz_domain_init）
+    disable_biz_domain: false
+
+    # 是否禁用业务域初始化（本地开发时建议设置为true）
+    disable_biz_domain_init: true
+
+
+
+    # 是否禁用审计日志初始化（本地开发时建议设置为true）
+    disable_audit_init: true
+
+    mock:
+        # 是否使用Mock MQ客户端（本地开发时建议设置为true）
+        mock_mq_client: true
+
+        # 是否使用Mock Sandbox Platform（本地开发时建议设置为true）
+        mock_sandbox_platform: false
+
+        # 是否使用Mock Hydra（本地开发时建议设置为true）
+        mock_hydra: true
+
+        # 是否使用Mock AuthZ（本地开发时建议设置为true）
+        mock_authz: true
+
+        # 是否使用Mock BizDomain（本地开发时建议设置为true）
+        mock_biz_domain: true
+
+        # Mock Hydra 返回的用户 ID
+        mock_user_id: "mock-user-id"
+
+# OpenAPI 文档配置
+enable_swagger: true
+swagger_token: ""
+
+# 这个文件只有本地调试用，打包是打不进去的，
+db:
+  user_name: aishu
+  user_pwd: "aishu123456"
+  db_host: decision-agent-mariadb
+  db_port: 3306
+  db_host_read: decision-agent-mariadb
+  db_port_read: 3306
+  db_name: adp
+  db_charset: utf8mb4
+  timeout: 10
+  read_timeout: 10
+  write_timeout: 10
+  max_open_conns: 30
+  max_open_read_conns: 30
+
+redis:
+  connect_type: "standalone"
+  password: "redis123456"
+  username: ""
+
+  db: 3
+
+  # standalone 单机模式
+  host: "decision-agent-redis"
+  port: "6379"
+
+  # sentinel 模式配置
+  master_group_name: "mymaster"
+  sentinel_host: "proton-redis-proton-redis-sentinel.resource"
+  sentinel_port: "26379"
+  sentinel_username: "root"
+  sentinel_password: "********"
+
+  # master-slave 主从模式
+  master_host: ""
+  master_port: "6379"
+  slave_host: ""
+  slave_port: "6379"
+  
+# hydra 相关配置
+hydra:
+  user-mgnt:
+    host: 192.168.232.11
+    port: 30980
+  hydra-public:
+    host: hydra-public
+    port: 4444
+  hydra-admin:
+    host: 192.168.232.11
+    port: 30445
+
+project:
+  host: "0.0.0.0"
+  port: 30777
+  language: "zh-CN"
+  logger_level: info
+  log_file: "./agent-factory.log"
+
+  model_factory_host: mf-model-factory
+  model_factory_port: 9898
+model_factory:
+  llm:
+    api_key: xxx
+  model_api_svc:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+  model_manager_svc:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+eco_index:
+  private_svc:
+    host: 192.168.232.11
+    port: 32130
+    protocol: http
+agent_executor:
+  public_svc:
+    host: localhost
+    port: 30778
+    protocol: http
+  private_svc:
+    host: localhost
+    port: 30778
+    protocol: http
+agent_factory:
+  public_svc:
+    host: localhost
+    port: 30777
+    protocol: http
+  private_svc:
+    host: localhost
+    port: 30777
+    protocol: http
+efast:
+  private_svc:
+    host: 192.168.232.11
+    port: 9123
+    protocol: http
+  public_svc:
+    host: 192.168.232.11
+    port: 9123
+    protocol: http
+docset:
+  public_svc:
+    host: 192.168.232.11
+    port: 32596
+    protocol: http
+  private_svc:
+    host: 192.168.232.11
+    port: 32597
+    protocol: http
+ecoconfig:
+  public_svc:
+    host: 192.168.232.11
+    port: 32127
+    protocol: http
+  private_svc:
+    host: 192.168.232.11
+    port: 32128
+    protocol: http
+
+uniquery:
+  public_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+  private_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+# Sandbox Platform 配置
+sandbox_platform:
+  public_svc:
+    host: localhost
+    port: 8000
+    protocol: http
+  private_svc:
+    host: localhost
+    port: 8000
+    protocol: http
+  default_ttl: 3600         # 默认 Session TTL（秒），最大 3600
+  max_retries: 10           # 等待 Session 就绪的最大重试次数
+  retry_interval: "500ms"   # 重试间隔
+  default_template_id: "python-basic"  # 默认模板 ID
+  default_cpu: "1"          # 默认 CPU 核心数
+  default_memory: "512Mi"   # 默认内存
+  default_disk: "1Gi"       # 默认磁盘
+  default_timeout: 300      # 默认超时时间（秒）
+  file_upload_config:
+    max_file_size: 10       # 最大文件大小（数值）
+    max_file_size_unit: "MB"  # 单位：KB/MB/GB
+    max_file_count: 10      # 最大文件数量
+    allowed_file_types:     # 允许的文件类型
+      - ".txt"
+      - ".py"
+      - ".js"
+      - ".json"
+      - ".csv"
+      - ".md"
+biz_domain:
+  public_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+  private_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+datahubcentral:
+  private_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+authorization:
+  public_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+  private_svc:
+    host: 192.168.232.11
+    port: 13011
+    protocol: http
+# OpenTelemetry 配置
+opentelemetry:
+  # 服务名称
+  service_name: "agent-factory"
+  # 服务版本
+  service_version: "1.0.0"
+
+  # Trace 配置
+  trace:
+    enabled: false
+    # 上报方式: console 或 http
+    exporter: "console"
+    # HTTP 上报端点 (当 exporter 为 http 时生效)
+    http_endpoint: "http://localhost:4318/v1/traces"
+    # 采样率: 0.0 - 1.0
+    sampling_rate: 1.0
+
+  # Log 配置
+  log:
+    enabled: false
+    # 上报方式: console 或 http
+    exporter: "console"
+    # HTTP 上报端点 (当 exporter 为 http 时生效)
+    http_endpoint: "http://localhost:4318/v1/logs"
+    # 日志级别: debug, info, warn, error
+    level: "info"
+
+  # Metric 配置
+  metric:
+    enabled: false
+    # 上报方式: console 或 http
+    exporter: "console"
+    # HTTP 上报端点 (当 exporter 为 http 时生效)
+    http_endpoint: "http://localhost:4318/v1/metrics"
+    # 指标上报间隔 (秒)
+    export_interval: 10

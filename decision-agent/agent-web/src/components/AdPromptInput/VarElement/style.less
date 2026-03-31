@@ -1,0 +1,23 @@
+.var-element {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+  height: 22px;
+  margin: 0 4px;
+
+  &-error {
+    background: var(--dip-error-color);
+    color: #fff;
+    position: relative;
+  }
+
+  &-text {
+
+    &-editable {
+      outline: none;
+    }
+  }
+
+  &-block {
+    opacity: 0;
+  }
+}

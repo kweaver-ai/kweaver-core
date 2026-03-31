@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-app
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: agent-app
+spec:
+  {{- if .Values.service.enableDualStack }}
+  ipFamilies:
+    - IPv6
+    - IPv4
+  ipFamilyPolicy: PreferDualStack
+  {{- end }}
+  ports:
+    - name: public-port
+      port: {{ .Values.service.agentApp.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.port }}
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ .Values.service.agentApp.nodePort }}
+      {{- end}}
+  selector:
+    app: agent-factory
+  type: {{ .Values.service.type }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: {{ .Values.service.sessionAffinityConfig.clientIP.timeoutSeconds }}

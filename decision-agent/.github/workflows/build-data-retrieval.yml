@@ -1,0 +1,71 @@
+name: Build data-retrieval Package
+
+on:
+  push:
+    branches: [main, master, 'release/*']
+    paths:
+      - 'data-retrieval/**'
+      - '.github/workflows/build-data-retrieval.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'data-retrieval/**'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      publish_target:
+        description: 'Publish target'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - testpypi
+          - pypi
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: data-retrieval
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Build package
+        run: uv build
+
+      - name: Check package
+        run: uvx twine check dist/*
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-retrieval-dist
+          path: data-retrieval/dist/
+          retention-days: 30
+
+      - name: Publish to TestPyPI
+        if: github.event.inputs.publish_target == 'testpypi'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        run: uvx twine upload --repository testpypi dist/*
+
+      - name: Publish to PyPI
+        if: github.event_name == 'release' || github.event.inputs.publish_target == 'pypi'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: uvx twine upload dist/*

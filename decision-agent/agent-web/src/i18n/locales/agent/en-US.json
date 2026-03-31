@@ -1,0 +1,6 @@
+{
+  "agent": {
+    "tool": "Tool",
+    "viewDebuggerTip": "After you start running, you can check the Debugger."
+  }
+}

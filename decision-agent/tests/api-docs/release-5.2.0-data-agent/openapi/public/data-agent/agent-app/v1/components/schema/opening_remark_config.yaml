@@ -1,0 +1,13 @@
+OpeningRemarkConfig:
+  type: object
+  properties:
+    type:
+      type: string
+      enum: [fixed, dynamic]
+      description: 开场白类型
+    fixed_opening_remark:
+      type: string
+      description: 固定开场白
+    dynamic_opening_remark_prompt:
+      type: string
+      description: 动态开场白提示语

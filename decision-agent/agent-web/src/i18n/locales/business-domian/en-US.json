@@ -1,0 +1,12 @@
+{
+  "businessDomain": {
+    "currentDomain": "Current Business Domain",
+    "pleaseSelect": "Please select",
+    "user": "User",
+    "department": "Department",
+    "group": "User Group",
+    "role": "Role",
+    "app": "Application Account",
+    "allOrgUsers": "All Organization Users"
+  }
+}

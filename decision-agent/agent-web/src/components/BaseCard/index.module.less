@@ -1,0 +1,73 @@
+.card {
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 8px;
+  border-color: var(--dip-border-color);
+
+  .checkbox {
+    align-self: flex-start;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 48px;
+  }
+
+  // 卡片底部
+  .card-footer {
+    height: 32px;
+
+    .user-avatar {
+      background-color: #8a90a5;
+      flex-shrink: 0;
+    }
+
+    .footer-text-color {
+      color: #92929d;
+    }
+
+    .actions {
+      .more-icon {
+        color: #6b7280;
+        transition: all 0.2s;
+        border-radius: 50%;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          color: #4f46e5;
+        }
+      }
+    }
+  }
+
+  .close-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+  }
+}
+
+.card:hover {
+  .actions {
+    display: unset !important;
+  }
+
+  .close-icon {
+    display: unset;
+  }
+}
+
+.hoverable:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.highlight {
+  margin-bottom: -6px;
+  border: solid 3px rgb(161, 209, 255);
+}
+
+.min-height-56 {
+  min-height: 56px !important;
+}

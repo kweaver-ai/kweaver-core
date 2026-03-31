@@ -1,0 +1,9 @@
+{
+  "graphList": {
+    "timedTask": "Scheduled task",
+    "more": "More",
+    "notDes": "[No description]",
+    "switchList": "List view",
+    "switchCard": "Grid view"
+  }
+}

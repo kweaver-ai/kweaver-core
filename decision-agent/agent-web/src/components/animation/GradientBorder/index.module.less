@@ -1,0 +1,27 @@
+.gradientBorderContainer {
+  position: relative;
+  background: linear-gradient(
+    to top right,
+    rgba(59, 155, 224, 1) 0%,
+    rgba(255, 170, 0, 1) 33%,
+    rgba(59, 155, 224, 1) 66%,
+    rgba(255, 170, 0, 1) 100%
+  );
+  background-size: 200% 200%;
+  border-radius: 16px;
+  box-sizing: border-box;
+  transition: transform 0.3s ease;
+  
+  // 闪烁效果需要将背景尺寸扩大
+  // 并通过 backgroundPosition 移动来实现流动感
+}
+
+.content {
+  position: relative;
+  background-color: white;
+  border-radius: 15px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+} 

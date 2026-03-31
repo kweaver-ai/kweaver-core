@@ -1,0 +1,52 @@
+Cite:
+  type: object
+  properties:
+    content:
+      type: string
+      description: 文档内容
+    ext_type:
+      type: string
+      description: 文档扩展名 带.
+    doc_id:
+      type: string
+      description: 文档ID，gns:// 开头
+    doc_name:
+      type: string
+      description: 文档名称
+    object_id:
+      type: string
+      description: 文档对象ID gns最后一段
+    parent_path:
+      type: string
+      description: 文档父路径
+    size:
+      type: integer
+      description: 文档大小，单位：字节
+    type:
+      type: string
+      description: 类型，document
+    slices:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: 文档ID
+          no:
+            type: integer
+            description: 文档页码
+          content:
+            type: string
+            description: 文档内容
+          pages:
+            type: array
+            items:
+              type: integer
+              description: 文档页码
+    space_id:
+      type: string
+      description: 空间ID
+    doc_lib_type:
+      type: string
+      description: 文档库类型

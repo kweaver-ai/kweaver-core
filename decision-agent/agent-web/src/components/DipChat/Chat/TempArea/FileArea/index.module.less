@@ -1,0 +1,35 @@
+.container {
+  width: 100%;
+  height: 100%;
+  padding: 8px 0;
+  .fileItem {
+    height: 24px;
+    display: flex;
+    align-items: center;
+
+    .fileName {
+      margin-left: 8px;
+    }
+
+    .btn {
+      display: none;
+    }
+
+    &:hover {
+      .btn {
+        display: block;
+      }
+    }
+
+    :global {
+      .agent-web-checkbox-label {
+        flex: 1;
+        min-width: 0;
+      }
+      .ant-checkbox-label {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "agentCommonConfig": {
+    "pleaseSelectModel": "请选择模型",
+    "configurationParameters": "配置参数",
+    "contextDesc": "Context Window是指模型可以参考的上下文信息的量（包含用户的输入、历史对话信息和召回的参考信息）。当前仅设置的是召回的参考信息最大长度",
+    "variableNotExist": "{varName}变量不存在，请修改",
+    "llm": {
+      "selectAtLeastOneTool": "至少选择一个工具",
+      "required": "必填",
+      "parameter": "参数",
+      "addTool": "添加技能",
+      "selected": "已选择{count}个技能",
+      "value": "值",
+      "fixedValueTip": "固定值：用户手动填入",
+      "modelAutoTip": "模型生成：模型自动填充内容",
+      "useVariableTip": "引用变量：可以从Agent配置中引用变量，支持 .",
+      "selectModelTip": "选择模型：当参数为LLM时，用户从模型工厂列表中选择添加的工具",
+      "parameterSetting": "设置",
+      "inputParameters": "输入参数",
+      "outputParameters": "输出参数",
+      "timeoutParameters": "超时时间策略",
+      "disabledInterventionTip": "当前仅支持在一个LLM块中开启人工中断",
+      "intervention": "人工干预功能",
+      "bigModelPlaceholder": "请选择大模型",
+      "modelAutoPlaceholder": "模型自动填充内容",
+      "fixedValue": "固定值",
+      "useVariable": "引用变量",
+      "selectModel": "选择模型",
+      "modelAuto": "模型生成",
+      "promptVarDataDesc": "召回图谱概念、实体等信息的结果",
+      "promptVarTextDesc": "以文本形式进行召回的结果",
+      "dolphinVarError": "不能作为变量名",
+      "dolphinVarNameError": "变量名只能包含字母、数字和下划线,且不能以数字开头"
+    }
+  }
+}

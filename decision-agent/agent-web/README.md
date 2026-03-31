@@ -1,0 +1,186 @@
+# ADP Decision Agent Web
+
+ADP Decision Agent前端项目，基于React + TypeScript + Ant Design构建的现代化Web应用。
+
+## ✨ 特性
+
+- 🚀 **现代化技术栈**: 使用React 18 + TypeScript + Ant Design 5
+- 🎨 **美观界面**: 基于Ant Design组件库，提供一致的用户体验
+- 🔧 **开发友好**: 完善的开发工具链
+- 🌐 **微前端支持**: 支持微前端架构部署
+
+## 📁 项目结构
+
+```
+├── public/               # 公共静态资源
+├── src/                  # 源代码目录
+│   ├── apis/             # API接口管理
+│   │   ├── agent-app/    # agent-app API
+│   │   ├── agent-factory/# agent-factory API
+│   │   └── ...
+│   ├── assets/           # 应用静态资源
+│   │   ├── fonts/        # 字体文件
+│   │   ├── icons/        # 应用图标
+│   │   └── images/       # 图片资源
+│   ├── components/       # React组件
+│   │   ├── AgentConfig/  # Decision Agent配置组件
+│   │   ├── DipChat/      # 聊天组件
+│   │   └── ...
+│   ├── hooks/            # 自定义Hooks
+│   │   ├── useBusinessDomain.ts
+│   │   ├── useDeepCompareEffect.ts
+│   │   └── ...
+│   ├── pages/            # 页面入口
+│   │   ├── agent-template/# Decision Agent模板页面
+│   │   ├── api/          # API页面
+│   │   ├── data-agent/   # Decision Agent页面
+│   │   └── my-agents/    # 我的Decision Agent页面
+│   ├── styles/           # 样式文件
+│   │   ├── main.less     # 主样式文件
+│   │   └── ...
+│   ├── utils/            # 工具函数
+│   │   ├── http/         # HTTP请求工具
+│   │   ├── file/         # 文件处理工具
+│   │   └── ...
+│   └── i18n/             # 国际化配置
+```
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js + npm 或 yarn（推荐使用最新稳定版本）
+
+### 安装依赖
+
+```bash
+# 使用 npm
+npm install
+
+# 或使用 yarn
+yarn install
+```
+
+### 开发模式
+
+```bash
+# 启动开发服务器
+npm run dev
+
+# 或使用 yarn
+yarn dev
+```
+
+开发服务器将在 http://localhost:1101 启动。
+
+### 构建项目
+
+```bash
+# 构建生产版本
+npm run build
+
+# 或使用 yarn
+yarn build
+```
+
+### 代码检查
+
+```bash
+# 代码格式检查
+npm run lint
+
+# 或使用 yarn
+yarn lint
+```
+
+### 测试
+
+```bash
+# 运行测试
+npm run test
+
+# 或使用 yarn
+yarn test
+```
+
+## 🛠️ 技术栈
+
+### 核心框架
+
+- **React 18.3.1** - 用户界面库
+- **TypeScript 5.8.2** - 类型安全的JavaScript超集
+- **Ant Design 5.26.2** - 企业级UI设计语言和组件库
+
+### 构建工具
+
+- **Rsbuild** - 基于Rspack的构建工具
+- **Less Module** - CSS预处理器和模块化
+- **SVGR** - SVG转React组件
+
+### 开发工具
+
+- **ESLint** - 代码质量检查
+- **Prettier** - 代码格式化
+- **Jest** - 测试框架
+
+### 主要依赖
+
+- **react-router-dom** - 路由管理
+- **axios** - HTTP客户端
+
+## 📋 开发规范
+
+### 组件命名
+
+- 组件名使用PascalCase：`<MyComponent />`
+- 文件名与组件名保持一致
+
+### 代码规范
+
+- 使用TypeScript进行类型检查
+- 函数组件使用useState和useEffect钩子
+- 遵循ESLint和Prettier配置
+
+## 🎯 主要功能模块
+
+### Decision Agent管理
+
+- Decision Agent创建和配置
+- Decision Agent模板管理
+- Decision Agent发布
+
+### 聊天交互
+
+- 实时聊天界面
+- 流式响应处理
+
+## 🔧 配置说明
+
+### 目录说明
+
+#### public/ 目录
+
+- **公共静态资源**：构建时直接复制到输出目录的文件
+
+### 构建配置
+
+构建配置位于 `rsbuild.config.mts`，支持：
+
+- **多页面入口配置**：支持多个独立页面的构建
+- **微前端支持**：为微前端架构提供适配
+- **路径别名配置**：简化模块导入路径
+- **性能优化**：内置代码分割、压缩等优化策略
+
+### 代码提交规范
+
+- feat: 新功能
+- fix: 修复bug
+- docs: 文档更新
+- style: 代码格式调整
+- refactor: 代码重构
+- test: 测试相关
+- chore: 构建过程或辅助工具变动
+
+---
+
+**ADP Decision Agent Web** - 构建智能Decision Agent应用的前端解决方案

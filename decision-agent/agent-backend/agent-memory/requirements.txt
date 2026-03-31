@@ -1,0 +1,29 @@
+anthropic==0.18.1
+boto3==1.34.29
+dbutilsx==1.3.3
+fastapi==0.109.0
+# google-generativeai==0.3.0
+groq==0.4.2
+httpx==0.25.2
+# langchain==0.1.10
+litellm==1.30.7
+numpy==1.26
+ollama==0.1.6
+openai==1.14.2
+# openai==0.28.0
+opensearch-py==2.8.0
+posthog==3.5.0
+pydantic==2.6.0b1
+python-dotenv==1.0.1
+pytz==2024.1
+pyyaml==6.0.1
+PyMySQL==1.1.1
+dbutilsx==1.3.3
+qdrant-client==1.8.0
+redis==5.0.1
+requests==2.32.0
+setuptools==76.0.0
+sqlalchemy==1.4.23
+setuptools==76.0.0
+together==0.2.4
+uvicorn==0.27.0

@@ -1,0 +1,422 @@
+.agentDetailContainer {
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+
+  .content {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+
+    .detailTabs {
+      margin-bottom: -16px;
+    }
+  }
+
+  // 标题区域
+  .titleSection {
+    padding: 16px 0;
+    width: 100%;
+
+    .titleContent {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .pageTitle {
+        color: #000;
+        font-size: 18px;
+        font-weight: 500;
+        margin: 0;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .profileValue {
+    font-size: 14px;
+
+    :global {
+      .agent-web-typography p {
+        margin-bottom: 10px !important;
+      }
+    }
+  }
+
+  // 更新时间区域
+  .updateTimeSection {
+    padding-bottom: 10px;
+    width: 100%;
+
+    .updateTime {
+      font-size: 14px;
+    }
+  }
+
+  // 标签页区域
+  .tabsSection {
+    padding-top: 24px;
+  }
+
+  // 基本信息内容
+  .basicInfoContent {
+    .infoSection {
+      margin-bottom: 24px;
+
+      .label {
+        font-size: 16px;
+        margin-bottom: 16px;
+      }
+
+      .value {
+        font-size: 14px;
+        line-height: 1.6;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+
+      .pms-control-user-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px 0;
+
+        .user-tag {
+          max-width: 200px;
+          font-size: 14px;
+          height: 26px;
+          line-height: 26px;
+        }
+      }
+    }
+
+    .sectionTitle {
+      font-size: 16px;
+      font-weight: 500;
+      // padding: 0 0 16px 0;
+      line-height: 1.4;
+    }
+
+    .tableSection {
+      margin-bottom: 32px;
+      overflow-x: auto;
+
+      .ant-table {
+        .ant-table-thead > tr > th {
+          background: #fafafa;
+          font-weight: 500;
+          color: #000;
+          font-size: 14px;
+          border-bottom: 1px solid #e8e8e8;
+        }
+
+        .ant-table-tbody > tr > td {
+          font-size: 14px;
+          color: #000;
+          border-bottom: 1px solid #f0f0f0;
+        }
+      }
+    }
+
+    .skillsSection {
+      margin-bottom: 32px;
+    }
+
+    .modelsSection {
+      margin-bottom: 32px;
+    }
+  }
+
+  // 技能列表样式
+  .skillsList {
+    .skillItem {
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: white;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .skillHeader {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+
+        .skillIcon {
+          width: 40px;
+          height: 40px;
+          border-radius: 6px;
+          background: #f0f2f5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+
+          .skillIconInner {
+            width: 20px;
+            height: 20px;
+            background: #1890ff;
+            border-radius: 2px;
+          }
+        }
+
+        .skillContent {
+          flex: 1;
+          min-width: 0;
+
+          .skillName {
+            color: #000;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4;
+            margin-bottom: 4px;
+          }
+
+          .skillType {
+            color: #1890ff;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 8px;
+          }
+
+          .skillDescription {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: justify;
+            word-break: break-word;
+          }
+        }
+
+        .skillAction {
+          color: #1890ff;
+          font-size: 14px;
+          padding: 4px 0;
+          height: auto;
+          flex-shrink: 0;
+
+          &:hover {
+            color: #40a9ff;
+          }
+        }
+      }
+    }
+  }
+
+  // 模型配置列表样式
+  .modelConfigList {
+    .modelItem {
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: white;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .modelHeader {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .modelIcon {
+          width: 40px;
+          height: 40px;
+          border-radius: 6px;
+          background: #f0f2f5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+
+          .modelIconInner {
+            width: 20px;
+            height: 20px;
+            background: #52c41a;
+            border-radius: 2px;
+          }
+        }
+
+        .modelContent {
+          flex: 1;
+
+          .modelName {
+            color: #000;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .defaultTag {
+              font-size: 12px;
+              font-weight: normal;
+            }
+          }
+
+          .modelType {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.4;
+          }
+        }
+
+        .modelAction {
+          color: #1890ff;
+          font-size: 14px;
+          padding: 4px 0;
+          height: auto;
+          flex-shrink: 0;
+
+          &:hover {
+            color: #40a9ff;
+          }
+        }
+      }
+    }
+  }
+
+  // 加载和错误状态
+  .loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    background: white;
+  }
+
+  .errorContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    gap: 16px;
+    background: white;
+
+    div {
+      color: #666;
+      font-size: 16px;
+    }
+  }
+}
+
+// 全局表格样式调整
+:global {
+  .ant-table-thead > tr > th {
+    background: #fafafa !important;
+    font-weight: 500 !important;
+    color: #000 !important;
+    font-size: 14px !important;
+    border-bottom: 1px solid #e8e8e8 !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    font-size: 14px !important;
+    color: #000 !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+  }
+
+  .ant-tag {
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 2px 8px;
+  }
+
+  .ant-breadcrumb {
+    font-size: 14px;
+
+    .ant-breadcrumb-separator {
+      color: #d9d9d9;
+    }
+  }
+
+  .ant-tabs {
+    .ant-tabs-nav {
+      margin-bottom: 0 !important;
+    }
+
+    .ant-tabs-tab {
+      .ant-tabs-tab-btn {
+        transition: color 0.2s;
+      }
+    }
+  }
+}
+
+.fileSettingsModal {
+  .settingsSection {
+    margin-bottom: 24px;
+
+    .settingsTitle {
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+      margin-bottom: 12px;
+
+      &::before {
+        content: '*';
+        color: #ff4d4f;
+        margin-right: 4px;
+      }
+    }
+
+    .radioGroup {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .radioItem {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        input[type='radio'] {
+          margin: 0;
+        }
+
+        label {
+          color: #000;
+          font-size: 14px;
+          cursor: pointer;
+        }
+      }
+    }
+
+    .configItem {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      label {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .configValue {
+        color: #000;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+  }
+}
+
+.bottom-divider {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+}

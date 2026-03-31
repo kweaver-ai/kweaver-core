@@ -1,0 +1,19 @@
+batch_fields_res:
+  type: array
+  description: |
+    - 批量获取agent指定字段
+  items:
+    type: object
+    properties:
+      agent_id:
+        type: string
+        description: agent id
+        example: "123"
+      field:
+        type: object
+        description: agent字段列表
+        properties:
+          name:
+            type: string
+            description: agent名称
+            example: "信息收集与图片生成小助手"

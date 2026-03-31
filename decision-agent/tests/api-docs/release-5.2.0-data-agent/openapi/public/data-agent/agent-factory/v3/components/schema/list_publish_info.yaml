@@ -1,0 +1,36 @@
+list_publish_info:
+  type: object
+  properties:
+    is_api_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为API Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_sdk_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为web SDK Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_skill_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为技能Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_data_flow_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为数据流Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+      

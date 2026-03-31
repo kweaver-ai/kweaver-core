@@ -1,0 +1,103 @@
+openapi: 3.0.3
+info:
+  title: 表格内容获取API
+  description: 获取文件夹下的excel文件列表, 并获取excel表格中特定sheet的数据
+  version: 1.0.0
+
+servers:
+  - url: http://192.168.232.15:9999
+    description: 本地测试环境
+
+paths:
+  /excel-files1:
+    get:
+      tags:
+        - 表格内容获取
+      summary: 根据sheets列表获取文件夹下各个excel文件中的数据44
+      description: 通过查询参数传递逗号分隔的sheets列表
+      parameters:
+        - name: sheets
+          description: sheets名称, 多个sheets使用英文逗号隔开
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "服务器和操作系统,数据库,中间件"
+      responses:
+        '200':
+          description: 成功返回数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_files:
+                    type: integer
+                    example: 1
+                  processed_count:
+                    type: integer
+                    example: 1
+                  failed_files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                          example: "Error"
+                        error:
+                          type: string
+                          example: "File processing error: xxx"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+        '404':
+          description: 资源不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        filename:
+          type: string
+          example: "AnyShare 7.0.3.0 兼容性列表.xlsx"
+        status:
+          type: string
+          example: "success"
+        sheets:
+          type: array
+          items:
+            type: object
+            properties:
+              sheet_name:
+                type: string
+                example: "服务器和操作系统"
+              data:
+                type: string
+                example: "xxx"
+              error:
+                type: string
+                example: "error: xxx"
+      required:
+        - filename
+        - status
+        - sheets
+
+    ErrorResponse:
+      type: object
+      properties:
+        status_code:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: "Folder not exists"
+      required:
+        - status_code
+        - detail

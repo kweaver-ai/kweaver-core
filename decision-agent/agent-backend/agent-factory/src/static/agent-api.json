@@ -1,0 +1,997 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "agent API",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/agent-app/v1/app/{app_key}/api/chat/completion": {
+      "post": {
+        "summary": "对话",
+        "tags": [
+          "对话"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app_key",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "agent app key(通用agent传入 agent id)"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "用户/应用账号的授权 Bearer <token>",
+            "example": "Bearer <token>"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentInfo": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Agent ID"
+          },
+          "agent_name": {
+            "type": "string",
+            "description": "Agent Name"
+          },
+          "agent_status": {
+            "type": "string",
+            "description": "Agent Status"
+          },
+          "agent_version": {
+            "type": "string",
+            "description": "Agent Version"
+          }
+        }
+      },
+      "Content": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "temp_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TempFile"
+            }
+          },
+          "final_answer": {
+            "$ref": "#/components/schemas/FinalAnswer"
+          },
+          "middle_answer": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MiddleAnswer"
+            }
+          }
+        }
+      },
+      "FinalAnswer": {
+        "type": "object",
+        "description": "最终结果",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/Answer"
+          },
+          "temp_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TempFile"
+            }
+          },
+          "thinking": {
+            "type": "string"
+          },
+          "skill_process": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillsProcessItem"
+            }
+          }
+        }
+      },
+      "SkillsProcessItem": {
+        "type": "object",
+        "description": "技能处理结果",
+        "properties": {
+          "agent_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "cites": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "thinking": {
+            "type": "string"
+          },
+          "input_message": {
+            "type": "object",
+            "nullable": true
+          },
+          "interrupted": {
+            "type": "boolean"
+          },
+          "related_queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RelatedQuestion"
+            }
+          }
+        }
+      },
+      "RelatedQuestion": {
+        "type": "object",
+        "description": "相关查询",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "MiddleAnswer": {
+        "type": "object",
+        "properties": {
+          "doc_retrieval": {
+            "type": "object",
+            "description": "文档召回结果"
+          },
+          "graph_retrieval": {
+            "type": "object",
+            "description": "图谱召回结果"
+          },
+          "middle_output_vars": {
+            "description": "中间结果",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "progress": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Progress"
+            },
+            "description": "dolphin执行过程"
+          }
+        }
+      },
+      "Answer": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "cites": {
+            "type": "object",
+            "nullable": true
+          },
+          "ask": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "TempFile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "description": "会话ID"
+          },
+          "user_message_id": {
+            "type": "string",
+            "description": "用户消息ID"
+          },
+          "assistant_message_id": {
+            "type": "string",
+            "description": "助手消息ID"
+          },
+          "message": {
+            "$ref": "#/components/schemas/Message"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态"
+          }
+        },
+        "example": {
+          "assistant_message_id": "01JXXXG8D8JT5QWQ56MKWP17J8",
+          "conversation_id": "01JXXXG8CEV6XRJZVBX16DE5F6",
+          "error": null,
+          "message": {
+            "agent_info": {
+              "agent_id": "01JXHCKY5829V4GDA9NARNVNEW",
+              "agent_name": "测试agent",
+              "agent_status": "",
+              "agent_version": "v6"
+            },
+            "content": {
+              "final_answer": {
+                "answer": {
+                  "text": ""
+                },
+                "answer_type_other": null,
+                "output_variables_config": {
+                  "answer_var": "final_answer",
+                  "doc_retrieval_var": "doc_retrieval_res",
+                  "graph_retrieval_var": "graph_retrieval_res",
+                  "middle_output_vars": [
+                    "llm_final_answer"
+                  ],
+                  "other_vars": null,
+                  "related_questions_var": "related_questions"
+                },
+                "query": "小白白品牌去年总销",
+                "skill_process": null,
+                "temp_files": null,
+                "thinking": ""
+              },
+              "middle_answer": {
+                "doc_retrieval": {
+                  "text": ""
+                },
+                "graph_retrieval": null,
+                "middle_output_vars": {
+                  "vars": [
+                    {
+                      "interventions": [],
+                      "thinking": "",
+                      "type": "explore",
+                      "value": [
+                        {
+                          "agent_name": "main",
+                          "input_message": [
+                            {
+                              "content": "请通过单次或多次调用工具的方式解决问题。\n问题：小白白品牌去年总销量\n\n",
+                              "role": "user"
+                            }
+                          ],
+                          "interrupted": false,
+                          "related_queries": null,
+                          "status": "completed",
+                          "text": "为了获取小白白品牌去年的总销量，我们需要从数据库中查询相关数据。这需要使用text2sql工具将自然语言查询转换为SQL查询语句。首先，我将尝试构建一个查询语句来获取所需信息。\n\n",
+                          "thinking": "",
+                          "type": ""
+                        },
+                        {
+                          "agent_name": "text2sql",
+                          "input_message": "text2sql: {\"input\": \"小白白品牌去年总销量\"}",
+                          "interrupted": false,
+                          "related_queries": null,
+                          "status": "completed",
+                          "text": "```json\n{\n    \"result\": {\n        \"output\": {\n            \"cites\": [\n                {\n                    \"description\": \"\",\n                    \"id\": \"010c8efd-63fd-40d8-b37b-277eed01955e\",\n                    \"name\": \"立白产品销量目标宽表\",\n                    \"type\": \"data_view\"\n                }\n            ],\n            \"data\": [\n                {\n                    \"去年总销量\": 3397097.8236388806\n                }\n            ],\n            \"data_desc\": {\n                \"real_records_num\": 1,\n                \"return_records_num\": 1\n            },\n            \"explanation\": {\n                \"立白产品销量目标宽表\": [\n                    {\n                        \"指标\": \"去年总销量\"\n                    },\n                    {\n                        \"日期\": \"全部\"\n                    },\n                    {\n                        \"品牌\": \"等于立白品牌\"\n                    },\n                    {\n                        \"目标渠道\": \"等于客户\"\n                    },\n                    {\n                        \"大区名称\": \"全部\"\n                    },\n                    {\n                        \"统计省区名称\": \"全部\"\n                    },\n                    {\n                        \"片区\": \"全部\"\n                    },\n                    {\n                        \"bo1事业部\": \"全部\"\n                    },\n                    {\n                        \"bo2品类\": \"全部\"\n                    },\n                    {\n                        \"bo3系列\": \"全部\"\n                    },\n                    {\n                        \"经营维度\": \"全部\"\n                    },\n                    {\n                        \"大类\": \"全部\"\n                    },\n                    {\n                        \"行序号\": \"全部\"\n                    },\n                    {\n                        \"销量\": \"全部\"\n                    },\n                    {\n                        \"目标\": \"全部\"\n                    }\n                ]\n            },\n            \"result_cache_key\": \"123_ut84q0yqS_uzyIxRdUYXew\",\n            \"sql\": \"SELECT SUM(sales_std) AS \\\"去年总销量\\\" FROM vdm_maria_64ubcd0f.default.t_sales_extend WHERE brand = '立白品牌' AND target_channel = '客户' LIMIT 3\",\n            \"title\": \"小白白品牌去年总销量\"\n        },\n        \"time\": \"26.096545457839966\",\n        \"tokens\": \"1343\"\n    }\n}\n```",
+                          "thinking": "",
+                          "type": ""
+                        },
+                        {
+                          "agent_name": "main",
+                          "input_message": [
+                            {
+                              "content": "请通过单次或多次调用工具的方式解决问题。\n问题：小白白品牌去年总销量\n\n",
+                              "role": "user"
+                            },
+                            {
+                              "content": "\n为了获取小白白品牌去年的总销量，我们需要从数据库中查询相关数据。这需要使用text2sql工具将自然语言查询转换为SQL查询语句。首先，我将尝试构建一个查询语句来获取所需信息。\n\n=>#text2sql:\n工具执行结果：{'result': {'output': {'data': [{'去年总销量': 3397097.8236388806}], 'title': '小白白品牌去年总销量', 'data_desc': {'return_records_num': 1, 'real_records_num': 1}, 'result_cache_key': '123_ut84q0yqS_uzyIxRdUYXew', 'sql': 'SELECT SUM(sales_std) AS \"去年总销量\" FROM vdm_maria_64ubcd0f.default.t_sales_extend WHERE brand = \\'立白品牌\\' AND target_channel = \\'客户\\' LIMIT 3', 'explanation': {'立白产品销量目标宽表': [{'指标': '去年总销量'}, {'日期': '全部'}, {'品牌': '等于立白品牌'}, {'目标渠道': '等于客户'}, {'大区名称': '全部'}, {'统计省区名称': '全部'}, {'片区': '全部'}, {'bo1事业部': '全部'}, {'bo2品类': '全部'}, {'bo3系列': '全部'}, {'经营维度': '全部'}, {'大类': '全部'}, {'行序号': '全部'}, {'销量': '全部'}, {'目标': '全部'}]}, 'cites': [{'name': '立白产品销量目标宽表', 'type': 'data_view', 'description': '', 'id': '010c8efd-63fd-40d8-b37b-277eed01955e'}]}, 'tokens': '1343', 'time': '26.096545457839966'}}\n",
+                              "role": "assistant"
+                            },
+                            {
+                              "content": "1.处理当前任务过程中，已经调用过text2sql工具，如果上次调用成功且非必要情况下不要立刻连续调用。\n2.如果你已经回答完毕直接结束回答，如果没有回答完毕则接着上一个答案继续回答。",
+                              "role": "user"
+                            }
+                          ],
+                          "interrupted": false,
+                          "related_queries": null,
+                          "status": "completed",
+                          "text": "根据text2sql工具的执行结果，小白白品牌去年的总销量为3,397,097.8236388806。这是通过查询立白产品销量目标宽表中的数据得出的，其中品牌等于立白品牌，目标渠道等于客户，其他维度如日期、大区名称、统计省区名称等均未进行限制，因此获取的是该品牌在所有渠道和地区的总销量。",
+                          "thinking": "",
+                          "type": ""
+                        }
+                      ],
+                      "var_name": "llm_final_answer"
+                    }
+                  ]
+                },
+                "other_variables": {},
+                "progress": [
+                  {
+                    "agent_name": "main",
+                    "stage": "llm",
+                    "answer": "斐波那契数列的定义是从0和1开始，后面的每个数字是前面两个数字之和。因此，第100个位置的数字可以通过计算得到。\n\n我将使用Python来计算这个值。\n",
+                    "think": "",
+                    "status": "completed",
+                    "skill_info": null,
+                    "block_answer": "",
+                    "input_message": [
+                      {
+                        "role": "user",
+                        "content": "斐波那契数列第 100 个位置是几"
+                      }
+                    ],
+                    "interrupted": false
+                  },
+                  {
+                    "agent_name": "execPython",
+                    "stage": "llm",
+                    "answer": "354224848179261915075",
+                    "think": "",
+                    "status": "completed",
+                    "skill_info": {
+                      "type": "TOOL",
+                      "name": "execPython",
+                      "args": [
+                        {
+                          "name": "cmd",
+                          "type": "str",
+                          "value": "def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n\nprint(fibonacci(100))"
+                        }
+                      ],
+                      "checked": true
+                    },
+                    "block_answer": "354224848179261915075",
+                    "input_message": "",
+                    "interrupted": false
+                  },
+                  {
+                    "agent_name": "main",
+                    "stage": "llm",
+                    "answer": "斐波那契数列的第100个位置的值是354224848179261915075。如果还有其他问题，请随时告诉我！",
+                    "think": "",
+                    "status": "completed",
+                    "skill_info": null,
+                    "block_answer": "",
+                    "input_message": [
+                      {
+                        "role": "user",
+                        "content": "斐波那契数列第 100 个位置是几"
+                      },
+                      {
+                        "role": "assistant",
+                        "content": "\n斐波那契数列的定义是从0和1开始，后面的每个数字是前面两个数字之和。因此，第100个位置的数字可以通过计算得到。\n\n我将使用Python来计算这个值。\n\n工具执行结果：354224848179261915075\n"
+                      },
+                      {
+                        "role": "user",
+                        "content": "1.处理当前任务过程中，已经调用过execPython工具，如果上次调用成功且非必要情况下不要立刻连续调用。\n2.如果你已经回答完毕直接结束回答，如果没有回答完毕则接着上一个答案继续回答。"
+                      }
+                    ],
+                    "interrupted": false
+                  }
+                ]
+              }
+            },
+            "content_type": "prompt",
+            "conversation_id": "01JXXXG8CEV6XRJZVBX16DE5F6",
+            "ext": {
+              "ask": null,
+              "related_queries": null
+            },
+            "id": "01JXXXG8D8JT5QWQ56MKWP17J8",
+            "index": 2,
+            "reply_id": "01JXXXG8CNRKEJ13WY7RMFZ0MF",
+            "role": "assistant",
+            "status": ""
+          },
+          "user_message_id": "01JXXXG8CNRKEJ13WY7RMFZ0MF"
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "消息ID"
+          },
+          "conversation_id": {
+            "type": "string",
+            "description": "会话ID"
+          },
+          "role": {
+            "type": "string",
+            "description": "角色 user, assistant"
+          },
+          "content": {
+            "$ref": "#/components/schemas/Content"
+          },
+          "content_type": {
+            "type": "string",
+            "description": "内容类型"
+          },
+          "status": {
+            "type": "string",
+            "description": "消息状态"
+          },
+          "reply_id": {
+            "type": "string",
+            "description": "回复ID,用于关联问答消息"
+          },
+          "agent_info": {
+            "$ref": "#/components/schemas/AgentInfo"
+          },
+          "index": {
+            "type": "integer",
+            "description": "消息下标,用于标记消息在整个会话中的位置、顺序，比如基于 index 正序在前端按照时间线展示对话消息"
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "agent ID"
+          },
+          "agent_version": {
+            "type": "string",
+            "description": "agent_version, 可指定版本，不传则默认使用最新发布版本"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "是否流式返回"
+          },
+          "inc_stream": {
+            "type": "boolean",
+            "description": "是否增量流式返回"
+          },
+          "conversation_id": {
+            "type": "string",
+            "description": "会话ID"
+          },
+          "temporary_area_id": {
+            "type": "string",
+            "description": "临时区域ID"
+          },
+          "temp_files": {
+            "type": "array",
+            "description": "临时文件",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "文档ID"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "类型(doc)"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "文档名称"
+                }
+              }
+            }
+          },
+          "query": {
+            "type": "string",
+            "description": "用户提问问题"
+          },
+          "custom_querys": {
+            "type": "object",
+            "description": "自定义输入变量，map[string]any"
+          },
+          "tool": {
+            "type": "object",
+            "description": "中断处理，如果是中断操作，tool 不为空",
+            "$ref": "#/components/schemas/tool"
+          },
+          "interrupted_assistant_message_id": {
+            "type": "string",
+            "description": "中断的助手信息ID"
+          },
+          "chat_mode": {
+            "type": "string",
+            "description": "聊天模式，deep_thinking 深度思考，normal 正常"
+          },
+          "confirm_plan": {
+            "type": "boolean",
+            "description": "默认为true， 在中断处理中告诉agent-app下次是否要弹出“确认计划”提示"
+          },
+          "regenerate_user_message_id": {
+            "type": "string",
+            "description": "编辑问题时，用户消息ID，不可以同时传入regenerate_assistant_message_id"
+          },
+          "regenerate_assistant_message_id": {
+            "type": "string",
+            "description": "重新生成时，助手消息ID，不可以同时传入regenerate_user_message_id"
+          }
+        },
+        "required": [
+          "query",
+          "agent_id",
+          "stream"
+        ]
+      },
+      "LLMHistory": {
+        "type": "object",
+        "description": "历史上下文",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "角色"
+          },
+          "content": {
+            "type": "string",
+            "description": "内容"
+          }
+        }
+      },
+      "LlmConfig": {
+        "type": "object",
+        "required": [
+          "name",
+          "max_tokens"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "模型ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "模型名"
+          },
+          "model_type": {
+            "type": "string",
+            "description": "模型类型"
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "温度参数"
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Top-p参数"
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Top-k参数"
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2,
+            "description": "频率惩罚"
+          },
+          "presence_penalty": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2,
+            "description": "存在惩罚"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "最大token数"
+          }
+        }
+      },
+      "RetrieverDataSource": {
+        "type": "object",
+        "properties": {
+          "kg": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KgSource"
+            },
+            "description": "图谱类型数据源"
+          },
+          "doc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocSource"
+            },
+            "description": "文档类型数据源"
+          },
+          "advanced_config": {
+            "$ref": "#/components/schemas/RetrieverAdvancedConfig",
+            "description": "召回高级配置"
+          }
+        }
+      },
+      "RetrieverAdvancedConfig": {
+        "type": "object",
+        "properties": {
+          "kg": {
+            "$ref": "#/components/schemas/KGAdvancedConfig",
+            "description": "图谱高级配置"
+          },
+          "doc": {
+            "$ref": "#/components/schemas/DocAdvancedConfig",
+            "description": "文档高级配置"
+          }
+        }
+      },
+      "KGAdvancedConfig": {
+        "type": "object",
+        "required": [
+          "text_match_entity_nums",
+          "vector_match_entity_nums",
+          "graph_rag_topk",
+          "long_text_length",
+          "reranker_sim_threshold",
+          "retrieval_max_length"
+        ],
+        "properties": {
+          "text_match_entity_nums": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 100,
+            "description": "文本匹配召回实体数量"
+          },
+          "vector_match_entity_nums": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 100,
+            "description": "向量匹配召回实体数量"
+          },
+          "graph_rag_topk": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100,
+            "description": "重排序后保留参考信息数量"
+          },
+          "long_text_length": {
+            "type": "integer",
+            "minimum": 50,
+            "description": "长文本长度"
+          },
+          "reranker_sim_threshold": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 10,
+            "description": "图谱rerank bge相似度过滤阈值"
+          },
+          "retrieval_max_length": {
+            "type": "integer",
+            "description": "召回文档最大长度"
+          }
+        }
+      },
+      "DocAdvancedConfig": {
+        "type": "object",
+        "required": [
+          "retrieval_slices_num",
+          "max_slice_per_cite",
+          "rerank_topk",
+          "slice_head_num",
+          "slice_tail_num",
+          "documents_num",
+          "document_threshold",
+          "retrieval_max_length"
+        ],
+        "properties": {
+          "retrieval_slices_num": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 200,
+            "description": "召回切片数"
+          },
+          "max_slice_per_cite": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20,
+            "description": "每篇文档最大保留切片数"
+          },
+          "rerank_topk": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 30,
+            "description": "重排序后保留切片数"
+          },
+          "slice_head_num": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "获取上文切片数"
+          },
+          "slice_tail_num": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "获取下文切片数"
+          },
+          "documents_num": {
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 10,
+            "description": "来源文档数量"
+          },
+          "document_threshold": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 10,
+            "description": "文档ranker bge相似度阈值"
+          },
+          "retrieval_max_length": {
+            "type": "integer",
+            "description": "召回文档最大长度"
+          }
+        }
+      },
+      "KgSource": {
+        "type": "object",
+        "required": [
+          "kg_id",
+          "fields"
+        ],
+        "properties": {
+          "kg_id": {
+            "type": "string",
+            "description": "图谱ID"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "实体类范围"
+          },
+          "field_properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "实体属性列表"
+          },
+          "output_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "结果范围"
+      },
+      "DocSource": {
+        "type": "object",
+        "required": [
+          "ds_id",
+          "fields"
+        ],
+        "properties": {
+          "ds_id": {
+            "type": "string",
+            "description": "数据源ID"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocSourceField"
+            },
+            "description": "数据源范围列表"
+          },
+          "datasets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "数据集列表"
+          }
+        }
+      },
+      "DocSourceField": {
+        "type": "object",
+        "required": [
+          "name",
+          "path",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "字段名称"
+          },
+          "path": {
+            "type": "string",
+            "description": "字段路径"
+          },
+          "source": {
+            "type": "string",
+            "description": "字段来源"
+          }
+        }
+      },
+      "tool": {
+        "type": "object",
+        "description": "工具调用信息",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "tool_args": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Progress": {
+        "type": "object",
+        "properties": {
+          "agent_name": {
+            "type": "string",
+            "description": "兼容旧版本字段，代理名称，对于LLM输出通常为\"main\"，对于工具调用为工具名称"
+          },
+          "stage": {
+            "type": "string",
+            "description": "执行阶段类型",
+            "enum": [
+              "llm (LLM输出)",
+              "skill (技能/工具调用)",
+              "assign (赋值操作)"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "description": "该阶段产生的答案或输出"
+          },
+          "think": {
+            "type": "string",
+            "description": "思考过程记录"
+          },
+          "status": {
+            "type": "string",
+            "description": "执行状态",
+            "enum": [
+              "processing (进行中)",
+              "completed (已完成)",
+              "failed (失败)"
+            ]
+          },
+          "skill_info": {
+            "description": "当 stage 为 \"skill\" 时包含技能调用的详细信息，否则为 null",
+            "$ref": "#/components/schemas/SkillInfo"
+          },
+          "block_answer": {
+            "type": "string",
+            "description": "块级别的答案输出"
+          },
+          "input_message": {
+            "type": "object",
+            "description": "输入消息，可能是字符串或消息对象数组"
+          },
+          "interrupted": {
+            "type": "boolean",
+            "description": "是否被中断"
+          }
+        }
+      },
+      "SkillInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "技能/工具名称"
+          },
+          "type": {
+            "type": "string",
+            "description": "技能类型",
+            "enum": [
+              "TOOL",
+              "AGENT",
+              "MCP"
+            ]
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Arg"
+            }
+          },
+          "checked": {
+            "type": "boolean",
+            "description": "参数是否已验证"
+          }
+        }
+      },
+      "Arg": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "参数名称"
+          },
+          "type": {
+            "type": "string",
+            "description": "参数类型"
+          },
+          "value": {
+            "type": "string",
+            "description": "参数值"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "http://agent-executor:30778",
+      "description": "服务器地址"
+    }
+  ],
+  "info": {
+    "title": "内置工具箱-联网搜索添加引用工具",
+    "description": "包含 一个工具，用于联网搜索并添加引用",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/agent-executor/v1/tools/online_search_cite_tool": {
+      "post": {
+        "tags": [
+          "internal-tools"
+        ],
+        "summary": "online_search_cite_tool",
+        "description": "执行联网搜索并添加引用\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+        "operationId": "online_search_cite_tool_api_agent_executor_v1_tools_online_search_cite_tool_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchCiteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchCiteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchCiteRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "搜索查询词",
+            "example": "机器学习"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "模型名称",
+            "example": "deepseek-v3"
+          },
+          "search_tool": {
+            "type": "string",
+            "title": "Search Tool",
+            "description": "搜索工具",
+            "example": "zhipu_search_tool"
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "搜索工具API密钥",
+            "example": "1828616286d4c94b26071585e1f93009.negnhMi3D5KVuc7h"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "user_id",
+            "description": "用户id",
+            "example": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "是否流式返回",
+            "default": false,
+            "example": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "model_name",
+          "search_tool",
+          "api_key",
+          "user_id"
+        ],
+        "title": "SearchCiteRequest",
+        "description": "联网搜索添加引用请求"
+      },
+      "SearchCiteResponse": {
+        "properties": {
+          "references": {
+            "type": "array",
+            "description": "搜索结果内容",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          },
+          "answer": {
+            "type": "string",
+            "description": "回答"
+          }
+        },
+        "type": "object",
+        "required": [
+          "references",
+          "answer"
+        ],
+        "title": "SearchCiteResponse",
+        "description": "联网搜索添加引用响应"
+      },
+      "SearchResult": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "搜索结果标题"
+          },
+          "content": {
+            "type": "string",
+            "description": "搜索结果内容"
+          },
+          "index": {
+            "type": "number",
+            "description": "搜索结果索引"
+          },
+          "link": {
+            "type": "string",
+            "description": "搜索结果链接"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "content",
+          "index",
+          "link"
+        ],
+        "title": "SearchResult",
+        "description": "搜索结果"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "Description": {
+            "description": "错误描述",
+            "title": "Description",
+            "type": "string"
+          },
+          "ErrorCode": {
+            "description": "错误码",
+            "title": "Errorcode",
+            "type": "string"
+          },
+          "ErrorDetails": {
+            "description": "错误详情",
+            "title": "Errordetails",
+            "type": "string"
+          },
+          "ErrorLink": {
+            "description": "错误链接",
+            "title": "Errorlink",
+            "type": "string"
+          },
+          "Solution": {
+            "description": "解决方法",
+            "title": "Solution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "Description",
+          "ErrorCode",
+          "ErrorDetails",
+          "ErrorLink",
+          "Solution"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      }
+    }
+  }
+}

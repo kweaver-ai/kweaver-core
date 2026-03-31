@@ -1,0 +1,28 @@
+AgentObservabilityResp:
+  type: object
+  properties:
+    agent:
+      $ref: './agent.yaml#/Agent'
+    total_requests:
+      type: integer
+      description: 总请求数
+    total_sessions:
+      type: integer
+      description: 总会话数
+    avg_session_rounds:
+      type: integer
+      description: 平均会话轮次
+    run_success_rate:
+      type: number
+      format: float
+      description: Run成功率
+    avg_execute_duration:
+      type: integer
+      description: 平均执行时长
+    avg_ttft_duration:
+      type: integer
+      description: 平均首token响应时间
+    tool_success_rate:
+      type: number
+      format: float
+      description: 工具调用成功率

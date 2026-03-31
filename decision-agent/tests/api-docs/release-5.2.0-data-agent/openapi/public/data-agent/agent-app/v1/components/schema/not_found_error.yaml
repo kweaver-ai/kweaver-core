@@ -1,0 +1,9 @@
+NotFoundError:
+  allOf:
+    - $ref: './error.yaml#/Error'
+  example:
+    error_code: "AgentApp.NotFound"
+    description: "not found"
+    error_detail: "some text"
+    error_link: "some text"
+    solution: "some text"

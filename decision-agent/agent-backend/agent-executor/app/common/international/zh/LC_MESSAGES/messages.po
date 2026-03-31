@@ -1,0 +1,152 @@
+# Chinese translations for PROJECT.
+# Copyright (C) 2023 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-12-23 11:42+0800\n"
+"PO-Revision-Date: 2023-05-30 05:13-0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.14.0\n"
+
+msgid "Parameter error!"
+msgstr "参数错误！"
+
+msgid "Please check your parameter again."
+msgstr "请重新检查输入参数"
+
+msgid "External service error!"
+msgstr "外部服务错误！"
+
+msgid "Please check the service."
+msgstr "请检查服务"
+
+msgid "Failed to parse file."
+msgstr "解析文件失败"
+
+msgid "Supports parsing text files only."
+msgstr "仅支持解析文本类型的文件"
+
+msgid "There's an error in the code. "
+msgstr "代码中有错误"
+
+msgid "Please check the code."
+msgstr "请检查代码"
+
+msgid "Incorrect input parameters. "
+msgstr "输入参数不正确"
+
+msgid "Please check the input arguments."
+msgstr "请检查参数"
+
+msgid "Code Execution Failure"
+msgstr "代码执行失败"
+
+msgid "Return of the function is not JSON serializable"
+msgstr "函数的返回结果无法json序列化"
+
+msgid " parameter: "
+msgstr " 参数："
+
+msgid " is required!"
+msgstr "是必需的！"
+
+msgid " must be a string type!"
+msgstr "必须是字符串类型！"
+
+msgid " must be an int type!"
+msgstr "必须是整型！"
+
+msgid " must be a float type!"
+msgstr "必须是浮点数类型！"
+
+msgid " must be a list!"
+msgstr "必须是列表！"
+
+msgid " must be a dict!"
+msgstr "必须是字典！"
+
+msgid " must be a bool type!"
+msgstr "必须是布尔类型！"
+
+msgid " must be a byte type!"
+msgstr "必须是字节类型！"
+
+msgid " length is at least "
+msgstr "长度至少为"
+
+msgid "!"
+msgstr "！"
+
+msgid " length is up to "
+msgstr "长度至多为"
+
+msgid " is at least "
+msgstr "至少为"
+
+msgid " is up to "
+msgstr "至多为"
+
+msgid " has duplicated items!"
+msgstr "有重复元素！"
+
+msgid " json format error!"
+msgstr "JSON格式错误！"
+
+msgid " is invalid!"
+msgstr "不合法！"
+
+msgid "Unknown error occurred!"
+msgstr "未知错误发生！"
+
+msgid " must be Chinese and English, numbers and underline!"
+msgstr "必须是中英文，数字和下划线！"
+
+msgid ""
+" must be Chinese and English, numbers and special symbols on the keyboard"
+" and cannot be empty!"
+msgstr "必须是中英文，数字和键盘字符，并且不能为空！"
+
+msgid " must be Chinese and English, numbers and special symbols on the keyboard!"
+msgstr "必须是中英文，数字和键盘字符！"
+
+msgid ""
+" must be Chinese and English, numbers and some keyboard symbols, "
+"excluding '#' '/' ':' '*' '?' '\"' '<' '>' '|'!"
+msgstr "必须是中英文，数字和部分键盘字符，不包括'#'，'/'，':'，'*'，'?'，'\"'，'<'，'>'，'|'！"
+
+msgid " must be positive integer!"
+msgstr "必须是正整数！"
+
+msgid " must be positive integer or -1!"
+msgstr "必须是正整数或-1！"
+
+msgid " must be positive integer or 0!"
+msgstr "必须是正整数或0！"
+
+msgid " must be English, numbers and hyphen!"
+msgstr "必须是英文、数字和下划线！"
+
+msgid " must be oss_id pattern!"
+msgstr "必须是对象存储id的格式！"
+
+msgid " must be a 19 digit number!"
+msgstr "必须是19位的数字！"
+
+msgid " must be uuid pattern!"
+msgstr "必须是uuid的格式！"
+
+msgid " cannot be empty. "
+msgstr "不能为空"
+
+msgid " must be in {}!"
+msgstr "必须是{}中的一个"

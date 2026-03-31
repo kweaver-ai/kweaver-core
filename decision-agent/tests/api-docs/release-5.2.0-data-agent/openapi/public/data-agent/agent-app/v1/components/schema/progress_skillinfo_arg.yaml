@@ -1,0 +1,14 @@
+Arg:
+  type: object
+  properties:
+    name:
+      type: string
+      description: 参数名称
+    type:
+      type: string
+      description: 参数类型
+    value:
+      type: string
+      description: 参数值
+
+      

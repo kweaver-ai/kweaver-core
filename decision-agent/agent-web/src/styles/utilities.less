@@ -1,0 +1,40 @@
+/* 光标样式 */
+.dip-default {
+  cursor: default;
+}
+.dip-pointer {
+  cursor: pointer;
+}
+.dip-not-allowed {
+  cursor: not-allowed;
+}
+
+/* 透明度样式 */
+.dip-opacity-50 {
+  opacity: 0.5;
+}
+
+.dip-opacity-75 {
+  opacity: 0.75;
+}
+
+/* 旋转变换样式 */
+.dip-rotate-90 {
+  transform: rotate(90deg);
+}
+
+/* 过渡动画样式 */
+.dip-transition-transform-30 {
+  transition: transform 0.3s;
+}
+
+/* 必填字段样式 */
+.dip-required::before {
+  content: '*';
+  display: inline-block;
+  margin-right: 4px;
+  color: #ff4d4f;
+  font-size: 14px;
+  font-family: SimSun, sans-serif;
+  line-height: 1;
+}

@@ -1,0 +1,2609 @@
+openapi: 3.0.2
+info:
+  title: user-management服务内部API
+  version: 1.0.0
+servers:
+  - url: http://{host}:{port}/api
+    description: ''
+    variables:
+      host:
+        default: host
+        description: 服务器IP
+      port:
+        default: '9080'
+        description: 内部API http默认端口9080
+security:
+  - {}
+tags:
+  - name: 用户查询
+    description: ''
+  - name: 部门查询
+    description: ''
+  - name: 组成员查询
+    description: ''
+  - name: 组织架构查询
+    description: ''
+  - name: 应用账户管理
+    description: ''
+  - name: 登录认证
+    description: ''
+  - name: 匿名账户管理
+    description: ''
+  - name: 保留名称管理
+    description: ''
+paths:
+  /user-management/v1/names:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertNamesParam'
+        required: true
+      tags:
+        - 组织架构查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvertNamesRes'
+          description: 接口调用成功
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Err400000000:
+                  $ref: '#/components/examples/Err400000000'
+                Err400019001-user:
+                  $ref: '#/components/examples/Err400019001'
+                Err400019001-dept:
+                  $ref: '#/components/examples/Err400019002'
+          description: 非法请求
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 批量转换用户显示名、部门名、联系人组名、用户组名
+  /user-management/v2/names:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertNamesParam'
+        required: true
+      tags:
+        - 组织架构查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvertNamesRes'
+          description: 接口调用成功
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Err400000000:
+                  $ref: '#/components/examples/Err400000000'
+                Err400019001-user:
+                  $ref: '#/components/examples/Err400019001'
+                Err400019001-dept:
+                  $ref: '#/components/examples/Err400019002'
+          description: 非法请求
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 批量转换用户显示名、部门名、联系人组名、用户组名
+  /user-management/v1/users/{user_id}/department_ids:
+    get:
+      tags:
+        - 用户查询
+      parameters:
+        - examples:
+            example:
+              value: 265c08d4-aabe-11ea-8867-005056822eb7
+          name: user_id
+          description: 用户id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                example:
+                  value:
+                    - 151bcb65-48ce-4b62-973f-0bb6685f9cb8
+                    - 1cd45758-aabe-11ea-bcbf-005056822eb7
+                    - 20e92b98-aabe-11ea-8163-005056822eb7
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取用户所属部门id
+      description: 所属部门包含所有直属部门及其父部门
+  /user-management/v1/org_managers/{org_manager_ids}/{fields}:
+    get:
+      tags:
+        - 用户查询
+      parameters:
+        - name: org_manager_ids
+          description: 组织管理员ID，用逗号分隔
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: fields
+          description: |-
+            获取管理员信息字段名：(可任意组合，若获取多个字段以逗号相隔)
+            - `sub_user_ids` 管理员管辖子用户id集合
+
+            例如：
+            - sub_user_ids   
+            (表示获取管理员管辖子用户id集合)  
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: 组织管理员信息
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgManagerInfo'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 根据组织管理员id获取数据
+      description: 获取组织管理员管辖子用户id
+  /user-management/v1/group-members:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetGroupMembersParam'
+        required: true
+      tags:
+        - 组成员查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMembers'
+          description: 接口调用成功
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Err400000000:
+                  $ref: '#/components/examples/Err400000000'
+                Err400019003:
+                  $ref: '#/components/examples/Err400019003'
+          description: 非法请求
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 批量获取用户组成员id
+  /user-management/v1/users/{user_id}/accessor_ids:
+    get:
+      tags:
+        - 用户查询
+      summary: 获取指定用户的访问令牌
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                ExampleOfIDs:
+                  value:
+                    - e1d258ad-ab58-4b62-973f-0bb6685f9cb8
+                    - cdd258ad-ab58-4b62-973f-0bb6685f9cb8
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      description: 获取指定用户的访问令牌
+    parameters:
+      - name: user_id
+        description: 用户ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/departments/{department_id}/accessor_ids:
+    get:
+      tags:
+        - 部门查询
+      summary: 获取指定部门的访问令牌
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                ExampleOfIDs:
+                  value:
+                    - e1d258ad-ab58-4b62-973f-0bb6685f9cb8
+                    - d2d258ad-ab58-4b62-973f-0bb6685f9cb8
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      description: 获取指定部门的访问令牌
+    parameters:
+      - name: department_id
+        description: 部门ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/search-org:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgSearchInfo'
+      tags:
+        - 组织架构查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgSearchData'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 组织范围搜索
+  /user-management/v1/departments/{department_id}/member_ids:
+    get:
+      tags:
+        - 部门查询
+      parameters:
+        - name: department_id
+          description: 部门ID
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartMembers'
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取部门成员
+  /user-management/v1/batch-get-user-info:
+    post:
+      tags:
+        - 用户查询
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserBatchGetInfo'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+              examples:
+                ExampleOfMultipleUserInfos:
+                  value:
+                    - id: e1d258ad-ab58-4b62-973f-0bb6685f9cb8
+                      roles:
+                        - super_admin
+                        - normal_user
+                      priority: 58
+                      csf_level: 56
+                      enabled: true
+                      name: 张三
+                      account: zzz
+                      frozen: true
+                      authenticated: true
+                      email: xxx@qq.com
+                      telephone: '12345678'
+                      third_attr: ''
+                      third_id: '123123'
+                      auth_type: local
+                      oss_id: '134143214'
+                      parent_deps:
+                        - - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                            name: xx公司
+                            type: department
+                          - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                            name: 研发部
+                            type: department
+                        - - id: f314a570-66a9-11eb-ad9d-0050568274c4
+                            name: bb公司
+                            type: department
+                          - id: f414a570-66a9-11eb-ad9d-0050568274c4
+                            name: 设计部
+                            type: department
+                      groups:
+                        - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                        - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                      manager:
+                        id: 2114a570-66a9-11eb-ad9d-0050568274c4
+                        type: user
+                    - id: a2d258ad-ab58-4b62-973f-0bb6685f9cb8
+                      roles:
+                        - super_admin
+                        - normal_user
+                      priority: 58
+                      csf_level: 56
+                      enabled: true
+                      name: 张三1
+                      account: zzz1
+                      frozen: true
+                      authenticated: true
+                      email: xxx@qq.com
+                      telephone: '12345678'
+                      third_attr: ''
+                      third_id: '123123'
+                      auth_type: local
+                      oss_id: '134143214'
+                      parent_deps:
+                        - - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                            name: xx公司
+                            type: department
+                          - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                            name: 研发部
+                            type: department
+                        - - id: f314a570-66a9-11eb-ad9d-0050568274c4
+                            name: bb公司
+                            type: department
+                          - id: f414a570-66a9-11eb-ad9d-0050568274c4
+                            name: 设计部
+                            type: department
+                      groups:
+                        - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                        - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                      manager:
+                        id: 2114a570-66a9-11eb-ad9d-0050568274c4
+                        type: user
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取用户信息
+      description: 获取用户信息
+  /user-management/v1/users/{user_ids}/{fields}:
+    get:
+      tags:
+        - 用户查询
+      parameters:
+        - name: fields
+          description: |-
+            获取用户信息字段名：(可任意组合，若获取多个字段以逗号相隔)  
+            - roles 用户角色  
+            - enabled 用户状态  
+            - priority 用户优先级  
+            - csf_level 用户密级  
+            - parent_deps 父部门信息  
+            - name 用户显示名  
+            - account 用户账户名
+            - frozen 冻结状态
+            - authenticated 实名认证状态
+            - email 邮箱地址
+            - telephone 手机号码
+            - third_attr 第三方应用属性
+            - third_id 第三方系统ID
+            - auth_type 认证类型
+            - groups 用户及其所属部门的所属用户组信息集合
+            - oss_id 用户的存储id
+            - custom_attr 用户的自定义属性
+
+            例如：
+            - roles,enabled,priority,csf_level,parent_deps,name,account,frozen,authenticated,email,telephone,third_attr,third_id,auth_type,groups,oss_id,custom_attr   
+            (表示获取所有字段)  
+            - enabled,priority  
+            (表示获取用户状态和用户优先级)  
+            - name  
+            (表示获取用户显示名) 
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: user_ids
+          description: 用户ID数组，逗号分隔
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+              examples:
+                ExampleOfMultipleUserInfos:
+                  value:
+                    - id: e1d258ad-ab58-4b62-973f-0bb6685f9cb8
+                      roles:
+                        - super_admin
+                        - normal_user
+                      priority: 58
+                      csf_level: 56
+                      enabled: true
+                      name: 张三
+                      account: zzz
+                      frozen: true
+                      authenticated: true
+                      email: xxx@qq.com
+                      telephone: '12345678'
+                      third_attr: ''
+                      third_id: '123123'
+                      auth_type: local
+                      oss_id: '134143214'
+                      parent_deps:
+                        - - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                            name: xx公司
+                            type: department
+                          - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                            name: 研发部
+                            type: department
+                        - - id: f314a570-66a9-11eb-ad9d-0050568274c4
+                            name: bb公司
+                            type: department
+                          - id: f414a570-66a9-11eb-ad9d-0050568274c4
+                            name: 设计部
+                            type: department
+                      groups:
+                        - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                        - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                    - id: a2d258ad-ab58-4b62-973f-0bb6685f9cb8
+                      roles:
+                        - super_admin
+                        - normal_user
+                      priority: 58
+                      csf_level: 56
+                      enabled: true
+                      name: 张三1
+                      account: zzz1
+                      frozen: true
+                      authenticated: true
+                      email: xxx@qq.com
+                      telephone: '12345678'
+                      third_attr: ''
+                      third_id: '123123'
+                      auth_type: local
+                      oss_id: '134143214'
+                      parent_deps:
+                        - - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                            name: xx公司
+                            type: department
+                          - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                            name: 研发部
+                            type: department
+                        - - id: f314a570-66a9-11eb-ad9d-0050568274c4
+                            name: bb公司
+                            type: department
+                          - id: f414a570-66a9-11eb-ad9d-0050568274c4
+                            name: 设计部
+                            type: department
+                      groups:
+                        - id: f114a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+                        - id: f214a570-66a9-11eb-ad9d-0050568274c4
+                          name: 用户组1
+                          type: group
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取用户信息
+      description: 获取用户信息
+  /user-management/v1/departments/{department_id}/all_user_ids:
+    get:
+      tags:
+        - 部门查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllUserIDs'
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取部门下所有用户ID
+    parameters:
+      - name: department_id
+        description: 部门ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/departments/{department_ids}/{fields}:
+    get:
+      tags:
+        - 部门查询
+      parameters:
+        - name: department_ids
+          description: 部门ID，用逗号分隔
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: fields
+          description: |-
+            获取部门信息字段名：(可任意组合，若获取多个字段以逗号相隔)
+            - `name` 部门名称
+            - `parent_deps` 父部门信息
+            - `managers` 管理员信息
+            - `manager` 部门负责人
+            - `code` 部门编码
+            - `enabled` 部门状态
+
+            例如：
+            - name,parent_deps,managers,manager,code,enabled    
+            (表示获取所有字段)  
+            - name   
+            (表示获取部门名称)  
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DepartInfo'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取部门信息
+  /user-management/v1/apps:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSpecifiedAccount'
+            examples:
+              ExampleOfAppInfo:
+                value:
+                  name: test
+                  type: specified
+                  password: some-secret
+        required: true
+      tags:
+        - 应用账户管理
+      responses:
+        '201':
+          headers:
+            Location:
+              schema:
+                format: uri
+                type: string
+              description: 获取应用账户 `/api/user-management/v1/apps/{id}`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAPP'
+              examples:
+                ExampleOfAppID:
+                  value:
+                    id: 5d721c72-7437-4498-b5e1-64eaf4891f2a
+          description: 创建应用账户成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '409':
+          $ref: '#/components/responses/RespStd409'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 专用应用账户注册
+      description: 专用应用账户注册
+  /user-management/v1/apps/{id}:
+    get:
+      tags:
+        - 应用账户管理
+      parameters:
+        - name: id
+          description: 应用账户ID
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetApp'
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取应用账户信息
+      description: 获取应用账户信息
+  /user-management/v1/anonymity-auth:
+    post:
+      parameters:
+        - name: x-referrer
+          description: 原始请求URI
+          schema:
+            type: string
+          in: header
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnonymityAuthInfo'
+      tags:
+        - 匿名账户管理
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnonymityAuthResult'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '403':
+          $ref: '#/components/responses/RespStd403'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 匿名账户认证
+  /user-management/v1/emails:
+    get:
+      tags:
+        - 组织架构查询
+      parameters:
+        - name: user_id
+          description: 用户ID数组
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+        - name: department_id
+          description: 部门ID数组
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+          required: false
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailInfo'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取部门/用户邮箱
+  /user-management/v1/departments:
+    get:
+      tags:
+        - 部门查询
+      parameters:
+        - name: level
+          description: 部门层级，0：根部门，1：一级部门，2：二级部门，根据层级依次获取
+          schema:
+            type: integer
+          in: query
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DepInfo'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 部门列举
+  /user-management/v1/departments/{department_id}/all_users:
+    get:
+      tags:
+        - 部门查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AllUserInfo'
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 根据部门ID获取所有子用户信息
+    parameters:
+      - name: department_id
+        description: 部门ID，部门唯一标识
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/internal-groups:
+    post:
+      tags:
+        - 内部组管理
+      responses:
+        '201':
+          headers:
+            Location:
+              schema:
+                format: uri
+                type: string
+              description: '`/api/user-management/v1/internal-groups/{id}`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalGroupID'
+          description: 创建成功（返回创建成功的内部组id）
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 创建
+  /user-management/v1/internal-groups/{ids}:
+    delete:
+      tags:
+        - 内部组管理
+      responses:
+        '204':
+          description: 接口调用成功
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 删除
+    parameters:
+      - name: ids
+        description: 内部组ID数组
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+  /user-management/v1/internal-group-members/{id}:
+    get:
+      tags:
+        - 内部组成员管理
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InternalGroupMemberInfo'
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取组成员
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/InternalGroupMemberInfo'
+      tags:
+        - 内部组成员管理
+      responses:
+        '204':
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 更新组成员
+    parameters:
+      - name: id
+        description: 内部组ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/configs/{fields}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigInfo'
+      tags:
+        - 配置管理
+      responses:
+        '204':
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 更新配置
+    parameters:
+      - name: fields
+        description: |-
+          配置信息字段名：(可任意组合，若获取多个字段以逗号相隔)
+          - `default_user_pwd` 默认用户密码,明文,长度为6-100,支持数字、字母、特殊字符（~!%#$@-_.）
+
+          例如：
+          - default_user_pwd     
+          (表示更新所有字段)  
+          - default_user_pwd   
+          (标识更新默认用户密码信息名称)  
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+  /user-management/v1/pwd-retrieval-method:
+    get:
+      tags:
+        - 用户查询
+      parameters:
+        - name: account
+          description: 账户名
+          schema:
+            type: string
+          in: query
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountPwdRetrevalInfo'
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 根据账户名获取密码找回方式
+  /user-management/v1/user-auth:
+    get:
+      tags:
+        - 登录认证
+      parameters:
+        - name: id
+          description: 用户唯一标识
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: password
+          description: 密码
+          schema:
+            type: string
+          in: query
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: ''
+                required:
+                  - result
+                type: object
+                properties:
+                  result:
+                    description: 密码验证结果。result为true时，代表密码验证成功；result为false时，代表密码验证失败。
+                    type: boolean
+                  reason:
+                    description: |-
+                      密码验证失败的具体原因。当result字段为false时，reason字段为必须。
+                      - `invalid_password` 密码错误
+                      - `initial_password` 初始密码
+                      - `password_not_safe` 不符合强密码要求
+                      - `under_control_password_expire` 管控状态下密码过期
+                      - `password_expire` 密码过期
+                    enum:
+                      - invalid_password
+                      - initial_password
+                      - password_not_safe
+                      - under_control_password_expire
+                      - password_expire
+                    type: string
+                example:
+                  result: false
+                  reason: invalid_password
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 本地账号密码验证
+  /user-management/v1/users/{user_id}/pwd_err_info:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PwdErrInfo'
+      tags:
+        - 登录认证
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 更新成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 更新账户密码错误信息
+    parameters:
+      - name: user_id
+        description: 用户ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /user-management/v1/account-match:
+    get:
+      tags:
+        - 登录认证
+      parameters:
+        - name: account
+          description: 账户名
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: id_card_login
+          description: 是否允许身份证号匹配
+          schema:
+            type: boolean
+          in: query
+          required: false
+        - name: prefix_match
+          description: 是否允许前缀匹配
+          schema:
+            type: boolean
+          in: query
+          required: false
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: ''
+                required:
+                  - result
+                properties:
+                  result:
+                    description: 账户匹配结果。result为true时，代表匹配到相应账户；result为false时，代表未匹配到
+                    type: boolean
+                  user:
+                    description: 用户信息。当result为true时，user字段为必须。
+                    required:
+                      - id
+                      - account
+                      - auth_type
+                      - pwd_err_cnt
+                      - pwd_err_last_time
+                      - disable_status
+                    type: object
+                    properties:
+                      id:
+                        description: 用户唯一标识
+                        type: string
+                      account:
+                        description: 账户名（login_name）
+                        type: string
+                      auth_type:
+                        description: |-
+                          用户认证方式
+                          - `local` 本地认证
+                          - `domain` 域认证
+                          - `third` 第三方认证
+                        enum:
+                          - local
+                          - domain
+                          - third
+                        type: string
+                      pwd_err_cnt:
+                        description: 该账户的密码错误次数
+                        type: integer
+                      pwd_err_last_time:
+                        format: int64
+                        description: 该账户上次密码错误时间
+                        type: integer
+                      disable_status:
+                        description: 账户禁用状态
+                        type: boolean
+                      ldap_server_type:
+                        description: ldap服务器类型。仅当auth_type=domain时，该字段有效
+                        enum:
+                          - windows_ad
+                          - other_ldap
+                        type: string
+                      domain_path:
+                        description: 域路径。仅当auth_type=domain时，该字段有效
+                        type: string
+              examples:
+                match_successfully:
+                  value:
+                    result: true
+                    user:
+                      id: a2d258ad-ab58-4b62-973f-0bb6685f9cb8
+                      account: '1'
+                      auth_type: local
+                      pwd_err_cnt: 0
+                      pwd_err_last_time: 0
+                      disable_status: false
+                match_failure:
+                  value:
+                    result: false
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 账户匹配
+      description: 根据输入的账户名，匹配出可能的账号信息
+  /user-management/v1/departments/{department_id}:
+    delete:
+      tags:
+        - 部门管理
+      parameters:
+        - name: department_id
+          description: 部门ID，部门唯一标识
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '204':
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 删除部门
+  /user-management/v1/anonymity/{id}:
+    get:
+      tags:
+        - 匿名账户管理
+      parameters:
+        - name: id
+          description: 匿名账户ID
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnonymityInfo'
+          description: 成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 获取匿名账户信息
+      description: 获取匿名账户信息
+  /user-management/v1/org-perm/{subject_type}/{subject_id}/{objects}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PermReadInfo'
+      tags:
+        - 组织架构查询权限
+      responses:
+        '204':
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '403':
+          $ref: '#/components/responses/RespStd403'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 设置权限
+    delete:
+      tags:
+        - 组织架构查询权限
+      responses:
+        '204':
+          description: 接口调用成功
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 删除权限
+    parameters:
+      - name: subject_type
+        description: 主体对象类型，暂时只支持实名用户user
+        schema:
+          enum:
+            - user
+          type: string
+        in: path
+        required: true
+      - name: subject_id
+        description: 主体对象ID，账户ID，账户唯一标识
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: objects
+        description: |-
+          客体对象数组，不为空数组，组织架构类型
+          - user 用户
+          - department 部门
+          - group 用户组
+        schema:
+          type: array
+          items:
+            enum:
+              - user
+              - department
+              - group
+            type: string
+        in: path
+        required: true
+  /user-management/v1/contactor-members:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetContactorMembersParam'
+        required: true
+      tags:
+        - 联系人组成员查询
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactorMemberInfos'
+          description: 接口调用成功
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Err400000000:
+                  $ref: '#/components/examples/Err400000000'
+                Err400019003:
+                  $ref: '#/components/examples/Err400019003'
+          description: 非法请求
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 批量获取联系人组成员
+  /user-management/v1/role-members/{roles}:
+    get:
+      tags:
+        - 组织架构查询
+      responses:
+        '200':
+          description: 接口调用成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleMemberInfos'
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 根据角色查看角色成员
+      description: 包含内置账户
+    parameters:
+      - name: roles
+        description: |-
+          角色名称，多个角色以逗号相隔
+           - `super_admin` 超级管理员
+          - `sys_admin` 系统管理员
+          - `audit_admin` 审计管理员
+          - `sec_admin` 安全管理员
+          - `org_manager` 组织管理员
+          - `org_audit` 组织审计员
+        schema:
+          type: array
+          items:
+            enum:
+              - super_admin
+              - sys_admin
+              - audit_admin
+              - sec_admin
+              - org_manager
+              - org_audit
+            type: string
+        in: path
+        required: true
+  /user-management/v1/users/{user_id}:
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                custom_attr:
+                  description: 用户自定义属性, 更新时相同key的值覆盖, 不同key的值新增, 接口调用方传参需要保证key的路径唯一(防止出现调用方的数据互相覆盖的情况)
+                  type: object
+                  additionalProperties: true
+      tags:
+        - 用户管理
+      parameters:
+        - name: user_id
+          description: 用户ID，用户唯一标识
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        '204':
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 增量修改用户信息
+  /user-management/v1/user-name-existed:
+    get:
+      tags:
+        - 组织架构查询
+      responses:
+        '200':
+          description: 接口调用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '500':
+          $ref: '#/components/responses/RespStd500'
+      summary: 检查用户显示名是否已存在
+    parameters:
+      - name: name
+        description: 显示名
+        schema:
+          type: string
+        in: query
+        required: true
+  /user-management/v1/reserved-names/{id}:
+    put:
+      summary: 更新保留名称
+      tags:
+        - 保留名称管理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 名称
+              required:
+                - name
+      responses:
+        '204':
+          description: 接口调用成功
+        '400':
+          $ref: '#/components/responses/RespStd400'
+        '404':
+          $ref: '#/components/responses/RespStd404'
+        '409':
+          description: 名称已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                user_name_exists:
+                  value:
+                    code: 409000000
+                    message: 名称已存在
+                    cause: 名称已存在
+                    detail:
+                      conflict_object:
+                        id: 7d94eb52-2891-11ef-8c29-025ac393bbc7
+                        type: user
+                doclib_name_exists:
+                  value:
+                    code: 409000000
+                    message: 名称已存在
+                    cause: 名称已存在
+                    detail:
+                      conflict_object:
+                        id: 0B40AEB4298649B8B871036111BA8FFD
+                        type: doclib
+        '500':
+          $ref: '#/components/responses/RespStd500'
+    delete:
+      summary: 删除保留名称
+      tags:
+        - 保留名称管理
+      responses:
+        '204':
+          description: 接口调用成功
+        '500':
+          $ref: '#/components/responses/RespStd500'
+    parameters:
+      - name: id
+        description: 保留名称ID
+        schema:
+          type: string
+        required: true
+        in: path
+components:
+  schemas:
+    ConvertNamesRes:
+      description: ''
+      required:
+        - department_names
+        - user_names
+        - group_names
+        - contactor_names
+        - app_names
+      type: object
+      properties:
+        user_names:
+          description: 用户信息集合
+          type: array
+          items:
+            $ref: '#/components/schemas/NameInfo'
+        department_names:
+          description: 组织/部门信息集合
+          type: array
+          items:
+            $ref: '#/components/schemas/NameInfo'
+        contactor_names:
+          description: 联系人组信息集合
+          type: array
+          items:
+            $ref: '#/components/schemas/NameInfo'
+        group_names:
+          description: 用户组信息集合
+          type: array
+          items:
+            $ref: '#/components/schemas/NameInfo'
+        app_names:
+          description: 应用账户信息集合
+          type: array
+          items:
+            $ref: '#/components/schemas/NameInfo'
+      example:
+        user_names:
+          - id: e1d258ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 张三
+          - id: c1d258ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 里斯
+        department_names:
+          - id: a1d258ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 教育局
+          - id: add258ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 文化局
+        contactor_names:
+          - id: e1b858ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 羽毛球组
+          - id: e1d2c3ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 篮球组
+        group_names:
+          - id: e1d258cd-ab58-4b62-973f-0bb6685f9cb8
+            name: 文化组
+          - id: e1d2a8ad-ab58-4b62-973f-0bb6685f9cb8
+            name: 建设组
+        app_names:
+          - id: 266c6a42-6131-4d62-8f39-853e7093701c
+            name: 管理系统
+          - id: 94752844-BDD0-4B9E-8927-1CA8D427E699
+            name: 审核系统
+    Result:
+      description: 结果
+      type: object
+      required:
+        - result
+      properties:
+        result:
+          description: 查找结果
+          type: boolean
+      example:
+        result: true
+    UsrIDTypeInfo:
+      description: 用户ID类型
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          description: 用户ID
+          type: string
+        type:
+          description: 用户类型，固定为`user`
+          type: string
+    RoleMemberInfos:
+      description: 角色成员信息
+      type: object
+      required:
+        - role
+        - members
+      properties:
+        role:
+          description: |-
+            角色 
+            - `super_admin` 超级管理员
+            - `sys_admin` 系统管理员
+            - `audit_admin` 审计管理员
+            - `sec_admin` 安全管理员
+            - `org_manager` 组织管理员
+            - `org_audit` 组织审计员
+          enum:
+            - super_admin
+            - sys_admin
+            - audit_admin
+            - sec_admin
+            - org_manager
+            - org_audit
+          type: string
+        members:
+          description: 角色成员信息
+          type: array
+          items:
+            $ref: '#/components/schemas/UsrIDTypeInfo'
+    PermReadInfo:
+      description: 组织架构权限信息
+      required:
+        - object
+        - perms
+      type: object
+      properties:
+        object:
+          description: |-
+            客体对象，组织架构类型，与URL内objects保持一致
+            - user 用户
+            - department 部门
+            - group 用户组
+          enum:
+            - user
+            - department
+            - group
+          type: string
+        perms:
+          description: |-
+            权限值
+            - read 读取组织架构对象信息
+          type: array
+          items:
+            enum:
+              - read
+            type: string
+      example:
+        type: user
+        perms:
+          - read
+    ConvertNamesParam:
+      description: ''
+      required:
+        - method
+      type: object
+      properties:
+        method:
+          description: 方法名，暂时只支持"GET"
+          enum:
+            - GET
+          type: string
+        user_ids:
+          description: 用户id集合
+          type: array
+          items:
+            type: string
+        department_ids:
+          description: 部门/组织id集合
+          type: array
+          items:
+            type: string
+        contactor_ids:
+          description: 联系人组id集合
+          type: array
+          items:
+            type: string
+        group_ids:
+          description: 用户组id集合
+          type: array
+          items:
+            type: string
+        app_ids:
+          description: 应用账户id集合
+          type: array
+          items:
+            type: string
+      example:
+        method: GET
+        user_ids:
+          - de448b16-58c8-422c-b9df-0b1eeb67f8e9
+          - 4d41ff70-a475-4afd-a0a8-ee355930bee5
+        department_ids:
+          - d23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - b4c069d0-8736-4e72-a2de-a2945dd28515
+        contactor_ids:
+          - a23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - c4c069d0-8736-4e72-a2de-a2945dd28515
+        group_ids:
+          - f23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - d4c069d0-8736-4e72-a2de-a2945dd28515
+        app_ids:
+          - ads23gfd-6c0e-4b46-a963-d43de04cf6ed
+          - 456ds35f-8736-4e72-a2de-a2945dd28515
+    DepInfo:
+      description: 部门信息
+      required:
+        - id
+        - name
+        - type
+      type: object
+      properties:
+        id:
+          description: 部门ID
+          type: string
+        name:
+          description: 部门名称
+          type: string
+        type:
+          description: 固定为"department"
+          type: string
+      example:
+        id: f114a570-66a9-11eb-ad9d-0050568274c4
+        name: 研发部
+        type: department
+    GroupInfo:
+      description: 用户组信息
+      required:
+        - id
+        - name
+        - type
+      type: object
+      properties:
+        id:
+          description: 用户组ID
+          type: string
+        name:
+          description: 用户组名称
+          type: string
+        type:
+          description: 固定为"group"
+          type: string
+      example:
+        id: f114a570-66a9-11eb-ad9d-0050568274c4
+        name: 用户组1
+        type: group
+    DirectManagerInfo:
+      description: 直属上级，如果fields内有manager，则判断是否有直属上级，如果没有直属上级，则无此字段，如果有直属上级，则返回直属上级信息
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          description: 用户ID
+          type: string
+        type:
+          description: 固定为"user"
+          type: string
+      example:
+        id: 2114a570-66a9-11eb-ad9d-0050568274c4
+        type: user
+    UserInfo:
+      description: 用户信息
+      type: object
+      properties:
+        id:
+          description: 用户id
+          type: string
+        roles:
+          description: |-
+            用户角色，如果fields包含roles则为required
+            - `super_admin` 超级管理员
+            - `sys_admin` 系统管理员
+            - `audit_admin` 审计管理员
+            - `sec_admin` 安全管理员
+            - `org_manager` 组织管理员
+            - `org_audit` 组织审计员
+            - `normal_user` 普通用户
+          type: array
+          items:
+            type: string
+        priority:
+          description: 优先级，如果fields包含priority则为required
+          type: integer
+        csf_level:
+          description: 密级，5~15，如果fields包含csf_level则为required
+          type: integer
+        enabled:
+          description: 用户禁用状态，true:未禁用 false:禁用，如果fields包含enabled则为required
+          type: boolean
+        name:
+          description: 用户显示名，如果fields包含name则为required
+          type: string
+        parent_deps:
+          description: |-
+            父部门信息，描述多个父部门的层级关系信息，每个父部门层级数组内第一个对象是根部门，最后一个对象是直接父部门     
+            如果fields包含parent_deps则为required
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/DepInfo'
+        account:
+          description: 用户账户名，如果fields包含account则为required
+          type: string
+        authenticated:
+          description: 实名认证状态，如果fields包含authenticated则为required
+          type: boolean
+        frozen:
+          description: 冻结状态，如果fields包含frozen_status则为required
+          type: boolean
+        email:
+          description: 邮箱地址，如果fields包含email则为required
+          type: string
+        telephone:
+          description: 电话号码，如果fields包含telephone则为required
+          type: string
+        third_attr:
+          description: 第三方应用属性，如果fields包含third_attr则为required
+          type: string
+        third_id:
+          description: 第三方系统ID，如果fields包含third_id则为required
+          type: string
+        auth_type:
+          description: |-
+            认证类型，如果fields包含auth_type则为required
+            - `local` 本地用户认证
+            - `domain` 域用户认证
+            - `third` 第三方用户认证
+          enum:
+            - local
+            - domain
+            - third
+          type: string
+        oss_id:
+          description: 用户的存储id，如果fields包含oss_id则为required
+          type: string
+        groups:
+          description: 用户及其所属部门的所属用户组信息集合，如果fields包含groups则为required
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupInfo'
+        custom_attr:
+          description: 用户自定义属性,如果fields包含custom_attr则为required
+          type: object
+          additionalProperties: true
+        manager:
+          description: 直属上级,如果fields包含manager则为required
+          $ref: '#/components/schemas/DirectManagerInfo'
+      example:
+        roles:
+          - super_admin
+          - normal_user
+        auth_type: local
+        priority: 58
+        csf_level: 56
+        enabled: true
+        name: 张三
+        email: xxx@qq.com
+        telephone: '12345678'
+        third_attr: ''
+        third_id: '123123'
+        parent_deps:
+          - - id: f114a570-66a9-11eb-ad9d-0050568274c4
+              name: xx公司
+              type: department
+            - id: f214a570-66a9-11eb-ad9d-0050568274c4
+              name: 研发部
+              type: department
+          - - id: f314a570-66a9-11eb-ad9d-0050568274c4
+              name: bb公司
+              type: department
+            - id: f414a570-66a9-11eb-ad9d-0050568274c4
+              name: 设计部
+              type: department
+        account: zhangsan
+        authenticated: true
+        custom_attr:
+          custom1: value1
+          custom2: value2
+        manager:
+          id: 2114a570-66a9-11eb-ad9d-0050568274c4
+          type: user
+    NameInfo:
+      description: ''
+      required:
+        - name
+        - id
+      type: object
+      properties:
+        id:
+          description: 用户/部门/组织/应用账户id
+          type: string
+        name:
+          description: 用户显示名/部门名/组织名/应用账户名
+          type: string
+      example:
+        id: 265c08d4-aabe-11ea-8867-005056822eb7
+        name: '1'
+    Error:
+      description: 接口调用错误信息结构基类，具体错误情况可查看新增的字段detail
+      required:
+        - code
+        - message
+        - cause
+      type: object
+      properties:
+        code:
+          format: int64
+          description: |
+            业务错误码，前三位为 HTTP标准状态码，中间三位为系统内全局唯一的微服务错误码标识号，后三位为自定义状态码。
+          type: integer
+        message:
+          description: 业务错误信息，与code一一对应。
+          type: string
+        cause:
+          description: 导致此错误的原因，也可用于给接口调用者提示解决此错误的办法，相同的code可对应不同的cause。
+          type: string
+        detail:
+          description: 错误辅助信息
+          type: object
+    ContactorMember:
+      description: 联系人组成员
+      required:
+        - id
+        - type
+      type: object
+      properties:
+        id:
+          description: 联系人组成员id，目前为用户id
+          type: string
+        type:
+          description: |
+            成员类型，目前只支持用户
+            - `user` 用户
+          enum:
+            - user
+          type: string
+    ContactorMemberInfos:
+      description: ''
+      required:
+        - contactor_id
+        - members
+      type: object
+      properties:
+        contactor_id:
+          description: 联系人组id
+          type: string
+        members:
+          description: 联系人组成员
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactorMember'
+      example:
+        contactor_id: d23e355b-6c0e-4b46-a963-d43de04cf6ed
+        members:
+          - id: 265c08d4-aabe-11ea-8867-005056822eb7
+            type: user
+    GetContactorMembersParam:
+      description: ''
+      required:
+        - method
+        - contactor_ids
+      type: object
+      properties:
+        method:
+          description: 方法名，暂时只支持"GET"
+          enum:
+            - GET
+          type: string
+        contactor_ids:
+          description: 联系人组id集合
+          type: array
+          items:
+            type: string
+      example:
+        method: GET
+        contactor_ids:
+          - d23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - b4c069d0-8736-4e72-a2de-a2945dd28515
+    GetGroupMembersParam:
+      description: ''
+      required:
+        - method
+        - group_ids
+      type: object
+      properties:
+        method:
+          description: 方法名，暂时只支持"GET"
+          enum:
+            - GET
+          type: string
+        group_ids:
+          description: 用户组id集合
+          type: array
+          items:
+            type: string
+      example:
+        method: GET
+        group_ids:
+          - d23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - b4c069d0-8736-4e72-a2de-a2945dd28515
+    GroupMembers:
+      description: ''
+      required:
+        - user_ids
+        - department_ids
+      type: object
+      properties:
+        user_ids:
+          description: 用户成员id组
+          type: array
+          items:
+            type: string
+        department_ids:
+          description: 部门成员id组
+          type: array
+          items:
+            type: string
+      example:
+        user_ids:
+          - 265c08d4-aabe-11ea-8867-005056822eb7
+          - 115c08d4-aabe-11ea-8867-005056822c1a
+        department_ids:
+          - 151bcb65-48ce-4b62-973f-0bb6685f9cb8
+    OrgSearchInfo:
+      description: 组织架构搜索信息
+      required:
+        - method
+        - scope
+      type: object
+      properties:
+        method:
+          description: |
+            方法名，目前支持GET 获取符合条件的信息
+            - `GET` 获取符合条件的信息
+          enum:
+            - GET
+          type: string
+        user_ids:
+          description: 需要检查的用户ID数组
+          type: array
+          items:
+            type: string
+        department_ids:
+          description: 需要检查的部门ID数组
+          type: array
+          items:
+            type: string
+        scope:
+          description: 范围数组，是部门ID数组
+          type: array
+          items:
+            type: string
+      example:
+        method: GET
+        user_ids:
+          - d23e355b-6c0e-4b46-a963-d43de04cf6ed
+          - b4c069d0-8736-4e72-a2de-a2945dd28515
+        department_ids:
+          - 2f3e355b-6c0e-4b46-a963-d43de04cf6ed
+          - 4ac069d0-8736-4e72-a2de-a2945dd28515
+        scope:
+          - 7d3e355b-6c0e-4b46-a963-d43de04cf6ed
+          - 3cc069d0-8736-4e72-a2de-a2945dd28515
+    OrgSearchData:
+      description: 组织结构搜索结果
+      required:
+        - user_ids
+        - department_ids
+      type: object
+      properties:
+        user_ids:
+          description: 符合条件的用户ID
+          type: array
+          items:
+            type: string
+        department_ids:
+          description: 符合条件的部门ID
+          type: array
+          items:
+            type: string
+      example:
+        user_ids:
+          - d278355b-6c0e-4b46-a963-d43de04cf6ed
+          - b42d69d0-8736-4e72-a2de-a2945dd28515
+        department_ids:
+          - c53e355b-6c0e-4b46-a963-d43de04cf6ed
+          - 6bc069d0-8736-4e72-a2de-a2945dd28515
+    DepartMembers:
+      description: 部门成员
+      required:
+        - user_ids
+        - department_ids
+      type: object
+      properties:
+        user_ids:
+          description: 直属用户ID
+          type: array
+          items:
+            type: string
+        department_ids:
+          description: 直属部门ID
+          type: array
+          items:
+            type: string
+      example:
+        user_ids:
+          - 58ad6a8c-dcac-589a-569d-cd58ac58dcac
+          - a8ad6a8c-dcac-589a-569d-cd58ac58dcac
+        department_ids:
+          - b8ad6a8c-dcac-589a-569d-cd58ac58dcac
+          - e8ad6a8c-dcac-589a-569d-cd58ac58dcac
+    UserBatchGetInfo:
+      description: 部门信息
+      required:
+        - method
+        - user_ids
+        - fields
+      type: object
+      properties:
+        method:
+          description: 方法名，暂时只支持"GET"
+          enum:
+            - GET
+          type: string
+        user_ids:
+          description: 所有用户ID
+          type: array
+          items:
+            type: string
+        fields:
+          description: |
+            获取用户信息字段名  
+            - roles 用户角色  
+            - enabled 用户状态  
+            - priority 用户优先级  
+            - csf_level 用户密级  
+            - parent_deps 父部门信息  
+            - name 用户显示名  
+            - account 用户账户名
+            - frozen 冻结状态
+            - authenticated 实名认证状态
+            - email 邮箱地址
+            - telephone 手机号码
+            - third_attr 第三方应用属性
+            - third_id 第三方系统ID
+            - auth_type 认证类型
+            - groups 用户及其所属部门的所属用户组信息集合
+            - oss_id 用户的存储id
+            - custom_attr 用户的自定义属性
+            - manager 直属上级
+          type: array
+          items:
+            enum:
+              - roles
+              - enabled
+              - priority
+              - csf_level
+              - parent_deps
+              - name
+              - account
+              - frozen
+              - authenticated
+              - email
+              - telephone
+              - third_attr
+              - third_id
+              - manager
+            type: string
+      example:
+        method: GET
+        user_ids:
+          - b8ad6a8c-dcac-589a-569d-cd58ac58dcac
+          - e8ad6a8c-dcac-589a-569d-cd58ac58dcac
+        fields:
+          - telephone
+          - third_attr
+    AllUserIDs:
+      description: 部门信息
+      required:
+        - all_user_ids
+      type: object
+      properties:
+        all_user_ids:
+          description: 部门下所有用户ID
+          type: array
+          items:
+            type: string
+      example:
+        all_user_ids:
+          - b8ad6a8c-dcac-589a-569d-cd58ac58dcac
+          - e8ad6a8c-dcac-589a-569d-cd58ac58dcac
+    DepartInfo:
+      description: 部门组织管理员
+      required:
+        - department_id
+      type: object
+      properties:
+        department_id:
+          description: 部门ID
+          type: string
+        managers:
+          description: 组织管理员信息，如果fields存在managers，则为required
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerInfo'
+        name:
+          description: 部门名称，如果fields存在name，则为required
+          type: string
+        parent_deps:
+          description: 父部门信息，如果fields存在parent_deps，则为required
+          type: array
+          items:
+            $ref: '#/components/schemas/DepInfo'
+        manager:
+          description: 部门负责人信息，如果fields存在manager，则为required
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DirectManagerInfo'
+        code:
+          description: 部门编码，如果fields存在code，则为required
+          type: string
+        enabled:
+          description: 部门状态，如果fields存在enabled，则为required
+          type: boolean
+      example:
+        department_id: b8ad6a8c-dcac-589a-569d-cd58ac58dcac
+        managers:
+          - name: zhangssan
+            id: c8ad6a8c-dcac-589a-569d-cd58ac58dcac
+          - name: lisi
+            id: e8ad6a8c-dcac-589a-569d-cd58ac58dcac
+        name: 分析组
+        parent_deps:
+          - id: 11ad6a8c-dcac-589a-569d-cd58ac58dcac
+            name: xx公司
+            type: department
+          - id: 21ad6a8c-dcac-589a-569d-cd58ac58dcac
+            name: xx部
+            type: department
+        manager:
+          type: user
+          id: e8ad6a8c-dcac-589a-569d-cd58ac58dcac
+        code: code1
+        enabled: true
+    ManagerInfo:
+      description: 组织管理员信息
+      required:
+        - name
+        - id
+      type: object
+      properties:
+        name:
+          description: 组织管理员名称
+          type: string
+        id:
+          description: 组织管理员id
+          type: string
+    GetApp:
+      description: ''
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 应用账户ID
+          type: string
+        name:
+          description: 应用账户名称
+          type: string
+      example:
+        id: 5d721c72-7437-4498-b5e1-64eaf4891f2a
+        name: test
+    CreateAPP:
+      description: 创建通用应用账户成功
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 应用账户ID
+          type: string
+    CreateSpecifiedAccount:
+      description: 创建通用账户请求体
+      required:
+        - name
+        - type
+        - password
+      type: object
+      properties:
+        type:
+          description: |
+            创建专用应用账户
+            - `internal` 内部
+            - `specified` 专用
+          enum:
+            - internal
+            - specified
+          type: string
+        name:
+          description: 应用账户名称
+          type: string
+        password:
+          description: 应用账户密码
+          type: string
+    AnonymityAuthInfo:
+      description: 匿名账户信息
+      required:
+        - account
+        - password
+      type: object
+      properties:
+        account:
+          description: 账户ID
+          type: string
+        password:
+          description: 密码
+          type: string
+      example:
+        account: 4bb41612-a040-11e6-887d-005056920bea
+        password: '111111'
+    AnonymityAuthResult:
+      description: 匿名账户认证结果
+      required:
+        - result
+      type: object
+      properties:
+        result:
+          description: 匿名账户认证结果
+          type: boolean
+      example:
+        result: true
+    UserEmailInfo:
+      description: 用户邮箱信息
+      required:
+        - id
+        - email
+      type: object
+      properties:
+        id:
+          description: 用户ID
+          type: string
+        email:
+          description: 邮箱
+          type: string
+    DepartEmailInfo:
+      description: 部门邮箱信息
+      required:
+        - id
+        - email
+      type: object
+      properties:
+        id:
+          description: 部门ID
+          type: string
+        email:
+          description: 邮箱
+          type: string
+    EmailInfo:
+      description: 邮箱信息
+      required:
+        - user_emails
+        - department_emails
+      type: object
+      properties:
+        user_emails:
+          description: 用户邮箱信息
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEmailInfo'
+        department_emails:
+          description: 部门邮箱信息
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartEmailInfo'
+      example:
+        user_emails:
+          - id: badb2514-775c-11ec-b826-4a331bbd0db0
+            email: 0@qq.com
+          - id: aadb2514-775c-11ec-b826-4a331bbd0db0
+            email: s1@qq.com
+        department_emails:
+          - id: beeb2514-775c-11ec-b826-4a331bbd0db0
+            email: s@163.com
+          - id: cadb2514-775c-11ec-b826-4a331bbd0db0
+            email: ''
+    AllUserInfo:
+      description: 部门子用户信息
+      required:
+        - id
+        - name
+        - account
+        - email
+        - telephone
+        - third_id
+        - third_attr
+      type: object
+      properties:
+        id:
+          description: 用户id，用户唯一标识
+          type: string
+        name:
+          description: 显示名
+          type: string
+        account:
+          description: 账户名
+          type: string
+        email:
+          description: 邮箱
+          type: string
+        telephone:
+          description: 电话号码
+          type: string
+        third_id:
+          description: 第三方ID
+          type: string
+        third_attr:
+          description: 第三方属性
+          type: string
+      example:
+        id: e1d258ad-ab58-4b62-973f-0bb6685f9cb
+        name: ssxt
+        account: sdaext
+        email: sds@qq.com
+        telephone: sasdxt
+        third_id: sasdxt
+        third_attr: somasd
+    InternalGroupID:
+      description: 内部组
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 内部组ID
+          type: string
+      example:
+        id: d23e355b-6c0e-4b46-a963-d43de04cf6ed
+    InternalGroupMemberInfo:
+      description: 内部组成员信息
+      required:
+        - id
+        - type
+      type: object
+      properties:
+        id:
+          description: 内部组成员id，目前为用户id
+          type: string
+        type:
+          description: |
+            成员类型，目前只支持用户
+            - `user` 用户
+          enum:
+            - user
+          type: string
+      example:
+        id: d23e355b-6c0e-4b46-a963-d43de04cf6ed
+        type: user
+    ConfigInfo:
+      description: 配置信息
+      type: object
+      properties:
+        default_user_pwd:
+          description: 默认用户密码，明文，长度限制为6-100，如果field中包含default_user_pwd则为required
+          type: string
+    AccountPwdRetrevalInfo:
+      description: 验证码配置信息
+      required:
+        - status
+      type: object
+      properties:
+        telephone:
+          description: 手机号，如果手机号验证方式开启，则为required
+          type: string
+        email:
+          description: 邮箱地址，如果邮箱验证方式开启，则为required
+          type: string
+        status:
+          description: |
+            此用户找回密码功能状态  
+            - `invalid_account` 无效账户  
+            - `disable_user`用户被禁用  
+            - `unable_pwd_retrieval` 密码找回功能未开启  
+            - `non_local_user` 非本地用户  
+            - `enable_pwd_control` 密码管控开启  
+            - `available` 密码找回功能可用  
+          enum:
+            - invalid_account
+            - disable_user
+            - unable_pwd_retrieval
+            - non_local_user
+            - enable_pwd_control
+            - available
+          type: string
+      example:
+        telephone: '18811115555'
+        email: 1@qq.com
+        status: available
+    PwdErrInfo:
+      description: ''
+      required:
+        - pwd_err_cnt
+        - pwd_err_last_time
+      type: object
+      properties:
+        pwd_err_cnt:
+          description: 密码错误次数
+          type: integer
+        pwd_err_last_time:
+          format: int64
+          description: 密码错误时间
+          type: integer
+      example:
+        pwd_err_cnt: 74
+        pwd_err_last_time: 83
+    AnonymityInfo:
+      description: 匿名账户相关信息
+      required:
+        - verify_mobile
+      type: object
+      properties:
+        verify_mobile:
+          description: 是否需要手机验证码
+          type: boolean
+      example:
+        verify_mobile: true
+    OrgManagerInfo:
+      description: 组织管理员信息
+      required:
+        - id
+        - sub_user_ids
+      type: object
+      properties:
+        id:
+          description: 组织管理员ID
+          type: string
+        sub_user_ids:
+          description: 组织管理员下属用户ID
+          type: array
+          items:
+            type: string
+      example:
+        id: f114a570-66a9-11eb-ad9d-0050568274c4
+        sub_user_ids:
+          - f114a570-66a9-11eb-ad9d-0050568274c4
+          - f114a570-66a9-11eb-ad9d-0050568274c4
+  responses:
+    RespStd400:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            Err400000000:
+              $ref: '#/components/examples/Err400000000'
+      description: 非法请求
+    RespStd500:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            Err500000000:
+              $ref: '#/components/examples/Err500000000'
+      description: 服务器错误
+    RespStd404:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            ResErrExampleof404:
+              value:
+                code: 404019001
+                message: 数据不存在
+                cause: 用户不存在
+      description: 资源不存在
+    RespStd409:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            ResErrExampleOf409:
+              value:
+                code: 409019001
+                message: 数据已存在
+                cause: 用户名已存在
+      description: 资源冲突
+    RespStd403:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            ResErrExampleOf403:
+              value:
+                code: 403019001
+                message: 禁止访问
+                cause: 没有用户组管理权限
+      description: 无法执行此操作
+  examples:
+    Err400000000:
+      summary: 参数错误
+      description: |
+        以下原因均会导致该错误
+        - 未提供必须参数
+        - 参数类型错误
+        - 参数结构不正确
+        - 枚举不存在
+        - 参数值不符合要求
+        `detail`中会说明不正确的参数名称
+      value:
+        cause: ''
+        code: 400000000
+        detail:
+          params:
+            - param1
+            - param2
+        message: Invalid request.
+    Err400019001:
+      summary: 用户不存在
+      value:
+        cause: record not exist
+        code: 400019001
+        message: 用户不存在
+        detail:
+          ids:
+            - 151bcb65-48ce-4b62-973f-0bb6685f9cb8
+    Err400019002:
+      summary: 部门不存在
+      value:
+        cause: record not exist
+        code: 400019002
+        message: 部门不存在
+        detail:
+          ids:
+            - 20e92b98-aabe-11ea-8163-005056822eb7
+    Err400019003:
+      summary: 用户组不存在
+      value:
+        cause: group not exist
+        code: 400019003
+        message: 用户组不存在
+        detail:
+          ids:
+            - 32e92b98-aabe-11ea-8163-005056822ac1
+    Err500000000:
+      summary: 服务器错误
+      description: |
+        可能是服务器代码问题或者环境问题导致的，
+        可以联系开发团队了解具体原因。
+      value:
+        cause: cause
+        code: 500000000
+        detail:
+          xx: xx
+        message: xxxxx

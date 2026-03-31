@@ -1,0 +1,88 @@
+agent:
+  type: object
+  properties:   
+    agent_key:
+      type: string
+      description: agent key
+    agent_version:
+      type: string
+      description: agent 版本（默认不传，表示latest）
+    agent_input:
+      type: array
+      description: 输入参数配置
+      items:
+        $ref: './skill_agent_input.yaml#/agent_input'
+    intervention:
+      type: boolean
+      description: 是否启用干预
+    datasource_config:
+      type: object
+      description: 数据源配置
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - inherit_main
+            - self_configured
+          description: |
+           - 数据源来源：
+           - inherit_main：继承主 Agent 数据源
+           - self_configured：使用自身配置（默认逻辑）
+        specific_inherit:
+          type: string
+          enum:
+            - docs_only
+            - graph_only
+            - all
+          description: |
+            - 仅当 type = inherit_main 时生效，指定继承范围：
+            - docs_only：仅继承文档数据源
+            - graph_only：仅继承图谱数据源
+            - all：继承所有类型数据源
+    llm_config:   
+      description: 大模型配置
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - inherit_main
+          description: |
+            - 大模型来源：
+            - inherit_main：继承主 Agent 大模型
+            - self_configured：使用自身配置（默认逻辑）
+    agent_timeout:
+      type: integer
+      description: Agent工具调用超时时间，单位s, 默认1800s
+      default: 1800
+    current_pms_check_status:
+      type: string
+      description: |
+        - 当前此技能的使用权限状态
+        - 【注意】：这个字段是调用详情接口时设置的，不是配置时设置的。
+        - 如果为空字符串，表示未检查（可能不需要检查，或此agent不存在或未发布等）
+        - 如果为"success"，表示检查通过（有权限）
+        - 如果为"failed"，表示检查失败（无权限）
+      enum: [ "", "success", "failed" ]
+    current_is_exists_and_published:
+      type: boolean
+      description: |
+        - 当前是否存在并已发布
+        - 【注意】：这个字段是运行时设置的，不是配置时设置的
+        - true：存在且已发布
+        - false：不存在或未发布
+      enum: [ true, false ]
+      
+     
+  required:
+    - agent_key
+    - agent_version
+  description: Agent类型技能 可选
+agents:
+  type: array
+  items:
+    $ref: '#/agent'

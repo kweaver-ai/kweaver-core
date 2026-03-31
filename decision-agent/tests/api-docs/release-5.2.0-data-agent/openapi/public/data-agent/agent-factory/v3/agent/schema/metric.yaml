@@ -1,0 +1,10 @@
+metric:
+  type: object
+  properties:
+    metric_model_id:
+      type: string
+      description: 指标模型id
+  required:
+    - metric_model_id
+  description: |
+    - 指标

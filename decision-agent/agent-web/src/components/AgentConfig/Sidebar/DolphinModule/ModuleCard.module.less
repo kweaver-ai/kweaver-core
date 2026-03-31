@@ -1,0 +1,43 @@
+.container {
+  background: #fafbfd;
+  border: solid 1px #f1f4f7;
+
+  .enabled-color {
+    color: #67ac5c;
+  }
+
+  .disabled-color {
+    color: #e25241;
+  }
+
+  .outer-circle {
+    width: 22px;
+    height: 22px;
+
+    .inner-circle {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .enabled-outer-circle {
+    background: #ddebdc;
+
+    .inner-circle {
+      background: #67ac5c;
+    }
+  }
+
+  .disabled-outer-circle {
+    background: #f8e9ea;
+
+    .inner-circle {
+      background: white;
+      border: solid 1px #e25241;
+    }
+  }
+
+  &:hover {
+    background: rgb(240, 245, 250);
+  }
+}

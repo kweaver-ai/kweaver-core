@@ -1,0 +1,136 @@
+retriever_data_source:
+  type: object
+  properties:
+    kg:
+      type: array
+      items:
+        $ref: './kg_source.yaml#/kg_source'
+      description: 图谱类型数据源
+      # maxItems: 1
+    doc:
+      type: array
+      items:
+        $ref: './doc_source.yaml#/doc_source'
+      description: 文档类型数据源
+      # maxItems: 1
+    metric:
+      type: array
+      items:
+        $ref: './metric.yaml#/metric'
+      description: 指标类型数据源
+      # maxItems: 1
+    kn_entry:
+      type: array
+      items:
+        $ref: './kn_entry.yaml#/kn_entry'
+      description: 知识条目类型数据源
+      # maxItems: 1
+    knowledge_network:
+      type: array
+      items:
+        $ref: './knowledge_network.yaml#/knowledge_network'
+      description: |
+        - 业务知识网络类型数据源
+          - 用户选择的业务知识网络和其下的“对象类”
+          - 作用，在召回时会从选择的这些范围中进行召回。或在召回后只保留选择的这些范围中的内容。
+      # maxItems: 1
+
+    advanced_config:
+      type: object
+      nullable: true
+      description: 召回高级配置
+      properties:
+        kg:
+          type: object
+          nullable: true
+          description: 图谱召回高级配置（当数据源类型为“图谱”类型时必需）
+          properties:
+            text_match_entity_nums:
+              type: integer
+              description: 文本匹配召回实体数量
+              example: 60
+            vector_match_entity_nums:
+              type: integer
+              description: 向量匹配召回实体数量
+              example: 60
+            graph_rag_topk:
+              type: integer
+              description: 重排序后保留参考信息数量
+              example: 25
+            long_text_length:
+              type: integer
+              description: 长文本长度
+              example: 256
+            reranker_sim_threshold:
+              type: number
+              description: 图谱rerank bge相似度过滤阈值
+              example: -5.5
+#            enable_rag:
+#              type: boolean
+#              description: 是否启用RAG
+#              example: true
+#            enable_ngql:
+#              type: boolean
+#              description: 是否启用NGQL
+#              example: true
+            retrieval_max_length:
+              type: integer
+              description: 召回最大长度
+              example: 20480
+          required:
+            - text_match_entity_nums
+            - vector_match_entity_nums
+            - graph_rag_topk
+            - long_text_length
+            - reranker_sim_threshold
+#            - enable_rag
+#            - enable_ngql
+            - retrieval_max_length
+        doc:
+          type: object
+          nullable: true
+          description: 文档召回高级配置（当数据源类型为“文档”类型时必需）
+          properties:
+            retrieval_slices_num:
+              type: integer
+              description: 召回切片数
+              example: 150
+            max_slice_per_cite:
+              type: integer
+              description: 每篇文档最大保留切片数
+              example: 16
+            rerank_topk:
+              type: integer
+              description: 重排序后保留切片数
+              example: 15
+            slice_head_num:
+              type: integer
+              description: 获取上文切片数
+              example: 2
+            slice_tail_num:
+              type: integer
+              description: 获取下文切片数
+              example: 0
+            documents_num:
+              type: integer
+              description: 来源文档数量
+              example: 8
+            document_threshold:
+              type: number
+              description: 文档ranker bge相似度阈值
+              example: -5.5
+            retrieval_max_length:
+              type: integer
+              description: 召回最大长度
+              example: 20480
+          required:
+            - retrieval_slices_num
+            - max_slice_per_cite
+            - rerank_topk
+            - slice_head_num
+            - slice_tail_num
+            - documents_num
+            - document_threshold
+            - retrieval_max_length
+
+

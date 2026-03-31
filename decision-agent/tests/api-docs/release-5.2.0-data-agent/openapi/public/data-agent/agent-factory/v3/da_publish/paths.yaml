@@ -1,0 +1,196 @@
+
+paths:
+  /agent-factory/v3/agent/{agent_id}/publish:
+    post:
+      operationId: publishAgent
+      summary: 发布智能体
+      description: 可以通过提交已有的 agent_id 发布智能体，或者提交 agent_config 创建并发布智能体
+      tags: 
+        - 发布相关
+        - 发布相关-internal
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          description: agent ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/upsert_req.yaml#/upsert_req'
+      responses:
+        '201':
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/publish_upsert_res.yaml#/publish_upsert_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/agent/{agent_id}/unpublish:
+    put:
+      operationId: unpublishAgent
+      summary: 取消发布智能体
+      description: 通过发布 ID 取消已发布的智能体
+      tags:
+        - 发布相关
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          description: agent ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 取消发布成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/category:
+    get:
+      operationId: getCategory
+      summary: 获取智能体分类
+      description: 获取智能体分类
+      tags:
+        - 发布相关
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    $ref: '../components/components.yaml#/components/schemas/CategoryResp'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/agent/{agent_id}/publish-info:
+    get:
+      operationId: getPublishInfo
+      summary: 获取已发布智能体的发布信息
+      description: |
+        - 获取已发布智能体的发布信息
+          - 如果提供的agent_id不是已发布智能体，会返回404错误
+      tags:
+        - 发布相关
+        - 发布相关-internal
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          description: agent ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/publish_info.yaml#/publish_info'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+    put:
+      operationId: updatePublishInfo
+      summary: 更新发布信息
+      description: 更新发布信息
+      tags:
+        - 发布相关
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          description: agent ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/upsert_req.yaml#/upsert_req'
+            examples:
+              example1:
+                value:
+                  category_id: "id1,id2,id3"
+                  description: "发布描述"
+                  publish_to_where:
+                    - custom_space
+                    - square
+                  # custom_space_ids:
+                  #   - id1
+                  #   - id2
+                  pms_control:
+                    role_ids:
+                      - role_id1
+                      - role_id2
+                    user_ids:
+                      - user_id1
+                      - user_id2
+                    user_group_ids:
+                      - user_group_id1
+                      - user_group_id2
+                    department_ids:
+                      - department_id1
+                      - department_id2
+                  publish_to_be:
+                    - api_agent
+                    - web_sdk_agent
+                    - skill_agent
+                    - data_flow_agent
+      responses:
+        '200':
+          description: 更新发布信息成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/publish_upsert_res.yaml#/publish_upsert_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]

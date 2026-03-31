@@ -1,0 +1,37 @@
+/.idea
+/**/__pycache__
+/**/*.pyc
+/**/*.pyo
+/.pytest_cache
+/.vscode
+# Test reports and Allure artifacts
+/report
+/report/**
+/report_*/
+/report_html
+/report_html/**
+/allure-results
+/allure-results/**
+/allure-report
+/allure-report/**
+# Generated test summary files
+test_summary.md
+/test_summary.md
+/gen-py-tmp
+/cm.yaml
+/**/export
+/**/temp
+
+# Sensitive configuration files with API keys, passwords, and secrets
+config/env.ini
+data/data-agent/zhipu_search_tool_config.json
+
+# Fetch log AI configuration and logs
+.fetch_log/
+.fetch_log_ai_config.json
+
+# Backup files (should not be committed)
+*_bak_*
+*_backup*
+*.bak
+*~

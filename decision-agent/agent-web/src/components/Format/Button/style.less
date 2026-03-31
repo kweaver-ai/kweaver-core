@@ -1,0 +1,502 @@
+.ad-format-button {
+  min-width: 72px !important;
+
+  .anticon {
+    font-size: 16px;
+  }
+
+  .anticon-caret-down {
+    margin-left: 6px !important;
+    // transform: translateY(2px);
+    font-size: 12px;
+  }
+}
+
+.agent-web-btn-text[disabled],
+.agent-web-btn-text[disabled]:active,
+.agent-web-btn-text[disabled]:focus,
+.agent-web-btn-text[disabled]:hover {
+  color: var(--dip-disabled-color) !important;
+}
+
+.ad-format-button-large {
+  font-size: 16px;
+  height: 40px;
+  padding: 8px 20px !important;
+
+  span {
+    height: 14px;
+    line-height: 14px;
+  }
+}
+
+.ad-format-button-middle {
+  font-size: 14px;
+  height: 32px;
+  padding: 4px 12px !important;
+
+  span {
+    height: 14px;
+    line-height: 14px;
+  }
+}
+
+.ad-format-button-small {
+  font-size: 14px;
+  height: 32px;
+  padding: 4px 12px !important;
+
+  min-width: 10px !important;
+  width: 32px;
+
+  .anticon-ellipsis {
+    transform: translateX(-4px);
+  }
+
+  span {
+    height: 14px;
+    line-height: 14px;
+  }
+}
+
+.ad-format-button-smallest {
+  font-size: 12px;
+  height: 24px;
+  padding: 2px 8px !important;
+
+  span {
+    height: 12px;
+    line-height: 12px;
+  }
+}
+
+.agent-web-btn {
+  &.ad-btn-text {
+    padding: 0;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 400;
+
+    &:focus,
+    &:hover {
+      background: transparent;
+      color: var(--ant-primary-color-hover);
+    }
+
+    // &:hover {
+    // background:rgba(0,0,0,0.04);
+    // }
+
+    // &:hover {
+    //   color: var(--dip-primary-color) !important;
+    // }
+  }
+
+  &.ad-btn-text-b {
+    padding: 4px 12px;
+    height: 32px;
+    min-width: 0;
+    font-size: 14px;
+    font-family:
+      PingFangSC-Regular,
+      PingFang SC;
+    font-weight: 400;
+
+    &:focus,
+    &:hover {
+      background: transparent;
+      color: var(--ant-primary-color-hover);
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    // &:hover {
+    //   color: var(--dip-primary-color) !important;
+    // }
+  }
+
+  &.ad-btn-link {
+    padding: 0;
+    min-width: 0;
+    font-size: 14px;
+    font-family:
+      PingFangSC-Regular,
+      PingFang SC;
+    font-weight: 400;
+    color: #126ee3;
+
+    &:focus,
+    &:hover {
+      background: transparent;
+      color: var(--ant-primary-color-hover);
+    }
+
+    // &:hover {
+    //   color: var(--dip-primary-color) !important;
+    // }
+  }
+
+  &.ad-btn-icon-text {
+    padding: 0;
+    min-width: 0;
+    // display: flex;
+    // align-items: center;
+    font-size: 14px;
+    height: 22px;
+    color: rgba(0, 0, 0, 0.85);
+
+    .anticon {
+      margin-right: 8px;
+    }
+
+    .anticon + span,
+    .agent-web-btn > span + .anticon {
+      margin-left: 8px;
+      font-size: 14px;
+    }
+
+    &:focus,
+    &:hover {
+      background: transparent;
+    }
+
+    &:hover {
+      color: var(--dip-primary-color);
+    }
+  }
+
+  &.ad-btn-text-icon {
+    padding: 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    height: 22px;
+    color: rgba(0, 0, 0, 0.85);
+
+    .anticon {
+      margin-left: 8px;
+      font-size: 14px;
+    }
+
+    .anticon-down {
+      margin-left: 4px;
+      font-size: 10px;
+    }
+
+    &:focus,
+    &:hover {
+      background: transparent;
+    }
+
+    &:hover {
+      color: var(--dip-primary-color);
+    }
+  }
+
+  &.ad-btn-icon-text-icon {
+    padding: 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+
+    .anticon + span,
+    .agent-web-btn > span + .anticon {
+      margin-left: 8px;
+      margin-right: 6px;
+    }
+
+    &:focus,
+    &:hover {
+      background: transparent;
+    }
+
+    &:hover {
+      color: var(--dip-primary-color) !important;
+    }
+  }
+
+  &.ad-btn-u-text {
+    min-width: 72px !important;
+  }
+}
+
+.ad-btn-text {
+  &.agent-web-tooltip-disabled-compatible-wrapper {
+    .agent-web-btn-text {
+      min-width: unset;
+      padding: 0;
+    }
+  }
+}
+
+.ad-btn-icon {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  font-size: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: var(--dip-hover-bg-color);
+  }
+
+  .anticon {
+    height: unset !important;
+    line-height: 0;
+  }
+
+  &-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.45;
+    //pointer-events: none;
+    user-select: none;
+
+    &:hover {
+      background: none;
+    }
+  }
+}
+
+.ad-format-icon-middle {
+  min-width: fit-content;
+  width: 32px;
+  height: 32px;
+}
+
+.ad-format-icon-small {
+  min-width: fit-content;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.ad-btn-u-icon {
+  min-width: 10px !important;
+  width: 32px;
+  height: 32px;
+  padding: 0px !important;
+  border: 1px solid #d9d9d9 !important;
+
+  &:hover {
+    background: var(--dip-hover-bg-color) !important;
+  }
+
+  .anticon {
+    // font-size: 16px;
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.ad-btn-icon-text {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  padding: 0 12px;
+  transition: all 0.5s;
+
+  .anticon {
+    margin-right: 8px;
+    font-size: 16px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:hover {
+    // color: var(--dip-primary-color);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &-disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.ad-btn-text-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  padding: 0 12px;
+  transition: all 0.5s;
+
+  .anticon {
+    margin-left: 8px;
+  }
+
+  .anticon-down {
+    margin-left: 4px;
+    font-size: 10px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:hover {
+    // color: var(--dip-primary-color);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &-disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.ad-btn-icon-text-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  padding: 0 12px;
+  transition: all 0.5s;
+
+  .anticon:first-child {
+    margin-right: 8px;
+  }
+
+  .anticon:last-child {
+    margin-left: 8px;
+  }
+
+  .anticon-down {
+    margin-left: 4px;
+    font-size: 10px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:hover {
+    // color: var(--dip-primary-color) !important;
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &-disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.ad-btn-icon-text-link {
+  padding: 0;
+  min-width: 0;
+  // display: flex;
+  // align-items: center;
+  font-size: 14px;
+  height: 22px !important;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+
+  .anticon {
+    margin-right: 8px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:hover {
+    color: var(--dip-primary-color);
+  }
+}
+
+.ad-btn-text-icon-link {
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  height: 22px;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  .anticon {
+    //margin-left: 8px;
+  }
+
+  .anticon-down {
+    margin-left: 4px;
+    font-size: 10px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:not(.ad-btn-icon-disabled) {
+    &:hover {
+      color: var(--dip-primary-color);
+    }
+  }
+}
+
+.ad-btn-icon-text-icon-link {
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  height: 22px;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+
+  .anticon:first-child {
+    margin-right: 8px;
+  }
+
+  .anticon:last-child {
+    margin-left: 8px;
+  }
+
+  .anticon-down {
+    margin-left: 4px;
+    font-size: 10px;
+  }
+
+  &:focus,
+  &:hover {
+    background: transparent;
+  }
+
+  &:hover {
+    color: var(--dip-primary-color) !important;
+  }
+}

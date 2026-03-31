@@ -1,0 +1,28 @@
+.container {
+  cursor: pointer;
+  box-shadow: var(--dip-box-shadow);
+  width: 340px;
+  height: 100px;
+  margin-top: 12px;
+  border-radius: 8px;
+  padding: 10px 16px;
+  transition: all .2s;
+  background: rgba(var(--dip-primary-color-rgb), .01);
+
+  .icon {
+    min-width: 24px;
+    width: auto;
+    height: 24px;
+    display: inline-block;
+  }
+
+  .link {
+    color: var(--dip-text-color);
+    transition: all .2s;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--dip-primary-color);
+    }
+  }
+}

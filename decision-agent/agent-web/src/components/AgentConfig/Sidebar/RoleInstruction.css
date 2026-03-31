@@ -1,0 +1,105 @@
+.instruction-description {
+  margin-bottom: 16px;
+}
+
+.instruction-description p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.65);
+  margin: 0 0 8px 0;
+}
+
+.instruction-format {
+  margin: 12px 0 16px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.format-text {
+  font-size: 13px;
+  line-height: 1.846;
+  color: rgba(0, 0, 0, 0.25);
+  margin: 0;
+  white-space: pre-line;
+}
+
+.instruction-textarea {
+  width: 100%;
+  border-radius: 4px;
+  font-family:
+    'Noto Sans SC',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 14px;
+  resize: none;
+}
+
+.instruction-buttons {
+  display: flex;
+  align-items: center;
+
+  .instruction-buttons-dolphin-module-management-icon {
+    width: 32px;
+    height: 32px;
+
+    &:hover {
+      background: var(--dip-hover-bg-color);
+      border-radius: 3px;
+    }
+  }
+}
+
+.button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.ai-btn {
+  background: white;
+  color: var(--dip-link-color-75);
+  border: 1px solid rgba(52, 97, 236, 0.1);
+}
+
+.dolphin-btn {
+  background: white;
+  color: var(--dip-link-color-75);
+  border: 1px solid rgba(52, 97, 236, 0.1);
+}
+
+.dolphin-icon {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to bottom, #7fd2ff, #0022e9);
+  border-radius: 50%;
+}
+
+/* 隐藏AdDolphinEditor中的decorationsOverviewRuler元素 */
+.decorationsOverviewRuler {
+  visibility: hidden;
+}
+
+/* 更具体的选择器 */
+.monaco-editor .decorationsOverviewRuler,
+.ad-dolphin-editor .decorationsOverviewRuler,
+.monaco-editor-container .decorationsOverviewRuler {
+  visibility: hidden;
+}
+
+.role-instruction-tabs {
+  .agent-web-tabs-nav {
+    margin-bottom: 0 !important;
+  }
+
+  .agent-web-tabs-nav::before {
+    border: none !important;
+  }
+
+  .agent-web-tabs-tab-btn {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,607 @@
+
+paths:
+
+  /agent-factory/v3/agent/ai-autogen:
+    post:
+      operationId: aiAutogenContent
+      tags: [ "其他" ]
+      summary: AI自动生成内容
+      description: |
+        - 根据提供的提示词，AI自动生成内容
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - params
+                - from
+              properties:
+                params:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: agent名称
+                    profile:
+                      type: string
+                      description: agent简介
+                    skills:
+                      type: array
+                      items:
+                        type: string
+                        description: agent技能
+                      description: agent技能列表
+                    sources:
+                      type: array
+                      description: agent知识来源列表
+                      items:
+                        type: string
+                        description: agent知识来源（最后一层目录）
+                        example: "dir1"
+                from:
+                  type: string
+                  description: |
+                    - 内容来源类型
+                        - system_prompt: 系统提示词
+                          - 流式返回
+                        - opening_remarks: 固定开场白
+                          - 流式返回
+                        - preset_question: 预设问题
+                          - 非流式，返回预设问题列表
+                  enum: [ system_prompt, opening_remarks, preset_question ]
+            example:
+              params:
+                name: "agent name"
+                profile: "agent profile"
+                skills: ["skill1", "skill2"]
+                sources: ["dir1","dir2"]
+              from: "system_prompt"
+      responses:
+        200:
+          description: 请求成功
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: 流式返回AI生成的内容
+              example: |
+                data: {"content": "AI生成的第一部分内容"}
+
+                data: {"content": "AI生成的第二部分内容"}
+
+                data: [DONE]
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: 预设问题
+              example:
+                - "question1"
+                - "question2"
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/batch-check-index-status:
+    post:
+      summary: 批量获取数据处理状态
+      description: |
+        - 批量获取数据处理状态
+          - 目前只会获取内置的文档类型（内容数据湖）的agent的数据处理状态
+            - 其他的会默认返回已完成（100%）
+      tags: [ "其他" ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agent_uniq_flags
+              properties:
+                agent_uniq_flags:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      agent_id:
+                        type: string
+                        description: data agent id
+                      agent_version:
+                        type: string
+                        description: data agent version
+                  description: data agent id列表
+                is_show_fail_infos:
+                  type: boolean
+                  description: 是否显示失败信息
+            example:
+              agent_uniq_flags: [
+                {
+                  agent_id: "id1",
+                  agent_version: "v1"
+                },
+                {
+                  agent_id: "id2",
+                  agent_version: "v2"
+                }
+              ]
+              is_show_fail_infos: true
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            agent_id:
+                              type: string
+                              description: data agent id
+                            agent_version:
+                              type: string
+                              description: data agent version
+                            dataset_id:
+                              type: string
+                              description: 数据集id
+                            complete_count:
+                              type: integer
+                              description: 完成数量
+                            progress:
+                              type: integer
+                              description: 进度（0-100）
+                              example: 78
+                            fail_infos:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                    id:
+                                      type: string
+                                      description: 失败对象id
+                                    fail_msg:
+                                      type: string
+                                      description: 失败信息
+                                    name:
+                                      type: string
+                                      description: 失败对象名称
+                                    path:
+                                      type: string
+                                      description: 失败对象路径
+                                    gns:
+                                      type: string
+                                      description: 失败对象gns
+
+
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/avatar/built-in:
+    get:
+      summary: 获取内置头像列表
+      description: 获取内置头像列表
+      tags:
+        - 其他
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    avatar_id:
+                      type: string
+                      description: 头像id
+                    avatar_url:
+                      type: string
+                      description: 头像url
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/avatar/built-in/{avatar_id}:
+    get:
+      summary: 获取内置头像
+      description: 获取内置头像
+      tags:
+        - 其他-ignore
+      parameters:
+        - name: avatar_id
+          in: path
+          required: true
+          description: 头像id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+                description: SVG格式的头像图片
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent-inout/export:
+    post:
+      summary: 导出数据
+      description: |
+        - 批量导出指定的data agent数据
+        - 支持导出多个agent
+        - 返回JSON格式的导出文件
+        - 只能导出“我的个人空间”中的agent
+        - 如果提供的agent_id有不存在的，会返回404错误
+      tags: [ "其他" ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agent_ids
+              properties:
+                agent_ids:
+                  type: array
+                  items:
+                    type: string
+                    description: data agent id
+                    example: "agent_001"
+                  description: 要导出的agent列表
+            example:
+              agent_ids:
+                - "agent_001"
+                - "agent_002"
+      responses:
+        '200':
+          description: 导出成功
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+                description: 导出的JSON文件
+          headers:
+            Content-Disposition:
+              description: 文件下载头信息
+              schema:
+                type: string
+                example: "attachment; filename=agent_export_20231201.json"
+            Content-Type:
+              description: 文件类型
+              schema:
+                type: string
+                example: "application/json"
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent-inout/import:
+    post:
+      summary: 导入数据
+      description: |
+        - 从导出的JSON文件中导入data agent数据
+        - 支持批量导入多个agent
+        - agent标识（key）不可与已存在的重复
+          - 如果重复，需要先删除已存在的agent，再导入
+          - 重复时，会返回重复的agent列表（包括agent_id、agent_key和agent_name）
+        - 只能导入到“我的个人空间”中
+      tags: [ "其他" ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - import_type
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 导入的JSON文件
+                import_type:
+                  type: string
+                  description: | 
+                    - 导入类型
+                    - upsert: 如果agent_key存在则更新，否则创建
+                    - create: 只能创建，如果agent_key存在则失败
+                  enum: [ "upsert", "create" ]
+                  example: "upsert"
+            encoding:
+              file:
+                contentType: application/json
+      responses:
+        '200':
+          description: 导入结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_success:
+                    type: boolean
+                    description: 是否导入成功
+                  config_invalid:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_key:
+                          type: string
+                          description: agent标识
+                        agent_name:
+                          type: string
+                          description: agent名称
+                    description: 配置无效的agent列表
+                  no_create_system_agent_pms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_key:
+                          type: string
+                          description: agent标识
+                        agent_name:
+                          type: string
+                          description: agent名称
+                    description: |
+                      - 需要“创建系统agent权限”的agent列表
+                        - 如果导入的agent为系统agent，会判断当前导入者是否有“创建系统agent权限”。如果没有，导入失败，将agent_key和agent_name添加到此列表
+                      - 细节说明：
+                        - 对于更新模式（upsert），虽然对于已存在的agent，不会修改“是否是系统Agent”的状态，但对于不存在的agent，会根据导入的agent的“是否是系统Agent”字段来进行创建。这里会统一进行判断是否有“创建系统agent权限”，不再详细区分某个Agent是创建还是更新。
+                  agent_key_conflict:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_key:
+                          type: string
+                          description: agent标识
+                        agent_name:
+                          type: string
+                          description: agent名称
+                    description: |
+                      - agent标识冲突的agent列表
+                        - 当import_type为upsert时，判断agent_key对应agent是否是当前导入者的agent。如果不是，导入失败，将agent_key和agent_name添加到此列表
+                        - 当import_type为create时，如果agent_key存在则失败，将agent_key和agent_name添加到此列表
+                  biz_domain_conflict:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_key:
+                          type: string
+                          description: agent标识
+                        agent_name:
+                          type: string
+                          description: agent名称
+                    description: |
+                      - 在更新模式下，agent标识因业务域冲突的agent列表
+                        - 如果导入的agent_key对应的agent不是当前业务域的，则导入失败，将agent_key和agent_name添加到此列表
+                        - 原因：导入的有其他业务域的agent，在当前业务域下没法更新其他业务域的agent
+                      - 创建模式下没有这个问题，因为是创建新的agent（agent_key会新生成）
+
+              examples:
+                success:
+                  summary: 导入成功
+                  description: 所有agent都成功导入
+                  value:
+                    is_success: true
+                    config_invalid: []
+                    no_create_system_agent_pms: []
+                    agent_key_conflict: []
+                failure:
+                  summary: 导入失败
+                  description: 部分agent导入失败，包含各种错误信息
+                  value:
+                    is_success: false
+                    config_invalid:
+                      - agent_key: "invalid_agent_001"
+                        agent_name: "配置错误的智能体"
+                    no_create_system_agent_pms:
+                      - agent_key: "system_agent_001"
+                        agent_name: "系统智能体示例"
+                    agent_key_conflict:
+                      - agent_key: "duplicate_agent_001"
+                        agent_name: "重复的智能体"
+                    biz_domain_conflict:
+                      - agent_key: "duplicate_agent_002"
+                        agent_name: "重复的智能体"
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        # '409':
+        #   description: 存在重复的agent标识
+        #   content:
+        #     application/json:
+        #       schema:
+        #         $ref: '../components/components.yaml#/components/schemas/Error'
+        # '413':
+        #   description: 文件过大
+        #   content:
+        #     application/json:
+        #       schema:
+        #         $ref: '../components/components.yaml#/components/schemas/Error'
+        # '415':
+        #   description: 不支持的文件类型
+        #   content:
+        #     application/json:
+        #       schema:
+        #         $ref: '../components/components.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/dolphin-tpl/list:
+    post:
+      operationId: listDolphinTpl
+      summary: 获取dolphin模板列表
+      description: 获取dolphin模板列表
+      tags: [ "其他" ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - config
+              properties:
+                config:
+                  $ref: '../agent/schema/config_req.yaml#/config'
+                  title: agent配置
+                built_in_agent_key:
+                  type: string
+                  description: |
+                    - 内置agent标识
+                    - 编辑内置agent的场景使用此字段，其他场景不要给此字段传值
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pre_dolphin:
+                    type: array
+                    items:
+                      $ref: '../agent/schema/dolphin_tpl.yaml#/dolphin_tpl_res'
+                    description: 在用户自定义dolphin之前执行的内置dolphin语句
+                  post_dolphin:
+                    type: array
+                    items:
+                      $ref: '../agent/schema/dolphin_tpl.yaml#/dolphin_tpl_res'
+                    description: 在用户自定义dolphin之后执行的内置dolphin语句
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/404'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/temp-zone/file-ext-map:
+    get:
+      operationId: getFileExtMap
+      summary: 获取文件扩展名映射
+      description: 获取文件扩展名映射
+      tags: [ "其他" ]
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    type: array
+                    items:
+                      type: string
+                    description: 文档文件扩展名
+                  spreadsheet:
+                    type: array
+                    items:
+                      type: string
+                    description: 表格文件扩展名
+                  presentation:
+                    type: array
+                    items:
+                      type: string
+                    description: 演示文件扩展名
+                  text:
+                    type: array
+                    items:
+                      type: string
+                    description: 文本文件扩展名
+                  audio:
+                    type: array
+                    items:
+                      type: string
+                    description: 音频文件扩展名
+                  pdf:
+                    type: array
+                    items:
+                      type: string
+                    description: PDF文件扩展名
+                  other:
+                    type: array
+                    items:
+                      type: string
+                    description: 其他文件扩展名
+                  video:
+                    type: array
+                    items:
+                      type: string
+                    description: 视频文件扩展名
+                  wikidoc:
+                    type: array
+                    items:
+                      type: string
+                    description: wikidoc文件扩展名
+                  faq:
+                    type: array
+                    items:
+                      type: string
+                    description: faq文件扩展名
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+          

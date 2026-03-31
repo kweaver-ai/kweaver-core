@@ -1,0 +1,18 @@
+{
+  "prompt": {
+    "temperature": "temperature",
+    "temperatureTip": "Control the randomness of generated text, which can control the diversity of generated text to avoid generating too similar text.",
+    "top_p": "top_p",
+    "top_pTip": "Controls the probability threshold for generated text, which can control the diversity of generated text to avoid generating too similar text.",
+    "max_tokens": "max tokens",
+    "max_tokensTip": "Controls the maximum length of generated text, which can control the length of the generated text to avoid generating too long text.",
+    "top_k": "top_k",
+    "top_k_tip": ":When each word is generated, the large model is controlled to randomly select a word from the top k words with the highest probability to improve the diversity of the generated results while ensuring text coherence.",
+    "presence_penalty": "presence penalty",
+    "presence_penaltyTip": "Controls the presence penalty for generated text, which controls the number of words and phrases that are not present in the generated text to avoid generating text that is too incoherent.",
+    "frequency_penalty": "frequency penalty",
+    "frequency_penaltyTip": "Controls the frequency penalty for generating text, which controls the number of repeated words and phrases in the generated text to avoid generating overly repetitive text.",
+    "saveClose": "Save and close",
+    "abandon": "Give up saving"
+  }
+}

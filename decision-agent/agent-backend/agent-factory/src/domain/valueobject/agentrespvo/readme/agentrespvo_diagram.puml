@@ -1,0 +1,212 @@
+@startuml AgentRespVO 模块结构图（AI生成）
+
+' 设置样式
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+package "agentrespvo" {
+    class AnswerS {
+        + Query: string
+        + Interventions: Interventions
+        + DynamicFieldsHolder
+        + NewAnswerS()
+        + MarshalJSON(): []byte, error
+        + UnmarshalJSON(data []byte): error
+    }
+
+    class Intervention {
+        + ToolName: string
+        + ToolCallInfo: *ToolCallInfo
+    }
+
+    class ToolCallInfo {
+        + ToolName: string
+        + Args: interface{}
+        + AssignType: string
+        + OutputVar: string
+    }
+
+    class Interventions {
+        + NewInterventions()
+        + ToOutputVarMap(): map[string][]*Intervention
+    }
+
+    class DocRetrievalRes {
+        + Text: string
+        + References: []*Reference
+        + AnswerAndCites(): string, []*interfaces.AnswerCite
+    }
+
+    class Reference {
+        + Content: string
+        + RetrieveSourceType: string
+        + Score: float64
+        + Meta: *Meta
+    }
+
+    class Meta {
+        + DocLibType: string
+        + ObjectID: string
+        + DocName: string
+        + ExtType: string
+        + ParentPath: string
+        + Size: int
+        + DocID: string
+        + Slices: []*Slice
+        + DataSource: string
+    }
+
+    class Slice {
+        + Score: float64
+        + ID: string
+        + No: int
+        + Content: string
+        + Pages: []int
+    }
+
+    class MiddleOutputVarItem {
+        + VarName: string
+        + Type: chatresenum.OutputVarType
+        + Value: interface{}
+        + Thinking: string
+    }
+
+    class MiddleOutputVarRes {
+        + Vars: []*MiddleOutputVarItem
+        + NewMiddleOutputVarRes()
+        + LoadFrom(vars []string, valuesMap map[string]interface{}): error
+        + ToExploreList(val interface{}): []*AnswerExplore, error
+    }
+
+    class AnswerPrompt {
+        + Answer: string
+        + Think: string
+    }
+
+    class AnswerPromptText {
+        + Text: string
+    }
+
+    class AnswerExplore {
+        + AgentName: string
+        + Answer: interface{}
+        + Think: string
+        + Status: string
+        + Interrupted: bool
+    }
+
+    class TimeStatus {
+        + ToolTime: int
+        + JudgeTime: int
+        + PromptTime: int
+        + ExploreTime: int
+        + AssignTime: int
+    }
+
+    class UsageStats {
+        + PromptTokens: int
+        + TotalTokens: int
+        + CompletionTokens: int
+    }
+}
+
+package "daresvo" {
+    class DataAgentRes {
+        + Answer: *agentrespvo.AnswerS
+        + UserDefine: map[string]interface{}
+        + Ask: interface{}
+        + Status: string
+        + Error: interface{}
+        - answerVarHelper: *ResHelper
+        - docRetrievalVarHelper: *ResHelper
+        - graphRetrievalVarHelper: *ResHelper
+        - relatedQuestionsVarHelper: *ResHelper
+        - otherVarsHelper: *ResHelper
+        - middleOutputVarsHelper: *ResHelper
+        + NewDataAgentRes(data []byte, outputVariablesS *agentconfigvo.OutputVariablesS): *DataAgentRes
+        + Effective(): bool
+        + GetFinalAnswer(): interface{}
+        + GetAnswerJSON(): []byte, error
+        + DocRetrievalAnswerAndCites(): string, []*interfaces.AnswerCite, error
+        + GetDocRetrieval(): *agentrespvo.DocRetrievalRes, error
+        + RelatedQueries(): []*interfaces.RelatedQuestion
+    }
+
+    class ResHelper {
+        + Answer: *agentrespvo.AnswerS
+        + outputVariablesS: *agentconfigvo.OutputVariablesS
+        + varField: VarFieldType
+        + NewResHelper(answer *agentrespvo.AnswerS, outputVariablesS *agentconfigvo.OutputVariablesS, varField VarFieldType): *ResHelper
+        + getFieldVal(): interface{}
+        + GetOtherVarsMap(): map[string]interface{}, error
+        + GetMiddleOutputVarsMap(): map[string]interface{}, error
+        + GetMap(): map[string]interface{}, error
+        + GetJSON(): []byte, error
+        + GetGJSON(): *gjson.Result, error
+        + GetType(): FieldType, error
+        + MustGetType(): FieldType
+        + IsFinalAnswerTypeObj(): bool
+        + IsFinalAnswerTypeSlice(): bool
+        + GetObjValByPath(path string): interface{}, error
+        + GetObjValStrByPath(path string): string, error
+    }
+
+    enum VarFieldType {
+        VarFieldTypeAnswer
+        VarFieldTypeDocRetrieval
+        VarFieldTypeGraphRetrieval
+        VarFieldTypeRelatedQuestions
+        VarFieldTypeOther
+        VarFieldTypeMiddleOutputVars
+    }
+
+    enum FieldType {
+        TypeString
+        TypeArray
+        TypeJSON
+        TypeNotSupport
+    }
+}
+
+' 关系定义
+AnswerS "1" *-- "many" Intervention : contains
+Intervention "1" *-- "1" ToolCallInfo : contains
+Interventions "1" *-- "many" Intervention : contains
+DocRetrievalRes "1" *-- "many" Reference : contains
+Reference "1" *-- "1" Meta : contains
+Meta "1" *-- "many" Slice : contains
+MiddleOutputVarRes "1" *-- "many" MiddleOutputVarItem : contains
+
+DataAgentRes "1" *-- "1" AnswerS : contains
+DataAgentRes "1" *-- "many" ResHelper : uses
+ResHelper "1" --> "1" AnswerS : references
+ResHelper "1" --> "1" VarFieldType : uses
+ResHelper "1" --> "1" FieldType : returns
+
+' 辅助函数关系
+note right of AnswerS
+  支持动态字段，可以存储
+  和访问任意类型的数据
+end note
+
+note right of Interventions
+  存储智能体执行过程中的
+  所有干预信息
+end note
+
+note right of DataAgentRes
+  整合各种类型的响应数据，
+  是数据智能体的核心响应结构
+end note
+
+note right of ResHelper
+  提供各种响应处理的辅助方法，
+  简化数据访问和转换
+end note
+
+@enduml

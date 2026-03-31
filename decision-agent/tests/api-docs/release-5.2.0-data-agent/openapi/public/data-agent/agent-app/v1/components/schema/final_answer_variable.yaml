@@ -1,0 +1,30 @@
+FinalAnswerVariable:
+  type: object
+  required:
+    - answer_var
+  properties:
+    answer_var:
+      type: string
+      description: 包含最终回答的变量名
+    doc_retrieval_var:
+      type: string
+      default: doc_retrieval_res
+      description: 包含文档检索结果的变量名
+    graph_retrieval_var:
+      type: string
+      default: graph_retrieval_res
+      description: 包含图谱检索结果的变量名
+    related_questions_var:
+      type: string
+      default: related_questions
+      description: 包含相关问题的变量名
+    other_vars:
+      type: array
+      items:
+        type: string
+      description: 其他变量数组
+    middle_output_vars:
+      type: array
+      items:
+        type: string
+      description: 中间变量数组

@@ -1,0 +1,150 @@
+// 字体颜色
+.dip-text-color {
+  color: var(--dip-text-color) !important;
+}
+
+.dip-text-color-85 {
+  color: var(--dip-text-color-85) !important;
+}
+
+.dip-text-color-80 {
+  color: var(--dip-text-color-80) !important;
+}
+
+.dip-text-color-75 {
+  color: var(--dip-text-color-75) !important;
+}
+
+.dip-text-color-65 {
+  color: var(--dip-text-color-65) !important;
+}
+
+.dip-text-color-45 {
+  color: var(--dip-text-color-45) !important;
+}
+
+.dip-text-color-25 {
+  color: var(--dip-text-color-25) !important;
+}
+
+.dip-text-color-primary {
+  color: var(--dip-primary-color) !important;
+}
+
+.dip-text-color-success {
+  color: var(--dip-success-color) !important;
+}
+
+.dip-text-color-error {
+  color: var(--dip-error-color) !important;
+}
+
+// 字体大小
+.dip-font-10 {
+  font-size: 10px;
+}
+
+.dip-font-11 {
+  font-size: 11px;
+}
+
+.dip-font-12 {
+  font-size: 12px !important;
+}
+
+.dip-font-13 {
+  font-size: 13px !important;
+}
+
+.dip-font-14 {
+  font-size: 14px !important;
+}
+
+.dip-font-16 {
+  font-size: 16px !important;
+}
+
+.dip-font-20 {
+  font-size: 20px !important;
+}
+
+.dip-font-24 {
+  font-size: 24px !important;
+}
+
+// 字重
+.dip-c-bold {
+  font-weight: 600;
+}
+
+.dip-font-weight-700 {
+  font-weight: 700;
+}
+
+.dip-text-link {
+  cursor: pointer;
+  color: var(--dip-text-color-45);
+  transition: color 0.3s;
+
+  &:hover {
+    color: rgba(var(--dip-primary-color-rgb), 0.85) !important;
+  }
+}
+
+.dip-text-blue-link {
+  color: var(--dip-link-color-75);
+  cursor: pointer;
+
+  &:hover {
+    color: #3461ec;
+  }
+}
+
+.dip-pre-whitespace {
+  white-space: pre;
+}
+
+// line-height
+.dip-line-height-20 {
+  line-height: 20px;
+}
+
+// common.less清除了默认样式, 富文本显示时需要还原
+.dip-rich-text-wrap {
+  // 标题
+  h3,
+  h2,
+  h1 {
+    margin: 0 !important;
+    font-weight: bold;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+  }
+  h3 {
+    font-size: 16px;
+  }
+
+  // 段落
+  p {
+    margin: 0 !important;
+  }
+  // 下划线、删除线、斜体
+  u {
+    text-decoration: underline;
+  }
+  s {
+    text-decoration: line-through;
+  }
+  em {
+    font-weight: normal;
+    font-style: italic;
+  }
+}
+
+.dip-user-select-none {
+  user-select: none;
+}

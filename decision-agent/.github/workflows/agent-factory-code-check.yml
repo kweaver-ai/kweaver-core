@@ -1,0 +1,64 @@
+name: Agent Factory Code Check
+
+on:
+  push:
+    branches: [main, master, 'release/*']
+    paths:
+      - 'agent-backend/agent-factory/**'
+      - '.github/workflows/agent-factory-code-check.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'agent-backend/agent-factory/**'
+  workflow_dispatch:
+    inputs:
+      test_path:
+        description: 'UT 测试路径（相对于 agent-factory）'
+        required: false
+        default: './src/domain/service/...'
+
+jobs:
+  agent-factory-lint:
+    name: agent-factory Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent-backend/agent-factory
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          working-directory: agent-backend/agent-factory
+        continue-on-error: true
+
+  agent-factory-ut:
+    name: agent-factory UT
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent-backend/agent-factory
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Run Unit Tests
+        continue-on-error: true
+        run: |
+          TEST_PATH="${{ github.event.inputs.test_path || './src/domain/service/...' }}"
+          mkdir -p test_out
+          go test -count=1 -timeout 30m \
+            -coverprofile=test_out/coverage.out \
+            -covermode=atomic \
+            ${TEST_PATH} 2>&1 | tee test_out/ut_output.log || true
+          go tool cover -func=test_out/coverage.out | tail -1 || true
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-factory-coverage
+          path: agent-backend/agent-factory/test_out/
+          retention-days: 30

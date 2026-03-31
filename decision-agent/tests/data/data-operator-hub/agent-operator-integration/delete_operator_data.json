@@ -1,0 +1,119 @@
+[
+    {
+        "title": "传参为整型，删除算子，删除失败",
+        "params": 1
+    },
+    {
+        "title": "传参为浮点型，删除算子，删除失败",
+        "params": 1.1
+    },
+    {
+        "title": "传参为字符型，删除算子，删除失败",
+        "params": "1"
+    },
+    {
+        "title": "传参为布尔型，删除算子，删除失败",
+        "params": true
+    },
+    {
+        "title": "传参为json类型，删除算子，删除失败",
+        "params": {
+            "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+            "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+        }
+    },
+    {
+        "title": "operator_id为整型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": 1,
+                "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为浮点型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": 1.1,
+                "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为布尔型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": true,
+                "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为列表类型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": ["d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"],
+                "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为json类型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": {
+                    "id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+                },
+                "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+            }
+        ]
+    },
+    {
+        "title": "version为整型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+                "version": 1
+            }
+        ]
+    },
+    {
+        "title": "version为浮点型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+                "version": 1.1
+            }
+        ]
+    },
+    {
+        "title": "version为布尔型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+                "version": true
+            }
+        ]
+    },
+    {
+        "title": "version为列表类型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+                "version": ["d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"]
+            }
+        ]
+    },
+    {
+        "title": "version为json类型，删除算子，删除失败",
+        "params": [
+            {
+                "operator_id": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed",
+                "version": {
+                    "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+                }
+            }
+        ]
+    }
+]

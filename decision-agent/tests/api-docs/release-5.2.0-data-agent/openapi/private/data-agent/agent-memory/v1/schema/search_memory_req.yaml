@@ -1,0 +1,33 @@
+SearchMemoryReq:
+  description: 召回记忆请求参数
+  type: object
+  properties:
+    user_id: 
+      type: string
+      description: 用户ID
+    agent_id:
+      type: string
+      description: Agent ID
+    run_id:
+      type: string
+      description: Run ID
+    query:
+      type: string
+      description: 搜索内容
+    limit:
+      type: integer
+      description: 返回数量(默认值：5)
+    threshold:
+      type: number
+      description: |
+         向量查询评分阈值, 返回大于阈值的结果
+         评分基于余弦相似度计算，数值越大越相似（1==完全相同）
+    rerank_threshold:
+      type: number
+      description: |
+         重排序评分阈值, 搜索结果进行重新排序,只返回重排序评分>=该阈值的记忆，默认为0，表示返回所有
+        
+  required:
+    - messages  
+    
+  

@@ -1,0 +1,292 @@
+@DESC
+Dolphin提示词生成助手：通过对话式交互帮助用户创建符合Dolphin语法规范的高质量提示词。适用于非编程背景的业务人员，支持智能工具推荐、流程梳理和代码生成。
+@DESC
+
+# 用户原始需求描述
+$user_requirement -> requirement
+
+# ========== 第一阶段：需求理解 ==========
+# 通过对话了解用户想要创建什么类型的智能体
+/prompt/(model="v3", output="json")
+你是一个友好的需求分析专家。根据用户的原始需求，分析以下信息：
+
+用户需求：{$user_requirement}
+
+请分析并提取：
+1. 智能体的核心功能（用一句话概括）
+2. 目标用户群体（谁会使用这个智能体）
+3. 主要应用场景（在什么情况下使用）
+4. 预期的输入输出（用户输入什么，期望得到什么）
+
+返回JSON格式：
+{
+  "core_function": "核心功能描述",
+  "target_users": "目标用户",
+  "use_cases": ["场景1", "场景2"],
+  "input_output": {
+    "input": "输入描述",
+    "output": "输出描述"
+  },
+  "need_more_info": ["需要进一步了解的问题1", "问题2"]
+}
+
+如果需求不够明确，在need_more_info中列出需要追问的问题。
+-> requirement_analysis
+
+# 如果需求分析显示需要更多信息，则进行追问
+/if/ len($requirement_analysis.need_more_info) > 0:
+    "为了更好地帮助您，我需要了解以下信息：\n" + $requirement_analysis.need_more_info.join("\n") + "\n\n请补充这些信息，以便我为您生成最合适的提示词。" -> clarifying_questions
+    $clarifying_questions -> output
+/end/
+
+# ========== 第二阶段：工具推荐 ==========
+# 获取系统可用工具列表
+@get_available_tools() -> available_tools
+
+# 基于需求分析结果，智能推荐工具
+/prompt/(model="v3", output="json")
+你是一个工具匹配专家。根据用户的需求分析和可用工具列表，推荐最合适的工具。
+
+用户需求分析：
+{$requirement_analysis}
+
+可用工具列表：
+{$available_tools}
+
+请分析并推荐：
+1. 哪些工具是实现该需求必需的
+2. 每个推荐工具的作用说明
+3. 是否有可选的工具可以增强功能
+4. 工具使用的优先级
+
+返回JSON格式：
+{
+  "recommended_tools": [
+    {
+      "tool_id": "工具ID",
+      "tool_name": "工具名称",
+      "reason": "推荐理由",
+      "priority": 1
+    }
+  ],
+  "optional_tools": [
+    {
+      "tool_id": "工具ID",
+      "tool_name": "工具名称",
+      "benefit": "可以带来的好处"
+    }
+  ],
+  "explanation": "整体推荐策略说明（用友好的语言向用户解释）"
+}
+-> tool_recommendation
+
+# 向用户展示工具推荐
+'''
+根据您的需求，我为您推荐以下工具：
+
+**必需工具**：
+''' + $tool_recommendation.recommended_tools.map(t => "- **" + t.tool_name + "**: " + t.reason).join("\n") + '''
+
+**可选工具**：
+''' + ($tool_recommendation.optional_tools.length > 0 ? $tool_recommendation.optional_tools.map(t => "- **" + t.tool_name + "**: " + t.benefit).join("\n") : "无") + '''
+
+''' + $tool_recommendation.explanation + '''
+
+这些工具是否符合您的需求？
+- 如果满意，请回复"可以"
+- 如果需要调整，请告诉我具体要求
+''' -> tool_recommendation_message
+
+# ========== 第三阶段：流程梳理 ==========
+# 引导用户梳理业务流程
+/prompt/(model="v3", output="json")
+你是一个业务流程设计专家。根据用户需求和推荐的工具，设计合理的执行流程。
+
+用户需求：{$user_requirement}
+需求分析：{$requirement_analysis}
+推荐工具：{$tool_recommendation.recommended_tools.map(t => t.tool_name).join(", ")}
+
+请设计执行流程：
+1. 分析该任务属于哪种类型（数据处理、问答、分析、自动化等）
+2. 提供该类型的标准流程模板
+3. 根据具体需求定制流程步骤
+4. 确定是否需要条件判断、循环等控制流
+
+返回JSON格式：
+{
+  "task_type": "任务类型",
+  "flow_template": "标准流程模板描述",
+  "custom_steps": [
+    {
+      "step_number": 1,
+      "description": "步骤描述",
+      "tools_needed": ["工具1", "工具2"],
+      "output": "该步骤的输出"
+    }
+  ],
+  "need_condition_logic": true/false,
+  "condition_description": "如果需要条件判断，描述判断逻辑",
+  "need_loop": true/false,
+  "loop_description": "如果需要循环，描述循环逻辑",
+  "flow_explanation": "用友好语言向用户解释流程设计"
+}
+-> flow_design
+
+# 展示流程设计给用户确认
+'''
+很好！让我们来梳理一下执行流程：
+
+**任务类型**：{$flow_design.task_type}
+
+**执行流程**：
+''' + $flow_design.custom_steps.map(s => s.step_number + ". **" + s.description + "**" + (s.tools_needed.length > 0 ? " (使用: " + s.tools_needed.join(", ") + ")" : "")).join("\n") + '''
+
+''' + ($flow_design.need_condition_logic ? "**条件判断**：" + $flow_design.condition_description + "\n" : "") + '''
+''' + ($flow_design.need_loop ? "**循环处理**：" + $flow_design.loop_description + "\n" : "") + '''
+
+''' + $flow_design.flow_explanation + '''
+
+这个流程是否符合您的预期？
+- 如果满意，请回复"可以"
+- 如果需要调整，请告诉我具体要求
+''' -> flow_design_message
+
+# ========== 第四阶段：信息完善 ==========
+# 收集生成提示词所需的详细参数
+/prompt/(model="v3", output="json")
+你是一个信息收集专家。根据前面的分析，整理生成Dolphin提示词所需的所有信息。
+
+已有信息：
+- 需求分析：{$requirement_analysis}
+- 工具推荐：{$tool_recommendation}
+- 流程设计：{$flow_design}
+
+请整理以下信息：
+1. 智能体名称（简洁明了的名称）
+2. 智能体描述（详细的功能说明）
+3. 输入参数定义（变量名、类型、说明）
+4. 使用的工具列表（工具ID）
+5. 输出格式要求（文本/JSON/JSONL/列表）
+6. 特殊要求（多轮对话、记忆、错误处理等）
+7. 系统提示词的角色定位
+8. 建议的模型参数（温度等）
+
+返回JSON格式：
+{
+  "agent_name": "智能体名称",
+  "agent_description": "详细描述",
+  "input_params": [
+    {
+      "name": "参数名",
+      "type": "参数类型",
+      "required": true/false,
+      "description": "参数说明"
+    }
+  ],
+  "tools": ["工具ID列表"],
+  "output_format": "输出格式",
+  "special_requirements": {
+    "multi_turn": true/false,
+    "memory": true/false,
+    "error_handling": "错误处理策略"
+  },
+  "system_role": "角色定位描述",
+  "model_params": {
+    "temperature": 0.7,
+    "model": "v3"
+  }
+}
+-> prompt_specification
+
+# ========== 第五阶段：提示词生成 ==========
+# 获取Dolphin语法文档
+@get_dolphin_syntax() -> dolphin_syntax
+
+# 生成符合Dolphin语法的完整提示词
+/prompt/(model="v3", output="text")
+你是一个Dolphin代码生成专家。根据以下规范和需求，生成符合Dolphin语法的完整提示词。
+
+Dolphin语法规范：
+{$dolphin_syntax}
+
+提示词规格说明：
+{$prompt_specification}
+
+需求分析：
+{$requirement_analysis}
+
+工具推荐：
+{$tool_recommendation}
+
+流程设计：
+{$flow_design}
+
+请生成完整的Dolphin提示词代码，要求：
+
+1. **结构完整**：
+   - 使用@DESC添加智能体描述
+   - 定义所有输入变量
+   - 选择合适的代码块类型（/prompt/、/explore/、/judge/）
+   - 添加必要的控制流（/if/、/for/等）
+   - 设置正确的输出格式
+
+2. **代码质量**：
+   - 变量命名清晰有意义
+   - 逻辑简洁易懂
+   - 关键步骤添加中文注释
+   - 使用#标注每个主要部分
+   - 添加错误处理逻辑
+
+3. **语法规范**：
+   - 严格遵循Dolphin语法
+   - 正确使用->和>>操作符
+   - 函数调用使用@符号
+   - 代码块正确闭合
+
+4. **用户友好**：
+   - 添加详细的注释说明
+   - 代码结构清晰
+   - 易于维护和扩展
+
+请直接输出Dolphin代码，使用```dolphin代码块包裹：
+-> dolphin_prompt_code
+
+# ========== 第六阶段：确认优化 ==========
+# 展示生成的提示词并询问用户反馈
+'''
+我已经为您生成了完整的Dolphin提示词！
+
+```dolphin
+{$dolphin_prompt_code}
+```
+
+**智能体功能概览**：
+- 名称：{$prompt_specification.agent_name}
+- 功能：{$prompt_specification.agent_description}
+- 输入：{$prompt_specification.input_params.map(p => p.name + " (" + p.description + ")").join(", ")}
+- 工具：{$prompt_specification.tools.join(", ")}
+- 输出：{$prompt_specification.output_format}
+
+这个提示词是否符合您的预期？
+
+**我可以帮您**：
+- 修改功能：告诉我具体要调整的部分
+- 添加工具：补充需要的工具
+- 调整流程：优化执行步骤
+- 优化代码：改进代码结构或注释
+
+请告诉我您的意见，或者回复"完成"直接使用这个提示词。
+''' -> final_prompt_message
+
+# 保存完整的提示词信息供后续使用
+{
+  "requirement_analysis": $requirement_analysis,
+  "tool_recommendation": $tool_recommendation,
+  "flow_design": $flow_design,
+  "prompt_specification": $prompt_specification,
+  "dolphin_code": $dolphin_prompt_code,
+  "generated_at": @_date() + " " + @_time()
+} -> prompt_generation_result
+
+# ========== 输出最终结果 ==========
+$final_prompt_message -> output

@@ -1,0 +1,19 @@
+.ad-btn {
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  &-text {
+    display: inline-flex;
+    align-items: center;
+    color: var(--ad-text-color-lower);
+    &:hover {
+      color: var(--dip-text-color);
+    }
+  }
+
+  &-disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    color: var(--dip-disabled-color) !important;
+  }
+}

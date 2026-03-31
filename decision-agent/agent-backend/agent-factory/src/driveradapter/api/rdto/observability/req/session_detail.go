@@ -1,0 +1,19 @@
+package observabilityreq
+
+import (
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+)
+
+// POST /api/agent-app/v1/observability/agent/:agent_id/conversation/:conversation_id/session/:session_id/deatail
+// 获取指定session的详情信息，包含多个指标
+type SessionDetailReq struct {
+	AgentID        string `json:"agent_id"`
+	AgentVersion   string `json:"agent_version"`
+	ConversationID string `json:"conversation_id"`
+	SessionID      string `json:"session_id"`
+	StartTime      int64  `json:"start_time"`
+	EndTime        int64  `json:"end_time"`
+
+	XAccountID   string            `json:"-"`
+	XAccountType cenum.AccountType `json:"-"`
+}

@@ -1,0 +1,12 @@
+Field:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: 参数（字段）名
+    type:
+      type: string
+      enum: [string, file, object]
+      description: 参数类型

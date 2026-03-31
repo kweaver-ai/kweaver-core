@@ -1,0 +1,60 @@
+# 依赖目录
+node_modules/
+
+# 构建输出
+dist/
+.rsbuild/
+
+# 测试相关
+coverage/
+.nyc_output/
+test-result/
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# IDE 配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 临时文件
+.tmp/
+temp/
+
+# 缓存目录
+.cache/
+
+# 代码质量工具
+lint-report.xml
+.eslintcache
+
+# 文档生成
+storybook-static/
+
+# 其他
+*.tgz
+*.tar.gz
+.gemini.md
+.agent

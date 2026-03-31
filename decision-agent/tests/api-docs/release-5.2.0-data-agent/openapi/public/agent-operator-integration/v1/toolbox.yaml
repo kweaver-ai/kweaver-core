@@ -1,0 +1,2221 @@
+openapi: "3.0.1"
+info:
+  title: "工具箱、工具相关接口"
+  description: "算子平台工具箱相关接口"
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration
+    description: 服务器地址
+paths:
+  /v1/tool-box/market/tools:
+    get:
+      summary: "查询市场工具列表"
+      description: "查询市场工具列表，支持根据工具名字，状态"
+      tags:
+        - 工具
+        - 工具市场
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "page"
+          in: "query"
+          description: "页码"
+          schema:
+            type: integer
+            default: 1
+        - name: "page_size"
+          in: "query"
+          description: "每页大小"
+          schema:
+            type: integer
+            default: 10
+        - name: "sort_by"
+          in: "query"
+          description: "排序字段"
+          schema:
+            type: string
+            default: "update_time"
+            enum:
+              - "create_time"
+              - "update_time"
+              - "name"
+        - name: "sort_order"
+          in: "query"
+          description: "排序方式"
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "desc"
+        - name: "tool_name"
+          in: "query"
+          description: "工具名称"
+          schema:
+            type: string
+        - name: "status"
+          in: "query"
+          description: "工具状态"
+          schema:
+            type: string
+            enum:
+              - "enabled"
+              - "disabled"
+        - name: "all"
+          in: "query"
+          description: "查询所有工具"
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: "获取所有工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryMarketToolInfoListResp"
+
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/market/{box_id}/{fields}:
+    get:
+      summary: "获取工具箱市场信息"
+      description: "根据工具箱ID获取工具箱市场信息"
+      tags:
+        - 工具箱
+        - 工具市场
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+            example: "123456,789012"
+        - name: "fields"
+          in: "path"
+          required: true
+          description: "返回字段:box_name,box_desc,box_svc_url,status,category_type,category_name,is_internal,source,create_user,update_user,release_user,tools"
+          schema:
+            type: string
+            example: "box_name,box_desc,box_svc_url,status,category_type,category_name,is_internal,source,create_user,update_user,release_user,tools"
+      responses:
+        "200":
+          description: "获取工具箱市场信息成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetToolBoxMarketInfoResult"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/market:
+    get:
+      summary: "获取工具箱市场信息"
+      description: "获取工具箱市场信息"
+      tags:
+        - 工具箱
+        - 工具市场
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "页码"
+          schema:
+            type: integer
+            example: 1
+        - name: "page_size"
+          in: "query"
+          required: false
+          description: "每页数量"
+          schema:
+            type: integer
+            example: 10
+        - name: "status"
+          in: "query"
+          required: false
+          description: "工具箱状态"
+          schema:
+            type: string
+            enum: ["unpublish", "published", "offline"]
+        - name: "user_id"
+          in: "query"
+          required: false
+          description: "用户ID"
+          schema:
+            type: string
+            example: "user_id"
+        - name: "category"
+          in: "query"
+          required: false
+          description: "工具箱分类"
+          schema:
+            type: string
+            example: "box_category"
+        - name: "name"
+          in: "query"
+          required: false
+          description: "工具箱名称"
+          schema:
+            type: string
+            example: "name"
+        - name: "sort_by"
+          in: "query"
+          required: false
+          description: "排序字段"
+          schema:
+            type: string
+            example: "create_time"
+            enum:
+              - "create_time"
+              - "updated_time"
+              - "name"
+        - name: "sort_order"
+          in: "query"
+          required: false
+          description: "排序顺序"
+          schema:
+            type: string
+            example: "asc"
+            enum:
+              - "asc"
+              - "desc"
+        - name: "all"
+          in: "query"
+          required: false
+          description: "是否获取所有工具箱"
+          schema:
+            type: boolean
+            example: false
+      responses:
+        "200":
+          description: "获取工具箱列表成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ToolBoxInfoList"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/market/{box_id}:
+    get:
+      summary: "获取工具箱市场信息"
+      description: "根据工具箱ID获取工具箱市场信息"
+      tags:
+        - 工具箱
+        - 工具市场
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "获取工具箱成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolBoxInfo"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/intcomp:
+    post:
+      summary: "更新内置工具组件"
+      description: "创建、更新内置工具组件"
+      tags:
+        - "内置工具管理"
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+      requestBody:
+        description: "工具信息"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInternalToolBoxReq"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateInternalToolBoxReq"
+      responses:
+        "200":
+          description: "创建工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateInternalToolBoxResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box:
+    post:
+      summary: "创建工具箱"
+      description: "创建工具箱"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateToolBoxRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateToolBoxRequest"
+      responses:
+        "200":
+          description: "创建工具箱成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateToolBoxResult"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}:
+    post:
+      summary: "更新工具箱"
+      description: "根据工具箱ID更新工具箱信息"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateToolBoxRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateToolBoxRequest"
+      responses:
+        "200":
+          description: "更新工具箱成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateToolBoxResult"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      summary: "获取工具箱信息"
+      description: "根据工具箱ID获取工具箱信息，包括工具信息"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "获取工具箱成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolBoxInfo"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: "删除工具箱"
+      description: "根据工具箱ID删除工具箱信息"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "删除工具箱成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteToolBoxResult"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/status:
+    post:
+      summary: "更新工具箱状态"
+      description: "根据工具箱ID更新工具箱状态"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateToolBoxStatusReq"
+      responses:
+        "200":
+          description: "更新工具箱状态成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateToolBoxStatusResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/list:
+    get:
+      summary: "获取工具箱列表"
+      description: "获取工具箱列表"
+      tags:
+        - 工具箱
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "page"
+          in: "query"
+          required: false
+          description: "页码"
+          schema:
+            type: integer
+            example: 1
+        - name: "page_size"
+          in: "query"
+          required: false
+          description: "每页数量"
+          schema:
+            type: integer
+            example: 10
+        - name: "status"
+          in: "query"
+          required: false
+          description: "工具箱状态"
+          schema:
+            type: string
+            enum: ["unpublish", "published", "offline"]
+        - name: "user_id"
+          in: "query"
+          required: false
+          description: "用户ID"
+          schema:
+            type: string
+            example: "user_id"
+        - name: "category"
+          in: "query"
+          required: false
+          description: "工具箱分类"
+          schema:
+            type: string
+            example: "box_category"
+        - name: "name"
+          in: "query"
+          required: false
+          description: "工具箱名称"
+          schema:
+            type: string
+            example: "name"
+        - name: "sort_by"
+          in: "query"
+          required: false
+          description: "排序字段"
+          schema:
+            type: string
+            example: "create_time"
+            enum:
+              - "create_time"
+              - "updated_time"
+              - "name"
+        - name: "sort_order"
+          in: "query"
+          required: false
+          description: "排序顺序"
+          schema:
+            type: string
+            example: "asc"
+            enum:
+              - "asc"
+              - "desc"
+        - name: "all"
+          in: "query"
+          required: false
+          description: "是否获取所有工具箱"
+          schema:
+            type: boolean
+            example: false
+      responses:
+        "200":
+          description: "获取工具箱列表成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ToolBoxInfoList"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tool:
+    post:
+      summary: "创建工具"
+      description: "根据工具箱ID创建工具"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateToolReq"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateToolReq"
+      responses:
+        "200":
+          description: "创建工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateToolResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tool/{tool_id}:
+    post:
+      summary: "更新工具"
+      description: "根据工具箱ID和工具ID更新工具信息"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateToolReq"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateToolReq"
+      responses:
+        "200":
+          description: "更新工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateToolResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      summary: "获取工具"
+      description: "根据工具箱ID和工具ID获取工具信息"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "获取工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolInfo"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tools/batch-delete:
+    post:
+      summary: "批量删除"
+      description: "根据工具箱ID批量删除工具"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchDeleteToolReq"
+      responses:
+        "200":
+          description: "批量删除工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchDeleteToolResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tools/list:
+    get:
+      summary: "获取工具箱内工具列表"
+      description: "根据工具箱ID获取工具列表"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "page"
+          in: "query"
+          description: "页码"
+          schema:
+            type: integer
+            default: 1
+        - name: "page_size"
+          in: "query"
+          description: "每页大小"
+          schema:
+            type: integer
+            default: 10
+        - name: "sort_by"
+          in: "query"
+          description: "排序字段"
+          schema:
+            type: string
+            default: "create_time"
+            enum:
+              - "create_time"
+              - "update_time"
+              - "name"
+        - name: "sort_order"
+          in: "query"
+          description: "排序方式"
+          schema:
+            type: string
+            enum:
+              - "asc"
+              - "desc"
+            default: "desc"
+        - name: "name"
+          in: "query"
+          description: "查询关键字"
+          schema:
+            type: string
+        - name: "status"
+          in: "query"
+          description: "查询状态"
+          schema:
+            type: string
+            enum:
+              - "enabled"
+              - "disabled"
+        - name: "user_id"
+          in: "query"
+          description: "查询用户ID"
+          schema:
+            type: string
+        - name: "all"
+          in: "query"
+          description: "查询所有工具"
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: "获取工具列表成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoxToolList"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tools/status:
+    post:
+      summary: "更新工具状态"
+      description: "根据工具箱ID和工具ID更新工具状态(批量)"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+            description: "工具箱ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/UpdateToolStatusReq"
+      responses:
+        "200":
+          description: "更新工具状态成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateToolStatusResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/tool/{tool_id}/debug:
+    post:
+      summary: "工具调试"
+      description: "根据工具箱ID和工具ID测试工具"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+        - name: "stream"
+          in: "query"
+          description: "是否流模式"
+          schema:
+            type: boolean
+            default: false
+        - name: "mode"
+          in: "query"
+          description: "执行模式"
+          schema:
+            type: string
+            enum:
+              - "sync"
+              - "stream"
+            default: "sync"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/APIProxyRequest"
+                - properties:
+                    timeout:
+                      type: integer
+                      description: 指定超时时间，单位（秒）
+      responses:
+        "200":
+          description: "API代理接口"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tool-box/{box_id}/proxy/{tool_id}:
+    post:
+      summary: "工具执行代理接口"
+      description: "工具执行代理接口"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+        - name: "stream"
+          in: "query"
+          description: "是否流模式"
+          schema:
+            type: boolean
+            default: false
+        - name: "mode"
+          in: "query"
+          description: "执行模式"
+          schema:
+            type: string
+            enum:
+              - "sync"
+              - "stream"
+            default: "sync"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/APIProxyRequest"
+                - properties:
+                    timeout:
+                      type: integer
+                      description: 指定超时时间，单位（秒）
+      responses:
+        "200":
+          description: "API代理接口"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  # 算子转换成工具
+  /v1/operator/convert/tool:
+    post:
+      summary: "算子转换成工具"
+      description: "算子转换成工具"
+      tags:
+        - 工具
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          description: "认证信息"
+          schema:
+            type: string
+            example: "Bearer token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConvertToolReq"
+      responses:
+        "200":
+          description: "算子转换成工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConvertToolResp"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      description: "错误信息"
+      properties:
+        code:
+          type: string
+          description: "错误码"
+        description:
+          type: string
+          description: "错误信息"
+        detail:
+          type: object
+          description: "错误详情"
+        solution:
+          type: string
+          description: "错误解决方案"
+        link:
+          type: string
+          description: "错误链接"
+    CreateInternalToolBoxReq:
+      type: object
+      description: "添加更新内置工具箱、工具组件"
+      required:
+        - box_id
+        - box_name
+        - box_desc
+        - metadata_type
+        - data
+        - source
+        - config_version
+        - config_source
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID，业务方需要保证唯一性"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+        source:
+          type: string
+          description: "工具来源"
+          default: "internal"
+          enum: ["custom", "internal"]
+        config_version:
+          type: string
+          description: "业务方维护:x.y.z 满足格式，xyz用数字代替，当工具箱配置或者工具信息有变更，需要升级版本。"
+        config_source:
+          type: string
+          description: 配置更新方式：(auto自动/manual手动)
+          enum:
+            - auto
+            - manual
+        protected_flag:
+          type: boolean
+          description: 手动配置保护锁, 当前版本周期能，如果开启锁保护，禁止自动更新操作
+    CreateInternalToolBoxResp:
+      type: object
+      description: "内置工具、工具箱更新返回结果"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        tools:
+          type: array
+          description: 工具箱内工具详情
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    APIProxyRequest:
+      type: object
+      properties:
+        header:
+          type: object
+          description: "请求头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "请求体参数"
+        query:
+          type: object
+          description: "查询参数"
+          additionalProperties:
+            type: string
+        path:
+          type: object
+          description: "路径参数"
+          additionalProperties:
+            type: string
+    APIProxyResponse:
+      type: object
+      properties:
+        status_code:
+          type: integer
+          description: "HTTP状态码"
+        headers:
+          type: object
+          description: "响应头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "响应体"
+          format: binary
+        error:
+          type: string
+          description: "错误信息"
+      required:
+        - status_code
+    CreateToolBoxRequest:
+      type: object
+      description: "创建工具箱请求"
+      required:
+        - metadata_type
+        - data
+      properties:
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        box_category:
+          type: string
+          description: "工具箱分类"
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+        source:
+          type: string
+          description: "工具来源"
+          default: "custom" # 自定义
+    CreateToolBoxResult:
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+    UpdateToolBoxRequest:
+      type: object
+      description: "更新工具箱请求"
+      required:
+        - box_name
+        - box_desc
+        - box_svc_url
+        - box_category
+      properties:
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        box_category:
+          type: string
+          description: "工具箱分类"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+    UpdateToolBoxResult:
+      type: object
+      description: "工具箱结果"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        edit_tools:
+          type: array
+          description: "更新的工具列表"
+          items:
+            type: object
+            properties:
+              tool_id:
+                type: string
+                description: "工具ID"
+              status:
+                type: string
+                description: "工具状态,启用/禁用"
+                enum: ["enable", "disable"]
+              name:
+                type: string
+                description: "工具名称"
+              description:
+                type: string
+                description: "工具描述"
+    ToolBoxInfo:
+      type: object
+      description: "工具箱信息"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        status:
+          type: string
+          description: "工具箱状态"
+          enum: ["unpublish", "published", "offline"]
+        category_type:
+          type: string
+          description: "工具箱分类"
+        category_name:
+          type: string
+          description: "工具箱分类名称"
+        is_internal:
+          type: boolean
+          description: "是否为内部工具箱"
+        source:
+          type: string
+          description: "工具来源"
+          default: "custom" # 自定义
+        tools:
+          type: array
+          description: "工具名列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+    DeleteToolBoxResult:
+      type: object
+      description: "删除工具箱结果"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+    ToolInfo:
+      type: object
+      description: "工具箱工具信息"
+      properties:
+        tool_id:
+          type: string
+          description: "工具ID"
+        name:
+          type: string
+          description: "工具名称"
+        description:
+          type: string
+          description: "工具描述"
+        status:
+          type: string
+          description: "工具状态,启用/禁用"
+          default: "disabled" # 默认禁用
+          enum:
+            - "enabled" # 启用
+            - "disabled" # 禁用
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        metadata:
+          type: object
+          description: "元数据"
+          properties:
+            openapi:
+              $ref: "#/components/schemas/OpenAPIStruct"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+    OpenAPIStruct:
+      type: object
+      description: "openapi类型元数据"
+      properties:
+        summary:
+          type: string
+          description: "摘要"
+        path:
+          type: string
+          description: "路径"
+        method:
+          type: string
+          description: "方法"
+        description:
+          type: string
+          description: "描述"
+        server_url:
+          type: string
+          description: "服务器地址"
+        api_spec:
+          type: object
+          properties:
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "参数名称"
+                  in:
+                    type: string
+                    description: "参数位置，如path/query/header/cookie"
+                  description:
+                    type: string
+                    description: "参数描述"
+                  required:
+                    type: boolean
+                    default: false
+                  schema:
+                    $ref: "#/components/schemas/ParameterSchema"
+            request_body:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: "请求体描述"
+                required:
+                  type: boolean
+                  default: false
+                content:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      schema:
+                        $ref: "#/components/schemas/ExampleRequest"
+                      example:
+                        $ref: "#/components/schemas/ExampleRequest"
+            responses:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  description:
+                    type: string
+                    description: "响应描述"
+                  content:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        schema:
+                          $ref: "#/components/schemas/ExampleResponse"
+                        example:
+                          $ref: "#/components/schemas/ExampleResponse"
+            schemas:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/ParameterSchema"
+            security:
+              type: array
+              items:
+                type: object
+                properties:
+                  securityScheme:
+                    type: string
+                    enum: ["apiKey", "http", "oauth2"]
+    ParameterSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["string", "number", "integer", "boolean", "array"]
+        format:
+          type: string
+          enum: ["int32", "int64", "float", "double", "byte"]
+        example:
+          type: string
+    ExampleRequest:
+      type: object
+      properties:
+        field1:
+          type: string
+          example: "sample_value"
+        field2:
+          type: integer
+          format: int32
+          example: 123
+    ExampleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        data:
+          type: object
+          properties:
+            result:
+              type: string
+              example: "success"
+    CreateToolReq:
+      type: object
+      description: "创建工具请求"
+      required:
+        - metadata_type
+        - data
+      properties:
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+        use_rule:
+          type: string
+          description: "工具使用规则描述"
+        global_parameters:
+          $ref: "#/components/schemas/Parameters"
+          description: "全局参数"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+    CreateToolResp:
+      type: object
+      description: "创建工具响应"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        success_count:
+          type: integer
+          description: "成功创建的工具数量"
+        success_ids:
+          type: array
+          description: "成功创建的工具ID列表"
+          items:
+            type: string
+            description: "工具ID"
+        failure_count:
+          type: integer
+          description: "失败创建的工具数量"
+        failures:
+          type: array
+          description: "失败创建的工具信息列表"
+          items:
+            type: object
+            properties:
+              tool_name:
+                type: string
+                description: "工具名称"
+              error:
+                $ref: "#/components/schemas/Error"
+                description: "错误信息"
+    UpdateToolReq:
+      type: object
+      description: "更新工具请求"
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          description: "工具名称"
+        description:
+          type: string
+          description: "工具描述"
+        use_rule:
+          type: string
+          description: "工具使用规则描述"
+        global_parameters:
+          $ref: "#/components/schemas/Parameters"
+          description: "全局参数"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+    UpdateToolResp:
+      type: object
+      description: "更新工具响应"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        tool_id:
+          type: string
+          description: "工具ID"
+    UpdateToolStatusReq:
+      type: object
+      description: "更新工具状态请求"
+      required:
+        - tool_id
+        - status
+      properties:
+        tool_id:
+          type: string
+          description: "工具ID"
+        status:
+          type: string
+          description: "工具状态,启用/禁用"
+          default: "disabled" # 默认禁用
+          enum:
+            - "enabled" # 启用
+            - "disabled" # 禁用
+    UpdateToolStatusResp:
+      type: array
+      description: "更新工具状态响应"
+      items:
+        type: object
+        properties:
+          tool_id:
+            type: string
+            description: "工具ID"
+          status:
+            type: string
+            description: "工具状态"
+            enum: ["unpublish", "published", "offline"]
+    BatchDeleteToolReq:
+      type: object
+      description: "批量删除工具请求"
+      required:
+        - tool_ids
+      properties:
+        tool_ids:
+          type: array
+          description: "工具ID列表"
+          items:
+            type: string
+            description: "工具ID"
+    BatchDeleteToolResp:
+      type: object
+      description: "删除工具响应"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        tool_ids:
+          type: array
+          description: "工具ID列表"
+          items:
+            type: string
+            description: "工具ID"
+    ConvertToolReq:
+      type: object
+      description: "转换工具请求"
+      required:
+        - box_id
+        - operator_id
+        - operator_version
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        operator_id:
+          type: string
+          description: "算子ID"
+        operator_version:
+          type: string
+          description: "算子版本"
+        global_parameters:
+          $ref: "#/components/schemas/Parameters"
+          description: "全局参数"
+    ConvertToolResp:
+      type: object
+      description: "转换工具响应"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        tool_id:
+          type: string
+          description: "工具ID"
+    Parameters:
+      type: object
+      description: "参数"
+      properties:
+        name:
+          type: string
+          description: "参数名称"
+        description:
+          type: string
+          description: "参数描述"
+        required:
+          type: boolean
+          description: "是否必填"
+          default: false
+        in:
+          type: string
+          description: "参数位置"
+          enum: ["path", "query", "header", "cookie", "body"]
+        type:
+          type: string
+          description: "参数类型"
+          enum: ["string", "object", "integer", "boolean", "array"]
+        value:
+          oneOf:
+            - type: string
+            - type: object
+            - type: integer
+            - type: boolean
+            - type: array
+              items:
+                type: string
+                description: "数组元素类型"
+                enum: ["string", "object", "integer", "boolean"]
+    BoxToolList:
+      type: object
+      description: "工具箱工具列表"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        status:
+          type: string
+          description: "工具状态"
+          enum: ["unpublish", "published", "offline"]
+        total:
+          type: integer
+          description: "工具总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        tools:
+          type: array
+          description: "工具列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    ToolInfoList:
+      type: object
+      description: "工具信息列表"
+      properties:
+        total:
+          type: integer
+          description: "工具总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          description: "工具信息列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    ToolBoxInfoList:
+      type: object
+      description: "工具箱信息列表"
+      properties:
+        total:
+          type: integer
+          description: "工具箱总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          description: "工具箱信息列表"
+          items:
+            type: object
+            description: "工具箱信息"
+            properties:
+              box_id:
+                type: string
+                description: "工具箱ID"
+              box_name:
+                type: string
+                description: "工具箱名称"
+              box_desc:
+                type: string
+                description: "工具箱描述"
+              box_svc_url:
+                type: string
+                description: "工具箱服务地址"
+              status:
+                type: string
+                description: "工具箱状态"
+                enum: ["unpublish", "published", "offline"]
+              category_type:
+                type: string
+                description: "工具箱分类"
+              category_name:
+                type: string
+                description: "工具箱分类名称"
+              is_internal:
+                type: boolean
+                description: "是否为内部工具箱"
+              source:
+                type: string
+                description: "工具来源"
+                default: "custom" # 自定义
+              tools:
+                type: array
+                description: "工具列表"
+                items:
+                  type: string
+                  description: "工具名"
+              create_time:
+                type: integer
+                description: "创建时间"
+              create_user:
+                type: string
+                description: "创建用户"
+              update_time:
+                type: integer
+                description: "更新时间"
+              update_user:
+                type: string
+                description: "更新用户"
+    UpdateToolBoxStatusReq:
+      type: object
+      description: "更新工具箱状态请求"
+      properties:
+        status:
+          type: string
+          description: "工具箱状态"
+          enum: ["unpublish", "published", "offline"]
+    UpdateToolBoxStatusResp:
+      type: object
+      description: "更新工具箱状态响应"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        status:
+          type: string
+          description: "工具箱状态"
+          enum: ["unpublish", "published", "offline"]
+    GetToolBoxMarketInfoResult:
+      type: object
+      description: "获取工具箱市场信息结果"
+      required:
+        - box_id
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        status:
+          type: string
+          description: "工具箱状态"
+          enum: ["unpublish", "published", "offline"]
+        category_type:
+          type: string
+          description: "工具箱分类"
+        category_name:
+          type: string
+          description: "工具箱分类名称"
+        is_internal:
+          type: boolean
+          description: "是否为内部工具箱"
+        source:
+          type: string
+          description: "工具来源"
+          default: "custom" # 自定义
+        tools:
+          type: array
+          description: 工具箱内工具详情
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_user:
+          type: string
+          description: "更新用户"
+        release_user:
+          type: string
+          description: "发布用户"
+    QueryMarketToolInfoListResp:
+      type: object
+      description: "工具箱信息列表"
+      properties:
+        total:
+          type: integer
+          description: "工具箱总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          description: "工具箱信息列表"
+          items:
+            type: object
+            description: "工具箱信息"
+            properties:
+              box_id:
+                type: string
+                description: "工具箱ID"
+              box_name:
+                type: string
+                description: "工具箱名称"
+              box_desc:
+                type: string
+                description: "工具箱描述"
+              box_svc_url:
+                type: string
+                description: "工具箱服务地址"
+              status:
+                type: string
+                description: "工具箱状态"
+                enum: ["unpublish", "published", "offline"]
+              category_type:
+                type: string
+                description: "工具箱分类"
+              category_name:
+                type: string
+                description: "工具箱分类名称"
+              is_internal:
+                type: boolean
+                description: "是否为内部工具箱"
+              source:
+                type: string
+                description: "工具来源"
+                default: "custom" # 自定义
+              tools:
+                type: array
+                description: "工具列表"
+                items:
+                  $ref: "#/components/schemas/ToolInfo"
+              create_time:
+                type: integer
+                description: "创建时间"
+              create_user:
+                type: string
+                description: "创建用户"
+              update_time:
+                type: integer
+                description: "更新时间"
+              update_user:
+                type: string
+                description: "更新用户"

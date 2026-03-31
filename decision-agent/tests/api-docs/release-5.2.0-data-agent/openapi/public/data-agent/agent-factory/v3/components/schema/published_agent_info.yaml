@@ -1,0 +1,73 @@
+published_agent_info:
+  type: object
+  description: 已发布agent信息
+  properties:
+    published_by:
+      type: string
+      description: 发布者uid
+      example: xxx
+    published_by_name:
+      type: string
+      description: 发布者名称
+      example: xxx
+    published_at:
+      type: integer
+      description: 发布时间（时间戳，单位：ms）
+    profile:
+      type: string
+      description: agent 简介
+      example: agent1 profile
+    version:
+      type: string
+      description: agent 版本
+      example: 1.0.0
+    avatar_type:
+      type: integer
+      description: |
+        - 头像类型
+          - 1: 内置头像
+          - 2: 用户上传头像
+          - 3: AI生成头像
+      example: 1
+    avatar:
+      type: string
+      description: |
+        - 头像信息
+          - 当头像类型为1时，为内置头像标识
+          - 当头像类型为2时，为头像存储信息
+          - 当头像类型为3时，为头像存储信息
+      example: 1
+    is_sdk_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为 web SDK Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_skill_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为技能Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_api_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为API Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_data_flow_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否为数据流Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+      
+        

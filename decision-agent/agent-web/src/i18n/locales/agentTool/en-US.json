@@ -1,0 +1,9 @@
+{
+  "agentTool": {
+    "searchPlaceholder": "Search tool name",
+    "paramName": "Parameter name",
+    "paramType": "Types",
+    "toolBox": "Toolbox",
+    "tool": "Tools"
+  }
+}

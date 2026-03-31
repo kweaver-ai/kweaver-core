@@ -1,0 +1,20 @@
+AgentAppResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 应用ID
+    main_agent_id:
+      type: string
+      description: 主AgentID
+    agents:
+      type: array
+      description: 应用的Agents
+      items:
+        type: object
+        description: 应用的Agent
+    temp_zone_config:
+      type: object
+      description: 临时区配置,若为null 则不显示临时区
+      $ref: '../../components/schema/temp_zone_config.yaml#/TempZoneConfig'
+

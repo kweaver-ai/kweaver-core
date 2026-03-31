@@ -1,0 +1,12 @@
+# Docker构建忽略文件
+Dockerfile.local
+.git
+.gitignore
+*.md
+__pycache__
+*.pyc
+.env
+.local
+.vscode
+.idea
+*.log

@@ -1,0 +1,73 @@
+.ad-tree.agent-web-tree {
+  background: transparent !important;
+
+  .agent-web-tree-treenode {
+    display: flex;
+    align-items: center;
+  }
+
+  .agent-web-tree-switcher {
+    display: flex;
+    align-items: center;
+    line-height: unset;
+    width: unset !important;
+    //margin-right: 8px;
+    &::before {
+      display: none;
+    }
+  }
+
+  .agent-web-tree-switcher-noop {
+    visibility: hidden;
+  }
+
+  .ad-treeNode-noIndent {
+    .agent-web-tree-switcher-noop {
+      display: none;
+    }
+  }
+
+  .agent-web-tree-node-content-wrapper {
+    display: flex;
+    line-height: unset;
+
+    .agent-web-tree-title {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &.agent-web-tree-node-selected {
+      background-color: var(--ad-select-bg-color);
+
+      &:hover {
+        background-color: var(--ad-select-bg-color);
+      }
+    }
+  }
+
+  .agent-web-tree-indent-unit {
+    position: relative;
+    &::after {
+      display: block !important;
+      position: absolute;
+      top: 0;
+      right: 18px;
+      bottom: -4px;
+      border-right: 1px solid #d9d9d9;
+      content: '';
+    }
+    &::before {
+      display: none !important;
+    }
+  }
+
+  &.ad-tree-noHover {
+    .agent-web-tree-node-content-wrapper:hover {
+      background-color: transparent;
+    }
+  }
+
+  .agent-web-tree-checkbox {
+    margin-left: 6px !important;
+  }
+}

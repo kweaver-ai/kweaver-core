@@ -1,0 +1,18 @@
+{
+  "prompt": {
+    "temperature": "隨機性 temperature",
+    "temperatureTip": "控制生成文本的隨機性。這個參數可以控制生成文本的多樣性，以避免生成過於相似的文本。",
+    "top_p": "核取樣 top_p",
+    "top_pTip": "控制生成文本的機率閾值。這個參數可以控制生成文本的多樣性，以避免生成過於相似的文本。",
+    "max_tokens": "單次回覆限制 max_tokens",
+    "max_tokensTip": "控制生成文本的最大長度。這個參數可以控制生成文本的長度，以避免生成過長的文本。",
+    "top_k": "前k取樣 top_k",
+    "top_k_tip": "控制大模型在每一個詞生成時，從機率最高的前k個詞中隨機選擇一個詞，以在保證文本連貫的同時提高生成結果的多樣性。",
+    "presence_penalty": "話題新鮮度 presence_penalty",
+    "presence_penaltyTip": "控制生成文本的存在懲罰。這個參數可以控制生成文本中不存在的單詞和短語的數量，以避免生成過於不連貫的文本。",
+    "frequency_penalty": "頻率懲罰度 frequency_penalty",
+    "frequency_penaltyTip": "控制生成文本的頻率懲罰。這個參數可以控制生成文本中重複的單詞和短語的數量，以避免生成過於重複的文本。",
+    "saveClose": "儲存並關閉",
+    "abandon": "放棄儲存"
+  }
+}

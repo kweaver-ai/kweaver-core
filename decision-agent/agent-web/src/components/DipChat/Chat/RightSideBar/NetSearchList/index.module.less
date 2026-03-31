@@ -1,0 +1,43 @@
+.container {
+  height: 100%;
+  position: relative;
+  border-radius: 8px;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, .45);
+  box-shadow: 0 5px 16px -4px rgba(0, 0, 0, .1);
+
+  .item {
+    cursor: pointer;
+    background: transparent;
+    border-radius: 6px;
+    margin-top: 24px;
+  }
+
+  .processChild {
+    margin-top: 12px;
+    border-radius: 8px;
+    padding: 10px 16px;
+    transition: all .2s;
+    background: rgba(var(--dip-primary-color-rgb), .01);
+    &:hover {
+      background: rgba(var(--dip-primary-color-rgb), .06);
+    }
+
+    .icon {
+      min-width: 24px;
+      width: auto;
+      height: 24px;
+      display: inline-block;
+    }
+  }
+
+  .link {
+    color: var(--dip-text-color);
+    transition: all .2s;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--dip-primary-color);
+    }
+  }
+}

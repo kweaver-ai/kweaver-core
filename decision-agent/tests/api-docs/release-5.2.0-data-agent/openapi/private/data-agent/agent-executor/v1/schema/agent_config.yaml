@@ -1,0 +1,23 @@
+agent_config:
+  allOf:
+    - $ref: '../../../../../public/data-agent/agent-factory/v3/agent/schema/config_req.yaml#/config'
+    - type: object
+      properties:
+        output_vars:
+          items:
+            type: string
+          type: array
+          description: 需要输出的变量
+          title: Output Vars
+        user_define:
+          type: object
+          description: 用户定义的变量,用于agent-app运行时记录用户运行信息
+          title: User Define
+        incremental_output:
+          type: boolean
+          title: Incremental Output
+          description: 是否增量输出
+          default: false
+  type: object
+  title: AgentConfig
+  description: Agent配置

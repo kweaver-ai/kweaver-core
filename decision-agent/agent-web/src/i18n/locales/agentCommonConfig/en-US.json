@@ -1,0 +1,36 @@
+{
+  "agentCommonConfig": {
+    "pleaseSelectModel": "Please select a model",
+    "configurationParameters": "Configuration parameters",
+    "contextDesc": "Context Window refers to the amount of contextual information that the model can refer to (including user input, historical dialogue information, and recalled reference information). Currently, only the maximum length of the recalled reference information is set",
+    "variableNotExist": "The {varName} variable does not exist, please modify it",
+    "llm": {
+      "selectAtLeastOneTool": "Select at least one tool",
+      "required": "Required",
+      "parameter": "Parameter",
+      "addTool": "Add skill",
+      "selected": "{count} skill selected",
+      "value": "Value",
+      "fixedValueTip": "Fixed value: user manually enters",
+      "modelAutoTip": "Model generation: model automatically fills in content",
+      "useVariableTip": "Use variable: can refer to variables from Agent configuration, support .",
+      "selectModelTip": "Select model: when the parameter is LLM, the user selects the model added in the model factory list",
+      "parameterSetting": "Set up",
+      "inputParameters": "Input parameters",
+      "outputParameters": "Output parameters",
+      "timeoutParameters": "Timeout Policy",
+      "disabledInterventionTip": "Currently only supports enabling human intervention in one LLM block",
+      "intervention": "Human intervention function",
+      "bigModelPlaceholder": "Please select a large model",
+      "modelAutoPlaceholder": "Model automatically fills in content",
+      "fixedValue": "Fixed value",
+      "useVariable": "Use variable",
+      "selectModel": "Select model",
+      "modelAuto": "Model generation",
+      "promptVarDataDesc": "The results of recalling graph concepts, entities and other information",
+      "promptVarTextDesc": "Results of recall as text",
+      "dolphinVarError": "cannot be used as a variable name",
+      "dolphinVarNameError": "Variable names can only contain letters, numbers, and underscores, and cannot start with a number."
+    }
+  }
+}

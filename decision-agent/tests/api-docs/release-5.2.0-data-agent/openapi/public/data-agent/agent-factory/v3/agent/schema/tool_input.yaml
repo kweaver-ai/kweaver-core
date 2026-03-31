@@ -1,0 +1,39 @@
+tool_input:
+  type: object
+  required:
+    # - enable
+    - input_name
+    - input_type
+    # - map_type
+    # - map_value
+  properties:
+    enable:
+      type: boolean
+      description: 是否启用
+    input_name:
+      type: string
+      description: 输入名称
+    input_type:
+      type: string
+      description: 输入类型
+      # enum: [ string,file,object ]
+    input_desc:
+      type: string
+      description: 输入描述
+    map_type:
+      type: string
+      description: |
+        - 值类型
+          - fixedValue: 固定值
+          - var: 引用变量
+          - model: 选择模型
+          - auto: 模型生成
+      enum: [ fixedValue,var,model,auto ]
+    map_value:
+      type: any
+      description: 值
+    children:
+      type: array
+      items:
+        $ref: '#/tool_input'
+      description: 子字段

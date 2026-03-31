@@ -1,0 +1,33 @@
+.container {
+  width: 100%;
+
+  :global {
+    .md-editor {
+      background: transparent;
+      p {
+        line-height: 26px;
+      }
+    }
+  }
+}
+
+.name {
+  font-size: 32px;
+  color: var(--dip-text-color);
+}
+
+.question {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, .85);
+  transition: all .3s;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 8px;
+
+  &:hover {
+    background: var(--dip-hover-bg-color);
+  }
+}

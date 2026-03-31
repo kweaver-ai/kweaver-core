@@ -1,0 +1,561 @@
+
+paths:
+  /agent-factory/v3/agent:
+    post:
+      summary: 创建agent
+      deprecated: false
+      description: 创建agent
+      tags:
+        - agent
+        - agent-internal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/create_req.yaml#/create_req'
+            example:
+              name: "信息收集与图片生成小助手"
+              profile: "这是一个信息收集与图片生成小助手"
+              key: "info-collector"
+              avatar_type: 1
+              avatar: "2"
+              product_key: "dip"
+              is_system_agent: 0
+              config:
+                input:
+                  fields:
+                    - name: "query"
+                      type: "string"
+                    - name: "tmp_files"
+                      type: "file"
+                  is_temp_zone_enabled: 1
+                  temp_zone_config:
+                    name: "临时上传区"
+                    tmp_file_use_type: "upload"
+                    max_file_count: 50
+                    single_file_size_limit: 100
+                    single_file_size_limit_unit: "MB"
+                    support_data_type: ["file"]
+                    allowed_file_categories: ["document", "pdf", "text"]
+                system_prompt: "你是一个专业的客服助手，请用友好的语气回答用户的问题。根据提供的知识库内容，准确回答用户咨询。如果不确定，请明确告知用户。"
+                dolphin: "/explore/(system_prompt="#工具调用\n你可以不使用工具直接回答用户问题，也可以调用以下工具回答用户问题：\n##1. 知识库检索工具：\n当用户提出问题时，可以先使用此工具来检索知识库中的内容。\n##2. 执行Web搜索：\n当用户提出需要搜索网络信息时，或者当前的知识不足以回答用户问题时，可以使用此工具，使用Tavily API执行Web搜索并返回结果\n##3. PlantUML图片生成：\n当用户提出生成PlantUML支持的图形时，生成对应的PlantUML脚本。对生成的脚步进行检查，确保脚本的正确性，如果脚本不正确，则重新生成脚本。先看看目前是否有足够的知识或信息来生成对应的脚本，如果有则根据生成的脚本使用“PlantUML图片生成”工具来生成并获得图片url。并简单介绍生成的图形，并提供可访问的图片地址。如果当前信息不足以生成，则明确告诉用户无法生成。\n##4. Markdown转HTML：\n将对用户最后的回答内容的markdown内容通过此工具转换为HTML格式，并将html链接返回给用户，让用户点击此链接查看回答内容。要求：1. 如果前面有生成PlantUML图片，则将PlantUML图片链接放在回答内容的最前面，PlantUML图片介绍放在回答内容的后面。2. 只包含回答给用户的内容，不要包含任何其他内容（比如思考过程、工具调用过程等）。") 要求：当用户想要生成一些图片时，先从知识库中搜索下，然后在从网络中搜下，然后再生成相应的图片（如流程图等）。在直接回答用户的问题后，将回答的内容转换为HTML格式，并提供可访问的HTML链接。调用api接口工具时，注意是http协议还是https协议。用户的问题是：$query ->answer"
+                is_dolphin_mode: 0
+                data_source:
+                  doc: [{"ds_id": "181","fields": [{"name": "代码规范","path": "测试数据/代码规范","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/AEBB543FEA1A4FD9917594CA013FC671","type": "folder"},{"name": "华控数据源","path": "测试数据/华控数据源","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/4CB822D4A40340CC924AAC57F60147D3","type": "folder"}]}]
+                  kg: [{"kg_id": "129","fields": ["regions","comments"],"output_fields": ["comments"],"field_properties": {"regions": ["※vid","regions"],"comments": ["※vid","CONTENT","VOTES","COMMENT_TIME"]}}]
+                  metric: [{"metric_model_id": "129"}]
+                  kn_entry: [{"kn_entry_id": "129"}]
+                  knowledge_network: [{"knowledge_network_id": "102","object_types": [{"object_type_id": "213"}]}]
+                  advanced_config:
+                    doc:
+                      document_threshold: -5.5
+                      retrieval_slices_num: 150
+                      max_slice_per_cite: 16
+                      rerank_topk: 15
+                      slice_head_num: 0
+                      slice_tail_num: 2
+                      documents_num: 8
+                      retrieval_max_length: 32000
+                    kg:
+                      graph_rag_topk: 25
+                      long_text_length: 256
+                      reranker_sim_threshold: -5.5
+                      text_match_entity_nums: 60
+                      vector_match_entity_nums: 60
+                      retrieval_max_length: 32000
+                      # enable_rag: true
+                      # enable_ngql: false
+                skills:
+                  tools:
+                    - tool_id: "tool 1"
+                      tool_box_id: "tool box 1"
+                      tool_input: null
+                      intervention: false
+                  agents:
+                    - agent_key: "agent 1"
+                      agent_version: "latest"
+                      agent_input: null
+                      intervention: false
+                  mcps:
+                    - mcp_server_id: "mcp server 1"
+                llms:
+                  - is_default: true
+                    llm_config:
+                      id: "1901307417048780800"
+                      name: "aaron-model-dv3"
+                      model_type: llm
+                      temperature: 1
+                      top_p: 1
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      max_tokens: 1000
+                      # retrieval_max_tokens: 32
+                  - is_default: false
+                    llm_config:
+                      id: "1901307417048780801"
+                      name: "gpt-4"
+                      model_type: llm
+                      temperature: 0.5
+                      top_p: 0.95
+                      max_tokens: 2000
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      # retrieval_max_tokens: 32
+                is_data_flow_set_enabled: 1
+                opening_remark_config:
+                  type: fixed
+                  fixed_opening_remark: "您好！我是智能客服助手，很高兴为您服务。请问有什么可以帮助您的吗？"
+                preset_questions:
+                  - question: "如何查询我的订单状态？"
+                  - question: "如何申请退款？"
+                  - question: "产品有哪些功能？"
+                output:
+                  variables:
+                    answer_var: "answer"
+                    doc_retrieval_var: "doc_retrieval_res"
+                    graph_retrieval_var: "graph_retrieval_res"
+                  default_format: "markdown"
+                built_in_can_edit_fields:
+                  name: false
+                  avatar: false
+                  profile: false
+                  input_config: false
+                  system_prompt: false
+                  knowledge_source: true
+                  model: true
+                  skills: false
+                  opening_remark_config: false
+                  preset_questions: false
+                  skills.tools.tool_input: false
+                memory:
+                  is_enabled: false
+                related_question:
+                  is_enabled: false
+                plan_mode:
+                  is_enabled: false
+      responses:
+        201:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: agent id
+                  version:
+                    type: string
+                    description: |
+                      - agent版本
+                        - 未发布data agent的版本为：v0
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    get:
+      summary: Agent列表（benchmarch）
+      description:  |
+        - Agent列表（供模型工厂做 Agent 的 Benchmarch 使用）
+        - 只提供`内部接口`
+      tags:
+        - agent-ignore
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+        - $ref: '../components/components.yaml#/components/parameters/name'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/agent_list_for_benchmark.yaml#/agent_list_for_benchmark'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      
+  /agent-factory/v3/agent/{agent_id}:
+    get:
+      summary: 获取agent详情
+      deprecated: false
+      description: |
+        - 获取agent详情
+          - v0版本的agent详情
+          - 如果是已发布的agent，最新版本和v0版本一致
+      tags:
+        - agent
+        - agent-internal
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/detail.yaml#/detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    put:
+      summary: 编辑agent
+      deprecated: false
+      description: 编辑agent
+      tags:
+        - agent
+        - agent-internal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/update_req.yaml#/update_req'
+            example:
+              name: "信息收集与图片生成小助手"
+              profile: "这是一个信息收集与图片生成小助手"
+              avatar_type: 1
+              avatar: "2"
+              config:
+                input:
+                  fields:
+                    - name: "query"
+                      type: "string"
+                    - name: "tmp_files"
+                      type: "file"
+                  is_temp_zone_enabled: 1
+                  temp_zone_config:
+                    name: "临时上传区"
+                    tmp_file_use_type: "upload"
+                    max_file_count: 50
+                    single_file_size_limit: 100
+                    single_file_size_limit_unit: "MB"
+                    support_data_type: ["file"]
+                    allowed_file_categories: ["document", "pdf", "text"]
+                system_prompt: "你是一个专业的客服助手，请用友好的语气回答用户的问题。根据提供的知识库内容，准确回答用户咨询。如果不确定，请明确告知用户。"
+                dolphin: "/explore/(system_prompt="#工具调用\n你可以不使用工具直接回答用户问题，也可以调用以下工具回答用户问题：\n##1. 知识库检索工具：\n当用户提出问题时，可以先使用此工具来检索知识库中的内容。\n##2. 执行Web搜索：\n当用户提出需要搜索网络信息时，或者当前的知识不足以回答用户问题时，可以使用此工具，使用Tavily API执行Web搜索并返回结果\n##3. PlantUML图片生成：\n当用户提出生成PlantUML支持的图形时，生成对应的PlantUML脚本。对生成的脚步进行检查，确保脚本的正确性，如果脚本不正确，则重新生成脚本。先看看目前是否有足够的知识或信息来生成对应的脚本，如果有则根据生成的脚本使用“PlantUML图片生成”工具来生成并获得图片url。并简单介绍生成的图形，并提供可访问的图片地址。如果当前信息不足以生成，则明确告诉用户无法生成。\n##4. Markdown转HTML：\n将对用户最后的回答内容的markdown内容通过此工具转换为HTML格式，并将html链接返回给用户，让用户点击此链接查看回答内容。要求：1. 如果前面有生成PlantUML图片，则将PlantUML图片链接放在回答内容的最前面，PlantUML图片介绍放在回答内容的后面。2. 只包含回答给用户的内容，不要包含任何其他内容（比如思考过程、工具调用过程等）。") 要求：当用户想要生成一些图片时，先从知识库中搜索下，然后在从网络中搜下，然后再生成相应的图片（如流程图等）。在直接回答用户的问题后，将回答的内容转换为HTML格式，并提供可访问的HTML链接。调用api接口工具时，注意是http协议还是https协议。用户的问题是：$query ->answer"
+                is_dolphin_mode: 0
+                data_source:
+                  doc: [{"ds_id": "181","fields": [{"name": "代码规范","path": "测试数据/代码规范","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/AEBB543FEA1A4FD9917594CA013FC671","type": "folder"},{"name": "华控数据源","path": "测试数据/华控数据源","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/4CB822D4A40340CC924AAC57F60147D3","type": "folder"}]}]
+                  kg: [{"kg_id": "129","fields": ["regions","comments"],"output_fields": ["comments"],"field_properties": {"regions": ["※vid","regions"],"comments": ["※vid","CONTENT","VOTES","COMMENT_TIME"]}}]
+                  metric: [{"metric_model_id": "129"}]
+                  kn_entry: [{"kn_entry_id": "129"}]
+                  knowledge_network: [{"knowledge_network_id": "102","object_types": [{"object_type_id": "213"}]}]
+                  advanced_config:
+                    doc:
+                      document_threshold: -5.5
+                      retrieval_slices_num: 150
+                      max_slice_per_cite: 16
+                      rerank_topk: 15
+                      slice_head_num: 0
+                      slice_tail_num: 2
+                      documents_num: 8
+                      retrieval_max_length: 32000
+                    kg:
+                      graph_rag_topk: 25
+                      long_text_length: 256
+                      reranker_sim_threshold: -5.5
+                      text_match_entity_nums: 60
+                      vector_match_entity_nums: 60
+                      # enable_rag: true
+                      # enable_ngql: false
+                      retrieval_max_length: 32000
+                skills:
+                  tools:
+                    - tool_id: "1901300419510927360"
+                      tool_box_id: "1901300419502538752"
+                      tool_input: null
+                      intervention: false
+                    - tool_id: "tool-123"
+                      tool_box_id: "box-456"
+                      tool_input:
+                        - enable: true
+                          input_name: "order_id"
+                          input_type: "string"
+                          map_type: "var"
+                          map_value: "query"
+                      intervention: false
+                  agents:
+                    - agent_key: "agent-456"
+                      agent_version: "latest"
+                      agent_input: null
+                      intervention: false
+                  mcps:
+                    - mcp_server_id: "mcp-server-789"
+                llms:
+                  - is_default: true
+                    llm_config:
+                      id: "1901307417048780800"
+                      name: "aaron-model-dv3"
+                      model_type: llm
+                      temperature: 1
+                      top_p: 1
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      max_tokens: 1000
+                      # retrieval_max_tokens: 32
+                  - is_default: false
+                    llm_config:
+                      id: "1901307417048780801"
+                      name: "gpt-4"
+                      model_type: llm
+                      temperature: 0.5
+                      top_p: 0.95
+                      max_tokens: 2000
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      # retrieval_max_tokens: 32
+                is_data_flow_set_enabled: 1
+                opening_remark_config:
+                  type: fixed
+                  fixed_opening_remark: "您好！我是智能客服助手，很高兴为您服务。请问有什么可以帮助您的吗？"
+                preset_questions:
+                  - question: "如何查询我的订单状态？"
+                  - question: "如何申请退款？"
+                  - question: "产品有哪些功能？"
+                output:
+                  variables:
+                    answer_var: "answer"
+                    doc_retrieval_var: "doc_retrieval_res"
+                    graph_retrieval_var: "graph_retrieval_res"
+                  default_format: "markdown"
+                built_in_can_edit_fields:
+                  name: false
+                  avatar: false
+                  profile: false
+                  input_config: false
+                  system_prompt: false
+                  knowledge_source: true
+                  model: true
+                  skills: false
+                  opening_remark_config: false
+                memory:
+                  is_enabled: false
+                related_question:
+                  is_enabled: false
+                plan_mode:
+                  is_enabled: false
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    delete:
+      summary: 删除agent
+      deprecated: false
+      description: 删除agent
+      tags:
+        - agent
+        - agent-internal
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/agentIDRequiredPath'
+
+  /agent-factory/v3/agent/by-key/{key}:
+    get:
+      summary: 根据key获取agent详情
+      deprecated: false
+      description: 获取agent详情
+      tags:
+        - agent-internal
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/detail.yaml#/detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/KEY'
+
+  /agent-factory/v3/agent/{agent_id}/copy:
+    post:
+      summary: 复制agent
+      description: 复制agent
+      tags:
+        - agent
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/agentIDRequiredPath'
+      responses:
+        '201':
+          description: 复制成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/copy_res.yaml#/copy_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+  /agent-factory/v3/agent/{agent_id}/copy2tpl:
+    post:
+      summary: 复制agent为模板
+      description: 复制agent为模板
+      tags:
+        - agent
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/agentIDRequiredPath'
+      responses:
+        '201':
+          description: 复制成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/copy_res.yaml#/copy_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent/{agent_id}/copy2tpl-and-publish:
+    post:
+      summary: 复制agent为模板并发布
+      description: 复制agent为模板并发布
+      tags:
+        - agent
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/agentIDRequiredPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../agent_tpl/schema/publish_upsert_req.yaml#/publish_upsert_req'
+      responses:
+        '201':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                $ref: '../agent_tpl/schema/publish_upsert_res.yaml#/publish_upsert_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+  
+  /agent-factory/v3/agent-fields:
+    post:
+      summary: 批量获取agent指定字段
+      description: 批量获取agent指定字段
+      tags:
+        - agent-internal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: agent id列表
+                fields:
+                  type: array
+                  items:
+                    type: string
+                  description: |
+                    - agent字段列表
+                    - 目前支持的字段：
+                      - name: agent名称
+                  enum:
+                    - name
+              required:
+                - agent_ids
+                - fields
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    $ref: './schema/batch_fields_res.yaml#/batch_fields_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/agent-self-config-fields:
+    get:
+      summary: 获取SELF_CONFIG字段结构
+      description: |
+        - 获取SELF_CONFIG字段结构定义
+        - SELF_CONFIG字段对应agent详情接口的config字段（减去了少量字段）
+        - 用于前端动态展示SELF_CONFIG字段树（供用户选择字段）
+      tags:
+        - agent
+      responses:
+        '200':
+          description: 成功获取字段结构
+          content:
+            application/json:
+              schema:
+                $ref: './schema/self_config_fields.yaml#/self_config_field'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      

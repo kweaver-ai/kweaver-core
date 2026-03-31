@@ -1,0 +1,16 @@
+export enum FieldEnum {
+  Path = 'path',
+  Size = 'size',
+  Name = 'name',
+  Type = 'type',
+  CreatedAt = 'created_at',
+  CreatedBy = 'created_by',
+  CSFLevel = 'csflevel',
+  ModifiedAt = 'modified_at',
+  ModifiedBy = 'modified_by',
+  DocLibType = 'doc_lib_type',
+  Status = 'status',
+  Version = 'version',
+  DocId = 'doc_id',
+  All = 'all',
+}

@@ -1,0 +1,75 @@
+.anyshare-selector-content {
+  .form-item {
+    margin-bottom: 24px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      font-size: 14px;
+      color: #262626;
+      font-weight: 400;
+      margin-bottom: 8px;
+      line-height: 22px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #d9d9d9;
+      font-size: 14px;
+
+      &:hover {
+        border-color: #4096ff;
+      }
+
+      &:focus {
+        border-color: #4096ff;
+        box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+      }
+    }
+
+    .tree-select {
+      height: fit-content;
+
+      .agent-web-select-selector {
+        max-height: 150px;
+        overflow-y: auto;
+      }
+    }
+  }
+
+  .data-source-option {
+    display: flex;
+    align-items: center;
+
+    .source-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .source-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .anyshare-selector-file-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+
+    .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

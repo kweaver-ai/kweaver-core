@@ -1,0 +1,77 @@
+replicaCount: 1
+
+namespace: dip
+moduleName: agent-web
+
+image:
+  registry: acr.aishu.cn
+  repository: /dip/agent-web
+  tag: 3.0.0.5
+  pullPolicy: IfNotPresent
+  name: agent-web
+
+service:
+  web:
+    type: ClusterIP
+    port: 1101
+    nodePort: 1101
+    ingress:
+      enabled: true
+      interface:
+        path: /agent-web
+  enableDualStack: false
+  type: ClusterIP
+  ports:
+    port1: 1101
+    protocol1: TCP
+    targetPort1: 1101
+    name1: agent-app
+  enableSensitiveWordDetection: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 1Gi
+  limits:
+    cpu: 11
+    memory: 20Gi
+
+probe:
+  livenessProbe:
+    httpGet:
+      path: /probe
+      port: 1101
+    initialDelaySeconds: 25
+    periodSeconds: 50
+    timeoutSeconds: 20
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /probe
+      port: 1101
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  startupProbe:
+    httpGet:
+      path: /probe
+      port: 1101
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 5
+
+nodeSelector: {}
+
+depServices:
+  class-443:
+    ingressClass: class-443
+
+enableSystemLog: true
+
+rps:
+  limit: 100 #每秒最大请求数

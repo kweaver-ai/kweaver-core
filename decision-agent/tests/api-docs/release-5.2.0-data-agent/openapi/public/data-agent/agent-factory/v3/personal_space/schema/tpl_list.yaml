@@ -1,0 +1,17 @@
+tpl_list:
+  type: object
+  description: 模板列表
+  properties:
+    entries:
+      type: array
+      description: 模板列表
+      items:
+        $ref: './tpl_list_item.yaml#/tpl_list_item'
+    pagination_marker_str:
+      $ref: './tpl_list_maker.yaml#/tpl_pagination_marker_str'
+    is_last_page:
+      type: boolean
+      description: |
+        - 是否是最后一页
+        - 当查询不到数据时，也是最后一页
+      

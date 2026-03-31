@@ -1,0 +1,309 @@
+openapi: 3.0.1
+info:
+  title: Sandbox_Control_Plane
+  description: 代码沙箱管理平台 API
+  version: 2.1.0
+servers:
+  - url: http://sandbox-control-plane:8000
+paths:
+  /api/v1/executions/sessions/{session_id}/execute-sync:
+    post:
+      tags:
+      - executions
+      summary: Execute_Code_Sync
+      description: |-
+        Synchronous code execution endpoint. Polls for result until terminal state (COMPLETED, FAILED, TIMEOUT, CRASHED) or sync_timeout reached.
+
+        Query Parameters:
+        - poll_interval: default 0.5s, range 0.1-10s
+        - sync_timeout: default 300s, range 10-3600s
+
+        Request Body:
+        - code: Lambda handler format (see template below)
+        - language: python/javascript/shell
+        - timeout: execution timeout in seconds
+        - event: input data
+
+        Code Template (Python):
+        ```python
+        from typing import Dict, Any
+
+        def handler(event: Dict[str, Any]) -> Any:
+            """
+            Generic Python tool handler function.
+
+            Each file must export a function named 'handler'. This is the entry point of the tool.
+
+            Parameters:
+            event: dict
+                The main input parameters for function execution.
+                Use event.get("key", default_value) to retrieve specific input values.
+
+            Return:
+            Any data object
+                The return data should match the declared output format.
+                Remember to define input/output in metadata to help LLM identify and use the tool.
+            """
+
+            # TODO: Insert actual logic here
+            # Example:
+            # name = event.get("name", "default")
+            # return {"message": f"Hello, {name}"}
+
+            result = {}
+            return result
+        ```
+      operationId: execute_code_sync_api_v1_executions_sessions__session_id__execute_sync_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        description: Sandbox session ID
+        schema:
+          type: string
+          title: Session Id
+          default: sess-agent-default
+      - name: poll_interval
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 10.0
+          minimum: 0.1
+          description: Polling interval in seconds
+          default: 0.5
+          title: Poll Interval
+        description: Polling interval in seconds
+      - name: sync_timeout
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 3600
+          minimum: 10
+          description: Maximum wait time in seconds
+          default: 300
+          title: Sync Timeout
+        description: Maximum wait time in seconds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteCodeRequest'
+            examples:
+              simple:
+                value:
+                  code: 'def handler(event):
+    name = event.get("name", "World")
+    return {"message": f"Hello, {name}!"}'
+                  event:
+                    name: World
+                  language: python
+                  timeout: 10
+              advanced:
+                value:
+                  code: 'def handler(event):
+    name = event.get("name", "World")
+    age = event.get("age", 0)
+    return {"message": f"Hello, {name}!", "age_doubled": age * 2}'
+                  event:
+                    age: 25
+                    name: Alice
+                  language: python
+                  timeout: 30
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ArtifactResponse:
+      properties:
+        path:
+          type: string
+          title: Path
+        size:
+          type: integer
+          title: Size
+        mime_type:
+          type: string
+          title: Mime Type
+        type:
+          type: string
+          title: Type
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        checksum:
+          type: string
+          title: Checksum
+      type: object
+      required:
+      - path
+      - size
+      - mime_type
+      - type
+      - created_at
+      title: ArtifactResponse
+      description: 文件制品响应
+    ExecuteCodeRequest:
+      properties:
+        code:
+          type: string
+          maxLength: 102400
+          minLength: 1
+          title: Code
+          description: 要执行的代码（必须符合 AWS Lambda handler 格式）
+        language:
+          type: string
+          enum:
+          - python
+          - javascript
+          - shell
+          title: Language
+          description: 编程语言
+        timeout:
+          type: integer
+          maximum: 3600.0
+          minimum: 1.0
+          title: Timeout
+          description: 执行超时（秒）
+          default: 30
+        event:
+          type: object
+          additionalProperties: true
+          nullable: true
+          title: Event
+          description: 事件数据
+      type: object
+      required:
+      - code
+      - language
+      title: ExecuteCodeRequest
+      description: 执行代码请求
+    ExecutionResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        session_id:
+          type: string
+          title: Session Id
+        status:
+          type: string
+          title: Status
+        code:
+          type: string
+          nullable: true
+          title: Code
+        language:
+          type: string
+          nullable: true
+          title: Language
+        timeout:
+          type: integer
+          nullable: true
+          title: Timeout
+        exit_code:
+          type: integer
+          nullable: true
+          title: Exit Code
+        error_message:
+          type: string
+          nullable: true
+          title: Error Message
+        execution_time:
+          type: number
+          nullable: true
+          title: Execution Time
+        stdout:
+          type: string
+          nullable: true
+          title: Stdout
+        stderr:
+          type: string
+          nullable: true
+          title: Stderr
+        artifacts:
+          items:
+            $ref: '#/components/schemas/ArtifactResponse'
+          type: array
+          title: Artifacts
+          default: []
+        retry_count:
+          type: integer
+          title: Retry Count
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Created At
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Started At
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Completed At
+        return_value:
+          type: object
+          additionalProperties: true
+          nullable: true
+          title: Return Value
+        metrics:
+          type: object
+          additionalProperties: true
+          nullable: true
+          title: Metrics
+      type: object
+      required:
+      - id
+      - session_id
+      - status
+      title: ExecutionResponse
+      description: 执行响应
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

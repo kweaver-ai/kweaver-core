@@ -1,0 +1,27 @@
+{
+  "global": {
+    "noData": "暂无数据",
+    "pleaseSelect": "请选择",
+    "testSuccessful": "测试连接成功",
+    "test": "测试",
+    "settings": "设置",
+    "view": "查看",
+    "noResult": "抱歉，没有找到相关内容",
+    "noContent": "暂无内容",
+    "search": "搜索",
+    "clearFilter": "清除筛选项",
+    "sort": "排序",
+    "refresh": "刷新",
+    "filter": "筛选",
+    "notDes": "[暂无描述]",
+    "ok": "确定",
+    "cancel": "取消",
+    "noNull": "此项不允许为空",
+    "required": "必填",
+    "unRequired": "非必填",
+    "enable": "启用",
+    "pleaseEnter": "请输入",
+    "existTitle": "确认要退出当前操作吗？",
+    "lenErr": "最多输入{len}个字符"
+  }
+}

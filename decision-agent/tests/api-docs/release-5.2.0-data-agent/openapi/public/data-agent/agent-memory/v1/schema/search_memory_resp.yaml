@@ -1,0 +1,52 @@
+SearchMemoryResp:
+  description: 召回记忆返回结果
+  type: object
+  properties:
+    results:
+      type: array
+      items:
+        $ref: '#/SearchMemoryRespItem'
+    
+  
+SearchMemoryRespItem:
+  description: 召回记忆返回结果项
+  type: object
+  properties:
+    id: 
+      type: string
+      description: 记忆ID
+    hash:
+      type: string
+      description: data sign
+    user_id:
+      type: string
+      description: 用户ID
+    agent_id:
+      type: string
+      description: Agent ID
+    run_id:
+      type: string
+      description: Run ID
+    metadata:
+      type: object
+      descriription: |
+        元数据,格式: {key: value}
+    memory:
+      type: string
+      description: 记忆内容
+    score:
+      type: number
+      description: 记忆评分
+    created_at:
+      type: string
+      description: 记忆创建时间
+    updated_at:
+      type: string
+      description: 记忆更新时间
+  required:
+    - id
+    - memory
+    - hash
+    - score
+    - created_at
+    

@@ -1,0 +1,8 @@
+{
+  "superAssistant": {
+    "notConfigured": "Super assistant is not configured yet, please contact administrator",
+    "placeholder": "Ask me anything",
+    "greeting": "Hi!",
+    "welcome": "Welcome"
+  }
+} 

@@ -1,0 +1,27 @@
+.container {}
+
+.collapseWrapper {
+  margin-top: 16px;
+  :global {
+    .dia-web-collapse {
+      background: transparent;
+      .dia-web-collapse-item{
+        margin-bottom: 8px;
+        border: 0;
+        .dia-web-collapse-header {
+          background: #F9FAFC;
+          border-radius: 6px;
+          transition: all .2s;
+          align-items: center;
+          padding: 12px;
+        }
+
+        &-active {
+          .dia-web-collapse-header {
+            background: rgba(var(--dip-primary-color-rgb), 0.06);
+          }
+        }
+      }
+    }
+  }
+}

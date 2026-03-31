@@ -1,0 +1,11 @@
+[
+    {
+        "db_name": "dip_data_agent",
+        "table_name": "t_data_agent_memory_history",
+        "object_type": "TABLE",
+        "operation_type": "DROP",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

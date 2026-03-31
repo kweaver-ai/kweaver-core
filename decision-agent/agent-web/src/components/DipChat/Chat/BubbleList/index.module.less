@@ -1,0 +1,40 @@
+.bubbleList {
+  :global {
+    .agent-web-bubble-list {
+      gap: 16px;
+      overflow-y: unset;
+
+      .agent-web-bubble-content {
+        //width: calc(100% - 40px);
+        width: 100%;
+        min-height: unset;
+      }
+
+      .agent-web-bubble-end {
+        .agent-web-bubble-content {
+          display: flex;
+          justify-content: flex-end;
+        }
+      }
+    }
+
+    .ant-bubble-list {
+      gap: 16px;
+      overflow-y: unset;
+
+      .ant-bubble-content {
+        //width: calc(100% - 40px);
+        width: 100%;
+        min-height: unset;
+        position: unset;
+      }
+
+      .ant-bubble-end {
+        .ant-bubble-content {
+          display: flex;
+          justify-content: flex-end;
+        }
+      }
+    }
+  }
+}

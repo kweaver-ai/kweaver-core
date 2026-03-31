@@ -1,0 +1,64 @@
+.container {
+  :global {
+    .md-editor {
+      background: transparent;
+    }
+    .agent-web-collapse {
+      .agent-web-collapse-header {
+        padding: 0 !important;
+      }
+
+      .agent-web-collapse-content-box {
+        padding: 0 0 0 8px !important;
+      }
+    }
+    .ant-collapse {
+      .ant-collapse-header {
+        padding: 0 !important;
+      }
+
+      .ant-collapse-content-box {
+        padding: 0 0 0 8px !important;
+      }
+    }
+  }
+}
+
+.deepThinkMarkdown {
+  border-left: 1px dotted var(--dip-text-color-45);
+  padding: 0 0 0 8px !important;
+  margin-top: 8px;
+  :global {
+    p {
+      color: var(--dip-text-color-65) !important;
+    }
+  }
+}
+
+.title {
+  padding: 12px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.45);
+  transition: all 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--dip-hover-bg-color);
+  }
+}
+
+.relatedQueries {
+  max-width: 100%;
+  width: fit-content;
+  border-radius: 8px;
+  background: #fff;
+  user-select: none;
+  transition: all 0.5s;
+  padding: 0 12px;
+  height: 40px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  &:hover {
+    background: var(--dip-hover-bg-color);
+  }
+}

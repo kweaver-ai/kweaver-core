@@ -1,0 +1,18 @@
+{
+  "prompt": {
+    "temperature": "随机性 temperature",
+    "temperatureTip": "控制生成文本的随机性。这个参数可以控制生成文本的多样性，以避免生成过于相似的文本。",
+    "top_p": "核采样 top_p",
+    "top_pTip": "控制生成文本的概率阈值。这个参数可以控制生成文本的多样性，以避免生成过于相似的文本。",
+    "max_tokens": "单次回复限制 max_tokens",
+    "max_tokensTip": "控制生成文本的最大长度。这个参数可以控制生成文本的长度，以避免生成过长的文本。",
+    "top_k": "前k采样 top_k",
+    "top_k_tip": "控制大模型在每一个词生成时，从概率最高的前k个词中随机选择一个词，以在保证文本连贯的同时提高生成结果的多样性。",
+    "presence_penalty": "话题新鲜度 presence_penalty",
+    "presence_penaltyTip": "控制生成文本的存在惩罚。这个参数可以控制生成文本中不存在的单词和短语的数量，以避免生成过于不连贯的文本。",
+    "frequency_penalty": "频率惩罚度 frequency_penalty",
+    "frequency_penaltyTip": "控制生成文本的频率惩罚。这个参数可以控制生成文本中重复的单词和短语的数量，以避免生成过于重复的文本。",
+    "saveClose": "保存并关闭",
+    "abandon": "放弃保存"
+  }
+}

@@ -1,0 +1,51 @@
+.AdTableCardList {
+  display: flex;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  position: relative;
+  min-height: 200px;
+
+  &-item {
+    border-radius: 2px;
+    border: 1px solid var(--dip-border-color);
+    padding: 16px;
+    transition: all 0.3s;
+
+    &:hover {
+      //border-color: var(--dip-text-color-45);
+    }
+
+    &-active {
+      border-color: #000;
+    }
+
+    &-body {
+      justify-content: center;
+    }
+
+    &-footer {
+      font-size: 12px;
+      color: var(--dip-text-color-65);
+    }
+  }
+
+  &-nodata-box {
+    padding: 32px 0;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  &-nodata-text {
+    margin-top: 8px;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.65);
+    cursor: default;
+  }
+
+  &-pagination {
+    &.ant-table-pagination.ant-pagination {
+      margin: 20px 0 0 0;
+    }
+  }
+}

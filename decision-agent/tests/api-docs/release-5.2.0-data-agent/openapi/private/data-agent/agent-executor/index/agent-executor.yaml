@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: agent-executor OpenAPI
+  description: This is a agent-executor OpenAPI schema
+  version: 1.0.0
+
+servers:
+  - url: 'https://{host}:{port}'
+    description: 'host: DIP服务器IP, port: 默认端口443'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '443'
+        description: https默认端口443
+
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: Agent运行
+  - name: Agent运行V2
+  - name: 对话Session
+
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: Agent Executor
+    tags:
+      - Agent运行
+      - Agent运行V2
+      - 对话Session
+
+
+paths:
+  /api/agent-executor/v1/agent/run:
+    $ref: '../v1/v1_path.yaml#/paths/~1api~1agent-executor~1v1~1agent~1run'
+  /api/agent-executor/v1/agent/debug:
+    $ref: '../v1/v1_path.yaml#/paths/~1api~1agent-executor~1v1~1agent~1debug'
+  /api/agent-executor/v1/agent/conversation-session/init:
+    $ref: '../v1/v1_path.yaml#/paths/~1api~1agent-executor~1v1~1agent~1conversation-session~1init'
+
+  /api/agent-executor/v2/agent/run:
+    $ref: '../v2/v2_path.yaml#/paths/~1api~1agent-executor~1v2~1agent~1run'
+  /api/agent-executor/v2/agent/debug:
+    $ref: '../v2/v2_path.yaml#/paths/~1api~1agent-executor~1v2~1agent~1debug'

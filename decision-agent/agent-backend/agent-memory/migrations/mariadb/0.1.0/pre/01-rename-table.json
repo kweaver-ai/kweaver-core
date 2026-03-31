@@ -1,0 +1,12 @@
+[
+    {
+        "db_name": "dip_data_agent",
+        "table_name": "t_data_agent_memory_history",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_data_agent_memory_history",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

@@ -1,0 +1,66 @@
+示例：
+1. 对话接口流式输出
+请求地址：
+https://192.168.232.11/api/agent-app/v1/app/01KCJDW2M8FG8CFEZM7BSA8P01/chat/completion
+请求体：
+{
+  "query": "你好",
+  "agent_id": "01KCJDW2M8FG8CFEZM7DJXM0HA",
+  "agent_version": "v0",
+  "stream": true,
+  "inc_stream": true,
+  "executor_version": "v2"
+}
+流式响应：
+data: {"seq_id": 0, "key": ["conversation_id"], "content": "01KCJDZB386D02V8BFAQA9K332", "action": "upsert"}
+
+data: {"seq_id": 1, "key": ["user_message_id"], "content": "01KCJDZB3A1RESA9DKDDF00BRW", "action": "upsert"}
+
+data: {"seq_id": 2, "key": ["assistant_message_id"], "content": "01KCJDZB3B14MBAJCGZRJKPBZ5", "action": "upsert"}
+
+data: {"seq_id": 3, "key": ["message"], "content": {"content":{"middle_answer":{"graph_retrieval":null,"other_variables":{},"progress":[],"doc_retrieval":null},"final_answer":{"answer":{"text":""},"temp_files":null,"thinking":"","skill_process":null,"answer_type_other":null,"output_variables_config":{"answer_var":"answer","doc_retrieval_var":"doc_retrieval_res","graph_retrieval_var":"graph_retrieval_res","related_questions_var":"related_questions","other_vars":null,"middle_output_vars":null},"query":"你好"}},"ext":{"total_tokens":0,"ttft":0,"ask":null,"related_queries":null,"total_time":0},"conversation_id":"01KCJDZB386D02V8BFAQA9K332","role":"assistant","status":"","reply_id":"01KCJDZB3A1RESA9DKDDF00BRW","agent_info":{"agent_id":"01KCJDW2M8FG8CFEZM7DJXM0HA","agent_name":"纯大模型对话","agent_status":"","agent_version":"v0"},"index":2,"id":"01KCJDZB3B14MBAJCGZRJKPBZ5","content_type":"other"}, "action": "upsert"}
+
+data: {"seq_id": 4, "key": ["error"], "content": null, "action": "upsert"}
+
+data: {"seq_id": 5, "key": ["message","content","final_answer","answer","text"], "content": "你好！有什么", "action": "append"}
+
+data: {"seq_id": 6, "key": ["message","content","middle_answer","progress",0], "content": {"id":"68837f90-13b6-43db-97b2-d97248a1d5ac","input_message":"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n用户的问题为：你好","interrupted":false,"start_time":1765850197.1576993,"estimated_ratio_tokens":0,"token_usage":{"completion_tokens":0,"total_tokens":0,"prompt_tokens_details":{"cached_tokens":0,"uncached_tokens":0},"prompt_tokens":0},"agent_name":"main","status":"processing","flags":"","end_time":1765850201.185951,"estimated_input_tokens":389,"answer":"你好！有什么","skill_info":null,"stage":"llm","think":"","estimated_output_tokens":7}, "action": "append"}
+
+data: {"seq_id": 7, "key": ["message","content_type"], "content": "prompt", "action": "upsert"}
+
+data: {"seq_id": 8, "key": ["message","ext","ttft"], "content": 4006, "action": "upsert"}
+
+data: {"seq_id": 9, "key": ["message","content","final_answer","answer","text"], "content": "问题我可以帮助你吗", "action": "append"}
+
+data: {"seq_id": 10, "key": ["message","content","middle_answer","progress",0,"answer"], "content": "问题我可以帮助你吗", "action": "append"}
+
+data: {"seq_id": 11, "key": ["message","content","middle_answer","progress",0,"end_time"], "content": 1765850201.4015665, "action": "upsert"}
+
+data: {"seq_id": 12, "key": ["message","content","middle_answer","progress",0,"estimated_output_tokens"], "content": 19, "action": "upsert"}
+
+data: {"seq_id": 13, "key": ["message","content","final_answer","answer","text"], "content": "？", "action": "append"}
+
+data: {"seq_id": 14, "key": ["message","content","middle_answer","progress",0,"answer"], "content": "？", "action": "append"}
+
+data: {"seq_id": 15, "key": ["message","content","middle_answer","progress",0,"end_time"], "content": 1765850201.4918728, "action": "upsert"}
+
+data: {"seq_id": 16, "key": ["message","content","middle_answer","progress",0,"token_usage","prompt_tokens_details","uncached_tokens"], "content": 4, "action": "upsert"}
+
+data: {"seq_id": 17, "key": ["message","content","middle_answer","progress",0,"token_usage","prompt_tokens_details","cached_tokens"], "content": 288, "action": "upsert"}
+
+data: {"seq_id": 18, "key": ["message","content","middle_answer","progress",0,"token_usage","prompt_tokens"], "content": 292, "action": "upsert"}
+
+data: {"seq_id": 19, "key": ["message","content","middle_answer","progress",0,"token_usage","completion_tokens"], "content": 10, "action": "upsert"}
+
+data: {"seq_id": 20, "key": ["message","content","middle_answer","progress",0,"token_usage","total_tokens"], "content": 302, "action": "upsert"}
+
+data: {"seq_id": 21, "key": ["message","content","middle_answer","progress",0,"estimated_output_tokens"], "content": 20, "action": "upsert"}
+
+data: {"seq_id": 22, "key": ["message","content","middle_answer","progress",0,"status"], "content": "completed", "action": "upsert"}
+
+data: {"seq_id": 23, "key": ["message","ext","total_tokens"], "content": 302, "action": "upsert"}
+
+data: {"seq_id": 24, "key": ["message","ext","total_time"], "content": 4.33, "action": "upsert"}
+
+data: {"seq_id": 25, "key": [], "content": null, "action": "end"}
+

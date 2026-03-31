@@ -1,0 +1,10 @@
+plan_mode:
+  type: object
+  description: |
+    - 任务规划模式配置（开启后，智能体将根据情况在需要时对用户的复杂请求进行智能拆解和规划，自动生成详细的任务执行列表，并按步骤逐一完成，提升处理复杂任务的效率和准确性）
+  properties:
+    is_enabled:
+      type: boolean
+      description: 是否启用（默认关闭）
+      example: false
+  

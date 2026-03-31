@@ -1,0 +1,68 @@
+.ToolModal {
+  .ad-universal-modal-content {
+    //overflow-y: auto;
+    padding-top: 0;
+    display: flex;
+
+    > div {
+      flex: 1;
+    }
+  }
+
+  .agent-web-tree-switcher:hover::before {
+    background-color: transparent !important;
+  }
+
+  .agent-web-tree-node-content-wrapper:hover {
+    background-color: transparent !important;
+  }
+
+  &-tree {
+    .agent-web-tree-node-content-wrapper {
+      flex: 1 !important;
+      min-width: 0;
+
+      .agent-web-tree-title {
+        width: 100%;
+        display: inline-block;
+      }
+    }
+  }
+
+  &-tab {
+    .agent-web-tabs-content-holder {
+      flex: 1;
+      height: 0;
+      overflow-y: auto;
+    }
+  }
+}
+
+.toolBoxLabel {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 6px;
+  background: rgb(206, 153, 101);
+  color: #fff;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  width: 100%;
+  line-height: 1;
+  text-align: center;
+}
+
+.ToolModal-param-tip {
+  .agent-web-popover-arrow {
+    display: none;
+  }
+}
+
+.ToolModal-param-tip-param-loading {
+  padding: 16px 80px;
+}
+
+.ToolModal-param-tip-param-failed {
+  padding: 20px 30px;
+}

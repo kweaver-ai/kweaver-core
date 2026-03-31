@@ -1,0 +1,33 @@
+.container {
+  margin-bottom: 16px;
+
+  :global {
+    i, em {
+      background: rgb(217, 226, 253);
+      color: var(--ad-primary-color);
+      border-radius: 2px;
+      min-width: 16px;
+      padding: 0px 2px;
+      height: 16px;
+      line-height: 16px;
+      text-align: center;
+      display: inline-block;
+      cursor: pointer;
+      margin: 0px 5px;
+      font-size: 12px;
+    }
+  }
+}
+
+.title {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #fff;
+  transition: all .2s;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, .04);
+}
+
+.active {
+  background: rgba(229, 235, 251, .65);
+}

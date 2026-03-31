@@ -1,0 +1,11 @@
+RespStatus:
+  type: string
+  description: |
+    - 状态
+    - completed: 流式响应结束
+    - failed: 流式响应失败
+    - processing: 流式响应中
+  enum:
+    - completed
+    - failed
+    - processing

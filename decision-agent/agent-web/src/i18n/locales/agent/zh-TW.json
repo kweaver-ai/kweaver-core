@@ -1,0 +1,6 @@
+{
+  "agent": {
+    "tool": "工具",
+    "viewDebuggerTip": "開始執行後，可以檢視Debugger"
+  }
+}
