@@ -21,7 +21,7 @@ KWeaver DIP is an AI-native platform for developing and managing digital employe
 - 🌐 [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Try KWeaver online (username: `kweaver`, password: `111111`)
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
-- 📘 [Documentation](docs/) - Product documentation and usage guides
+- 📘 [Documentation](help/) - Product documentation and usage guides
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver/) - KWeaver technical articles and updates
 - 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
@@ -34,7 +34,7 @@ KWeaver DIP is an AI-native platform for developing and managing digital employe
 
 <div align="center">
 <a href="https://www.bilibili.com/video/BV1nGXVBTEmo/?vd_source=4cdad687b2ac18a0b25e434f1fafe2f7" target="_blank">
-<img src="./docs/demo-cover.png" alt="KWeaver Demo Video" width="75%"/>
+<img src="./help/demo-cover.png" alt="KWeaver Demo Video" width="75%"/>
 </a>
 
 Click the image to watch the KWeaver demo on Bilibili
@@ -383,7 +383,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 ## 💬 Community
 
 <div align="center">
-<img src="./docs/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
+<img src="./help/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
 
 Scan to join the KWeaver community group
 </div>
