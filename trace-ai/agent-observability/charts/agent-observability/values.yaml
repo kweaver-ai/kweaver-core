@@ -44,7 +44,7 @@ tolerations: []
 affinity: {}
 
 opensearch:
-  endpoint: http://opensearch-read.resource.svc.cluster.local:9200
+  endpoint:  http://opensearch-cluster-master.resource.svc.cluster.local:9200
   traceIndex: ss4o_traces-default-anyshare
   auth:
     enabled: false

@@ -40,7 +40,7 @@ service:
 opensearchExporter:
   enabled: true
   http:
-    endpoint: http://opensearch-read.resource.svc.cluster.local:9200
+    endpoint:  http://opensearch-cluster-master.resource.svc.cluster.local:9200
     tls:
       insecure: true
   auth:
