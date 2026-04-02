@@ -19,21 +19,31 @@ class EACP_API:
     def __init__(self, namespace='anyshare'):
         self.namespace = namespace
 
-    def auth_Pwd_RSABase64(self, message: str) -> str:
-        """使用项目 resource 目录下的 rsa_public.key 进行 RSA 加密并 base64 编码"""
-        key = os.path.join(RESOURCE_DIR, "rsa_public.key")
-        with open(key, "r", encoding="utf-8") as f:
+     # 用户身份验证密码RSABase64加密
+    def auth_Pwd_RSABase64(self, message):
+        '''
+        param: public_key_loc Path to public key
+        param: message String to be encrypted
+        return base64 encoded encrypted string
+        '''
+
+        key = os.path.join(RESOURCE_DIR,"rsa_public.key")
+        with open(key, "r") as f:
             pubkey = f.read()
         public_key = RSA.import_key(pubkey)
         cipher = PKCS1_v1_5.new(public_key)
         encrypted_message = cipher.encrypt(message.encode('utf-8'))
-        return b64encode(encrypted_message).decode('utf-8')
 
-    def GetNew(self, account, password, name, client_type, description, udids, id, content, ip, port, clientip):
-        """EACP 用户身份验证，返回 user_id 与 context 等信息"""
+        # Convert encrypted byte data to a base64 string
+        result = b64encode(encrypted_message).decode('utf-8')
+        return result
+
+    def GetNew(self, account,auth_request, getnewPort, password, name, client_type, description, udids, id, content, ip, port, clientip):
         password = self.auth_Pwd_RSABase64(password)
-        port = '9998'
-        url = f"http://{ip}:{port}/api/eacp/v1/auth1/getnew"
-        data = {"account": account, "password": password, "device": {"name": name, "client_type": client_type, "description": description, "udids": udids}, "vcode": {"id": id, "content": content}, "ip": clientip}
+        url = "%s://%s:%s/api/eacp/v1/auth1/getnew" % (auth_request,ip, getnewPort)
+        data = {"account": account, "password": password,
+                "device": {"name": name, "client_type": client_type, "description": description, "udids": udids}, \
+                "vcode": {"id": id, "content": content}, "ip": clientip}
         r = requests.request('POST', url, json=data, verify=False)
+        print("getnew response", r)
         return r.status_code, json.loads(r.content)

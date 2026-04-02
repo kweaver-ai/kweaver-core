@@ -16,10 +16,6 @@ DATA_DIR = os.path.join(BASE_DIR, "test_data")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# 测试报告目录
-REPORT_DIR = os.path.join(BASE_DIR, "reports")
-os.makedirs(REPORT_DIR, exist_ok=True)
-
 # 资源目录（rsa_public.key 等）
 RESOURCE_DIR = os.path.join(BASE_DIR, "resource")
 os.makedirs(RESOURCE_DIR, exist_ok=True)
@@ -104,4 +100,4 @@ class Config:
 config = Config()
 
 if __name__ == "__main__":
-    print(REPORT_DIR)
+    print(BASE_DIR)

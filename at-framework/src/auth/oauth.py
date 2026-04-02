@@ -16,9 +16,9 @@ class OAuth:
     def __init__(self, namespace='dip'):
         self.namespace = namespace
 
-    def AdminURL(self, ip: str) -> str:
+    def AdminURL(self, auth_request, ip: str, adminUrlPort: str) -> str:
         """管理端 OAuth2 Admin 基础 URL，使用传入的 IP"""
-        return f'http://{ip}:4445/admin/oauth2/'
+        return f'{auth_request}://{ip}:{adminUrlPort}/admin/oauth2/'
 
     def PublicURL(self, ip: str) -> str:
         """对外 OAuth2 Public 基础 URL，使用传入的 IP"""
@@ -57,13 +57,13 @@ class OAuth:
         else:
             return r.status_code, {"headers": r.headers}
 
-    def GetConsent(self, ip, port, consent_challenge, cookies):
-        req_url = f'{self.AdminURL(ip)}auth/requests/consent?consent_challenge={consent_challenge}'
+    def GetConsent(self, auth_request, ip, adminUrlPort, consent_challenge, cookies):
+        req_url = f'{self.AdminURL(auth_request, ip, adminUrlPort)}auth/requests/consent?consent_challenge={consent_challenge}'
         r = requests.request('GET', req_url, cookies=cookies, verify=False, allow_redirects=False)
         return r.status_code, json.loads(r.content)
 
-    def AcceptConsent(self, ip, port, consent_challenge, grant_scope, remember, remember_for, access_token):
-        req_url = f'{self.AdminURL(ip)}auth/requests/consent/accept?consent_challenge={consent_challenge}'
+    def AcceptConsent(self, auth_request, ip, adminUrlPort, consent_challenge, grant_scope, remember, remember_for, access_token):
+        req_url = f'{self.AdminURL(auth_request, ip, adminUrlPort)}auth/requests/consent/accept?consent_challenge={consent_challenge}'
         data = {"grant_scope": grant_scope, "remember": remember, "remember_for": remember_for, "session": {"access_token": access_token}}
         r = requests.request('PUT', req_url, json=data, verify=False, allow_redirects=False)
         return r.status_code, json.loads(r.content)
@@ -83,13 +83,13 @@ class OAuth:
         return r.status_code, json.loads(r.content)
 
     # 认证相关
-    def GetLogin(self, ip, port, login_challenge):
-        req_url = self.AdminURL(ip) + f'auth/requests/login?login_challenge={login_challenge}'
+    def GetLogin(self, auth_request, ip, adminUrlPort, login_challenge):
+        req_url = self.AdminURL(auth_request, ip, adminUrlPort) + f'auth/requests/login?login_challenge={login_challenge}'
         r = requests.request('GET', req_url, verify=False, allow_redirects=False)
         return r.status_code, json.loads(r.content)
 
-    def AcceptLogin(self, ip, port, login_challenge, subject, remember, remember_for, acr, context):
-        req_url = self.AdminURL(ip) + f'auth/requests/login/accept?login_challenge={login_challenge}'
+    def AcceptLogin(self, auth_request, ip, adminUrlPort, login_challenge, subject, remember, remember_for, acr, context):
+        req_url = self.AdminURL(auth_request, ip, adminUrlPort) + f'auth/requests/login/accept?login_challenge={login_challenge}'
         data = {"acr": acr, "remember": remember, "remember_for": remember_for, "subject": subject, "context": context}
         r = requests.request('PUT', req_url, json=data, verify=False, allow_redirects=False)
         return r.status_code, json.loads(r.content)

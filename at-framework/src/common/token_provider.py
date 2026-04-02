@@ -42,12 +42,14 @@ def _get_hosts() -> Tuple[Optional[str], Optional[str]]:
 def get_token(user: str, password: str, force_refresh: bool = False) -> Optional[str]:
     """
     获取指定用户的 access token。
-    - user/password：账号密码（建议配合 AT_ADMIN_USER / AT_ADMIN_PASSWORD）
+    - user/password：账号密码（见 config.ini [test_data]）
+    - OAuth/EACP 端口须在 config.ini [server] 中配置：adminUrlPort、getnewPort、public_port（无代码内默认值）
     - force_refresh：是否强制刷新（例如 401/403 后重试）
     """
     host, client_host = _get_hosts()
     if not host or not client_host:
         logger.warning("未找到登录所需的 host/client_host 配置，跳过获取 token。")
+        print("未找到登录所需的 host/client_host 配置，跳过获取 token。")
         return None
 
     cache_key = (host, client_host, user)

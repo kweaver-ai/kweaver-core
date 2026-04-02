@@ -1,0 +1,67 @@
+feature: mdl-data-model
+story: metric_model
+switch: y
+tags:
+  - metric-model
+  - regression
+
+cases:
+  - name: 准备指标分组_用于模型测试
+    url: 创建指标模型分组
+    body_params: '{"name":"指标测试分组_${ts_uuid}","comment":"用于模型测试"}'
+    code_check: "201"
+    resp_values: '{"metric_group_for_model":"$.id"}'
+
+  - name: 创建指标模型_promql
+    url: 创建指标模型
+    prev_case: 准备指标分组_用于模型测试
+    body_params: '[{"name":"测试PromQL指标_${ts_uuid}","id":"测试PromQL指标_${ts_uuid}","tags":[],"comment":"","metric_type":"atomic","group_id":"${metric_group_for_model}","data_source":{"type":"DSL","id":"__isf_audit_log"},"query_type":"promql","formula":"100","date_field":"@timestamp","date_format":"epoch_millis","measure_field":"value","unit_type":"numUnit","unit":"none"}]'
+    code_check: "201"
+    resp_values: '{"created_metric_id":"$[0].id"}'
+
+  - name: 创建指标模型_空名称
+    url: 创建指标模型
+    prev_case: 准备指标分组_用于模型测试
+    body_params: '[{"name":"","id":"","tags":[],"comment":"","metric_type":"atomic","group_id":"${metric_group_for_model}","data_source":{"type":"DSL","id":"__isf_audit_log"},"query_type":"promql","formula":"100","date_field":"@timestamp","date_format":"epoch_millis","measure_field":"value","unit_type":"numUnit","unit":"none"}]'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 查询指标模型列表_默认
+    url: 查询指标模型列表
+    query_params: '{"sort":"update_time","direction":"desc","offset":0,"limit":10}'
+    code_check: "200"
+
+  - name: 查询指标模型列表_按名称模糊
+    url: 查询指标模型列表
+    query_params: '{"name_pattern":"测试","sort":"update_time","direction":"desc","offset":0,"limit":10}'
+    code_check: "200"
+
+  - name: 查询指标模型列表_负数偏移
+    url: 查询指标模型列表
+    query_params: '{"offset":-1}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 删除单个指标模型
+    url: 删除单个指标模型
+    prev_case: 创建指标模型_promql
+    path_params: '{"metric_id":"${created_metric_id}"}'
+    code_check: "204"
+
+  - name: 删除不存在指标模型
+    url: 删除单个指标模型
+    path_params: '{"metric_id":"${metric_model_id_non_existent}"}'
+    code_check: "404"
+    tags: [negative]
+
+  - name: 批量删除指标模型_空列表映射
+    url: 批量删除指标模型
+    path_params: '{"metric_ids":""}'
+    code_check: "404"
+    tags: [negative]
+
+  - name: 清理指标测试分组
+    url: 删除指标模型分组
+    prev_case: 准备指标分组_用于模型测试
+    path_params: '{"group_id":"${metric_group_for_model}","force":"${force_true}"}'
+    code_check: "204"

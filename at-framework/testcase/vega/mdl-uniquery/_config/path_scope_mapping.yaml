@@ -1,0 +1,14 @@
+# 路径 → 作用域/标签/建议套件 映射：mdl-uniquery 模块
+
+mappings:
+  - paths:
+      - "vega/mdl-uniquery/**"
+    scope: "mdl-uniquery"
+    tags:
+      - "smoke"
+      - "query"
+      - "pit"
+    suggested_suites:
+      - "smoke_test.yaml"
+      - "query_data.yaml"
+      - "pit_ops.yaml"

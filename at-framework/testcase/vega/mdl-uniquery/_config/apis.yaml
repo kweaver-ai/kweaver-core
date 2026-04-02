@@ -1,0 +1,26 @@
+# API 列表：mdl-uniquery 模块
+
+- name: 查询视图数据
+  url: /api/mdl-uniquery/v1/data-views/${ids}
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 预览视图数据
+  url: /api/mdl-uniquery/v1/data-views
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除视图PIT
+  url: /api/mdl-uniquery/v1/data-view-pits
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 内部查询视图数据
+  url: /api/mdl-uniquery/in/v1/data-views/${ids}
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 内部删除视图PIT
+  url: /api/mdl-uniquery/in/v1/data-view-pits
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

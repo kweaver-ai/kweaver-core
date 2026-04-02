@@ -35,13 +35,13 @@ def _resolve_authorization(case_info):
 
         user, pwd = at_env.admin_credentials(config)
         if not user:
-            allure.attach("token_source=login 但未配置 AT_ADMIN_USER / test_data.admin_user，已回退默认 Bearer", name="鉴权说明")
+            allure.attach("token_source=login 但未配置 test_data.admin_user，已回退默认 Bearer", name="鉴权说明")
             return BEARER_AUTH
         tok = get_token(user, pwd)
         if tok:
             return "Bearer %s" % tok
         allure.attach(
-            "get_token 返回空，已回退默认 Bearer（AT_API_TOKEN / external.token / test_data.application_token）",
+            "get_token 返回空，已回退默认 Bearer（API_ACCESS_TOKEN / test_data.application_token）",
             name="鉴权说明",
         )
     except Exception as ex:

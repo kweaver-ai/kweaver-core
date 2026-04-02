@@ -1,0 +1,44 @@
+# 全局变量清单：mdl-uniquery 模块
+
+variables:
+  - name: view_id
+    description: 正常视图 ID
+    type: string
+    example: "test_view_id"
+    required: true
+
+  - name: invalid_view_id
+    description: 不存在视图 ID
+    type: string
+    example: "nonexistent_view_id"
+    required: true
+
+  - name: start_ts
+    description: 查询开始时间戳
+    type: number
+    example: 1689228477228
+    required: true
+
+  - name: end_ts
+    description: 查询结束时间戳
+    type: number
+    example: 1689232077228
+    required: true
+
+  - name: pit_id_single
+    description: 单个 PIT ID
+    type: string
+    example: "nonexistent_pit_id"
+    required: false
+
+  - name: pit_id_1
+    description: 多个 PIT 场景 ID1
+    type: string
+    example: "nonexistent_pit_id_1"
+    required: false
+
+  - name: pit_id_2
+    description: 多个 PIT 场景 ID2
+    type: string
+    example: "nonexistent_pit_id_2"
+    required: false

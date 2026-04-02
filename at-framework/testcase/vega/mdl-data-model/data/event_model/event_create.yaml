@@ -1,9 +1,0 @@
-# 业务知识网络 YAML 用例数据
-
-# 正向测试用例
-- case_name: "事件模型-正常创建-名称-中文名称"
-  kn_id: "${ts_uuid}"
-  kn_name: "${fake_cn_name}"
-  test_type: "positive"
-  expected_status: 201
-  should_exist_in_db: true

@@ -1,121 +1,66 @@
 # 字段特征功能测试套件：data-connection 模块
 # 测试最新功能 #137 - 视图支持字段特征
 
+feature: data-connection
+story: field_feature
+switch: y
+tags:
+  - field-feature
+
 cases:
-  - case_id: "ff_001"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "获取 OpenSearch 索引映射"
-    description: "验证获取索引 mapping 接口返回字段特征信息"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 获取 OpenSearch 索引映射
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证获取索引 mapping 接口返回字段特征信息；原 setup index_name=test-index，现用 global.yaml 的 index_name
     tags:
       - field-feature
       - opensearch
-    setup:
-      - type: set_var
-        var_name: index_name
-        value: "test-index"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.properties"
-          expected_type: object
 
-  - case_id: "ff_002"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "验证 keyword 字段特征配置"
-    description: "验证 text 类型字段的 keyword 子字段配置"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 keyword 字段特征配置
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证 text 类型字段的 keyword 子字段配置（原用例校验 $.data.properties.*.fields.keyword 为 object）
     tags:
       - field-feature
       - keyword
-    setup:
-      - type: set_var
-        var_name: index_name
-        value: "test-index"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.data.properties.*.fields.keyword"
-          expected_type: object
 
-  - case_id: "ff_003"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "验证 ignore_above 配置"
-    description: "验证 keyword 字段的 ignore_above 参数"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 ignore_above 配置
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    description: 验证 keyword 字段的 ignore_above 参数
     tags:
       - field-feature
       - keyword
-    expect:
-      status_code: 200
 
-  - case_id: "ff_004"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "验证 analyzer 配置"
-    description: "验证 text 字段的 analyzer 分词器配置"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 analyzer 配置
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    description: 验证 text 字段的 analyzer 分词器配置
     tags:
       - field-feature
       - analyzer
-    expect:
-      status_code: 200
 
-  - case_id: "ff_005"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "创建带字段特征的视图"
-    description: "验证创建视图时字段特征配置生效"
-    api_name: "创建视图"
+  - name: 创建带字段特征的视图
+    url: 创建视图
+    body_params: '{"name": "test-view-field-feature", "datasource_id": "${datasource_id}", "fields": [{"name": "test_field", "type": "text", "features": {"keyword": {"type": "keyword", "ignore_above": 256}}}]}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    resp_values: '{"created_view_id": "$.data.id"}'
+    description: 验证创建视图时字段特征配置生效；datasource_id 取自 global.yaml
     tags:
       - field-feature
       - view
-    setup:
-      - type: set_var
-        var_name: view_name
-        value: "test-view-field-feature"
-    body:
-      name: "${view_name}"
-      datasource_id: "${datasource_id}"
-      fields:
-        - name: "test_field"
-          type: "text"
-          features:
-            keyword:
-              type: "keyword"
-              ignore_above: 256
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "ff_006"
-    suite: "字段特征功能测试"
-    switch: y
-    name: "同步视图元数据"
-    description: "验证视图同步时字段特征正确传递"
-    api_name: "同步视图元数据"
+  - name: 同步视图元数据
+    url: 同步视图元数据
+    prev_case: 创建带字段特征的视图
+    path_params: '{"id": "${created_view_id}"}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证视图同步时字段特征正确传递；依赖上一步创建的视图 id
     tags:
       - field-feature
       - view
       - sync
-    setup:
-      - type: set_var
-        var_name: view_id
-        value: "${view_id}"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0

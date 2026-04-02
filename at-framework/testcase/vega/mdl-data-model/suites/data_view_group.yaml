@@ -1,0 +1,81 @@
+feature: mdl-data-model
+story: data_view_group
+switch: y
+tags:
+  - data-view-group
+  - regression
+
+cases:
+  - name: 创建数据视图分组_正常
+    url: 创建数据视图分组
+    body_params: '{"name":"测试分组_${ts_uuid}"}'
+    code_check: "201"
+    resp_values: '{"created_group_id":"$.id"}'
+
+  - name: 创建数据视图分组_空名称
+    url: 创建数据视图分组
+    body_params: '{"name":""}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 创建数据视图分组_重复名称
+    url: 创建数据视图分组
+    body_params: '{"name":"测试分组"}'
+    code_check: "403"
+    tags: [negative]
+
+  - name: 查询数据视图分组列表_默认
+    url: 查询数据视图分组列表
+    query_params: '{"sort":"name","direction":"asc","offset":0,"limit":10}'
+    code_check: "200"
+
+  - name: 查询数据视图分组列表_内置
+    url: 查询数据视图分组列表
+    query_params: '{"sort":"name","direction":"asc","offset":0,"limit":10,"builtin":true}'
+    code_check: "200"
+
+  - name: 更新数据视图分组_正常
+    url: 更新数据视图分组
+    prev_case: 创建数据视图分组_正常
+    path_params: '{"group_id":"${created_group_id}"}'
+    body_params: '{"name":"更新后的测试分组_${ts_uuid}"}'
+    code_check: "204"
+
+  - name: 更新数据视图分组_不存在
+    url: 更新数据视图分组
+    path_params: '{"group_id":"${group_id_non_existent}"}'
+    body_params: '{"name":"测试更新不存在分组"}'
+    code_check: "404"
+    tags: [negative]
+
+  - name: 更新数据视图分组_空名称
+    url: 更新数据视图分组
+    prev_case: 创建数据视图分组_正常
+    path_params: '{"group_id":"${created_group_id}"}'
+    body_params: '{"name":""}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 导出分组数据视图_正常
+    url: 导出分组数据视图
+    prev_case: 创建数据视图分组_正常
+    path_params: '{"group_id":"${created_group_id}"}'
+    code_check: "200"
+
+  - name: 导出分组数据视图_不存在分组
+    url: 导出分组数据视图
+    path_params: '{"group_id":"${group_id_non_existent}"}'
+    code_check: "404"
+    tags: [negative]
+
+  - name: 删除数据视图分组_正常
+    url: 删除数据视图分组
+    prev_case: 创建数据视图分组_正常
+    path_params: '{"group_id":"${created_group_id}"}'
+    code_check: "204"
+
+  - name: 删除数据视图分组_不存在
+    url: 删除数据视图分组
+    path_params: '{"group_id":"${group_id_non_existent}"}'
+    code_check: "404"
+    tags: [negative]

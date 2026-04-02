@@ -1,0 +1,28 @@
+# 冒烟测试套件：mdl-uniquery 模块
+
+feature: mdl-uniquery
+story: smoke_test
+switch: y
+tags:
+  - smoke
+
+cases:
+  - name: 查询视图数据_基础可用
+    url: 查询视图数据
+    path_params: '{"ids": "${view_id}"}'
+    header_params: '{"x-http-method-override": "GET"}'
+    body_params: '{"start": ${start_ts}, "end": ${end_ts}, "sort": [{"field": "@timestamp", "direction": "asc"}], "offset": 0, "limit": 2, "need_total": true, "use_search_after": false}'
+    code_check: "500"
+    description: 沿用存量环境断言，验证接口链路可达
+    tags:
+      - smoke
+      - query
+
+  - name: 预览视图数据_基础可用
+    url: 预览视图数据
+    body_params: '{"data_view_id": "${view_id}", "limit": 10, "offset": 0}'
+    code_check: "200"
+    description: 冒烟检查预览接口可用
+    tags:
+      - smoke
+      - preview

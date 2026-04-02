@@ -1,0 +1,17 @@
+# 套件清单：mdl-uniquery 模块
+
+suites:
+  - name: smoke_test.yaml
+    description: 冒烟测试 - 核心查询与预览接口可用
+    priority: high
+    estimated_duration: "5m"
+
+  - name: query_data.yaml
+    description: 视图数据查询场景（正向/负向）
+    priority: medium
+    estimated_duration: "8m"
+
+  - name: pit_ops.yaml
+    description: PIT 删除相关场景（外部/内部）
+    priority: medium
+    estimated_duration: "8m"

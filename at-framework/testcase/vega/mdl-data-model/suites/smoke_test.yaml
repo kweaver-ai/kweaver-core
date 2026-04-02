@@ -1,46 +1,39 @@
-# 冒烟测试套件：mdl-data-model 模块
+feature: mdl-data-model
+story: smoke_test
+switch: y
+tags:
+  - smoke
 
 cases:
-  - case_id: "smoke_001"
-    suite: "mdl-data-model 冒烟测试"
-    switch: y
-    name: "查询数据模型列表"
-    description: "验证模型列表接口可用"
-    api_name: "查询数据模型列表"
+  - name: 数据视图分组列表_默认参数
+    url: 查询数据视图分组列表
+    query_params: '{"sort":"name","direction":"asc","offset":0,"limit":10}'
+    code_check: "200"
+    resp_check: '{"$.total_count": "@type:int"}'
     tags:
       - smoke
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
+      - data-view-group
 
-  - case_id: "smoke_002"
-    suite: "mdl-data-model 冒烟测试"
-    switch: y
-    name: "创建数据模型"
-    description: "验证创建模型接口可用"
-    api_name: "创建数据模型"
+  - name: 行列权限规则列表_默认参数
+    url: 查询行列权限规则列表
+    query_params: '{"offset":0,"limit":10,"sort":"update_time","direction":"desc"}'
+    code_check: "200"
     tags:
       - smoke
-    body:
-      name: "test-model-smoke"
-      description: "冒烟测试模型"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
+      - row-column-rule
 
-  - case_id: "smoke_003"
-    suite: "mdl-data-model 冒烟测试"
-    switch: y
-    name: "查询模型字段列表"
-    description: "验证字段列表接口可用"
-    api_name: "查询模型字段列表"
+  - name: 指标模型分组列表_默认参数
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":10}'
+    code_check: "200"
     tags:
       - smoke
-    expect:
-      status_code: 200
+      - metric-group
+
+  - name: 指标模型列表_默认参数
+    url: 查询指标模型列表
+    query_params: '{"sort":"update_time","direction":"desc","offset":0,"limit":10}'
+    code_check: "200"
+    tags:
+      - smoke
+      - metric-model

@@ -1,11 +1,9 @@
-model_id: mdl-test-001
-model_name: test-model
-field_id: field-test-001
-field_name: test_field
-version_id: ver-test-001
-model_status: published
-group_id: group-test-001
-force: 'false'
-ids: id-a,id-b
-rule_id: rule-test-001
-rule_ids: rule-a,rule-b
+view_id: "test_view_id"
+group_id_non_existent: "non_existent_group"
+rule_id_non_existent: "non_existent_rule"
+
+metric_group_id_non_existent: "999999999"
+metric_model_id_non_existent: "999999999"
+
+force_true: "true"
+force_false: "false"

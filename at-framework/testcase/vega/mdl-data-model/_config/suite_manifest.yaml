@@ -1,29 +1,21 @@
 suites:
-- name: smoke_test.yaml
-  description: 冒烟测试
-  priority: high
-  estimated_duration: 5m
-- name: model_crud.yaml
-  description: 数据模型增删改查测试
-  priority: high
-  estimated_duration: 10m
-- name: field_crud.yaml
-  description: 模型字段增删改查测试
-  priority: medium
-  estimated_duration: 10m
-- name: version_test.yaml
-  description: 模型版本和发布测试
-  priority: medium
-  estimated_duration: 8m
-- name: metric_model_legacy.yaml
-  description: 指标模型（历史用例迁移）
-  priority: medium
-  estimated_duration: 10m
-- name: data_view_group_legacy.yaml
-  description: 数据视图分组（历史用例迁移）
-  priority: medium
-  estimated_duration: 8m
-- name: row_column_rule_legacy.yaml
-  description: 行列权限规则（历史用例迁移）
-  priority: medium
-  estimated_duration: 8m
+  - name: smoke_test.yaml
+    description: 冒烟测试 - 核心列表与创建接口
+    priority: high
+    estimated_duration: "6m"
+  - name: data_view_group.yaml
+    description: 数据视图分组增删改查导出
+    priority: high
+    estimated_duration: "10m"
+  - name: row_column_rule.yaml
+    description: 数据视图行列权限规则增删改查
+    priority: medium
+    estimated_duration: "12m"
+  - name: metric_model_group.yaml
+    description: 指标模型分组增删改查
+    priority: high
+    estimated_duration: "12m"
+  - name: metric_model.yaml
+    description: 指标模型增删查
+    priority: medium
+    estimated_duration: "15m"

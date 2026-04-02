@@ -38,7 +38,16 @@ class HTTPClient:
         return self.resp.status_code
 
     def resp_body(self):
-        return self.resp.json()
+        """解析 JSON；204/空 body 或非 JSON（如 HTML 错误页）时返回 dict，避免 json() 抛错掩盖状态码。"""
+        if self.resp is None:
+            return {}
+        if self.resp.status_code == 204:
+            return {}
+        try:
+            return self.resp.json()
+        except ValueError:
+            t = (self.resp.text or "").strip()
+            return {"_parse_error": "non_json_body", "_text_preview": t[:2000]} if t else {}
 
 
 if __name__ == '__main__':

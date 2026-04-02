@@ -1,40 +1,31 @@
 # 冒烟测试套件：vega-gateway 模块
 
+feature: vega-gateway
+story: smoke_test
+switch: y
+tags:
+  - smoke
+
 cases:
-  - case_id: "smoke_001"
-    suite: "vega-gateway 冒烟测试"
-    switch: y
-    name: "健康检查"
-    description: "验证网关健康检查接口"
-    api_name: "健康检查"
+  - name: 健康检查
+    url: 健康检查
+    code_check: "200"
+    description: 验证网关健康检查接口（仅校验 HTTP 状态；响应体可能非 JSON）
     tags:
       - smoke
       - health
-    expect:
-      status_code: 200
 
-  - case_id: "smoke_002"
-    suite: "vega-gateway 冒烟测试"
-    switch: y
-    name: "获取路由列表"
-    description: "验证路由列表接口可用"
-    api_name: "获取路由列表"
+  - name: 获取路由列表
+    url: 获取路由列表
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证路由列表接口可用
     tags:
       - smoke
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "smoke_003"
-    suite: "vega-gateway 冒烟测试"
-    switch: y
-    name: "获取网关配置"
-    description: "验证网关配置接口可用"
-    api_name: "获取网关配置"
+  - name: 获取网关配置
+    url: 获取网关配置
+    code_check: "200"
+    description: 验证网关配置接口可用
     tags:
       - smoke
-    expect:
-      status_code: 200

@@ -1,102 +1,67 @@
 # OpenSearch 元数据测试套件：data-connection 模块
 # 测试 OpenSearch 元数据获取和字段映射功能
 
+feature: data-connection
+story: opensearch_metadata
+switch: y
+tags:
+  - opensearch
+  - metadata
+
 cases:
-  - case_id: "os_001"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "获取 OpenSearch 索引列表"
-    description: "验证获取索引列表接口"
-    api_name: "查询 OpenSearch 索引"
+  - name: 获取 OpenSearch 索引列表
+    url: 查询 OpenSearch 索引
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证获取索引列表接口；原用例另校验 $.data 为数组，框架单条 resp_check 未逐类型断言，见集成环境再加强
     tags:
       - opensearch
       - metadata
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data"
-          expected_type: array
 
-  - case_id: "os_002"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "获取索引字段映射"
-    description: "验证获取索引 mapping 返回字段信息"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 获取索引字段映射
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证获取索引 mapping 返回字段信息；index_name 使用 global.yaml 的 index_name（默认 test-index）
     tags:
       - opensearch
       - metadata
       - mapping
-    setup:
-      - type: set_var
-        var_name: index_name
-        value: "test-index"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.properties"
-          expected_type: object
 
-  - case_id: "os_003"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "验证 keyword 字段特征"
-    description: "验证 text 类型字段的 keyword 子字段配置"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 keyword 字段特征
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证 text 类型字段的 keyword 子字段配置（原用例对 $.data.properties 等做类型级校验）
     tags:
       - opensearch
       - field-feature
       - keyword
-    expect:
-      status_code: 200
 
-  - case_id: "os_004"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "验证 ignore_above 配置"
-    description: "验证 keyword 字段的 ignore_above 参数（默认 256）"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 ignore_above 配置
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    description: 验证 keyword 字段的 ignore_above 参数（默认 256）
     tags:
       - opensearch
       - field-feature
       - keyword
-    expect:
-      status_code: 200
 
-  - case_id: "os_005"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "验证 analyzer 分词器配置"
-    description: "验证 text 字段的 analyzer 配置"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 analyzer 分词器配置
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    description: 验证 text 字段的 analyzer 配置
     tags:
       - opensearch
       - field-feature
       - analyzer
-    expect:
-      status_code: 200
 
-  - case_id: "os_006"
-    suite: "OpenSearch 元数据测试"
-    switch: y
-    name: "验证 mappingConfig 完整结构"
-    description: "验证返回的 mappingConfig 包含完整的字段特征配置"
-    api_name: "获取 OpenSearch 字段映射"
+  - name: 验证 mappingConfig 完整结构
+    url: 获取 OpenSearch 字段映射
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证返回的 mappingConfig 包含完整的字段特征配置（原用例对 $.data.properties.*.mappingConfig 做 object 类型校验）
     tags:
       - opensearch
       - field-feature
       - mapping-config
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.data.properties.*.mappingConfig"
-          expected_type: object

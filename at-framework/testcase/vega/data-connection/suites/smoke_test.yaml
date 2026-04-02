@@ -1,67 +1,45 @@
-# 冒烟测试套件：data-connection 模块
+# 冒烟测试套件：data-connection 模块（框架 case_schema）
 # 验证基础功能正常
 
+feature: data-connection
+story: smoke_test
+switch: y
+tags:
+  - smoke
+
 cases:
-  - case_id: "smoke_001"
-    suite: "data-connection 冒烟测试"
-    switch: y
-    name: "查询数据源列表"
-    description: "验证数据源列表接口可用"
-    api_name: "查询数据源列表"
+  - name: 查询数据源列表
+    url: 查询数据源列表
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证数据源列表接口可用
     tags:
       - smoke
       - datasource
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "smoke_002"
-    suite: "data-connection 冒烟测试"
-    switch: y
-    name: "查询支持的连接器类型"
-    description: "验证连接器列表接口可用"
-    api_name: "查询所有支持数据源"
+  - name: 查询支持的连接器类型
+    url: 查询所有支持数据源
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证连接器列表接口可用
     tags:
       - smoke
       - connector
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "smoke_003"
-    suite: "data-connection 冒烟测试"
-    switch: y
-    name: "查询扫描任务列表"
-    description: "验证扫描任务接口可用"
-    api_name: "查询扫描任务列表"
+  - name: 查询扫描任务列表
+    url: 查询扫描任务列表
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证扫描任务接口可用
     tags:
       - smoke
       - metadata
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "smoke_004"
-    suite: "data-connection 冒烟测试"
-    switch: y
-    name: "查询视图列表"
-    description: "验证视图列表接口可用"
-    api_name: "查询视图列表"
+  - name: 查询视图列表
+    url: 查询视图列表
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证视图列表接口可用
     tags:
       - smoke
       - view
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0

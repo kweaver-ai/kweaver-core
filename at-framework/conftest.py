@@ -10,25 +10,24 @@ from common.hooks import load_session_clean_up
 config = load_sys_config("./config/config.ini")
 
 
-def _env_section():
-    return config.get("env") or {}
-
-
 def _default_bearer_auth():
-    """默认 Authorization：AT_AUTH_SOURCE / [env] 为 login 时走 get_token；否则 AT_API_TOKEN > [external].token。"""
+    """默认 Authorization：AT_AUTH_SOURCE 为 login 时走 get_token；否则使用静态 token。"""
     src = at_env.auth_token_source(config)
     static_tok = at_env.static_access_token(config)
     if src in ("login", "get_token", "token_provider"):
+        user, pwd = "", ""
         try:
             from src.common.token_provider import get_token
 
             user, pwd = at_env.admin_credentials(config)
             if user and pwd:
                 tok = get_token(user, pwd)
+                print("tok", tok)
                 if tok:
                     return "Bearer %s" % tok
-        except Exception:
-            pass
+        except Exception as ex:
+            print("user", user, "pwd", pwd)
+            print("获取 token 异常:", ex)
     return "Bearer %s" % static_tok if static_tok else "Bearer "
 
 
@@ -88,7 +87,7 @@ def pytest_collection_modifyitems(items) -> None:
 
 
 def pytest_configure(config):
-    """运行时参数优先级：pytest 参数 > 环境变量 > config.ini。"""
+    """运行时参数优先级：pytest 参数 > 环境变量 > 默认值。"""
     global _case_file, _module_name, _case_list_cache
     _case_list_cache = None
     opt_case_file = (config.getoption("--case-file") or "").strip()

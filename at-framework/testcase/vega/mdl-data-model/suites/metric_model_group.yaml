@@ -1,0 +1,57 @@
+feature: mdl-data-model
+story: metric_model_group
+switch: y
+tags:
+  - metric-group
+  - regression
+
+cases:
+  - name: 创建指标模型分组_正常
+    url: 创建指标模型分组
+    body_params: '{"name":"测试分组_${ts_uuid}","comment":"这是一个测试分组"}'
+    code_check: "201"
+    resp_values: '{"created_metric_group_id":"$.id"}'
+
+  - name: 创建指标模型分组_空名称
+    url: 创建指标模型分组
+    body_params: '{"name":"","comment":"空名称分组"}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 查询指标模型分组列表_默认
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":10}'
+    code_check: "200"
+
+  - name: 查询指标模型分组列表_无效排序字段
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"invalid_field","direction":"asc","offset":0,"limit":10}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 更新指标模型分组_正常
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":"修改后的分组_${ts_uuid}","comment":"修改后的备注"}'
+    code_check: "204"
+
+  - name: 更新指标模型分组_空名称
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":""}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 删除指标模型分组_空分组
+    url: 删除指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}","force":"${force_false}"}'
+    code_check: "204"
+
+  - name: 删除指标模型分组_不存在
+    url: 删除指标模型分组
+    path_params: '{"group_id":"${metric_group_id_non_existent}","force":"${force_false}"}'
+    code_check: "404"
+    tags: [negative]

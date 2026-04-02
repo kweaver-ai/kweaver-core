@@ -1,46 +1,36 @@
 variables:
-- name: model_id
-  description: 数据模型 ID
-  type: string
-  example: mdl-xxx-xxx-xxx
-  required: true
-- name: model_name
-  description: 数据模型名称
-  type: string
-  example: test-model
-  required: true
-- name: field_id
-  description: 模型字段 ID
-  type: string
-  example: field-xxx-xxx-xxx
-  required: false
-- name: field_name
-  description: ????
-  type: string
-  example: test_field
-  required: false
-- name: version_id
-  description: ???? ID
-  type: string
-  example: ver-xxx-xxx-xxx
-  required: false
-- name: model_status
-  description: ????
-  type: string
-  example: published
-  required: false
-- name: group_id
-  description: metric/data-view group id
-  ref: ${group_id}
-- name: force
-  description: delete force flag
-  ref: ${force}
-- name: ids
-  description: comma separated metric ids
-  ref: ${ids}
-- name: rule_id
-  description: row column rule id
-  ref: ${rule_id}
-- name: rule_ids
-  description: comma separated rule ids
-  ref: ${rule_ids}
+  - name: view_id
+    description: 用于行列权限规则的视图ID
+    type: string
+    example: "test_view_id"
+    required: true
+  - name: group_id_non_existent
+    description: 不存在的数据视图分组ID
+    type: string
+    example: "non_existent_group"
+    required: true
+  - name: rule_id_non_existent
+    description: 不存在的行列权限规则ID
+    type: string
+    example: "non_existent_rule"
+    required: true
+  - name: metric_group_id_non_existent
+    description: 不存在的指标模型分组ID
+    type: string
+    example: "999999999"
+    required: true
+  - name: metric_model_id_non_existent
+    description: 不存在的指标模型ID
+    type: string
+    example: "999999999"
+    required: true
+  - name: force_true
+    description: 强制删除标记
+    type: string
+    example: "true"
+    required: true
+  - name: force_false
+    description: 非强制删除标记
+    type: string
+    example: "false"
+    required: true

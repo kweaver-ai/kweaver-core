@@ -1,0 +1,11 @@
+# 全局变量：mdl-uniquery 模块
+
+view_id: "test_view_id"
+invalid_view_id: "nonexistent_view_id"
+
+start_ts: 1689228477228
+end_ts: 1689232077228
+
+pit_id_single: "nonexistent_pit_id"
+pit_id_1: "nonexistent_pit_id_1"
+pit_id_2: "nonexistent_pit_id_2"

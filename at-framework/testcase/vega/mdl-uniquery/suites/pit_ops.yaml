@@ -1,0 +1,48 @@
+# PIT 操作套件：mdl-uniquery 模块
+
+feature: mdl-uniquery
+story: pit_ops
+switch: y
+tags:
+  - pit
+  - regression
+
+cases:
+  - name: 删除单个视图PIT
+    url: 删除视图PIT
+    header_params: '{"x-http-method-override": "DELETE"}'
+    body_params: '{"pit_ids": ["${pit_id_single}"]}'
+    code_check: "500"
+    description: 对齐原用例期望：删除不存在 PIT 返回 500
+    tags:
+      - pit
+      - negative
+
+  - name: 删除多个视图PIT
+    url: 删除视图PIT
+    header_params: '{"x-http-method-override": "DELETE"}'
+    body_params: '{"pit_ids": ["${pit_id_1}", "${pit_id_2}"]}'
+    code_check: "500"
+    description: 对齐原用例期望：批量删除不存在 PIT 返回 500
+    tags:
+      - pit
+      - negative
+
+  - name: 删除全部视图PIT
+    url: 删除视图PIT
+    header_params: '{"x-http-method-override": "DELETE"}'
+    body_params: '{"pit_ids": ["__all"]}'
+    code_check: "200"
+    description: 对齐原用例期望：删除全部 PIT 返回 200
+    tags:
+      - pit
+
+  - name: 内部删除视图PIT
+    url: 内部删除视图PIT
+    header_params: '{"x-http-method-override": "DELETE"}'
+    body_params: '{"pit_ids": ["${pit_id_single}"]}'
+    code_check: "200"
+    description: 对齐原内部接口删除用例期望
+    tags:
+      - pit
+      - internal

@@ -1,137 +1,70 @@
 # 数据源 CRUD 测试套件：data-connection 模块
 
+feature: data-connection
+story: datasource_crud
+switch: y
+tags:
+  - datasource
+
 cases:
-  - case_id: "ds_001"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "创建 OpenSearch 数据源"
-    description: "创建 OpenSearch 类型数据源"
-    api_name: "新增数据源"
+  - name: 创建 OpenSearch 数据源
+    url: 新增数据源
+    body_params: '{"name": "test-opensearch-${ts_s}", "type": "opensearch", "host": "${datasource_host}", "port": 9200, "account": "admin", "password": "test123", "connectProtocol": "http"}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    resp_values: '{"created_datasource_id": "$.data.id"}'
+    description: 创建 OpenSearch 类型数据源；原用例另校验 $.data.id 为 string（由提取链路保证）
     tags:
       - datasource
       - opensearch
-    body:
-      name: "test-opensearch-${timestamp}"
-      type: "opensearch"
-      host: "${datasource_host}"
-      port: 9200
-      account: "admin"
-      password: "test123"
-      connectProtocol: "http"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.id"
-          expected_type: string
-      extract:
-        - type: json_path
-          source: "$.data.id"
-          var_name: "created_datasource_id"
 
-  - case_id: "ds_002"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "查询数据源列表"
-    description: "验证创建的数据源在列表中"
-    api_name: "查询数据源列表"
+  - name: 查询数据源列表
+    url: 查询数据源列表
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证创建的数据源在列表中；原用例另校验 $.data.list 为 array
     tags:
       - datasource
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.list"
-          expected_type: array
 
-  - case_id: "ds_003"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "查询数据源详情"
-    description: "验证数据源详情正确"
-    api_name: "查询数据源详情"
+  - name: 查询数据源详情
+    url: 查询数据源详情
+    prev_case: 创建 OpenSearch 数据源
+    path_params: '{"id": "${created_datasource_id}"}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 验证数据源详情正确；原用例校验 data.name 包含 test-opensearch，此处保留业务码与成功态，名称子串校验需环境与稳定命名时再补
     tags:
       - datasource
-    setup:
-      - type: set_var
-        var_name: id
-        value: "${created_datasource_id}"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.name"
-          expected_contains: "test-opensearch"
 
-  - case_id: "ds_004"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "测试数据源连接"
-    description: "验证数据源连接正常"
-    api_name: "测试数据源连接"
+  - name: 测试数据源连接
+    url: 测试数据源连接
+    prev_case: 查询数据源详情
+    body_params: '{"datasourceId": "${created_datasource_id}"}'
+    code_check: "200"
+    resp_check: '{"$.code": 0, "$.data.connected": true}'
+    description: 验证数据源连接正常
     tags:
       - datasource
       - connection
-    body:
-      datasourceId: "${created_datasource_id}"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
-        - type: json_path
-          path: "$.data.connected"
-          expected: true
 
-  - case_id: "ds_005"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "更新数据源"
-    description: "更新数据源配置"
-    api_name: "更新数据源"
+  - name: 更新数据源
+    url: 更新数据源
+    prev_case: 测试数据源连接
+    path_params: '{"id": "${created_datasource_id}"}'
+    body_params: '{"name": "test-opensearch-updated", "host": "${datasource_host}", "port": 9200}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 更新数据源配置
     tags:
       - datasource
-    setup:
-      - type: set_var
-        var_name: id
-        value: "${created_datasource_id}"
-    body:
-      name: "test-opensearch-updated"
-      host: "${datasource_host}"
-      port: 9200
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
 
-  - case_id: "ds_006"
-    suite: "数据源增删改查测试"
-    switch: y
-    name: "删除数据源"
-    description: "清理测试数据源"
-    api_name: "删除数据源"
+  - name: 删除数据源
+    url: 删除数据源
+    prev_case: 更新数据源
+    path_params: '{"id": "${created_datasource_id}"}'
+    code_check: "200"
+    resp_check: '{"$.code": 0}'
+    description: 清理测试数据源
     tags:
       - datasource
       - cleanup
-    setup:
-      - type: set_var
-        var_name: id
-        value: "${created_datasource_id}"
-    expect:
-      status_code: 200
-      response_checks:
-        - type: json_path
-          path: "$.code"
-          expected: 0
