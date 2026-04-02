@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
-
-	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
 )
 
 // @Summary      获取指定session的详情信息
@@ -37,61 +37,67 @@ func (h *observabilityHTTPHandler) SessionDetail(c *gin.Context) {
 
 	if agentID == "" {
 		h.logger.Errorf("[SessionDetail] agent_id is required")
-		o11y.Error(c, "[SessionDetail] agent_id is required")
-		httpErr := capierr.New400Err(c, "[SessionDetail] agent_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[SessionDetail] agent_id is required")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] agent_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	if conversationID == "" {
 		h.logger.Errorf("[SessionDetail] conversation_id is required")
-		o11y.Error(c, "[SessionDetail] conversation_id is required")
-		httpErr := capierr.New400Err(c, "[SessionDetail] conversation_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[SessionDetail] conversation_id is required")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] conversation_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	if sessionID == "" {
 		h.logger.Errorf("[SessionDetail] session_id is required")
-		o11y.Error(c, "[SessionDetail] session_id is required")
-		httpErr := capierr.New400Err(c, "[SessionDetail] session_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[SessionDetail] session_id is required")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] session_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 2. 获取请求参数
-	var req observabilityreq.SessionDetailReq
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var sessionDetailReq observabilityreq.SessionDetailReq
+	if err := c.ShouldBindJSON(&sessionDetailReq); err != nil {
 		h.logger.Errorf("[SessionDetail] should bind json err: %v", err)
-		o11y.Error(c, fmt.Sprintf("[SessionDetail] should bind json err: %v", err))
 		httpErr := capierr.New400Err(c, fmt.Sprintf("[SessionDetail] should bind json err: %v", err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("[SessionDetail] should bind json err: %v", err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, httpErr)
 
 		return
 	}
 
 	// 3. 设置路径参数到请求中
-	req.AgentID = agentID
-	req.ConversationID = conversationID
-	req.SessionID = sessionID
+	sessionDetailReq.AgentID = agentID
+	sessionDetailReq.ConversationID = conversationID
+	sessionDetailReq.SessionID = sessionID
 
 	// 4. 参数验证
-	if req.StartTime == 0 || req.EndTime == 0 {
+	if sessionDetailReq.StartTime == 0 || sessionDetailReq.EndTime == 0 {
 		err := capierr.New400Err(c, "[SessionDetail] start_time and end_time are required")
 		h.logger.Errorf("[SessionDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[SessionDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
 	}
 
-	if req.StartTime > req.EndTime {
+	if sessionDetailReq.StartTime > sessionDetailReq.EndTime {
 		err := capierr.New400Err(c, "[SessionDetail] start_time cannot be greater than end_time")
 		h.logger.Errorf("[SessionDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[SessionDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
@@ -100,27 +106,28 @@ func (h *observabilityHTTPHandler) SessionDetail(c *gin.Context) {
 	// 5. 获取用户信息
 	user := chelper.GetVisitorFromCtx(c)
 	if user == nil {
-		httpErr := capierr.New404Err(c, "[SessionDetail] user not found")
-		o11y.Error(c, "[SessionDetail] user not found")
-		h.logger.Errorf("[SessionDetail] user not found: %v", httpErr)
-		rest.ReplyError(c, httpErr)
+		err := capierr.New404Err(c, "[SessionDetail] user not found")
+		otellog.LogError(c.Request.Context(), "[SessionDetail] user not found", err)
+		h.logger.Errorf("[SessionDetail] user not found: %v", err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 6. 设置用户信息到请求对象中
-	req.XAccountID = user.ID
-	req.XAccountType.LoadFromMDLVisitorType(user.Type)
+	sessionDetailReq.XAccountID = user.ID
+	sessionDetailReq.XAccountType.LoadFromMDLVisitorType(user.Type)
 
 	// 7. 调用服务
 	// h.logger.Infof("[SessionDetail] query session detail, agent_id: %s, conversation_id: %s, session_id: %s, version: %s, time_range: [%d, %d]",
-	// 	req.AgentID, req.ConversationID, req.SessionID, req.AgentVersion, req.StartTime, req.EndTime)
+	// 	sessionDetailReq.AgentID, sessionDetailReq.ConversationID, sessionDetailReq.SessionID, sessionDetailReq.AgentVersion, sessionDetailReq.StartTime, sessionDetailReq.EndTime)
 
 	// 调用可观测性服务获取Session详情
-	resp, httpErr := h.observabilitySvc.SessionDetail(c.Request.Context(), &req)
+	resp, httpErr := h.observabilitySvc.SessionDetail(c.Request.Context(), &sessionDetailReq)
 	if httpErr != nil {
 		h.logger.Errorf("[SessionDetail] call observability service error: %v", httpErr.Error())
-		o11y.Error(c, fmt.Sprintf("[SessionDetail] call observability service error: %v", httpErr.Error()))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("[SessionDetail] call observability service error: %v", httpErr.Error()), httpErr)
+		oteltrace.EndSpan(c.Request.Context(), httpErr)
 		rest.ReplyError(c, httpErr)
 
 		return

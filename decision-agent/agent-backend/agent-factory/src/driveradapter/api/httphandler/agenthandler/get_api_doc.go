@@ -9,7 +9,8 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/constant"
 	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/pkg/errors"
 )
@@ -33,9 +34,11 @@ func (h *agentHTTPHandler) GetAPIDoc(c *gin.Context) {
 
 	appKey := c.Param("app_key")
 	if appKey == "" {
-		rest.ReplyError(c, capierr.New400Err(c, "app_key is required"))
+		err := capierr.New400Err(c, "app_key is required")
+		rest.ReplyError(c, err)
 		h.logger.Errorf("[GetAPIDoc] app_key is required")
-		o11y.Error(c, "[GetAPIDoc] app_key is required")
+		otellog.LogError(c.Request.Context(), "[GetAPIDoc] app_key is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 
 		return
 	}
@@ -45,7 +48,8 @@ func (h *agentHTTPHandler) GetAPIDoc(c *gin.Context) {
 	doc, err := h.agentSvc.GetAPIDoc(ctx, &req)
 	if err != nil {
 		h.logger.Errorf("[GetAPIDoc] error cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("[GetAPIDoc] error cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetAPIDoc] error cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(ctx, err)
 		rest.ReplyError(c, err)
 
 		return

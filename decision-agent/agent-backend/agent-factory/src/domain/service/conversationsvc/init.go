@@ -11,15 +11,16 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/pkg/errors"
 )
 
 func (sv *conversationSvc) Init(ctx context.Context, req conversationreq.InitReq) (rt conversationresp.InitConversationResp, err error) {
-	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, err)
+	ctx, span := oteltrace.StartInternalSpan(ctx)
+	defer span.End()
 
 	if req.Title == "" {
 		req.Title = "新会话"
@@ -35,11 +36,10 @@ func (sv *conversationSvc) Init(ctx context.Context, req conversationreq.InitReq
 
 	po, err = sv.conversationRepo.Create(ctx, po)
 	if err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[Init] create conversation error, err: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("[Init] create conversation error, err: %v", err), err)
 		return rt, errors.Wrapf(err, "update conversation title failed")
 	}
 
-	// 确保 Sandbox Session 存在并就绪（仅在启用沙箱时执行）
 	var sandboxSessionID string
 
 	if sv.sandboxPlatformConf.Enable {
@@ -49,7 +49,7 @@ func (sv *conversationSvc) Init(ctx context.Context, req conversationreq.InitReq
 
 		sandboxSessionID, sandboxErr = sv.ensureSandboxSession(ctx, sessionID, &req)
 		if sandboxErr != nil {
-			o11y.Warn(ctx, fmt.Sprintf("[Init] ensure sandbox session failed: %v", sandboxErr))
+			otellog.LogWarn(ctx, fmt.Sprintf("[Init] ensure sandbox session failed: %v", sandboxErr))
 		}
 	}
 

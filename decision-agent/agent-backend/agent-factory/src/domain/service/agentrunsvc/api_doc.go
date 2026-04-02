@@ -8,42 +8,40 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/square/squarereq"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/static"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 func (agentSvc *agentSvc) GetAPIDoc(ctx context.Context, req *agentreq.GetAPIDocReq) (interface{}, error) {
-	var err error
+	ctx, span := oteltrace.StartInternalSpan(ctx)
+	defer span.End()
 
-	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, err)
-	o11y.SetAttributes(ctx, attribute.String("agent_id", req.AgentID))
-	o11y.SetAttributes(ctx, attribute.String("agent_version", req.AgentVersion))
+	oteltrace.SetAttributes(ctx, attribute.String("agent_id", req.AgentID))
+	oteltrace.SetAttributes(ctx, attribute.String("agent_version", req.AgentVersion))
 
-	// 1. 通过agent id获取agent信息
 	agentInfo, err := agentSvc.squareSvc.GetAgentInfoByIDOrKey(ctx, &squarereq.AgentInfoReq{
 		AgentID:      req.AgentID,
 		AgentVersion: req.AgentVersion,
 	})
 	if err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[GetAPIDoc] get agent failed: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetAPIDoc] get agent failed: %v", err), err)
 		return nil, errors.Wrapf(err, "[GetAPIDoc] get agent failed: %v", err)
 	}
 
-	// 2. 读取api文档模版并解析为openapi3类型
 	loader := openapi3.NewLoader()
 
 	docByte, err := static.StaticFiles.ReadFile("agent-api.json")
 	if err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[GetAPIDoc] read file failed: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetAPIDoc] read file failed: %v", err), err)
 		return nil, errors.Wrapf(err, "[GetAPIDoc] read file failed: %v", err)
 	}
 
 	apiDoc, err := loader.LoadFromData(docByte)
 	if err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[GetAPIDoc] load api doc err: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetAPIDoc] load api doc err: %v", err), err)
 		return nil, errors.Wrapf(err, "[GetAPIDoc] load api doc err: %v", err)
 	}
 

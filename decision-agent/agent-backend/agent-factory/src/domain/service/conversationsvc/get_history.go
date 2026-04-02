@@ -10,8 +10,9 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/comvalobj"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/conversationmsgvo"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/daconfvalobj"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -19,18 +20,19 @@ import (
 func (svc *conversationSvc) GetHistoryV2(ctx context.Context, id string, historyConfig *daconfvalobj.ConversationHistoryConfig, regenerateUserMsgID string,
 	regenerateAssistantMsgID string,
 ) ([]*comvalobj.LLMMessage, error) {
-	var err error
+	ctx, span := oteltrace.StartInternalSpan(ctx)
+	defer span.End()
 
-	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, err)
-	o11y.SetAttributes(ctx, attribute.String("conversation_id", id))
+	oteltrace.SetAttributes(ctx, attribute.String("conversation_id", id))
+
+	var err error
 
 	if historyConfig == nil {
 		return nil, errors.New("[GetHistoryV2] history_config is required")
 	}
 
 	if err = historyConfig.Strategy.EnumCheck(); err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[GetHistoryV2] invalid history strategy, err: %v", err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetHistoryV2] invalid history strategy, err: %v", err), err)
 		return nil, errors.Wrapf(err, "[GetHistoryV2] invalid history strategy, err: %v", err)
 	}
 
@@ -56,17 +58,18 @@ func (svc *conversationSvc) GetHistoryV2(ctx context.Context, id string, history
 func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int, regenerateUserMsgID string,
 	regenerateAssistantMsgID string,
 ) ([]*comvalobj.LLMMessage, error) {
-	var err error
+	ctx, span := oteltrace.StartInternalSpan(ctx)
+	defer span.End()
 
-	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, err)
-	o11y.SetAttributes(ctx, attribute.String("conversation_id", id))
+	oteltrace.SetAttributes(ctx, attribute.String("conversation_id", id))
+
+	var err error
 
 	// NOTE: 如果不需要regenerate，则使用DetailWithLimit减少数据库查询
 	if regenerateUserMsgID == "" && regenerateAssistantMsgID == "" {
 		conversation, err := svc.DetailWithLimit(ctx, id, limit)
 		if err != nil {
-			o11y.Error(ctx, fmt.Sprintf("[GetHistory] get conversation detail error, id: %s, err: %v", id, err))
+			otellog.LogError(ctx, fmt.Sprintf("[GetHistory] get conversation detail error, id: %s, err: %v", id, err), err)
 			return nil, errors.Wrapf(err, "[GetHistory] get conversation detail error, id: %s, err: %v", id, err)
 		}
 
@@ -78,7 +81,7 @@ func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int
 				if msg.Content != nil && *msg.Content != "" {
 					err := sonic.Unmarshal([]byte(*msg.Content), &content)
 					if err != nil {
-						o11y.Error(ctx, fmt.Sprintf("[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err))
+						otellog.LogError(ctx, fmt.Sprintf("[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err), err)
 						return nil, errors.Wrapf(err, "[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err)
 					}
 				}
@@ -113,7 +116,7 @@ func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int
 				if msg.Content != nil && *msg.Content != "" {
 					err := sonic.Unmarshal([]byte(*msg.Content), &userContent)
 					if err != nil {
-						o11y.Error(ctx, fmt.Sprintf("[GetHistory] unmarshal user content error, id: %s, err: %v", id, err))
+						otellog.LogError(ctx, fmt.Sprintf("[GetHistory] unmarshal user content error, id: %s, err: %v", id, err), err)
 						return nil, errors.Wrapf(err, "[GetHistory] unmarshal user content error, id: %s, err: %v", id, err)
 					}
 				}
@@ -147,7 +150,7 @@ func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int
 	// NOTE: 需要regenerate时，使用原来的全量查询逻辑
 	conversation, err := svc.Detail(ctx, id)
 	if err != nil {
-		o11y.Error(ctx, fmt.Sprintf("[GetHistory] get conversation detail error, id: %s, err: %v", id, err))
+		otellog.LogError(ctx, fmt.Sprintf("[GetHistory] get conversation detail error, id: %s, err: %v", id, err), err)
 		return nil, errors.Wrapf(err, "[GetHistory] get conversation detail error, id: %s, err: %v", id, err)
 	}
 
@@ -165,7 +168,7 @@ func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int
 			if msg.Content != nil && *msg.Content != "" {
 				err := sonic.Unmarshal([]byte(*msg.Content), &content)
 				if err != nil {
-					o11y.Error(ctx, fmt.Sprintf("[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err))
+					otellog.LogError(ctx, fmt.Sprintf("[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err), err)
 					return nil, errors.Wrapf(err, "[GetHistory] unmarshal assistant content error, id: %s, err: %v", id, err)
 				}
 			}
@@ -202,7 +205,7 @@ func (svc *conversationSvc) GetHistory(ctx context.Context, id string, limit int
 			if msg.Content != nil && *msg.Content != "" {
 				err := sonic.Unmarshal([]byte(*msg.Content), &userContent)
 				if err != nil {
-					o11y.Error(ctx, fmt.Sprintf("[GetHistory] unmarshal user content error, id: %s, err: %v", id, err))
+					otellog.LogError(ctx, fmt.Sprintf("[GetHistory] unmarshal user content error, id: %s, err: %v", id, err), err)
 					return nil, errors.Wrapf(err, "[GetHistory] unmarshal user content error, id: %s, err: %v", id, err)
 				}
 			}

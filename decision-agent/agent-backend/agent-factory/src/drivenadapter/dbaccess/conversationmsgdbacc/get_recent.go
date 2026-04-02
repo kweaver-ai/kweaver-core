@@ -7,17 +7,16 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/pkg/errors"
 )
 
 func (repo *ConversationMsgRepo) GetRecentMessages(ctx context.Context, conversationID string, limit int) (rt []*dapo.ConversationMsgPO, err error) {
-	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, nil)
-	oteltrace.SetConversationID(ctx, conversationID)
-	o11y.SetAttributes(ctx, attribute.Int("limit", limit))
+	ctx, span := oteltrace.StartInternalSpan(ctx)
+	defer span.End()
+	span.SetAttributes(attribute.String("conversationID", conversationID))
+	span.SetAttributes(attribute.Int("limit", limit))
 
 	sr := dbhelper2.NewSQLRunner(repo.db, repo.logger)
 

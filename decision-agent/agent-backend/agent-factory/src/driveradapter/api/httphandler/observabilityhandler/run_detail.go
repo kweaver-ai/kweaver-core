@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
-
-	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
 )
 
 // @Summary      获取指定run的详情信息
@@ -39,71 +39,78 @@ func (h *observabilityHTTPHandler) RunDetail(c *gin.Context) {
 
 	if agentID == "" {
 		h.logger.Errorf("[RunDetail] agent_id is required")
-		o11y.Error(c, "[RunDetail] agent_id is required")
-		httpErr := capierr.New400Err(c, "[RunDetail] agent_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[RunDetail] agent_id is required")
+		otellog.LogError(c.Request.Context(), "[RunDetail] agent_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	if conversationID == "" {
 		h.logger.Errorf("[RunDetail] conversation_id is required")
-		o11y.Error(c, "[RunDetail] conversation_id is required")
-		httpErr := capierr.New400Err(c, "[RunDetail] conversation_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[RunDetail] conversation_id is required")
+		otellog.LogError(c.Request.Context(), "[RunDetail] conversation_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	if sessionID == "" {
 		h.logger.Errorf("[RunDetail] session_id is required")
-		o11y.Error(c, "[RunDetail] session_id is required")
-		httpErr := capierr.New400Err(c, "[RunDetail] session_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[RunDetail] session_id is required")
+		otellog.LogError(c.Request.Context(), "[RunDetail] session_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	if runID == "" {
 		h.logger.Errorf("[RunDetail] run_id is required")
-		o11y.Error(c, "[RunDetail] run_id is required")
-		httpErr := capierr.New400Err(c, "[RunDetail] run_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[RunDetail] run_id is required")
+		otellog.LogError(c.Request.Context(), "[RunDetail] run_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 2. 获取请求参数
-	var req observabilityreq.RunDetailReq
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var runDetailReq observabilityreq.RunDetailReq
+	if err := c.ShouldBindJSON(&runDetailReq); err != nil {
 		h.logger.Errorf("[RunDetail] should bind json err: %v", err)
-		o11y.Error(c, fmt.Sprintf("[RunDetail] should bind json err: %v", err))
 		httpErr := capierr.New400Err(c, fmt.Sprintf("[RunDetail] should bind json err: %v", err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("[RunDetail] should bind json err: %v", err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, httpErr)
 
 		return
 	}
 
 	// 3. 设置路径参数到请求中
-	req.AgentID = agentID
-	req.ConversationID = conversationID
-	req.SessionID = sessionID
-	req.RunID = runID
+	runDetailReq.AgentID = agentID
+	runDetailReq.ConversationID = conversationID
+	runDetailReq.SessionID = sessionID
+	runDetailReq.RunID = runID
 
 	// 4. 参数验证
-	if req.StartTime == 0 || req.EndTime == 0 {
+	if runDetailReq.StartTime == 0 || runDetailReq.EndTime == 0 {
 		err := capierr.New400Err(c, "[RunDetail] start_time and end_time are required")
 		h.logger.Errorf("[RunDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[RunDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[RunDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
 	}
 
-	if req.StartTime > req.EndTime {
+	if runDetailReq.StartTime > runDetailReq.EndTime {
 		err := capierr.New400Err(c, "[RunDetail] start_time cannot be greater than end_time")
 		h.logger.Errorf("[RunDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[RunDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[RunDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
@@ -112,27 +119,28 @@ func (h *observabilityHTTPHandler) RunDetail(c *gin.Context) {
 	// 5. 获取用户信息
 	user := chelper.GetVisitorFromCtx(c)
 	if user == nil {
-		httpErr := capierr.New404Err(c, "[RunDetail] user not found")
-		o11y.Error(c, "[RunDetail] user not found")
-		h.logger.Errorf("[RunDetail] user not found: %v", httpErr)
-		rest.ReplyError(c, httpErr)
+		err := capierr.New404Err(c, "[RunDetail] user not found")
+		otellog.LogError(c.Request.Context(), "[RunDetail] user not found", err)
+		h.logger.Errorf("[RunDetail] user not found: %v", err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 6. 设置用户信息到请求对象中
-	req.XAccountID = user.ID
-	req.XAccountType.LoadFromMDLVisitorType(user.Type)
+	runDetailReq.XAccountID = user.ID
+	runDetailReq.XAccountType.LoadFromMDLVisitorType(user.Type)
 
 	// 7. 调用服务
 	// h.logger.Infof("[RunDetail] query run detail, agent_id: %s, conversation_id: %s, session_id: %s, run_id: %s, version: %s, time_range: [%d, %d]",
-	// 	req.AgentID, req.ConversationID, req.SessionID, req.RunID, req.AgentVersion, req.StartTime, req.EndTime)
+	// 	runDetailReq.AgentID, runDetailReq.ConversationID, runDetailReq.SessionID, runDetailReq.RunID, runDetailReq.AgentVersion, runDetailReq.StartTime, runDetailReq.EndTime)
 
 	// 调用可观测性服务获取Run详情
-	resp, httpErr := h.observabilitySvc.RunDetail(c.Request.Context(), &req)
+	resp, httpErr := h.observabilitySvc.RunDetail(c.Request.Context(), &runDetailReq)
 	if httpErr != nil {
 		h.logger.Errorf("[RunDetail] call observability service error: %v", httpErr.Error())
-		o11y.Error(c, fmt.Sprintf("[RunDetail] call observability service error: %v", httpErr.Error()))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("[RunDetail] call observability service error: %v", httpErr.Error()), httpErr)
+		oteltrace.EndSpan(c.Request.Context(), httpErr)
 		rest.ReplyError(c, httpErr)
 
 		return

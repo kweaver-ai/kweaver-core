@@ -6,7 +6,8 @@ import (
 
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/apierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -32,7 +33,8 @@ func (h *conversationHTTPHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		h.logger.Errorf("[Delete] id is empty")
-		o11y.Error(c, "[Delete] id is empty")
+		otellog.LogError(c.Request.Context(), "[Delete] id is empty", nil)
+		oteltrace.EndSpan(c.Request.Context(), nil)
 		httpErr := capierr.New400Err(c, "id is empty")
 		rest.ReplyError(c, httpErr)
 
@@ -42,7 +44,8 @@ func (h *conversationHTTPHandler) Delete(c *gin.Context) {
 	err := h.conversationSvc.Delete(ctx, id)
 	if err != nil {
 		h.logger.Errorf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		// 返回错误
 		rest.ReplyError(c, err)
 
@@ -70,7 +73,8 @@ func (h *conversationHTTPHandler) DeleteByAPPKey(c *gin.Context) {
 
 	if appKey == "" {
 		h.logger.Errorf("[DeleteByAPPKey] appKey is empty")
-		o11y.Error(c, "[DeleteByAPPKey] appKey is empty")
+		otellog.LogError(c.Request.Context(), "[DeleteByAPPKey] appKey is empty", nil)
+		oteltrace.EndSpan(c.Request.Context(), nil)
 		err := capierr.New400Err(c, "appKey is empty")
 		rest.ReplyError(c, err)
 
@@ -80,7 +84,8 @@ func (h *conversationHTTPHandler) DeleteByAPPKey(c *gin.Context) {
 	err := h.conversationSvc.DeleteByAppKey(ctx, appKey)
 	if err != nil {
 		h.logger.Errorf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("delete conversation failed, cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		httpErr := rest.NewHTTPError(c.Request.Context(), http.StatusInternalServerError, apierr.ConversationDeleteFailed).WithErrorDetails(fmt.Sprintf("delete conversation failed: %s", err.Error()))
 		rest.ReplyError(c, httpErr)
 
