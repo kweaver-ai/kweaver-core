@@ -33,9 +33,7 @@ func (s *httpServer) registerManagementPubRoutes(engine *gin.Engine) {
 		apimiddleware.VisitorTypeCheck(),
 
 		// 注入OpenTelemetry中间件
-		otelgin.Middleware(global.GConfig.OtelConfig.ServiceName),
-		// 注入logs和metrics
-		global.GDependencyInjector.Middleware(),
+		otelgin.Middleware(global.GConfig.OtelV2Config.ServiceName),
 	)
 
 	s.v3AgentConfigHandler.RegPubRouter(router)
@@ -66,9 +64,7 @@ func (s *httpServer) registerManagementPriRoutes(engine *gin.Engine) {
 		capimiddleware.HandleBizDomain(true),
 
 		// 注入OpenTelemetry中间件
-		otelgin.Middleware(global.GConfig.OtelConfig.ServiceName),
-		// 注入logs和metrics
-		global.GDependencyInjector.Middleware(),
+		otelgin.Middleware(global.GConfig.OtelV2Config.ServiceName),
 	)
 
 	s.releaseHandler.RegPriRouter(internalRouterG)
