@@ -187,7 +187,7 @@ async def run_dolphin(
                 f"agent_id={config.agent_id}, conversation_id={config.conversation_id}"
             )
         except Exception as e:
-            o11y_logger().warning(f"[run_dolphin] Failed to create trace listener: {e}")
+            o11y_logger().warn(f"[run_dolphin] Failed to create trace listener: {e}")
             trace_listener = None
     else:
         o11y_logger().info("[run_dolphin] Dolphin trace is disabled")

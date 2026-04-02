@@ -69,7 +69,7 @@ def process_options(
     else:
         from app.utils.observability.observability_log import get_logger as o11y_logger
 
-        o11y_logger().warning(
+        o11y_logger().warn(
             f"[process_options] No conversation_id in options, will use auto-generated value: {agent_config.conversation_id}"
         )
 
