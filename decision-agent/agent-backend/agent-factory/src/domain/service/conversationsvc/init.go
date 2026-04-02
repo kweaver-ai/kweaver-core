@@ -37,7 +37,7 @@ func (sv *conversationSvc) Init(ctx context.Context, req conversationreq.InitReq
 	po, err = sv.conversationRepo.Create(ctx, po)
 	if err != nil {
 		otellog.LogError(ctx, fmt.Sprintf("[Init] create conversation error, err: %v", err), err)
-		return rt, errors.Wrapf(err, "update conversation title failed")
+		return rt, errors.Wrapf(err, "create conversation error")
 	}
 
 	var sandboxSessionID string

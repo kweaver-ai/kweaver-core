@@ -3,6 +3,7 @@ package chatlogrecord
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentrespvo"
 	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
@@ -12,7 +13,12 @@ import (
 )
 
 func LogSuccessExecution(ctx context.Context, req *agentreq.ChatReq, progressAns []*agentrespvo.Progress, totalTime float64, totalTokens int64) {
-	progressJsonStr, _ := json.Marshal(progressAns)
+	progressJsonStr, err := json.Marshal(progressAns)
+
+	if err != nil {
+		otellog.LogError(ctx, fmt.Sprintf("marshal progress ans failed, err: %v", err), err)
+		return
+	}
 
 	toolCallCount := 0
 	toolCallFailedCount := 0
