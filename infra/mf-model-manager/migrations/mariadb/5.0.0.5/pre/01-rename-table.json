@@ -1,0 +1,92 @@
+[
+    {
+        "db_name": "model_management",
+        "table_name": "t_llm_model",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_llm_model",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_small_model",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_small_model",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_prompt_item_list",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_prompt_item_list",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_prompt_list",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_prompt_list",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_prompt_template_list",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_prompt_template_list",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_model_monitor",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_model_monitor",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_model_quota_config",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_model_quota_config",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+      {
+        "db_name": "model_management",
+        "table_name": "t_model_op_detail",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_model_op_detail",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+  {
+        "db_name": "model_management",
+        "table_name": "t_user_quota_config",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "adp.t_user_quota_config",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

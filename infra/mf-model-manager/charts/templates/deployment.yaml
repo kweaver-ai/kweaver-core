@@ -1,0 +1,340 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.image.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.image.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.image.name }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | trunc 10 | quote }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          image: "{{ .Values.image.registry }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: model-factory
+              containerPort: {{ .Values.service.ports.port }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/alive
+              port: {{ .Values.service.ports.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 300
+            timeoutSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: {{ .Values.service.ports.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+            - name: {{ .Release.Name }}-rds-conf
+              mountPath: /tmp/rds_conf
+          env:
+            - name: DEVICE_CODE
+              value: {{ .Values.env.devicecode }}
+            - name: RDSHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: RDSHOST
+            - name: RDSPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: RDSPORT
+            - name: RDSUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: RDSUSER
+            - name: RDSPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: RDSPASS
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: DB_TYPE
+            - name: RDSDBNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: RDSDBNAME
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCH_HOST
+            - name: OPENSEARCHWRITE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCHWRITE
+            - name: OPENSEARCHREAD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCHRED
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCH_PORT
+            - name: OPENSEARCH_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCH_USER
+            - name: OPENSEARCH_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OPENSEARCH_PASS
+            - name: REDISCLUSTERMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISCLUSTERMODE
+            - name: REDISUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISUSER
+            - name: REDISPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISPASS
+            {{- if ne .Values.depServices.redis.connectType "master-slave" }}
+            - name: REDISHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISHOST
+            - name: REDISPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISPORT
+            {{- end }}
+            {{- if eq .Values.depServices.redis.connectType "sentinel" }}
+            - name: SENTINELMASTER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: SENTINELMASTER
+            - name: SENTINELUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: SENTINELUSER
+            - name: SENTINELPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: SENTINELPASS
+            {{- end }}
+            {{- if eq .Values.depServices.redis.connectType "master-slave" }}
+            - name: REDISREADHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISREADHOST
+            - name: REDISREADPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISREADPORT
+            - name: REDISREADUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISREADUSER
+            - name: REDISREADPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISREADPASS
+            - name: REDISWRITEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISWRITEHOST
+            - name: REDISWRITEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISWRITEPORT
+            - name: REDISWRITEUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISWRITEUSER
+            - name: REDISWRITEPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: REDISWRITEPASS
+            {{- end }}
+            - name: KAFKAHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: KAFKAHOST
+            - name: KAFKAPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: KAFKAPORT
+            - name: KAFKAUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: KAFKAUSER
+            - name: KAFKAPASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: KAFKAPASS
+            # 修复以下三个环境变量的配置
+            - name: TEXTVECTORMAPPING
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: TEXTVECTORMAPPING
+            - name: VLMVECTORMAPPING
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: VLMVECTORMAPPING
+            - name: TEXTRERANKERMAPPING
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: TEXTRERANKERMAPPING
+            - name: DM_SVC_PATH
+              value: /tmp/rds_conf/
+            - name: OAUTHPUBLICHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OAUTHPUBLICHOST
+            - name: OAUTHPUBLICPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OAUTHPUBLICPORT
+            - name: OAUTHADMINHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OAUTHADMINHOST
+            - name: OAUTHADMINPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: OAUTHADMINPORT
+            - name: USERMANAGEMENTPUBLICHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: USERMANAGEMENTPUBLICHOST
+            - name: USERMANAGEMENTPUBLICPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: USERMANAGEMENTPUBLICPORT
+            - name: USERMANAGEMENTPRIVATEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: USERMANAGEMENTPRIVATEHOST
+            - name: USERMANAGEMENTPRIVATEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: USERMANAGEMENTPRIVATEPORT
+            - name: AUTHORIZATIONPRIVATEHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: AUTHORIZATIONPRIVATEHOST
+            - name: AUTHORIZATIONPRIVATEPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-yaml
+                  key: AUTHORIZATIONPRIVATEPORT
+            # 可观测相关配置
+            - name: LOG_ENABLED
+              value: {{ .Values.observability.logEnabled | quote }}
+            - name: TRACE_ENABLED
+              value: {{ .Values.observability.traceEnabled | quote }}
+            - name: METRIC_ENABLED
+              value: {{ .Values.observability.metricEnabled | quote }}
+            - name: LOG_EXPORTER
+              value: {{ .Values.observability.logExporter }}
+            - name: TRACE_PROVIDER
+              value: {{ .Values.observability.traceProvider }}
+            - name: METRIC_PROVIDER
+              value: {{ .Values.observability.metricProvider }}
+            - name: LOG_LOAD_INTERNAL
+              value: {{ .Values.observability.logLoadInternal | quote }}
+            - name: LOG_LOAD_MAX_LOG
+              value: {{ .Values.observability.logLoadMaxLog | quote }}
+            - name: TRACE_MAX_QUEUE_SIZE
+              value: {{ .Values.observability.traceMaxQueueSize | quote }}
+            - name: METRIC_INTERVAL_SECOND
+              value: {{ .Values.observability.metricIntervalSecond | quote }}
+            - name: HTTP_LOG_FEED_INGESTER_URL
+              value: {{ .Values.observability.httpLogFeedIngesterUrl }}
+            - name: HTTP_TRACE_FEED_INGESTER_URL
+              value: {{ .Values.observability.httpTraceFeedIngesterUrl }}
+            - name: HTTP_METRIC_FEED_INGESTER_URL
+              value: {{ .Values.observability.httpMetricFeedIngesterUrl }}
+            - name: GRPC_TRACE_FEED_INGESTER_URL
+              value: {{ .Values.observability.grpcTraceFeedIngesterUrl }}
+            - name: GRPC_TRACE_JOB_ID
+              value: {{ .Values.observability.grpcTraceJobId }}
+      volumes:
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+        - name: {{ .Release.Name }}-rds-conf
+          configMap:
+            name: {{ .Release.Name }}-yaml
+            items:
+            - key: dm_svc.conf
+              path: dm_svc.conf

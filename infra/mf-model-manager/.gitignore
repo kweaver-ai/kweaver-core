@@ -1,0 +1,10 @@
+/.idea/mf-model-factory.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/vcs.xml
+/.idea/workspace.xml
+.idea
+*.pyc
+*.log
+.nocalhost/config.yaml
