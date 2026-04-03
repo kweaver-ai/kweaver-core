@@ -21,7 +21,7 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        agent_id  path      string  true  "agent_id"
-// @Param        request  body      object  true  "请求体"
+// @Param        request  body      releasereq.UpdatePublishInfoReq  true  "请求体"
 // @Success      200  {object}  object  "更新发布信息成功"
 // @Failure      400  {object}  object  "失败"
 // @Failure      401  {object}  object  "失败"

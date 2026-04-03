@@ -81,6 +81,28 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: HTTP Bearer token, formatted as `Bearer ACCESS_TOKEN`
+  schemas:
+    releasereq.UpdatePublishInfoReq:
+      required:
+        - category_ids
+      properties:
+        category_ids:
+          description: 必填，至少传入 1 个分类ID
+          minItems: 1
+        publish_to_where:
+          description: |-
+            - 发布到的目标
+              - custom_space: 发布到自定义空间
+              - square: 发布到广场
+            - 非必填；为空时默认发布到广场
+        pms_control:
+          description: |-
+            - 权限控制信息
+            - 非必填；为空时表示所有用户可见可用
+        publish_to_bes:
+          description: |-
+            - 同时发布为其他类型
+            - 非必填；为空时表示不额外发布为其他类型
 paths:
   /api/agent-factory/v3/agent-market/agent/{agent_id}/version/{version}:
     get:
@@ -90,6 +112,17 @@ paths:
       security: []
     put:
       security: []
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                value:
+                  category_ids:
+                    - 01JRYRKP0M8VYHQSX4FXR5CKG2
+                  description: 发布描述
+            schema:
+              $ref: "#/components/schemas/releasereq.UpdatePublishInfoReq"
   /api/agent-factory/v3/agent/{agent_id}/release-history:
     get:
       security: []
@@ -117,6 +150,17 @@ paths:
   /api/agent-factory/v3/agent/{agent_id}/publish:
     post:
       security: []
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                value:
+                  category_ids:
+                    - 01JRYRKP0M8VYHQSX4FXR5CKG2
+                  description: 发布描述
+            schema:
+              $ref: "#/components/schemas/releasereq.UpdatePublishInfoReq"
   /api/agent-factory/v3/published/agent:
     post:
       security: []

@@ -3038,7 +3038,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/releasereq.UpdatePublishInfoReq"
                         }
                     }
                 ],
@@ -3180,7 +3180,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/releasereq.UpdatePublishInfoReq"
                         }
                     }
                 ],
@@ -5457,6 +5457,17 @@ const docTemplate = `{
                 }
             }
         },
+        "daenum.PublishToWhere": {
+            "type": "string",
+            "enum": [
+                "custom_space",
+                "square"
+            ],
+            "x-enum-varnames": [
+                "PublishToWhereCustomSpace",
+                "PublishToWhereSquare"
+            ]
+        },
         "datasourcevalobj.DocAdvancedConfig": {
             "type": "object",
             "required": [
@@ -5750,6 +5761,46 @@ const docTemplate = `{
                 }
             }
         },
+        "pmsvo.PmsControlObjS": {
+            "type": "object",
+            "properties": {
+                "app_account_ids": {
+                    "description": "应用账号ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "department_ids": {
+                    "description": "部门ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "role_ids": {
+                    "description": "角色ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_group_ids": {
+                    "description": "用户组ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_ids": {
+                    "description": "用户ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "productreq.CreateReq": {
             "type": "object",
             "required": [
@@ -5952,6 +6003,44 @@ const docTemplate = `{
                     "description": "每页显示数量",
                     "type": "integer",
                     "maximum": 1000
+                }
+            }
+        },
+        "releasereq.UpdatePublishInfoReq": {
+            "type": "object",
+            "properties": {
+                "category_ids": {
+                    "description": "分类IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "description": "发布描述",
+                    "type": "string"
+                },
+                "pms_control": {
+                    "description": "权限控制信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/pmsvo.PmsControlObjS"
+                        }
+                    ]
+                },
+                "publish_to_bes": {
+                    "description": "发布为什么 [\"skill_agent\", \"api_agent\", \"web_sdk_agent\", \"agent_tpl\"]",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cdaenum.PublishToBe"
+                    }
+                },
+                "publish_to_where": {
+                    "description": "发布到的目标 [\"custom_space\", \"square\"]",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/daenum.PublishToWhere"
+                    }
                 }
             }
         },

@@ -4328,6 +4328,17 @@
         },
         "type": "object"
       },
+      "daenum.PublishToWhere": {
+        "enum": [
+          "custom_space",
+          "square"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "PublishToWhereCustomSpace",
+          "PublishToWhereSquare"
+        ]
+      },
       "datasourcevalobj.DocAdvancedConfig": {
         "properties": {
           "document_threshold": {
@@ -5458,6 +5469,46 @@
         },
         "type": "object"
       },
+      "pmsvo.PmsControlObjS": {
+        "properties": {
+          "app_account_ids": {
+            "description": "应用账号ID列表",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "department_ids": {
+            "description": "部门ID列表",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "role_ids": {
+            "description": "角色ID列表",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "user_group_ids": {
+            "description": "用户组ID列表",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "user_ids": {
+            "description": "用户ID列表",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "product_create_req": {
         "properties": {
           "key": {
@@ -6410,6 +6461,48 @@
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "releasereq.UpdatePublishInfoReq": {
+        "properties": {
+          "category_ids": {
+            "description": "必填，至少传入 1 个分类ID",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "description": {
+            "description": "发布描述",
+            "type": "string"
+          },
+          "pms_control": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/pmsvo.PmsControlObjS"
+              }
+            ],
+            "description": "- 权限控制信息\n- 非必填；为空时表示所有用户可见可用"
+          },
+          "publish_to_bes": {
+            "description": "- 同时发布为其他类型\n- 非必填；为空时表示不额外发布为其他类型",
+            "items": {
+              "$ref": "#/components/schemas/cdaenum.PublishToBe"
+            },
+            "type": "array"
+          },
+          "publish_to_where": {
+            "description": "- 发布到的目标\n  - custom_space: 发布到自定义空间\n  - square: 发布到广场\n- 非必填；为空时默认发布到广场",
+            "items": {
+              "$ref": "#/components/schemas/daenum.PublishToWhere"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "category_ids"
+        ],
         "type": "object"
       },
       "responses-InternalServerError": {
@@ -11990,8 +12083,18 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "examples": {
+                "example1": {
+                  "value": {
+                    "category_ids": [
+                      "01JRYRKP0M8VYHQSX4FXR5CKG2"
+                    ],
+                    "description": "发布描述"
+                  }
+                }
+              },
               "schema": {
-                "$ref": "#/components/schemas/upsert_req"
+                "$ref": "#/components/schemas/releasereq.UpdatePublishInfoReq"
               }
             }
           },
@@ -12112,41 +12215,15 @@
               "examples": {
                 "example1": {
                   "value": {
-                    "category_id": "id1,id2,id3",
-                    "description": "发布描述",
-                    "pms_control": {
-                      "department_ids": [
-                        "department_id1",
-                        "department_id2"
-                      ],
-                      "role_ids": [
-                        "role_id1",
-                        "role_id2"
-                      ],
-                      "user_group_ids": [
-                        "user_group_id1",
-                        "user_group_id2"
-                      ],
-                      "user_ids": [
-                        "user_id1",
-                        "user_id2"
-                      ]
-                    },
-                    "publish_to_be": [
-                      "api_agent",
-                      "web_sdk_agent",
-                      "skill_agent",
-                      "data_flow_agent"
+                    "category_ids": [
+                      "01JRYRKP0M8VYHQSX4FXR5CKG2"
                     ],
-                    "publish_to_where": [
-                      "custom_space",
-                      "square"
-                    ]
+                    "description": "发布描述"
                   }
                 }
               },
               "schema": {
-                "$ref": "#/components/schemas/upsert_req"
+                "$ref": "#/components/schemas/releasereq.UpdatePublishInfoReq"
               }
             }
           },
@@ -13099,12 +13176,12 @@
   ],
   "servers": [
     {
-      "description": "host: DIP服务器IP, port: 默认端口443",
+      "description": "host: 服务器IP, port: 默认端口443",
       "url": "https://{host}:{port}/",
       "variables": {
         "host": {
           "default": "host",
-          "description": "DIP服务器IP"
+          "description": "服务器IP"
         },
         "port": {
           "default": "443",

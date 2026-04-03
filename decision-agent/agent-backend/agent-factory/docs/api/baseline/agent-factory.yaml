@@ -8377,6 +8377,12 @@ paths:
             requestBody:
                 content:
                     application/json:
+                        examples:
+                            example1:
+                                value:
+                                    category_ids:
+                                        - 01JRYRKP0M8VYHQSX4FXR5CKG2
+                                    description: 发布描述
                         schema:
                             $ref: '#/components/schemas/upsert_req'
                 description: 请求体
@@ -8455,29 +8461,9 @@ paths:
                         examples:
                             example1:
                                 value:
-                                    category_id: id1,id2,id3
+                                    category_ids:
+                                        - 01JRYRKP0M8VYHQSX4FXR5CKG2
                                     description: 发布描述
-                                    pms_control:
-                                        department_ids:
-                                            - department_id1
-                                            - department_id2
-                                        role_ids:
-                                            - role_id1
-                                            - role_id2
-                                        user_group_ids:
-                                            - user_group_id1
-                                            - user_group_id2
-                                        user_ids:
-                                            - user_id1
-                                            - user_id2
-                                    publish_to_be:
-                                        - api_agent
-                                        - web_sdk_agent
-                                        - skill_agent
-                                        - data_flow_agent
-                                    publish_to_where:
-                                        - custom_space
-                                        - square
                         schema:
                             $ref: '#/components/schemas/upsert_req'
                 description: 请求体

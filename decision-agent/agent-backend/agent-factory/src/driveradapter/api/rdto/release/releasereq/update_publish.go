@@ -1,6 +1,9 @@
 package releasereq
 
 import (
+	"strings"
+
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/publishvo"
 	"github.com/pkg/errors"
 )
@@ -17,6 +20,30 @@ func (req *UpdatePublishInfoReq) GetErrMsgMap() map[string]string {
 
 // CustomCheck 自定义参数校验
 func (req *UpdatePublishInfoReq) CustomCheck() (err error) {
+	if req == nil {
+		return errors.New("[UpdatePublishInfoReq]: request is required")
+	}
+
+	categoryIDs := make([]string, 0, len(req.CategoryIDs))
+	for _, categoryID := range req.CategoryIDs {
+		categoryID = strings.TrimSpace(categoryID)
+		if categoryID == "" {
+			continue
+		}
+
+		categoryIDs = append(categoryIDs, categoryID)
+	}
+
+	if len(categoryIDs) == 0 {
+		return errors.New("[UpdatePublishInfoReq]: category_ids is required")
+	}
+
+	req.CategoryIDs = categoryIDs
+
+	if len(req.PublishToWhere) == 0 {
+		req.PublishToWhere = []daenum.PublishToWhere{daenum.PublishToWhereSquare}
+	}
+
 	// 校验发布目标
 	for _, target := range req.PublishToWhere {
 		if err = target.EnumCheck(); err != nil {

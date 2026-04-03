@@ -21,7 +21,7 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        agent_id  path      string  true  "agent_id"
-// @Param        request  body      object  true  "请求体"
+// @Param        request  body      releasereq.UpdatePublishInfoReq  true  "请求体"
 // @Success      201  {object}  object  "发布成功"
 // @Failure      400  {object}  object  "失败"
 // @Failure      401  {object}  object  "失败"
@@ -43,9 +43,9 @@ func (h *releaseHandler) Publish(c *gin.Context) {
 
 	var err error
 
-	var req releasereq.PublishReq
+	req := releasereq.NewPublishReq()
 
-	setIsPrivate2Req(c, &req)
+	setIsPrivate2Req(c, req)
 
 	req.UserID, err = chelper.GetUserIDFromGinContext(c)
 	if err != nil {
@@ -69,9 +69,9 @@ func (h *releaseHandler) Publish(c *gin.Context) {
 
 	req.AgentID = c.Param("agent_id")
 
-	err = c.ShouldBind(&req)
+	err = c.ShouldBind(req)
 	if err != nil {
-		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
+		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, req))
 		// todo error log
 		if !isPrivate {
 			audit.NewWarnLogWithError(audit.OPERATION, auditconstant.PUBLISH, audit.TransforOperator(*visitor),
@@ -83,12 +83,20 @@ func (h *releaseHandler) Publish(c *gin.Context) {
 		return
 	}
 
-	if err = req.CustomCheck(); err != nil {
-		rest.ReplyError(c, err)
+	req.AgentID = c.Param("agent_id")
+
+	if err = req.ReqCheck(); err != nil {
+		httpErr := capierr.New400Err(c, err.Error())
+		if !isPrivate {
+			audit.NewWarnLogWithError(audit.OPERATION, auditconstant.PUBLISH, audit.TransforOperator(*visitor),
+				auditconstant.GenerateAgentAuditObject(req.AgentID, ""), &httpErr.BaseError)
+		}
+
+		_ = c.Error(httpErr)
 		return
 	}
 
-	resp, auditloginfo, err := h.releaseSvc.Publish(ctx, &req)
+	resp, auditloginfo, err := h.releaseSvc.Publish(ctx, req)
 	if err != nil {
 		httpErr := capierr.New500Err(c, err.Error())
 		if !isPrivate {

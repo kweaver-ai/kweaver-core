@@ -31,10 +31,22 @@ func (p *PublishReq) GetErrMsgMap() map[string]string {
 	}
 }
 
+func (p *PublishReq) ensureUpdatePublishInfoReq() {
+	if p.UpdatePublishInfoReq == nil {
+		p.UpdatePublishInfoReq = &UpdatePublishInfoReq{}
+	}
+}
+
+func (p *PublishReq) CustomCheck() error {
+	return p.ReqCheck()
+}
+
 func (p *PublishReq) ReqCheck() (err error) {
 	if p.AgentID == "" {
 		return errors.New("[PublishReq]: agent_id is required")
 	}
+
+	p.ensureUpdatePublishInfoReq()
 
 	if err = p.UpdatePublishInfoReq.CustomCheck(); err != nil {
 		return

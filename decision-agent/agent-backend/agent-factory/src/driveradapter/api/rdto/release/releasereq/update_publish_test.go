@@ -53,6 +53,7 @@ func TestUpdatePublishInfoReq_CustomCheck_Valid(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
 		daenum.PublishToWhereCustomSpace,
@@ -74,13 +75,39 @@ func TestUpdatePublishInfoReq_CustomCheck_Empty(t *testing.T) {
 
 	err := req.CustomCheck()
 
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "category_ids is required")
+}
+
+func TestUpdatePublishInfoReq_CustomCheck_DefaultPublishToWhere(t *testing.T) {
+	t.Parallel()
+
+	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
+
+	err := req.CustomCheck()
+
 	assert.NoError(t, err)
+	assert.Equal(t, []daenum.PublishToWhere{daenum.PublishToWhereSquare}, req.PublishToWhere)
+}
+
+func TestUpdatePublishInfoReq_CustomCheck_TrimCategoryIDs(t *testing.T) {
+	t.Parallel()
+
+	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"  cat-1  ", "", " cat-2 "}
+
+	err := req.CustomCheck()
+
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"cat-1", "cat-2"}, req.CategoryIDs)
 }
 
 func TestUpdatePublishInfoReq_CustomCheck_InvalidPublishToWhere(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
 		daenum.PublishToWhere("invalid"),
@@ -96,6 +123,7 @@ func TestUpdatePublishInfoReq_CustomCheck_InvalidPublishToBes(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToBes = []cdaenum.PublishToBe{
 		cdaenum.PublishToBeAPIAgent,
 		cdaenum.PublishToBe("invalid"),
@@ -117,6 +145,7 @@ func TestUpdatePublishInfoReq_CustomCheck_AllValidPublishToWhere(t *testing.T) {
 
 	for _, target := range validTargets {
 		req := &UpdatePublishInfoReq{}
+		req.CategoryIDs = []string{"cat-1"}
 		req.PublishToWhere = []daenum.PublishToWhere{target}
 
 		err := req.CustomCheck()
@@ -136,6 +165,7 @@ func TestUpdatePublishInfoReq_CustomCheck_AllValidPublishToBes(t *testing.T) {
 
 	for _, target := range validTargets {
 		req := &UpdatePublishInfoReq{}
+		req.CategoryIDs = []string{"cat-1"}
 		req.PublishToBes = []cdaenum.PublishToBe{target}
 
 		err := req.CustomCheck()
@@ -177,6 +207,7 @@ func TestUpdatePublishInfoReq_WithMultiplePublishTargets(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
 		daenum.PublishToWhereCustomSpace,
@@ -197,6 +228,7 @@ func TestUpdatePublishInfoReq_WithDuplicatePublishTargets(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
 		daenum.PublishToWhereSquare,
@@ -216,6 +248,7 @@ func TestUpdatePublishInfoReq_WithNilPmsControl(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PmsControl = nil
 
 	assert.Nil(t, req.PmsControl)
