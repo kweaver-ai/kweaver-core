@@ -1,0 +1,2733 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "agent-executor OpenAPI",
+    "description": "This is a agent-executor OpenAPI schema",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{host}:{port}",
+      "description": "host: DIP服务器IP, port: 默认端口443",
+      "variables": {
+        "host": {
+          "default": "host",
+          "description": "DIP服务器IP"
+        },
+        "port": {
+          "default": "443",
+          "description": "https默认端口443"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "公共Header说明",
+      "description": "# Authentication\n- 调用需要鉴权的API，必须将token放在HTTP header中：\"Authorization: Bearer ACCESS_TOKEN\"\n\n# Business Domain\n- 业务域标识Header：`x-business-domain`，用于区分不同业务场景的请求\n"
+    },
+    {
+      "name": "Agent运行"
+    },
+    {
+      "name": "Agent运行V2"
+    },
+    {
+      "name": "Agent缓存"
+    }
+  ],
+  "paths": {
+    "/api/agent-executor/v1/agent/run": {
+      "post": {
+        "tags": [
+          "Agent运行"
+        ],
+        "summary": "运行agent",
+        "description": "运行agent",
+        "operationId": "v1_agent_run_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/run_agent_param"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/run_agent_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v1/agent/debug": {
+      "post": {
+        "tags": [
+          "Agent运行"
+        ],
+        "summary": "调试agent",
+        "description": "调试agent",
+        "operationId": "v1_agent_debug_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/run_agent_param"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/run_agent_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v1/agent/conversation-session/{conversation_id}/manage": {
+      "post": {
+        "tags": [
+          "对话Session"
+        ],
+        "summary": "对话Session管理",
+        "description": "- 创建/更新对话Session\n",
+        "operationId": "upsert_conversation_session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          },
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "对话id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/conversation_session_put"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/conversation_session_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v1/agent/cache/manage": {
+      "post": {
+        "tags": [
+          "Agent缓存"
+        ],
+        "summary": "Agent缓存管理",
+        "description": "- Agent缓存管理\n  - 缓存的key的构成：\n    - agent_id\n    - agent_version\n    - agent_config_version_flag\n    - 即：[prefix]:{agent_id}:{agent_version}:{agent_config_version_flag}\n  - 缓存的value存储的信息目前有：\n    - tools_info_dict\n    - skill_agent_info_dict\n    - llm_config_dict\n",
+        "operationId": "upsert_agent_cache",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/agent_cache_manage_req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/agent_cache_resp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v2/agent/run": {
+      "post": {
+        "tags": [
+          "Agent运行V2"
+        ],
+        "summary": "运行agent",
+        "description": "运行agent",
+        "operationId": "v2_agent_run_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/run_agent_param_run_agent_param"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/run_agent_response_run_agent_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v2/agent/debug": {
+      "post": {
+        "tags": [
+          "Agent运行V2"
+        ],
+        "summary": "调试agent",
+        "description": "调试agent",
+        "operationId": "v2_agent_debug_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/run_agent_param_run_agent_param"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/run_agent_response_run_agent_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v2/agent/resume": {
+      "post": {
+        "tags": [
+          "Agent运行V2"
+        ],
+        "summary": "恢复Agent执行",
+        "description": "当Agent执行触发工具中断后，调用此接口恢复执行。\n支持两种操作：\n- confirm: 确认执行工具（可修改参数）\n- skip: 跳过工具执行\n",
+        "operationId": "v2_agent_resume_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/resume_agent_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功（SSE流式响应）",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/run_agent_response_run_agent_response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "agent_run_id 不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-executor/v2/agent/terminate": {
+      "post": {
+        "tags": [
+          "Agent运行V2"
+        ],
+        "summary": "终止Agent执行",
+        "description": "立即终止正在运行的Agent",
+        "operationId": "v2_agent_terminate_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/x-account-id"
+          },
+          {
+            "$ref": "#/components/parameters/x-account-type"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/terminate_agent_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "终止成功"
+          },
+          "404": {
+            "description": "agent_run_id 不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error_response"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "x-account-id": {
+        "name": "x-account-id",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "- 用户ID/应用账号ID\n- 当 x-account-type 为 app 时，x-account-id 为应用账号ID\n- 当 x-account-type 为 user 时，x-account-id 为用户ID\n"
+      },
+      "x-account-type": {
+        "name": "x-account-type",
+        "in": "header",
+        "description": "- 账号类型\n- user-普通用户\n- app-应用账号\n",
+        "enum": [
+          "user",
+          "app"
+        ],
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "field": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "参数（字段）名",
+            "example": "query"
+          },
+          "type": {
+            "type": "string",
+            "description": "- 类型\n  - string: 字符串\n  - file: 文件\n  - object: json对象\n",
+            "enum": [
+              "string",
+              "file",
+              "object"
+            ],
+            "default": "string",
+            "example": "string"
+          },
+          "desc": {
+            "type": "string",
+            "description": "参数描述",
+            "example": ""
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "description": "agent参数（字段）"
+      },
+      "kg_source": {
+        "type": "object",
+        "properties": {
+          "kg_id": {
+            "type": "string",
+            "description": "图谱id"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "实体类范围"
+          },
+          "field_properties": {
+            "type": "object",
+            "description": "实体属性列表",
+            "example": {
+              "regions": [
+                "※vid",
+                "regions"
+              ],
+              "comments": [
+                "※vid",
+                "content",
+                "votes",
+                "comment_time"
+              ]
+            }
+          },
+          "output_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "结果范围，非必填"
+          }
+        },
+        "required": [
+          "kg_id",
+          "fields"
+        ],
+        "description": "图谱类型数据源"
+      },
+      "llm_config": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "模型id"
+          },
+          "name": {
+            "type": "string",
+            "description": "模型名",
+            "example": "deepseek-v3"
+          },
+          "model_type": {
+            "type": "string",
+            "description": "- 模型类型\n  - llm: 非推理模型\n  - rlm: 推理模型（可能是reasoning model）\n",
+            "default": "llm",
+            "enum": [
+              "llm",
+              "rlm"
+            ],
+            "example": "llm"
+          },
+          "temperature": {
+            "type": "number",
+            "description": "随机性",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "top_p": {
+            "type": "number",
+            "description": "核采样",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "前k采样",
+            "minimum": 0
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "description": "频率惩罚度",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "presence_penalty": {
+            "type": "number",
+            "description": "话题新鲜度",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "单次回复限制",
+            "default": 500,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "description": "大模型配置"
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/field"
+            },
+            "description": "参数列表"
+          },
+          "augment": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用"
+              },
+              "data_source": {
+                "type": "object",
+                "properties": {
+                  "kg": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/kg_source"
+                    },
+                    "description": "图谱类型数据源",
+                    "maxItems": 1
+                  }
+                },
+                "description": "图谱数据源配置"
+              }
+            },
+            "required": [
+              "enable",
+              "data_source"
+            ],
+            "description": "query增强"
+          },
+          "rewrite": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用"
+              },
+              "llm_config": {
+                "$ref": "#/components/schemas/llm_config"
+              }
+            },
+            "required": [
+              "enable",
+              "llm_config"
+            ],
+            "description": "query重写"
+          },
+          "is_temp_zone_enabled": {
+            "type": "integer",
+            "description": "- 是否启用临时区\n  - 配置时，前端不需要传此字段。后端根据fields中是否包含file类型字段自动判断\n",
+            "enum": [
+              0,
+              1
+            ],
+            "example": 0
+          },
+          "temp_zone_config": {
+            "type": "object",
+            "description": "- 临时区配置\n  - 当使用临时区时（fields中包含file类型字段），此配置必需\n",
+            "required": [
+              "tmp_file_use_type",
+              "single_file_size_limit",
+              "single_file_size_limit_unit",
+              "support_data_type",
+              "allowed_file_categories"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "- 区域名称\n  - 默认：临时区\n",
+                "example": "临时区"
+              },
+              "tmp_file_use_type": {
+                "type": "string",
+                "description": "- 临时文件使用类型\n  - upload: 直接上传\n  - select_from_temp_zone: 从临时区选择\n",
+                "example": "select_from_temp_zone"
+              },
+              "max_file_count": {
+                "type": "integer",
+                "description": "- 临时区最大文件数量（目前最多50个文件）\n- 默认：50\n",
+                "example": 50
+              },
+              "single_chat_max_select_file_count": {
+                "type": "integer",
+                "description": "- 单次对话中支持选择的文件个数（目前最多5个文件）\n- 默认：5\n",
+                "example": 5
+              },
+              "single_file_size_limit": {
+                "type": "integer",
+                "description": "- 单文件大小限制\n- 目前的限制是最大100MB\n",
+                "example": 100
+              },
+              "single_file_size_limit_unit": {
+                "type": "string",
+                "description": "单文件大小限制单位",
+                "enum": [
+                  "KB",
+                  "MB",
+                  "GB"
+                ],
+                "example": "MB"
+              },
+              "support_data_type": {
+                "type": "array",
+                "description": "- 支持的数据类型\n  - file: 文件 （目前支持文件，后面可能会增加新的类型，比如af的相关数据等）\n- 默认：[\"file\"]\n",
+                "items": {
+                  "type": "string",
+                  "example": "file",
+                  "enum": [
+                    "file"
+                  ]
+                }
+              },
+              "allowed_file_categories": {
+                "type": "array",
+                "description": "- 允许的文件大类型，如：[\"video\", \"image\"]\n- 当support_data_type包含file时，此配置有效\n- 目前有：\n  - document: 文档\n  - spreadsheet: 工作表\n  - presentation: 演示文稿\n  - pdf: PDF\n  - text: 文本\n  - audio: 音频\n  - video: 视频\n  - wikidoc: wikidoc\n  - faq:   faq\n  - other: 其他\n",
+                "items": {
+                  "type": "string",
+                  "example": "video",
+                  "enum": [
+                    "document",
+                    "spreadsheet",
+                    "presentation",
+                    "pdf",
+                    "text",
+                    "audio",
+                    "other",
+                    "video",
+                    "wikidoc",
+                    "faq"
+                  ]
+                }
+              },
+              "allowed_file_types": {
+                "type": "array",
+                "description": "- 允许的文件类型，如：[\"mp4\", \"jpg\"]\n- 当support_data_type包含file时，此配置有效\n- 在创建和编辑时，不需要传递此字段。会根据allowed_file_categories自动生成\n",
+                "items": {
+                  "type": "string",
+                  "example": "mp4"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "description": "输入参数"
+      },
+      "dolphin_tpl_req": {
+        "type": "object",
+        "description": "dolphin块的配置",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "dolphin块的key"
+          },
+          "name": {
+            "type": "string",
+            "description": "dolphin块的名称"
+          },
+          "value": {
+            "type": "string",
+            "description": "dolphin块的dolphin语句"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "是否启用",
+            "default": true
+          },
+          "edited": {
+            "type": "boolean",
+            "description": "是否编辑过",
+            "default": false
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      },
+      "doc_source": {
+        "type": "object",
+        "properties": {
+          "ds_id": {
+            "type": "string",
+            "description": "数据源id",
+            "example": 1
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "字段名称",
+                  "example": "dir2"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "字段路径",
+                  "example": "dir1/dir2"
+                },
+                "source": {
+                  "type": "string",
+                  "description": "字段来源",
+                  "example": "gns://92EE2D87255142B78A6F1DFB6BBB836B/90B7F2F079824711886F317955008C5F"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "- 字段类型（文件类型目前只支持anyshare外置数据源，内置数据源目前只支持folder）\n- file: 文件\n- folder: 文件夹\n",
+                  "enum": [
+                    "file",
+                    "folder"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "path",
+                "source",
+                "type"
+              ]
+            },
+            "description": "数据源范围列表"
+          },
+          "datasets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "- 数据集合id\n- 【注意】：此字段不需要通过接口传递，后端会根据fields字段自动生成\n"
+          }
+        },
+        "required": [
+          "ds_id",
+          "fields"
+        ],
+        "description": "图谱类型数据源"
+      },
+      "metric": {
+        "type": "object",
+        "properties": {
+          "metric_model_id": {
+            "type": "string",
+            "description": "指标模型id"
+          }
+        },
+        "required": [
+          "metric_model_id"
+        ],
+        "description": "- 指标\n"
+      },
+      "kn_entry": {
+        "type": "object",
+        "properties": {
+          "kn_entry_id": {
+            "type": "string",
+            "description": "知识条目id"
+          }
+        },
+        "required": [
+          "kn_entry_id"
+        ],
+        "description": "- 知识条目\n"
+      },
+      "knowledge_network": {
+        "type": "object",
+        "properties": {
+          "knowledge_network_id": {
+            "type": "string",
+            "description": "业务知识网络id"
+          },
+          "object_types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "object_type_id": {
+                  "type": "string",
+                  "description": "对象类id"
+                }
+              },
+              "required": [
+                "object_type_id"
+              ]
+            },
+            "description": "对象类数组"
+          }
+        },
+        "required": [
+          "knowledge_network_id"
+        ],
+        "description": "- 业务知识网络\n  - 用户选择的业务知识网络和其下的“对象类”\n    - 作用，在召回时会从选择的这些范围中进行召回。或在召回后只保留选择的这些范围中的内容。\n"
+      },
+      "retriever_data_source": {
+        "type": "object",
+        "properties": {
+          "kg": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/kg_source"
+            },
+            "description": "图谱类型数据源"
+          },
+          "doc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/doc_source"
+            },
+            "description": "文档类型数据源"
+          },
+          "metric": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/metric"
+            },
+            "description": "指标类型数据源"
+          },
+          "kn_entry": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/kn_entry"
+            },
+            "description": "知识条目类型数据源"
+          },
+          "knowledge_network": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/knowledge_network"
+            },
+            "description": "- 业务知识网络类型数据源\n  - 用户选择的业务知识网络和其下的“对象类”\n  - 作用，在召回时会从选择的这些范围中进行召回。或在召回后只保留选择的这些范围中的内容。\n"
+          },
+          "advanced_config": {
+            "type": "object",
+            "nullable": true,
+            "description": "召回高级配置",
+            "properties": {
+              "kg": {
+                "type": "object",
+                "nullable": true,
+                "description": "图谱召回高级配置（当数据源类型为“图谱”类型时必需）",
+                "properties": {
+                  "text_match_entity_nums": {
+                    "type": "integer",
+                    "description": "文本匹配召回实体数量",
+                    "example": 60
+                  },
+                  "vector_match_entity_nums": {
+                    "type": "integer",
+                    "description": "向量匹配召回实体数量",
+                    "example": 60
+                  },
+                  "graph_rag_topk": {
+                    "type": "integer",
+                    "description": "重排序后保留参考信息数量",
+                    "example": 25
+                  },
+                  "long_text_length": {
+                    "type": "integer",
+                    "description": "长文本长度",
+                    "example": 256
+                  },
+                  "reranker_sim_threshold": {
+                    "type": "number",
+                    "description": "图谱rerank bge相似度过滤阈值",
+                    "example": -5.5
+                  },
+                  "retrieval_max_length": {
+                    "type": "integer",
+                    "description": "召回最大长度",
+                    "example": 20480
+                  }
+                },
+                "required": [
+                  "text_match_entity_nums",
+                  "vector_match_entity_nums",
+                  "graph_rag_topk",
+                  "long_text_length",
+                  "reranker_sim_threshold",
+                  "retrieval_max_length"
+                ]
+              },
+              "doc": {
+                "type": "object",
+                "nullable": true,
+                "description": "文档召回高级配置（当数据源类型为“文档”类型时必需）",
+                "properties": {
+                  "retrieval_slices_num": {
+                    "type": "integer",
+                    "description": "召回切片数",
+                    "example": 150
+                  },
+                  "max_slice_per_cite": {
+                    "type": "integer",
+                    "description": "每篇文档最大保留切片数",
+                    "example": 16
+                  },
+                  "rerank_topk": {
+                    "type": "integer",
+                    "description": "重排序后保留切片数",
+                    "example": 15
+                  },
+                  "slice_head_num": {
+                    "type": "integer",
+                    "description": "获取上文切片数",
+                    "example": 2
+                  },
+                  "slice_tail_num": {
+                    "type": "integer",
+                    "description": "获取下文切片数",
+                    "example": 0
+                  },
+                  "documents_num": {
+                    "type": "integer",
+                    "description": "来源文档数量",
+                    "example": 8
+                  },
+                  "document_threshold": {
+                    "type": "number",
+                    "description": "文档ranker bge相似度阈值",
+                    "example": -5.5
+                  },
+                  "retrieval_max_length": {
+                    "type": "integer",
+                    "description": "召回最大长度",
+                    "example": 20480
+                  }
+                },
+                "required": [
+                  "retrieval_slices_num",
+                  "max_slice_per_cite",
+                  "rerank_topk",
+                  "slice_head_num",
+                  "slice_tail_num",
+                  "documents_num",
+                  "document_threshold",
+                  "retrieval_max_length"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "tool_input": {
+        "type": "object",
+        "required": [
+          "input_name",
+          "input_type"
+        ],
+        "properties": {
+          "enable": {
+            "type": "boolean",
+            "description": "是否启用"
+          },
+          "input_name": {
+            "type": "string",
+            "description": "输入名称"
+          },
+          "input_type": {
+            "type": "string",
+            "description": "输入类型"
+          },
+          "input_desc": {
+            "type": "string",
+            "description": "输入描述"
+          },
+          "map_type": {
+            "type": "string",
+            "description": "- 值类型\n  - fixedValue: 固定值\n  - var: 引用变量\n  - model: 选择模型\n  - auto: 模型生成\n",
+            "enum": [
+              "fixedValue",
+              "var",
+              "model",
+              "auto"
+            ]
+          },
+          "map_value": {
+            "type": "any",
+            "description": "值"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/tool_input"
+            },
+            "description": "子字段"
+          }
+        }
+      },
+      "tool": {
+        "type": "object",
+        "properties": {
+          "tool_id": {
+            "type": "string",
+            "description": "工具id"
+          },
+          "tool_box_id": {
+            "type": "string",
+            "description": "工具箱id"
+          },
+          "tool_input": {
+            "type": "array",
+            "description": "输入参数配置",
+            "items": {
+              "$ref": "#/components/schemas/tool_input"
+            }
+          },
+          "tool_timeout": {
+            "type": "integer",
+            "description": "工具调用超时时间，单位s, 默认300s",
+            "default": 300
+          },
+          "intervention": {
+            "type": "boolean",
+            "description": "是否启用人工干预"
+          },
+          "intervention_confirmation_message": {
+            "type": "string",
+            "description": "人工干预确认消息"
+          },
+          "result_process_strategies": {
+            "type": "array",
+            "description": "结果处理策略",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "结果处理策略分类ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "结果处理策略分类名称"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "结果处理策略分类描述"
+                    }
+                  }
+                },
+                "strategy": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "结果处理策略ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "结果处理策略名称"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "description": "结果处理策略描述"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "tool_id",
+          "tool_box_id"
+        ],
+        "description": "工具（技能） 可选"
+      },
+      "tools": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/tool"
+        }
+      },
+      "skill_agent_input": {
+        "type": "object",
+        "required": [
+          "input_name",
+          "input_type"
+        ],
+        "properties": {
+          "enable": {
+            "type": "boolean",
+            "description": "是否启用"
+          },
+          "input_name": {
+            "type": "string",
+            "description": "输入名称"
+          },
+          "input_type": {
+            "type": "string",
+            "description": "输入类型",
+            "enum": [
+              "string",
+              "file",
+              "object"
+            ]
+          },
+          "map_type": {
+            "type": "string",
+            "description": "- 值类型\n  - fixedValue: 固定值\n  - var: 引用变量\n  - model: 选择模型\n  - auto: 模型生成\n",
+            "enum": [
+              "fixedValue",
+              "var",
+              "model",
+              "auto"
+            ]
+          },
+          "map_value": {
+            "type": "any",
+            "description": "值"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/skill_agent_input"
+            },
+            "description": "子字段"
+          }
+        }
+      },
+      "agent": {
+        "type": "object",
+        "properties": {
+          "agent_key": {
+            "type": "string",
+            "description": "agent key"
+          },
+          "agent_version": {
+            "type": "string",
+            "description": "agent 版本（默认不传，表示latest）"
+          },
+          "agent_input": {
+            "type": "array",
+            "description": "输入参数配置",
+            "items": {
+              "$ref": "#/components/schemas/skill_agent_input"
+            }
+          },
+          "intervention": {
+            "type": "boolean",
+            "description": "是否启用人工干预"
+          },
+          "intervention_confirmation_message": {
+            "type": "string",
+            "description": "人工干预确认消息"
+          },
+          "datasource_config": {
+            "type": "object",
+            "description": "数据源配置",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "inherit_main",
+                  "self_configured"
+                ],
+                "description": "- 数据源来源：\n- inherit_main：继承主 Agent 数据源\n- self_configured：使用自身配置（默认逻辑）\n"
+              },
+              "specific_inherit": {
+                "type": "string",
+                "enum": [
+                  "docs_only",
+                  "graph_only",
+                  "all"
+                ],
+                "description": "- 仅当 type = inherit_main 时生效，指定继承范围：\n- docs_only：仅继承文档数据源\n- graph_only：仅继承图谱数据源\n- all：继承所有类型数据源\n"
+              }
+            }
+          },
+          "llm_config": {
+            "description": "大模型配置",
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "inherit_main"
+                ],
+                "description": "- 大模型来源：\n- inherit_main：继承主 Agent 大模型\n- self_configured：使用自身配置（默认逻辑）\n"
+              }
+            }
+          },
+          "agent_timeout": {
+            "type": "integer",
+            "description": "Agent工具调用超时时间，单位s, 默认1800s",
+            "default": 1800
+          },
+          "current_pms_check_status": {
+            "type": "string",
+            "description": "- 当前此技能的使用权限状态\n- 【注意】：这个字段是调用详情接口时设置的，不是配置时设置的。\n- 如果为空字符串，表示未检查（可能不需要检查，或此agent不存在或未发布等）\n- 如果为\"success\"，表示检查通过（有权限）\n- 如果为\"failed\"，表示检查失败（无权限）\n",
+            "enum": [
+              "",
+              "success",
+              "failed"
+            ]
+          },
+          "current_is_exists_and_published": {
+            "type": "boolean",
+            "description": "- 当前是否存在并已发布\n- 【注意】：这个字段是运行时设置的，不是配置时设置的\n- true：存在且已发布\n- false：不存在或未发布\n",
+            "enum": [
+              true,
+              false
+            ]
+          }
+        },
+        "required": [
+          "agent_key",
+          "agent_version"
+        ],
+        "description": "Agent类型技能 可选"
+      },
+      "agents": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/agent"
+        }
+      },
+      "mcp": {
+        "type": "object",
+        "properties": {
+          "mcp_server_id": {
+            "type": "string",
+            "description": "mcp server id"
+          }
+        },
+        "required": [
+          "mcp_server_id"
+        ],
+        "description": "MCP 类型技能 可选"
+      },
+      "mcps": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/mcp"
+        }
+      },
+      "output": {
+        "type": "object",
+        "required": [
+          "default_format"
+        ],
+        "properties": {
+          "variables": {
+            "type": "object",
+            "properties": {
+              "answer_var": {
+                "type": "string",
+                "description": "- 包含最终回答的变量名\n  - 非dolphin模式下，此字段的值固定为“answer”\n  - dolphin模式下，此字段必填\n"
+              },
+              "doc_retrieval_var": {
+                "type": "string",
+                "description": "- 包含文档检索结果的变量名\n  - 非dolphin模式下，此字段的值固定为“doc_retrieval_res”\n"
+              },
+              "graph_retrieval_var": {
+                "type": "string",
+                "description": "- 包含图谱检索结果的变量名\n  - 非dolphin模式下，此字段的值固定为“graph_retrieval_res”\n"
+              },
+              "related_questions_var": {
+                "type": "string",
+                "description": "- 包含相关问题的变量名\n  - 非dolphin模式下，此字段的值固定为“related_questions”\n"
+              },
+              "other_vars": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "string",
+                  "description": "变量名"
+                },
+                "description": "其他变量数组"
+              }
+            },
+            "description": "- 输出变量（从dolphin中的所有输出变量中进行选择）\n"
+          },
+          "default_format": {
+            "type": "string",
+            "description": "默认输出格式",
+            "enum": [
+              "json",
+              "markdown"
+            ],
+            "example": "markdown"
+          }
+        },
+        "description": "输出变量配置"
+      },
+      "built_in_can_edit_fields": {
+        "type": "object",
+        "description": "- 内置agent可编辑字段\n- 当is_built_in为1时有效\n- 用途：\n  - 内置agent创建者可以根据需要来设置此字段，来控制用户可以编辑的agent配置字段\n  - 前端根据此字段来控制用户可以编辑的agent配置字段\n  - agent后端编辑接口根据此字段来验证前端传过来的字段是否符合要求\n",
+        "properties": {
+          "name": {
+            "type": "boolean",
+            "description": "名字",
+            "example": false
+          },
+          "avatar": {
+            "type": "boolean",
+            "description": "头像",
+            "example": false
+          },
+          "profile": {
+            "type": "boolean",
+            "description": "描述",
+            "example": false
+          },
+          "input_config": {
+            "type": "boolean",
+            "description": "- 输入配置\n",
+            "example": false
+          },
+          "system_prompt": {
+            "type": "boolean",
+            "description": "- 角色指令，包括dolpin模式和非dolpin模式\n",
+            "example": false
+          },
+          "data_source.kg": {
+            "type": "boolean",
+            "description": "- 知识来源-业务知识网络\n",
+            "example": false
+          },
+          "data_source.doc": {
+            "type": "boolean",
+            "description": "- 知识来源-文档\n",
+            "example": false
+          },
+          "data_source.metric": {
+            "type": "boolean",
+            "description": "- 知识来源-指标\n",
+            "example": false
+          },
+          "data_source.kn_entry": {
+            "type": "boolean",
+            "description": "- 知识来源-知识条目\n",
+            "example": false
+          },
+          "model": {
+            "type": "boolean",
+            "description": "- 模型配置\n",
+            "example": true
+          },
+          "skills": {
+            "type": "boolean",
+            "description": "- 技能\n",
+            "example": false
+          },
+          "opening_remark_config": {
+            "type": "boolean",
+            "description": "- 开场白配置\n",
+            "example": false
+          },
+          "preset_questions": {
+            "type": "boolean",
+            "description": "- 预设问题列表\n",
+            "example": false
+          },
+          "skills.tools.tool_input": {
+            "type": "boolean",
+            "description": "- 技能-工具输入参数配置\n",
+            "example": false
+          },
+          "memory": {
+            "type": "boolean",
+            "description": "- 长期记忆配置\n",
+            "example": false
+          },
+          "related_question": {
+            "type": "boolean",
+            "description": "- 相关问题配置\n",
+            "example": false
+          }
+        }
+      },
+      "memory": {
+        "type": "object",
+        "description": "- 长期记忆配置（基于对话消息进行总结，基于记忆 Agent 可以做出更智能、个性化的反应）\n",
+        "properties": {
+          "is_enabled": {
+            "type": "boolean",
+            "description": "是否启用（默认关闭）",
+            "example": false
+          }
+        }
+      },
+      "related_question": {
+        "type": "object",
+        "description": "- 相关问题配置（开启后，大模型会在回答用户问题时同时生成相关问题）\n",
+        "properties": {
+          "is_enabled": {
+            "type": "boolean",
+            "description": "是否启用（默认关闭）",
+            "example": false
+          }
+        }
+      },
+      "plan_mode": {
+        "type": "object",
+        "description": "- 任务规划模式配置（开启后，智能体将根据情况在需要时对用户的复杂请求进行智能拆解和规划，自动生成详细的任务执行列表，并按步骤逐一完成，提升处理复杂任务的效率和准确性）\n",
+        "properties": {
+          "is_enabled": {
+            "type": "boolean",
+            "description": "是否启用（默认关闭）",
+            "example": false
+          }
+        }
+      },
+      "config_metadata": {
+        "type": "object",
+        "description": "- 配置元数据\n  - 这块是系统来维护的，创建和编辑时不需要用户来设置\n",
+        "properties": {
+          "config_tpl_version": {
+            "type": "string",
+            "description": "- 配置模板版本\n- 为了以后支持多版本时做准备（数据升级场景等）\n",
+            "enum": [
+              "v1"
+            ],
+            "example": "v1"
+          },
+          "config_last_set_timestamp": {
+            "type": "integer",
+            "format": "uint64",
+            "description": "- 配置最后设置时间的时间戳(纳秒)\n",
+            "example": 1700000000000000000
+          }
+        }
+      },
+      "config": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/input"
+          },
+          "system_prompt": {
+            "type": "string",
+            "description": "系统提示词"
+          },
+          "dolphin": {
+            "type": "string",
+            "description": "dolphin语句"
+          },
+          "pre_dolphin": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dolphin_tpl_req"
+            },
+            "description": "在用户自定义dolphin之前执行的内置dolphin语句"
+          },
+          "post_dolphin": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dolphin_tpl_req"
+            },
+            "description": "在用户自定义dolphin之后执行的内置dolphin语句"
+          },
+          "is_dolphin_mode": {
+            "type": "integer",
+            "description": "是否是dolphin模式",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0
+          },
+          "data_source": {
+            "description": "数据源",
+            "$ref": "#/components/schemas/retriever_data_source"
+          },
+          "skills": {
+            "type": "object",
+            "properties": {
+              "tools": {
+                "$ref": "#/components/schemas/tools"
+              },
+              "agents": {
+                "$ref": "#/components/schemas/agents"
+              },
+              "mcps": {
+                "$ref": "#/components/schemas/mcps"
+              }
+            }
+          },
+          "llms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "is_default": {
+                  "type": "boolean",
+                  "description": "是否默认（从选择的所有llm中选择一个为默认llm）"
+                },
+                "llm_config": {
+                  "$ref": "#/components/schemas/llm_config"
+                }
+              }
+            }
+          },
+          "is_data_flow_set_enabled": {
+            "type": "integer",
+            "description": "是否启用数据流设置",
+            "enum": [
+              0,
+              1
+            ],
+            "example": 0
+          },
+          "opening_remark_config": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "description": "开场白配置",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "开场白类型（固定/动态）",
+                "enum": [
+                  "fixed",
+                  "dynamic"
+                ],
+                "example": "fixed"
+              },
+              "fixed_opening_remark": {
+                "type": "string",
+                "description": "固定开场白",
+                "example": ""
+              },
+              "dynamic_opening_remark_prompt": {
+                "type": "string",
+                "description": "动态开场白提示语",
+                "example": ""
+              }
+            },
+            "example": ""
+          },
+          "preset_questions": {
+            "type": "array",
+            "description": "- 预设问题列表\n",
+            "items": {
+              "type": "object",
+              "required": [
+                "question"
+              ],
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "问题内容",
+                  "example": ""
+                }
+              }
+            }
+          },
+          "output": {
+            "$ref": "#/components/schemas/output"
+          },
+          "built_in_can_edit_fields": {
+            "$ref": "#/components/schemas/built_in_can_edit_fields"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/memory"
+          },
+          "related_question": {
+            "$ref": "#/components/schemas/related_question"
+          },
+          "plan_mode": {
+            "$ref": "#/components/schemas/plan_mode"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/config_metadata"
+          }
+        },
+        "required": [
+          "input",
+          "llms",
+          "output"
+        ],
+        "description": "data agent配置"
+      },
+      "agent_config": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/config"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "output_vars": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "description": "需要输出的变量",
+                "title": "Output Vars"
+              },
+              "user_define": {
+                "type": "object",
+                "description": "用户定义的变量,用于agent-app运行时记录用户运行信息",
+                "title": "User Define"
+              },
+              "incremental_output": {
+                "type": "boolean",
+                "title": "Incremental Output",
+                "description": "是否增量输出",
+                "default": false
+              }
+            }
+          }
+        ],
+        "type": "object",
+        "title": "AgentConfig",
+        "description": "Agent配置"
+      },
+      "tool_interrupt_info": {
+        "description": "工具中断信息",
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "会话id"
+          },
+          "tool_name": {
+            "type": "string",
+            "description": "工具名称"
+          },
+          "tool_args": {
+            "type": "array",
+            "description": "工具参数列表",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "参数名称"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array"
+                    },
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "参数值"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "参数类型"
+                }
+              }
+            }
+          }
+        }
+      },
+      "agent_input": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "用户输入"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "角色"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "内容"
+                }
+              }
+            },
+            "title": "History",
+            "description": "历史记录"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/tool_interrupt_info",
+            "title": "Tool",
+            "description": "发生中断时，需要用户进行干预的工具信息"
+          },
+          "header": {
+            "type": "object",
+            "title": "Header",
+            "description": "请求头"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AgentInput",
+        "description": "Agent输入模型"
+      },
+      "agent_options": {
+        "properties": {
+          "output_vars": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "description": "需要输出的变量",
+            "title": "Output Vars"
+          },
+          "incremental_output": {
+            "type": "boolean",
+            "title": "Incremental Output",
+            "description": "是否增量输出",
+            "default": false
+          },
+          "data_source": {
+            "$ref": "#/components/schemas/retriever_data_source",
+            "description": "数据源配置",
+            "title": "Data Source"
+          },
+          "llm_config": {
+            "$ref": "#/components/schemas/llm_config",
+            "description": "默认使用的LLM配置",
+            "title": "Llm Config"
+          },
+          "tmp_files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "文档ID"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "类型(doc/wikidoc/faq)"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "文档名称"
+                }
+              }
+            },
+            "title": "Tmp Files",
+            "description": "临时文件列表"
+          }
+        },
+        "type": "object",
+        "title": "AgentOptions",
+        "description": "Agent运行选项, 此处如果有配置项，则覆盖config中的配置"
+      },
+      "run_agent_param": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "id",
+            "description": "agent id",
+            "example": "1830930776523276288"
+          },
+          "config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/agent_config"
+              }
+            ],
+            "title": "config",
+            "description": "agent配置"
+          },
+          "input": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/agent_input"
+              }
+            ],
+            "title": "input",
+            "description": "agent输入",
+            "example": {
+              "query": "你好"
+            }
+          },
+          "_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/agent_options"
+              }
+            ],
+            "title": "options",
+            "description": "Agent运行选项"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input"
+        ],
+        "title": "RunAgentParam"
+      },
+      "error_response": {
+        "properties": {
+          "description": {
+            "description": "错误描述",
+            "title": "Description",
+            "type": "string"
+          },
+          "error_code": {
+            "description": "错误码",
+            "title": "Errorcode",
+            "type": "string"
+          },
+          "error_details": {
+            "description": "错误详情",
+            "title": "Errordetails",
+            "type": "string"
+          },
+          "error_link": {
+            "description": "错误链接",
+            "title": "Errorlink",
+            "type": "string"
+          },
+          "solution": {
+            "description": "解决方法",
+            "title": "Solution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "error_code",
+          "error_details",
+          "error_link",
+          "solution"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "run_agent_response": {
+        "properties": {
+          "answer": {
+            "type": "object",
+            "title": "answer",
+            "description": "agent最终输出，包含dolphin输出的全部内容"
+          },
+          "status": {
+            "type": "string",
+            "title": "status",
+            "description": "\"True\": 流式信息已结束; \"False\": 流式信息未结束，正在返回; \"Error\": 失败"
+          },
+          "ask": {
+            "description": "需要用户进行干预的工具信息",
+            "$ref": "#/components/schemas/tool_interrupt_info"
+          },
+          "error": {
+            "description": "错误信息",
+            "$ref": "#/components/schemas/error_response"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "status"
+        ],
+        "title": "RunAgentResponse"
+      },
+      "conversation_session_put": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "操作类型",
+            "description": "- create: 创建新的对话session\n  - 逻辑：\n    - 删除现有的对话下的session\n    - 按逻辑创建新的对话session\n- get_info_or_create: 获取对话session信息或创建新的对话session\n  - 逻辑：\n    - 如果conversation_session_id对应的session存在(redis中)，则返回session信息\n    - 如果conversation_session_id对应的session不存在，则创建session并返回session信息\n- extend_lifetime: 延长对话session的有效期\n  - 逻辑：\n    - 如果conversation_session_id对应的session存在(redis中)，则延长session的有效期并返回session信息\n    - 如果conversation_session_id对应的session不存在，则创建session并返回session信息\n",
+            "enum": [
+              "create",
+              "get_info_or_create",
+              "extend_lifetime"
+            ]
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "conversation_id",
+            "description": "对话id",
+            "example": "xxx"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "agent_id",
+            "description": "- agent id\n- agent_config和agent_id 不能同时为空。agent_config优先级高于agent_id。\n",
+            "example": "xxx"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "agent_version",
+            "description": "- agent版本号,与agent_id配合使用\n- 当agent_id提供时,此字段为required\n- 当agent_config提供时,则忽略agent_version和agent_id\n",
+            "example": "latest"
+          },
+          "agent_config": {
+            "$ref": "#/components/schemas/config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "action"
+        ],
+        "title": "ConversationSessionPut"
+      },
+      "conversation_session_response": {
+        "type": "object",
+        "required": [
+          "conversation_session_id",
+          "ttl",
+          "created_at"
+        ],
+        "properties": {
+          "conversation_session_id": {
+            "type": "string",
+            "title": "conversation_session_id",
+            "description": "- 对话Session ID\n- 格式：user_id:visitor_type:conversation_id:config_version_last_set_time:session_start_time\n"
+          },
+          "ttl": {
+            "type": "integer",
+            "title": "ttl",
+            "description": "会话有效期（秒）",
+            "example": 600
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "created_at",
+            "description": "创建时间",
+            "example": "2024-10-21T10:30:00Z"
+          },
+          "cache_data": {
+            "type": "object",
+            "title": "cache_data",
+            "description": "session缓存的数据（debug模式下有效）"
+          }
+        },
+        "title": "ConversationSessionInitResponse"
+      },
+      "agent_cache_manage_req": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "agent_id",
+            "description": "- agent id\n- agent_config和agent_id 不能同时为空。agent_config优先级高于agent_id。\n",
+            "example": "xxx"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "agent_version",
+            "description": "- agent版本号,与agent_id配合使用\n- 当agent_id提供时,此字段为required\n- 当agent_config提供时,则忽略agent_version和agent_id\n",
+            "example": "latest"
+          },
+          "action": {
+            "type": "string",
+            "title": "操作类型",
+            "description": "- upsert: 更新或创建新的此Agent缓存\n  - 逻辑：\n    - 如果agent_id对应的缓存存在(redis中)，则更新并返回缓存信息\n      - 更新逻辑：\n        - 获取新的缓存数据，并更新redis中的缓存（恢复有效期ttl）\n        - 返回更新后的缓存信息\n    - 如果agent_id对应的缓存不存在，则创建缓存并返回缓存信息\n      - 创建逻辑：\n        - 获取新的缓存数据，并创建redis中的缓存（设置有效期ttl）\n        - 返回创建后的缓存信息\n- get_info: 获取此Agent缓存信息\n  - 逻辑：\n    - 如果agent_id对应的缓存存在(redis中)，则返回缓存信息\n    - 如果agent_id对应的缓存不存在，则返回null\n",
+            "enum": [
+              "upsert",
+              "get_info"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "agent_version",
+          "action"
+        ],
+        "title": "AgentCacheManageReq"
+      },
+      "agent_cache_resp": {
+        "type": "object",
+        "properties": {
+          "cache_id": {
+            "type": "string",
+            "title": "cache_id",
+            "description": "缓存ID，格式：{agent_id}:{agent_version}:{agent_config_version_flag}",
+            "example": "agent_id:v0:1234567890"
+          },
+          "ttl": {
+            "type": "integer",
+            "title": "ttl",
+            "description": "缓存有效期（秒）",
+            "example": 600
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "created_at",
+            "description": "缓存创建时间",
+            "example": "2024-10-21T10:30:00Z"
+          },
+          "cache_data": {
+            "type": "object",
+            "title": "cache_data",
+            "description": "缓存的数据"
+          }
+        },
+        "title": "AgentCacheResponse"
+      },
+      "tool_interrupt_info_tool_interrupt_info": {
+        "description": "工具中断信息",
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "object",
+            "description": "恢复句柄对象\n• 包含恢复执行所需的所有信息\n• 上层应用应完整保存此对象\n• 调用 resume_with_decision() 时传递\n",
+            "required": [
+              "frame_id",
+              "snapshot_id",
+              "resume_token",
+              "interrupt_type",
+              "current_block",
+              "restart_block"
+            ],
+            "properties": {
+              "frame_id": {
+                "type": "string",
+                "description": "执行帧ID，标识当前执行的帧，用于定位中断发生的位置",
+                "example": "frame_abc123"
+              },
+              "snapshot_id": {
+                "type": "string",
+                "description": "快照ID，指向保存的执行快照，包含完整的上下文状态",
+                "example": "snap_xyz789"
+              },
+              "resume_token": {
+                "type": "string",
+                "description": "恢复令牌，防伪标识，确保恢复请求的合法性",
+                "example": "token_def456"
+              },
+              "interrupt_type": {
+                "type": "string",
+                "description": "中断类型\n• 当前固定值 \"tool_confirmation\"\n• 未来扩展预留：可能支持其他中断类型\n• 为向后兼容性保留的字段\n",
+                "example": "tool_confirmation"
+              },
+              "current_block": {
+                "type": "integer",
+                "description": "当前代码块索引，指示中断发生在哪个代码块",
+                "example": 3
+              },
+              "restart_block": {
+                "type": "boolean",
+                "description": "是否重启代码块\n• false：从断点继续执行（工具中断）\n• SDK 内部使用，区分不同恢复策略\n",
+                "example": false
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "description": "中断详情数据（工具信息、参数等）",
+            "required": [
+              "tool_name",
+              "tool_description",
+              "tool_args",
+              "interrupt_config"
+            ],
+            "properties": {
+              "tool_name": {
+                "type": "string",
+                "description": "工具名称",
+                "example": "delete_database"
+              },
+              "tool_description": {
+                "type": "string",
+                "description": "工具描述",
+                "example": "删除指定的数据库"
+              },
+              "tool_args": {
+                "type": "array",
+                "description": "工具参数列表",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "value",
+                    "type"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "description": "参数名称",
+                      "example": "database_name"
+                    },
+                    "value": {
+                      "description": "参数值，支持多种类型",
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "example": "test_db"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "参数类型",
+                      "enum": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "array",
+                        "object",
+                        "null"
+                      ],
+                      "example": "string"
+                    }
+                  }
+                }
+              },
+              "interrupt_config": {
+                "type": "object",
+                "description": "中断配置信息",
+                "required": [
+                  "requires_confirmation",
+                  "confirmation_message"
+                ],
+                "properties": {
+                  "requires_confirmation": {
+                    "type": "boolean",
+                    "description": "是否需要用户确认",
+                    "example": true
+                  },
+                  "confirmation_message": {
+                    "type": "string",
+                    "description": "确认提示消息",
+                    "example": "⚠️ 确认删除数据库 test_db？"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "agent_input_agent_input": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "用户输入"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "角色"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "内容"
+                }
+              }
+            },
+            "title": "History",
+            "description": "历史记录"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/tool_interrupt_info_tool_interrupt_info",
+            "title": "Tool",
+            "description": "发生中断时，需要用户进行干预的工具信息"
+          },
+          "header": {
+            "type": "object",
+            "title": "Header",
+            "description": "请求头"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AgentInput",
+        "description": "Agent输入模型"
+      },
+      "resume_info": {
+        "type": "object",
+        "title": "ResumeInfo",
+        "description": "恢复执行信息",
+        "required": [
+          "resume_handle",
+          "action"
+        ],
+        "properties": {
+          "resume_handle": {
+            "type": "object",
+            "description": "恢复句柄对象\n**注意**: 直接传递中断响应中的 handle 字段，不要修改\n",
+            "required": [
+              "frame_id",
+              "snapshot_id",
+              "resume_token",
+              "interrupt_type",
+              "current_block",
+              "restart_block"
+            ],
+            "properties": {
+              "frame_id": {
+                "type": "string",
+                "description": "执行帧ID",
+                "example": "frame_abc123"
+              },
+              "snapshot_id": {
+                "type": "string",
+                "description": "快照ID",
+                "example": "snap_xyz789"
+              },
+              "resume_token": {
+                "type": "string",
+                "description": "恢复令牌",
+                "example": "token_def456"
+              },
+              "interrupt_type": {
+                "type": "string",
+                "description": "中断类型",
+                "example": "tool_confirmation"
+              },
+              "current_block": {
+                "type": "integer",
+                "description": "当前代码块索引",
+                "example": 3
+              },
+              "restart_block": {
+                "type": "boolean",
+                "description": "是否重启代码块",
+                "example": false
+              }
+            }
+          },
+          "action": {
+            "type": "string",
+            "description": "操作类型\n- confirm: 确认执行工具\n- skip: 跳过工具执行\n",
+            "enum": [
+              "confirm",
+              "skip"
+            ],
+            "example": "confirm"
+          },
+          "modified_args": {
+            "type": "array",
+            "description": "修改后的参数（仅 confirm 时有效）",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "value"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "参数名称",
+                  "example": "database_name"
+                },
+                "value": {
+                  "description": "参数值",
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "array"
+                    },
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "example": "new_test_db"
+                }
+              }
+            }
+          }
+        }
+      },
+      "is_need_progress": {
+        "type": "boolean",
+        "description": "- 是否需要返回progress\n- 为false时，不返回progress等\n",
+        "default": false
+      },
+      "enable_dependency_cache": {
+        "type": "boolean",
+        "description": "- 是否需要使用缓存\n- 为true时，在agent-executor执行时，会使用缓存，如果缓存不存在会生成缓存\n- 缓存通过redis存储\n- 限制：\n  - 如果是agent配置页面的debug模式，则enable_dependency_cache会自动设置为false\n",
+        "default": false
+      },
+      "agent_options_agent_options": {
+        "properties": {
+          "output_vars": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "description": "需要输出的变量",
+            "title": "Output Vars"
+          },
+          "incremental_output": {
+            "type": "boolean",
+            "title": "Incremental Output",
+            "description": "是否增量输出",
+            "default": false
+          },
+          "data_source": {
+            "$ref": "#/components/schemas/retriever_data_source",
+            "description": "数据源配置",
+            "title": "Data Source"
+          },
+          "llm_config": {
+            "$ref": "#/components/schemas/llm_config",
+            "description": "默认使用的LLM配置",
+            "title": "Llm Config"
+          },
+          "tmp_files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "文档ID"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "类型(doc/wikidoc/faq)"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "文档名称"
+                }
+              }
+            },
+            "title": "Tmp Files",
+            "description": "临时文件列表"
+          },
+          "agent_run_id": {
+            "type": "string",
+            "title": "Agent Run ID",
+            "description": "Agent运行ID"
+          },
+          "resume_info": {
+            "$ref": "#/components/schemas/resume_info",
+            "title": "Resume Info",
+            "description": "恢复执行信息（为空时走首次执行流程）"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation ID",
+            "description": "会话ID"
+          },
+          "is_need_progress": {
+            "$ref": "#/components/schemas/is_need_progress"
+          },
+          "enable_dependency_cache": {
+            "$ref": "#/components/schemas/enable_dependency_cache"
+          }
+        },
+        "type": "object",
+        "title": "AgentOptions",
+        "description": "Agent运行选项, 此处如果有配置项，则覆盖config中的配置"
+      },
+      "run_agent_param_run_agent_param": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "agent_id",
+            "description": "- agent id\n- agent_config和agent_id 不能同时为空。agent_config优先级高于agent_id。\n",
+            "example": "1830930776523276288"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "agent_version",
+            "description": "- agent版本号,与agent_id配合使用\n- 当agent_id提供时,此字段为required\n- 当agent_config提供时,则忽略agent_version和agent_id\n",
+            "example": "latest"
+          },
+          "agent_config": {
+            "$ref": "#/components/schemas/config"
+          },
+          "agent_input": {
+            "$ref": "#/components/schemas/agent_input_agent_input",
+            "title": "agent_input",
+            "description": "agent输入",
+            "example": {
+              "query": "你好"
+            }
+          },
+          "_options": {
+            "$ref": "#/components/schemas/agent_options_agent_options",
+            "title": "options",
+            "description": "Agent运行选项"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_input"
+        ],
+        "title": "RunAgentParam",
+        "description": "- Agent运行request\n- agent_config和agent_id 不能同时为空\n"
+      },
+      "run_agent_response_run_agent_response": {
+        "properties": {
+          "answer": {
+            "type": "object",
+            "title": "answer",
+            "description": "agent最终输出，包含dolphin输出的全部内容"
+          },
+          "status": {
+            "type": "string",
+            "title": "status",
+            "description": "\"True\": 流式信息已结束; \"False\": 流式信息未结束，正在返回; \"Error\": 失败"
+          },
+          "interrupt_info": {
+            "description": "中断信息",
+            "$ref": "#/components/schemas/tool_interrupt_info_tool_interrupt_info"
+          },
+          "agent_run_id": {
+            "type": "string",
+            "description": "agent运行id"
+          },
+          "error": {
+            "description": "错误信息",
+            "$ref": "#/components/schemas/error_response"
+          },
+          "ttft": {
+            "description": "time to first token（毫秒）",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "status"
+        ],
+        "title": "RunAgentResponse"
+      },
+      "resume_agent_request": {
+        "type": "object",
+        "title": "ResumeAgentRequest",
+        "description": "恢复Agent执行请求",
+        "required": [
+          "agent_run_id",
+          "resume_info"
+        ],
+        "properties": {
+          "agent_run_id": {
+            "type": "string",
+            "description": "Agent运行ID（从中断响应获取）",
+            "example": "agent-session-12345"
+          },
+          "resume_info": {
+            "$ref": "#/components/schemas/resume_info"
+          }
+        }
+      },
+      "terminate_agent_request": {
+        "type": "object",
+        "title": "TerminateAgentRequest",
+        "description": "终止Agent执行请求",
+        "required": [
+          "agent_run_id"
+        ],
+        "properties": {
+          "agent_run_id": {
+            "type": "string",
+            "description": "Agent运行ID",
+            "example": "agent-session-12345"
+          }
+        }
+      }
+    }
+  },
+  "x-tagGroups": [
+    {
+      "name": "通用说明",
+      "tags": [
+        "公共Header说明"
+      ]
+    },
+    {
+      "name": "Agent Executor",
+      "tags": [
+        "Agent运行",
+        "Agent运行V2",
+        "Agent缓存"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+update_req:
+  type: object
+  required:
+    - name
+    - profile
+    - product_key
+    - avatar_type
+    - avatar
+    - config
+  properties:
+    is_built_in:
+      type: integer
+      description: |
+        - 是否内置（内部接口有效）
+          - 0: 否
+          - 1: 是
+      example: 0
+    name:
+      type: string
+      description: 名字
+      example: agent1
+      maxLength: 50
+    profile:
+      type: string
+      description: 描述
+      example: agent1 profile
+      maxLength: 100
+    product_key:
+      type: string
+      description: 所属产品标识
+      example: agent1
+    avatar_type:
+      type: integer
+      description: | 
+        - 头像类型
+          - 1: 内置头像
+          - 2: 用户上传头像
+          - 3: AI生成头像
+      example: 1
+    avatar:
+      type: string
+      description: | 
+        - 头像信息
+          - 当头像类型为1时，为内置头像标识
+          - 当头像类型为2时，为头像存储信息
+          - 当头像类型为3时，为头像存储信息
+      example: 1
+    config:
+      $ref: './config_req.yaml#/config'
+      title: agent配置
+    updated_by:
+      type: string
+      description: 更新人uid（内部接口有效）
+      example: xxx

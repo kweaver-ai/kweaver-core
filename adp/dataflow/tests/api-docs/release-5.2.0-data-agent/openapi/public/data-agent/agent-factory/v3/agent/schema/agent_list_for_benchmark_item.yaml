@@ -1,0 +1,32 @@
+agent_list_for_benchmark_item:
+  type: object
+  properties:
+    id:
+      type: string
+      description: agent id
+      example: xxx
+    key:
+      type: string
+      description: agent 标识
+      example: xxx
+    name:
+      type: string
+      description: 名字
+      example: agent1
+    version:
+      type: string
+      description: |
+        - 版本
+          - 未发布的为：v0
+          - 发布的为：latest
+    status:
+      type: string
+      enum: [unpublished, published]
+      description: |
+        - 状态
+          - unpublished: 未发布
+          - published: 已发布
+      example: unpublished
+    updated_at:
+      type: integer
+      description: 更新时间

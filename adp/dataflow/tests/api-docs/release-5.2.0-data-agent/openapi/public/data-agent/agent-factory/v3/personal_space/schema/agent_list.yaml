@@ -1,0 +1,17 @@
+agent_list:
+  type: object
+  description: 智能体列表
+  properties:
+    entries:
+      type: array
+      description: 智能体列表
+      items:
+        $ref: './agent_list_item.yaml#/agent_list_item'
+    pagination_marker_str:
+      $ref: './agent_list_maker.yaml#/agent_pagination_marker_str'
+    is_last_page:
+      type: boolean
+      description: |
+        - 是否是最后一页
+        - 当查询不到数据时，也是最后一页
+      

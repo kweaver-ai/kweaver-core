@@ -1,0 +1,19 @@
+[
+  {
+  "id": "10",
+  "operator": "@internal/return",
+  "parameters": {
+    "succ": "{{__1.json}}"
+  }
+} ,
+{
+  "id": "10",
+  "operator": "@internal/return",
+  "parameters": {
+    "str": "{{__0.fields.str}}",
+    "numend": "{{__0.fields.num}}",
+    "obj": "{{__0.fields.obj}}",
+    "arr": "{{__0.fields.arr}}"
+  }
+}
+]

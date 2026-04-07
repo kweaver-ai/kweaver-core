@@ -1,0 +1,17 @@
+publish_upsert_res:
+  type: object
+  properties:
+    published_at:
+      type: integer
+      description: 发布时间（单位：ms）
+    published_by:
+      type: string
+      description: 发布人
+    published_by_name:
+      type: string
+      description: 发布人名称
+    version:
+      type: string
+      description: Agent 版本号
+      
+

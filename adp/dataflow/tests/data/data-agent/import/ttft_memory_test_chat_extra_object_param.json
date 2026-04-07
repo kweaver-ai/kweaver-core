@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01KEGTFH84KAK3Y49Z0CTVBK1E",
+      "name": "ttft_memory_test_chat_extra_object_param",
+      "key": "01KEGTFH84KAK3Y49Z09KBPFAA",
+      "profile": "测试开启记忆功能，并且新增一个Object类型输入参数",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1767943685382,
+      "updated_at": 1767944160828,
+      "created_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "updated_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"query1\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"\",\"dolphin\":\"/explore/(history=true)回答用户的问题:$context -\\u003e answer\",\"is_dolphin_mode\":1,\"pre_dolphin\":[{\"key\":\"memory_retrieve\",\"name\":\"记忆召回模块\",\"value\":\"\\n@search_memory(query=$query, user_id=$header['x-account-id'], limit=50, threshold=0.5) -\\u003e relevant_memories\\n$history + [{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Memories:\\\\\\\\n\\\" + \\\"\\\\\\\\n\\\".join(f\\\"- {entry['memory']}\\\" for entry in $relevant_memories[\\\"answer\\\"][\\\"result\\\"])}] -\\u003e history\\n\\n\\\"\\\" -\\u003e relevant_memories\\n\",\"enabled\":true,\"edited\":false},{\"key\":\"context_organize\",\"name\":\"上下文组织模块\",\"value\":\"\\n{\\\"query\\\": \\\"用户的问题为: \\\"+$query} -\\u003e context\\n\",\"enabled\":true,\"edited\":false}],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1988514015063707648\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"answer\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":true},\"related_question\":{\"is_enabled\":false},\"plan_mode\":null,\"metadata\":{\"config_tpl_version\":\"v1\",\"config_last_set_timestamp\":1767944160828017461}}",
+      "created_type": "create",
+      "create_from": "dip"
+    }
+  ]
+}

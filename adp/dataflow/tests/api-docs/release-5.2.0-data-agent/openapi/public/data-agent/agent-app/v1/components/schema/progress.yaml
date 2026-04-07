@@ -1,0 +1,38 @@
+Progress:
+  type: object
+  properties:
+    agent_name:
+      type: string
+      description: 兼容旧版本字段，代理名称，对于LLM输出通常为"main"，对于工具调用为工具名称
+    stage:
+      type: string
+      description: 执行阶段类型
+      enum:
+        - llm (LLM输出)
+        - skill (技能/工具调用)
+        - assign (赋值操作)
+    answer:
+      type: object
+      description: 该阶段产生的答案或输出 ,注意answer在工具调用时结果为object，在LLM输出时结果为string
+    think:
+      type: string
+      description: 思考过程记录
+    status:
+      type: string
+      description: 执行状态
+      enum:
+        - processing (进行中)
+        - completed (已完成)
+        - failed (失败)
+    skill_info:
+      description: 当 stage 为 "skill" 时包含技能调用的详细信息，否则为 null
+      $ref: './progress_skillinfo.yaml#/SkillInfo'
+    block_answer:
+      type: object
+      description: 块级别的答案输出，注意block_answer在工具调用时结果为object，在LLM输出时结果为string
+    input_message:
+      type: object
+      description: 输入消息，可能是字符串或消息对象数组
+    interrupted:
+      type: boolean
+      description: 是否被中断

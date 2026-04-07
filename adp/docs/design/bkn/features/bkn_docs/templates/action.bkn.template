@@ -1,0 +1,84 @@
+---
+type: action
+id: {action_id}
+name: {行动名称}
+version: 1.0.0
+spec_version: 1.0.0
+network: {network_id}
+namespace: {namespace}
+owner: {owner}
+action_type: add | modify | delete
+enabled: false
+risk_level: low | medium | high
+requires_approval: true
+tags: [{标签1}, {标签2}]
+---
+
+# {行动名称}
+
+{详细描述}
+
+## 绑定实体
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| {entity_id} | modify |
+
+## 触发条件
+
+```yaml
+condition:
+  object_type_id: {entity_id}
+  field: {property_name}
+  operation: {operator}
+  value: {value}
+```
+
+> {触发条件说明}
+
+## 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| {entity_id} | {影响描述} |
+
+## 工具配置
+
+| 类型 | 工具箱ID | 工具ID |
+|------|----------|--------|
+| tool | {box_id} | {tool_id} |
+
+<!-- 或使用 MCP -->
+<!-- | 类型 | MCP ID | 工具名称 |
+|------|--------|----------|
+| mcp | {mcp_id} | {tool_name} | -->
+
+## 参数绑定
+
+| 参数 | 来源 | 绑定 | 说明 |
+|------|------|------|------|
+| {param} | property | {property_name} | {说明} |
+| {param} | input | - | {说明} |
+| {param} | const | {value} | {说明} |
+
+## 调度配置
+
+<!-- 可选 -->
+
+| 类型 | 表达式 |
+|------|--------|
+| FIX_RATE | {interval} |
+
+## 权限与前置条件
+
+{谁可以启用/执行、是否需要审批、需要哪些凭据/权限}
+
+## 回滚/失败策略
+
+{失败如何处理、是否重试、是否可撤销、如何回滚}
+
+## 执行流程
+
+1. {步骤1}
+2. {步骤2}
+3. {步骤3}

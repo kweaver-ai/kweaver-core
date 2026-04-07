@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Operator_Category_Success_Response",
+    "type": "array",
+    "items": {
+        "anyOf": [
+            {
+                "type": "integer",
+                "const": 200,
+                "description": "The response status code."
+            },
+            {
+                "type": "array",
+                "properties": {
+                    "category_type": {
+                        "type": "string",
+                        "enum": [
+                            "cursom",
+                            "data_process",
+                            "data_transform",
+                            "data_store",
+                            "data_analysis",
+                            "data_query",
+                            "data_extract",
+                            "data_split",
+                            "model_train"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            }
+        ]
+    }
+}

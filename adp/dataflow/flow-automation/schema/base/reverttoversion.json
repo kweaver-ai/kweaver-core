@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建数据处理流任务",
+    "description": "post /api/automation/v1/dag/:dagID/versions/:versionID/rollback",
+    "type": "object",
+    "properties": {
+        "title": {
+            "oneOf": [
+                {
+                    "description": "任务名称,名称不能包含 /:*?\"<>| 特殊字符，长度不能超过128个字符",
+                    "type": "string",
+                    "pattern": "^[^/:\\*?\"<>\\|]+$",
+                    "maxLength": 128
+                },
+                {
+                    "const": ""
+                }
+            ]
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^v(0|[1-9]\\d*)(?:\\.(0|[1-9]\\d*)){2}$"
+        },
+        "change_log": {
+            "type": "string",
+            "maxLength": 300
+        }
+    },
+    "additionalProperties": false
+}

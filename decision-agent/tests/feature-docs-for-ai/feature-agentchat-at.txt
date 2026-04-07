@@ -1,0 +1,2333 @@
+需求描述：
+
+针对不同的智能体进行对话的测试，测试前需要先通过导入data/data-agent目录下的json文件来创建智能体。测试结束后需要删除这些智能体。
+
+
+需求目标：
+1. 读取data/data-agent目录下的json文件并获得对应的agent_key和agent_name
+1. 在lib/data-agent目录下创建agent-app,agent-factory服务的库文件，根据API文档实现agent-app的对话接口以及agent-factory的导入和删除智能体接口，可以参考lib/operator.py
+2. 导入和删除功能放在conftest文件中，每个测试执行前需要调用导入功能，测完后调用删除功能
+3. 测试开始前还需要检测指定模型Tome-pro是否存在并，以及测试联调性
+5. 发起对话请使用非流式输出，参考示例中的stream和inc_stream参数设置
+6. 对话功能测试点如下：
+    a. 状态码是200，否则用例失败
+    b. error为空，否则用例失败
+    c. message不为空，，否则用例失败
+    d. message.content.middle_answer.progress不为空，，否则用例失败
+    f. 从最后一个开始遍历message.content.middle_answer.progress数组，如果stage是llm并且answer不为空，如果为空，再检测下一个，如果遍历完answer都是空，则用例失败
+    g. 从最后一个开始遍历message.content.middle_answer.progress数组，如果stage是llm并且answer不为空，但如果包含fail to call LLM，则用例失败
+    h. 测试对话接口设置超时时间，如果20分钟还没有返回值，则用例失败
+7. 在testcases/api/data-agent目录下创建智能体测试文件，使用数据驱动测试，实现一个测试函数覆盖data/data-agent下的所有智能体json
+8. 验证请在容器中进行，命令如下：
+    docker run -it --net=host -v /root/agent-AT:/app -v /root/.kube/config:/root/.kube/config -v /usr/bin/kubectl:/usr/bin/kubectl acr.aishu.cn/dip/agent-at:20250418 bash 
+
+
+
+API文档信息：
+请读取以下路径的API文档
+1. 智能体导入
+文件路径： ./api-docs/release-5.2.0-data-agent/openapi/public/data-agent/agent-factory/v3/other/paths.yaml
+path：/agent-factory/v3/agent-inout/import
+方法: post
+
+2. 智能体删除
+文件路径：./api-docs/release-5.2.0-data-agent/openapi/public/data-agent/agent-factory/v3/agent/paths.yaml
+path： /agent-factory/v3/agent/{agent_id}
+方法:  delete
+
+3. 智能体对话
+文件路径： ./api-docs/release-5.2.0-data-agent/openapi/public/data-agent/agent-app/v1/chat/paths.yaml
+path：/api/agent-app/v1/app/{app_key}/chat/completion
+方法: post
+
+示例：
+1. 查询指定名称的模型是否存在
+请求url：https://{host_ip}/api/mf-model-manager/v1/llm/list?page=1&size=20&name={model_name}
+方法：GET
+成功响应：
+{
+  "count": 1,
+  "data": [
+    {
+      "model_id": "1981196845543723008",
+      "model_name": "Tome-pro1",
+      "model_series": "tome",
+      "model": "Tome-pro",
+      "create_by": "test",
+      "update_by": "test",
+      "create_time": "2025-10-23 11:11:51",
+      "update_time": "2025-11-07 10:17:00",
+      "max_model_len": 32,
+      "model_parameters": null,
+      "model_type": "llm",
+      "quota": 0,
+      "model_config": {
+        "api_model": "Tome-pro",
+        "api_url": "http://192.168.152.11:8342/v1/chat/completions"
+      },
+      "input_tokens_remain": null,
+      "input_tokens": null,
+      "input_tokens_used": null,
+      "billing_type": null,
+      "output_tokens": null,
+      "output_tokens_used": null,
+      "output_tokens_remain": null
+    }
+  ]
+}
+
+失败响应：
+{
+  "count": 0,
+  "data": []
+}
+
+
+2. 测试大模型连通性
+请求url：https://{host_ip}/api/mf-model-manager/v1/llm/test
+方法：POST
+请求体：
+{
+  "model_id": model_id
+}
+成功响应：
+{
+  "status": "ok",
+  "id": "1981196845543723008"
+}
+失败响应：
+{
+  "code": "ModelFactory.ModelController.TestModel.Error",
+  "description": "模型配置错误，请检查模型信息",
+  "detail": "{\"detail\":\"认证失败\"}",
+  "solution": "测试连接失败，请重新检查信息",
+  "link": ""
+}
+
+3. 通过agent_key获得agent_id
+请求url：https://{host_ip}/api/agent-factory/v3/agent/by-key/{agent_key}
+方法：GET
+响应：
+{
+    "id": "01K9BDC9VZFAATZDHD42QPTH8S",
+    "key": "01K800F9PYPDXDN0K9SMBW039C",
+    "is_built_in": 0,
+    "is_system_agent": 0,
+    "name": "TTFT测试之简单对话explore",
+    "profile": "TTFT测试之简单对话explore",
+    "avatar_type": 1,
+    "avatar": "1",
+    "product_key": "chatbi",
+    "product_name": "",
+    "config": {
+    },
+    "status": "unpublished"
+}
+
+4. 对话接口
+https://{host_ip}/api/agent-app/v1/app/{agent_id}/chat/completion
+方法：POST
+请求体：
+{
+  "agent_id": "01K99032VZVSF7K8GW5FR8A3WB",
+  "agent_version": "v0",
+  "query": "确定是12:30出发吗",
+  "stream": false,
+  "inc_stream": false,
+  "executor_version": "v2"
+}
+成功响应：
+{
+    "assistant_message_id": "01K9BGBMN5F1DN8A605MZBADRY",
+    "conversation_id": "01K9BGBMN2N4DQWJA5KPBXBYQ6",
+    "error": null,
+    "message": {
+        "agent_info": {
+            "agent_id": "01K8WBMTK9NATK4MRGQATW3RFW",
+            "agent_name": "TTFT测试之配置技能3_文档召回3_history",
+            "agent_status": "",
+            "agent_version": "v0"
+        },
+        "content": {
+            "final_answer": {
+                "answer": {
+                    "text": ""
+                },
+                "answer_type_other": {
+                    "__type__": "VarOutput",
+                    "name": "answer",
+                    "skill_info": {},
+                    "source_type": "EXPLORE",
+                    "value": {
+                        "agent_name": "main",
+                        "answer": "# 工作流执行机制深度分析报告\n\n## 执行摘要\n\n本报告针对\"工作流执行\"主题进行了全面分析，重点研究了基于AnyShare 7.0.6.3认知助手的工作流执行机制。报告揭示了工作流执行的三个关键阶段：任务规划、Agent详情获取与条件判断、动态任务调整。通过对参考信息的深入解析，我们构建了完整的工作流执行框架，并提出了优化建议。\n\n## 1. 工作流执行架构分析\n\n### 1.1 系统架构概览\n\n工作流执行系统采用分层架构设计：\n- **规划层**：负责任务分解与调度\n- **执行层**：包含各类功能Agent(如DocQA_Agent)\n- **数据层**：知识网络与文件库支撑\n\n### 1.2 核心组件交互\n\n```\n+---------------+       +----------------+       +---------------+\n|   Plan_Agent  | ----> | 获取agent详情  | ----> | DocQA_Agent   |\n+---------------+       +----------------+       +---------------+\n     |                      |                          ^\n     v                      v                          |\n+----------------+    +------------------+      +---------------+\n| 子任务列表生成 |    | 数据源配置检查   |      | 文件库搜索    |\n+----------------+    +------------------+      +---------------+\n```\n\n## 2. 工作流执行详细机制\n\n### 2.1 阶段一：任务规划\n\n**Plan_Agent工作流程**：\n1. 接收主任务输入\n2. 进行任务分解算法处理\n3. 输出结构化子任务列表\n4. 传递至下游处理单元\n\n关键参数：\n- 分解粒度：基于任务复杂度自动调整\n- 优先级：内置加权算法\n\n### 2.2 阶段二：Agent详情获取与条件判断\n\n**数据源检查流程**：\n1. 调用\"获取agent详情\"服务\n2. 关键参数：`key=DocQA_Agent`\n3. 解析返回JSON结构：\n   ```json\n   {\n     \"answer\": {\n       \"config\": {\n         \"data_source\": {\n           \"doc\": \"...\"  // 空值或文件路径\n         }\n       }\n     }\n   }\n   ```\n4. 条件判断逻辑：\n   - `doc`非空 → 触发文件库搜索任务\n   - `doc`为空 → 继续原任务流\n\n### 2.3 阶段三：动态任务调整\n\n**文件库搜索任务生成条件**：\n- 依赖前阶段检查结果\n- 任务属性：\n  - 类型：后台异步任务\n  - 超时设置：默认300s\n  - 重试机制：3次指数退避\n\n## 3. 配置与权限管理分析\n\n### 3.1 环境准备要求\n\n基于AnyShare 7.0.6.3手册要求：\n1. 前置条件：\n   - 工作中心基础配置完成\n   - 知识网络已创建\n   - 服务部署完整\n\n2. 关键配置项：\n   - 数据源ID绑定\n   - MCP服务端点配置\n   - 权限令牌有效期设置\n\n### 3.2 权限管理体系\n\n参考测试报告766842：\n- 权限控制维度：\n  - 算子级权限\n  - 工具访问权限\n  - MCP接入权限\n\n- 测试要点：\n  | 测试项 | 结果 | 改进建议 |\n  |-------|------|----------|\n  | 角色权限继承 | 通过 | 增加权限冲突检测 |\n  | 临时权限回收 | 部分通过 | 优化超时机制 |\n  | 跨域访问控制 | 通过 | - |\n\n## 4. 实施建议与优化方案\n\n### 4.1 配置优化建议\n\n1. 数据源管理：\n   - 实现配置版本控制\n   - 增加健康检查机制\n\n2. 工作流监控：\n   - 添加执行轨迹记录\n   - 设置性能基线告警\n\n### 4.2 异常处理增强\n\n建议增加以下容错机制：\n- 数据源连接超时处理\n- 文件库索引异常恢复\n- 子任务依赖关系验证\n\n### 4.3 性能优化方向\n\n1. 缓存策略：\n   - Agent配置缓存\n   - 文件库元数据缓存\n\n2. 并行化改进：\n   - 独立子任务并",
+                        "block_answer": "",
+                        "end_time": 1762396696.616981,
+                        "estimated_input_tokens": 10027,
+                        "estimated_output_tokens": 2606,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "85c0b6c5-a10f-404f-a1ba-cc8c57cfd487",
+                        "input_message": "\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n文档召回的内容：第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----\n用户的问题为：\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762396651.2620835,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 1000,
+                            "prompt_tokens": 5164,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 3664,
+                                "uncached_tokens": 1500
+                            },
+                            "total_tokens": 6164
+                        }
+                    }
+                },
+                "output_variables_config": {
+                    "answer_var": "answer",
+                    "doc_retrieval_var": "doc_retrieval_res",
+                    "graph_retrieval_var": "graph_retrieval_res",
+                    "middle_output_vars": null,
+                    "other_vars": null,
+                    "related_questions_var": "related_questions"
+                },
+                "query": "",
+                "skill_process": null,
+                "temp_files": null,
+                "thinking": ""
+            },
+            "middle_answer": {
+                "doc_retrieval": null,
+                "graph_retrieval": null,
+                "other_variables": {},
+                "progress": [
+                    {
+                        "agent_name": "doc_qa",
+                        "answer": {
+                            "full_result": {
+                                "cites": [
+                                ],
+                                "data_source": {
+                                    "doc": [
+                                        {
+                                            "datasets": [
+                                                "57c55f1efff04a518c644618d8279bb4"
+                                            ],
+                                            "ds_id": "0",
+                                            "fields": [
+                                                {
+                                                    "name": "临时区文件夹",
+                                                    "path": "临时区文件夹",
+                                                    "source": "gns://9CB2AEB17D584B5BAAFC0DDCB9FBE93E/A23829AC1520496298F5315E70C5A0EC",
+                                                    "type": "folder"
+                                                },
+                                                {
+                                                    "name": "报销制度",
+                                                    "path": "报销制度",
+                                                    "source": "gns://9CB2AEB17D584B5BAAFC0DDCB9FBE93E/42EA567650AA423EA30380C5E49738A5",
+                                                    "type": "folder"
+                                                },
+                                                {
+                                                    "name": "问题分析",
+                                                    "path": "问题分析",
+                                                    "source": "gns://9CB2AEB17D584B5BAAFC0DDCB9FBE93E/22B9F01FD17941659C04DD83798A3A7A",
+                                                    "type": "folder"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "references": [],
+                                "text": "第<i score=0.03 slice_idx=7 p='r'>1</i>个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第<i score=0.07 slice_idx=1 p='r'>2</i>个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第<i score=0.07 slice_idx=0 p='r'>3</i>个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----"
+                            },
+                            "result": "第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----"
+                        },
+                        "end_time": 1762396600.0761838,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "604c5365-eb49-4816-8e97-ce17f287ccef",
+                        "input_message": "{'query': '【】'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "【】"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "doc_qa",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1762396591.8134444,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "main",
+                        "answer": "",
+                        "end_time": 1762396604.9745119,
+                        "estimated_input_tokens": 2492,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "7b251be9-bae0-4505-9377-00c9683b06d0",
+                        "input_message": "\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n文档召回的内容：第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----\n用户的问题为：\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762396600.160439,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "Plan_Agent",
+                        "answer": {
+                            "__type__": "VarOutput",
+                            "name": "plan_list",
+                            "skill_info": {},
+                            "source_type": "ASSIGN",
+                            "value": [
+                                "搜索资料：Plan_Agent的功能和使用方法",
+                                "搜索资料：获取agent详情的接口文档，特别是DocQA_Agent的配置参数",
+                                "搜索资料：判断数据源是否为空的条件判断方法",
+                                "总结内容：完整的工作流执行步骤"
+                            ]
+                        },
+                        "end_time": 1762396609.8064253,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "70c742f2-5474-4a1e-9cb2-c688dc2e1f85",
+                        "input_message": "{'query': '工作流：\\n1. 先调用技能：Plan_Agent获得子任务列表\\n2. 再调用技能：获取agent详情 判断DocQA_Agent是否配置数据源， 参数key的值是DocQA_Agent\\n3. 如果返回值中answer.config.data_source.doc不为空，那么再子任务列表中新增一个子任务：搜索文件库'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "工作流：\n1. 先调用技能：Plan_Agent获得子任务列表\n2. 再调用技能：获取agent详情 判断DocQA_Agent是否配置数据源， 参数key的值是DocQA_Agent\n3. 如果返回值中answer.config.data_source.doc不为空，那么再子任务列表中新增一个子任务：搜索文件库"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "Plan_Agent",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1762396604.974849,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "main",
+                        "answer": "",
+                        "end_time": 1762396610.8775141,
+                        "estimated_input_tokens": 2794,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "2b9f49dc-900b-4f03-aea0-c0151cdc722f",
+                        "input_message": "\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n文档召回的内容：第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----\n用户的问题为：\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762396609.834301,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "main",
+                        "answer": "",
+                        "end_time": 1762396622.8618875,
+                        "estimated_input_tokens": 6911,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "109ffafc-e750-4d81-a98e-ece8a77a273c",
+                        "input_message": "\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n文档召回的内容：第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----\n用户的问题为：\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762396610.9283981,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "Summary_Agent",
+                        "answer": {
+                            "__type__": "VarOutput",
+                            "name": "answer",
+                            "skill_info": {},
+                            "source_type": "LLM",
+                            "value": {
+                                "answer": "# 工作流执行机制深度分析报告\n\n## 执行摘要\n\n本报告针对\"工作流执行\"主题进行了全面分析，重点研究了基于AnyShare 7.0.6.3认知助手的工作流执行机制。报告揭示了工作流执行的三个关键阶段：任务规划、Agent详情获取与条件判断、动态任务调整。通过对参考信息的深入解析，我们构建了完整的工作流执行框架，并提出了优化建议。\n\n## 1. 工作流执行架构分析\n\n### 1.1 系统架构概览\n\n工作流执行系统采用分层架构设计：\n- **规划层**：负责任务分解与调度\n- **执行层**：包含各类功能Agent(如DocQA_Agent)\n- **数据层**：知识网络与文件库支撑\n\n### 1.2 核心组件交互\n\n```\n+---------------+       +----------------+       +---------------+\n|   Plan_Agent  | ----> | 获取agent详情  | ----> | DocQA_Agent   |\n+---------------+       +----------------+       +---------------+\n     |                      |                          ^\n     v                      v                          |\n+----------------+    +------------------+      +---------------+\n| 子任务列表生成 |    | 数据源配置检查   |      | 文件库搜索    |\n+----------------+    +------------------+      +---------------+\n```\n\n## 2. 工作流执行详细机制\n\n### 2.1 阶段一：任务规划\n\n**Plan_Agent工作流程**：\n1. 接收主任务输入\n2. 进行任务分解算法处理\n3. 输出结构化子任务列表\n4. 传递至下游处理单元\n\n关键参数：\n- 分解粒度：基于任务复杂度自动调整\n- 优先级：内置加权算法\n\n### 2.2 阶段二：Agent详情获取与条件判断\n\n**数据源检查流程**：\n1. 调用\"获取agent详情\"服务\n2. 关键参数：`key=DocQA_Agent`\n3. 解析返回JSON结构：\n   ```json\n   {\n     \"answer\": {\n       \"config\": {\n         \"data_source\": {\n           \"doc\": \"...\"  // 空值或文件路径\n         }\n       }\n     }\n   }\n   ```\n4. 条件判断逻辑：\n   - `doc`非空 → 触发文件库搜索任务\n   - `doc`为空 → 继续原任务流\n\n### 2.3 阶段三：动态任务调整\n\n**文件库搜索任务生成条件**：\n- 依赖前阶段检查结果\n- 任务属性：\n  - 类型：后台异步任务\n  - 超时设置：默认300s\n  - 重试机制：3次指数退避\n\n## 3. 配置与权限管理分析\n\n### 3.1 环境准备要求\n\n基于AnyShare 7.0.6.3手册要求：\n1. 前置条件：\n   - 工作中心基础配置完成\n   - 知识网络已创建\n   - 服务部署完整\n\n2. 关键配置项：\n   - 数据源ID绑定\n   - MCP服务端点配置\n   - 权限令牌有效期设置\n\n### 3.2 权限管理体系\n\n参考测试报告766842：\n- 权限控制维度：\n  - 算子级权限\n  - 工具访问权限\n  - MCP接入权限\n\n- 测试要点：\n  | 测试项 | 结果 | 改进建议 |\n  |-------|------|----------|\n  | 角色权限继承 | 通过 | 增加权限冲突检测 |\n  | 临时权限回收 | 部分通过 | 优化超时机制 |\n  | 跨域访问控制 | 通过 | - |\n\n## 4. 实施建议与优化方案\n\n### 4.1 配置优化建议\n\n1. 数据源管理：\n   - 实现配置版本控制\n   - 增加健康检查机制\n\n2. 工作流监控：\n   - 添加执行轨迹记录\n   - 设置性能基线告警\n\n### 4.2 异常处理增强\n\n建议增加以下容错机制：\n- 数据源连接超时处理\n- 文件库索引异常恢复\n- 子任务依赖关系验证\n\n### 4.3 性能优化方向\n\n1. 缓存策略：\n   - Agent配置缓存\n   - 文件库元数据缓存\n\n2. 并行化改进：\n   - 独立子任务并行执行\n   - 批量获取Agent详情\n\n## 5. 实施检查清单\n\n关键步骤验证表：\n\n| 序号 | 检查项 | 预期结果 | 验证方法 |\n|------|--------|----------|----------|\n| 1 | Plan_Agent可用性 |",
+                                "think": ""
+                            }
+                        },
+                        "end_time": 1762396651.2348893,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "71705f25-f309-4dd3-ab3c-34e5c0c2984e",
+                        "input_message": "{'query': '工作流：\\n1. 先调用技能：Plan_Agent获得子任务列表\\n2. 再调用技能：获取agent详情 判断DocQA_Agent是否配置数据源， 参数key的值是DocQA_Agent\\n3. 如果返回值中answer.config.data_source.doc不为空，那么再子任务列表中新增一个子任务：搜索文件库', 'ref_list': '第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\\n前言\\n准备工作\\n工作中心配置\\n获取数据源id\\n环境准备\\n创建知识网络\\n服务部署与配置更新\\n3.2 工作流执行\\n-----\\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\\n测试内容（粒度为测试点）|测试结果\\n|\\n改进意见\\n测试依据\\n【备注】AT+手工测试\\n-----\\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\\n-----'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "工作流：\n1. 先调用技能：Plan_Agent获得子任务列表\n2. 再调用技能：获取agent详情 判断DocQA_Agent是否配置数据源， 参数key的值是DocQA_Agent\n3. 如果返回值中answer.config.data_source.doc不为空，那么再子任务列表中新增一个子任务：搜索文件库"
+                                },
+                                {
+                                    "name": "ref_list",
+                                    "type": "str",
+                                    "value": "第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "Summary_Agent",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1762396622.8628411,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "main",
+                        "answer": "# 工作流执行机制深度分析报告\n\n## 执行摘要\n\n本报告针对\"工作流执行\"主题进行了全面分析，重点研究了基于AnyShare 7.0.6.3认知助手的工作流执行机制。报告揭示了工作流执行的三个关键阶段：任务规划、Agent详情获取与条件判断、动态任务调整。通过对参考信息的深入解析，我们构建了完整的工作流执行框架，并提出了优化建议。\n\n## 1. 工作流执行架构分析\n\n### 1.1 系统架构概览\n\n工作流执行系统采用分层架构设计：\n- **规划层**：负责任务分解与调度\n- **执行层**：包含各类功能Agent(如DocQA_Agent)\n- **数据层**：知识网络与文件库支撑\n\n### 1.2 核心组件交互\n\n```\n+---------------+       +----------------+       +---------------+\n|   Plan_Agent  | ----> | 获取agent详情  | ----> | DocQA_Agent   |\n+---------------+       +----------------+       +---------------+\n     |                      |                          ^\n     v                      v                          |\n+----------------+    +------------------+      +---------------+\n| 子任务列表生成 |    | 数据源配置检查   |      | 文件库搜索    |\n+----------------+    +------------------+      +---------------+\n```\n\n## 2. 工作流执行详细机制\n\n### 2.1 阶段一：任务规划\n\n**Plan_Agent工作流程**：\n1. 接收主任务输入\n2. 进行任务分解算法处理\n3. 输出结构化子任务列表\n4. 传递至下游处理单元\n\n关键参数：\n- 分解粒度：基于任务复杂度自动调整\n- 优先级：内置加权算法\n\n### 2.2 阶段二：Agent详情获取与条件判断\n\n**数据源检查流程**：\n1. 调用\"获取agent详情\"服务\n2. 关键参数：`key=DocQA_Agent`\n3. 解析返回JSON结构：\n   ```json\n   {\n     \"answer\": {\n       \"config\": {\n         \"data_source\": {\n           \"doc\": \"...\"  // 空值或文件路径\n         }\n       }\n     }\n   }\n   ```\n4. 条件判断逻辑：\n   - `doc`非空 → 触发文件库搜索任务\n   - `doc`为空 → 继续原任务流\n\n### 2.3 阶段三：动态任务调整\n\n**文件库搜索任务生成条件**：\n- 依赖前阶段检查结果\n- 任务属性：\n  - 类型：后台异步任务\n  - 超时设置：默认300s\n  - 重试机制：3次指数退避\n\n## 3. 配置与权限管理分析\n\n### 3.1 环境准备要求\n\n基于AnyShare 7.0.6.3手册要求：\n1. 前置条件：\n   - 工作中心基础配置完成\n   - 知识网络已创建\n   - 服务部署完整\n\n2. 关键配置项：\n   - 数据源ID绑定\n   - MCP服务端点配置\n   - 权限令牌有效期设置\n\n### 3.2 权限管理体系\n\n参考测试报告766842：\n- 权限控制维度：\n  - 算子级权限\n  - 工具访问权限\n  - MCP接入权限\n\n- 测试要点：\n  | 测试项 | 结果 | 改进建议 |\n  |-------|------|----------|\n  | 角色权限继承 | 通过 | 增加权限冲突检测 |\n  | 临时权限回收 | 部分通过 | 优化超时机制 |\n  | 跨域访问控制 | 通过 | - |\n\n## 4. 实施建议与优化方案\n\n### 4.1 配置优化建议\n\n1. 数据源管理：\n   - 实现配置版本控制\n   - 增加健康检查机制\n\n2. 工作流监控：\n   - 添加执行轨迹记录\n   - 设置性能基线告警\n\n### 4.2 异常处理增强\n\n建议增加以下容错机制：\n- 数据源连接超时处理\n- 文件库索引异常恢复\n- 子任务依赖关系验证\n\n### 4.3 性能优化方向\n\n1. 缓存策略：\n   - Agent配置缓存\n   - 文件库元数据缓存\n\n2. 并行化改进：\n   - 独立子任务并",
+                        "end_time": 1762396696.6169217,
+                        "estimated_input_tokens": 10027,
+                        "estimated_output_tokens": 2606,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "85c0b6c5-a10f-404f-a1ba-cc8c57cfd487",
+                        "input_message": "\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n文档召回的内容：第1个参考信息 AnyShare 7.0.6.3 认知助手实施及配置手册 (2) -- 版权声明\n前言\n准备工作\n工作中心配置\n获取数据源id\n环境准备\n创建知识网络\n服务部署与配置更新\n3.2 工作流执行\n-----\n第2个参考信息 766842 算子、工具、MCP接入ISF权限管理体系 测试报告 -- 概述\n测试内容（粒度为测试点）|测试结果\n|\n改进意见\n测试依据\n【备注】AT+手工测试\n-----\n第3个参考信息 aaaa -- 你啊哈搜啊是阿莫斯那可就是哪家\n-----\n用户的问题为：\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762396651.2620835,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 1000,
+                            "prompt_tokens": 5164,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 3664,
+                                "uncached_tokens": 1500
+                            },
+                            "total_tokens": 6164
+                        }
+                    }
+                ]
+            }
+        },
+        "content_type": "other",
+        "conversation_id": "01K9BGBMN2N4DQWJA5KPBXBYQ6",
+        "ext": {
+            "ask": null,
+            "related_queries": null,
+            "total_time": 104.8,
+            "total_tokens": 6164,
+            "ttft": 1067
+        },
+        "id": "01K9BGBMN5F1DN8A605MZBADRY",
+        "index": 2,
+        "reply_id": "01K9BGBMN333FXQ0PAE7J0CNZN",
+        "role": "assistant",
+        "status": ""
+    },
+    "user_message_id": "01K9BGBMN333FXQ0PAE7J0CNZN"
+}
+
+失败响应：
+{
+    "assistant_message_id": "01K9BF65NK52YVMANH49Y4GJQY",
+    "conversation_id": "01K9BF65NH21WSDKTWWTJR88Z6",
+    "error": null,
+    "message": {
+        "agent_info": {
+            "agent_id": "01K99032VZVSF7K8GW5FR8A3WB",
+            "agent_name": "翻译",
+            "agent_status": "",
+            "agent_version": "v0"
+        },
+        "content": {
+            "final_answer": {
+                "answer": {
+                    "text": ""
+                },
+                "answer_type_other": {
+                    "__type__": "VarOutput",
+                    "name": "answer",
+                    "skill_info": {},
+                    "source_type": "EXPLORE",
+                    "value": {
+                        "agent_name": "main",
+                        "answer": "failed to call LLM[]",
+                        "block_answer": "",
+                        "end_time": 1762395363.2111025,
+                        "estimated_input_tokens": 1001,
+                        "estimated_output_tokens": 26,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "1cbe9ca9-96d8-4f8b-b349-0f317fe8cbc9",
+                        "input_message": "如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n用户的问题为：",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762395363.124799,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {}
+                    }
+                },
+                "output_variables_config": {
+                    "answer_var": "answer",
+                    "doc_retrieval_var": "doc_retrieval_res",
+                    "graph_retrieval_var": "graph_retrieval_res",
+                    "middle_output_vars": null,
+                    "other_vars": null,
+                    "related_questions_var": "related_questions"
+                },
+                "query": "",
+                "skill_process": null,
+                "temp_files": null,
+                "thinking": ""
+            },
+            "middle_answer": {
+                "doc_retrieval": null,
+                "graph_retrieval": null,
+                "other_variables": {},
+                "progress": [
+                    {
+                        "agent_name": "main",
+                        "answer": "failed to call LLM[]",
+                        "end_time": 1762395363.2110832,
+                        "estimated_input_tokens": 1001,
+                        "estimated_output_tokens": 26,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "1cbe9ca9-96d8-4f8b-b349-0f317fe8cbc9",
+                        "input_message": "如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\n用户的问题为：",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1762395363.124799,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    }
+                ]
+            }
+        },
+        "content_type": "other",
+        "conversation_id": "01K9BF65NH21WSDKTWWTJR88Z6",
+        "ext": {
+            "ask": null,
+            "related_queries": null,
+            "total_time": 0.09,
+            "total_tokens": 0,
+            "ttft": 248
+        },
+        "id": "01K9BF65NK52YVMANH49Y4GJQY",
+        "index": 2,
+        "reply_id": "01K9BF65NJNZBPC0T2337YYQ71",
+        "role": "assistant",
+        "status": ""
+    },
+    "user_message_id": "01K9BF65NJNZBPC0T2337YYQ71"
+}
+
+5. 获取agent配置信息
+请求url：https://{host_ip}/api/agent-factory/v3/agent/{agent_id}
+方法：GET
+响应(没有配置数据源)：
+{
+    "id": "01K9V8G3755R58SPQ0CWN201F8",
+    "key": "01K9V8G3755R58SPQ0D097HWBB",
+    "is_built_in": 0,
+    "is_system_agent": 0,
+    "name": "Plan_Agent_副本",
+    "profile": "负责规划任务的Agent",
+    "avatar_type": 1,
+    "avatar": "1",
+    "product_key": "dip",
+    "product_name": "",
+    "config": {
+        "input": {
+            "fields": [
+                {
+                    "name": "query",
+                    "type": "string",
+                    "desc": ""
+                },
+                {
+                    "name": "history",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "tool",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "header",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "self_config",
+                    "type": "object",
+                    "desc": ""
+                }
+            ],
+            "rewrite": null,
+            "augment": null,
+            "is_temp_zone_enabled": 0,
+            "temp_zone_config": null
+        },
+        "system_prompt": "",
+        "dolphin": "",
+        "is_dolphin_mode": 1,
+        "pre_dolphin": [
+            {
+                "key": "context_organize",
+                "name": "上下文组织模块",
+                "value": "\n{\"query\": \"用户的问题为: \"+$query} -> context\n",
+                "enabled": true,
+                "edited": false
+            }
+        ],
+        "post_dolphin": [],
+        "data_source": {
+            "kg": null,
+            "doc": null,
+            "metric": null,
+            "kn_entry": null,
+            "knowledge_network": null,
+            "advanced_config": null
+        },
+        "skills": {
+            "tools": [],
+            "agents": [],
+            "mcps": null
+        },
+        "llms": [
+            {
+                "is_default": true,
+                "llm_config": {
+                    "id": "1967427534576553984",
+                    "name": "Qwen-72B",
+                    "model_type": "llm",
+                    "temperature": 1,
+                    "top_p": 1,
+                    "top_k": 1,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0,
+                    "max_tokens": 1000
+                }
+            }
+        ],
+        "is_data_flow_set_enabled": 0,
+        "opening_remark_config": null,
+        "preset_questions": null,
+        "output": {
+            "variables": {
+                "answer_var": "plan_list",
+                "doc_retrieval_var": "doc_retrieval_res",
+                "graph_retrieval_var": "graph_retrieval_res",
+                "related_questions_var": "related_questions",
+                "other_vars": null,
+                "middle_output_vars": null
+            },
+            "default_format": "markdown"
+        },
+        "built_in_can_edit_fields": {
+            "name": false,
+            "avatar": false,
+            "profile": false,
+            "input_config": false,
+            "system_prompt": false,
+            "data_source.kg": false,
+            "data_source.doc": false,
+            "model": true,
+            "skills": false,
+            "opening_remark_config": false,
+            "preset_questions": false,
+            "skills.tools.tool_input": false,
+            "memory": false,
+            "related_question": false
+        },
+        "memory": {
+            "is_enabled": false
+        },
+        "related_question": {
+            "is_enabled": false
+        },
+        "plan_mode": null,
+        "metadata": {
+            "config_version": "v1"
+        }
+    },
+    "status": "published"
+}
+
+响应(配置了文档数据源)：
+{
+    "id": "01K9V8G3755R58SPQ0CWN201F8",
+    "key": "01K9V8G3755R58SPQ0D097HWBB",
+    "is_built_in": 0,
+    "is_system_agent": 0,
+    "name": "Plan_Agent_副本",
+    "profile": "负责规划任务的Agent",
+    "avatar_type": 1,
+    "avatar": "1",
+    "product_key": "dip",
+    "product_name": "",
+    "config": {
+        "input": {
+            "fields": [
+                {
+                    "name": "query",
+                    "type": "string",
+                    "desc": ""
+                },
+                {
+                    "name": "history",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "tool",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "header",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "self_config",
+                    "type": "object",
+                    "desc": ""
+                }
+            ],
+            "rewrite": null,
+            "augment": null,
+            "is_temp_zone_enabled": 0,
+            "temp_zone_config": null
+        },
+        "system_prompt": "",
+        "dolphin": "",
+        "is_dolphin_mode": 1,
+        "pre_dolphin": [
+            {
+                "key": "doc_retrieve",
+                "name": "文档召回模块",
+                "value": "\n/judge/(tools=[\"doc_qa\"], history=True)判断【$query】是否需要到文档中召回，如果不需要召回，则直接返回“不需要文档召回”，否则执行工具对【$query】进行召回 -> doc_retrieval_res\n",
+                "enabled": true,
+                "edited": false
+            },
+            {
+                "key": "context_organize",
+                "name": "上下文组织模块",
+                "value": "\n\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\\n\" -> reference\n\n/if/ \"result\" in $doc_retrieval_res['answer'] and $doc_retrieval_res['answer']['result']:\n    $reference + \"文档召回的内容：\" + $doc_retrieval_res['answer']['result'] + \"\\n\" -> reference\n/end/\n\n{\"reference\": $reference, \"query\": \"用户的问题为: \"+$query} -> context\n",
+                "enabled": true,
+                "edited": false
+            }
+        ],
+        "post_dolphin": [],
+        "data_source": {
+            "kg": null,
+            "doc": [
+                {
+                    "ds_id": "0",
+                    "fields": [
+                        {
+                            "name": "AnyBackup Family 8 技术白皮书",
+                            "path": "AnyBackup Family 8 技术白皮书",
+                            "source": "gns://9CB2AEB17D584B5BAAFC0DDCB9FBE93E/92057B34D53E40F485EE94B6B526C4CE",
+                            "type": "folder"
+                        }
+                    ],
+                    "datasets": [
+                        "17535fcf23c7492eb8637e956b87af1e"
+                    ]
+                }
+            ],
+            "metric": null,
+            "kn_entry": null,
+            "knowledge_network": null,
+            "advanced_config": {
+                "kg": null,
+                "doc": {
+                    "retrieval_slices_num": 150,
+                    "max_slice_per_cite": 16,
+                    "rerank_topk": 15,
+                    "slice_head_num": 0,
+                    "slice_tail_num": 2,
+                    "documents_num": 8,
+                    "document_threshold": -5.5,
+                    "retrieval_max_length": 12288
+                }
+            }
+        },
+        "skills": {
+            "tools": [],
+            "agents": [],
+            "mcps": null
+        },
+        "llms": [
+            {
+                "is_default": true,
+                "llm_config": {
+                    "id": "1967427534576553984",
+                    "name": "Qwen-72B",
+                    "model_type": "llm",
+                    "temperature": 1,
+                    "top_p": 1,
+                    "top_k": 1,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0,
+                    "max_tokens": 1000
+                }
+            }
+        ],
+        "is_data_flow_set_enabled": 0,
+        "opening_remark_config": null,
+        "preset_questions": null,
+        "output": {
+            "variables": {
+                "answer_var": "plan_list",
+                "doc_retrieval_var": "doc_retrieval_res",
+                "graph_retrieval_var": "graph_retrieval_res",
+                "related_questions_var": "related_questions",
+                "other_vars": null,
+                "middle_output_vars": null
+            },
+            "default_format": "markdown"
+        },
+        "built_in_can_edit_fields": {
+            "name": false,
+            "avatar": false,
+            "profile": false,
+            "input_config": false,
+            "system_prompt": false,
+            "data_source.kg": false,
+            "data_source.doc": false,
+            "model": true,
+            "skills": false,
+            "opening_remark_config": false,
+            "preset_questions": false,
+            "skills.tools.tool_input": false,
+            "memory": false,
+            "related_question": false
+        },
+        "memory": {
+            "is_enabled": false
+        },
+        "related_question": {
+            "is_enabled": false
+        },
+        "plan_mode": null,
+        "metadata": {
+            "config_version": "v1"
+        }
+    },
+    "status": "unpublished"
+}
+响应(配置了业务知识网络数据源以及3个技能，分别是一个工具：zhipu_search_tool和2个agent：Plan_Agent和Summary_Agent)：
+{
+    "id": "01K9V8G3755R58SPQ0CWN201F8",
+    "key": "01K9V8G3755R58SPQ0D097HWBB",
+    "is_built_in": 0,
+    "is_system_agent": 0,
+    "name": "Plan_Agent_副本",
+    "profile": "负责规划任务的Agent",
+    "avatar_type": 1,
+    "avatar": "1",
+    "product_key": "dip",
+    "product_name": "",
+    "config": {
+        "input": {
+            "fields": [
+                {
+                    "name": "query",
+                    "type": "string",
+                    "desc": ""
+                },
+                {
+                    "name": "history",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "tool",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "header",
+                    "type": "object",
+                    "desc": ""
+                },
+                {
+                    "name": "self_config",
+                    "type": "object",
+                    "desc": ""
+                }
+            ],
+            "rewrite": null,
+            "augment": null,
+            "is_temp_zone_enabled": 0,
+            "temp_zone_config": null
+        },
+        "system_prompt": "",
+        "dolphin": "",
+        "is_dolphin_mode": 1,
+        "pre_dolphin": [
+            {
+                "key": "graph_retrieve",
+                "name": "业务知识网络召回模块",
+                "value": "\n/judge/(tools=[\"graph_qa\"], history=True)判断【$query】是否需要到业务知识网络中召回，如果不需要召回，则直接返回“不需要业务知识网络召回”，否则执行工具对【$query】进行召回 -> graph_retrieval_res\n",
+                "enabled": true,
+                "edited": false
+            },
+            {
+                "key": "context_organize",
+                "name": "上下文组织模块",
+                "value": "\n\"如果有参考文档，结合参考文档回答用户的问题。如果没有参考文档，根据用户的问题回答。\\n\" -> reference\n\n/if/ \"result\" in $graph_retrieval_res['answer'] and $graph_retrieval_res['answer']['result']:\n    $reference + \"业务知识网络召回的内容：\" + $graph_retrieval_res['answer']['result'] + \"\\n\" -> reference\n/end/\n\n{\"reference\": $reference, \"query\": \"用户的问题为: \"+$query} -> context\n",
+                "enabled": true,
+                "edited": false
+            }
+        ],
+        "post_dolphin": [],
+        "data_source": {
+            "kg": [
+                {
+                    "kg_id": "8",
+                    "fields": [
+                        "reaction",
+                        "waste",
+                        "patent",
+                        "measure",
+                        "chemical",
+                        "enterprise",
+                        "campus",
+                        "catalyzer",
+                        "technique"
+                    ],
+                    "field_properties": {
+                        "campus": [
+                            "实体vid",
+                            "name",
+                            "address",
+                            "country",
+                            "province_code",
+                            "region_code",
+                            "post_code",
+                            "contact_number",
+                            "industrial_orientation",
+                            "id",
+                            "brief",
+                            "air_supplyze",
+                            "power_supply",
+                            "water_supply",
+                            "land_surplus"
+                        ],
+                        "catalyzer": [
+                            "实体vid",
+                            "name",
+                            "id",
+                            "function_type",
+                            "source_enterprise",
+                            "development_status",
+                            "intellectual_property",
+                            "composition",
+                            "application_performance",
+                            "price"
+                        ],
+                        "chemical": [
+                            "实体vid",
+                            "name",
+                            "name_en",
+                            "smiles_formula",
+                            "molecular_weight",
+                            "einecs_id",
+                            "category",
+                            "introduction",
+                            "usages",
+                            "production_method",
+                            "molar_mass",
+                            "is_highly_toxic",
+                            "density",
+                            "vapor_pressure",
+                            "refractive_index",
+                            "flash_point",
+                            "storage_condition",
+                            "solubility",
+                            "form",
+                            "colour",
+                            "smell",
+                            "ph_value",
+                            "olfactory_threshold",
+                            "water_solubility",
+                            "susceptibility",
+                            "exposure_limits",
+                            "toxic_substance_data",
+                            "toxicity",
+                            "immediate_threatening_concentration",
+                            "msds_link",
+                            "poison_level",
+                            "acute_toxicity",
+                            "stimulus_data",
+                            "explosive_characteristics",
+                            "storage_and_transport_characteristic",
+                            "fire_extinguishing_agent",
+                            "physical_property",
+                            "chemical_property",
+                            "synonyms_zh",
+                            "synonyms_en",
+                            "melting_point_lower",
+                            "melting_point_upper",
+                            "boiling_point_lower",
+                            "boiling_point_upper",
+                            "explosive_limit_lower",
+                            "explosive_limit_upper"
+                        ],
+                        "enterprise": [
+                            "实体vid",
+                            "name",
+                            "website",
+                            "credit_code",
+                            "administrative_division",
+                            "industry",
+                            "registered_capital",
+                            "insured_person_cnt",
+                            "enterprise_nature",
+                            "listing_status",
+                            "list_classification",
+                            "type_of_technology",
+                            "industrial_and_commercial_status",
+                            "legal_representative",
+                            "telephone",
+                            "mail",
+                            "company_registered_address",
+                            "nature_of_business",
+                            "registration_time",
+                            "stock_code",
+                            "stock_abbreviation",
+                            "securities_category",
+                            "listed_exchange",
+                            "securities_regulatory_commission"
+                        ],
+                        "measure": [
+                            "实体vid",
+                            "name",
+                            "description"
+                        ],
+                        "patent": [
+                            "实体vid",
+                            "name",
+                            "patent_no",
+                            "authorize_date",
+                            "introduction",
+                            "request_date",
+                            "type"
+                        ],
+                        "reaction": [
+                            "实体vid",
+                            "name",
+                            "reaction_type",
+                            "condition_type"
+                        ],
+                        "technique": [
+                            "实体vid",
+                            "name",
+                            "is_key_regulatory_technique",
+                            "description",
+                            "steam_consumption_rate",
+                            "elec_consumption_rate",
+                            "circulating_water_consumption_rate",
+                            "chilled_water_consumption_rate",
+                            "demineralized_water_consumption_rate",
+                            "fuel_consumption_rate",
+                            "environmental_protection_facilities_fee"
+                        ],
+                        "waste": [
+                            "实体vid",
+                            "name",
+                            "category_code"
+                        ]
+                    },
+                    "output_fields": [
+                        "enterprise",
+                        "campus"
+                    ]
+                }
+            ],
+            "doc": [],
+            "metric": null,
+            "kn_entry": null,
+            "knowledge_network": null,
+            "advanced_config": {
+                "kg": {
+                    "text_match_entity_nums": 60,
+                    "vector_match_entity_nums": 60,
+                    "graph_rag_topk": 25,
+                    "long_text_length": 256,
+                    "reranker_sim_threshold": -5.5,
+                    "retrieval_max_length": 12288
+                },
+                "doc": null
+            }
+        },
+        "skills": {
+            "tools": [
+                {
+            "tool_id": "e80c6aaf-3808-467a-b1e6-6a9c59d0b1cf",
+            "tool_box_id": "939bb1db-9239-43f5-8100-ba03eed683db",
+            "tool_input": [
+                {
+                    "input_name": "api_key",
+        "input_type": "string",
+        "input_desc": "智谱API密钥",
+        "map_type": "fixedValue",
+        "map_value": "1828616286d4c94b26071585e1f93009.negnhMi3D5KVuc7h",
+        "enable": true
+      },
+      {
+        "input_name": "query",
+        "input_type": "string",
+        "input_desc": "搜索查询词",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+      }
+    ],
+    "intervention": false,
+    "details": {
+      "tool_type": "tool",
+      "tool_id": "e80c6aaf-3808-467a-b1e6-6a9c59d0b1cf",
+      "tool_name": "zhipu_search_tool",
+      "tool_box_id": "939bb1db-9239-43f5-8100-ba03eed683db",
+      "tool_box_name": "搜索工具",
+      "tool_desc": "执行智谱搜索\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+      "intervention": false,
+      "tool_input": [
+        {
+          "input_name": "api_key",
+          "input_type": "string",
+          "input_desc": "智谱API密钥",
+          "map_type": "fixedValue",
+          "map_value": "1828616286d4c94b26071585e1f93009.negnhMi3D5KVuc7h",
+          "enable": true
+        },
+        {
+          "input_name": "query",
+          "input_type": "string",
+          "input_desc": "搜索查询词",
+          "map_type": "auto",
+          "map_value": "",
+          "enable": true
+        }
+      ],
+      "tool_timeout": 300
+    }
+  }
+],
+            "agents": [
+  {
+    "agent_key": "Plan_Agent",
+    "agent_version": "v0",
+    "agent_input": [
+      {
+        "enable": true,
+        "input_name": "query",
+        "input_type": "string",
+        "map_type": "auto",
+        "input_desc": "query变量"
+      }
+    ],
+    "intervention": false,
+    "data_source_config": {
+      "type": "self_configured"
+    },
+    "llm_config": {
+      "type": "self_configured"
+    },
+    "details": {
+      "tool_type": "agent",
+      "tool_id": "Plan_Agent",
+      "tool_name": "Plan_Agent",
+      "tool_box_id": "built-in-agent",
+      "tool_box_name": "Agent",
+      "tool_desc": "负责规划任务的Agent",
+      "intervention": false,
+      "tool_input": [
+        {
+          "enable": true,
+          "input_name": "query",
+          "input_type": "string",
+          "map_type": "auto",
+          "input_desc": "query变量"
+        }
+      ],
+      "agent_version": "v0",
+      "agent_key": "Plan_Agent",
+      "data_source_config": {
+        "type": "self_configured"
+      },
+      "llm_config": {
+        "type": "self_configured"
+      }
+    }
+  },
+  {
+    "agent_key": "Summary_Agent",
+    "agent_version": "v0",
+    "agent_input": [
+      {
+        "enable": true,
+        "input_name": "query",
+        "input_type": "string",
+        "map_type": "auto",
+        "input_desc": "query变量"
+      },
+      {
+        "enable": false,
+        "input_name": "ref_list",
+        "input_type": "string",
+        "map_type": "auto",
+        "input_desc": "ref_list变量"
+      }
+    ],
+    "intervention": false,
+    "data_source_config": {
+      "type": "self_configured"
+    },
+    "llm_config": {
+      "type": "self_configured"
+    },
+    "details": {
+      "tool_type": "agent",
+      "tool_id": "Summary_Agent",
+      "tool_name": "Summary_Agent",
+      "tool_box_id": "built-in-agent",
+      "tool_box_name": "Agent",
+      "tool_desc": "负责总结任务的Agent",
+      "intervention": false,
+      "tool_input": [
+        {
+          "enable": true,
+          "input_name": "query",
+          "input_type": "string",
+          "map_type": "auto",
+          "input_desc": "query变量"
+        },
+        {
+          "enable": false,
+          "input_name": "ref_list",
+          "input_type": "string",
+          "map_type": "auto",
+          "input_desc": "ref_list变量"
+        }
+      ],
+      "agent_version": "v0",
+      "agent_key": "Summary_Agent",
+      "data_source_config": {
+        "type": "self_configured"
+      },
+      "llm_config": {
+        "type": "self_configured"
+      }
+    }
+  }
+],
+            "mcps": null
+        },
+        "llms": [
+            {
+                "is_default": true,
+                "llm_config": {
+                    "id": "1967427534576553984",
+                    "name": "Qwen-72B",
+                    "model_type": "llm",
+                    "temperature": 1,
+                    "top_p": 1,
+                    "top_k": 1,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0,
+                    "max_tokens": 1000
+                }
+            }
+        ],
+        "is_data_flow_set_enabled": 0,
+        "opening_remark_config": null,
+        "preset_questions": null,
+        "output": {
+            "variables": {
+                "answer_var": "plan_list",
+                "doc_retrieval_var": "doc_retrieval_res",
+                "graph_retrieval_var": "graph_retrieval_res",
+                "related_questions_var": "related_questions",
+                "other_vars": null,
+                "middle_output_vars": null
+            },
+            "default_format": "markdown"
+        },
+        "built_in_can_edit_fields": {
+            "name": false,
+            "avatar": false,
+            "profile": false,
+            "input_config": false,
+            "system_prompt": false,
+            "data_source.kg": false,
+            "data_source.doc": false,
+            "model": true,
+            "skills": false,
+            "opening_remark_config": false,
+            "preset_questions": false,
+            "skills.tools.tool_input": false,
+            "memory": false,
+            "related_question": false
+        },
+        "memory": {
+            "is_enabled": true
+        },
+        "related_question": {
+            "is_enabled": true
+        },
+        "plan_mode": {
+            "is_enabled": true
+        },
+        "metadata": {
+            "config_version": "v1"
+        }
+    },
+    "status": "unpublished"
+}
+
+示例6：查询工具箱
+请求地址：https://{host_ip}/api/agent-operator-integration/v1/tool-box/market?name={tool_box_name}&page=1&page_size=20
+方法：GET
+响应：
+{
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false,
+    "data": [
+        {
+            "box_id": "939bb1db-9239-43f5-8100-ba03eed683db",
+            "box_name": "搜索工具",
+            "box_desc": "包含 图数据库问答、文档问答、智谱搜索 三个工具",
+            "box_svc_url": "http://agent-executor:30778",
+            "status": "published",
+            "category_type": "system",
+            "category_name": "系统工具",
+            "is_internal": true,
+            "source": "internal",
+            "tools": [
+                "doc_qa",
+                "graph_qa",
+                "zhipu_search_tool"
+            ],
+            "create_time": 1762857428544069753,
+            "update_time": 1762857428544069822,
+            "create_user": "system",
+            "update_user": "system",
+            "release_user": "system",
+            "release_time": 1762857428544069881
+        }
+    ]
+}
+
+示例7：根据工具箱ID获取某个工具的ID
+请求地址：https://{host_ip}/api/agent-operator-integration/v1/tool-box/{tool_box_id}/tools/list?box_id={tool_box_id}&page=1&page_size=20
+方法：GET
+响应：
+{
+    "total": 3,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false,
+    "box_id": "939bb1db-9239-43f5-8100-ba03eed683db",
+    "tools": [
+        {
+            "tool_id": "6e35509b-00a2-49b6-a5c3-c25eeb1e641b",
+            "name": "doc_qa",
+            "description": "基于文档的问答\n\n- **query**: 查询问题\n- **props**: 查询的数据源范围和请求头\n\n返回问答结果",
+            "status": "enabled",
+            "metadata_type": "openapi",
+            "metadata": {
+                "version": "41c01e43-4d96-429b-9d10-b5caadb8a42d",
+                "summary": "doc_qa",
+                "description": "基于文档的问答\n\n- **query**: 查询问题\n- **props**: 查询的数据源范围和请求头\n\n返回问答结果",
+                "server_url": "http://agent-executor:30778",
+                "path": "/api/agent-executor/v1/tools/doc_qa",
+                "method": "POST",
+                "create_time": 1761286538769988805,
+                "update_time": 1761286538769988805,
+                "create_user": "",
+                "update_user": "",
+                "api_spec": {
+                    "parameters": [],
+                    "request_body": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QARequest"
+                                }
+                            }
+                        },
+                        "required": false
+                    },
+                    "responses": [
+                        {
+                            "status_code": "200",
+                            "description": "Successful Response",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/QAToolResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "400",
+                            "description": "Bad Request",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "500",
+                            "description": "Internal Server Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "components": {
+                        "schemas": {
+                            "QAResponse": {
+                                "type": "object",
+                                "description": "问答响应",
+                                "required": [
+                                    "text"
+                                ],
+                                "properties": {
+                                    "references": {
+                                        "type": "array",
+                                        "description": "来源信息",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "text": {
+                                        "type": "string",
+                                        "description": "回答内容"
+                                    }
+                                }
+                            },
+                            "ErrorResponse": {
+                                "type": "object",
+                                "required": [
+                                    "Description",
+                                    "ErrorCode",
+                                    "ErrorDetails",
+                                    "ErrorLink",
+                                    "Solution"
+                                ],
+                                "properties": {
+                                    "ErrorDetails": {
+                                        "type": "string",
+                                        "description": "错误详情"
+                                    },
+                                    "ErrorLink": {
+                                        "type": "string",
+                                        "description": "错误链接"
+                                    },
+                                    "Solution": {
+                                        "type": "string",
+                                        "description": "解决方法"
+                                    },
+                                    "Description": {
+                                        "type": "string",
+                                        "description": "错误描述"
+                                    },
+                                    "ErrorCode": {
+                                        "type": "string",
+                                        "description": "错误码"
+                                    }
+                                }
+                            },
+                            "QARequest": {
+                                "type": "object",
+                                "description": "文档问答请求",
+                                "required": [
+                                    "query",
+                                    "props"
+                                ],
+                                "properties": {
+                                    "props": {
+                                        "$ref": "#/components/schemas/QARequestProps"
+                                    },
+                                    "query": {
+                                        "type": "string",
+                                        "description": "查询问题"
+                                    }
+                                }
+                            },
+                            "QARequestProps": {
+                                "description": "图数据库问答请求",
+                                "properties": {
+                                    "data_source": {
+                                        "type": "object",
+                                        "description": "数据源"
+                                    },
+                                    "headers": {
+                                        "type": "object",
+                                        "description": "请求头"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "QAToolResponse": {
+                                "description": "问答响应",
+                                "required": [
+                                    "result",
+                                    "full_result"
+                                ],
+                                "properties": {
+                                    "full_result": {
+                                        "$ref": "#/components/schemas/QAResponse"
+                                    },
+                                    "result": {
+                                        "type": "string",
+                                        "description": "回答内容"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "callbacks": null,
+                    "security": null,
+                    "tags": [
+                        "internal-tools"
+                    ],
+                    "external_docs": null
+                }
+            },
+            "use_rule": "",
+            "global_parameters": {
+                "name": "",
+                "description": "",
+                "required": false,
+                "in": "",
+                "type": "",
+                "value": null
+            },
+            "create_time": 1761286538770577784,
+            "update_time": 1761286538770577784,
+            "create_user": "",
+            "update_user": "",
+            "extend_info": {}
+        },
+        {
+            "tool_id": "e8243de2-6ba1-4c16-bc0a-25ebc6e43e8a",
+            "name": "graph_qa",
+            "description": "基于图数据库的问答\n\n- **query**: 查询问题\n- **props**: 查询的数据源范围和请求头\n\n返回问答结果",
+            "status": "enabled",
+            "metadata_type": "openapi",
+            "metadata": {
+                "version": "e858221a-c6de-421a-89b8-1934f1dc59e6",
+                "summary": "graph_qa",
+                "description": "基于图数据库的问答\n\n- **query**: 查询问题\n- **props**: 查询的数据源范围和请求头\n\n返回问答结果",
+                "server_url": "http://agent-executor:30778",
+                "path": "/api/agent-executor/v1/tools/graph_qa",
+                "method": "POST",
+                "create_time": 1761286538769988805,
+                "update_time": 1761286538769988805,
+                "create_user": "",
+                "update_user": "",
+                "api_spec": {
+                    "parameters": [],
+                    "request_body": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QARequest"
+                                }
+                            }
+                        },
+                        "required": false
+                    },
+                    "responses": [
+                        {
+                            "status_code": "200",
+                            "description": "Successful Response",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/QAToolResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "400",
+                            "description": "Bad Request",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "500",
+                            "description": "Internal Server Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "components": {
+                        "schemas": {
+                            "QARequest": {
+                                "properties": {
+                                    "props": {
+                                        "$ref": "#/components/schemas/QARequestProps"
+                                    },
+                                    "query": {
+                                        "type": "string",
+                                        "description": "查询问题"
+                                    }
+                                },
+                                "type": "object",
+                                "description": "文档问答请求",
+                                "required": [
+                                    "query",
+                                    "props"
+                                ]
+                            },
+                            "QARequestProps": {
+                                "description": "图数据库问答请求",
+                                "properties": {
+                                    "data_source": {
+                                        "type": "object",
+                                        "description": "数据源"
+                                    },
+                                    "headers": {
+                                        "type": "object",
+                                        "description": "请求头"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "QAToolResponse": {
+                                "properties": {
+                                    "result": {
+                                        "type": "string",
+                                        "description": "回答内容"
+                                    },
+                                    "full_result": {
+                                        "$ref": "#/components/schemas/QAResponse"
+                                    }
+                                },
+                                "type": "object",
+                                "description": "问答响应",
+                                "required": [
+                                    "result",
+                                    "full_result"
+                                ]
+                            },
+                            "QAResponse": {
+                                "required": [
+                                    "text"
+                                ],
+                                "properties": {
+                                    "text": {
+                                        "type": "string",
+                                        "description": "回答内容"
+                                    },
+                                    "references": {
+                                        "description": "来源信息",
+                                        "items": {
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object",
+                                "description": "问答响应"
+                            },
+                            "ErrorResponse": {
+                                "type": "object",
+                                "required": [
+                                    "Description",
+                                    "ErrorCode",
+                                    "ErrorDetails",
+                                    "ErrorLink",
+                                    "Solution"
+                                ],
+                                "properties": {
+                                    "ErrorDetails": {
+                                        "type": "string",
+                                        "description": "错误详情"
+                                    },
+                                    "ErrorLink": {
+                                        "description": "错误链接",
+                                        "type": "string"
+                                    },
+                                    "Solution": {
+                                        "type": "string",
+                                        "description": "解决方法"
+                                    },
+                                    "Description": {
+                                        "type": "string",
+                                        "description": "错误描述"
+                                    },
+                                    "ErrorCode": {
+                                        "type": "string",
+                                        "description": "错误码"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "callbacks": null,
+                    "security": null,
+                    "tags": [
+                        "internal-tools"
+                    ],
+                    "external_docs": null
+                }
+            },
+            "use_rule": "",
+            "global_parameters": {
+                "name": "",
+                "description": "",
+                "required": false,
+                "in": "",
+                "type": "",
+                "value": null
+            },
+            "create_time": 1761286538770577784,
+            "update_time": 1761286538770577784,
+            "create_user": "",
+            "update_user": "",
+            "extend_info": {}
+        },
+        {
+            "tool_id": "e80c6aaf-3808-467a-b1e6-6a9c59d0b1cf",
+            "name": "zhipu_search_tool",
+            "description": "执行智谱搜索\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+            "status": "enabled",
+            "metadata_type": "openapi",
+            "metadata": {
+                "version": "f88c9cfb-ff86-4c77-91cd-9c1afef2d93d",
+                "summary": "zhipu_search_tool",
+                "description": "执行智谱搜索\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+                "server_url": "http://agent-executor:30778",
+                "path": "/api/agent-executor/v1/tools/zhipu_search_tool",
+                "method": "POST",
+                "create_time": 1761286538769988805,
+                "update_time": 1761286538769988805,
+                "create_user": "",
+                "update_user": "",
+                "api_spec": {
+                    "parameters": [
+                        {
+                            "name": "api_key",
+                            "in": "header",
+                            "description": "智谱API密钥",
+                            "required": true,
+                            "schema": {
+                                "description": "智谱API密钥",
+                                "title": "Api-Key",
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "request_body": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ZhipuSearchRequest"
+                                }
+                            }
+                        },
+                        "required": false
+                    },
+                    "responses": [
+                        {
+                            "status_code": "500",
+                            "description": "Internal Server Error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "200",
+                            "description": "Successful Response",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ZhipuSearchResponse"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "status_code": "400",
+                            "description": "Bad Request",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "components": {
+                        "schemas": {
+                            "ZhipuSearchRequest": {
+                                "type": "object",
+                                "description": "智谱搜索请求",
+                                "required": [
+                                    "query"
+                                ],
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "搜索查询词"
+                                    }
+                                }
+                            },
+                            "ErrorResponse": {
+                                "type": "object",
+                                "required": [
+                                    "Description",
+                                    "ErrorCode",
+                                    "ErrorDetails",
+                                    "ErrorLink",
+                                    "Solution"
+                                ],
+                                "properties": {
+                                    "ErrorCode": {
+                                        "type": "string",
+                                        "description": "错误码"
+                                    },
+                                    "ErrorDetails": {
+                                        "type": "string",
+                                        "description": "错误详情"
+                                    },
+                                    "ErrorLink": {
+                                        "type": "string",
+                                        "description": "错误链接"
+                                    },
+                                    "Solution": {
+                                        "type": "string",
+                                        "description": "解决方法"
+                                    },
+                                    "Description": {
+                                        "type": "string",
+                                        "description": "错误描述"
+                                    }
+                                }
+                            },
+                            "ZhipuSearchResponse": {
+                                "required": [
+                                    "content"
+                                ],
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "description": "搜索结果内容"
+                                    }
+                                },
+                                "type": "object",
+                                "description": "智谱搜索响应"
+                            }
+                        }
+                    },
+                    "callbacks": null,
+                    "security": null,
+                    "tags": [
+                        "internal-tools"
+                    ],
+                    "external_docs": null
+                }
+            },
+            "use_rule": "",
+            "global_parameters": {
+                "name": "",
+                "description": "",
+                "required": false,
+                "in": "",
+                "type": "",
+                "value": null
+            },
+            "create_time": 1761286538770577784,
+            "update_time": 1761286538770577784,
+            "create_user": "",
+            "update_user": "",
+            "extend_info": {}
+        }
+    ]
+}
+
+示例8：中断对话的第一次和第二次响应
+请求地址：https://{host_ip}/api/agent-app/v1/app/{agent_id}/chat/completion
+方法：POST
+第一次的请求体：
+{
+  "agent_id": "01KAA9ZGPACAB7JKAH38PXW730",
+  "agent_version": "v0",
+   "query": "如何学习蛙泳",
+  "stream": false,
+  "inc_stream": false,
+  "executor_version": "v2"
+}
+第一次的响应：
+{
+    "assistant_message_id": "01KAAWRBQ8FAXJ9MAJ9HNWAYVZ",
+    "conversation_id": "01KAAWRBQ493ASRX3N92H8YFQ1",
+    "error": null,
+    "message": {
+        "agent_info": {
+            "agent_id": "01KAA9ZGPACAB7JKAH38PXW730",
+            "agent_name": "ttft_plan_agent_skill_intervention_chat_dolphin",
+            "agent_status": "",
+            "agent_version": "v0"
+        },
+        "content": {
+            "final_answer": {
+                "answer": {
+                    "text": ""
+                },
+                "answer_type_other": null,
+                "output_variables_config": {
+                    "answer_var": "answer",
+                    "doc_retrieval_var": "doc_retrieval_res",
+                    "graph_retrieval_var": "graph_retrieval_res",
+                    "middle_output_vars": [],
+                    "other_vars": null,
+                    "related_questions_var": "related_questions"
+                },
+                "query": "如何学习蛙泳",
+                "skill_process": null,
+                "temp_files": null,
+                "thinking": ""
+            },
+            "middle_answer": {
+                "doc_retrieval": null,
+                "graph_retrieval": null,
+                "other_variables": {},
+                "progress": [
+                    {
+                        "agent_name": "main",
+                        "answer": "我将调用任务计划...",
+                        "end_time": 1763449778.0577633,
+                        "estimated_input_tokens": 35,
+                        "estimated_output_tokens": 14,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "ca1af0d6-cb06-4c7e-98b7-6ea474362e57",
+                        "input_message": "输出以下内容：我将调用任务计划...不要输出其他内容。",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1763449778.0563498,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 8,
+                            "prompt_tokens": 48,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 16,
+                                "uncached_tokens": 32
+                            },
+                            "total_tokens": 56
+                        }
+                    },
+                    {
+                        "agent_name": "Plan_Agent",
+                        "answer": "",
+                        "end_time": 1763449778.058546,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "fd768fbb-64d1-4227-9ea2-36a0965197df",
+                        "input_message": "{'query': '如何学习蛙泳'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "如何学习蛙泳"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "Plan_Agent",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1763449778.058546,
+                        "status": "processing",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    }
+                ]
+            }
+        },
+        "content_type": "other",
+        "conversation_id": "01KAAWRBQ493ASRX3N92H8YFQ1",
+        "ext": {
+            "ask": {
+                "session_id": "01KAAWRBQ08R9G3ADSK4HTMB5P",
+                "tool_args": [
+                    {
+                        "key": "query",
+                        "type": "string",
+                        "value": "如何学习蛙泳"
+                    }
+                ],
+                "tool_name": "Plan_Agent"
+            },
+            "related_queries": null,
+            "total_time": 0,
+            "total_tokens": 56,
+            "ttft": 186
+        },
+        "id": "01KAAWRBQ8FAXJ9MAJ9HNWAYVZ",
+        "index": 2,
+        "reply_id": "01KAAWRBQ5VYHF716TGRSBFG2Q",
+        "role": "assistant",
+        "status": ""
+    },
+    "user_message_id": "01KAAWRBQ5VYHF716TGRSBFG2Q"
+}
+
+第二次的请求体：
+{
+  "query": "如何学习蛙泳",
+  "tool": {
+    "tool_args": [
+      {
+        "key": "query",
+        "value": "如何学习蛙泳",
+        "type": "string"
+      }
+    ],
+    "session_id": "01KAAWRBQ08R9G3ADSK4HTMB5P",
+    "tool_name": "Plan_Agent"
+  },
+  "interrupted_assistant_message_id": "01KAAWRBQ8FAXJ9MAJ9HNWAYVZ",
+  "conversation_id": "01KAAWRBQ493ASRX3N92H8YFQ1",
+  "agent_id": "01KAA9ZGPACAB7JKAH38PXW730",
+  "agent_version": "v0",
+  "stream": false,
+  "inc_stream": false,
+  "executor_version": "v2"
+}
+第二次的响应：
+{
+    "assistant_message_id": "01KAAWRBQ8FAXJ9MAJ9HNWAYVZ",
+    "conversation_id": "01KAAWRBQ493ASRX3N92H8YFQ1",
+    "error": null,
+    "message": {
+        "agent_info": {
+            "agent_id": "01KAA9ZGPACAB7JKAH38PXW730",
+            "agent_name": "ttft_plan_agent_skill_intervention_chat_dolphin",
+            "agent_status": "",
+            "agent_version": "v0"
+        },
+        "content": {
+            "final_answer": {
+                "answer": {
+                    "text": "以下是拆分后的问题及参考信息的整理：\n\n---\n\n### **问题拆分：如何学习蛙泳？**\n\n#### **1. 蛙泳的基本动作和技巧有哪些？**\n- **参考信息**：搜索资料: 蛙泳的基本动作和技巧  \n- **建议内容**：  \n  - 蛙泳的划手动作（前伸、外划、内划、前划）  \n  - 蛙泳的蹬腿动作（收腿、翻脚、蹬夹、滑行）  \n  - 呼吸技巧（在划手和蹬腿时抬头换气）  \n  - 身体协调与节奏控制  \n\n---\n\n#### **2. 初学者如何安全有效地练习蛙泳？**\n- **参考信息**：搜索资料: 初学者如何安全有效地练习蛙泳  \n- **建议内容**：  \n  - 选择合适的练习环境（如泳池、浅水区）  \n  - 使用辅助工具（如浮板、泳圈）  \n  - 分步骤练习（先练手部动作，再练腿部动作，最后协调）  \n  - 注意安全（避免呛水、疲劳过度）  \n  - 逐步增加练习时间和强度  \n\n---\n\n#### **3. 如何总结学习蛙泳的方法？**\n- **参考信息**：总结内容：如何学习蛙泳  \n- **建议内容**：  \n  - 理论学习（了解蛙泳动作原理）  \n  - 分步练习（手、腿、呼吸分开练习）  \n  - 综合协调（将动作连贯起来）  \n  - 反复练习与调整（纠正错误动作）  \n  - 寻求专业指导（如有条件可请教练指导）  \n\n---\n\n### **总结：学习蛙泳的步骤**\n1. 学习蛙泳的基本动作和技巧  \n2. 安全有效地分步练习  \n3. 逐步协调动作并反复练习  \n4. 总结经验，持续改进  \n\n--- \n\n如需更详细的内容，可以进一步搜索或咨询专业游泳教练。"
+                },
+                "answer_type_other": null,
+                "output_variables_config": {
+                    "answer_var": "answer",
+                    "doc_retrieval_var": "doc_retrieval_res",
+                    "graph_retrieval_var": "graph_retrieval_res",
+                    "middle_output_vars": [],
+                    "other_vars": null,
+                    "related_questions_var": "related_questions"
+                },
+                "query": "如何学习蛙泳",
+                "skill_process": null,
+                "temp_files": null,
+                "thinking": ""
+            },
+            "middle_answer": {
+                "doc_retrieval": null,
+                "graph_retrieval": null,
+                "other_variables": {},
+                "progress": [
+                    {
+                        "agent_name": "main",
+                        "answer": "我将调用任务计划...",
+                        "end_time": 1763449778.0577633,
+                        "estimated_input_tokens": 35,
+                        "estimated_output_tokens": 14,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "ca1af0d6-cb06-4c7e-98b7-6ea474362e57",
+                        "input_message": "输出以下内容：我将调用任务计划...不要输出其他内容。",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1763449778.0563498,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 8,
+                            "prompt_tokens": 48,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 16,
+                                "uncached_tokens": 32
+                            },
+                            "total_tokens": 56
+                        }
+                    },
+                    {
+                        "agent_name": "Plan_Agent",
+                        "answer": "",
+                        "end_time": 1763449778.058546,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "fd768fbb-64d1-4227-9ea2-36a0965197df",
+                        "input_message": "{'query': '如何学习蛙泳'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "如何学习蛙泳"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "Plan_Agent",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1763449778.058546,
+                        "status": "processing",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "Plan_Agent",
+                        "answer": [
+                            "搜索资料:蛙泳的基本动作和技巧",
+                            "搜索资料:初学者如何安全有效地练习蛙泳",
+                            "总结内容：如何学习蛙泳"
+                        ],
+                        "end_time": 1763449909.8304303,
+                        "estimated_input_tokens": 0,
+                        "estimated_output_tokens": 0,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "3a69e4a4-19ea-4cc3-a2c6-5bf09a168c64",
+                        "input_message": "{'query': '如何学习蛙泳'}",
+                        "interrupted": false,
+                        "skill_info": {
+                            "args": [
+                                {
+                                    "name": "query",
+                                    "type": "str",
+                                    "value": "如何学习蛙泳"
+                                }
+                            ],
+                            "checked": true,
+                            "name": "Plan_Agent",
+                            "type": "TOOL"
+                        },
+                        "stage": "skill",
+                        "start_time": 1763449909.5430946,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 0,
+                            "prompt_tokens": 0,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "uncached_tokens": 0
+                            },
+                            "total_tokens": 0
+                        }
+                    },
+                    {
+                        "agent_name": "main",
+                        "answer": "以下是拆分后的问题及参考信息的整理：\n\n---\n\n### **问题拆分：如何学习蛙泳？**\n\n#### **1. 蛙泳的基本动作和技巧有哪些？**\n- **参考信息**：搜索资料: 蛙泳的基本动作和技巧  \n- **建议内容**：  \n  - 蛙泳的划手动作（前伸、外划、内划、前划）  \n  - 蛙泳的蹬腿动作（收腿、翻脚、蹬夹、滑行）  \n  - 呼吸技巧（在划手和蹬腿时抬头换气）  \n  - 身体协调与节奏控制  \n\n---\n\n#### **2. 初学者如何安全有效地练习蛙泳？**\n- **参考信息**：搜索资料: 初学者如何安全有效地练习蛙泳  \n- **建议内容**：  \n  - 选择合适的练习环境（如泳池、浅水区）  \n  - 使用辅助工具（如浮板、泳圈）  \n  - 分步骤练习（先练手部动作，再练腿部动作，最后协调）  \n  - 注意安全（避免呛水、疲劳过度）  \n  - 逐步增加练习时间和强度  \n\n---\n\n#### **3. 如何总结学习蛙泳的方法？**\n- **参考信息**：总结内容：如何学习蛙泳  \n- **建议内容**：  \n  - 理论学习（了解蛙泳动作原理）  \n  - 分步练习（手、腿、呼吸分开练习）  \n  - 综合协调（将动作连贯起来）  \n  - 反复练习与调整（纠正错误动作）  \n  - 寻求专业指导（如有条件可请教练指导）  \n\n---\n\n### **总结：学习蛙泳的步骤**\n1. 学习蛙泳的基本动作和技巧  \n2. 安全有效地分步练习  \n3. 逐步协调动作并反复练习  \n4. 总结经验，持续改进  \n\n--- \n\n如需更详细的内容，可以进一步搜索或咨询专业游泳教练。",
+                        "end_time": 1763449909.8328958,
+                        "estimated_input_tokens": 118,
+                        "estimated_output_tokens": 930,
+                        "estimated_ratio_tokens": 0,
+                        "flags": "",
+                        "id": "fb6ab26e-1bd3-4cb9-8972-44f9dada5cc7",
+                        "input_message": "拆分用户的问题：如何学习蛙泳\n参考信息：\"{'answer': ['搜索资料:蛙泳的基本动作和技巧', '搜索资料:初学者如何安全有效地练习蛙泳', '总结内容：如何学习蛙泳']}\"",
+                        "interrupted": false,
+                        "skill_info": null,
+                        "stage": "llm",
+                        "start_time": 1763449909.8316188,
+                        "status": "completed",
+                        "think": "",
+                        "token_usage": {
+                            "completion_tokens": 438,
+                            "prompt_tokens": 82,
+                            "prompt_tokens_details": {
+                                "cached_tokens": 16,
+                                "uncached_tokens": 66
+                            },
+                            "total_tokens": 520
+                        }
+                    }
+                ]
+            }
+        },
+        "content_type": "prompt",
+        "conversation_id": "01KAAWRBQ493ASRX3N92H8YFQ1",
+        "ext": {
+            "ask": null,
+            "related_queries": null,
+            "total_time": 131.78,
+            "total_tokens": 576,
+            "ttft": 175
+        },
+        "id": "01KAAWRBQ8FAXJ9MAJ9HNWAYVZ",
+        "index": 2,
+        "reply_id": "01KAAWRBQ5VYHF716TGRSBFG2Q",
+        "role": "assistant",
+        "status": ""
+    },
+    "user_message_id": "01KAAWRBQ5VYHF716TGRSBFG2Q"
+}

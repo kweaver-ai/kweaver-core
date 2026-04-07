@@ -1,0 +1,1284 @@
+@host = http://localhost:8082
+@token = Bearer ory_at_Dqtcr03pUFeFB2Kn1wyCKqhDe6rJsNnrwoXs4_sq7UU.tz-1kBG7VP2wuJ7nCBbwowrhDP3wN9H8Jo0x3ZkG2mU
+
+### 检查授权
+POST {{host}}/api/automation/v1/oauth2/auth
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "redirect_uri": "https://10.4.108.24"
+}
+
+### health
+GET {{host}}/api/automation/v1/health/ready
+
+### 创建简单的文本合并流程（手动触发）
+POST {{host}}/api/automation/v1/dag
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+  "title": "简单文本合并测试",
+  "description": "手动触发的文本合并流程",
+  "status": "normal",
+  "steps": [
+    {
+      "id": "0",
+      "title": "手动触发",
+      "operator": "@trigger/manual",
+      "parameters": {}
+    },
+    {
+      "id": "1",
+      "title": "文本合并",
+      "operator": "@internal/text/join",
+      "parameters": {
+        "texts": ["Hello", "World", "测试"],
+        "separator": " "
+      }
+    }
+  ]
+}
+
+### 创建dag
+POST {{host}}/api/automation/v1/dag
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+    "title":"未命名自动任务(1111611111)",
+    "description":"",
+    "status":"normal",
+    "steps": [
+    {
+      "id": "0",
+      "title": "",
+      "operator": "@anyshare-trigger/upload-file",
+      "parameters": {
+        "docid": "gns://9A8C9277947D4898A350427C768A194C/B06A19BD068B40E788360ED54FA3CB7D",
+        "inherit": true
+      }
+    },
+    {
+      "id": "1",
+      "title": "",
+      "operator": "@anyshare/file/copy",
+      "parameters": {
+        "destparent": "gns://9A8C9277947D4898A350427C768A194C/B06A19BD068B40E788360ED54FA3CB7D",
+        "docid": "{{__0.id}}",
+        "ondup": 2
+      }
+    },
+    {
+      "id": "2",
+      "title": "",
+      "operator": "@control/flow/branches",
+      "branches": [
+        {
+          "conditions": [
+            [
+              {
+                "id": "7",
+                "parameters": {
+                  "a": "1",
+                  "b": "1"
+                },
+                "operator": "@internal/cmp/string-eq"
+              }
+            ]
+          ],
+          "steps": [
+            {
+              "id": "4",
+              "title": "",
+              "operator": "@anyshare/file/remove",
+              "parameters": {
+                "docid": "{{__1.new_docid}}"
+              }
+            }
+          ]
+        },
+        {
+          "conditions": [
+            [
+              {
+                "id": "8",
+                "parameters": {
+                  "a": "1",
+                  "b": "2"
+                },
+                "operator": "@internal/cmp/string-eq"
+              }
+            ]
+          ],
+          "steps": [
+            {
+              "id": "6",
+              "title": "",
+              "operator": "@anyshare/file/copy",
+              "parameters": {
+                "destparent": "gns://9A8C9277947D4898A350427C768A194C/B06A19BD068B40E788360ED54FA3CB7D",
+                "docid": "{{__1.new_docid}}",
+                "ondup": 2
+              }
+            },
+            {
+              "id": "9",
+              "title": "",
+              "operator": "@control/flow/branches",
+              "branches": [
+                {
+                  "conditions": [
+                    [
+                      {
+                        "id": "14",
+                        "parameters": {
+                          "a": "1",
+                          "b": "1"
+                        },
+                        "operator": "@internal/cmp/string-eq"
+                      }
+                    ]
+                  ],
+                  "steps": [
+                    {
+                      "id": "11",
+                      "title": "",
+                      "operator": "@anyshare/folder/create",
+                      "parameters": {
+                        "docid": "gns://9A8C9277947D4898A350427C768A194C/B06A19BD068B40E788360ED54FA3CB7D",
+                        "name": "11",
+                        "ondup": 2
+                      }
+                    }
+                  ]
+                },
+                {
+                  "conditions": [
+                    [
+                      {
+                        "id": "15",
+                        "parameters": {
+                          "a": "1",
+                          "b": "2"
+                        },
+                        "operator": "@internal/cmp/string-eq"
+                      }
+                    ]
+                  ],
+                  "steps": [
+                    {
+                      "id": "13",
+                      "title": "",
+                      "operator": "@anyshare/folder/create",
+                      "parameters": {
+                        "docid": "gns://9A8C9277947D4898A350427C768A194C/B06A19BD068B40E788360ED54FA3CB7D",
+                        "name": "22",
+                        "ondup": 2
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+            }
+
+### 创建dag简单的
+POST {{host}}/api/automation/v1/dag
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title": "permDemo",
+  "description": "",
+  "status": "normal",
+  "shortcuts": [],
+  "accessors": [],
+  "steps": [
+    {
+      "id": "0",
+      "operator": "@anyshare-trigger/upload-file",
+      "parameters": {
+        "docids": [
+          "gns://09DEEBF2AE0A49B388A55700BA3C4FE8"
+        ],
+        "inherit": true
+      }
+    },
+    {
+      "id": "1",
+      "operator": "@anyshare/file/perm",
+      "parameters": {
+        "docid": "{{__0.id}}",
+        "inherit": true,
+        "perminfos": [
+          {
+            "accessor": {
+              "id": "247e1192-5867-11ee-948d-b2e5fae8aad1",
+              "name": "d",
+              "type": "user"
+            },
+            "perm": {
+              "allow": [
+                "display",
+                "preview"
+              ],
+              "deny": []
+            }
+          }
+        ],
+        "useAppid": false,
+        "appid": "",
+        "apppwd": ""
+      }
+    }
+  ]
+}
+
+### 创建dag带事件触发器的
+POST {{host}}/api/automation/v1/dag
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "title":"上传文件触发3",
+  "description":"",
+  "status":"normal",
+  "steps": [
+    {
+      "id":"0",
+      "title":"",
+      "operator":"@anyshare-trigger/upload-file",
+      "parameters": {
+        "docid": ["gns://9A8C9277947D4898A350427C768A194C/F7FBC6B29BB14F5F8AFE8C0457473A60"]
+      }
+    },
+    {
+      "id":"1",
+      "title":"",
+      "operator":"@anyshare/file/matchcontent",
+      "parameters":{
+        "matchtype": "KEYWORD",
+        "keyword":"gns://9A8C9277947D4898A350427C768A194C/F7FBC6B29BB14F5F8AFE8C0457473A60",
+        "docid":"{{__0.id}}"
+      }
+    }
+  ]
+}
+
+### 创建dag带事件触发器的(循环创建)
+POST {{host}}/api/automation/v1/dag
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "title": "复制目录时自动复制目录11110",
+    "steps": [
+        {
+            "id": "0",
+            "title": "移动文件触发执行",
+            "operator": "@anyshare-trigger/move-file",
+            "parameters": {
+                "docid": "gns://9A8C9277947D4898A350427C768A194C/73103941E98249D0805DB0481799357D",
+                "inherit": false
+            }
+        },
+        {
+            "id": "1",
+            "title": "复制目录",
+            "operator": "@anyshare/file/copy",
+            "parameters": {
+                "destparent": "gns://9A8C9277947D4898A350427C768A194C/73103941E98249D0805DB0481799357D",
+                "docid": "{{__0.id}}",
+                "ondup": 2
+            }
+        }
+    ]
+}
+
+
+### 更新dag
+PUT  {{host}}/api/automation/v1/dag/435233283157030332
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "title": "AutoMation5_update",
+    "description": "更新简单内容自动化任务",
+    "status": "normal",
+    "steps": [
+        {
+            "id": "0",
+            "title": "手动执行",
+            "operator": "@trigger/manual",
+            "parameters": {
+                "token": "{{token}}"
+            }
+        },
+        {
+            "id": "1",
+            "title": "复制目录",
+            "operator": "@anyshare/folder/copy",
+            "parameters": {
+                "docid": "gns://DC274D7CA9204E3CAD6D83A2560498C1/F94E076907864C16966ADC5EB2B13E4A/FB97A168E76546E8B4834005EEE86870",
+                "destparent": "gns://DC274D7CA9204E3CAD6D83A2560498C1/F94E076907864C16966ADC5EB2B13E4A",
+                "ondup": 2
+            }
+        },
+        {
+            "id": "2",
+            "title": "删除目录",
+            "operator": "@anyshare/folder/remove",
+            "parameters": {
+                "docid": "{{__1.docid}}"
+            }
+        },
+        {
+            "id": "3",
+            "title": "移动原始目录",
+            "operator": "@anyshare/folder/move",
+            "parameters": {
+                "docid": "{{__1.docid}}"
+            }
+        }
+    ]
+}
+
+### 获取dag
+GET  {{host}}/api/automation/v1/dag/482205463857886652
+Authorization: {{token}}
+Content-Type: application/json
+
+### 删除dag
+DELETE  {{host}}/api/automation/v1/dag/600730165626041788
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+### 列举dag
+GET {{host}}/api/automation/v1/dags?sortby=updated_at&order=desc&limit=20&page=0
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+
+### 执行dag
+POST {{host}}/api/automation/v1/run-instance/604225964230079932
+Authorization: {{token}}
+Content-Type: application/json
+
+### 取消运行中的dag
+PUT {{host}}/api/automation/v1/run-instance/440852303709238716
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "status": "canceled"
+}
+
+### 获取dag运行列表
+GET   {{host}}/api/automation/v1/dag/604225964230079932/results
+Authorization: {{token}}
+Content-Type: application/json
+
+### 获取dag运行详情
+GET   {{host}}/api/automation/v1/dag/438647354506114492/result/438647391315326396
+Authorization: {{token}}
+Content-Type: application/json
+
+### 获取suggestName
+GET {{host}}/api/automation/v1/dag/suggestname/复制目录
+Authorization: {{token}}
+Content-Type: application/json
+
+### 获取token
+GET {{host}}/api/automation/v1/auth?code=Gn2OR5RJtTzFaqaNy2qo2co0nBvp_PcCgO-CM0GgZGU.jXTpTcKlBQGooqIYf3Pi2nASialdjIWNv-PDSqZaipU
+
+### 获取服务开关
+GET {{host}}/api/automation/v1/switch
+Authorization: {{token}}
+Content-Type: application/json
+
+### 设置服务开关
+PUT {{host}}/api/automation/v1/switch
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "status": false
+}
+
+### 获取dag运行列表
+GET   {{host}}/api/automation/v2/dag/556234442935430690/results
+Authorization: {{token}}
+Content-Type: application/json
+
+### 批量获取dag信息
+POST   {{host}}/api/automation/v2/dags/created_at,name,creator
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "method": "GET",
+  "dag_ids": ["554028889114996280", "554183486680919608", "554195867544907320"]
+}
+
+### 创建组合算子
+POST   {{host}}/api/automation/v1/operators
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "title": "未命名自动任务(35)",
+    "description": "",
+    "status": "normal",
+    "steps": [
+        {
+            "id": "0",
+            "operator": "@trigger/form",
+            "parameters": {
+                "dag_id": "561906426205730236",
+                "fields": [
+                    {
+                        "key": "FWazTKtQDSEMSgYO",
+                        "type": "string",
+                        "name": "a",
+                        "required": true
+                    },
+                    {
+                        "key": "AsJgDkCXNuvcCCWh",
+                        "name": "b",
+                        "type": "long_string"
+                    },
+                    {
+                        "key": "JSoJaZerctpAFuDO",
+                        "name": "c",
+                        "type": "number"
+                    }
+                ]
+            },
+            "title": ""
+        },
+        {
+            "id": "1",
+            "title": "",
+            "operator": "@internal/time/now"
+        }
+    ],
+    "exec_mode": "sync",
+    "category": "text_processing"
+}
+
+### 更新组合算子
+PUT   {{host}}/api/automation/v1/operators/562179319955223996
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "title": "未命名自动任务(31)",
+    "description": "",
+    "status": "normal",
+    "steps": [
+        {
+            "id": "0",
+            "operator": "@trigger/form",
+            "parameters": {
+                "dag_id": "561904624584390076",
+                "fields": [
+                    {
+                        "key": "FWazTKtQDSEMSgYO",
+                        "type": "string",
+                        "name": "a",
+                        "required": true
+                    },
+                    {
+                        "key": "AsJgDkCXNuvcCCWh",
+                        "name": "b",
+                        "type": "long_string"
+                    }
+                ]
+            },
+            "title": ""
+        },
+        {
+            "id": "1",
+            "title": "",
+            "operator": "@internal/time/now"
+        }
+    ],
+    "operation_id": "",
+    "version": ""
+}
+
+### 获取dag运行列表
+GET   {{host}}/api/automation/v1/operators?page=0&limit=20
+Authorization: {{token}}
+Content-Type: application/json
+
+### 创建dataflow (定时任务)
+POST {{host}}/api/automation/v1/run-instance-form/606252203769886140
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+    "data": {
+        "vtHWJyNbitlEMtvr": "a"
+    }
+}
+
+### 创建dataflow (表单任务)
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+    "steps": [
+        {
+            "id": "0",
+            "operator": "@trigger/form",
+            "parameters": {
+                "fields": [
+                    {
+                        "key": "vtHWJyNbitlEMtvr",
+                        "type": "string",
+                        "name": "a"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "1",
+            "operator": "@internal/json/get",
+            "parameters": {
+                "json": "{\"a\": \"1\"}",
+                "fields": [
+                    {
+                        "key": "a",
+                        "type": "string",
+                        "value": "{{__0.fields.vtHWJyNbitlEMtvr}}"
+                    }
+                ]
+            }
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/manual",
+        "dataSource": {
+            "operator": "",
+            "parameters": {
+                "accessorid": "00000000-0000-0000-0000-000000000000"
+            }
+        }
+    },
+    "title": "表单手动触发"
+}
+
+### 创建dataflow (定时任务)
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+    "steps": [
+        {
+            "id": "0",
+            "operator": "@trigger/dataflow-user"
+        },
+        {
+            "id": "1",
+            "operator": "@internal/text/split",
+            "parameters": {
+                "text": "a-b",
+                "separator": "custom",
+                "custom": "-"
+            }
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/cron/month",
+        "dataSource": {
+            "operator": "@anyshare-data/user",
+            "parameters": {
+                "accessorid": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        "cron": "0 58 16 1 * ?"
+    },
+    "title": "测试定时任务",
+    "version": "v0.0.0"
+}
+
+### 创建dataflow (表不存在)
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_public
+
+{
+    "steps": [
+        {
+            "id": "0",
+            "operator": "@trigger/form",
+            "parameters": {
+                "fields": [
+                    {
+                        "key": "zFdWhYGkYCzEWfnd",
+                        "type": "string",
+                        "name": "a"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "1",
+            "operator": "@internal/database/write",
+            "parameters": {
+                "datasource_type": "postgresql",
+                "datasource_id": "22237883-5cd0-4c3a-8730-b9635ee0fcfc",
+                "datasource_name": "外置MySQL",
+                "table_exist": false,
+                "table_name": "ai_summary_rule",
+                "operate_type": "append",
+                "sync_model_fields": [
+                    {
+                        "target": {
+                            "name": "f_id",
+                            "comment": "主键id",
+                            "data_lenth": 255,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 1
+                        },
+                        "source": {
+                            "name": "f_id",
+                            "comment": "主键id",
+                            "data_lenth": 255,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 1
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_task_id",
+                            "comment": "任务id",
+                            "data_lenth": 32,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_task_id",
+                            "comment": "任务id",
+                            "data_lenth": 32,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_object",
+                            "comment": "文件对象信息",
+                            "data_lenth": 1024,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_object",
+                            "comment": "文件对象信息",
+                            "data_lenth": 1024,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_summary_type",
+                            "comment": "总结类型",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_summary_type",
+                            "comment": "总结类型",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_max_segments",
+                            "comment": "最大分段数",
+                            "data_lenth": 4,
+                            "data_type": "tinyint",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_max_segments",
+                            "comment": "最大分段数",
+                            "data_lenth": 4,
+                            "data_type": "tinyint",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_max_segments_type",
+                            "comment": "分段类型",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_max_segments_type",
+                            "comment": "分段类型",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_need_abstract",
+                            "comment": "是否需要摘要",
+                            "data_lenth": 4,
+                            "data_type": "tinyint",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_need_abstract",
+                            "comment": "是否需要摘要",
+                            "data_lenth": 4,
+                            "data_type": "tinyint",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_abstract_type",
+                            "comment": "摘要输出方式",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_abstract_type",
+                            "comment": "摘要输出方式",
+                            "data_lenth": 12,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_callback",
+                            "comment": "回调地址",
+                            "data_lenth": 1024,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_callback",
+                            "comment": "回调地址",
+                            "data_lenth": 1024,
+                            "data_type": "VARCHAR",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_created_at",
+                            "comment": "创建时间",
+                            "data_lenth": 20,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_created_at",
+                            "comment": "创建时间",
+                            "data_lenth": 20,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    },
+                    {
+                        "target": {
+                            "name": "f_updated_at",
+                            "comment": "更新时间",
+                            "data_lenth": 20,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        },
+                        "source": {
+                            "name": "f_updated_at",
+                            "comment": "更新时间",
+                            "data_lenth": 20,
+                            "data_type": "BIGINT",
+                            "is_nullable": "NO",
+                            "primary_key": 0
+                        }
+                    }
+                ],
+            "sync_options": {
+                "batch_size": 1000,
+                "truncate_before_write": false
+            },
+            "data": [
+                {
+                    "f_id": 1001,
+                    "f_task_id": "tsk_20240915001",
+                    "f_object": "oss://as-bucket/docs/report_001.pdf",
+                    "f_summary_type": "general",
+                    "f_max_segments": 5,
+                    "f_max_segments_type": "pages",
+                    "f_need_abstract": 1,
+                    "f_abstract_type": "bullet",
+                    "f_callback": "https://api.example.com/callback/tsk_20240915001",
+                    "f_created_at": 1725523200000,
+                    "f_updated_at": 1725526800000
+                },
+                {
+                    "f_id": 1002,
+                    "f_task_id": "tsk_20240915002",
+                    "f_object": "oss://as-bucket/docs/contract_2024.docx",
+                    "f_summary_type": "legal",
+                    "f_max_segments": 3,
+                    "f_max_segments_type": "paragraphs",
+                    "f_need_abstract": 0,
+                    "f_abstract_type": "none",
+                    "f_callback": "https://api.example.com/callback/tsk_20240915002",
+                    "f_created_at": 1725527300000,
+                    "f_updated_at": 1725528300000
+                },
+                {
+                    "f_id": 1003,
+                    "f_task_id": "tsk_20240915003",
+                    "f_object": "oss://as-bucket/slides/sales_q3.pptx",
+                    "f_summary_type": "marketing",
+                    "f_max_segments": 8,
+                    "f_max_segments_type": "slides",
+                    "f_need_abstract": 1,
+                    "f_abstract_type": "paragraph",
+                    "f_callback": "https://api.example.com/callback/tsk_20240915003",
+                    "f_created_at": 1725531200000,
+                    "f_updated_at": 1725532200000
+                }
+            ],
+            "output_var": "a"
+            }
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/manual",
+        "dataSource": {
+            "operator": "",
+            "parameters": {
+                "accessorid": "00000000-0000-0000-0000-000000000000"
+            }
+        }
+    },
+    "title": "09005db-newdb-long2-postgresql1",
+    "debug_id": "605828158578521532"
+}
+
+
+### 达梦数据库创建dataflow (表不存在)
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "steps":[{
+    "id":"0",
+    "operator":"@trigger/form",
+    "parameters":{
+      "fields":[{
+        "key":"VLUyuMBonxFLgMNr",
+        "type":"string",
+        "name":"a"
+    }]}
+  },{
+      "id": "1",
+      "operator": "@internal/database/write",
+      "parameters": {
+        "datasource_type": "dameng",
+        "datasource_id": "32024530-54b7-4406-a87c-a7b4db2872ca",
+        "datasource_name": "外置MySQL",
+        "table_exist": false,
+        "table_name": "users2",
+        "operate_type": "append",
+        "sync_model_fields": [
+          {
+            "target": {
+              "name": "id",
+              "comment": "ID",
+              "data_lenth": 255,
+              "data_type": "INT",
+              "is_nullable": "NO",
+              "primary_key": 1
+            },
+            "source": {
+              "name": "id",
+              "comment": "ID",
+              "data_lenth": 255,
+              "data_type": "INT",
+              "is_nullable": "NO",
+              "primary_key": 1
+            }
+          },
+          {
+            "target": {
+              "name": "username",
+              "comment": "用户名",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            },
+            "source": {
+              "name": "username",
+              "comment": "用户名",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            }
+          },
+          {
+            "target": {
+              "name": "email",
+              "comment": "邮箱地址",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            },
+            "source": {
+              "name": "email",
+              "comment": "邮箱地址",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            }
+          },
+          {
+            "target": {
+              "name": "password_hash",
+              "comment": "密码哈希",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            },
+            "source": {
+              "name": "password_hash",
+              "comment": "密码哈希",
+              "data_lenth": 255,
+              "data_type": "VARCHAR",
+              "is_nullable": "YES",
+              "primary_key": 0
+            }
+          }
+        ],
+        "sync_options": {
+          "batch_size": 1000,
+          "truncate_before_write": false
+        },
+        "data": [
+          {
+            "id": 1,
+            "username": "2",
+            "email": "2@2.com",
+            "password_hash": "123456"
+          },
+          {
+            "id": 2,
+            "username": "3",
+            "email": "3@3.com",
+            "password_hash": "123456"
+          },
+          {
+            "id": 3,
+            "username": "4",
+            "email": "4@4.com",
+            "password_hash": "123456"
+          }
+        ],
+        "output_var": "a"
+      }
+  }],
+  "trigger_config":{
+    "operator":"@trigger/manual",
+    "dataSource":{
+      "operator":"",
+      "parameters":{
+        "accessorid":"00000000-0000-0000-0000-000000000000"
+      }
+    }
+  },
+  "title":"aaa-createtable-dm8"
+}
+
+### 获取单步调试结果
+GET   {{host}}/api/automation/v1/dags/single-debug/result?id=585809202832831932
+Authorization: {{token}}
+Content-Type: application/json
+
+
+### 单步调试
+POST   {{host}}/api/automation/v1/dags/single-debug
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_publc
+
+{
+    "id": "3",
+    "operator": "@internal/json/get",
+    "parameters": {
+        "fields": [],
+        "json": "a"
+    }
+}
+
+### 整体调试
+POST   {{host}}/api/automation/v1/dags/full-debug
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd_publc
+
+{
+    "steps": [
+        {
+            "id": "0",
+            "title": "",
+            "operator": "@trigger/form",
+            "parameters": {
+                "fields": [
+                    {
+                        "key": "KcBAXtznXhVUdiUw",
+                        "name": "a",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "2",
+            "title": "",
+            "operator": "@control/flow/loop",
+            "parameters": {
+                "array": [],
+                "limit": 3,
+                "mode": "limit",
+                "outputs": []
+            },
+            "steps": [
+                {
+                    "id": "3",
+                    "title": "",
+                    "operator": "@internal/json/get",
+                    "parameters": {
+                        "fields": [],
+                        "json": "a"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "4",
+            "operator": "@internal/tool/py3",
+            "parameters": {
+                "input_params": [
+                    {
+                        "id": "8oo7d",
+                        "key": "aa",
+                        "type": "string",
+                        "value": "{{__0.fields.KcBAXtznXhVUdiUw}}"
+                    }
+                ],
+                "output_params": [
+                    {
+                        "id": "bhpv5",
+                        "key": "res",
+                        "type": "string"
+                    }
+                ],
+                "code": "def main(aa):\n    return aa+\"123\""
+            }
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/manual",
+        "dataSource": {
+            "operator": "",
+            "parameters": {
+                "accessorid": "00000000-0000-0000-0000-000000000000"
+            }
+        },
+        "cron": "0 38 11 1 * ?"
+    },
+    "trigger_data": {
+      "KcBAXtznXhVUdiUw": "aaa"
+    }
+}
+
+### 创建包含并行分支的dataflow流程
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd-public
+
+{
+  "title": "并行数据处理流程",
+  "description": "演示包含多个并行分支的数据流处理",
+  "status": "normal",
+  "steps": [
+    {
+      "id": "0",
+      "title": "表单触发器",
+      "operator": "@trigger/form",
+      "parameters": {
+        "fields": [
+          {
+            "key": "input_data",
+            "type": "string",
+            "name": "输入数据"
+          },
+          {
+            "key": "process_type",
+            "type": "string",
+            "name": "处理类型"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "title": "获取当前时间",
+      "operator": "@internal/time/now",
+      "parameters": {}
+    },
+    {
+      "id": "2",
+      "title": "并行分支处理",
+      "operator": "@control/flow/parallel",
+      "branches": [
+        {
+          "id": "branch_1",
+          "title": "文本处理分支1",
+          "steps": [
+            {
+              "id": "3",
+              "title": "文本合并",
+              "operator": "@internal/text/join",
+              "parameters": {
+                "texts": ["分支1:", "{{__0.fields.input_data}}", "时间:", "{{__1.time}}"],
+                "separator": "，"
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch_2",
+          "title": "文本处理分支2",
+          "steps": [
+            {
+              "id": "4",
+              "title": "文本分割",
+              "operator": "@internal/text/split",
+              "parameters": {
+                "text": "{{__0.fields.input_data}}",
+                "separator": ","
+              }
+            }
+          ]
+        },
+        {
+          "id": "branch_3",
+          "title": "文本处理分支3",
+          "steps": [
+            {
+              "id": "5",
+              "title": "文本合并",
+              "operator": "@internal/text/join",
+              "parameters": {
+                "texts": ["分支3:", "{{__0.fields.process_type}}", "数据:", "{{__0.fields.input_data}}"],
+                "separator": "；"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "title": "汇总所有分支结果",
+      "operator": "@internal/text/join",
+      "parameters": {
+        "texts": [
+          "分支1结果: {{__3.result}}",
+          "分支2结果: {{__4.result}}",
+          "分支3结果: {{__5.result}}",
+          "执行时间: {{__1.time}}"
+        ],
+        "separator": "；"
+      }
+    }
+  ],
+    }
+  }
+}
+
+### ---------------- S3 File Management ----------------
+
+### Upload File to S3 via DataFlow
+POST {{host}}/api/automation/v1/data-flow/{{dagID}}/files/upload
+Authorization: {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file content.
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### List Files in S3 for DataFlow
+GET {{host}}/api/automation/v1/data-flow/{{dagID}}/files
+Authorization: {{token}}
+
+### Delete File in S3 for DataFlow
+DELETE {{host}}/api/automation/v1/data-flow/{{dagID}}/files?key=dataflow-doc/{{dagID}}/test.txt
+Authorization: {{token}}

@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "标签规则参数校验",
+    "description": "post /api/automation/v1/tags/extract-by-rule",
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "type": "string",
+                    "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                },
+                "content": {
+                    "type": "string",
+                    "maxLength": 10000
+                }
+            }
+        },
+        "rule_id": {
+            "type":"string",
+            "maxLength": 100
+        },
+        "rules": {
+            "type": "array",
+            "items": {
+                "type":"object",
+                "properties": {
+                    "tag_id": {
+                        "type":"string"
+                    },
+                    "tag_path": {
+                        "type":"string"
+                    },
+                    "rule": {
+                        "type":"object",
+                        "properties": {
+                            "or": {
+                                "type": "array",
+                                "items": {
+                                    "type":"array",
+                                    "items": {
+                                        "type":"string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "tag_id",
+                    "tag_path",
+                    "rule"
+                ]
+            }
+        }
+    },
+    "required": [
+        "target"
+    ],
+    "additionalProperties": false
+}

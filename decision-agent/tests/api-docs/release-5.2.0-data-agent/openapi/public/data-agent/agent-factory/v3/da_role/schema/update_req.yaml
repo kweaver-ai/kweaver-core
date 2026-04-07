@@ -1,0 +1,21 @@
+role_update_req:
+  type: object
+  properties:
+    name:
+      type: string
+      description: 角色名称
+      maxLength: 50
+    profile:
+      type: string
+      description: 角色简介
+      maxLength: 100
+    # members:
+    #   type: array
+    #   description: 角色成员
+    #   items:
+    #     $ref: './member_req.yaml#/role_member_req'
+    # resources:
+    #   type: array
+    #   description: 角色资源
+    #   items:
+    #     $ref: './resource_req.yaml#/role_resource_req'

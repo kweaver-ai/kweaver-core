@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "doc-convert.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "doc-convert.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "doc-convert.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "doc-convert.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      {{- if .Values.gotenberg.enabled }}
+      - name: gotenberg
+        image: "{{ .Values.image.registry }}/{{ .Values.image.gotenberg.repository }}:{{ .Values.image.gotenberg.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 3000
+          name: http-gotenberg
+        resources:
+          {{- toYaml .Values.gotenberg.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.gotenberg.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.gotenberg.readinessProbe | nindent 10 }}
+      {{- end }}
+      {{- if .Values.tika.enabled }}
+      - name: tika
+        image: "{{ .Values.image.registry }}/{{ .Values.image.tika.repository }}:{{ .Values.image.tika.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 9998
+          name: http-tika
+        env:
+        {{- toYaml .Values.tika.env | nindent 8 }}
+        resources:
+          {{- toYaml .Values.tika.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.tika.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.tika.readinessProbe | nindent 10 }}
+      {{- end }}

@@ -1,0 +1,9 @@
+RetrieverAdvancedConfig:
+  type: object
+  properties:
+    kg:
+      $ref: './kg_advanced_config.yaml#/KGAdvancedConfig'
+      description: 图谱高级配置
+    doc:
+      $ref: './doc_advanced_config.yaml#/DocAdvancedConfig'
+      description: 文档高级配置

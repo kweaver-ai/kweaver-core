@@ -1,0 +1,109 @@
+{
+    "logic_definition": [
+        {
+            "id": "node_Jdopj",
+            "name": "数据关联",
+            "type": "join",
+            "inputs": [
+                "node_8rFBz",
+                "node_xERlF"
+            ],
+            "config": {
+                "join_type": "left",
+                "join_on": [
+                    {
+                        "right_field": "supplier_number",
+                        "operator": "=",
+                        "left_field": "supplier_code"
+                    }
+                ]
+            },
+            "output_fields": [
+                {
+                    "name": "paycond_name",
+                    "from": "paycond_name",
+                    "from_node": "node_8rFBz"
+                },
+                {
+                    "name": "purchaserid_name",
+                    "from": "purchaserid_name",
+                    "from_node": "node_8rFBz"
+                },
+                {
+                    "name": "societycreditcode",
+                    "from": "societycreditcode",
+                    "from_node": "node_8rFBz"
+                },
+                {
+                    "name": "supplier_code",
+                    "from": "supplier_code",
+                    "from_node": "node_8rFBz"
+                },
+                {
+                    "name": "supplier_name",
+                    "from": "supplier_name",
+                    "from_node": "node_8rFBz"
+                },
+                {
+                    "name": "material_name",
+                    "from": "material_name",
+                    "from_node": "node_xERlF"
+                },
+                {
+                    "name": "material_number",
+                    "from": "material_number",
+                    "from_node": "node_xERlF"
+                },
+                {
+                    "name": "qty",
+                    "from": "qty",
+                    "from_node": "node_xERlF"
+                }
+            ]
+        },
+        {
+            "id": "node_8rFBz",
+            "name": "erp_supplier",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "2017573348875202561",
+                "filters": {},
+                "distinct": false
+            },
+            "output_fields": [
+                "paycond_name",
+                "purchaserid_name",
+                "societycreditcode",
+                "supplier_code",
+                "supplier_name"
+            ]
+        },
+        {
+            "id": "node_xERlF",
+            "name": "erp_purchase_order",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "2017573348875202562",
+                "filters": {},
+                "distinct": true
+            },
+            "output_fields": [
+                "*"
+            ]
+        },
+        {
+            "id": "node-output",
+            "type": "output",
+            "name": "输出视图",
+            "inputs": [
+                "node_Jdopj"
+            ],
+            "config": {},
+            "output_fields": [
+                "*"
+            ]
+        }
+    ]
+}

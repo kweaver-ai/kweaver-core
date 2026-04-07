@@ -1,0 +1,11 @@
+publish_to_bes:
+  type: array
+  description: |
+    - 发布为什么
+      - skill_agent: 发布成技能智能体
+      - api_agent: 发布成API智能体
+      - web_sdk_agent: 发布成web sdk智能体
+      - data_flow_agent: 发布成数据流智能体
+  items:
+    type: string
+    enum: ["skill_agent", "api_agent", "web_sdk_agent", "data_flow_agent"]

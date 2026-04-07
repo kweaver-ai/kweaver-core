@@ -1,0 +1,73 @@
+self_config_field:
+  type: object
+  description: SELF_CONFIG字段结构
+  properties:
+    name:
+      type: string
+      description: 字段名称
+    type:
+      type: string
+      description: 字段类型
+    description:
+      type: string
+      description: 字段描述
+    children:
+      type: array
+      items:
+        $ref: '#/self_config_field'
+      description: 子字段列表
+  example:
+    name: "self_config"
+    type: "object"
+    description: "完整的配置对象"
+    children:
+      - name: "input"
+        type: "object"
+        description: "输入参数配置"
+        children:
+          - name: "fields"
+            type: "array"
+            description: "参数列表"
+            children:
+              - name: "name"
+                type: "string"
+                description: "参数名称"
+              - name: "type"
+                type: "string"
+                description: "参数类型"
+          - name: "is_temp_zone_enabled"
+            type: "integer"
+            description: "是否启用临时区"
+          - name: "temp_zone_config"
+            type: "object"
+            description: "临时区配置"
+            children:
+              - name: "name"
+                type: "string"
+                description: "区域名称"
+              - name: "tmp_file_use_type"
+                type: "string"
+                description: "临时文件使用类型"
+      - name: "system_prompt"
+        type: "string"
+        description: "系统提示词"
+      - name: "data_source"
+        type: "object"
+        description: "数据源配置"
+        children:
+          - name: "doc"
+            type: "array"
+            description: "文档类型数据源"
+          - name: "kg"
+            type: "array"
+            description: "图谱类型数据源"
+      - name: "llms"
+        type: "array"
+        description: "大模型配置"
+        children:
+          - name: "is_default"
+            type: "boolean"
+            description: "是否默认"
+          - name: "llm_config"
+            type: "object"
+            description: "模型配置"

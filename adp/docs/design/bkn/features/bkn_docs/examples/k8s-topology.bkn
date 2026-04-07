@@ -1,0 +1,324 @@
+---
+type: network
+id: k8s-topology
+name: Kubernetes拓扑网络
+version: 1.0.0
+tags: [Kubernetes, 拓扑架构, 运维]
+description: Kubernetes 集群拓扑结构的知识网络，包含核心资源对象及其关系
+---
+
+# Kubernetes拓扑网络
+
+Kubernetes 集群的核心资源拓扑结构，用于运维监控和故障分析。
+
+## 网络概览
+
+```mermaid
+graph TB
+    subgraph Entities["实体"]
+        Node["Node 节点"]
+        Pod["Pod 容器组"]
+        Service["Service 服务"]
+    end
+    
+    subgraph Relations["关系"]
+        Node -->|包含| Pod
+        Service -->|路由| Pod
+    end
+    
+    subgraph Actions["行动"]
+        Pod -.->|重启| RestartPod["restart_pod"]
+        Node -.->|隔离| CordonNode["cordon_node"]
+    end
+```
+
+---
+
+# 实体定义
+
+## Entity: pod
+
+**Pod实例** - Kubernetes 中的最小部署单元，一个或多个容器的集合
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dis0 | pod_info_view |
+
+> **主键**: `id` | **显示属性**: `pod_name`
+
+### 属性覆盖
+
+| 属性名 | 显示名 | 索引配置 | 说明 |
+|--------|--------|----------|------|
+| pod_status | 状态 | fulltext + vector | 支持全文和语义搜索 |
+| pod_name | Pod名称 | keyword + fulltext | 支持精确和模糊匹配 |
+
+### 逻辑属性
+
+#### pod_metrics
+
+Pod 的监控指标，用于获取 CPU、内存、网络等实时数据。
+
+- **类型**: metric
+- **来源**: pod_metric (metric-model)
+- **说明**: Pod的监控指标
+
+| 参数名 | 来源 | 绑定值 | 说明 |
+|--------|------|--------|------|
+| id | property | id | 绑定Pod主键 |
+| pod_name | property | pod_name | 绑定Pod名称 |
+| instant | input | - | 瞬时查询时间点 |
+| start | input | - | 范围查询开始时间 |
+| end | input | - | 范围查询结束时间 |
+
+#### pod_operator
+
+Pod 的自定义算子，用于执行复杂计算逻辑。
+
+- **类型**: operator
+- **来源**: pod_operator (operator)
+- **说明**: Pod的自定义算子
+
+| 参数名 | 来源 | 绑定值 |
+|--------|------|--------|
+| operator_param1 | property | id |
+| operator_param2 | property | pod_name |
+| operator_param3 | input | - |
+
+---
+
+## Entity: node
+
+**Node节点** - Kubernetes 集群中的工作节点，承载 Pod 运行
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380disg | node_info_view |
+
+> **主键**: `id` | **显示属性**: `node_name`
+
+### 属性覆盖
+
+| 属性名 | 显示名 | 说明 |
+|--------|--------|------|
+| node_status | 节点状态 | Ready/NotReady/Unknown |
+
+---
+
+## Entity: service
+
+**Service服务** - Kubernetes 服务抽象层，提供稳定的访问入口
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dith | service_info_view |
+
+> **主键**: `id` | **显示属性**: `service_name`
+
+---
+
+# 关系定义
+
+## Relation: pod_belongs_node
+
+**Pod属于节点** - Pod 与其所在物理/虚拟节点之间的归属关系
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| pod | node | direct |
+
+### 映射规则
+
+| 起点属性 (Pod) | 终点属性 (Node) |
+|----------------|-----------------|
+| pod_node_name | node_name |
+
+### 业务语义
+
+一个 Pod 运行在某个 Node 上，通过 Kubernetes 调度器分配。
+
+- **基数**: N:1 (多个Pod属于一个Node)
+- **生命周期**: Pod 重新调度时关系变化
+- **典型查询**: 查询节点上的所有 Pod，或查询 Pod 所在节点
+
+---
+
+## Relation: service_routes_pod
+
+**Service路由Pod** - Service 到 Pod 的流量路由关系
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| service | pod | direct |
+
+### 映射规则
+
+| 起点属性 (Service) | 终点属性 (Pod) |
+|--------------------|----------------|
+| service_name | service_name |
+
+### 业务语义
+
+Service 通过 selector 匹配 Pod，将流量路由到后端 Pod。
+
+- **基数**: N:M (一个 Service 可路由多个 Pod，一个 Pod 可被多个 Service 访问)
+- **典型查询**: 查询 Service 的后端 Pod 列表
+
+---
+
+# 行动定义
+
+## Action: restart_pod
+
+**重启Pod** - 当 Pod 状态异常时，自动执行重启操作以恢复服务
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| pod | modify |
+
+### 触发条件
+
+```yaml
+condition:
+  object_type_id: pod
+  field: pod_status
+  operation: in
+  value:
+    - Unknown
+    - Failed
+```
+
+> 当 Pod 状态为 Unknown 或 Failed 时触发
+
+### 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| pod | 删除并重建 Pod，恢复服务状态 |
+
+### 工具配置
+
+| 类型 | 工具箱ID | 工具ID |
+|------|----------|--------|
+| tool | k8s_toolbox | kubectl_delete_pod |
+
+### 参数绑定
+
+| 参数 | 来源 | 绑定 | 说明 |
+|------|------|------|------|
+| pod | property | pod_name | Pod 名称 |
+| namespace | property | pod_namespace | 命名空间 |
+| grace_period | const | 30 | 优雅终止等待秒数 |
+| force | input | - | 是否强制删除 |
+
+### 调度配置
+
+| 类型 | 表达式 | 说明 |
+|------|--------|------|
+| FIX_RATE | 5m | 每5分钟检查一次条件 |
+
+### 执行流程
+
+```mermaid
+flowchart TD
+    A[检测到异常Pod] --> B{确认状态}
+    B -->|已恢复| C[取消操作]
+    B -->|仍异常| D[执行删除]
+    D --> E{有控制器?}
+    E -->|是| F[等待重建]
+    E -->|否| G[记录告警]
+    F --> H{新Pod正常?}
+    H -->|是| I[操作成功]
+    H -->|否| J[触发告警]
+```
+
+### 执行步骤
+
+1. **确认状态**: 验证 Pod 确实处于异常状态
+2. **执行删除**: `kubectl delete pod ${pod} -n ${namespace} --grace-period=${grace_period}`
+3. **等待重建**: 控制器自动创建新 Pod
+4. **验证结果**: 确认新 Pod 进入 Running 状态
+
+### 回滚方案
+
+如果重启后仍然失败：
+1. 通知运维人员介入
+2. 收集 Pod 事件和容器日志
+3. 暂停自动重启避免频繁重启
+
+---
+
+## Action: cordon_node
+
+**隔离节点** - 将故障节点标记为不可调度，防止新 Pod 被调度到该节点
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| node | modify |
+
+### 触发条件
+
+```yaml
+condition:
+  object_type_id: node
+  field: node_status
+  operation: ==
+  value: NotReady
+```
+
+> 当 Node 状态为 NotReady 时触发
+
+### 影响范围
+
+| 影响对象 | 影响描述 |
+|----------|----------|
+| node | 标记节点为不可调度状态 |
+
+### 工具配置
+
+| 类型 | MCP ID | 工具名称 |
+|------|--------|----------|
+| mcp | kubernetes-mcp | cordon_node |
+
+### 参数绑定
+
+| 参数 | 来源 | 绑定 |
+|------|------|------|
+| node | property | node_name |
+
+### 执行说明
+
+1. 执行 `kubectl cordon ${node}` 标记节点不可调度
+2. 现有 Pod 不受影响，继续运行
+3. 新 Pod 不会被调度到该节点
+4. 节点恢复后需手动执行 `kubectl uncordon` 解除隔离
+
+---
+
+# 扩展说明
+
+## 网络统计
+
+| 类型 | 数量 |
+|------|------|
+| 实体类 | 3 |
+| 关系类 | 2 |
+| 行动类 | 2 |
+
+## 典型应用场景
+
+1. **故障根因分析**: 通过拓扑关系追溯故障影响链
+2. **自动化运维**: 基于行动定义实现故障自愈
+3. **容量规划**: 分析 Node 资源与 Pod 分布
+4. **服务依赖分析**: 通过 Service-Pod 关系理解服务架构
+
+## 相关文档
+
+- [Kubernetes 官方文档](https://kubernetes.io/docs/)
+- [Pod 生命周期](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)

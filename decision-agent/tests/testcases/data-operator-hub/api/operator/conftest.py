@@ -1,0 +1,46 @@
+# -*- coding:UTF-8 -*-
+
+import pytest
+import pymysql
+
+from common.get_content import GetContent
+
+configfile = "./config/env.ini"
+file = GetContent(configfile)
+config = file.config()
+
+host = config["server"]["host"]
+db_port = config["server"]["db_port"]
+db_user = config["server"]["db_user"]
+db_pwd = config["server"]["db_pwd"]
+
+@pytest.fixture(scope="module", autouse=True)
+def delete_operator_data():
+    '''清理算子记录'''
+    conn = pymysql.connect(host=host, user=db_user, password=db_pwd, port=int(db_port), database="dip_data_operator_hub")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM t_op_registry")
+        conn.commit()
+        print(f"表 t_op_registry 中 {cursor.rowcount} 条记录已被删除")
+
+        cursor.execute("DELETE FROM t_metadata_api")
+        conn.commit()
+        print(f"表 t_metadata_api 中 {cursor.rowcount} 条记录已被删除")
+
+        cursor.execute("DELETE FROM t_operator_release")
+        conn.commit()
+        print(f"表 t_operator_release 中 {cursor.rowcount} 条记录已被删除")
+
+        cursor.execute("DELETE FROM t_operator_release_history")
+        conn.commit()
+        print(f"表 t_operator_release_history 中 {cursor.rowcount} 条记录已被删除")
+
+        cursor.execute("DELETE FROM t_internal_component_config")
+        conn.commit()
+        print(f"表 t_internal_component_config 中 {cursor.rowcount} 条记录已被删除")
+    except Exception as e:
+        conn.rollback()
+        print(f"error: {str(e)}")
+    finally:
+        cursor.close()

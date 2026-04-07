@@ -1,0 +1,20 @@
+published_tpl_list:
+  type: object
+  description: 已发布智能体列表
+  properties:
+    entries:
+      type: array
+      description: 已发布智能体列表
+      items:
+        $ref: './published_tpl_list_item.yaml#/published_tpl_list_item'
+    # total:
+    #   type: integer
+    #   description: 总数
+    pagination_marker_str:
+      $ref: './published_tpl_list_maker.yaml#/tpl_pagination_marker_str'
+    is_last_page:
+      type: boolean
+      description: |
+        - 是否是最后一页
+        - 当查询不到数据时，也是最后一页
+      

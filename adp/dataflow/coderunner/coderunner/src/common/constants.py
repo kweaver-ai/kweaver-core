@@ -1,0 +1,1 @@
+page_not_found = "<html><title>404: Not Found</title><body>404: Not Found</body></html>"

@@ -1,0 +1,77 @@
+server:
+  runMode: release
+  httpPort: 13012
+  language: zh-CN
+  readTimeOut: 120
+  writeTimeOut: 120
+  retryIntervalMs: 3000           # kafka生产、消费、opensearch的bulk请求失败重试的等待时间
+  flushMiB: 5
+  flushItems: 10000
+  flushIntervalSec: 3
+  failureThreshold: 10
+  packagePoolSize: 40
+  monitorIntervalSec: 10
+  watchWorkersIntervalMin: 5     # 自动恢复异常任务
+  watchDeployInterval: 10         # 检查任务 deploy 资源
+  cpuMax: 8         
+  memoryMax: 8192   # MiB
+  maxPipelineCount: 100
+log:
+  logLevel: info
+  developMode: false
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+kafka:
+  sessionTimeoutMs: 45000               # 组管理协议用来监测消费者是否失效的超时时间
+  socketTimeoutMs: 60000                # 消费者拉取消息的超时时间
+  maxPollIntervalMs: 300000             # 两次 poll操作之间的间隔
+  heartbeatIntervalMs: 10000            # 消费者向coordinator发送心跳包的间隔时间
+  transactionTimeoutMs: 60000           # 事务操作超时时间
+  retentionTime: 7d                     # day or hour, example: 7d, 8h
+  retentionSize: -1                    # GiB
+  autoOffsetReset: earliest             # 可选值 latest, earliest
+  adminClientRequestTimeoutMs: 30000    # 获取源集群 topics 的超时时间
+  adminClientOperationTimeoutMs: 60000  # 向目标集群创建 topic 的超时时间
+  retries: 5                            # 生产者重试次数
+  retryBackoffMs: 500                   # 生产者每次重试之间的间隔
+depServices:
+  rds:
+    host: mariadb-mariadb-master.resource.svc.cluster.local.
+    port: 3330
+    user: root
+    password: xxxxxx
+    database: adp
+    type: MariaDB
+  opensearch:
+    host: opensearch-master.resource.svc.cluster.local.
+    port: 9200
+    protocol: http
+    user: admin
+    password: xxxxxx
+  mq:
+    auth:
+      mechanism: PLAIN
+      password: xxxxxx
+      username: anyrobot
+    mqHost: kafka-headless.resource.svc.cluster.local.
+    mqPort: 9097
+    mqType: kafka
+    protocol: sasl_plaintext
+    tenant: default
+  authorization-private:
+    host: authorization-private
+    port: 30920
+    protocol: http
+  hydra-admin:
+    host: hydra-admin
+    port: 4445
+    protocol: http
+  flow-stream-data-pipeline:
+    host: flow-stream-data-pipeline-svc
+    port: 13012
+    protocol: http
+  index-base:
+    host: mdl-index-base-svc
+    port: 13013
+    protocol: http

@@ -1,0 +1,21 @@
+role_list_item:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 角色ID
+    name:
+      type: string
+      description: 角色名称
+    key:
+      type: string
+      description: 角色唯一标识符
+    profile:
+      type: string
+      description: 角色简介说明
+    created_at:
+      type: integer
+      description: 创建时间（时间戳，单位：ms）
+    updated_at:
+      type: integer
+      description: 更新时间（时间戳，单位：ms）

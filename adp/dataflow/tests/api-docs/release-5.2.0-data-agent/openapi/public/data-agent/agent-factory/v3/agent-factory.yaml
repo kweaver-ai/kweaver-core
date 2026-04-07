@@ -1,0 +1,184 @@
+openapi: 3.0.2
+info:
+  title: Agent-Factory API
+  version: 1.0.0
+  description: |
+    API to access DIP
+
+    如有任何疑问，可到开发者社区提问：https://developers.aishu.cn
+
+servers:
+  - url: 'https://{host}:{port}/api/'
+    description: 'host: DIP服务器IP, port: 默认端口443'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '443'
+        description: https默认端口443
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: agent
+  - name: 发布相关
+  - name: 已发布
+  - name: 最近访问
+  - name: 产品
+  - name: 个人空间
+  - name: 模板
+  - name: 权限
+  - name: 工具结果处理策略
+#  - name: 角色
+  - name: 其他
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=261242083)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/744857)
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: DATA AGENT
+    tags:
+      - agent
+      - 发布相关
+      - 已发布
+      - 最近访问
+      - 产品
+      - 个人空间
+      - 模板
+      - 权限
+      - 工具结果处理策略
+#      - 角色
+      - 其他
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+paths:
+  # ---- agent start ----
+  /agent-factory/v3/agent:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent'
+  /agent-factory/v3/agent/{agent_id}:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}'
+  /agent-factory/v3/agent/by-key/{key}:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1by-key~1{key}'
+  /agent-factory/v3/agent/{agent_id}/copy:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1copy'
+  /agent-factory/v3/agent/{agent_id}/copy2tpl:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1copy2tpl'
+  /agent-factory/v3/agent/{agent_id}/copy2tpl-and-publish:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1copy2tpl-and-publish'
+  /agent-factory/v3/agent-self-config-fields:
+    $ref: './agent/paths.yaml#/paths/~1agent-factory~1v3~1agent-self-config-fields'
+  # ---- agent end ----
+  # ---- other start ----
+  /agent-factory/v3/agent/ai-autogen:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1ai-autogen'
+  /agent-factory/v3/agent/batch-check-index-status:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1batch-check-index-status'
+  /agent-factory/v3/agent/avatar/built-in/{avatar_id}:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1avatar~1built-in~1{avatar_id}'
+  /agent-factory/v3/agent/avatar/built-in:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1avatar~1built-in'
+  /agent-factory/v3/agent-inout/export:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent-inout~1export'
+  /agent-factory/v3/agent-inout/import:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent-inout~1import'
+  /agent-factory/v3/agent/dolphin-tpl/list:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1dolphin-tpl~1list'
+  /agent-factory/v3/agent/temp-zone/file-ext-map:
+    $ref: './other/paths.yaml#/paths/~1agent-factory~1v3~1agent~1temp-zone~1file-ext-map'
+  # ---- other end ----
+  # ---- product start ----
+  /agent-factory/v3/product:
+    $ref: './product/paths.yaml#/paths/~1agent-factory~1v3~1product'
+  /agent-factory/v3/product/{id}:
+    $ref: './product/paths.yaml#/paths/~1agent-factory~1v3~1product~1{id}'
+  # ---- product end ----
+  # ---- publish start ----
+  /agent-factory/v3/agent/{agent_id}/publish:
+    $ref: './da_publish/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1publish'
+  /agent-factory/v3/agent/{agent_id}/unpublish:
+    $ref: './da_publish/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1unpublish'
+
+  /agent-factory/v3/category:
+    $ref: './da_publish/paths.yaml#/paths/~1agent-factory~1v3~1category'
+
+  /agent-factory/v3/agent/{agent_id}/publish-info:
+    $ref: './da_publish/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1publish-info'
+  # ---- publish end ----
+
+  # ---- tpl start ----
+  /agent-factory/v3/agent-tpl/{id}:
+    $ref: './agent_tpl/paths.yaml#/paths/~1agent-factory~1v3~1agent-tpl~1{id}'
+
+  /agent-factory/v3/agent-tpl/{id}/publish:
+    $ref: './agent_tpl/paths.yaml#/paths/~1agent-factory~1v3~1agent-tpl~1{id}~1publish'
+  /agent-factory/v3/agent-tpl/{id}/unpublish:
+    $ref: './agent_tpl/paths.yaml#/paths/~1agent-factory~1v3~1agent-tpl~1{id}~1unpublish'
+
+  /agent-factory/v3/agent-tpl/{id}/publish-info:
+    $ref: './agent_tpl/paths.yaml#/paths/~1agent-factory~1v3~1agent-tpl~1{id}~1publish-info'
+  /agent-factory/v3/agent-tpl/{id}/copy:
+    $ref: './agent_tpl/paths.yaml#/paths/~1agent-factory~1v3~1agent-tpl~1{id}~1copy'
+
+  # ---- tpl end ----
+  # ---- permission start ----
+  /agent-factory/v3/agent-permission/list-btn:
+    $ref: './agent_permission/paths.yaml#/paths/~1agent-factory~1v3~1agent-permission~1list-btn'
+  /agent-factory/v3/agent-permission/execute:
+    $ref: './agent_permission/paths.yaml#/paths/~1agent-factory~1v3~1agent-permission~1execute'
+  /agent-factory/v3/agent-permission/management/user-status:
+    $ref: './agent_permission/paths.yaml#/paths/~1agent-factory~1v3~1agent-permission~1management~1user-status'
+  # ---- permission end ----
+
+  # ---- personal space start ----
+  /agent-factory/v3/personal-space/agent-list:
+    $ref: './personal_space/paths.yaml#/paths/~1agent-factory~1v3~1personal-space~1agent-list'
+
+  /agent-factory/v3/personal-space/agent-tpl-list:
+    $ref: './personal_space/paths.yaml#/paths/~1agent-factory~1v3~1personal-space~1agent-tpl-list'
+  # ---- personal space end ----
+
+  # ---- published start ----
+  /agent-factory/v3/published/agent:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1published~1agent'
+  /agent-factory/v3/published/agent-tpl:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1published~1agent-tpl'
+  /agent-factory/v3/published/agent-tpl/{tpl_id}:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1published~1agent-tpl~1{tpl_id}'
+  /agent-factory/v3/published/agent-info-list:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1published~1agent-info-list'
+
+  /agent-factory/v3/agent-market/agent/{agent_id}/version/{version}:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1agent-market~1agent~1{agent_id}~1version~1{version}'
+  /agent-factory/v3/agent/{agent_id}/release-history:
+    $ref: './da_published/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1release-history'
+  # ---- published end ----
+
+  # ---- recent visit start ----
+  /agent-factory/v3/recent-visit/agent:
+    $ref: './recent_visit/paths.yaml#/paths/~1agent-factory~1v3~1recent-visit~1agent'
+  # ---- recent visit end ----
+
+  # ---- role start ----
+  /agent-factory/v3/role:
+    $ref: './da_role/paths.yaml#/paths/~1agent-factory~1v3~1role'
+  /agent-factory/v3/role/{id}:
+    $ref: './da_role/paths.yaml#/paths/~1agent-factory~1v3~1role~1{id}'
+  /agent-factory/v3/role/{id}/members:
+    $ref: './da_role/paths.yaml#/paths/~1agent-factory~1v3~1role~1{id}~1members'
+  /agent-factory/v3/role/{id}/resources:
+    $ref: './da_role/paths.yaml#/paths/~1agent-factory~1v3~1role~1{id}~1resources'
+  # ---- role end ----
+  # ---- tool_result_process_strategy start ----
+  /agent-factory/v3/tool-result-process-strategy/category:
+    $ref: './da_tool_result_process_strategy/paths.yaml#/paths/~1agent-factory~1v3~1tool-result-process-strategy~1category'
+  /agent-factory/v3/tool-result-process-strategy/category/{category_id}/strategy:
+    $ref: './da_tool_result_process_strategy/paths.yaml#/paths/~1agent-factory~1v3~1tool-result-process-strategy~1category~1{category_id}~1strategy'
+  # ---- tool_result_process_strategy end ----

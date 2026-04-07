@@ -1,0 +1,195 @@
+# kn
+[BknBackend.KnowledgeNetwork.Duplicated.IDInFile]
+Description = "Same Konwledge Network ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.Duplicated.Name]
+Description = "Same Konwledge Network Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.BusinessDomain]
+Description = "Invalid Business Domain Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.ConceptCondition]
+Description = "Invalid Concept Condition Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.Direction]
+Description = "Invalid Direction Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.IncludeStatistics]
+Description = "Invalid Include Statistics Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.IncludeTypeInfo]
+Description = "Invalid Include Type Info Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InvalidParameter.PathLength]
+Description = "Invalid Path Length Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.KNIDExisted]
+Description = "Same ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.KNNameExisted]
+Description = "Same Knowledge Network Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.LengthExceeded.Name]
+Description = "The Length of Knowledge Network Name Out of Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.NullParameter.Branch]
+Description = "Branch Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.NullParameter.Direction]
+Description = "Direction Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.NullParameter.Name]
+Description = "Knowledge Network Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.NullParameter.SourceObjectTypeId]
+Description = "Source Object Type Id Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.Forbidden.HasRunningJob]
+Description = "Knowledge Network Has Running Job"
+Solution = "Please try again later. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.NotFound]
+Description = "The Knowledge Network Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.BeginTransactionFailed]
+Description = "Begin Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.BindBusinessDomainFailed]
+Description = "Bind Business Domain Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.UnbindBusinessDomainFailed]
+Description = "Unbind Business Domain Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CheckKNIfExistFailed]
+Description = "Check Knowledge Network Exist Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetKNByIDFailed]
+Description = "Get Knowledge Network By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.UpdateKNFailed]
+Description = "Update Knowledge Network Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CreateKNFailed]
+Description = "Create Knowledge Network Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CreateResourcesFailed]
+Description = "Create Knowledge Network Resources Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetActionTypesTotalFailed]
+Description = "Get Action Types Total Failed Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetObjectTypesTotalFailed]
+Description = "Get Object Types Total In Knowledge Network Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetRelationTypesTotalFailed]
+Description = "Get Relation Types Total In Knowledge Network Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetVectorFailed]
+Description = "Get Knowledge Network Vector Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.InsertOpenSearchDataFailed]
+Description = "Insert Knowledge Network Data Into OpenSearch Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CreateObjectTypesFailed]
+Description = "Failed to create object types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CreateRelationTypesFailed]
+Description = "Failed to create relation types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.CreateActionTypesFailed]
+Description = "Failed to create action types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.DeleteObjectTypesFailed]
+Description = "Failed to delete object types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.DeleteRelationTypesFailed]
+Description = "Failed to delete relation types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.DeleteActionTypesFailed]
+Description = "Failed to delete action types"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.KnowledgeNetwork.InternalError.GetRiskTypesTotalFailed]
+Description = "Get Risk Types Total In Knowledge Network Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

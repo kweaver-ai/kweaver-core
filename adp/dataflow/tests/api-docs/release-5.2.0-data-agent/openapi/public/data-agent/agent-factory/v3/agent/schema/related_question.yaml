@@ -1,0 +1,9 @@
+related_question:
+  type: object
+  description: |
+    - 相关问题配置（开启后，大模型会在回答用户问题时同时生成相关问题）
+  properties:
+    is_enabled:
+      type: boolean
+      description: 是否启用（默认关闭）
+      example: false

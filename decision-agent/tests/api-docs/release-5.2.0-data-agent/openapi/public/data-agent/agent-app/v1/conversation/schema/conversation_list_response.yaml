@@ -1,0 +1,65 @@
+ConversationListResponse:
+  type: object
+  properties:
+    total_count:
+      type: integer
+      description: 结果总数
+    entries:
+      type: array
+      description: 会话列表
+      items:
+        $ref: '#/ConversationListItem'
+  required:
+    - total_count
+    - entries
+  example:
+    total_count: 2
+    entries:
+      - id: "conv_123"
+        title: "示例会话"
+        message_index: 5
+        read_message_index: 3
+        create_time: 1744167890000000000
+        update_time: 1744167890000000000
+      - id: "conv_456"
+        title: "另一个会话"
+        message_index: 10
+        read_message_index: 8
+        create_time: 1744167891000000000
+        update_time: 1744167891000000000
+
+
+
+
+ConversationListItem:
+  description: 会话简介
+  type: object
+  properties:
+    id:
+      type: string
+      description: 会话ID
+    title:
+      type: string
+      description: 会话标题
+    message_index:
+      type: integer
+      description: 最新会话消息下标
+    read_message_index:
+      type: integer
+      description: 最新已读的会话消息下标	
+    create_time:
+      type: integer
+      description: 创建时间
+    update_time:
+      type: integer
+      description: 更新时间
+  required:
+    - id
+    - title
+  example:
+    id: "conv_123"
+    title: "示例会话"
+    message_index: 5
+    read_message_index: 3
+    create_time: 1744167890000000000
+    update_time: 1744167890000000000

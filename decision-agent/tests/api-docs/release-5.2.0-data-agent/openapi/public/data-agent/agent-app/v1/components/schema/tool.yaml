@@ -1,0 +1,27 @@
+Tool:
+  type: object
+  required:
+    - tool_type
+    - tool_id
+    - tool_box_id
+    - tool_use_description
+  properties:
+    tool_type:
+      type: string
+      description: 工具类型
+    tool_id:
+      type: string
+      description: 工具ID
+    tool_box_id:
+      type: string
+      description: 工具箱ID
+    tool_use_description:
+      type: string
+      description: 工具说明
+    tool_input:
+      type: object
+      description: 工具输入
+    intervention:
+      type: boolean
+      default: false
+      description: 是否启用干预

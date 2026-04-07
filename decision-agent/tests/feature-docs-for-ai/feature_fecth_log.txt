@@ -1,0 +1,206 @@
+需求背景
+data-agent涉及3个主要的服务agent-app,agent-factory,agent-executor. agent-app提供了面向用户的对话等接口，agent-factory提供了agent的管理等接口，agent-executor是内部服务，是data-agent的核心。
+当用户在使用agent的时候遇到问题后，运维人员需要获取data-agent的相关日志供研发排查，例如遇到agent无法创建，无法保存，获取无法导入等等管理一类的问题，则需要检查agent-factory的日志。如果用户在agent对
+或者调试的时候遇到问题，就需要检查agent-app和agent-executor的日志。
+服务是运行在K8s平台，所以需要执行kubectl命令来获取相关日志，另外随着服务运行时间变长，控制台日志会非常多，所以需要考虑只获取最近200行的日志。
+
+目标
+开发一个程序，用户可以自动收集data-agent相关服务的日志
+
+扩展
+如果指定需要获取日志的服务名，则获取改服务的日志，不仅限于data-agent相关的服务
+
+开发语言
+golang
+
+可执行产物适配版本
+linux: x86和arm
+
+如何获取日志？
+1. 获取服务的真实pod名
+kubectl get pods -A|grep [服务名]
+2. 查看服务控制台的日志
+kubectl logs -n [namespace] [pod名] --tail=300
+3. agent-executor获取日志需要【特殊处理】，既要获取控制台的日志，还需要获取容器里的日志文件，手动输入命令如下：
+kubectl exec -it -n [namespace] [pod名] bash
+cd log
+在log目录下能看到agent-executor.log dolphin.log requests.log
+我们只需要获取最新的300行日志即可
+
+输出结果：
+log_[时间戳].json
+
+输出结构：
+[
+    {
+        "svc_name":"",
+        "pod":"",
+        "fetch_time":"",
+        "fecth_log_lines":300,
+        "log_detail":[
+            {
+                "log_name":"",
+                "log_content":""
+            }
+        ]
+
+    }
+]
+
+支持的命令：
+fetch_log
+# 无参数，默认获取agent-app,agent-executor
+fetch_log --svc_list agent-factory,agent-memory,mf-model-manager
+# 指定服务名查询
+
+大模型会话示例：
+请求url：
+http://192.168.232.11/api/mf-model-api/v1/chat/completions
+鉴权：
+Bearer Token: 要求用户输入
+请求体：
+{
+  "model": "deepseek-v3-1-20250821", # 这个值要求用户输入
+  "temperature": 1,
+  "top_p": 1,
+  "max_tokens": 10000,
+  "top_k": 1,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "stream": true, # 流式输出
+  "messages": [
+    {
+      "role": "user",
+      "content": "\r\n/prompt/请将原始任务拆解成多步骤任务，任务的个数应该在2~4个，前几步应是搜索资料，最后一步应该是总结内容。\r\n以list格式返回\r\n示例:\r\n原始任务:如何提高英语口语能力？\r\n拆解结果:[\"搜索资料:提高英语口语能力的最佳方法\",\"搜索资料：适合初学者的英语口语练习技巧\",\"总结内容：如何提高英语口语能力？\"]\r\n\r\n原始任务:如何学习python\r\n拆解结果:->plan_list\r\neval($plan_list.answer)->plan_list\r\n"
+    }
+  ],
+  "response_format": {
+    "type": "text"
+  }
+}
+
+响应：
+data: {"choices": [{"delta": {"content": "根据", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "您的", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "原始", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "任务", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\"", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "如何", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "学习", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "python", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\"，", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "我", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "拆", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "解", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "如下", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "：", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\n\n", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "[\"", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "搜索", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "资料", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "：", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "Python", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "学习", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "路线", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "和", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "核心", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "知识点", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\",\"", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "搜索", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "资料", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "：", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "推荐", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "的高", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "质量", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "Python", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "学习", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "资源", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\",\"", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "搜索", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "资料", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "：", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "Python", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "学习", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "过程中的", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "常见", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "问题", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "与", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "解决方法", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\",\"", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "总结", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "内容", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "：", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "如何", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "高效", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "学习", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "Python", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "的", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "完整", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "指南", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "\"]", "role": "assistant"}, "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [{"delta": {"content": "", "role": "assistant"}, "finish_reason": "stop", "index": 0}], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "service_tier": "default", "object": "chat.completion.chunk", "usage": null}
+
+data: {"choices": [], "created": 1768183241, "id": "0217681832407477f331573a59c5c1ce993ad92e92293c22ace5e", "model": "deepseek-v3-1-250821", "object": "chat.completion.chunk", "usage": {"completion_tokens": 58, "prompt_tokens": 132, "total_tokens": 190, "prompt_tokens_details": {"cached_tokens": 0, "uncached_tokens": 132}, "completion_tokens_details": {"reasoning_tokens": 0}}}
+
+data: [DONE]
+
+
+

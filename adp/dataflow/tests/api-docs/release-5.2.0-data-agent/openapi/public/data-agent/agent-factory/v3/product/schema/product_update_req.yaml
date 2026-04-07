@@ -1,0 +1,11 @@
+product_update_req:
+  type: object
+  properties:
+    name:
+      type: string
+      description: 产品名称
+      maxLength: 50
+    profile:
+      type: string
+      description: 产品简介
+      maxLength: 100

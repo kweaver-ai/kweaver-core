@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: Agent可观测数据查询API
+  description: 查询Agent/Session/Run的可观测数据和配置信息
+  version: 1.0.0
+servers:
+  - url: http://agent-app:30777/api
+paths:
+  /agent-app/internal/v1/observability/analytics/query:
+    post:
+      summary: 查询可观测数据
+      description: 根据分析类型和时间范围查询相应的metrics和配置数据
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/observability_analytics_request.yaml#/components/schemas/AnalyticsQueryRequest'
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/observability_analytics_resp.yaml#/components/schemas/AnalyticsQueryResponse'
+        '400':
+          $ref: '../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/InternalServerError'

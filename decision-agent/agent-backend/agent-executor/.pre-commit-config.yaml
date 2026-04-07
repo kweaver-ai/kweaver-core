@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-merge-conflict
+        files: ^agent-backend/agent-executor/
+      - id: end-of-file-fixer
+        files: ^agent-backend/agent-executor/
+      - id: trailing-whitespace
+        files: ^agent-backend/agent-executor/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.14.3"
+    hooks:
+      - id: ruff
+        args: [--exit-non-zero-on-fix]
+        files: ^agent-backend/agent-executor/
+      - id: ruff-format
+        files: ^agent-backend/agent-executor/

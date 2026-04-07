@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: Memory_Benchmark_API
+  description: Memory Benchmark测试的RESTful API接口
+  version: 1.0.0
+servers:
+  - url: http://10.4.111.141:5052
+    description: 测试环境服务器
+paths:
+  /:
+    get:
+      summary: Root
+      description: 根路径，返回API信息
+      operationId: root__get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /configure:
+    post:
+      summary: Configure_Api
+      description: 配置API参数
+      operationId: configure_api_configure_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BenchmarkRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /status:
+    get:
+      summary: Get_Status
+      description: 获取当前配置状态
+      operationId: get_status_status_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+  /health-check:
+    get:
+      summary: Health_Check
+      description: 健康检测接口
+      operationId: health_check_health_check_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheckResponse"
+  /clean-memory:
+    post:
+      summary: Clean_Memory
+      description: 清除记忆
+      operationId: clean_memory_clean_memory_post
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+  /build-memory:
+    post:
+      summary: Build_Memory
+      description: 构建记忆
+      operationId: build_memory_build_memory_post
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+  /list-memory:
+    post:
+      summary: List_Memory
+      description: 列举记忆
+      operationId: list_memory_list_memory_post
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryListResponse"
+  /run-debug:
+    post:
+      summary: Run_Debug_Mode
+      description: 运行调试模式测试
+      operationId: run_debug_mode_run_debug_post
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultResponse"
+  /run-benchmark:
+    post:
+      summary: Run_Full_Benchmark
+      description: 运行完整benchmark测试
+      operationId: run_full_benchmark_run_benchmark_post
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultResponse"
+components:
+  schemas:
+    BenchmarkRequest:
+      properties:
+        api_host:
+          type: string
+          title: Api Host
+          description: API服务器地址
+        x_user:
+          type: string
+          title: X User
+          description: 用户标识
+        agent_id:
+          type: string
+          title: Agent Id
+          description: Agent ID
+        user_id:
+          type: string
+          title: User Id
+          description: 用户ID
+        search_threshold:
+          type: number
+          title: Search Threshold
+          description: 搜索阈值
+          default: 0.1
+        search_rerank_threshold:
+          type: number
+          title: Search Rerank Threshold
+          description: 重排序阈值
+          default: 0.1
+        search_limit:
+          type: integer
+          title: Search Limit
+          description: 搜索限制
+          default: 100
+        accuracy_match_threshold:
+          type: number
+          title: Accuracy Match Threshold
+          description: 准确率匹配阈值
+          default: 0.5
+        accuracy_similarity_threshold:
+          type: number
+          title: Accuracy Similarity Threshold
+          description: 准确率相似度阈值
+          default: 0.3
+        best_match_threshold:
+          type: number
+          title: Best Match Threshold
+          description: 最佳匹配阈值
+          default: 0.5
+      type: object
+      required:
+        - api_host
+        - x_user
+        - agent_id
+        - user_id
+      title: BenchmarkRequest
+      description: Benchmark请求模型
+    BenchmarkResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+        data:
+          type: object
+          nullable: true
+          title: Data
+        timestamp:
+          type: string
+          title: Timestamp
+      type: object
+      required:
+        - success
+        - message
+        - timestamp
+      title: BenchmarkResponse
+      description: Benchmark响应模型
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: "#/components/schemas/ValidationError"
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthCheckResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+        service_status:
+          type: string
+          title: Service Status
+        timestamp:
+          type: string
+          title: Timestamp
+      type: object
+      required:
+        - success
+        - message
+        - service_status
+        - timestamp
+      title: HealthCheckResponse
+      description: 健康检测响应模型
+    MemoryListResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+        total_count:
+          type: integer
+          title: Total Count
+        difficulty_stats:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Difficulty Stats
+        memories:
+          items:
+            type: object
+          type: array
+          title: Memories
+        timestamp:
+          type: string
+          title: Timestamp
+      type: object
+      required:
+        - success
+        - message
+        - total_count
+        - difficulty_stats
+        - memories
+        - timestamp
+      title: MemoryListResponse
+      description: 记忆列表响应模型
+    TestResultResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+        test_type:
+          type: string
+          title: Test Type
+        total_tests:
+          type: integer
+          title: Total Tests
+        success_count:
+          type: integer
+          title: Success Count
+        error_count:
+          type: integer
+          title: Error Count
+        accuracy:
+          type: number
+          nullable: true
+          title: Accuracy
+        bad_cases:
+          type: array
+          items:
+            type: object
+          nullable: true
+          title: Bad Cases
+        report_path:
+          type: string
+          nullable: true
+          title: Report Path
+        timestamp:
+          type: string
+          title: Timestamp
+      required:
+        - success
+        - message
+        - test_type
+        - total_tests
+        - success_count
+        - error_count
+        - timestamp
+      title: TestResultResponse
+      description: 测试结果响应模型
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError

@@ -1,0 +1,73 @@
+ChatRequest:
+  type: object
+  properties:
+    conversation_id:
+      type: string
+      description: 会话ID
+    temporary_area_id:
+      type: string
+      description: 临时区域ID
+    source_ranges:
+      type: array
+      items:
+        $ref: '../../components/schema/source_range.yaml#/SourceRange'
+    query:
+      type: string
+      description: 查询内容
+    vars:
+      type: object
+      description: 变量映射
+      additionalProperties: true
+    parent_qa_id:
+      type: string
+      description: 父问答ID
+    range:
+      type: string
+      description: 查询范围
+    times:
+      type: integer
+      description: 重试次数
+    debug:
+      type: boolean
+      description: 是否开启调试模式
+    ask_tool:
+      type: object
+      description: 工具参数
+    history_limit:
+      type: integer
+      description: 历史记录限制，-1表示无限制
+      default: -1
+    interrupted_parent_qa_id:
+      type: string
+      description: 中断的父问答ID
+    step:
+      type: string
+      description: 调试步骤
+  required:
+    - query
+  example:
+    conversation_id: "conv_123"
+    temporary_area_id: "temp_456"
+    source_ranges:
+      - id: "doc_789"
+        type: "doc"
+        name: "技术文档"
+      - id: "wiki_101"
+        type: "wikidoc"
+        name: "知识库文章"
+    query: "如何使用这个功能？"
+    vars:
+      user_id: "user_123"
+      user_name: "张三"
+    parent_qa_id: "qa_321"
+    range: "all"
+    times: 0
+    debug: false
+    ask_tool:
+      tool_name: "calculator"
+      parameters:
+        num1: 10
+        num2: 20
+    history_limit: -1
+    interrupted_parent_qa_id: "qa_111"
+    step: "step1"

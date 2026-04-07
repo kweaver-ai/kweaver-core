@@ -1,0 +1,26 @@
+Conversation:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 会话ID
+    title:
+      type: string
+      description: 会话标题
+    origin:
+      type: string
+      description: 会话来源
+    messages:
+      type: array
+      items:
+        $ref: './message.yaml#/Message'
+    message_index:
+      type: integer
+      description: 消息索引
+    read_message_index:
+      type: integer
+      description: 已读消息索引
+    ext:
+      type: object
+      additionalProperties: true
+      description: 扩展信息

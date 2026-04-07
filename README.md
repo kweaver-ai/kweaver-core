@@ -17,7 +17,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 - 🌐 [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Try KWeaver online (username: `kweaver`, password: `111111`)
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
-- 📘 [Documentation](docs/) - Product documentation and usage guides
+- 📘 [Documentation](help/) - Product documentation and usage guides
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver/) - KWeaver technical articles and updates
 - 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
@@ -30,7 +30,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 
 <div align="center">
 <a href="https://www.bilibili.com/video/BV1nGXVBTEmo/?vd_source=4cdad687b2ac18a0b25e434f1fafe2f7" target="_blank">
-<img src="./docs/demo-cover.png" alt="KWeaver Demo Video" width="75%"/>
+<img src="./help/demo-cover.png" alt="KWeaver Demo Video" width="75%"/>
 </a>
 
 Click the image to watch the KWeaver demo on Bilibili
@@ -385,7 +385,7 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 ## 💬 Community
 
 <div align="center">
-<img src="./docs/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
+<img src="./help/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
 
 Scan to join the KWeaver community group
 </div>

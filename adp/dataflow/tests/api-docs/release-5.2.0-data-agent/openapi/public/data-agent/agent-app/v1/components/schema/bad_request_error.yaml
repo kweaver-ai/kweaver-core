@@ -1,0 +1,9 @@
+BadRequestError:
+  allOf:
+    - $ref: './error.yaml#/Error'
+  example:
+    error_code: "AgentApp.InvalidParameter"
+    description: "Invalid Parameter"
+    error_detail: "some text"
+    error_link: "some text"
+    solution: "some text"

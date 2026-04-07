@@ -1,0 +1,3 @@
+RelatedQuery:
+  description: 相关查询
+  type: string

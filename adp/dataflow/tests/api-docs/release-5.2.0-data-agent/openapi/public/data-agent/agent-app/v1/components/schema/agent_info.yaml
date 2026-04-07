@@ -1,0 +1,15 @@
+AgentInfo:
+  type: object
+  properties:
+    agent_id:
+      type: string
+      description: Agent ID
+    agent_name:
+      type: string
+      description: Agent Name
+    agent_status:
+      type: string
+      description: Agent Status
+    agent_version:
+      type: string
+      description: Agent Version

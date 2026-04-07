@@ -1,0 +1,35 @@
+[AgentMemory.Validation.Error]
+description = "Request parameter validation failed"
+solution = "Please check if the request parameters meet the API documentation requirements"
+error_link = "https://api.example.com/docs/errors/validation"
+
+
+[AgentMemory.InvalidParameter.RequestBody]
+description = "Request parameter validation failed"
+solution = "Please check if the request parameters meet the API documentation requirements"
+error_link = "https://api.example.com/docs/errors/invalid-parameter"
+
+[AgentMemory.InvalidParameter.MemoryId]
+description = "Specified memory not found"
+solution = "Please verify the memory ID is correct or check if the memory has been deleted"
+error_link = "https://api.example.com/docs/errors/invalid-memory-id"
+
+[AgentMemory.NotFound.Memory]
+description = "Specified memory not found"
+solution = "Please verify the memory ID is correct or check if the memory has been deleted"
+error_link = "https://api.example.com/docs/errors/memory-not-found"
+
+[AgentMemory.Operation.Failed]
+description = "Memory operation failed"
+solution = "Please try again later. If the problem persists, contact the administrator"
+error_link = "https://api.example.com/docs/errors/operation-failed"
+
+[AgentMemory.Service.Unavailable]
+description = "Memory service temporarily unavailable"
+solution = "Please try again later. If the problem persists, contact the administrator"
+error_link = "https://api.example.com/docs/errors/service-unavailable"
+
+[AgentMemory.Internal.Error]
+description = "Internal server error"
+solution = "Please try again later. If the problem persists, contact the administrator"
+error_link = "https://api.example.com/docs/errors/internal-error"

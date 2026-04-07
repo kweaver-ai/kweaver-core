@@ -1,0 +1,167 @@
+openapi: 3.0.0
+info:
+  title: Markdown Render API
+  description: API for rendering Markdown to HTML with preview and download capabilities
+  version: 1.0.0
+servers:
+  - url: http://10.4.110.230:8080
+    description: Local development server
+paths:
+  /api/v1/test2:
+    get:
+      summary: 测试接口2
+      description: 测试接口是否正常工作
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John
+          x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传的文件
+          formData:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传的文件
+      responses:
+        "200":
+          description: 测试成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Test successful"
+  /api/v1/render:
+    post:
+      summary: 渲染Markdown
+      description: 将Markdown内容渲染为HTML并返回预览和下载链接
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderRequest"
+      responses:
+        "200":
+          description: 渲染成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenderResponse"
+        "400":
+          description: 请求格式错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/preview/{id}:
+    get:
+      summary: 预览Markdown
+      description: 通过ID预览已渲染的Markdown文档
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 文档ID
+      responses:
+        "200":
+          description: 返回HTML预览
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: 文档未找到
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/download/{id}:
+    get:
+      summary: 下载Markdown
+      description: 通过ID下载原始Markdown文档
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 文档ID
+      responses:
+        "200":
+          description: 返回Markdown文件
+          content:
+            text/markdown:
+              schema:
+                type: string
+        "404":
+          description: 文档未找到
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    RenderRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Markdown原始内容
+          example: "# Hello World\n\nThis is a **Markdown** document."
+        expiration:
+          type: integer
+          description: 文档过期时间（秒），默认为86400（24小时）
+          example: 3600
+    RenderResponse:
+      type: object
+      properties:
+        preview_url:
+          type: string
+          description: 预览链接
+          example: http://localhost:8080/api/v1/preview/20230615120000
+        download_url:
+          type: string
+          description: 下载链接
+          example: http://localhost:8080/api/v1/download/20230615120000
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误信息
+          example: "Document not found"

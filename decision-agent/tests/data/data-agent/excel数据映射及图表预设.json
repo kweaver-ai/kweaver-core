@@ -1,0 +1,34 @@
+[
+  {
+    "agent_key": "01KCK19RDQ1C9GR8YSPXB3SDMG",
+    "agent_version": "v1",
+    "agent_input": [
+      {
+        "enable": true,
+        "map_type": "auto",
+        "input_name": "query",
+        "input_type": "string",
+        "input_desc": "query变量"
+      },
+      {
+        "enable": true,
+        "map_type": "var",
+        "map_value": "self_config.conversation_id",
+        "input_name": "sessionid",
+        "input_type": "string",
+        "input_desc": "sessionid变量"
+      }
+    ],
+    "intervention": false,
+    "data_source_config": {
+      "type": "self_configured",
+      "specific_inherit": ""
+    },
+    "llm_config": {
+      "type": "self_configured"
+    },
+    "agent_timeout": 1800,
+    "current_pms_check_status": "success",
+    "current_is_exists_and_published": true
+  }
+]

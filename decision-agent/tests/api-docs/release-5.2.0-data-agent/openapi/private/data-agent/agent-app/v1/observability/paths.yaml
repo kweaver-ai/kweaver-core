@@ -1,0 +1,26 @@
+paths:
+  analytics_query:
+    post:
+      summary: 查询可观测数据
+      description: 根据分析类型和时间范围查询相应的metrics和配置数据
+      tags:
+        - 可观测性
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/observability_analytics_request.yaml#/components/schemas/AnalyticsQueryRequest'
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/observability_analytics_resp.yaml#/components/schemas/AnalyticsQueryResponse'
+        '400':
+          $ref: '../../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/BadRequestError'
+        '404':
+          $ref: '../../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../../../../../public/data-agent/agent-app/v1/components/components.yaml#/components/responses/InternalServerError'

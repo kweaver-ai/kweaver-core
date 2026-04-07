@@ -1,0 +1,51 @@
+{{- if .Values.components.flowAutomation.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dataflow.flowAutomation.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "dataflow.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "dataflow.flowAutomation.fullname" . }}
+spec:
+  {{- if .Values.flowAutomation.service.enableDualStack }}
+  ipFamilies:
+  - IPv6
+  - IPv4
+  ipFamilyPolicy: PreferDualStack
+  {{- end }}
+  type: {{ .Values.flowAutomation.service.type }}
+  ports:
+    - port: {{ .Values.flowAutomation.service.port }}
+      targetPort: dataflow-pub
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dataflow.flowAutomation.fullname" . }}-private
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "dataflow.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "dataflow.flowAutomation.fullname" . }}-private
+spec:
+  {{- if .Values.flowAutomation.service.enableDualStack }}
+  ipFamilies:
+  - IPv6
+  - IPv4
+  ipFamilyPolicy: PreferDualStack
+  {{- end }}
+  type: {{ .Values.flowAutomation.service.type }}
+  ports:
+    - port: {{ .Values.flowAutomation.service.port }}
+      targetPort: dataflow-priv
+      protocol: TCP
+      name: private
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

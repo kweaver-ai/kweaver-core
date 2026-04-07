@@ -1,0 +1,59 @@
+tool:
+  type: object
+  properties:
+    tool_id:
+      type: string
+      description: 工具id
+    tool_box_id:
+      type: string
+      description: 工具箱id
+    tool_input:
+      type: array
+      description: 输入参数配置
+      items:
+        $ref: './tool_input.yaml#/tool_input'
+    tool_timeout:
+      type: integer
+      description: 工具调用超时时间，单位s, 默认300s
+      default: 300
+    intervention:
+      type: boolean
+      description: 是否启用干预
+    result_process_strategies:
+      type: array
+      description: 结果处理策略
+      items:
+        type: object
+        properties:
+          category:
+            type: object
+            properties:
+              id:
+                type: string
+                description: 结果处理策略分类ID
+              name:
+                type: string
+                description: 结果处理策略分类名称
+              description:
+                type: string
+                description: 结果处理策略分类描述
+          strategy:
+            type: object
+            properties:
+              id:
+                type: string
+                description: 结果处理策略ID
+              name:
+                type: string
+                description: 结果处理策略名称
+              description:
+                type: string
+            description: 结果处理策略描述
+  required:
+    - tool_id
+    - tool_box_id
+  description: 工具（技能） 可选
+tools:
+  type: array
+  items:
+    $ref: '#/tool'

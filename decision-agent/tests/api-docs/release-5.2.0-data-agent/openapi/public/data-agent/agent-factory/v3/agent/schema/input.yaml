@@ -1,0 +1,145 @@
+input:
+  type: object
+  properties:
+    fields:
+      type: array
+      items:
+        $ref: './field.yaml#/field'
+      description: 参数列表
+    augment:
+      type: object
+      nullable: true
+      properties:
+        enable:
+          type: boolean
+          description: 是否启用
+        data_source:
+          type: object
+          properties:
+            kg:
+              type: array
+              items:
+                $ref: './kg_source.yaml#/kg_source'
+              description: 图谱类型数据源
+              maxItems: 1
+          description: 图谱数据源配置
+      required:
+        - enable
+        - data_source
+      description: query增强
+    rewrite:
+      type: object
+      nullable: true
+      properties:
+        enable:
+          type: boolean
+          description: 是否启用
+        llm_config:
+          $ref: './llm_config.yaml#/llm_config'
+      required:
+        - enable
+        - llm_config
+      description: query重写
+    is_temp_zone_enabled:
+      type: integer
+      description: |
+        - 是否启用临时区
+          - 配置时，前端不需要传此字段。后端根据fields中是否包含file类型字段自动判断
+      enum: [ 0, 1 ]
+      example: 0
+    temp_zone_config:
+      type: object
+      description: |
+        - 临时区配置
+          - 当使用临时区时（fields中包含file类型字段），此配置必需
+      required:
+#        - name
+        - tmp_file_use_type
+#        - max_file_count
+        # - single_chat_max_select_file_count
+        - single_file_size_limit
+        - single_file_size_limit_unit
+        - support_data_type
+        - allowed_file_categories
+      properties:
+        name:
+          type: string
+          description: |
+            - 区域名称
+              - 默认：临时区
+          example: "临时区"
+        tmp_file_use_type:
+          type: string
+          description: |
+            - 临时文件使用类型
+              - upload: 直接上传
+              - select_from_temp_zone: 从临时区选择
+          example: "select_from_temp_zone"
+        max_file_count:
+          type: integer
+          description: |
+            - 临时区最大文件数量（目前最多50个文件）
+            - 默认：50
+          example: 50
+        single_chat_max_select_file_count:
+          type: integer
+          description: |
+            - 单次对话中支持选择的文件个数（目前最多5个文件）
+            - 默认：5
+          example: 5
+        single_file_size_limit:
+          type: integer
+          description: |
+            - 单文件大小限制
+            - 目前的限制是最大100MB
+          example: 100
+        single_file_size_limit_unit:
+          type: string
+          description: 单文件大小限制单位
+          enum:
+            - "KB"
+            - "MB"
+            - "GB"
+          example: "MB"
+        support_data_type:
+          type: array
+          description: |
+            - 支持的数据类型
+              - file: 文件 （目前支持文件，后面可能会增加新的类型，比如af的相关数据等）
+            - 默认：["file"]
+          items:
+            type: string
+            example: "file"
+            enum: [ "file" ]
+        allowed_file_categories:
+          type: array
+          description: |
+            - 允许的文件大类型，如：["video", "image"]
+            - 当support_data_type包含file时，此配置有效
+            - 目前有：
+              - document: 文档
+              - spreadsheet: 工作表
+              - presentation: 演示文稿
+              - pdf: PDF
+              - text: 文本
+              - audio: 音频
+              - video: 视频
+              - wikidoc: wikidoc
+              - faq:   faq
+              - other: 其他
+          items:
+            type: string
+            example: "video"
+            enum: [ "document", "spreadsheet", "presentation", "pdf", "text", "audio",  "other", "video", "wikidoc", "faq" ]
+        allowed_file_types:
+          type: array
+          description: |
+            - 允许的文件类型，如：["mp4", "jpg"]
+            - 当support_data_type包含file时，此配置有效
+            - 在创建和编辑时，不需要传递此字段。会根据allowed_file_categories自动生成
+          items:
+            type: string
+            example: "mp4"
+  required:
+    - fields
+  description: 输入参数

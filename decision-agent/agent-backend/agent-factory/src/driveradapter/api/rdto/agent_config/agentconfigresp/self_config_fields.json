@@ -1,0 +1,555 @@
+{
+  "name": "self_config",
+  "type": "object",
+  "description": "完整的配置对象",
+  "children": [
+    {
+      "name": "input",
+      "type": "object",
+      "description": "输入参数配置",
+      "children": [
+        {
+          "name": "fields",
+          "type": "array",
+          "description": "参数列表",
+          "children": [
+            {
+              "name": "name",
+              "type": "string",
+              "description": "参数名称"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "description": "参数类型"
+            }
+          ]
+        },
+        {
+          "name": "is_temp_zone_enabled",
+          "type": "integer",
+          "description": "是否启用临时区"
+        },
+        {
+          "name": "temp_zone_config",
+          "type": "object",
+          "description": "临时区配置",
+          "children": [
+            {
+              "name": "name",
+              "type": "string",
+              "description": "区域名称"
+            },
+            {
+              "name": "tmp_file_use_type",
+              "type": "string",
+              "description": "临时文件使用类型"
+            },
+            {
+              "name": "max_file_count",
+              "type": "integer",
+              "description": "最大文件数量"
+            },
+            {
+              "name": "single_file_size_limit",
+              "type": "integer",
+              "description": "单文件大小限制"
+            },
+            {
+              "name": "single_file_size_limit_unit",
+              "type": "string",
+              "description": "单文件大小限制单位"
+            },
+            {
+              "name": "support_data_type",
+              "type": "array",
+              "description": "支持的数据类型"
+            },
+            {
+              "name": "allowed_file_categories",
+              "type": "array",
+              "description": "允许的文件类别"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "system_prompt",
+      "type": "string",
+      "description": "系统提示词"
+    },
+    {
+      "name": "dolphin",
+      "type": "string",
+      "description": "dolphin语句"
+    },
+    {
+      "name": "is_dolphin_mode",
+      "type": "integer",
+      "description": "是否是dolphin模式"
+    },
+    {
+      "name": "data_source",
+      "type": "object",
+      "description": "数据源配置",
+      "children": [
+        {
+          "name": "doc",
+          "type": "array",
+          "description": "文档类型数据源",
+          "children": [
+            {
+              "name": "ds_id",
+              "type": "string",
+              "description": "数据源ID"
+            },
+            {
+              "name": "fields",
+              "type": "array",
+              "description": "数据源范围列表",
+              "children": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "description": "字段名称"
+                },
+                {
+                  "name": "path",
+                  "type": "string",
+                  "description": "字段路径"
+                },
+                {
+                  "name": "source",
+                  "type": "string",
+                  "description": "字段来源"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "description": "字段类型"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kg",
+          "type": "array",
+          "description": "图谱类型数据源",
+          "children": [
+            {
+              "name": "kg_id",
+              "type": "string",
+              "description": "图谱ID"
+            },
+            {
+              "name": "fields",
+              "type": "array",
+              "description": "实体类范围"
+            },
+            {
+              "name": "output_fields",
+              "type": "array",
+              "description": "结果范围"
+            },
+            {
+              "name": "field_properties",
+              "type": "object",
+              "description": "实体属性列表",
+              "children": [
+                {
+                  "name": "regions",
+                  "type": "array",
+                  "description": "regions属性"
+                },
+                {
+                  "name": "comments",
+                  "type": "array",
+                  "description": "comments属性"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "metric",
+          "type": "array",
+          "description": "指标类型数据源",
+          "children": [
+            {
+              "name": "metric_model_id",
+              "type": "string",
+              "description": "指标模型ID"
+            }
+          ]
+        },
+        {
+          "name": "kn_entry",
+          "type": "array",
+          "description": "知识条目类型数据源",
+          "children": [
+            {
+              "name": "kn_entry_id",
+              "type": "string",
+              "description": "知识条目ID"
+            }
+          ]
+        },
+        {
+          "name": "knowledge_network",
+          "type": "array",
+          "description": "业务知识网络类型数据源",
+          "children": [
+            {
+              "name": "knowledge_network_id",
+              "type": "string",
+              "description": "业务知识网络id"
+            }
+          ]
+        },
+        {
+          "name": "advanced_config",
+          "type": "object",
+          "description": "召回高级配置",
+          "children": [
+            {
+              "name": "doc",
+              "type": "object",
+              "description": "文档召回高级配置",
+              "children": [
+                {
+                  "name": "document_threshold",
+                  "type": "number",
+                  "description": "文档ranker bge相似度阈值"
+                },
+                {
+                  "name": "retrieval_slices_num",
+                  "type": "integer",
+                  "description": "召回切片数"
+                },
+                {
+                  "name": "max_slice_per_cite",
+                  "type": "integer",
+                  "description": "每篇文档最大保留切片数"
+                },
+                {
+                  "name": "rerank_topk",
+                  "type": "integer",
+                  "description": "重排序后保留切片数"
+                },
+                {
+                  "name": "slice_head_num",
+                  "type": "integer",
+                  "description": "获取上文切片数"
+                },
+                {
+                  "name": "slice_tail_num",
+                  "type": "integer",
+                  "description": "获取下文切片数"
+                },
+                {
+                  "name": "documents_num",
+                  "type": "integer",
+                  "description": "来源文档数量"
+                },
+                {
+                  "name": "retrieval_max_length",
+                  "type": "integer",
+                  "description": "召回最大长度"
+                }
+              ]
+            },
+            {
+              "name": "kg",
+              "type": "object",
+              "description": "图谱召回高级配置",
+              "children": [
+                {
+                  "name": "graph_rag_topk",
+                  "type": "integer",
+                  "description": "重排序后保留参考信息数量"
+                },
+                {
+                  "name": "long_text_length",
+                  "type": "integer",
+                  "description": "长文本长度"
+                },
+                {
+                  "name": "reranker_sim_threshold",
+                  "type": "number",
+                  "description": "图谱rerank bge相似度过滤阈值"
+                },
+                {
+                  "name": "text_match_entity_nums",
+                  "type": "integer",
+                  "description": "文本匹配召回实体数量"
+                },
+                {
+                  "name": "vector_match_entity_nums",
+                  "type": "integer",
+                  "description": "向量匹配召回实体数量"
+                },
+                {
+                  "name": "retrieval_max_length",
+                  "type": "integer",
+                  "description": "召回最大长度"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "skills",
+      "type": "object",
+      "description": "技能配置",
+      "children": [
+        {
+          "name": "tools",
+          "type": "array",
+          "description": "工具技能",
+          "children": [
+            {
+              "name": "tool_id",
+              "type": "string",
+              "description": "工具ID"
+            },
+            {
+              "name": "tool_box_id",
+              "type": "string",
+              "description": "工具箱ID"
+            },
+            {
+              "name": "tool_input",
+              "type": "array",
+              "description": "输入参数配置"
+            },
+            {
+              "name": "intervention",
+              "type": "boolean",
+              "description": "是否启用干预"
+            }
+          ]
+        },
+        {
+          "name": "agents",
+          "type": "array",
+          "description": "Agent技能",
+          "children": [
+            {
+              "name": "agent_key",
+              "type": "string",
+              "description": "agent key"
+            },
+            {
+              "name": "agent_version",
+              "type": "string",
+              "description": "agent版本"
+            },
+            {
+              "name": "agent_input",
+              "type": "array",
+              "description": "输入参数配置"
+            },
+            {
+              "name": "intervention",
+              "type": "boolean",
+              "description": "是否启用干预"
+            }
+          ]
+        },
+        {
+          "name": "mcps",
+          "type": "array",
+          "description": "MCP技能",
+          "children": [
+            {
+              "name": "mcp_server_id",
+              "type": "string",
+              "description": "mcp server id"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "llms",
+      "type": "array",
+      "description": "大模型配置",
+      "children": [
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "description": "是否默认"
+        },
+        {
+          "name": "llm_config",
+          "type": "object",
+          "description": "模型配置",
+          "children": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "模型ID"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "模型名"
+            },
+            {
+              "name": "model_type",
+              "type": "string",
+              "description": "模型类型"
+            },
+            {
+              "name": "temperature",
+              "type": "number",
+              "description": "随机性"
+            },
+            {
+              "name": "top_p",
+              "type": "number",
+              "description": "核采样"
+            },
+            {
+              "name": "top_k",
+              "type": "integer",
+              "description": "前k采样"
+            },
+            {
+              "name": "frequency_penalty",
+              "type": "number",
+              "description": "频率惩罚度"
+            },
+            {
+              "name": "presence_penalty",
+              "type": "number",
+              "description": "话题新鲜度"
+            },
+            {
+              "name": "max_tokens",
+              "type": "integer",
+              "description": "单次回复限制"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "opening_remark_config",
+      "type": "object",
+      "description": "开场白配置",
+      "children": [
+        {
+          "name": "type",
+          "type": "string",
+          "description": "开场白类型"
+        },
+        {
+          "name": "fixed_opening_remark",
+          "type": "string",
+          "description": "固定开场白"
+        },
+        {
+          "name": "dynamic_opening_remark_prompt",
+          "type": "string",
+          "description": "动态开场白提示语"
+        }
+      ]
+    },
+    {
+      "name": "preset_questions",
+      "type": "array",
+      "description": "预设问题列表",
+      "children": [
+        {
+          "name": "question",
+          "type": "string",
+          "description": "问题内容"
+        }
+      ]
+    },
+    {
+      "name": "output",
+      "type": "object",
+      "description": "输出变量配置",
+      "children": [
+        {
+          "name": "variables",
+          "type": "object",
+          "description": "输出变量",
+          "children": [
+            {
+              "name": "answer_var",
+              "type": "string",
+              "description": "包含最终回答的变量名"
+            },
+            {
+              "name": "doc_retrieval_var",
+              "type": "string",
+              "description": "包含文档检索结果的变量名"
+            },
+            {
+              "name": "graph_retrieval_var",
+              "type": "string",
+              "description": "包含图谱检索结果的变量名"
+            },
+            {
+              "name": "related_questions_var",
+              "type": "string",
+              "description": "包含相关问题的变量名"
+            },
+            {
+              "name": "other_vars",
+              "type": "array",
+              "description": "其他变量数组"
+            }
+          ]
+        },
+        {
+          "name": "default_format",
+          "type": "string",
+          "description": "默认输出格式"
+        }
+      ]
+    },
+    {
+      "name": "memory",
+      "type": "object",
+      "description": "长期记忆配置",
+      "children": [
+        {
+          "name": "is_enabled",
+          "type": "boolean",
+          "description": "是否启用"
+        }
+      ]
+    },
+    {
+      "name": "related_question",
+      "type": "object",
+      "description": "相关问题配置",
+      "children": [
+        {
+          "name": "is_enabled",
+          "type": "boolean",
+          "description": "是否启用"
+        }
+      ]
+    },
+    {
+      "name": "agent_id",
+      "type": "string",
+      "description": "智能体ID"
+    },
+    {
+      "name": "conversation_id",
+      "type": "string",
+      "description": "Conversation ID"
+    }
+  ]
+}
+

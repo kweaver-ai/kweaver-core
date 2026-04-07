@@ -1,0 +1,292 @@
+paths:
+  /api/agent-app/v1/app/{app_key}/conversation: 
+    get:
+      summary: 获取会话列表
+      tags:
+        - 会话管理
+      parameters:
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+        - $ref: '../components/components.yaml#/components/parameters/pageOffset'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+      responses:
+        '200':
+          description: 会话列表获取成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/conversation_list_response.yaml#/ConversationListResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+    post:
+      summary: 初始化会话
+      tags:
+        - 会话管理
+      parameters:
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 会话标题
+              required:
+                - title
+      responses:
+        '200':
+          description: 初始化会话
+          content:
+            application/json:
+              schema:
+                $ref: './schema/conversation_init_response.yaml#/ConversationInitResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'  
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+    delete:
+      summary: 删除所有会话
+      tags:
+        - 会话管理
+      responses:
+        '204':
+          description: 所有会话删除成功
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  /api/agent-app/v1/app/{app_key}/conversation/{id}:
+    get:
+      summary: 获取会话详情
+      tags:
+        - 会话管理
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: 会话ID
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+
+      responses:
+        '200':
+          description: 会话获取成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/conversation_detail.yaml#/ConversationDetail'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: 编辑会话(修改标题)
+      tags:
+        - 会话管理
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: 会话ID
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 会话标题
+              required:
+                - title
+      responses:
+        '204':
+          description: 成功
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+    delete:
+      summary: 删除会话
+      tags:
+        - 会话管理
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: 会话 ID
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          description: 会话不存在
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  /api/agent-app/v1/app/{app_key}/conversation/{id}/mark_read:
+    put:
+      summary: 标记会话已读
+      tags:
+        - 会话管理
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: 会话ID
+        - $ref: './schema/common.yaml#/components/PathAppKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latest_read_index:
+                  type: int
+                  description: 已读消息下标
+              required:
+                - latest_read_index
+      responses:
+        '204':
+          description: 成功
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  # /api/agent-app/v1/conversation/favorite/{id}:
+  #   get:
+  #     summary: 查看收藏的会话详情
+  #     tags:
+  #       - 会话收藏
+  #     parameters:
+  #       - in: path
+  #         name: id
+  #         schema:
+  #           type: string
+  #         required: true
+  #         description: 会话收藏ID
+  #     responses:
+  #       '200':
+  #         description: 成功
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: './schema/conversation_detail.yaml#/ConversationDetail'
+
+  #       '404':
+  #         $ref: '../components/components.yaml#/components/responses/NotFoundError'
+  #       '500':
+  #         $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  #   delete:
+  #     summary: 取消收藏会话
+  #     tags:
+  #       - 会话收藏
+  #     parameters:
+  #       - in: path
+  #         name: id
+  #         schema:
+  #           type: string
+  #         required: true
+  #         description: 收藏ID
+  #     responses:
+  #       '204':
+  #         description: 成功
+  #       '404':
+  #         description: 收藏不存在
+  #         $ref: '../components/components.yaml#/components/responses/NotFoundError'
+  #       '500':
+  #         $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  #   post:
+  #     summary: 收藏会话
+  #     tags:
+  #       - 会话收藏
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               conversation_id:
+  #                 type: string
+  #                 description: 会话ID
+  #             required:
+  #               - conversation_id
+  #             example:
+  #               conversation_id: "2f5334ae-6a2f-402a-b58c-def4b05a77d7"
+  #     responses:
+  #       '201':
+  #         description: 成功
+  #         content:
+  #           application/json:
+  #             schema:
+  #                 type: string
+  #                 description: 收藏ID
+  #                 example:
+  #                   favorite_id: "f99e389a-edc5-4027-7ec9-7da8a8f41334"
+  #       '400':
+  #         $ref: '../components/components.yaml#/components/responses/BadRequestError'
+  #       '500':
+  #         $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  # /api/agent-app/v1/conversation/favorite:
+  #   get:
+  #     summary: 获取所有收藏的会话列表
+  #     tags:
+  #       - 会话收藏
+  #     responses:
+  #       '200':
+  #         description: 成功
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: './schema/conversation_favorite_list_response.yaml#/ConversationFavoriteListResponse'
+  #       '500':
+  #         $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  #   delete:
+  #     summary: 删除所有收藏
+  #     tags:
+  #       - 会话收藏
+  #     responses:
+  #       '204':
+  #         description: 成功
+  #       '500':
+  #         $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  # /api/agent-app/v1/conversation/favorite/agent/{id}:
+  #   get:
+  #     summary: 获取指定agent的收藏列表
+  #     parameters:
+  #       - in: path
+  #         name: id
+  #         schema:
+  #           type: string
+  #         required: true
+  #         description: agent ID
+  #     responses:
+  #       '200':
+  #         description: 成功
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: './schema/conversation_favorite_list_response.yaml#/ConversationFavoriteListResponse'

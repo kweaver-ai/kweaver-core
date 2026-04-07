@@ -1,0 +1,45 @@
+{
+    "description": "新建ocr任务参数校验",
+    "type": "object",
+    "properties": {
+        "docid": {
+            "type": "string",
+            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+        },
+        "scene": {
+            "type": "string",
+            "enum": [
+                "eleinvoice",
+                "idcard",
+                "handwriting"
+            ]
+        },
+        "rec_type": {
+            "type": "string",
+            "enum": [
+                "eleinvoice",
+                "idcard",
+                "general"
+            ]
+        },
+        "task_type": {
+            "enum": [
+                1,
+                100,
+                101
+            ]
+        },
+        "uri": {
+            "type": "string",
+            "pattern": "^/([a-zA-Z0-9]+/?)+$"
+        }
+    },
+    "required": [
+        "docid",
+        "scene",
+        "rec_type",
+        "task_type",
+        "uri"
+    ],
+    "additionalProperties": false
+}

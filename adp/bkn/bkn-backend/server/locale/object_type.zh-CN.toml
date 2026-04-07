@@ -1,0 +1,140 @@
+# 对象类
+[BknBackend.ObjectType.Duplicated.IDInFile]
+Description = "存在重复的对象类ID"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.Duplicated.Name]
+Description = "存在重复的对象类名称"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InvalidParameter.ConceptCondition]
+Description = "概念查询参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InvalidParameter.PropertyName]
+Description = "请求的属性名称不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InvalidParameter.SmallModel]
+Description = "小模型参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.ObjectTypeIDExisted]
+Description = "对象类ID已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.ObjectTypeNameExisted]
+Description = "对象类名称已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.ObjectTypeBoundByActionType]
+Description = "对象类被行动类绑定，无法删除"
+Solution = "请先删除绑定的行动类，或使用force_delete=true强制删除。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.ObjectTypeBoundByRelationType]
+Description = "对象类被关系类绑定，无法删除"
+Solution = "请先删除绑定的关系类，或使用force_delete=true强制删除。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.LengthExceeded.Name]
+Description = "对象类名称长度超出限制"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.NullParameter.Name]
+Description = "对象类名称为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.NullParameter.PrimaryKeys]
+Description = "对象类主键为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.NullParameter.DisplayKey]
+Description = "对象类显示键为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.NullParameter.PropertyName]
+Description = "对象类属性名称为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.ObjectTypeNotFound]
+Description = "对象类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.SmallModelNotFound]
+Description = "小模型不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.BeginTransactionFailed]
+Description = "开启事务异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.MissingTransaction]
+Description = "缺少事务"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.CheckObjectTypeIfExistFailed]
+Description = "检查对象类名称是否存在失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.CreateConceptGroupRelationFailed]
+Description = "创建概念与分组的绑定关系失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.GetDataViewByIDFailed]
+Description = "按ID获取数据视图失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.GetMetricModelByIDFailed]
+Description = "按ID获取指标模型失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.GetObjectTypeByIDFailed]
+Description = "按ID获取对象类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.GetObjectTypesByIDsFailed]
+Description = "按ID批量获取对象类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.GetSmallModelByIDFailed]
+Description = "按ID获取小模型失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ObjectType.InternalError.InsertOpenSearchDataFailed]
+Description = "对象类概念索引插入失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

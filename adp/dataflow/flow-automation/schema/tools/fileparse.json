@@ -1,0 +1,174 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "File parse",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "source_type": {
+                            "type": "string",
+                            "const": "docid"
+                        },
+                        "docid": {
+                            "type": "string"
+                        },
+                        "version": {
+                            "type": "string"
+                        },
+                        "slice_vector": {
+                            "type": "string",
+                            "enum": ["none", "slice", "slice_vector"]
+                        },
+                        "model": {
+                            "type": "string"
+                        },
+                        "multimodal_enabled": {
+                            "type": "boolean",
+                            "description": "是否启用多模态图片描述"
+                        },
+                        "multimodal_model_name": {
+                            "type": "string",
+                            "description": "多模态模型标识(如 \"gpt-4-vision-preview\", \"claude-3-opus\", \"gemini-pro-vision\")"
+                        },
+                        "multimodal_prompt_template": {
+                            "type": "string",
+                            "description": "提示词模板(由前端传递默认值)"
+                        },
+                        "temperature": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 2,
+                            "description": "多模态模型温度参数"
+                        },
+                        "top_p": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "多模态模型TopP参数"
+                        },
+                        "max_tokens": {
+                            "type": "integer",
+                            "description": "多模态模型最大token数"
+                        },
+                        "top_k": {
+                            "type": "integer",
+                            "description": "多模态模型TopK参数"
+                        },
+                        "presence_penalty": {
+                            "type": "number",
+                            "minimum": -2,
+                            "maximum": 2,
+                            "description": "多模态模型存在惩罚参数"
+                        },
+                        "frequency_penalty": {
+                            "type": "number",
+                            "minimum": -2,
+                            "maximum": 2,
+                            "description": "多模态模型频率惩罚参数"
+                        }
+                    },
+                    "required": [
+                        "docid"
+                    ]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "source_type": {
+                            "type": "string",
+                            "const": "url"
+                        },
+                        "url": {
+                            "type": "string"
+                        },
+                        "filename": {
+                            "type": "string"
+                        },
+                        "slice_vector": {
+                            "type": "string",
+                            "enum": ["none", "slice", "slice_vector"]
+                        },
+                        "model": {
+                            "type": "string"
+                        },
+                        "multimodal_enabled": {
+                            "type": "boolean",
+                            "description": "是否启用多模态图片描述"
+                        },
+                        "multimodal_model_name": {
+                            "type": "string",
+                            "description": "多模态模型标识(如 \"gpt-4-vision-preview\", \"claude-3-opus\", \"gemini-pro-vision\")"
+                        },
+                        "multimodal_prompt_template": {
+                            "type": "string",
+                            "description": "提示词模板(由前端传递默认值)"
+                        },
+                        "temperature": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 2,
+                            "description": "多模态模型温度参数"
+                        },
+                        "top_p": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "多模态模型TopP参数"
+                        },
+                        "max_tokens": {
+                            "type": "integer",
+                            "description": "多模态模型最大token数"
+                        },
+                        "top_k": {
+                            "type": "integer",
+                            "description": "多模态模型TopK参数"
+                        },
+                        "presence_penalty": {
+                            "type": "number",
+                            "minimum": -2,
+                            "maximum": 2,
+                            "description": "多模态模型存在惩罚参数"
+                        },
+                        "frequency_penalty": {
+                            "type": "number",
+                            "minimum": -2,
+                            "maximum": 2,
+                            "description": "多模态模型频率惩罚参数"
+                        }
+                    },
+                    "required": [
+                        "source_type",
+                        "url",
+                        "filename"
+                    ]
+                }
+            ]
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

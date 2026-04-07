@@ -1,0 +1,97 @@
+agent_list_item:
+  type: object
+  properties:
+    id:
+      type: string
+      description: agent id
+      example: xxx
+    key:
+      type: string
+      description: agent 标识
+      example: xxx
+    is_built_in:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否内置
+          - 0: 否
+          - 1: 是
+      example: 0
+    is_system_agent:
+      type: integer
+      enum: [0, 1]
+      description: |
+        - 是否系统Agent
+          - 0: 否
+          - 1: 是
+      example: 0
+    name:
+      type: string
+      description: 名字
+      example: agent1
+    profile:
+      type: string
+      description: agent 简介
+      example: agent1 profile
+    avatar_type:
+      type: integer
+      description: |
+        - 头像类型
+          - 1: 内置头像
+          - 2: 用户上传头像
+          - 3: AI生成头像
+      example: 1
+    avatar:
+      type: string
+      description: |
+        - 头像信息
+          - 当头像类型为1时，为内置头像标识(如1-10等)
+          - 当头像类型为2时，为头像存储信息
+          - 当头像类型为3时，为头像存储信息
+      example: 1
+    product_key:
+      type: string
+      description: 所属产品标识
+      example: dip
+    updated_at:
+      type: integer
+      description: 最近更新时间
+    updated_by:
+      type: string
+      description: 更新者uid
+      example: xxx
+    updated_by_name:
+      type: string
+      description: 更新者名称
+      example: xxx
+    created_at:
+      type: integer
+      description: 创建时间
+    created_by:
+      type: string
+      description: 创建者uid
+      example: xxx
+    created_by_name:
+      type: string
+      description: 创建者名称
+      example: xxx
+    status:
+      type: string
+      enum: [unpublished, published]
+      description: |
+        - 状态
+          - unpublished: 未发布
+          - published: 已发布
+      example: unpublished
+    published_at:
+      type: integer
+      description: 发布时间
+      example: 1672502400000
+    version:
+      type: string
+      description: |
+        - agent 版本
+          - 未发布状态的版本为v0
+      example: v0
+    publish_info:
+      $ref: '../../components/schema/list_publish_info.yaml#/list_publish_info'

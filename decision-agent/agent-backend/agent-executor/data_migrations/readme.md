@@ -1,0 +1,2 @@
+### data_migrations目录
+用于应用数据的初始化，与migrations目录不同的是，该目录下的脚本是在应用启动时执行，而migrations是在app应用启动前由数据库服务的job执行。

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>Document</title>
+    <style type="text/css">
+        div>h3 {
+            font-weight: bold;
+            font-size: 16px;
+            color: #000;
+            margin: 0px;
+        }
+
+        div>h3>em {
+            font-weight: bolder;
+        }
+
+        .title {
+            color: #000000;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 32px;
+            letter-spacing: 0px;
+            text-align: left;
+        }
+
+        .tip {
+            margin-top: 8px;
+            color: rgba(0, 0, 0, 0.3);
+            font-size: 13px;
+            line-height: 22px;
+        }
+
+        .label {
+            color: #808080;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: normal;
+            font-size: 13px;
+            line-height: 24px;
+            letter-spacing: 0px;
+            text-align: left;
+            white-space: nowrap !important;
+            padding-right: 24px;
+        }
+
+        .details {
+            margin: 0;
+            font-size: 13px;
+            color: #000000;
+            line-height: 24px;
+            letter-spacing: 0px;
+            text-align: left;
+        }
+
+        .wrap {
+            white-space: pre-wrap !important;
+            word-break: break-all;
+        }
+
+        .delete {
+            margin: 0;
+            color: rgba(0, 0, 0, 0.3);
+            font-weight: normal;
+            font-size: 13px;
+            line-height: 22px;
+            letter-spacing: 0px;
+            text-align: left;
+
+        }
+
+        tr {
+            margin-top: 12px;
+            vertical-align: baseline;
+        }
+
+        .button {
+            font-size: 13px;
+            margin-top: 48px;
+            padding: 0 8px;
+            cursor: pointer;
+            width: 120px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 4px;
+            color: #fff;
+            background: #126EE3;
+            border: 1px solid transparent;
+            display: block;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .button:active {
+            border-color: #064fbd;
+            background: #064fbd;
+        }
+
+        .button:hover {
+            border-color: #3a8ff0;
+            background: #3a8ff0;
+        }
+
+        .elipsis {
+            display: inline-block;
+            max-width: 100%;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            vertical-align: top;
+        }
+
+        div>i {
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <table
+        style="max-width: 800px; width: 100%; margin: 0px auto; border: 1px solid #aab8c4; border-spacing: 0; border-collapse: collapse; box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.2);font-family: 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', sans-serif;">
+        <thead>
+            <tr valign="top" style="vertical-align: top;">
+                <th style="padding:0;">
+                    <img className="file-transfer-logo" width="100%" height="auto"
+                        style="max-width: 800;max-height: 100px;" src="cid:image" />
+                </th>
+            </tr>
+        </thead>
+        <tbody style=" max-width: 800px; width: 100%;">
+            <tr valign="top" style="vertical-align: top;">
+                <td style="padding:0;">
+                    <div style="margin: 40px 40px 8px;">
+                        <div class="title"
+                            style=" color: #000000; font-weight: bold; font-size: 16px; line-height: 32px; letter-spacing: 0px; text-align: left;">
+                            {{ if .IsHour }}
+                            Flow<span>“{{.Name}}”</span>ran into an exception in the past {{.Hours}} hours
+                            {{ else }}
+                            Flow<span>“{{.Name}}”</span>ran into an exception in the past {{.Minutes}} minutes
+                            {{ end }}
+                        </div>
+                        <table style="margin-top: 16px; border-collapse: separate; border-spacing: 0 12px;">
+                            <tr valign="top" style="vertical-align: top;">
+                                <td class="label"
+                                    style="color:#808080;color: rgba(0, 0, 0, 0.5);font-weight: normal;font-size: 13px;line-height: 24px;letter-spacing: 0px;text-align: left;white-space: nowrap !important">
+                                    Flow name:</td>
+                                <td>
+                                    <div class="details"
+                                        style="vertical-align: top;margin: 0;font-size: 13px;color: #000000;line-height: 24px;letter-spacing: 0px;text-align: left;">
+                                        {{.Name}}</div>
+                                </td>
+                            </tr>
+                            <tr valign="top" style="vertical-align: top;">
+                                <td class="label"
+                                    style="color:#808080;color: rgba(0, 0, 0, 0.5);font-weight: normal;font-size: 13px;line-height: 24px;letter-spacing: 0px;text-align: left;white-space: nowrap !important">
+                                    Cause:</td>
+                                <td>
+                                    <div class="details"
+                                        style="vertical-align: top;margin: 0;font-size: 13px;color: #000000;line-height: 24px;letter-spacing: 0px;text-align: left;">
+                                        {{.Reason}}</div>
+                                </td>
+                            </tr>
+                            <tr valign="top" style="vertical-align: top;">
+                                <td class="label"
+                                    style="color:#808080;color: rgba(0, 0, 0, 0.5);font-weight: normal;font-size: 13px;line-height: 24px;letter-spacing: 0px;text-align: left;white-space: nowrap !important">
+                                    Exception times: </td>
+                                <td>
+                                    <div class="details"
+                                        style="vertical-align: top;margin: 0;font-size: 13px;color: #000000;line-height: 24px;letter-spacing: 0px;text-align: left;">
+                                        {{.FailedCount}}</div>
+                                </td>
+                            </tr>
+
+                        </table>
+                        <table style="padding-top: 48px;"></table>
+                        <div class="tip"
+                            style="margin-top: 48px;color:#a9a9a9;color: rgba(0, 0, 0, 0.3);font-size: 13px; line-height: 22px; ">
+                            This email is sent by System. No need to reply
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>

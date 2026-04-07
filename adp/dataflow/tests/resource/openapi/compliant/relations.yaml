@@ -1,0 +1,346 @@
+openapi: 3.0.0
+info:
+  title: 关联关系管理服务API
+  description: 提供关联关系的增删改查功能
+  version: 1.0.0
+
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration/internal-v1
+    description: 本地开发环境
+
+paths:
+  /relations/{id}:
+    delete:
+      summary: 删除关联关系
+      description: 删除指定ID的关联关系
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            description: 授权信息
+            example: Bearer <token>
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 关系ID
+      responses:
+        "200":
+          description: "删除成功"
+        "404":
+          description: 关系不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      summary: 获取关联关系详情
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            description: 授权信息
+            example: Bearer <token>
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelationAllMoudleInfo"
+        "404":
+          description: 关系不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /relations/delete:
+    post:
+      summary: 批量删除关联关系
+      description: 批量删除指定ID的关联关系
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            description: 授权信息
+            example: Bearer <token>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteRelationReq"
+      responses:
+        "200":
+          description: 批量删除成功
+        "400":
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /relations/source:
+    get:
+      summary: 根据源资源查询关联关系
+      description: 根据源资源查询关联关系
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            description: 授权信息
+            example: Bearer <token>
+        - name: source_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: source_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueryRelationDetils"
+        "400":
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /relations/target:
+    get:
+      summary: 根据目标资源查询关联关系
+      description: 根据目标资源查询关联关系
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            description: 授权信息
+            example: Bearer <token>
+        - name: target_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: target_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueryRelationDetils"
+        "400":
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 关系不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      description: "错误信息"
+      properties:
+        code:
+          type: string
+          description: "错误码"
+        description:
+          type: string
+          description: "错误信息"
+        detail:
+          type: object
+          description: "错误详情"
+        solution:
+          type: string
+          description: "错误解决方案"
+        link:
+          type: string
+          description: "错误链接"
+    ModuleInfo:
+      type: object
+      description: "模块信息"
+      properties:
+        type:
+          type: string
+          description: "模块类型"
+        id:
+          type: string
+          description: "模块ID"
+        name:
+          type: string
+          description: "模块名称"
+        description:
+          type: string
+          description: "模块描述"
+    RelationAllMoudleInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 关系ID
+        rel_type:
+          type: string
+          description: 关系类型
+          enum:
+            - "ref"
+        source_moudle_info:
+          type: object
+          description: 源资源模块信息
+          properties:
+            schema:
+              $ref: "#/components/schemas/ModuleInfo"
+        target_moudle_info:
+          type: object
+          description: 目标资源模块信息
+          properties:
+            schema:
+              $ref: "#/components/schemas/ModuleInfo"
+        create_time:
+          type: integer
+          description: 创建时间
+        created_user:
+          type: string
+          description: 创建人
+        update_time:
+          type: integer
+          description: 更新时间
+        updated_user:
+          type: string
+          description: 更新人
+    QueryRelationDetils:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 关系ID
+        rel_type:
+          type: string
+          description: 关系类型
+          enum:
+            - "ref"
+        moudle_info:
+          type: object
+          description: 源资源模块信息
+          properties:
+            schema:
+              $ref: "#/components/schemas/ModuleInfo"
+        create_time:
+          type: integer
+          description: 创建时间
+        created_user:
+          type: string
+          description: 创建人
+        update_time:
+          type: integer
+          description: 更新时间
+        updated_user:
+          type: string
+          description: 更新人
+    DeleteRelationReq:
+      type: array
+      description: 批量删除关联关系请求体
+      items:
+        $ref: "#/components/schemas/AddRelationReq"
+    AddRelationReq:
+      type: object
+      required:
+        - source_id
+        - source_type
+        - target_id
+        - target_type
+        - rel_type
+      properties:
+        source_id:
+          type: string
+          description: 源资源ID
+        source_type:
+          type: string
+          description: 源资源类型
+          enum:
+            - "tool"
+            - "agent"
+        target_id:
+          type: string
+          description: 目标资源ID
+        target_type:
+          type: string
+          description: 目标资源类型
+          enum:
+            - "tool"
+            - "operator"
+        rel_type:
+          type: string
+          description: 关系类型
+          enum:
+            - "ref"
+        extend_info:
+          type: object
+          description: 扩展信息
+          additionalProperties: true

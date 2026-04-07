@@ -1,0 +1,307 @@
+ChatResponse:
+  type: object
+  properties:
+    result:
+      type: object
+      properties:
+        qa_id:
+          type: string
+          description: 问答ID
+        related_queries:
+          type: array
+          description: 相关查询
+          items:
+            $ref: '../../components/schema/related_query.yaml#/RelatedQuery'
+        answer_type:
+          $ref: '../../components/schema/answer_type.yaml#/AnswerType'
+        answer:
+          type: object
+          properties:
+            text:
+              type: string
+              description: 回答文本
+            cites:
+              type: object
+              description: 引用信息
+        ask:
+          $ref: '../../components/schema/ask.yaml#/Ask'
+        thinking:
+          type: string
+          description: 思考过程
+        skills_process:
+          type: array
+          items:
+            $ref: '../../components/schema/skill_process.yaml#/SkillProcess'
+        query_str:
+          type: string
+          description: 查询字符串
+        has_permission:
+          type: boolean
+          description: 是否有权限
+        effective:
+          type: boolean
+          description: 是否有效
+        answer_attribution:
+          type: string
+          description: 答案归属
+        question_attribution:
+          type: string
+          description: 问题归属
+        status:
+          $ref: '../../components/schema/resp_status.yaml#/RespStatus'
+        agent_id:
+          type: string
+          description: agentID
+        agent_version:
+          type: string
+          description: agent版本
+        agent_name:
+          type: string
+          description: agent名称
+        agent_availability:
+          type: boolean
+          description: agent是否可用
+        source_ranges:
+          type: array
+          items:
+            $ref: '../../components/schema/source_range.yaml#/SourceRange'
+        debug_info_step:
+          type: object
+          nullable: true
+
+#new add
+        doc_retrieval:
+          $ref: '../../components/schema/doc_retrieval.yaml#/DocRetrieval'
+        graph_retrieval:
+          type: object
+          description: 图谱检索（暂时没有用到）
+          properties:
+            text:
+              type: string
+              description: 图谱检索文本
+            cites:
+              type: object
+              description: 引用信息
+            kg_id:
+              type: string
+              description: 知识图谱ID
+            kg_name:
+              type: string
+              description: 知识图谱名称
+            subgraph:
+              type: object
+              description: 子图信息
+        answer_type_other:
+          type: any
+          description: 当answer_type为other时使用的数据
+        other_variables:
+          type: object
+          description: 用于存储配置中output.variables.other_vars配置的其他变量
+        middle_output_var_res:
+          type: object
+          description: 中间输出变量
+          $ref: '../../components/schema/middle_output_var_res.yaml#/MiddleOutputVarRes'
+        original_response:
+          type: object
+          description: 原始response（来自agent-executor）
+          properties:
+            answer:
+              type: object
+              description: |
+                - 回答
+                - 这个是外层结构体，里面包含具体的回答内容
+            user_define:
+              type: object
+              description: 用户定义的一些内容，这里好像是直接返回接受到的内容
+            ask:
+              type: object
+              description: 中断相关信息
+            status:
+              type: string
+              description: |
+                - 状态
+                - True: 流式响应结束
+                - False: 流式响应中
+                - Error: 错误
+              enum:
+                - True
+                - False
+                - Error
+            error:
+              type: object
+              description: 错误
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              description: 错误类型
+              enum:
+                - agent_factory
+                - agent_executor
+            error:
+              type: any
+              description: 错误信息，根据type不同，error的内容不同
+    conversation_id:
+      type: string
+      description: 会话ID
+  example:
+    result:
+      qa_id: "b3c69f76-189e-4a2a-aa19-c3c88f518eb4"
+      related_queries: []
+      answer: "为了帮助您完成会议视频的内容总结，我将按照您之前的要求，使用默认参数调用\"音视频内容提取_post\"工具来提取视频内容，然后使用\"总结助手\"对提取的内容进行总结,最后将总结的内容转换为PDF文件。现在，我将首先调用\"音视频内容提取_post\"工具。"
+      thinking: ""
+      skills_process:
+        - agent_name: "main"
+          text: "为了帮助您完成会议视频的内容总结..."
+          status: "completed"
+          type: ""
+          thinking: ""
+          input_message:
+            - role: "user"
+              content: "如何上传会议视频进行内容总结？"
+          interrupted: false
+      query_str: "如何上传会议视频进行内容总结？"
+      
+      has_permission: true
+      effective: false
+      answer_attribution: "controller_agent:llm"
+      question_attribution: ""
+      status: "completed"
+      agent_id: "11324b04-3d5c-46f2-a3cc-12d694d49d3d"
+      agent_version: "7d4eded5-aa56-4e28-a9e5-30a56d167940"
+      agent_name: "meeting_bot"
+      agent_availability: true
+      source_ranges: null
+      debug_info_step: null
+
+      # add
+      ask:
+        session_id: agent-session-1912373104584298496
+        tool_name: check
+        tool_args:
+          - key: value
+            value:
+              - 搜索资料:爱数公司的企业文化和社会责任
+              - 总结内容:爱数是一家怎样的公司？
+            type: string
+          - key: field
+            value: generate_plan
+            type: string
+      answer_type: "prompt"
+      doc_retrieval_res:
+        text: "第1个参考信息 AnyShare 7.0.3.9 第四范式OCR内容识别服务实施指导手册"
+        references:
+          - content: "下载需要授权文件，授权请找生态部\n生成ID文件，示例：cc7119a4.id\n授权文件导入：拿到授权文件之后，如下导入文件"
+            retrieve_source_type: "DOC_LIB"
+            score: 0.5
+            meta:
+              doc_lib_type: "custom_doc_lib"
+              object_id: "D0D917F04C3948588D4FFEAC2165ECCF"
+              doc_name: "AnyShare 7.0.3.9 第四范式OCR内容识别服务实施指导手册"
+              ext_type: ".docx"
+              parent_path: "gns://agent/qa数据/01-产品发布/01-AnyShare Enterprise 7 & Express 7/7.0.3.9/实施指导手册"
+              size: 3128171
+              doc_id: "gns://93B867D279B84F97AED6A2E30095ADED/C0C1AC761A8E4021BEE0F4B4FE5E2420/1EC1B540D2D54F898611FAD8B0D55DC8/5BD405CA87D24763884358854147AD55/B5763A5473FD4D36B7146A01388FF002/3D59D50D006540ABA271D19A8391A5D1/D0D917F04C3948588D4FFEAC2165ECCF"
+              slices:
+                - score: 0.5
+                  id: "D0D917F04C3948588D4FFEAC2165ECCF_24"
+                  no: 25
+                  content: "下载需要授权文件，授权请找生态部"
+                  pages:
+                    - 10
+                - score: -100
+                  id: "8dcd181f-cbb1-40e5-bdc1-77b93a0a2459"
+                  no: 26
+                  content: "生成ID文件，示例：cc7119a4.id"
+                  pages:
+                    - 10
+                - score: -100
+                  id: "08f57182-cf76-4d3b-8ba6-ee8f3c96cbfe"
+                  no: 27
+                  content: "授权文件导入：拿到授权文件之后，如下导入文件"
+                  pages:
+                    - 10
+              data_source: "doc"
+          - content: "下载需要授权文件，授权请找生态部\n生成ID文件，示例：cc7119a4.id\n授权文件导入：拿到授权文件之后，如下导入文件"
+            retrieve_source_type: "DOC_LIB"
+            score: 0.49985450312818275
+            meta:
+              doc_lib_type: "custom_doc_lib"
+              object_id: "B73EB6A192DE418C8E5B98E4505114EF"
+              doc_name: "AnyShare 7.0.3.7 第四范式OCR内容识别服务实施指导手册"
+              ext_type: ".docx"
+              parent_path: "gns://agent/qa数据/01-产品发布/01-AnyShare Enterprise 7 & Express 7/7.0.3.7/实施指导手册"
+              size: 3126004
+              doc_id: "gns://93B867D279B84F97AED6A2E30095ADED/C0C1AC761A8E4021BEE0F4B4FE5E2420/1EC1B540D2D54F898611FAD8B0D55DC8/5BD405CA87D24763884358854147AD55/044AF597D9DB4A4790CA9CC67555289A/2902D64CB094458AB4A3B417837ECCF3/B73EB6A192DE418C8E5B98E4505114EF"
+              slices:
+                - score: 0.49985450312818275
+                  id: "B73EB6A192DE418C8E5B98E4505114EF_51"
+                  no: 52
+                  content: "下载需要授权文件，授权请找生态部"
+                  pages:
+                    - 16
+                - score: -100
+                  id: "a548d3ae-db27-4604-9aba-43974b2e7c15"
+                  no: 53
+                  content: "生成ID文件，示例：cc7119a4.id"
+                  pages:
+                    - 16
+                - score: -100
+                  id: "1208aab0-cc6d-42f4-a2a6-dbd4e7a922fa"
+                  no: 54
+                  content: "授权文件导入：拿到授权文件之后，如下导入文件"
+                  pages:
+                    - 17
+              data_source: "doc"
+      other_variables:
+        search_querys:
+          - "小鹏汽车的性能如何"
+          - "小鹏汽车的续航里程是多少"
+        xx: "爱数（AnyShare）是一家专注于数据管理与服务的公司，总部位于中国上海。爱数成立于2006年，其主要业务包括数据备份、恢复、归档、分析以及数据治理等，致力于为企业提供全面的数据管理解决方案。爱数的产品和服务覆盖了从数据保护到数据价值挖掘的整个生命周期，帮助企业实现数据的高效利用和安全保护。此外，爱数还提供专业的技术支持和咨询服务，帮助客户优化数据管理流程，提升数据治理能力。爱数在数据管理领域拥有丰富的经验和深厚的技术积累，是该领域的领先企业之一。"
+      middle_output_var_res:
+        vars:
+          - var_name: "output_search_querys"
+            type: "other"
+            value: 
+              - "小鹏汽车的性能如何"
+              - "小鹏汽车的续航里程是多少"
+            thinking: ""
+            interventions: 
+              - tool_name: "音视频内容提取_post"
+                tool_call_info: 
+                  tool_name: "音视频内容提取_post"
+                  args:
+                    - key: "doc_id"
+                      value: "2487573458"
+                      type: "string"
+                    - key: "format"
+                      value: "txt"
+                      type: "string"
+                  output_var: "output_search_querys"
+                  assign_type: "->" 
+              - tool_name: "文本转PDF_post"
+                tool_call_info: 
+                  tool_name: "文本转PDF_post"
+                  args:
+                    - key: "markdown_text"
+                      value: "《寻找彩虹》的故事不仅是一次关于自然现象的探索，更是一次心灵的旅程。小雨的旅程教会我们，真正的彩虹是内心的希望和爱，它不受外界条件的限制，只要我们心中有爱，就能看到彩虹，就能拥有一个充满希望和梦想的世界。\n\n这个故事也强调了友谊的重要性。小雨在旅途中遇到了许多有趣的朋友，他们不仅帮助她找到了彩虹，更重要的是，他们教会了她如何在心中种下爱的种子，让自己的心灵充满彩虹般的色彩。这些朋友的存在，让小雨的旅程变得更加丰富多彩，也让她的内心变得更加坚强和勇敢。\n\n最后，小雨成为了村子里最受欢迎的小女孩，因为她总能带给人们快乐和希望。这告诉我们，当我们心中有爱，我们就能成为别人的光，照亮他们的世界，让他们也能看到彩虹，感受到希望和梦想的力量。\n\n《寻找彩虹》的故事，是一次关于爱、希望和梦想的旅程，它告诉我们，真正的彩虹就在我们的心中，只要我们心中有爱，就能看到彩虹，就能拥有一个充满希望和梦想的世界。"
+                      type: "string"
+                    - key: "filename"
+                      value: "agent_story"
+                      type: "string"
+                  output_var: "output_search_querys"
+                  assign_type: "->" 
+      original_response:
+        result:
+          answer: "为了帮助您完成会议视频的内容总结，我将按照您之前的要求，使用默认参数调用\"音视频内容提取_post\"工具来提取视频内容，然后使用\"总结助手\"对提取的内容进行总结,最后将总结的内容转换为PDF文件。现在，我将首先调用\"音视频内容提取_post\"工具。"
+          ask: null
+        status: "True"
+        error: null
+      error:
+        type: "agent_executor"
+        error:
+          aa: "aaaa"
+          bb: "bbbb"
+
+    conversation_id: "4b5c1954-79d1-4a91-9a59-90d4a939b127"

@@ -1,0 +1,32 @@
+SkillProcess:
+  type: object
+  properties:
+    agent_name:
+      type: string
+      description: agent名称
+    text:
+      type: string
+      description: 处理结果文本
+    status:
+      type: string
+      description: 处理状态
+    type:
+      type: string
+      description: 处理类型
+    thinking:
+      type: string
+      description: 思考过程
+    input_message:
+      type: array
+      items:
+        type: object
+        properties:
+          content:
+            type: string
+            description: 消息内容
+          role:
+            type: string
+            description: 角色类型
+    interrupted:
+      type: boolean
+      description: 是否被中断

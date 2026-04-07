@@ -1,0 +1,10 @@
+kn_entry:
+  type: object
+  properties:
+    kn_entry_id:
+      type: string
+      description: 知识条目id
+  required:
+    - kn_entry_id
+  description: |
+    - 知识条目

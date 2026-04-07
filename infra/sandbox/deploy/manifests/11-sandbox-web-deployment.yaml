@@ -1,0 +1,138 @@
+---
+# Sandbox Web Deployment
+#
+# This manifest deploys the Sandbox Web Console (React application)
+# which provides a web-based management interface for the platform.
+#
+# Prerequisites:
+# - Control Plane must be deployed (05-control-plane-deployment.yaml)
+#
+# Installation:
+#   kubectl apply -f deploy/manifests/11-sandbox-web-deployment.yaml
+#
+# Verification:
+#   kubectl get pods -n sandbox-system -l app=sandbox-web
+#   kubectl logs -n sandbox-system deployment/sandbox-web
+#
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-web
+  namespace: sandbox-system
+  labels:
+    app: sandbox-web
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: sandbox-web
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-web
+  namespace: sandbox-system
+  labels:
+    app: sandbox-web
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sandbox-web
+  template:
+    metadata:
+      labels:
+        app: sandbox-web
+    spec:
+      # Pod 反亲和性 - 尽量分布在不同节点
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - sandbox-web
+                topologyKey: kubernetes.io/hostname
+
+      # 初始化容器 - 等待 Control Plane 就绪
+      initContainers:
+        - name: wait-for-control-plane
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z sandbox-control-plane.sandbox-system.svc.cluster.local 8000; do
+                echo "Waiting for Control Plane..."
+                sleep 2
+              done
+              echo "Control Plane is ready!"
+
+      containers:
+        - name: sandbox-web
+          image: sandbox-web:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+
+          # NOTE: DO NOT set VITE_API_BASE_URL environment variable.
+          # The frontend uses runtime URL detection via getApiBaseUrl() which
+          # dynamically infers the API URL from the browser's location.
+          # This ensures the frontend works correctly when accessed via:
+          # - Ingress/Domain name
+          # - NodePort/LoadBalancer IP
+          # - Port-forwarding
+          # See: sandbox_web/src/utils/config.ts
+
+          # 资源限制
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          # 健康检查
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+      # 重启策略
+      restartPolicy: Always
+
+      # DNS 策略
+      dnsPolicy: ClusterFirst

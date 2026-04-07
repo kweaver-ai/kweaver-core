@@ -1,0 +1,11 @@
+Output:
+  type: object
+  required:
+    - variables
+  properties:
+    variables:
+      $ref: './variables.yaml#/VariablesS'
+      description: 变量名
+    default_format:
+      type: string
+      description: 默认输出格式

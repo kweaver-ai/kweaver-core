@@ -1,0 +1,35 @@
+paths:
+  /agent-factory/v3/recent-visit/agent:
+    get:
+      summary: 获取最近访问的智能体
+      description:  获取最近访问的智能体
+      tags:
+        - 最近访问
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/name'
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+        - $ref: '../components/components.yaml#/components/parameters/customSpaceID'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    $ref: './schema/recent_agent_list.yaml#/RecentAgentListResp'
+                  # total:
+                  #   type: integer
+                  #   description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: []

@@ -1,0 +1,1198 @@
+openapi: "3.0.2"
+info:
+  title: "DIP算子服务私有接口协议"
+  version: "1.0.0"
+  description: "DIP算子服务私有接口协议RESTful API集合,用于集群内部服务调用, 无需接口认证信息"
+servers:
+  - url: "http://{host}:{port}/api/agent-operator-integration/internal-v1"
+    description: "DIP算子服务私有接口协议接口地址"
+    variables:
+      host:
+        default: "agent-operator-integration"
+        description: "agent-operator-integration, 地址默认为agent-operator-integration 命名空间为 anyshare"
+      port:
+        default: "9000"
+        description: "默认端口9000"
+
+paths:
+  /operator/register:
+    post:
+      summary: "注册算子"
+      description: "注册算子"
+      tags:
+        - "算子管理"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorRegisterReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorRegisterResp"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "算子已存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/info/update:
+    post:
+      summary: "更新算子信息"
+      description: "更新算子信息"
+      tags:
+        - "算子管理"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - operator_id
+              allOf:
+                - properties:
+                    operator_id:
+                      type: string
+                      description: "算子ID"
+                - $ref: "#/components/schemas/OperatorRegisterReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorRegisterResp"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "算子已存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/info/list:
+    get:
+      summary: "获取算子列表"
+      description: "获取算子列表"
+      tags:
+        - "算子管理"
+      parameters:
+        - name: page
+          in: query
+          description: "页码，从1开始，默认为1"
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: "每页数量，默认为10，最大为100，当page_size为-1时，返回所有算子信息"
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: sort_by
+          in: query
+          description: "排序字段，支持按创建时间、更新时间、名称排序"
+          schema:
+            type: string
+            enum:
+              - "create_time" # 创建时间
+              - "update_time" # 更新时间
+              - "name" # 算子名称
+            default: "update_time"
+        - name: sort_order
+          in: query
+          description: "排序规则"
+          schema:
+            type: string
+            enum:
+              - "asc" # 升序
+              - "desc" # 降序
+            default: "desc"
+        - name: create_user
+          in: query
+          description: "根据创建用户查询,默认根据更新时间排序，desc"
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: "根据算子名称查询，返回所有版本的算子信息，默认根据更新时间排序，desc"
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: "根据算子状态查询，返回所有版本的算子信息，默认根据更新时间排序，desc"
+          schema:
+            type: string
+            enum:
+              - "unpublish"
+              - "published"
+              - "offline"
+              - "editing" # 编辑中
+        - name: category
+          in: query
+          description: "根据算子分类查询，返回所有版本的算子信息"
+          schema:
+            type: string
+            enum:
+              - "other_category" # 自定义
+              - "data_process" # 数据处理
+              - "data_transform" # 数据转换
+              - "data_store" # 数据存储
+              - "data_analysis" # 数据分析
+              - "data_query" # 数据查询
+              - "data_extract" # 数据抽取
+              - "data_split" # 数据分割
+              - "model_train" # 模型训练
+        - name: operator_type
+          in: query
+          description: "根据算子类型查询，返回所有版本的算子信息"
+          schema:
+            type: string
+            enum:
+              - "basic" # 基础算子
+              - "composite" # 组合算子
+        - name: all
+          in: query
+          description: "是否返回所有版本的算子信息，默认为false"
+          schema:
+            type: boolean
+            default: false
+        - name: is_data_source
+          in: query
+          description: "是否为数据源算子"
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorDataInfoList"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/info/{operator_id}:
+    get:
+      summary: "获取算子信息"
+      description: "获取算子信息"
+      tags:
+        - "算子管理"
+      parameters:
+        - name: operator_id
+          in: path
+          description: "算子ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorDataInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/category:
+    get:
+      summary: "获取算子分类"
+      description: "获取算子分类列表"
+      tags:
+        - "分类管理"
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer token"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    category_type:
+                      type: string
+                      description: "分类类型"
+                      enum:
+                        - "other_category" # 自定义
+                        - "data_process" # 数据处理
+                        - "data_transform" # 数据转换
+                        - "data_store" # 数据存储
+                        - "data_analysis" # 数据分析
+                        - "data_query" # 数据查询
+                        - "data_extract" # 数据抽取
+                        - "data_split" # 数据分割
+                        - "model_train" # 模型训练
+                    name:
+                      type: string
+                      description: "分类名称，支持国际化"
+        "404":
+          description: "资源不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: "新建算子分类"
+      description: "新建算子分类"
+      tags:
+        - "分类管理"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryReq"
+      responses:
+        "200":
+          description: "新建成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category_type:
+                    type: string
+                    description: "算子分类类型"
+                  name:
+                    type: string
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "算子分类已存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/category/:category_type:
+    put:
+      summary: "更新算子分类"
+      description: "更新指定的算子分类"
+      tags:
+        - "分类管理"
+      parameters:
+        - name: category_type
+          in: path
+          description: "算子分类类型"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryReq"
+      responses:
+        "200":
+          description: "更新成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category_type:
+                    type: string
+                    description: "算子分类类型"
+                  name:
+                    type: string
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子分类不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: "删除算子分类"
+      description: "删除指定的算子分类"
+      tags:
+        - "分类管理"
+      parameters:
+        - name: category_type
+          in: path
+          description: "算子分类类型"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "删除成功"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子分类不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/history/:operator_id/:version:
+    get:
+      summary: "获取算子历史版本详情"
+      description: "获取指定算子的历史版本"
+      tags:
+        - "算子历史"
+      parameters:
+        - name: operator_id
+          in: path
+          description: "算子ID"
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: "版本号"
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: "语义版本号，默认为最新"
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorDataInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部服务器错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/history/:operator_id:
+    get:
+      summary: "获取算子历史版本列表"
+      description: "获取算子的历史版本列表"
+      tags:
+        - "算子历史"
+      parameters:
+        - name: operator_id
+          in: path
+          description: "算子ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OperatorDataInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部服务器错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/market:
+    get:
+      summary: "获取算子市场列表"
+      description: "获取算子市场列表"
+      tags:
+        - "算子市场"
+      parameters:
+        - name: page
+          in: query
+          description: "页码，从1开始，默认为1"
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: "每页数量，默认为10，最大为100，当page_size为-1时，返回所有算子信息"
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: sort_by
+          in: query
+          description: "排序字段，支持按创建时间、更新时间、名称排序"
+          schema:
+            type: string
+            enum:
+              - "create_time" # 创建时间
+              - "update_time" # 更新时间
+              - "name" # 算子名称
+            default: "update_time"
+        - name: sort_order
+          in: query
+          description: "排序规则"
+          schema:
+            type: string
+            enum:
+              - "asc" # 升序
+              - "desc" # 降序
+            default: "desc"
+        - name: create_user
+          in: query
+          description: "根据创建用户查询,默认根据更新时间排序，desc"
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: "根据算子名称查询，返回所有版本的算子信息，默认根据更新时间排序，desc"
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: "根据算子状态查询，返回所有版本的算子信息，默认根据更新时间排序，desc"
+          schema:
+            type: string
+            enum:
+              - "unpublish"
+              - "published"
+              - "offline"
+              - "editing"
+        - name: category
+          in: query
+          description: "根据算子分类查询，返回所有版本的算子信息"
+          schema:
+            type: string
+            default: "other_category"
+        - name: operator_type
+          in: query
+          description: "根据算子类型查询，返回所有版本的算子信息"
+          schema:
+            type: string
+            enum:
+              - "basic" # 基础算子
+              - "composite" # 组合算子
+        - name: release_user
+          in: query
+          description: "根据发布用户查询，返回所有版本的算子信息，默认根据更新时间排序，desc"
+          schema:
+            type: string
+        - name: all
+          in: query
+          description: "是否返回所有版本的算子信息，默认为false"
+          schema:
+            type: boolean
+            default: false
+        - name: is_data_source
+          in: query
+          description: "是否为数据源算子"
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorDataInfoList"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/market/:operator_id:
+    get:
+      summary: "获取算子市场指定算子详情"
+      description: "获取算子市场指定算子详情"
+      tags:
+        - "算子市场"
+      parameters:
+        - name: operator_id
+          in: path
+          description: "算子ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorDataInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /operator/intcomp:
+    post:
+      summary: "内置算子注册更新"
+      description: "内置算子注册更新"
+      tags:
+        - "内置算子"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorIntCompReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorIntCompResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "算子不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      description: "错误信息"
+      properties:
+        code:
+          type: string
+          description: "错误码"
+        description:
+          type: string
+          description: "错误信息"
+        detail:
+          type: object
+          description: "错误详情"
+        solution:
+          type: string
+          description: "错误解决方案"
+        link:
+          type: string
+          description: "错误链接"
+    OperatorDataInfoList:
+      type: object
+      description: "算子信息列表"
+      properties:
+        total:
+          type: integer
+          description: "总记录数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页记录数"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          items:
+            type: object
+            $ref: "#/components/schemas/OperatorDataInfo"
+    OperatorDataInfoOpenAPI:
+      type: object
+      description: "openapi类型元数据"
+      properties:
+        summary:
+          type: string
+          description: "摘要"
+        path:
+          type: string
+          description: "路径"
+        method:
+          type: string
+          description: "方法"
+        description:
+          type: string
+          description: "描述"
+        server_url:
+          type: array
+          items:
+            type: string
+            description: "服务器地址"
+        api_spec:
+          type: object
+          properties:
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "参数名称"
+                  in:
+                    type: string
+                    description: "参数位置，如path/query/header/cookie"
+                  description:
+                    type: string
+                    description: "参数描述"
+                  required:
+                    type: boolean
+                    default: false
+                  schema:
+                    $ref: "#/components/schemas/ParameterSchema"
+            request_body:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: "请求体描述"
+                required:
+                  type: boolean
+                  default: false
+                content:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      schema:
+                        $ref: "#/components/schemas/ExampleRequest"
+                      example:
+                        $ref: "#/components/schemas/ExampleRequest"
+            responses:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  description:
+                    type: string
+                    description: "响应描述"
+                  content:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        schema:
+                          $ref: "#/components/schemas/ExampleResponse"
+                        example:
+                          $ref: "#/components/schemas/ExampleResponse"
+            schemas:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/ParameterSchema"
+            security:
+              type: array
+              items:
+                type: object
+                properties:
+                  securityScheme:
+                    type: string
+                    enum: ["apiKey", "http", "oauth2"]
+    ParameterSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["string", "number", "integer", "boolean", "array"]
+        format:
+          type: string
+          enum: ["int32", "int64", "float", "double", "byte"]
+        example:
+          type: string
+    ExampleRequest:
+      type: object
+      properties:
+        field1:
+          type: string
+          example: "sample_value"
+        field2:
+          type: integer
+          format: int32
+          example: 123
+    ExampleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        data:
+          type: object
+          properties:
+            result:
+              type: string
+              example: "success"
+    OperatorDataInfo:
+      type: object
+      description: "算子信息"
+      properties:
+        name:
+          type: string
+          description: "算子名称"
+        operator_id:
+          type: string
+          description: "算子ID"
+        version:
+          type: string
+          description: "算子版本"
+        status:
+          type: string
+          description: "算子状态"
+          enum:
+            - "unpublish"
+            - "published"
+            - "offline"
+            - "editing"
+        metadata_type:
+          type: string
+          description: "算子元数据类型"
+          enum:
+            - "openapi"
+        metadata:
+          type: object
+          description: "算子元数据"
+          properties:
+            openapi:
+              $ref: "#/components/schemas/OperatorDataInfoOpenAPI"
+        operator_info:
+          $ref: "#/components/schemas/OperatorInfo"
+        operator_execute_control:
+          $ref: "#/components/schemas/OperatorExecuteControl"
+        extend_info:
+          type: object
+          description: "扩展信息"
+        create_time:
+          type: integer
+          description: "创建时间"
+        update_time:
+          type: integer
+          description: "更新时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_user:
+          type: string
+          description: "更新用户"
+        release_user:
+          type: string
+          description: "发布用户"
+        release_time:
+          type: integer
+          description: "发布时间"
+        tag:
+          type: string
+          description: "语义版本号"
+        is_internal:
+          type: boolean
+          description: "是否内部算子"
+    OperatorRegisterReq:
+      type: object
+      description: "算子注册请求"
+      required:
+        - "data"
+        - "operator_metadata_type"
+      properties:
+        data:
+          type: string
+          description: "算子数据"
+        operator_metadata_type:
+          type: string
+          description: "算子元数据类型"
+          enum:
+            - "openapi"
+        operator_info:
+          $ref: "#/components/schemas/OperatorInfo"
+        operator_execute_control:
+          $ref: "#/components/schemas/OperatorExecuteControl"
+        extend_info:
+          type: object
+          description: "算子拓展信息"
+        direct_publish:
+          type: boolean
+          description: "是否直接发布算子，只允许单个算子直接发布"
+        user_token:
+          type: string
+          description: "用户token，内部接口传参，用于认证用户身份"
+    OperatorRegisterResp:
+      type: array
+      items:
+        type: object
+        required:
+          - "status"
+        properties:
+          status:
+            type: string
+            description: "算子状态"
+            enum:
+              - "success"
+              - "failed"
+          operator_id:
+            type: string
+            description: "算子ID"
+          version:
+            type: string
+            description: "算子版本"
+          error:
+            $ref: "#/components/schemas/Error"
+    OperatorInfo:
+      type: object
+      description: "算子信息"
+      properties:
+        operator_type:
+          type: string
+          description: "算子类型： basic: 基础算子, composite: 组合算子, 默认为basic"
+          default: "basic"
+          enum:
+            - "basic"
+            - "composite"
+        execution_mode:
+          type: string
+          description: "执行模式：sync: 同步执行, async: 异步执行, 默认为sync"
+          default: "sync"
+          enum:
+            - "sync"
+            - "async"
+        category:
+          type: string
+          description: "算子分类 默认为other_category"
+          default: "other_category"
+          enum:
+            - "other_category" # 自定义
+            - "data_process" # 数据处理
+            - "data_transform" # 数据转换
+            - "data_store" # 数据存储
+            - "data_analysis" # 数据分析
+            - "data_query" # 数据查询
+            - "data_extract" # 数据抽取
+            - "data_split" # 数据分割
+            - "model_train" # 模型训练
+        category_name:
+          type: string
+          description: "算子分类名称"
+        source:
+          type: string
+          description: "算子来源, 默认为unknown, 可选值为system/unknown, 如果是system不允许修改"
+          default: "unknown"
+          enum:
+            - "system"
+            - "unknown"
+        is_data_source:
+          type: boolean
+          description: "是否为数据源算子"
+          default: false
+    OperatorExecuteControl:
+      type: object
+      description: "算子执行控制"
+      properties:
+        timeout:
+          type: integer
+          description: "超时时间（毫秒）"
+        retry_policy:
+          type: object
+          description: "重试策略"
+          properties:
+            max_attempts:
+              type: integer
+              description: "最大重试次数"
+              default: 3
+            initial_delay:
+              type: integer
+              description: "初始延迟时间(毫秒)"
+              default: 1000
+            max_delay:
+              type: integer
+              description: "最大延迟时间(毫秒)"
+              default: 6000
+            backoff_factor:
+              type: integer
+              description: "退避因子"
+              default: 2
+            retry_conditions:
+              type: object
+              description: "重试条件"
+              properties:
+                status_code:
+                  type: array
+                  description: "HTTP状态码"
+                  items:
+                    type: integer
+                error_codes:
+                  type: array
+                  description: "异常类型"
+                  items:
+                    type: string
+    OperatorIntCompReq:
+      type: object
+      description: "内置算子注册更新请求"
+      required:
+        - operator_id
+        - name
+        - metadata_type
+        - data
+        - operator_type
+        - execution_mode
+        - source
+        - config_source
+        - config_version
+      properties:
+        operator_id:
+          type: string
+          description: "算子ID"
+        name:
+          type: string
+          description: "算子名称"
+        metadata_type:
+          type: string
+          description: "算子元数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          description: "算子数据"
+          format: binary
+        operator_type:
+          type: string
+          description: "算子类型"
+          enum:
+            - "basic"
+            - "composite"
+        execution_mode:
+          type: string
+          description: "算子执行模式"
+          enum:
+            - "sync"
+            - "async"
+        source:
+          type: string
+          description: "算子来源"
+          default: "internal"
+        operator_execute_control:
+          $ref: "#/components/schemas/OperatorExecuteControl"
+        extend_info:
+          type: object
+          description: "算子拓展信息"
+        config_source:
+          type: string
+          description: "配置来源"
+          enum:
+            - "auto"
+            - "manual"
+        config_version:
+          type: string
+          description: "配置版本"
+        protected_flag:
+          type: boolean
+          description: "是否保护"
+        is_data_source:
+          type: boolean
+          description: "是否为数据源算子"
+          default: false
+    OperatorIntCompResp:
+      type: object
+      description: "内置算子注册更新响应"
+      required:
+        - operator_id
+        - version
+        - status
+      properties:
+        status:
+          type: string
+          description: "状态"
+          enum:
+            - "success"
+            - "failed"
+        operator_id:
+          type: string
+          description: "算子ID"
+        version:
+          type: string
+          description: "算子元数据版本"
+    CreateCategoryReq:
+      type: object
+      description: "新建算子分类请求"
+      required:
+        - name
+      properties:
+        category_type:
+          type: string
+          description: "算子分类类型， 如果不指定值，系统默认生成，如果指定值，请自行确保值的唯一性"
+        name:
+          type: string
+          description: "算子分类名称"
+    UpdateCategoryReq:
+      type: object
+      description: "更新算子分类请求"
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: "算子分类名称"

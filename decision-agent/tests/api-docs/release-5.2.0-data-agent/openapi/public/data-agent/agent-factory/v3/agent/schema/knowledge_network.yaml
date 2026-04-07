@@ -1,0 +1,24 @@
+knowledge_network:
+  type: object
+  properties:
+    knowledge_network_id:
+      type: string
+      description: 业务知识网络id
+    object_types:
+      type: array
+      items:
+        type: object
+        properties:
+          object_type_id:
+            type: string
+            description: 对象类id
+        required:
+          - object_type_id
+      description: 对象类数组
+  required:
+    - knowledge_network_id
+  description: |
+    - 业务知识网络
+      - 用户选择的业务知识网络和其下的“对象类”
+        - 作用，在召回时会从选择的这些范围中进行召回。或在召回后只保留选择的这些范围中的内容。
+  

@@ -1,0 +1,22 @@
+MiddleOutputVarItem:
+  type: object
+  properties:
+    var_name:
+      type: string
+      description: 变量名
+    type:
+      type: string
+      enum:
+        - prompt
+        - explore
+        - other
+    value:
+      type: object
+      description: 变量值
+    thinking:
+      type: string
+      description: 思考过程
+    interventions:
+      type: array
+      items:
+        $ref: './intervention.yaml#/Intervention'

@@ -1,0 +1,91 @@
+[
+    {
+    "tool_id": "7ed400e0-e433-47c8-a21c-bbf909d4f257",
+    "tool_box_id": "7fe0fa84-17a0-464d-8ae6-d5a4748a12af",
+    "tool_timeout": 300,
+    "tool_input": [
+        {
+        "input_name": "stream",
+        "input_type": "boolean",
+        "input_desc": "是否流式返回",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "mode",
+        "input_type": "string",
+        "input_desc": "请求模式",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "efast_url",
+        "input_type": "string",
+        "input_desc": "EFAST地址，可选，默认使用默认URL",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "file_params",
+        "input_type": "array",
+        "input_desc": "下载文件参数列表",
+        "map_type": "var",
+        "map_value": "file",
+        "enable": true
+        },
+        {
+        "input_name": "save_path",
+        "input_type": "string",
+        "input_desc": "保存路径，可选，默认保存到会话目录",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+        },
+        {
+        "input_name": "server_url",
+        "input_type": "string",
+        "input_desc": "可选，沙箱服务器URL，默认使用配置文件中的 SANDBOX_URL",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "session_id",
+        "input_type": "string",
+        "input_desc": "沙箱会话ID",
+        "map_type": "var",
+        "map_value": "self_config.conversation_id",
+        "enable": true
+        },
+        {
+        "input_name": "timeout",
+        "input_type": "integer",
+        "input_desc": "超时时间(秒)，可选，默认300秒",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "title",
+        "input_type": "string",
+        "input_desc": "对于当前操作的简单描述，便于用户理解",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+        },
+        {
+        "input_name": "token",
+        "input_type": "string",
+        "input_desc": "认证令牌",
+        "map_type": "var",
+        "map_value": "header.token",
+        "enable": true
+        }
+    ],
+    "intervention": false,
+    "result_process_strategies": null
+    }
+]

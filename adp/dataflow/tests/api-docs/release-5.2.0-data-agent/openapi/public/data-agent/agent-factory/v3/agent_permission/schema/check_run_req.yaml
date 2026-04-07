@@ -1,0 +1,23 @@
+check_run_req:
+  type: object
+  properties:
+    agent_id:
+      type: string
+      description: agent id
+    # agent_version:
+    #   type: string
+    #   description: agent版本
+    custom_space_id:
+      type: string
+      description: 自定义空间id（广场custom_space_id为空）
+    user_id:
+      type: string
+      description: 用户id（内部接口使用）
+    app_account_id:
+      type: string
+      description: 应用账号id（内部接口使用）
+
+
+  required:
+    - agent_id
+

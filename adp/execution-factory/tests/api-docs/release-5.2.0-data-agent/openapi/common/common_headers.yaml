@@ -1,0 +1,15 @@
+# 公共Header说明
+# 在入口文件的 tags 中引用此定义
+#
+# 使用方式：
+# tags:
+#   - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+
+common_header_tag:
+  name: 公共Header说明
+  description: |
+    # Authentication
+    - 调用需要鉴权的API，必须将token放在HTTP header中："Authorization: Bearer ACCESS_TOKEN"
+
+    # Business Domain
+    - 业务域标识Header：`x-business-domain`，用于区分不同业务场景的请求

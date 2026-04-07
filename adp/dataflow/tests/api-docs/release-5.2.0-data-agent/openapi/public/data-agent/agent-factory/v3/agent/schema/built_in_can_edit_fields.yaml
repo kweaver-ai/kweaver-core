@@ -1,0 +1,87 @@
+built_in_can_edit_fields:
+      type: object
+      description: |
+        - 内置agent可编辑字段
+        - 当is_built_in为1时有效
+        - 用途：
+          - 内置agent创建者可以根据需要来设置此字段，来控制用户可以编辑的agent配置字段
+          - 前端根据此字段来控制用户可以编辑的agent配置字段
+          - agent后端编辑接口根据此字段来验证前端传过来的字段是否符合要求
+      properties:
+        name:
+          type: boolean
+          description: 名字
+          example: false
+        avatar:
+          type: boolean
+          description: 头像
+          example: false
+        profile:
+          type: boolean
+          description: 描述
+          example: false
+        input_config:
+          type: boolean
+          description: | 
+            - 输入配置
+          example: false
+        system_prompt:
+          type: boolean
+          description: | 
+            - 角色指令，包括dolpin模式和非dolpin模式
+          example: false
+        "data_source.kg":
+          type: boolean
+          description: | 
+            - 知识来源-业务知识网络
+          example: false
+        "data_source.doc":
+          type: boolean
+          description: | 
+            - 知识来源-文档
+          example: false
+        "data_source.metric":
+          type: boolean
+          description: | 
+            - 知识来源-指标
+          example: false
+        "data_source.kn_entry":
+          type: boolean
+          description: | 
+            - 知识来源-知识条目
+          example: false
+        model:
+          type: boolean
+          description: | 
+            - 模型配置
+          example: true
+        skills:
+          type: boolean
+          description: | 
+            - 技能
+          example: false
+        opening_remark_config:
+          type: boolean
+          description: | 
+            - 开场白配置
+          example: false
+        preset_questions:
+          type: boolean
+          description: | 
+            - 预设问题列表
+          example: false
+        "skills.tools.tool_input":
+           type: boolean
+           description: | 
+             - 技能-工具输入参数配置
+           example: false
+        memory:
+          type: boolean
+          description: | 
+            - 长期记忆配置
+          example: false
+        related_question:
+          type: boolean
+          description: | 
+            - 相关问题配置
+          example: false

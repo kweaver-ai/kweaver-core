@@ -1,0 +1,5 @@
+paths:
+  chat_completion:
+    $ref: '../../../../public/data-agent/agent-app/v1/chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1chat~1completion'
+  api_chat_completion:
+    $ref: '../../../../public/data-agent/agent-app/v1/chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1api~1chat~1completion'

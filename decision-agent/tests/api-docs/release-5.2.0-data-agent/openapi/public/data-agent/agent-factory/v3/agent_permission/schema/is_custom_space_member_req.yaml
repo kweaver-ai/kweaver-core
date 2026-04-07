@@ -1,0 +1,10 @@
+
+is_custom_space_member_req:
+  type: object
+  properties:
+    custom_space_id:
+      type: string
+      description: 自定义空间id
+    user_id:
+      type: string
+      description: 用户id（内部接口使用）

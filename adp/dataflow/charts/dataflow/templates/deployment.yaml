@@ -1,0 +1,261 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dataflow.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "dataflow.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        {{- if .Values.components.streamDataPipeline.enabled }}
+        module: {{ .Values.streamDataPipeline.moduleName }}
+        {{- end }}
+      annotations:
+        checksum/configmap-flow-automation: {{ include (print $.Template.BasePath "/flow-automation/configmap.yaml") . | sha256sum }}
+        checksum/configmap-stream-data-pipeline: {{ include (print $.Template.BasePath "/stream-data-pipeline/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      dnsConfig:
+        options:
+          - name: single-request-reopen
+          - name: use-vc
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+
+      {{- if .Values.antiAffinity.enabled }}
+      affinity:
+        {{- if eq .Values.antiAffinity.rule "soft" }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: module
+                      operator: In
+                      values:
+                        - {{ .Release.Name }}
+        {{- else if eq .Values.antiAffinity.rule "hard" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                  - key: module
+                    operator: In
+                    values:
+                      - {{ .Release.Name }}
+        {{- end }}
+      {{- end }}
+
+      initContainers:
+        - name: prepare-image
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - "echo init done"
+
+      containers:
+        # =====================================================================
+        # flow-automation
+        # =====================================================================
+        {{- if .Values.components.flowAutomation.enabled }}
+        - name: flow-automation
+          securityContext:
+            {{- toYaml .Values.flowAutomation.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - "cd /opt/flow-automation && ./flow-automation"
+          ports:
+            - name: dataflow-pub
+              containerPort: {{ .Values.flowAutomation.service.port }}
+              protocol: TCP
+            - name: dataflow-priv
+              containerPort: {{ add 2 .Values.flowAutomation.service.port }}
+              protocol: TCP
+            - name: ecron-mgt-pub
+              containerPort: {{ .Values.ecronManagement.service.ecronMgntPort }}
+            - name: ecron-anlys-pub
+              containerPort: {{ .Values.ecronManagement.service.ecronAnlysPort }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.flowAutomation.service.prefix }}/health/ready
+              port: dataflow-pub
+            {{- toYaml .Values.flowAutomation.service.readinessProbe | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.flowAutomation.service.prefix }}/health/alive
+              port: dataflow-pub
+            {{- toYaml .Values.flowAutomation.service.livenessProbe | nindent 12 }}
+          volumeMounts:
+            - name: flow-automation-ca
+              mountPath: /opt/flow-automation/ssl
+            - mountPath: /tmp
+              name: tmp-volume
+            - mountPath: /opt/flow-automation/osslog
+              name: log-volume
+            - mountPath: /conf/flow_o11y_data.yaml
+              name: flow-o11y-data-yaml
+              subPath: flow_o11y_data.yaml
+            - mountPath: {{ .Values.flowAutomation.actionConfigYaml }}
+              name: action-config-yaml
+              subPath: action_config.yaml
+            - name: s3-yaml
+              mountPath: /conf/s3.yaml
+              subPath: s3.yaml
+
+            # ecron 配置
+            - name: ecron-management-yaml
+              mountPath: /sysvol/conf/service_conf
+            - name: ecron-management-secret
+              mountPath: /sysvol/conf/secret_conf
+          resources:
+            {{- $res := .Values.resources | default dict -}}
+            {{- merge $res .Values.resources | toYaml | nindent 12 }}
+          env:
+            - name: LOGOUT
+              value: {{ .Values.flowAutomation.service.logger }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "dataflow.flowAutomation.fullname" . }}
+            - secretRef:
+                name: {{ include "dataflow.flowAutomation.fullname" . }}
+        {{- end }}
+
+        # =====================================================================
+        # flow-stream-data-pipeline
+        # =====================================================================
+        {{- if .Values.components.streamDataPipeline.enabled }}
+        - name: flow-stream-data-pipeline
+          securityContext:
+            {{- toYaml .Values.flowAutomation.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - "cd /opt/pipeline && ./pipeline-mgmt-server"
+          ports:
+            - name: sdp-pub
+              containerPort: {{ .Values.streamDataPipeline.service.streamDataPipeline.port }}
+          livenessProbe:
+            tcpSocket:
+              port: sdp-pub
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: sdp-pub
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 30
+            failureThreshold: 3
+          env:
+            - name: TZ
+              value: {{ .Values.env.timezone }}
+            - name: LANG
+              value: {{ .Values.env.language }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SDP_PIPELINE_IMAGE
+              value: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            - name: SDP_PIPELINE_NAMESPACE
+              value: {{ .Values.namespace }}
+            - name: DB_TYPE
+              value: {{ .Values.depServices.rds.type }}
+            - name: MQ_TYPE
+              value: {{ .Values.depServices.mq.mqType | quote }}
+            - name: DM_SVC_PATH
+              value: /opt/pipeline/config
+            - name: AUTH_ENABLED
+              value: {{ .Values.auth.enabled | quote }}
+
+          resources:
+            {{- $res := .Values.resources | default dict -}}
+            {{- merge $res .Values.resources | toYaml | nindent 12 }}
+          volumeMounts:
+            - name: stream-data-pipeline-cm
+              mountPath: /opt/pipeline/config
+        {{- end }}
+
+      volumes:
+        # ecron-management
+        - name: ecron-management-yaml
+          configMap:
+            name: {{ include "dataflow.ecronManagement.fullname" . }}-yaml
+            items:
+            - key: cronsvr.yaml
+              path: cronsvr.yaml
+            - key: mq_config.yaml
+              path: mq_config.yaml
+        - name: ecron-management-secret
+          secret:
+            secretName: {{ include "dataflow.ecronManagement.fullname" . }}-secret
+            items:
+            - key: cronsvr-secret.yaml
+              path: cronsvr-secret.yaml
+        # flow-automation
+        - name: flow-automation-ca
+          secret:
+            secretName: {{ include "dataflow.flowAutomation.fullname" . }}-ca
+        - name: tmp-volume
+          emptyDir: {}
+        - name: log-volume
+          emptyDir: {}
+        - name: flow-o11y-data-yaml
+          configMap:
+            name: {{ include "dataflow.flowAutomation.fullname" . }}
+            items:
+              - key: flow_o11y_data.yaml
+                path: flow_o11y_data.yaml
+        - name: action-config-yaml
+          configMap:
+            name: {{ include "dataflow.flowAutomation.fullname" . }}
+            items:
+              - key: ACTION_CONFIG
+                path: action_config.yaml
+        - name: s3-yaml
+          configMap:
+            name: {{ include "dataflow.flowAutomation.fullname" . }}
+            items:
+              - key: S3
+                path: s3.yaml
+        # flow-stream-data-pipeline
+        - name: stream-data-pipeline-cm
+          configMap:
+            name: {{ .Values.streamDataPipeline.moduleName }}-cm

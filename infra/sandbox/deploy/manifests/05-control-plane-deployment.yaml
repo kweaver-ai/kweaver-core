@@ -1,0 +1,236 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-control-plane
+  namespace: sandbox-system
+  labels:
+    app: sandbox-control-plane
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: sandbox-control-plane
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-executor
+  namespace: sandbox-system
+  labels:
+    app: sandbox-executor
+spec:
+  type: ClusterIP
+  ports:
+    - name: executor
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: sandbox-executor
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-control-plane
+  namespace: sandbox-system
+  labels:
+    app: sandbox-control-plane
+spec:
+  replicas: 1  # 本地环境使用 1 个副本
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sandbox-control-plane
+  template:
+    metadata:
+      labels:
+        app: sandbox-control-plane
+    spec:
+      serviceAccountName: sandbox-control-plane
+
+      # Pod 反亲和性 - 尽量分布在不同节点
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - sandbox-control-plane
+                topologyKey: kubernetes.io/hostname
+
+      # 优先级 - 高优先级保证 Control Plane 优先调度
+      priorityClassName: ""
+
+      # 初始化容器 - 等待依赖服务就绪
+      initContainers:
+        - name: wait-for-mariadb
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mariadb.sandbox-system.svc.cluster.local 3306; do
+                echo "Waiting for MariaDB..."
+                sleep 2
+              done
+              echo "MariaDB is ready!"
+
+      containers:
+        - name: control-plane
+          image: sandbox-control-plane:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          env:
+            # 从 ConfigMap 读取配置
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: ENVIRONMENT
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DEBUG
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DATABASE_URL
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: KUBERNETES_NAMESPACE
+            - name: DEFAULT_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DEFAULT_TIMEOUT
+            - name: MAX_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: MAX_TIMEOUT
+            - name: DEFAULT_CPU
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DEFAULT_CPU
+            - name: DEFAULT_MEMORY
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DEFAULT_MEMORY
+            - name: DEFAULT_DISK
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DEFAULT_DISK
+            - name: IDLE_THRESHOLD_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: IDLE_THRESHOLD_MINUTES
+            - name: MAX_LIFETIME_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: MAX_LIFETIME_HOURS
+            - name: CLEANUP_INTERVAL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: CLEANUP_INTERVAL_SECONDS
+            - name: DISABLE_BWRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: sandbox-config
+                  key: DISABLE_BWRAP
+
+            # 从 Secret 读取敏感信息
+            - name: S3_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-secrets
+                  key: S3_ENDPOINT_URL
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-secrets
+                  key: S3_ACCESS_KEY_ID
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-secrets
+                  key: S3_SECRET_ACCESS_KEY
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-secrets
+                  key: S3_BUCKET
+            - name: S3_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-secrets
+                  key: S3_REGION
+
+            # 运行时配置
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: CONTROL_PLANE_URL
+              value: "http://sandbox-control-plane.sandbox-system.svc.cluster.local:8000"
+
+          # 资源限制（本地环境优化）
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # 健康检查
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+      # 重启策略
+      restartPolicy: Always
+
+      # DNS 策略
+      dnsPolicy: ClusterFirst

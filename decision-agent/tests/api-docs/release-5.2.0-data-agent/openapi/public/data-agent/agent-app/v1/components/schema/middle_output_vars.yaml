@@ -1,0 +1,7 @@
+MiddleOutputVars:
+  type: object
+  properties:
+    vars:
+      type: array
+      items:
+        $ref: './middle_output_var_item.yaml#/MiddleOutputVarItem'

@@ -1,0 +1,394 @@
+replicaCount: 1
+
+nodeSelector: {}
+
+namespace: dip
+moduleName: agent-factory
+
+# 设置为dev则为开发模式.
+runMode: release
+
+enableSecurityContext: true
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+
+image:
+  registry: acr.aishu.cn
+  service:
+    repository: dip/agent-backend
+    tag: data-581755
+    pullPolicy: IfNotPresent
+
+service:
+  agentFactory:
+    type: ClusterIP
+    port: 13020
+    nodePort: 31022
+    ingress:
+      enabled: true
+      interface:
+        path:
+          - /api/agent-factory/v1
+          - /api/agent-factory/v2
+          - /api/agent-factory/v3
+          - /api/agent-app/v1
+  agentApp:
+    port: 30777
+    nodePort: 31023
+  type: ClusterIP
+  enableDualStack: false
+  port: 13020
+  language: zh-CN
+  loggerOutput: stdout
+  loggerLevel: info # 【详见：go.uber.org/zap@v1.27.0/zapcore/level.go】
+  businessTimeOffset: 0
+  # APP 配置
+  streamDiffFrequency: 5
+
+  # 是否保留老的APP路径
+  keep_legacy_app_path: true
+
+  # ========== 开发环境控制开关（生产环境建议设置为 false）==========
+  disablePmsCheck: false
+  disableBizDomainInit: false
+  disableAuditInit: false
+  mockMqClient: false
+  mockSandboxPlatform: false
+  mockHydra: false
+  mockAuthz: false
+  mockBizDomain: false
+  # ========================================
+
+  # ========== Swagger 文档配置 ==========
+  enableSwagger: false
+  swaggerToken: ""
+  # ========================================
+
+  # ========== 日志配置 ==========
+  logFile: "/app/agent-factory/log/agent-factory.log"
+  # ========================================
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 60
+    failureThreshold: 10
+
+
+# 业务域开关
+businessDomain:
+  enabled: true
+
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+  disable_pms_check: false
+
+depServices:
+  class-443:
+    ingressClass: class-443
+  hydra:
+    userMgnt:
+      host: user-management-private
+      port: 30980
+    hydraPublic:
+      host: hydra-public
+      port: 4444
+    hydraAdmin:
+      host: hydra-admin
+      port: 4445
+  # 数据库连接配置
+  rds:
+    type: MYSQL
+    host: mariadb-mariadb-cluster.resource
+    port: 3330
+    hostRead: mariadb-mariadb-cluster.resource
+    portRead: 3330
+    user: anyshare
+    password: xxx
+    database: adp
+    maxConnections: 30
+    maxReadConnections: 30
+    dbCharset: utf8mb4
+    timeout: 10
+    readTimeout: 10
+    writeTimeout: 10
+  opensearch:
+    read: "opensearch-read"
+    write: "opensearch-write"
+    host: "opensearch-master"
+    port: "9200"
+    user: "admin"
+    password: xxx
+  redis:
+    connectType: sentinel
+    connectInfo:
+      masterGroupName: mymaster
+      password: xxx
+      sentinelHost: proton-redis-proton-redis-sentinel.resource
+      sentinelPassword: xxx
+      sentinelPort: 26379
+      sentinelUsername: root
+      username: root
+      host: ""
+      port: ""
+      masterHost: ""
+      masterPort: 6379
+      slaveHost: ""
+      slavePort: 6379
+    db: 3
+    enableSSL: false
+    secretName: ""
+    caName: ""
+    certName: ""
+    keyName: ""
+  mq:
+    auth:
+      mechanism: PLAIN
+      password: xxx
+      username: anyrobot
+    connectorType: kafka
+    mqHost: kafka-headless.resource.svc.cluster.local.
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9097
+    mqType: kafka
+    protocol: sasl_plaintext
+    tenant: default
+  modelFactory:
+    modelApiSvc:
+      host: mf-model-api
+      port: 9898
+      protocol: http
+    modelManagerSvc:
+      host: mf-model-manager
+      port: 9898
+      protocol: http
+    llm:
+      apiKey: xxx
+  authorization:
+    privateSvc:
+      host: authorization-private
+      port: 30920
+      protocol: http
+    publicSvc:
+      host: authorization-public
+      port: 30920
+      protocol: http
+  bizDomain:
+    privateSvc:
+      host: business-system-service
+      port: 80
+      protocol: http
+    publicSvc:
+      host: business-system-service
+      port: 80
+      protocol: http
+
+  agentFactory:
+    privateSvc:
+      host: localhost
+      port: 13020
+      protocol: http
+  # APP 特有服务
+  agentExecutor:
+    privateSvc:
+      host: localhost
+      port: 30778
+      protocol: http
+    useV2: true
+  efast:
+    privateSvc:
+      host: efast-private
+      port: 9123
+      protocol: http
+    publicSvc:
+      host: efast-public
+      port: 9123
+      protocol: http
+  docset:
+    publicSvc:
+      host: docset-public
+      port: 32596
+      protocol: http
+    privateSvc:
+      host: docset-private
+      port: 32597
+      protocol: http
+  ecoconfig:
+    privateSvc:
+      host: ecoconfig-private
+      port: 32128
+      protocol: http
+    publicSvc:
+      host: ecoconfig-public
+      port: 32127
+      protocol: http
+  uniquery:
+    publicSvc:
+      host: mdl-uniquery-svc
+      port: 13011
+      protocol: http
+    privateSvc:
+      host: mdl-uniquery-svc
+      port: 13011
+      protocol: http
+  # ========== Sandbox Platform 配置 ==========
+  sandboxPlatform:
+    enable: true              # 是否启用沙箱功能
+    publicSvc:
+      host: sandbox-control-plane
+      port: 8000
+      protocol: http
+    privateSvc:
+      host: sandbox-control-plane
+      port: 8000
+      protocol: http
+    defaultTtl: 3600         # 默认 Session TTL（秒），最大 3600
+    maxRetries: 10           # 等待 Session 就绪的最大重试次数
+    retryInterval: "500ms"   # 重试间隔
+    defaultTemplateId: "python-basic"  # 默认模板 ID
+    defaultCpu: "1"          # 默认 CPU 核心数
+    defaultMemory: "512Mi"   # 默认内存
+    defaultDisk: "1Gi"       # 默认磁盘
+    defaultTimeout: 300      # 默认超时时间（秒）
+    fileUploadConfig:
+      maxFileSize: 10        # 最大文件大小（数值）
+      maxFileSizeUnit: "MB"  # 单位：KB/MB/GB
+      maxFileCount: 10       # 最大文件数量
+      allowedFileTypes:      # 允许的文件类型
+        - ".txt"
+        - ".py"
+        - ".js"
+        - ".json"
+        - ".csv"
+        - ".md"
+  # ========== LLM/Embedding 外部服务 (Executor/Memory共用) ==========
+  llm_ad:
+    embeddingUrl: ""
+    embeddingModel: ""
+    embeddingDimension: 768
+  rerank_ad:
+    rerankUrl: ""
+  graphDatabase:
+    type: "nebulaGraph"
+    host: ""
+    port: "9669"
+    user: ""
+    password: ""
+    readonlyuser: ""
+    readonlypassword: ""
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 200Mi
+  limits:
+    cpu: 4
+    memory: 8Gi
+
+observability:
+  logEnabled: true
+  traceEnabled: false
+  metricEnabled: false
+  logExporter: http
+  traceProvider: http
+  metricProvider: http
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  traceMaxQueueSize: 50000
+  metricIntervalSecond: 60
+  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+
+# OpenTelemetry 配置 (新增)
+opentelemetry:
+  service_name: "agent-factory"
+  service_version: "1.0.0"
+  trace:
+    enabled: false
+    exporter: "console"
+    http_endpoint: "http://localhost:4318/v1/traces"
+    sampling_rate: 1.0
+  log:
+    enabled: false
+    exporter: "console"
+    http_endpoint: "http://localhost:4318/v1/logs"
+    level: "info"
+  metric:
+    enabled: false
+    exporter: "console"
+    http_endpoint: "http://localhost:4318/v1/metrics"
+    export_interval: 10
+
+# 新版 OTel Collector 配置
+otel:
+  service_name: "agent-factory"
+  service_version: "1.0.0"
+  environment: "production"
+  otlp_endpoint: "otelcol-contrib:4318"
+  trace:
+    enabled: false
+    sampling_rate: 1.0
+  log:
+    enabled: false
+    level: "info"
+
+# ========== Agent Executor 配置 ==========
+agentExecutor:
+  port: 30778
+  debugMode: false
+  logLevel: "info"
+  enableSystemLog: true
+  enableDolphinAgentVerbose: false
+  isPrintLastCommitInfo: true
+  logConversationSessionInit: false
+  isWriteExceptionLogToFile: false
+  enableSensitiveWordDetection: false
+  doNotUseExploreBlockV2: false
+  disableDolphinSdkLLMCache: false
+  enableDolphinAgentOutputVariablesCtrl: false
+  isSkillAgentNeedProgress: false
+  rps:
+    limit: 100
+  telemetry:
+    log:
+      enabled: false
+      endpoint: ""
+    metric:
+      enabled: false
+      endpoint: ""
+    trace:
+      enabled: false
+      endpoint: ""
+
+# ========== Agent Memory 配置 ==========
+agentMemory:
+  port: 30790
+  llm:
+    base_url: ""
+    model: ""
+  embedding:
+    model: ""
+    base_url: ""
+    dims: 768
+  rerank:
+    model: ""
+    url: ""
+  telemetry:
+    log:
+      enabled: false
+      endpoint: ""
+    metric:
+      enabled: false
+      endpoint: ""
+    trace:
+      enabled: false
+      endpoint: ""

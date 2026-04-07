@@ -1,0 +1,333 @@
+paths:
+  /api/intelli-search/v2/bots/{id}/chat:
+    post:
+      summary: chat-intellisearch
+      tags:
+        - 对话
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: agent ID
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: agent version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/chat_request.yaml#/ChatRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/chat_response.yaml#/ChatResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+
+  /api/agent-app/v1/app/{app_key}/chat/completion:
+    post:
+      summary: 对话
+      tags:
+        - 对话
+      parameters:
+        - in: path
+          name: app_key 
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id，超级助手传入固定字符串:super_assistant)
+        - in: query
+          name: custom_space_id
+          schema:
+            type: string
+          required: false
+          description: 如果从自定义空间调用，则需要传入自定义空间id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/chat_request_v2.yaml#/ChatRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/chat_response_v2.yaml#/ChatResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  /api/agent-app/v1/app/{app_key}/chat/resume:
+    post:
+      summary: 对话恢复
+      tags:
+        - 对话
+      parameters:
+        - in: path
+          name: app_key
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id，超级助手传入固定字符串:super_assistant)
+       
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conversation_id:
+                  type: string
+                  description: conversation_id
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/chat_response_v2.yaml#/ChatResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/app/{app_key}/chat/termination:
+    post:
+      summary: 终止对话
+      tags:
+        - 对话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conversation_id:
+                  type: string
+                  description: conversation_id
+              required:
+                - conversation_id
+      responses:
+        '204':
+          description: 成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+        '404':
+          $ref: '../components/components.yaml#/components/responses/NotFoundError'
+
+  /api/agent-app/v1/app/{app_key}/debug/completion:
+    post:
+      summary: 调试
+      tags:
+        - 对话  
+      parameters:
+        - in: path
+          name: app_key
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id)
+        - in: query
+          name: custom_space_id
+          schema:
+            type: string
+          required: false
+          description: 如果从自定义空间调用，则需要传入自定义空间id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/debug_request.yaml#/DebugRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/debug_response.yaml#/DebugResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+  /api/agent-app/v1/app/{app_key}:
+    get:
+      summary: 获取agent_app详情
+      parameters:
+        - in: path
+          name: app_key
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id，超级助手传入固定字符串:super_assistant)
+      tags:
+        - Agent应用管理
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/agent_app_response.yaml#/AgentAppResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+
+
+  /api/agent-app/v1/app/{app_key}/api/chat/completion:
+    post:
+      summary: APIChat
+      tags:
+        - 对话
+      parameters:
+        - in: path
+          name: app_key 
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id，超级助手传入固定字符串:super_assistant)
+        - in: query
+          name: custom_space_id
+          schema:
+            type: string
+          required: false
+          description: 如果从自定义空间调用，则需要传入自定义空间id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/api_chat_request.yaml#/APIChatRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/chat_response_v2.yaml#/ChatResponse'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/BadRequestError'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+  /api/agent-app/v1/app/{app_key}/api/doc:
+    post:
+      summary: 获取Agent Api文档
+      tags:
+        - 对话
+      parameters:
+        - in: path
+          name: app_key 
+          schema:
+            type: string
+          required: true
+          description: agent app key(通用agent传入 agent id，超级助手传入固定字符串:super_assistant)
+        - in: query
+          name: custom_space_id
+          schema:
+            type: string
+          required: false
+          description: 如果从自定义空间调用，则需要传入自定义空间id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_id:
+                  type: string
+                  description: agent id
+                agent_version:
+                  type: string
+                  description: agent version
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 返回结果:open api文档
+  /api/agent-app/v1/file/check:
+    post:
+      summary: 文件检查
+      tags:
+        - 对话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: 文件id
+                    required: true
+                  # type:
+                  #   type: string
+                  #   description: 文件类型
+                  #   enum:
+                  #     - doc
+            example:
+              - id: 97E09222FC9B45899670E698AF89D113
+                # type: doc
+        
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 文件上传进度
+                properties:
+                  progress:
+                    type: number
+                    description: 进度 (0-100)
+                  process_info:
+                    type: array
+                    description: 处理信息
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 文件id
+                        status:
+                          type: string
+                          description: 处理状态
+                          enum:
+                            - processing
+                            - completed
+                            - failed
+              example:
+                progress: 100
+                process_info:
+                  - id: 97E09222FC9B45899670E698AF89D113
+                    status: completed
+        '500':
+          $ref: '../components/components.yaml#/components/responses/InternalServerError'
+              

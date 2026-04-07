@@ -1,0 +1,982 @@
+{
+    "shared_configs": {
+        "doc_resource_config": "./doc_resource_config.json",
+        "graph_resource_config": "./graph_resource_config.json",
+        "zhipu_search_tool_config": "./zhipu_search_tool_config.json",
+        "plan_agent_config": "./plan_agent_config.json",
+        "summary_agent_config": "./summary_agent_config.json",
+        "temp_file_config": "./temp_file_config.json"
+    },
+    "agents": [
+        {
+            "agent_config": "ttft_simple_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "你好，介绍下自己"
+                ],
+                "multi_turn": [
+                    "什么是机器学习",
+                    "它的作用是什么?",
+                    "举个例子"
+                ]
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "你好，介绍下自己",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["你好", "我"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ],
+                "multi_turn": [
+                    {
+                        "query": "什么是机器学习",
+                        "query_index": 1,
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["机器学习", "人工智能"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    },
+                    {
+                        "query": "它的作用是什么?",
+                        "query_index": 2,
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["机器学习的作用"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    },
+                    {
+                        "query": "举个例子",
+                        "query_index": 3,
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["机器学习","例子"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_graph_resource_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": true,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "丙酮缩合制异佛尔酮这个反应是不是需要用到丙酮？"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "丙酮缩合制异佛尔酮这个反应是不是需要用到丙酮？",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "graph_qa",
+                                "must_exist": true
+                            },                            
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["需要"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_doc_resource_chat_explore.json",
+            "use_as_doc": false,
+            "need_conf_llm": true,
+            "need_conf_doc_resource": true,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "什么是副本数据湖"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "什么是副本数据湖",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "doc_qa",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer",
+                                    "answer['full_result']['text']",
+                                    "answer['full_result']['cites'][0]['content']"
+                                ],
+                                "answer_keywords": ["参考信息"],
+                                "answer_failure_keywords": []                                  
+                            },                            
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["副本数据湖","数据孤岛"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_3_skills_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [
+                "zhipu_search_tool",
+                "Plan_Agent",
+                "Summary_Agent"
+            ],
+            "config_intervention": [false, false, false],
+            "test_queries": {
+                "single_turn": [
+                    "如何学习python"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "如何学习python",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Plan_Agent",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "zhipu_search_tool",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["学习", "Python", "步骤", "方法"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_3_skills_chat_dolphin.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [
+                "zhipu_search_tool",
+                "Plan_Agent",
+                "Summary_Agent"
+            ],
+            "config_intervention": [false, false, false],
+            "test_queries": {
+                "single_turn": [
+                    "介绍上海的外滩"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍上海的外滩",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Plan_Agent",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": ["搜索资料","总结内容","外滩"],
+                                "answer_failure_keywords": []                                  
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "zhipu_search_tool",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["外滩", "上海", "租界", "黄浦江"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_plan_agent_skill_intervention_chat_dolphin.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [
+                "Plan_Agent"
+            ],
+            "config_intervention": [true],
+            "test_queries": {
+                "single_turn": [],
+                "multi_turn": [
+                    "介绍上海的东方明珠塔",
+                    "介绍上海的东方明珠塔"
+                ]
+            },
+            "expected_results": {
+                "multi_turn": [
+                    {
+                        "query": "介绍上海的东方明珠塔",
+                        "query_index": 1,
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Plan_Agent",
+                                "must_exist": true,
+                                "status": "processing"
+                            }
+                        ]
+                    },
+                    {
+                        "query": "介绍上海的东方明珠塔",
+                        "query_index": 2,
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["东方明珠塔", "上海", "介绍"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_variable.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "你好"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "你好",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["abc","def","ghi"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_control_flow.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "你好"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "你好",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["当前项是子项3"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_function_call.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": ["zhipu_search_tool"],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "介绍下上海中心大厦"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍下上海中心大厦",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "zhipu_search_tool",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer",
+                                    "answer['choices']",
+                                    "answer['choices'][0]['message']"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": []                                
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["上海中心", "陆家嘴", "632米", "上海之巅"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_prompt_and_ouput.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "介绍下上海环球金融中心，不超过50个字"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍下上海环球金融中心，不超过50个字",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["{", "}", "id", "name"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_explore_no_history.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,             
+            "skill_list": [
+                "zhipu_search_tool",
+                "Plan_Agent",
+                "Summary_Agent"
+            ],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "介绍下抖音的发展历程"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍下抖音的发展历程",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Summary_Agent",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["短视频平台", "TikTok", "抖音", "推荐算法"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_judge.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": true,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "你好，介绍下你自己"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "你好，介绍下你自己",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["你好", "我是"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "dolphin_program_test_inner_function.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "你好"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "你好",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "_date",
+                                "must_exist": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_temp_file_test_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": true,
+            "temp_file_config_index": 0,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "她的年龄"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "她的年龄",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "process_file_intelligent",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["30"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_memory_test_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": true,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "记录：我有一个同事叫王五"
+                ],
+                "multi_turn": [
+                    "记录：我喜欢吃苹果",
+                    "我同事的名字叫什么？"
+                ]
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "记录：我有一个同事叫王五",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "search_memory",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["记录", "王五"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_plan_mode_test_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": true,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "介绍下推理模型的原理，然后讲一下现状和未来的趋势"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍下推理模型的原理，然后讲一下现状和未来的趋势",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Task_Plan_Agent",
+                                "must_exist": true
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["我将", "回答","任务规划","总结","顺序执行"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_related_question_test_chat_explore.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": true,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "介绍下AI编程的现状"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "介绍下AI编程的现状",
+                        "progress_validations": [
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["[","]"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_external_doc_resource_chat_test_explore.json",
+            "use_as_doc": true,
+            "need_conf_llm": true,
+            "need_conf_doc_resource": true,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": [],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "anyshare如何配置认知助手"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "anyshare如何配置认知助手",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "doc_qa",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError"]
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["认知助手", "AnyShare", "配置", "Sailor"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_plan_agent_skill_chat_dolphin_param.json",
+            "use_as_doc": false,
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,            
+            "skill_list": ["Plan_Agent"],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "1"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "1",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "Plan_Agent",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "excel数据映射及图表预设.json",
+            "need_publish_to_skill":true,
+            "skip_skills_config": true,
+            "use_as_doc": false,
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": ["create_file"],
+            "config_intervention": [],
+            "test_queries": {},
+            "expected_results": {}
+        },
+        {
+            "agent_config": "效能分析主控Agent.json",
+            "use_as_doc": false,
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": true,
+            "temp_file_config_index": 1,
+            "need_config_memory": false,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skip_skills_config": true,
+            "skill_list": [
+                "excel数据映射及图表预设",
+                "list_files",
+                "上传文件到efast并获取共享链接",
+                "将Markdown文件转换为Word文档",
+                "生成数据分析报告",
+                "download_from_efast"
+            ],
+            "config_intervention": [],
+            "test_queries": {
+                "single_turn": [
+                    "输出报告"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "输出报告",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "list_files",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "download_from_efast",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer",
+                                    "answer['result']",
+                                    "answer['result']['download_result']",
+                                    "answer['result']['download_result']['results']"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "excel数据映射及图表预设",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "生成数据分析报告",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            },
+                            {
+                                "stage": "skill",
+                                "agent_name": "将Markdown文件转换为Word文档",
+                                "must_exist": true,
+                                "not_null": [
+                                    "answer",
+                                    "answer['result']"
+                                ],
+                                "answer_keywords": [],
+                                "answer_failure_keywords": ["UnknownError", "InternalServerError", "check the service", "error occurred", "ParamError", "ErrorDetails"]
+                            },
+                            {
+                                "stage": "llm",
+                                "answer_keywords": ["下载链接", "分析报告已生成并上传成功", "gns", "数据分析报告"],
+                                "must_exist": true,
+                                "status": "completed"
+                            }                                                                                                              
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "agent_config": "ttft_memory_test_chat_extra_object_param.json",
+            "need_conf_llm": true,
+            "need_conf_doc_resource": false,
+            "need_conf_graph_resource": false,
+            "need_run": true,
+            "need_temp_file": false,
+            "need_config_memory": true,
+            "need_config_related_question": false,
+            "need_config_plan_mode": false,
+            "skill_list": [],
+            "config_intervention": [],
+            "extra_params": [
+                {
+                    "query1": {
+                        "name": "query1",
+                        "value": {
+                            "name":"xxx"
+                        },
+                        "type": "object"
+                    }
+                }
+            ],
+            "test_queries": {
+                "single_turn": [
+                    "我是谁"
+                ],
+                "multi_turn": []
+            },
+            "expected_results": {
+                "single_turn": [
+                    {
+                        "query": "我是谁",
+                        "progress_validations": [
+                            {
+                                "stage": "skill",
+                                "agent_name": "search_memory",
+                                "must_exist": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

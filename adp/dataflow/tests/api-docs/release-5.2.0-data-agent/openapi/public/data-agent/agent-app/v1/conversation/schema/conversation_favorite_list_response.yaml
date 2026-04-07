@@ -1,0 +1,25 @@
+ConversationFavoriteListResponse:
+  type: object
+  properties:
+    total_count:
+      type: integer
+      description: 结果总数
+    entries:
+      type: array
+      description: 会话列表
+      items:
+        $ref: './favorite_intro.yaml#/FavoriteIntro'
+  required:
+    - total_count
+    - entries
+  example:
+    total_count: 2
+    entries:
+      - favorite_id: "f99e389a-edc5-4027-7ec9-7da8a8f41334"
+        favorite_title: "示例会话1"
+        create_time: 1744167890000000000
+        agent_id: "agent_123"
+      - favorite_id: "f99e389a-edc5-4027-7ec9-7da8a8f41335"
+        favorite_title: "示例会话2"
+        create_time: 1744167890000000000
+        agent_id: "agent_456"

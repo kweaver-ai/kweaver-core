@@ -1,0 +1,157 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "新个人缴费信息汇总标准化接口",
+        "description": "用于查询个人缴费信息汇总的标准化接口",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://117.73.253.229:8443/data-application-gateway",
+            "description": "生产环境"
+        }
+    ],
+    "paths": {
+        "/xgrjfxxhzbzhjk/xgrjfhzbzh": {
+            "post": {
+                "tags": [
+                    "Insurance"
+                ],
+                "summary": "查询个人缴费信息汇总",
+                "description": "根据身份证号、姓名和时间范围查询个人缴费信息汇总",
+                "operationId": "getPersonalInsurancePaymentSummary",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "用于身份验证的令牌，格式为 'Bearer <token>'",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "查询参数",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentSummaryRequest"
+                            },
+                            "example": {
+                                "DISTRICT_NO": "3751",
+                                "IDENTITY_CARD_NO": "370631197909253513",
+                                "NAME": "曲军利",
+                                "START_YM": "200001",
+                                "TERMI_YM": "202512"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentSummaryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "300": {
+                        "description": "该人员未参保社会保险",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "data": "",
+                                    "message": "该人员未参保社会保险！",
+                                    "status": 300
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "PaymentSummaryRequest": {
+                "type": "object",
+                "required": [
+                    "DISTRICT_NO",
+                    "START_YM",
+                    "TERMI_YM",
+                    "NAME",
+                    "IDENTITY_CARD_NO"
+                ],
+                "properties": {
+                    "DISTRICT_NO": {
+                        "type": "string",
+                        "description": "地区编码",
+                        "example": "3751"
+                    },
+                    "START_YM": {
+                        "type": "string",
+                        "description": "起始年月，格式为YYYYMM",
+                        "example": "200001"
+                    },
+                    "TERMI_YM": {
+                        "type": "string",
+                        "description": "终止年月，格式为YYYYMM",
+                        "example": "202512"
+                    },
+                    "NAME": {
+                        "type": "string",
+                        "description": "姓名",
+                        "example": "曲军利"
+                    },
+                    "IDENTITY_CARD_NO": {
+                        "type": "string",
+                        "description": "身份证号",
+                        "example": "370631197909253513"
+                    }
+                }
+            },
+            "PaymentSummaryResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "返回的缴费信息数据"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "返回消息"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": "状态码"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "string",
+                        "description": "空数据"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "错误消息"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": "错误状态码"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,15 @@
+agent_list_for_benchmark:
+  type: object
+  description: 智能体列表
+  properties:
+    entries:
+      type: array
+      description: 智能体列表
+      items:
+        $ref: './agent_list_for_benchmark_item.yaml#/agent_list_for_benchmark_item'
+    total:
+      type: integer
+      description: |
+        - 总数
+        - 包括已发布和未发布
+          - 如果同一个agent同时存在已发布和未发布版本，算2个

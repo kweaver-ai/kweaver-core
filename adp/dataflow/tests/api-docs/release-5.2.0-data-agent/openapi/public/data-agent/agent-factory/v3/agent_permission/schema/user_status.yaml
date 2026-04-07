@@ -1,0 +1,65 @@
+user_status:
+  type: object
+  properties:
+    custom_space:
+      type: object
+      properties:
+        create:
+          type: boolean
+          description: 是否有创建权限
+    agent:
+      type: object
+      properties:
+        publish:
+          type: boolean
+          description: 是否有发布权限
+        unpublish:
+          type: boolean
+          description: 是否有取消发布权限
+        unpublish_other_user_agent:
+          type: boolean
+          description: |
+            - 是否有取消其他用户发布的agent的权限
+              - 这个操作暂不通过权限平台进行配置，暂定只有“应用管理员”角色有此权限
+        publish_to_be_skill_agent:
+          type: boolean
+          description: 是否有发布为技能agent的权限
+        publish_to_be_web_sdk_agent:
+          type: boolean
+          description: 是否有发布为web sdk agent的权限
+        publish_to_be_api_agent:
+          type: boolean
+          description: 是否有发布为api agent的权限
+        publish_to_be_data_flow_agent:
+          type: boolean
+          description: 是否有发布为数据流agent的权限
+        create_system_agent:
+          type: boolean
+          description: |
+            - 是否有创建系统agent的权限
+            - 用于控制是否在agent创建页面展示“是否是系统agent”选项
+        mgnt_built_in_agent:
+          type: boolean
+          description: |
+            - 是否有管理内置agent的权限
+            - 有此权限的用户可以管理内置agent（编辑、发布、删除等）
+    agent_tpl:
+      type: object
+      properties:
+        publish:
+          type: boolean
+          description: |
+            - 是否有发布权限
+              - 也对应“agent复制为模板并发布模板”的操作
+        unpublish:
+          type: boolean
+          description: 是否有取消发布权限
+        unpublish_other_user_agent_tpl:
+          type: boolean
+          description: |
+            - 是否有取消其他用户发布的agent模板的权限
+              - 这个操作暂不通过权限平台进行配置，暂定只有“应用管理员”角色有此权限
+          
+          
+          
+      

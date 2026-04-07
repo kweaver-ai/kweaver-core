@@ -1,0 +1,17 @@
+ChatResponse:
+  type: object
+  properties:
+    conversation_id:
+      type: string
+      description: 会话ID
+    user_message_id:
+      type: string
+      description: 用户消息ID
+    assistant_message_id:
+      type: string
+      description: 助手消息ID
+    message:
+      $ref: '../../components/schema/message.yaml#/Message'
+    # status:
+    #   type: string
+    #   description: 状态

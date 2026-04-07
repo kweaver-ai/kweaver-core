@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "POST Custom Prompt",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "docid": {
+            "type": "string",
+            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+        }
+    },
+    "required": ["docid"],
+    "additionalProperties": false
+}

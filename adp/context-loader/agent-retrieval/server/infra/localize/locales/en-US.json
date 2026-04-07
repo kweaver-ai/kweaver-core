@@ -1,0 +1,59 @@
+{
+    "audit_log": {
+        "unknown_operation": "Unknown operation '%s'"
+    },
+    "desc": {
+        "BadRequest": "Invalid parameters",
+        "Unauthorized": "Authentication failed",
+        "Forbidden": "Permission denied",
+        "NotFound": "Resource not found",
+        "MethodNotAllowed": "Method not allowed",
+        "Conflict": "Resource conflict",
+        "InternalServerError": "Internal server error",
+        "NotImplemented": "Method not implemented",
+        "ServiceUnavailable": "Service unavailable",
+        "ValidationRequired": "Required information cannot be empty",
+        "ValidationFormat": "Request parameter input format is incorrect",
+        "ValidationRange": "Request parameter input value exceeds allowed range",
+        "ValidationEnum": "Please select from the options",
+        "CommonAddForbidden": "Permission denied: You do not have permission to create current operation, please contact the administrator to open relevant permissions",
+        "CommonNameInvalid": "OOnly Chinese, letters, numbers, and underscores can be entered",
+        "CommonUserNotFound": "User not found",
+        "CommonAnonymousUserNotAllowed": "Anonymous user not allowed",
+        "CommonExternalServerError": "External service call exception",
+        "MCPInstanceAlreadyExists": "MCP instance already exists",
+        "MCPInstanceNotFound": "MCP instance not found",
+        "KnActionRecallUnsupportedType": "Unsupported action source type, currently only type=tool and type=mcp are supported",
+        "KnActionRecallNoActionsFound": "No available actions found",
+        "KnActionRecallSchemaConvertFailed": "Tool schema conversion failed",
+        "KnActionRecallToolNotFound": "Tool not found or has been deleted",
+        "ValidationDetailMin": "Parameter %s value %s is less than minimum %s, please adjust to a value greater than or equal to %s",
+        "ValidationDetailMax": "Parameter %s value %s is greater than maximum %s, please adjust to a value less than or equal to %s",
+        "ValidationDetailMinNoValue": "Parameter %s value must be greater than or equal to %s",
+        "ValidationDetailMaxNoValue": "Parameter %s value must be less than or equal to %s",
+        "ValidationDetailRequired": "Parameter %s is required and cannot be empty",
+        "ValidationDetailOneof": "Parameter %s value must be one of the following options: %s",
+        "ValidationDetailUnknown": "Parameter %s value %s does not meet validation rule %s (%s)",
+        "ValidationDetailUnknownNoValue": "Parameter %s does not meet validation rule %s (%s)"
+    },
+    "sol": {
+        "Common": "Contact administrator",
+        "BadRequest": "Please check if the parameters are correct",
+        "None": "None",
+        "ValidationRequired": "Required information cannot be empty",
+        "ValidationFormat": "Please check the input format and re-enter",
+        "ValidationRange": "Please adjust the input value to a reasonable range",
+        "ValidationEnum": "Please select the correct option",
+        "CommonAddForbidden": "Permission denied: You do not have permission to create current operation, please contact the administrator to open relevant permissions",
+        "CommonExternalServerError": "Please check the service",
+        "MCPInstanceAlreadyExists": "None",
+        "MCPInstanceNotFound": "None",
+        "KnActionRecallUnsupportedType": "Please check if the action source type configuration is correct, currently supports tool and mcp types",
+        "KnActionRecallNoActionsFound": "Please check if the action type configuration is correct",
+        "KnActionRecallSchemaConvertFailed": "Please check if the tool's OpenAPI Schema definition complies with the specification",
+        "KnActionRecallToolNotFound": "Please check if the tool exists, or contact the administrator"
+    },
+    "link": {
+        "None": "None"
+    }
+}

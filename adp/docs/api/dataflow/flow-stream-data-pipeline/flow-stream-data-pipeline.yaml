@@ -1,0 +1,577 @@
+---
+openapi: 3.0.2
+info:
+  title: pipeline
+  version: 0.1.0
+servers:
+  - url: "https://{host}:{port}/api"
+    description: host:localhost;port:13020
+    variables:
+      host:
+        default: 服务器ip
+      port:
+        default: 默认端口
+paths:
+  /sdp-pipeline/v1/pipelines/{pipeline_id}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAPipeline"
+              examples:
+                获取单个管道:
+                  value:
+                    id: pipeline1
+                    name: 管道1
+                    tags:
+                      - tag1
+                      - tag2
+                    comment: ""
+                    builtin: false
+                    output_type: index_base
+                    index_base: base1
+                    input_topic: aaa
+                    output_topic: bbb
+                    error_topic: ccc
+                    create_time: 1735660800000
+                    update_time: 1735660800000
+                    deployment_config:
+                      cpu_limit: 1
+                      memory_limit: 2048
+                    status: running
+                    status_details: ""
+          description: OK
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 获取单个管道
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePipeline"
+            examples:
+              updatepip:
+                value:
+                  name: 管道1
+                  tags:
+                    - tag1
+                    - tag2
+                  comment: ""
+                  index_base: base1
+                  deployment_config:
+                    cpu_limit: 1
+                    memory_limit: 2048
+        required: true
+      responses:
+        "204":
+          description: 修改成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 修改单个管道
+    delete:
+      responses:
+        "204":
+          description: 删除成功
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 删除单个管道
+    parameters:
+      - name: pipeline_id
+        description: 管道 id
+        schema:
+          type: string
+        in: path
+        required: true
+  /sdp-pipeline/v1/pipelines/{pipeline_id}/attrs/{fields}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePipelineStatus"
+            examples:
+              开启管道:
+                value:
+                  status: running
+              关闭管道:
+                value:
+                  status: close
+        required: true
+      responses:
+        "204":
+          description: 开启或暂停成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 修改管道属性
+    parameters:
+      - name: pipeline_id
+        description: 管道 id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: fields
+        description: 管道的属性，当前仅支持 status 字段，用于开启或者关闭管道
+        schema:
+          type: string
+        in: path
+        required: true
+  /sdp-pipeline/v1/pipelines:
+    get:
+      parameters:
+        - name: name_pattern
+          description: 根据管道名称模糊查询，默认为空. 与 name 不能同时存在
+          schema:
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，可根据名称和更新时间排序，默认是update_time
+          schema:
+            enum:
+              - update_time
+              - name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: 分页偏移量，范围需大于等于0，默认值0
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: tag
+          description: 根据标签名称精确过滤
+          schema:
+            type: string
+          in: query
+        - name: builtin
+          description: 根据是否为内置管道过滤，值可以为true或false。如果需要传多个值，写法为 builtin=true&builtin=false
+          schema:
+            type: boolean
+          in: query
+        - name: status
+          description: |-
+            管道状态
+
+            error：失败
+
+            running：运行中
+
+            close：关闭
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPipelines"
+              examples:
+                list:
+                  value:
+                    entries:
+                      - id: pipeline1
+                        name: 管道1
+                        tags:
+                          - tag1
+                          - tag2
+                        comment: ""
+                        builtin: false
+                        output_type: index_base
+                        index_base: base1
+                        create_time: 1735660800000
+                        update_time: 1735660800000
+                        status: running
+                    total_count: 1
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 查询管道列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqPipeline"
+            examples:
+              创建管道:
+                value:
+                  id: pipeline1
+                  name: 管道1
+                  tags:
+                    - tag1
+                    - tag2
+                  comment: ""
+                  output_type: index_base
+                  index_base: base1
+                  deployment_config:
+                    cpu_limit: 1
+                    memory_limit: 2048
+        required: true
+      parameters:
+        - name: x-http-method-override
+          description: 重载请求头
+          schema:
+            enum:
+              - POST
+              - GET
+              - DELETE
+            type: string
+          in: header
+          required: true
+      responses:
+        "201":
+          headers:
+            Location:
+              schema:
+                format: uri
+                type: string
+              description: "`/api/sdp-pipeline/v1/pipelines/{id}`"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/pipelineID"
+              examples:
+                新增一个:
+                  value:
+                    id: pipeline1
+          description: 创建成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 创建单个管道
+      description: ""
+components:
+  schemas:
+    Error:
+      description: ""
+      required:
+        - description
+        - error_code
+        - error_detail
+        - error_link
+        - solution
+      type: object
+      properties:
+        description:
+          description: 错误描述
+          type: string
+        error_code:
+          description: 错误码
+          type: string
+        error_detail:
+          description: 错误详情
+          type: string
+        error_link:
+          description: 错误链接
+          type: string
+        solution:
+          description: 处理建议
+          type: string
+      example:
+        description: some text
+        error_code: some text
+        error_detail: some text
+        error_link: some text
+        solution: some text
+    ListPipelines:
+      description: ""
+      required: []
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ListAPipeline"
+        total_count:
+          description: 总条数
+          type: integer
+    GetManyPipelines:
+      description: 获取多个视图信息
+      type: array
+      items:
+        $ref: "#/components/schemas/GetAPipeline"
+    UpdatePipelineStatus:
+      description: 更新视图属性
+      required:
+        - pipeline_status
+      type: object
+      properties:
+        pipeline_status:
+          description: 开启或关闭管道
+          enum:
+            - running
+            - close
+          type: string
+    ReqPipeline:
+      description: ""
+      required:
+        - metric_model_name
+        - name
+        - model_name
+        - output_type
+        - index_base
+      type: object
+      properties:
+        name:
+          description: 管道名称
+          type: string
+        tags:
+          description: 标签，用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        id:
+          description: 管道 ID
+          type: string
+        output_type:
+          description: 数据输出类型
+          enum:
+            - index_base
+          type: string
+        index_base:
+          description: 数据输出到的索引库
+          type: string
+        deployment_config:
+          $ref: "#/components/schemas/deployment_config"
+          description: 部署配置
+    deployment_config:
+      description: 部署配置
+      type: object
+      properties:
+        cpu_limit:
+          description: CPU 限制
+          type: integer
+        memory_limit:
+          description: 内存限制
+          type: integer
+    UpdatePipeline:
+      description: ""
+      required:
+        - metric_model_name
+        - name
+        - model_name
+        - index_base
+      type: object
+      properties:
+        name:
+          description: 管道名称
+          type: string
+        tags:
+          description: 标签，用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        index_base:
+          description: 数据输出到的索引库
+          type: string
+        deployment_config:
+          $ref: "#/components/schemas/deployment_config"
+          description: 部署配置
+    ListAPipeline:
+      description: ""
+      required:
+        - metric_model_name
+        - model_name
+      type: object
+      properties:
+        name:
+          description: 管道名称
+          type: string
+        tags:
+          description: 标签，用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        builtin:
+          description: 内置管道标识
+          type: boolean
+        id:
+          description: 管道 ID
+          type: string
+        output_type:
+          description: 数据输出类型
+          enum:
+            - index_base
+          type: string
+        index_base:
+          description: 数据输出到的索引库
+          type: string
+        create_time:
+          description: 创建时间
+          type: integer
+        update_time:
+          description: 更新时间
+          type: integer
+        status:
+          description: 管道状态
+          enum:
+            - error
+            - running
+            - close
+          type: string
+    GetAPipeline:
+      description: ""
+      required:
+        - metric_model_name
+        - model_name
+      type: object
+      properties:
+        name:
+          description: 管道名称
+          type: string
+        tags:
+          description: 标签，用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        builtin:
+          description: 内置管道标识
+          type: boolean
+        id:
+          description: 管道 ID
+          type: string
+        output_type:
+          description: 数据输出类型
+          enum:
+            - index_base
+          type: string
+        index_base:
+          description: 数据输出到的索引库
+          type: string
+        deployment_config:
+          $ref: "#/components/schemas/deployment_config"
+          description: 部署配置
+        create_time:
+          description: 创建时间
+          type: integer
+        update_time:
+          description: 更新时间
+          type: integer
+        input_topic:
+          description: 输入topic
+          type: string
+        output_topic:
+          description: 输出topic
+          type: string
+        error_topic:
+          description: 错误 topic
+          type: string
+        status:
+          description: 管道状态
+          enum:
+            - error
+            - running
+            - close
+          type: string
+        status_details:
+          description: 管道状态详情
+          type: string
+    pipelineID:
+      description: 管道id
+      type: object
+      properties:
+        id:
+          description: 管道 id
+          type: string
+  responses:
+    "500InternalError":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: internel server error
+                error_code: DataView.InternalError
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 内部错误
+    "400BadRequest":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: Invalid Parameter
+                error_code: DataView.InvalidParameter
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 参数错误
+    "403Forbidden":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: 拒绝执行该请求
+    "404NotFound":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                error_code: DataView.DataViewNotFound
+                description: DataView Not Found
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 管道不存在

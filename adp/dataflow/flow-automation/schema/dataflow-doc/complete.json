@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Dataflow Doc Complete Request",
+    "description": "POST /api/automation/v2/dataflow-doc/complete",
+    "type": "object",
+    "properties": {
+        "file_id": {
+            "type": "string",
+            "description": "文件ID，支持纯ID或dfs://格式"
+        },
+        "etag": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "文件etag/hash"
+        },
+        "size": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "上传后实际大小"
+        }
+    },
+    "required": ["file_id"]
+}

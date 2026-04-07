@@ -1,0 +1,28 @@
+CreateMemoryReq:
+  description:  | 
+    构建记忆请求参数,
+  type: object
+  properties:
+    user_id: 
+      type: string
+      description: | 
+        用户ID
+        请求参数中必须包含 user_id, agent_id, run_id 中的至少一个参数
+    agent_id:
+      type: string
+      description: Agent ID
+    run_id:
+      type: string
+      description: Run ID
+    messages:
+      type: array
+      items:
+        $ref: './message_vo.yaml#/Message'
+    metadata:
+      type: object
+      descriription: |
+        元数据,格式: {key: value}
+  required:
+    - messages  
+    
+  

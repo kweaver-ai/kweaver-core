@@ -1,0 +1,28 @@
+conversation_session_param:
+  properties:
+    conversation_id:
+      type: string
+      title: conversation_id
+      description: 对话id
+      example: 'xxx'
+    agent_id:
+      type: string
+      title: agent_id
+      description: |
+        - agent id
+        - agent_config和agent_id 不能同时为空。agent_config优先级高于agent_id。
+      example: 'xxx'
+    agent_version:
+      type: string
+      title: agent_version
+      description: |
+        - agent版本号,与agent_id配合使用
+        - 当agent_id提供时,此字段为required
+        - 当agent_config提供时,则忽略agent_version和agent_id
+      example: 'latest'
+    agent_config:
+      $ref: '../../../../../public/data-agent/agent-factory/v3/agent/schema/config_req.yaml#/config'
+  type: object
+  required:
+    - conversation_id
+  title: ConversationSessionParam

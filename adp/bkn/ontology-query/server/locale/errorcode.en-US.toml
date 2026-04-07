@@ -1,0 +1,41 @@
+# Common
+[OntologyQuery.InvalidParameter.Condition]
+Description = "Invalid Condition"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.InvalidParameter.OverrideMethod]
+Description = "Invalid Override Method"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.NullParameter.OverrideMethod]
+Description = "Override Method Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.InvalidRequestHeader.ContentType]
+Description = "Invalid ContentType"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.MarshalDataFailed]
+Description = "An internal server error occurred while marshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.UnMarshalDataFailed]
+Description = "An internal server error occurred while unMarshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.SearchDataFromOpensearchFailed]
+Description = "An internal server error occurred while search data from opensearch"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+

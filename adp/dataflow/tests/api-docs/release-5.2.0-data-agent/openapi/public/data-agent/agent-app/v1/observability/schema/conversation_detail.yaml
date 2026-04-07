@@ -1,0 +1,27 @@
+ConversationDetail:
+  type: object
+  properties:
+    id:
+      type: string
+      description: 会话ID
+    title:
+      type: string
+      description: 会话标题
+    status:
+      type: string
+      description: 会话最新消息的状态，completed,processing,failed
+    create_time:
+      type: integer
+      description: 创建时间
+    update_time:
+      type: integer
+      description: 更新时间
+  required:
+    - id
+    - title
+  example:
+    id: "conv_123"
+    title: "示例会话"
+    status: "completed"
+    create_time: 1744167890000000000
+    update_time: 1744167890000000000

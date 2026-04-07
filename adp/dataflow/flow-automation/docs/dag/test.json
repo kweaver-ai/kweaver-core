@@ -1,0 +1,49 @@
+{
+    "title": "定时获取指定目录所有的文档",
+    "description": "",
+    "status": "normal",
+    "appinfo":{
+        "enable": true
+    },
+	"trigger": {
+			 "operator": "@trigger/cron",
+			 "dataSource": {
+                "operator": "@anyshare-data/list-files",
+                "parameters": {
+                    "docids" : [
+                        "gns://E0FA5CE66F4740698F4A69C645FB228A",
+                        "gns://51D31167656C4173893B718D60038308"
+                    ],
+                    "depth" : -1
+           		}
+            },
+            "cron": "0 0 1 * * ?"
+	},
+   "steps": [
+        {
+            "id": "0",
+			"title": "",
+            "operator": "@dataflow-trigger/doc"
+        },
+        {
+            "id": "1",
+            "title": "",
+            "operator": "@intelliinfo/transfer",
+            "parameters" : {
+                "rule_id" : "document_all_upsert",
+                "data" : {
+                    "id": "{{__2.item_id}}",
+                    "name": "{{__2.name}}",
+                    "rev": "{{__2.rev}}",
+                    "create_time": "{{__2.create_time}}",
+                    "modify_time": "{{__2.modify_time}}",
+                    "size": "{{__2.size}}",
+                    "path": "{{__2.path}}",
+                    "csflevel": "{{__2.csflevel}}",
+                    "creator": "{{__2.creator_id}}",
+                    "editor": "{{__2.editor_id}}"
+                }
+            }
+        }
+    ]
+}

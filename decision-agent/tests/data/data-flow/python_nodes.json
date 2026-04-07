@@ -1,0 +1,17 @@
+[
+  {
+    "id": "1",
+    "operator": "@internal/tool/py3",
+    "parameters": {
+      "input_params": [],
+      "output_params": [
+        {
+          "id": "bj5yy",
+          "key": "b",
+          "type": "string"
+        }
+      ],
+      "code": "def main():\n    return \"hello word\""
+    }
+  }
+] 

@@ -1,0 +1,44 @@
+MemoryHistoryResp:
+  description: 记忆历史返回结果
+  type: object
+  properties:
+    history:
+      type: array
+      items:
+        $ref: '#/MemoryHistoryRespItem'
+  
+
+
+ 
+MemoryHistoryRespItem:
+  description: 记忆历史返回结果项
+  type: object
+  properties:
+    id: 
+      type: string
+      description: ID,唯一标识
+    memory_id:
+      type: string
+      description: 记忆ID
+    old_memory:
+      type: string
+      description: 记忆内容(旧)
+    new_memory:
+      type: string
+      description: 记忆内容(新)
+    event:
+      type: string
+      description: 事件(ADD,DELETE,UPDATE)
+    created_at:
+      type: string
+      description: 记忆创建时间
+    updated_at:
+      type: string
+      description: 记忆更新时间
+    is_deleted:
+      type: boolean
+      description: 删除状态
+  required:
+    - id
+    - memory_id
+    

@@ -1,0 +1,20 @@
+env
+.env
+.venv
+venv
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+*.log
+.vscode
+.idea
+from_intranet/
+.claude/
+
+go.work
+go.work.sum
+
+# Test result output (per TESTING spec)
+test-result/

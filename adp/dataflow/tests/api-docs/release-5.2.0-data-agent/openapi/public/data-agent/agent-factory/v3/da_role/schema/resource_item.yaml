@@ -1,0 +1,21 @@
+role_resource_item:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: 资源关联ID
+    space_id:
+      type: string
+      description: 空间ID
+    resource_type:
+      type: string
+      description: 资源对象类型，如：agent等
+    resource_id:
+      type: string
+      description: 资源的唯一标识
+    resource_name:
+      type: string
+      description: 资源名称
+    published_agent_info:
+      $ref: '../../components/schema/published_agent_info.yaml#/published_agent_info'
+      

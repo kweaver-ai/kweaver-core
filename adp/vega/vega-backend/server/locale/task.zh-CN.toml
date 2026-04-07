@@ -1,0 +1,19 @@
+[VegaBackend.Task.NotFound]
+Description = "任务不存在"
+Solution = "请检查任务ID"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.CreateFailed]
+Description = "创建构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.GetFailed]
+Description = "获取构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.Exist]
+Description = "构建任务已存在"
+Solution = "请检查资源是否已存在构建任务"
+ErrorLink = "暂无"

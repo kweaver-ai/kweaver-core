@@ -1,0 +1,28 @@
+agent_operation:
+  type: array
+  description: agent 操作
+  items:
+    type: string
+    description: |
+      - 操作类型
+        - publish: 发布
+        - delete: 删除
+        - edit: 更新
+        - publish_to_be_skill_agent: 发布为技能Agent
+        - publish_to_be_api_agent: 发布为API Agent
+        - publish_to_be_web_sdk_agent: 发布为Web SDK Agent
+        - publish_to_be_data_flow_agent: 发布为数据流Agent
+        - use: 运行(使用)
+    enum: 
+      - publish
+      - delete
+      - edit
+      - publish_to_be_skill_agent
+      - publish_to_be_api_agent
+      - publish_to_be_web_sdk_agent
+      - publish_to_be_data_flow_agent
+      - use
+    example:
+      - publish
+      - delete
+      - edit

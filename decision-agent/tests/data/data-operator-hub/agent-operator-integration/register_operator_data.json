@@ -1,0 +1,347 @@
+[
+    {
+        "title": "注册算子，必填参数data未传，注册失败",
+        "params": {
+            "operator_metadata_type": "openapi",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "extend_info": {},
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，必填参数operator_metadata_type未传，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "extend_info": {},
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，可选参数operator_info未传，注册成功",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "openapi",
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "extend_info": {},
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，可选参数operator_execute_control未传，注册成功",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "openapi",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "extend_info": {},
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，可选参数extend_info未传，注册成功",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "openapi",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，可选参数direct_publish未传，注册成功",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "openapi",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "direct_publish": false,
+            "user_token": "string"
+        }
+    },
+    {
+        "title": "注册算子，可选参数user_token未传，注册成功",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "openapi",
+            "operator_info": {
+                "operator_type": "basic",
+                "execution_mode": "sync",
+                "category": "other_category"
+            },
+            "operator_execute_control": {
+                "timeout": 0,
+                "retry_policy": {
+                    "max_attempts": 3,
+                    "initial_delay": 1000,
+                    "max_delay": 6000,
+                    "backoff_factor": 2,
+                    "retry_conditions": {
+                        "status_code": [500],
+                        "error_codes": ["string"]
+                    }
+                }
+            },
+            "extend_info": {},
+            "direct_publish": false
+        }
+    },
+    {
+        "title": "注册算子，data为整型，注册失败",
+        "params": {
+            "data": 1,
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，data为浮点型，注册失败",
+        "params": {
+            "data": 1.1,
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，data为列表类型，注册失败",
+        "params": {
+            "data": ["data"],
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，data为布尔型，注册失败",
+        "params": {
+            "data": false,
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，data为json类型，注册失败",
+        "params": {
+            "data": {
+                "data": "string"
+            },
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，data为空，注册失败",
+        "params": {
+            "data": "",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，operator_metadata_type为整型，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": 1
+        }
+    },
+    {
+        "title": "注册算子，operator_metadata_type为浮点型，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": 1.11
+        }
+    },
+    {
+        "title": "注册算子，operator_metadata_type为列表类型，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": ["openapi"]
+        }
+    },
+    {
+        "title": "注册算子，operator_metadata_type为布尔型，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": true
+        }
+    },
+    {
+        "title": "注册算子，operator_metadata_type为json类型，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": {
+                "type": "openapi"
+            }
+        }
+    },
+    {
+        "title": "注册算子，data为空，operator_metadata_type为openapi外的其他值，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/template.yaml",
+            "operator_metadata_type": "api"
+        }
+    },
+    {
+        "title": "注册算子，openapi中title不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/title_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中version不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/version_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中servers不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/servers_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中paths不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/paths_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中summary不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/summary_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中responses不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/responses_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中components不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/components_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中Input不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/Input_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中Output不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/Output_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，openapi中Error不存在，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/Error_not_exists.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "openapi中包含的算子个数超过10个，注册算子，注册失败",
+        "params": {
+            "data": "./resource/openapi/compliant/more_operators.json",
+            "operator_metadata_type": "openapi"
+        }
+    },
+    {
+        "title": "注册算子，算子名称包含特殊字符，openapi解析失败，注册失败",
+        "params": {
+            "data": "./resource/openapi/non-compliant/special.yaml",
+            "operator_metadata_type": "openapi"
+        }
+    }
+]

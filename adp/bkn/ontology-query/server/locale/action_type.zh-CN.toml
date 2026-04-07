@@ -1,0 +1,35 @@
+# 行动类
+[OntologyQuery.ActionType.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.InvalidParameter.IncludeTypeInfo]
+Description = "是否包含类信息参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.InvalidParameter.IgnoringStoreCache]
+Description = "是否忽略索引数据的参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.InvalidParameter.DynamicParams]
+Description = "动态参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.ActionTypeNotFound]
+Description = "行动类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionType.InternalError.GetActionTypesByIDFailed]
+Description = "按id获取行动类信息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 

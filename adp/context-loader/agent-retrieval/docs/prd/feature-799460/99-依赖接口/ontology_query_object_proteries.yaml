@@ -1,0 +1,372 @@
+---
+openapi: 3.0.2
+info:
+  title: ontology-query
+  version: 1.0.0
+servers:
+  - url: http://ontology-query-svc:13018
+paths:
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/object-types/{ot_id}/properties:
+    post:
+      summary: get_object_properties_values
+      description: 根据对象唯一标识查询指定对象类实例的属性值，支持普通属性、指标属性和算子属性的查询。对于指标属性可通过dynamic_params设置时间范围、聚合步长等参数。
+      parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: ot_id
+        description: 对象类ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: x-http-method-override
+        description: 重载 post，实际上是 get 方法
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
+      - name: x-user
+        description: 用户id
+        schema:
+          type: string
+        in: header
+        required: true
+      requestBody:
+        description: 属性查询请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyQueryBody'
+            examples:
+              含指标、算子的属性值查询:
+                value:
+                  unique_identities:
+                  - id: 1479
+                    pod_ip: 192.169.37.60
+                  - id: 1480
+                    pod_ip: 192.169.37.72
+                  properties:
+                  - pod_name
+                  - pod_status
+                  - metric_test
+                  - a_action
+                  dynamic_params:
+                    metric_test:
+                      start: 1731460342241
+                      end: 1762996342241
+                      instant: false
+                      step: month
+                    a_action:
+                      Authorization: aasssdffgg
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectPropertiesValuesResponse'
+              examples:
+                请求指标属性和算子属性:
+                  value:
+                    datas:
+                    - id: 1479
+                      pod_status: Succeeded
+                      pod_name: communication-config-679xd
+                      pod_ip: 192.169.37.60
+                      metric_test:
+                        model:
+                          unit_type: numUnit
+                          unit: none
+                        datas:
+                        - labels:
+                            pod_name: ar-k8s-event-executor-6ffcc7884c-9wgsb
+                            pod_node_name: node-111-175
+                            pod_ip: 192.169.37.60
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        - labels:
+                            pod_name: communication-config-679xd
+                            pod_node_name: node-111-175
+                            pod_ip: 192.169.37.60
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        step: month
+                        is_variable: false
+                        is_calendar: false
+                      a_action: {}
+                    - id: 1480
+                      metric_test:
+                        model:
+                          unit_type: numUnit
+                          unit: none
+                        datas:
+                        - labels:
+                            pod_ip: 192.169.37.72
+                            pod_name: content-data-lake-dm-pre-verify-gr2gj
+                            pod_node_name: node-111-175
+                          times:
+                          - 1730390400000
+                          - 1732982400000
+                          - 1735660800000
+                          - 1738339200000
+                          - 1740758400000
+                          - 1743436800000
+                          - 1746028800000
+                          - 1748707200000
+                          - 1751299200000
+                          - 1753977600000
+                          - 1756656000000
+                          - 1759248000000
+                          - 1761926400000
+                          values:
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                          - 1
+                          - null
+                          - null
+                          - null
+                          - null
+                          - null
+                        step: month
+                        is_variable: false
+                        is_calendar: false
+                      pod_name: content-data-lake-dm-pre-verify-gr2gj
+                      pod_ip: 192.169.37.72
+                      pod_status: Succeeded
+                      a_action: {}
+                    overall_ms: 2588
+          description: ok
+components:
+  schemas:
+    Object:
+      description: 对象的json，字段不定，随对象实例动态变化
+      type: object
+    PropertyQueryBody:
+      description: 属性查询请求体
+      required:
+      - properties
+      - unique_identities
+      type: object
+      properties:
+        unique_identities:
+          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+          type: array
+          items:
+            $ref: '#/components/schemas/UniqueIdentity'
+        properties:
+          description: 属性列表
+          type: array
+          items:
+            type: string
+        dynamic_params:
+          description: 各个逻辑属性所需的动态参数。是个map，key为属性名成，value为map，其key为参数名，值为赋予的参数值
+          additionalProperties: {}
+    UniqueIdentity:
+      description: 唯一标识
+      type: object
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: integer
+    ObjectPropertiesValuesResponse:
+      description: 节点（对象类）信息
+      required:
+      - groups
+      - type
+      - datas
+      type: object
+      properties:
+        datas:
+          description: 对象实例数据。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectPropertyValue'
+    ObjectPropertyValue:
+      description: 对象的属性值
+      type: object
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: integer
+        - $ref: '#/components/schemas/MetricPropertyValue'
+        - type: object
+    MetricPropertyValue:
+      description: 指标属性值
+      required:
+      - model
+      - datas
+      type: object
+      properties:
+        model:
+          $ref: '#/components/schemas/MetricModel'
+          description: 指标模型的信息
+        datas:
+          description: 指标数据
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricData'
+    MetricModel:
+      description: 指标模型信息
+      required:
+      - unit_type
+      - unit
+      type: object
+      properties:
+        unit_type:
+          description: 单位类型
+          enum:
+          - numUnit
+          - storeUnit
+          - percent
+          - transmissionRate
+          - timeUnit
+          - currencyUnit
+          - percentageUnit
+          - countUnit
+          - weightUnit
+          - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+          - none
+          - K
+          - Mil
+          - Bil
+          - Tri
+          - bit
+          - Byte
+          - KB
+          - MB
+          - GB
+          - TB
+          - PB
+          - bps
+          - Kbps
+          - Mbps
+          - μs
+          - ms
+          - s
+          - m
+          - h
+          - day
+          - week
+          - month
+          - year
+          - quarter
+          - Fen
+          - Jiao
+          - CNY
+          - 10K_CNY
+          - 1M_CNY
+          - 100M_CNY
+          - US_Cent
+          - USD
+          - EUR_Cent
+          - '%'
+          - ‰
+          - household
+          - transaction
+          - piece
+          - item
+          - times
+          - man_day
+          - family
+          - hand
+          - sheet
+          - packet
+          - ton
+          - kg
+          - rank
+          type: string
+    MetricData:
+      description: 指标模型的指标数据计算结果
+      required:
+      - labels
+      - times
+      - values
+      type: object
+      properties:
+        labels:
+          description: 普通维度 label 的 map，key 为字段名，value 为字段值，键值的类型都是 string
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+        times:
+          description: 时间值数组。为字符串或者数值类型
+          type: array
+          items:
+            type: object
+        values:
+          description: 度量值数组。数值类型
+          type: array
+          items:
+            type: number

@@ -1,0 +1,119 @@
+[
+    {
+        "title": "传参为整型，更新算子状态，更新失败",
+        "params": 1
+    },
+    {
+        "title": "传参为浮点型，更新算子状态，更新失败",
+        "params": 1.1
+    },
+    {
+        "title": "传参为字符型，更新算子状态，更新失败",
+        "params": "1"
+    },
+    {
+        "title": "传参为布尔型，更新算子状态，更新失败",
+        "params": true
+    },
+    {
+        "title": "传参为json类型，更新算子状态，更新失败",
+        "params": {
+            "operator_id": "1",
+            "status": "unpublish"
+        }
+    },
+    {
+        "title": "operator_id为整型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": 1,
+                "status": "unpublish"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为浮点型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": 1.1,
+                "status": "unpublish"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为布尔型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": true,
+                "status": "unpublish"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为列表类型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": ["1"],
+                "status": "unpublish"
+            }
+        ]
+    },
+    {
+        "title": "operator_id为json类型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": {
+                    "id": "1"
+                },
+                "status": "unpublish"
+            }
+        ]
+    },
+    {
+        "title": "status为整型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": "1",
+                "status": 1
+            }
+        ]
+    },
+    {
+        "title": "status为浮点型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": "1",
+                "status": 1.1
+            }
+        ]
+    },
+    {
+        "title": "status为布尔型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": "1",
+                "status": true
+            }
+        ]
+    },
+    {
+        "title": "status为列表类型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": "1",
+                "status": ["unpublish"]
+            }
+        ]
+    },
+    {
+        "title": "status为json类型，更新算子状态，更新失败",
+        "params": [
+            {
+                "operator_id": "1",
+                "status": {
+                    "status": "unpublish"
+                }
+            }
+        ]
+    }
+]

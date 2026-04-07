@@ -1,0 +1,38 @@
+paths:
+# -- agent start --
+  agent:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent/paths.yaml#/paths/~1agent-factory~1v3~1agent'
+  agent_id:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}'
+  agent_by_key:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent/paths.yaml#/paths/~1agent-factory~1v3~1agent~1by-key~1{key}'
+  agent_market_agent_version:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent-factory.yaml#/paths/~1agent-factory~1v3~1agent-market~1agent~1{agent_id}~1version~1{version}'
+
+  agent_batch_fields:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent/paths.yaml#/paths/~1agent-factory~1v3~1agent-fields'
+
+# -- agent end --
+
+# -- agent publish start --
+  agent_publish:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent-factory.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1publish'
+  agent_publish_info:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent-factory.yaml#/paths/~1agent-factory~1v3~1agent~1{agent_id}~1publish-info'
+
+# -- agent publish end --
+
+# -- agent permission start --
+  agent_permission_execute:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent-factory.yaml#/paths/~1agent-factory~1v3~1agent-permission~1execute'
+
+  agent_permission_management_user_status:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/agent-factory.yaml#/paths/~1agent-factory~1v3~1agent-permission~1management~1user-status'
+    
+  # -- agent permission end --
+
+  # -- 已发布 start --
+  published_agent_list_cache_status:
+    $ref: '../../../../../public/data-agent/agent-factory/v3/da_published/paths.yaml#/paths/~1agent-factory~1v3~1published~1agent-list-cache-status'
+    
+  # -- 已发布 end --

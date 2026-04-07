@@ -1,0 +1,12 @@
+role_resource_req:
+  type: object
+  required:
+    - resource_type
+    - resource_id
+  properties:
+    resource_type:
+      type: string
+      description: 资源类型，如：agent
+    resource_id:
+      type: string
+      description: 资源ID

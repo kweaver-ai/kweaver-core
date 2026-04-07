@@ -1,0 +1,424 @@
+components:
+  schemas:
+    AnalyticsQueryResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          description: 请求是否成功
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/AgentMetrics'
+            - $ref: '#/components/schemas/SessionMetrics'
+            - $ref: '#/components/schemas/RunMetrics'
+          description: 根据analysis_level返回对应的数据
+        error:
+          type: string
+          description: 错误信息（如果有）
+    AgentMetrics:
+      type: object
+      required:
+        - agent_config
+        - agent_metrics
+      properties:
+        agent_config:
+          type: object
+          properties:
+            input:
+              type: object
+              properties:
+                fields:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                      desc:
+                        type: string
+                rewrite:
+                  type: object
+                  properties:
+                    enable:
+                      type: boolean
+                    llm_config:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        model_type:
+                          type: string
+                        temperature:
+                          type: number
+                          format: float
+                        top_p:
+                          type: number
+                          format: float
+                        top_k:
+                          type: integer
+                        frequency_penalty:
+                          type: number
+                          format: float
+                        presence_penalty:
+                          type: number
+                          format: float
+                        max_tokens:
+                          type: integer
+                augment:
+                  type: object
+                  properties:
+                    enable:
+                      type: boolean
+                    data_source:
+                      type: object
+                      properties:
+                        kg:
+                          type: array
+                          items:
+                            type: object
+                is_temp_zone_enabled:
+                  type: integer
+                temp_zone_config:
+                  type: object
+            system_prompt:
+              type: string
+              description: 系统提示词
+            dolphin:
+              type: string
+              description: Dolphin模式配置
+            is_dolphin_mode:
+              type: integer
+            pre_dolphin:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  name:
+                    type: string
+                  value:
+                    type: string
+                  enabled:
+                    type: boolean
+                  edited:
+                    type: boolean
+            post_dolphin:
+              type: array
+              items:
+                type: object
+            data_source:
+              type: object
+              properties:
+                kg:
+                  type: array
+                  items:
+                    type: object
+                doc:
+                  type: array
+                  items:
+                    type: object
+                metric:
+                  type: array
+                  items:
+                    type: object
+                kn_entry:
+                  type: array
+                  items:
+                    type: object
+                knowledge_network:
+                  type: array
+                  items:
+                    type: object
+                advanced_config:
+                  type: object
+                  properties:
+                    kg:
+                      type: object
+                    doc:
+                      type: object
+            skills:
+              type: object
+              properties:
+                tools:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      tool_id:
+                        type: string
+                      tool_box_id:
+                        type: string
+                      tool_timeout:
+                        type: integer
+                      tool_input:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            input_name:
+                              type: string
+                            input_type:
+                              type: string
+                            input_desc:
+                              type: string
+                            map_type:
+                              type: string
+                            map_value:
+                              type: string
+                            enable:
+                              type: boolean
+                      intervention:
+                        type: boolean
+                      result_process_strategies:
+                        type: object
+                agents:
+                  type: array
+                  items:
+                    type: object
+                mcps:
+                  type: array
+                  items:
+                    type: object
+            llms:
+              type: array
+              items:
+                type: object
+                properties:
+                  is_default:
+                    type: boolean
+                  llm_config:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      model_type:
+                        type: string
+                      temperature:
+                        type: number
+                        format: float
+                      top_p:
+                        type: number
+                        format: float
+                      top_k:
+                        type: integer
+                      frequency_penalty:
+                        type: number
+                        format: float
+                      presence_penalty:
+                        type: number
+                        format: float
+                      max_tokens:
+                        type: integer
+            is_data_flow_set_enabled:
+              type: integer
+            opening_remark_config:
+              type: object
+            preset_questions:
+              type: array
+              items:
+                type: object
+                properties:
+                  question:
+                    type: string
+            output:
+              type: object
+              properties:
+                variables:
+                  type: object
+                  properties:
+                    answer_var:
+                      type: string
+                    doc_retrieval_var:
+                      type: string
+                    graph_retrieval_var:
+                      type: string
+                    related_questions_var:
+                      type: string
+                    other_vars:
+                      type: object
+                    middle_output_vars:
+                      type: object
+                default_format:
+                  type: string
+            built_in_can_edit_fields:
+              type: object
+            memory:
+              type: object
+              properties:
+                is_enabled:
+                  type: boolean
+            related_question:
+              type: object
+              properties:
+                is_enabled:
+                  type: boolean
+            plan_mode:
+              type: object
+            metadata:
+              type: object
+              properties:
+                config_version:
+                  type: string
+          description: Agent配置信息
+        agent_metrics:
+          type: object
+          properties:
+            total_requests:
+              type: integer
+              description: 总请求数
+            total_sessions:
+              type: integer
+              description: 总会话数
+            avg_session_rounds:
+              type: integer
+              description: 平均会话轮次
+            run_success_rate:
+              type: number
+              format: float
+              description: Run成功率
+            avg_execute_duration:
+              type: integer
+              description: 平均执行时长
+            avg_ttft_duration:
+              type: integer
+              description: 平均首token响应时间
+            tool_success_rate:
+              type: number
+              format: float
+              description: 工具调用成功率
+          description: Agent级指标数据
+        session_list:
+          type: array
+          items:
+            type: object
+            properties:
+              session_id:
+                type: string
+              session_start_time:
+                type: string
+                format: date-time
+              session_end_time:
+                type: string
+                format: date-time
+              session_duration:
+                type: integer
+                format: int64
+          description: 会话列表
+        trend_data:
+          type: object
+          properties:
+            last_7_days:
+              type: array
+              items:
+                type: object
+              description: 过去7天趋势数据
+            last_24_hours:
+              type: array
+              items:
+                type: object
+              description: 过去24小时趋势数据
+          description: 趋势数据
+    SessionMetrics:
+      type: object
+      required:
+        - session_metrics
+        - agent_config
+        - run_list
+      properties:
+        session_metrics:
+          type: object
+          properties:
+            session_run_count:
+              type: integer
+              description: Session运行次数
+            session_duration:
+              type: integer
+              description: Session时长，单位毫秒
+            avg_run_execute_duration:
+              type: integer
+              description: 平均运行执行耗时（毫秒）
+            avg_run_ttft_duration:
+              type: integer
+              description: 平均运行首token响应耗时（毫秒）
+            run_error_count:
+              type: integer
+              description: 运行错误次数
+            tool_fail_count:
+              type: integer
+              description: 工具失败次数
+          description: 会话指标数据
+        agent_config:
+          type: object
+          description: Agent配置信息（结构同AgentMetrics中的agent_config）
+        run_list:
+          type: array
+          items:
+            type: object
+            properties:
+              run_id:
+                type: string
+                description: Run ID
+              response_time:
+                type: number
+                format: float
+                description: 响应时间（毫秒）
+              status:
+                type: string
+                description: 状态
+          description: Run列表信息
+    RunMetrics:
+      type: object
+      required:
+        - run_id
+        - input_message
+        - progress
+      properties:
+        run_id:
+          type: string
+          description: Run ID
+        input_message:
+          type: string
+          description: 输入query
+        start_time:
+          type: integer
+          format: int64
+          description: 开始时间，毫秒时间戳
+        end_time:
+          type: integer
+          format: int64
+          description: 结束时间
+        ttft:
+          type: integer
+          description: 首token响应时间，单位ms
+        total_time:
+          type: integer
+          format: int64
+          description: 总时间，单位ms
+        total_tokens:
+          type: integer
+          format: int64
+          description: 总token数
+        tool_call_count:
+          type: integer
+          description: 工具调用次数
+        tool_call_failed_count:
+          type: integer
+          description: 工具调用失败次数
+        progress:
+          type: array
+          items:
+            $ref: '../../../../../../public/data-agent/agent-app/v1/components/schema/progress.yaml#/Progress'
+          description: Progress链路信息
+        status:
+          type: string
+          description: 运行状态 Success / Failed

@@ -1,0 +1,87 @@
+# 统一副本数配置（因为已合并为一个多容器 Pod）
+replicaCount: 1
+namespace: kweaver
+enableDualStack: false
+type: ClusterIP
+
+image:
+  registry: acr.aishu.cn
+  gotenberg:
+    repository: dip/gotenberg
+    tag: "7"
+  tika:
+    repository: dip/tika
+    tag: "3.2.3"
+  pullPolicy: IfNotPresent
+
+# Gotenberg 配置
+gotenberg:
+  enabled: true
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "4000m"
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Tika 配置
+tika:
+  enabled: true
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+  env:
+    - name: TIKA_CONFIG
+      value: "/config/tika-config.xml"
+
+  service:
+    type: ClusterIP
+    port: 9998
+
+  livenessProbe:
+    httpGet:
+      path: /version
+      port: 9998
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /version
+      port: 9998
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3

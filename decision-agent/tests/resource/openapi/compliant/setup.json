@@ -1,0 +1,1332 @@
+{
+    "info": {
+        "description": "DocPoliby Public RESTful API",
+        "title": "DocPoliby Public RESTful API",
+        "version": "1.0.0"
+    },
+    "openapi": "3.1.0",
+    "servers": [
+        {
+            "url": "https://127.0.0.1:443/api",
+            "description": "host: AnyShare服务器IP, port: 默认端口443"
+        }
+    ],
+    "tags": [
+        {
+            "name": "文档库索引优先级策略"
+        },
+        {
+            "name": "审核开关管理"
+        },
+        {
+            "name": "加密策略管理"
+        },
+        {
+            "name": "文档库杀毒策略"
+        }
+    ],
+    "x-tagGroups": [
+        {
+            "name": "文档策略服务",
+            "tags": [
+                "文档库索引优先级策略",
+                "审核开关管理",
+                "加密策略管理",
+                "文档库杀毒策略"
+            ]
+        }
+    ],
+    "paths": {
+        "/doc-policy/v1/doc-lib-priority-policy": {
+            "get": {
+                "description": "文档库索引优先级策略列表查询",
+                "parameters": [
+                    {
+                        "description": "搜索关键词，文档库名称(支持模糊搜索)",
+                        "in": "query",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "文档库类型(文档库类型筛选)(可多个)",
+                        "in": "query",
+                        "name": "doc_lib_type",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "user_doc_lib",
+                                "department_doc_lib",
+                                "custom_doc_lib",
+                                "knowledge_doc_lib"
+                            ]
+                        }
+                    },
+                    {
+                        "description": "prioirty(优先级筛选)(可多个)",
+                        "in": "query",
+                        "name": "priority",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "lower",
+                                "low",
+                                "medium",
+                                "high",
+                                "higher"
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit300"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocLibPriorityPolicyGetResponseBody"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Common401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Common403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "文档库索引优先级策略列表查询",
+                "tags": [
+                    "文档库索引优先级策略"
+                ]
+            },
+            "post": {
+                "requestBody": {
+                    "description": "文档库索引优先级策略列表(1 <= length <= 300)",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DocLibPriorityPolicyPostRequestBody"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "207": {
+                        "description": "请求成功",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocLibPriorityPolicy207"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Common401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "新增文档库索引优先级策略",
+                "description": "test",
+                "tags": [
+                    "文档库索引优先级策略"
+                ]
+            }
+        },
+        "/doc-policy/v1/doc-lib-priority-policy/{doc_id}": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "文档库ID(user_doc_lib, department_doc_lib, custom_doc_lib, knowledge_doc_lib, r'^gns://[A-Z0-9]{32}$')",
+                        "in": "path",
+                        "name": "doc_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DocLibPriorityPolicyPutRequestBody"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Common401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "修改文档库索引优先级策略",
+                "description": "test",
+                "tags": [
+                    "文档库索引优先级策略"
+                ]
+            },
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "文档库ID",
+                        "in": "path",
+                        "name": "doc_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "删除成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Common401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "删除文档库索引优先级策略",
+                "description": "test",
+                "tags": [
+                    "文档库索引优先级策略"
+                ]
+            }
+        },
+        "/doc-policy/v1/doc-lib-priority": {
+            "get": {
+                "description": "获取文档库优先级",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit300"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocLibPriorityGetResponseBody"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Common401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/DocLibPriorityPolicy403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "获取文档库优先级",
+                "tags": [
+                    "文档库索引优先级策略"
+                ]
+            }
+        },
+        "/approval/user/status": {
+            "servers": [
+                {
+                    "url": "https://127.0.0.1/api/doc-policy/v1"
+                }
+            ],
+            "get": {
+                "description": "获取审核开关状态",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PolicyStatus"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/RespCommon401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/RespDocPolicy403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "获取实名审核开关状态",
+                "tags": [
+                    "审核开关管理"
+                ]
+            },
+            "put": {
+                "description": "设置实名审核开关状态",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PolicyStatus"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/RespCommon401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/RespDocPolicy403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "设置实名审核开关状态",
+                "tags": [
+                    "审核开关管理"
+                ]
+            }
+        },
+        "/approval/anyone/status": {
+            "servers": [
+                {
+                    "url": "https://127.0.0.1/api/doc-policy/v1"
+                }
+            ],
+            "get": {
+                "description": "获取匿名审核开关状态",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PolicyStatus"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/RespCommon401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/RespDocPolicy403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "获取匿名审核开关状态",
+                "tags": [
+                    "审核开关管理"
+                ]
+            },
+            "put": {
+                "description": "设置匿名审核开关状态",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PolicyStatus"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/RespStd400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/RespCommon401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/RespDocPolicy403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "设置匿名审核开关状态",
+                "tags": [
+                    "审核开关管理"
+                ]
+            }
+        },
+        "/antivirus-policy/allowlist/{doc_lib_id}": {
+            "servers": [
+                {
+                    "url": "https://127.0.0.1/api/doc-policy/v1"
+                }
+            ],
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "文档库ID",
+                        "in": "path",
+                        "name": "doc_lib_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "删除成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/RespCommon401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/RespDocPolicy403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/RespDocPolicy404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/RespStd500"
+                    }
+                },
+                "summary": "删除杀毒白名单",
+                "description": "test",
+                "tags": [
+                    "文档库杀毒策略"
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "OAuth2.0": {
+                "scheme": "bearer",
+                "type": "http"
+            }
+        },
+        "parameters": {
+            "offset": {
+                "description": "获取数据起始下标，`0`开始，默认`0`,,如果`offset`小于`0`，则抛出异常。,,如果`offset`大于数据总数，则返回空列表。",
+                "in": "query",
+                "name": "offset",
+                "schema": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            },
+            "limit300": {
+                "description": "获取数据量，默认`20`,,limit合法区间为`[1, 300]`，否则抛出异常。,",
+                "in": "query",
+                "name": "limit",
+                "schema": {
+                    "maximum": 300,
+                    "minimum": 1,
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas": {
+            "DocLibPriorityPolicyGetResponseBody": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "data": {
+                                "items": {
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "doc_id": {
+                                                    "description": "文档库ID",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "user_doc_lib",
+                                                        "department_doc_lib",
+                                                        "custom_doc_lib",
+                                                        "knowledge_doc_lib",
+                                                        "r'^gns://[A-Z0-9]{32}$'"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "name": {
+                                                    "description": "文档库名称",
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "policy_type": {
+                                                    "description": "策略类型",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "all",
+                                                        "specified"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "doc_lib_type": {
+                                                    "description": "文档库类型",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "user_doc_lib",
+                                                        "department_doc_lib",
+                                                        "custom_doc_lib",
+                                                        "knowledge_doc_lib"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "priority": {
+                                                    "description": "文档库优先级",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "lower",
+                                                        "low",
+                                                        "medium",
+                                                        "high",
+                                                        "higher"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "create_time": {
+                                                    "description": "创建时间",
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "update_time": {
+                                                    "description": "修改时间",
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "type": "object",
+                                    "required": [
+                                        "doc_id",
+                                        "policy_type",
+                                        "name",
+                                        "doc_lib_type",
+                                        "priority",
+                                        "create_time",
+                                        "update_time"
+                                    ]
+                                },
+                                "type": "array"
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "count": {
+                                "description": "策略总数",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "data",
+                            "count"
+                        ]
+                    }
+                ]
+            },
+            "Error": {
+                "description": "错误",
+                "properties": {
+                    "cause": {
+                        "description": "供开发者查看的错误信息",
+                        "type": "string"
+                    },
+                    "code": {
+                        "description": "供开发者查看的错误信息",
+                        "type": "integer"
+                    },
+                    "detail": {
+                        "description": "错误辅助信息",
+                        "type": "object"
+                    },
+                    "message": {
+                        "description": "可以直接展示给终端用户的错误信息",
+                        "example": "false",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "message",
+                    "cause"
+                ],
+                "type": "object"
+            },
+            "DocLibPriorityPolicyPostRequestBody": {
+                "items": {
+                    "allOf": [
+                        {
+                            "properties": {
+                                "doc_id": {
+                                    "description": "文档库ID",
+                                    "type": "string",
+                                    "enum": [
+                                        "r'^gns://[A-Z0-9]{32}$'"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "doc_lib_type": {
+                                    "description": "文档库类型",
+                                    "type": "string",
+                                    "enum": [
+                                        "user_doc_lib",
+                                        "department_doc_lib",
+                                        "custom_doc_lib",
+                                        "knowledge_doc_lib"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "priority": {
+                                    "description": "文档库优先级",
+                                    "type": "string",
+                                    "enum": [
+                                        "lower",
+                                        "low",
+                                        "medium",
+                                        "high",
+                                        "higher"
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "type": "object",
+                    "required": [
+                        "doc_id",
+                        "doc_lib_type",
+                        "priority"
+                    ]
+                },
+                "type": "array"
+            },
+            "DocLibPriorityPolicy207": {
+                "description": "批量创建文档库索引优先级策略",
+                "properties": {
+                    "total": {
+                        "description": "创建总数",
+                        "example": 300,
+                        "type": "integer"
+                    },
+                    "success": {
+                        "description": "创建成功条数",
+                        "properties": {
+                            "count": {
+                                "description": "创建成功条数",
+                                "example": 100,
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "count"
+                        ],
+                        "type": "object"
+                    },
+                    "fail": {
+                        "description": "创建失败明细",
+                        "properties": {
+                            "count": {
+                                "description": "创建失败条数",
+                                "example": 100,
+                                "type": "integer"
+                            },
+                            "detail": {
+                                "description": "创建失败详情",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "doc_id": {
+                                            "description": "文档库id",
+                                            "example": "gns://384631EEE46C4950962A45355F7F1FBF",
+                                            "type": "string"
+                                        },
+                                        "errcode": {
+                                            "description": "创建失败错误码",
+                                            "example": "400014234",
+                                            "type": "string"
+                                        },
+                                        "message": {
+                                            "description": "简单信息",
+                                            "example": "xxxxxxxxxxxxxxxxxxxxxxxx",
+                                            "type": "string"
+                                        },
+                                        "cause": {
+                                            "description": "详细信息",
+                                            "example": "xxxxxxxxxxxxxxxxxxxxxxx",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "doc_id",
+                                        "errcode",
+                                        "message",
+                                        "cause"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "detail"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "total",
+                    "success",
+                    "fail"
+                ],
+                "type": "object"
+            },
+            "DocLibPriorityPolicyPutRequestBody": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "priority": {
+                                "description": "文档库优先级",
+                                "type": "string",
+                                "enum": [
+                                    "lower",
+                                    "low",
+                                    "medium",
+                                    "high",
+                                    "higher"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "type": "object",
+                "required": [
+                    "priority"
+                ],
+                "example": {
+                    "priority": "lower"
+                }
+            },
+            "DocLibPriorityGetResponseBody": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "data": {
+                                "items": {
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "doc_id": {
+                                                    "description": "文档库ID",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "r'^gns://[A-Z0-9]{32}$'(正则)",
+                                                        "user_doc_lib",
+                                                        "custom_doc_lib",
+                                                        "department_doc_lib",
+                                                        "knowledge_doc_lib"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "policy_type": {
+                                                    "description": "策略类型",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "all",
+                                                        "specified"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "priority": {
+                                                    "description": "文档库优先级",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "lower",
+                                                        "low",
+                                                        "medium",
+                                                        "high",
+                                                        "higher"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "type": "object",
+                                    "required": [
+                                        "doc_id",
+                                        "policy_type",
+                                        "priority"
+                                    ]
+                                },
+                                "type": "array"
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "count": {
+                                "description": "策略总数",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "data",
+                            "count"
+                        ]
+                    }
+                ]
+            },
+            "PolicyStatus": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "description": "实名审核开关状态,true开启,false关闭",
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "OnlineEditingEncryption": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "加密策略选项配置,origin与原文件格式保持一致,always_encrypted加密保存,always_decrypted明文保存",
+                        "enum": [
+                            "origin",
+                            "always_encrypted",
+                            "always_decrypted"
+                        ]
+                    }
+                },
+                "required": [
+                    "status"
+                ],
+                "example": {
+                    "status": "always_encrypted"
+                }
+            },
+            "AntivirusPolicyAllowListGetRespBody": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "data": {
+                                "items": {
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "doc_lib_id": {
+                                                    "description": "文档库ID",
+                                                    "type": "string",
+                                                    "pattern": "gns://user_doc_libdepartment_doc_libcustom_doc_libknowledge_doc_lib"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "doc_lib_type": {
+                                                    "description": "文档库类型",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "user_doc_lib",
+                                                        "department_doc_lib",
+                                                        "custom_doc_lib",
+                                                        "knowledge_doc_lib"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "name": {
+                                                    "description": "文档库名称",
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "type": "object",
+                                    "required": [
+                                        "doc_lib_id",
+                                        "doc_lib_type",
+                                        "name"
+                                    ]
+                                },
+                                "type": "array"
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "count": {
+                                "description": "策略总数",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "data",
+                            "count"
+                        ]
+                    }
+                ]
+            },
+            "AntivirusPolicyAllowListPostRequestBody": {
+                "items": {
+                    "allOf": [
+                        {
+                            "properties": {
+                                "doc_lib_id": {
+                                    "description": "文档库ID",
+                                    "type": "string",
+                                    "pattern": "gns://user_doc_libdepartment_doc_libcustom_doc_libknowledge_doc_lib"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "doc_lib_type": {
+                                    "description": "文档库类型",
+                                    "type": "string",
+                                    "enum": [
+                                        "user_doc_lib",
+                                        "department_doc_lib",
+                                        "custom_doc_lib",
+                                        "knowledge_doc_lib"
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "type": "object",
+                    "required": [
+                        "doc_lib_id",
+                        "doc_lib_type"
+                    ]
+                },
+                "type": "array"
+            },
+            "AntivirusPolicy207": {
+                "description": "批量添加杀毒白名单",
+                "properties": {
+                    "total": {
+                        "description": "创建总数",
+                        "example": 300,
+                        "type": "integer"
+                    },
+                    "success": {
+                        "description": "创建成功条数",
+                        "properties": {
+                            "count": {
+                                "description": "创建成功条数",
+                                "example": 100,
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "count"
+                        ],
+                        "type": "object"
+                    },
+                    "fail": {
+                        "description": "创建失败明细",
+                        "properties": {
+                            "count": {
+                                "description": "创建失败条数",
+                                "example": 100,
+                                "type": "integer"
+                            },
+                            "detail": {
+                                "description": "创建失败详情",
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "doc_lib_id": {
+                                            "description": "文档库id",
+                                            "example": "gns://384631EEE46C4950962A45355F7F1FBF",
+                                            "type": "string"
+                                        },
+                                        "errcode": {
+                                            "description": "创建失败错误码",
+                                            "example": "400014234",
+                                            "type": "string"
+                                        },
+                                        "message": {
+                                            "description": "简单信息",
+                                            "example": "xxxxxxxxxxxxxxxxxxxxxxxx",
+                                            "type": "string"
+                                        },
+                                        "cause": {
+                                            "description": "详细信息",
+                                            "example": "xxxxxxxxxxxxxxxxxxxxxxx",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "doc_lib_id",
+                                        "errcode",
+                                        "message",
+                                        "cause"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "detail"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "total",
+                    "success",
+                    "fail"
+                ],
+                "type": "object"
+            }
+        },
+        "examples": {
+            "Err400000000": {
+                "description": "以下原因均会导致该错误,- 未提供必须参数,- 参数类型错误,- 参数结构不正确,- 枚举不存在,- 参数值不符合要求,`detail`中会说明不正确的参数名称,",
+                "summary": "参数错误",
+                "value": {
+                    "code": 400000000,
+                    "detail": {
+                        "invalid_params": [
+                            "param1",
+                            "param2"
+                        ]
+                    },
+                    "message": "Invalid request.",
+                    "cause": ""
+                }
+            },
+            "Err401000000": {
+                "description": "- 未授权,`cause`中会详细说明,",
+                "summary": "找不到资源。",
+                "value": {
+                    "cause": "reason.",
+                    "code": 401000000,
+                    "message": "Not authorized."
+                }
+            },
+            "Err403000000": {
+                "description": "- 没有权限,`cause`中会详细说明,",
+                "summary": "Err403000000",
+                "value": {
+                    "cause": "reason.",
+                    "code": 403000000,
+                    "message": "No permission to do this service."
+                }
+            },
+            "Err409034000": {
+                "description": "以下原因均会导致该错误,- 修改、添加的属性已存在,`detail`中会说明冲突的参数名称,",
+                "summary": "资源冲突。",
+                "value": {
+                    "code": 409034000,
+                    "detail": {
+                        "conflict_params": [
+                            "param1",
+                            "param2"
+                        ]
+                    },
+                    "message": "Resource conflicts.",
+                    "cause": ""
+                }
+            },
+            "Err404034000": {
+                "description": "以下原因均会导致该错误,- `uri`找不到,- `uri`中指定的内容和`body`无法匹配,- 提交的参数中有不存在的内容,`detail`中会说明不存在的参数名称,",
+                "summary": "找不到资源。",
+                "value": {
+                    "code": 404034000,
+                    "detail": {
+                        "notfound_params": [
+                            "param1",
+                            "param2"
+                        ]
+                    },
+                    "message": "Resource not found.",
+                    "cause": ""
+                }
+            }
+        },
+        "responses": {
+            "RespStd400": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err400000000": {
+                                "$ref": "#/components/examples/Err400000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "非法请求"
+            },
+            "Common401": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err401000000": {
+                                "$ref": "#/components/examples/Err401000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "未授权"
+            },
+            "Common403": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err403000000": {
+                                "$ref": "#/components/examples/Err403000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "未授权"
+            },
+            "RespStd500": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Code500000000": {
+                                "description": "可能是服务器代码问题或者环境问题导致的，,可以联系开发团队了解具体原因。,",
+                                "summary": "服务器错误",
+                                "value": {
+                                    "cause": "cause",
+                                    "code": 500000000,
+                                    "detail": {
+                                        "xx": "xx"
+                                    },
+                                    "message": "xxxxx"
+                                }
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "服务器错误"
+            },
+            "DocLibPriorityPolicy403": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err403000000": {
+                                "$ref": "#/components/examples/Err403000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "没有权限"
+            },
+            "DocLibPriorityPolicy409": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err404034000": {
+                                "$ref": "#/components/examples/Err409034000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "资源冲突"
+            },
+            "DocLibPriorityPolicy404": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err404034000": {
+                                "$ref": "#/components/examples/Err404034000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "找不到资源"
+            },
+            "RespCommon401": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err401013000": {
+                                "$ref": "#/components/examples/Err401000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "未授权"
+            },
+            "RespDocPolicy403": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err403000000": {
+                                "$ref": "#/components/examples/Err403000000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "没有权限"
+            },
+            "RespDocPolicy409": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err409034000": {
+                                "$ref": "#/components/examples/Err409034000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "资源冲突"
+            },
+            "RespDocPolicy404": {
+                "content": {
+                    "application/json": {
+                        "examples": {
+                            "Err404034000": {
+                                "$ref": "#/components/examples/Err404034000"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "找不到资源"
+            }
+        }
+    }
+}

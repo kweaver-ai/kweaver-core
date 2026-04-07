@@ -1,0 +1,55 @@
+# 行动计划
+[BknBackend.ActionSchedule.InvalidParameter]
+Description = "参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.InvalidCronExpression]
+Description = "Cron表达式无效"
+Solution = "请检查Cron表达式格式是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.InvalidStatus]
+Description = "状态值无效"
+Solution = "请检查状态值是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.ActionTypeNotFound]
+Description = "行动类不存在"
+Solution = "请检查行动类ID是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.NotFound]
+Description = "行动计划不存在"
+Solution = "请检查行动计划ID是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.CreateFailed]
+Description = "创建行动计划失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.UpdateFailed]
+Description = "更新行动计划失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.DeleteFailed]
+Description = "删除行动计划失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.GetFailed]
+Description = "获取行动计划失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionSchedule.GetActionTypeFailed]
+Description = "获取行动类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

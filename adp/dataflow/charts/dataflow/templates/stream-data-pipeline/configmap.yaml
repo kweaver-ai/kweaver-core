@@ -1,0 +1,45 @@
+{{- if .Values.components.streamDataPipeline.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.streamDataPipeline.moduleName }}-cm
+  namespace: {{ .Values.namespace }}
+data:
+  pipeline-config.yaml: |
+    server:
+      {{- toYaml .Values.streamDataPipeline.config.server | nindent 6 }}
+    log:
+      {{- toYaml .Values.streamDataPipeline.config.log | nindent 6 }}
+    kafka:
+      {{- toYaml .Values.streamDataPipeline.config.kafka | nindent 6 }}
+    depServices:
+      authorization-private:
+        host: {{ .Values.depServices.authorization.privateHost }}
+        port: {{ .Values.depServices.authorization.privatePort }}
+        protocol: http
+      flow-stream-data-pipeline:
+        host: {{ index .Values "depServices" "flow-stream-data-pipeline" "host" }}
+        port: {{ index .Values "depServices" "flow-stream-data-pipeline" "port" }}
+        protocol: {{ index .Values "depServices" "flow-stream-data-pipeline" "protocol" }}
+      hydra-admin:
+        host: {{ .Values.depServices.hydra.administrativeHost }}
+        port: {{ .Values.depServices.hydra.administrativePort }}
+        protocol: {{ .Values.depServices.hydra.administrativeProtocol }}
+      index-base:
+        host: {{ index .Values "depServices" "index-base" "host" }}
+        port: {{ index .Values "depServices" "index-base" "port" }}
+        protocol: {{ index .Values "depServices" "index-base" "protocol" }}
+      mq:
+        {{- toYaml .Values.depServices.mq | nindent 8 }}
+      opensearch:
+        {{- toYaml .Values.depServices.opensearch | nindent 8 }}
+      rds:
+        {{- toYaml .Values.depServices.rds | nindent 8 }}
+
+  dm_svc.conf: |
+    TIME_ZON=(480)
+    LANGUAGE=(cn)
+    DM=({{ .Values.depServices.rds.host }})
+    [DM]
+    LOGIN_MODE=(1)
+{{- end }}

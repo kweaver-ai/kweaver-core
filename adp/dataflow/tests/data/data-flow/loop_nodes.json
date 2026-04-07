@@ -1,0 +1,39 @@
+[
+    {
+        "id": "1",
+        "operator": "@trigger/form",
+        "parameters": {
+            "fields": [
+                {
+                    "key": "n",
+                    "name": "n",
+                    "type": "number",
+                    "required": true
+                }
+            ]
+        }
+    },
+    {
+        "id": "2",
+        "operator": "@control/flow/loop",
+        "parameters": {
+            "mode": "limit",
+            "limit": "{{__1.fields.n}}",
+            "outputs": [
+                {
+                    "key": "numbers",
+                    "value": "{{__2.index}}"
+                }
+            ]
+        },
+        "steps": [
+        ]
+    },
+    {
+        "id": "100",
+        "operator": "@internal/return",
+        "parameters": {
+            "numbers": "{{__2.outputs.numbers}}"
+        }
+    }
+]

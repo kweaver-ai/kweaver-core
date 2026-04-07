@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01KCR68HSD2FBQ0BBXPS683M45",
+      "name": "ttft_plan_agent_skill_chat_dolphin_param",
+      "key": "01KCNJP50AN0HCM54W73C1AAQQ",
+      "profile": "验证主控agent调用技能agent时，query传值是数字的情况下传值正确",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1766043436845,
+      "updated_at": 1766043640217,
+      "created_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "updated_by": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"调用技能：Plan_Agent 进行回答\",\"dolphin\":\"@Plan_Agent(query=$query)-\\u003eabs\\r\\n/prompt/输出以下内容：\\r\\n$abs[\\\"answer\\\"]\\r\\n不要输出其他内容 -\\u003e answer\",\"is_dolphin_mode\":1,\"pre_dolphin\":[{\"key\":\"context_organize\",\"name\":\"上下文组织模块\",\"value\":\"\\n{\\\"query\\\": \\\"用户的问题为: \\\"+$query} -\\u003e context\\n\",\"enabled\":true,\"edited\":false}],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[],\"agents\":[{\"agent_key\":\"Plan_Agent\",\"agent_version\":\"v14\",\"agent_input\":[{\"enable\":true,\"map_type\":\"auto\",\"input_name\":\"query\",\"input_type\":\"string\",\"input_desc\":\"query变量\"}],\"intervention\":false,\"data_source_config\":{\"type\":\"self_configured\",\"specific_inherit\":\"\"},\"llm_config\":{\"type\":\"self_configured\"},\"agent_timeout\":1800,\"current_pms_check_status\":\"success\",\"current_is_exists_and_published\":true}],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1988514015063707648\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"answer\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":false},\"related_question\":{\"is_enabled\":false},\"plan_mode\":null,\"metadata\":{\"config_tpl_version\":\"v1\",\"config_last_set_timestamp\":1766043640216669340}}",
+      "created_type": "import",
+      "create_from": "dip"
+    }
+  ]
+}

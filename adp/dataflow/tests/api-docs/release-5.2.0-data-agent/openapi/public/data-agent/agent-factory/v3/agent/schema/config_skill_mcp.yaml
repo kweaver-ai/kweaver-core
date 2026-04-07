@@ -1,0 +1,13 @@
+mcp:
+  type: object
+  properties:
+    mcp_server_id:
+      type: string
+      description: mcp server id
+  required:
+    - mcp_server_id
+  description: MCP 类型技能 可选
+mcps:
+  type: array
+  items:
+    $ref: '#/mcp'

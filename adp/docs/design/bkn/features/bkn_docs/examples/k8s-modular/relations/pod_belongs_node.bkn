@@ -1,0 +1,31 @@
+---
+type: relation
+id: pod_belongs_node
+name: Pod属于节点
+version: 1.0.0
+network: k8s-modular
+tags: [拓扑架构]
+---
+
+# Pod属于节点
+
+Pod 与其所在节点之间的归属关系。
+
+## 关联定义
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| pod | node | direct |
+
+## 映射规则
+
+| 起点属性 (Pod) | 终点属性 (Node) |
+|----------------|-----------------|
+| pod_node_name | node_name |
+
+## 业务语义
+
+一个 Pod 运行在某个 Node 上，通过 Kubernetes 调度器分配。
+
+- **基数**: N:1 (多个 Pod 属于一个 Node)
+- **生命周期**: Pod 重新调度时关系变化

@@ -1,0 +1,363 @@
+---
+openapi: 3.0.2
+info:
+  title: ontology-query
+  version: 1.0.0
+servers:
+  - url: http://ontology-query-svc:13018
+paths:
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/action-types/{at_id}/:
+    summary: 行动查询
+    description: 获取相关行动的具体行动详情，可支持获取多个对象的行动详情
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UniqueIdentities'
+            examples:
+              行动查询-request:
+                value:
+                  unique_identities:
+                  - c_commentid: "32485"
+                  - c_commentid: "32696"
+        required: true
+      parameters:
+      - name: kn_id
+        description: 业务知识网络id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: at_id
+        description: 行动类id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: include_type_info
+        description: "是否包含行动类信息, 默认false，不包含"
+        schema:
+          type: boolean
+        in: query
+      - name: x-http-method-override
+        description: 重载POST
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actions'
+              examples:
+                行动查询-response:
+                  value:
+                    action_type:
+                      id: comment_update
+                      name: comment_update
+                      action_type: modify
+                      object_type_id: comment
+                      condition:
+                        object_type_id: comment
+                        field: c_browserused
+                        operation: ==
+                        value_from: const
+                        value: Firefox
+                      action_source:
+                        type: tool
+                        box_id: 939bb1db-9239-43f5-8100-ba03eed683db
+                        tool_id: 13d6a740-2d04-4834-8b09-ed047cd2391f
+                      parameters:
+                      - name: props.data_source
+                        type: object
+                        source: Body
+                        value_from: property
+                        value: c_commentid
+                      - name: props.headers
+                        type: object
+                        source: Body
+                        value_from: input
+                      - name: query
+                        type: string
+                        source: Body
+                        value_from: const
+                        value: asasddd
+                      schedule:
+                        type: ""
+                        expression: ""
+                    action_source:
+                      type: tool
+                      box_id: 939bb1db-9239-43f5-8100-ba03eed683db
+                      tool_id: 13d6a740-2d04-4834-8b09-ed047cd2391f
+                    actions:
+                    - parameters:
+                        props:
+                          data_source: 32485
+                        query: asasddd
+                      dynamic_params:
+                        props: {}
+                    total_count: 1
+                    overall_ms: 1163
+          description: ok
+      summary: 行动查询
+    parameters:
+    - name: kn_id
+      description: 业务知识网络id
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: at_id
+      description: 行动类id
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: include_type_info
+      description: "是否包含行动类信息, 默认false，不包含"
+      schema:
+        type: boolean
+      in: query
+    - name: x-http-method-override
+      description: 重载POST
+      schema:
+        enum:
+        - GET
+        type: string
+      in: header
+      required: true
+components:
+  schemas:
+    UniqueIdentities:
+      description: 对象唯一标识
+      required:
+      - unique_identities
+      type: object
+      properties:
+        unique_identities:
+          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+          type: array
+          items:
+            $ref: '#/components/schemas/UniqueIdentity'
+    UniqueIdentity:
+      description: 唯一标识
+      type: object
+      additionalProperties:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: integer
+    Actions:
+      description: 行动查询返回结果
+      required:
+      - action_source
+      - actions
+      type: object
+      properties:
+        action_type:
+          $ref: '#/components/schemas/ActionType'
+          description: 行动类信息
+        action_source:
+          $ref: '#/components/schemas/ToolSource'
+          description: 行动资源
+        actions:
+          description: 各对象的实例化后的行动参数，顺序与请求的对象唯一标识数组一致
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionParam'
+    ActionType:
+      description: 行动类信息
+      required:
+      - action_source
+      - action_type
+      - affect
+      - condition
+      - id
+      - name
+      - object_type_id
+      - parameters
+      - schedule
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+          - add
+          - modify
+          - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        condition:
+          $ref: '#/components/schemas/ActionCondition'
+          description: 行动条件
+        affect:
+          $ref: '#/components/schemas/Affect'
+          description: 行动影响
+        action_source:
+          $ref: '#/components/schemas/ToolSource'
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionTypeParams'
+        schedule:
+          $ref: '#/components/schemas/Schedule'
+          description: 行动监听参数配置
+    ToolSource:
+      description: 行动资源
+      required:
+      - box_id
+      - tool_id
+      - type
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+          - tool
+          type: string
+        box_id:
+          description: 工具箱ID
+          type: string
+        tool_id:
+          description: 工具ID
+          type: string
+    ActionParam:
+      description: 行动参数
+      required:
+      - parameters
+      type: object
+      properties:
+        parameters:
+          description: 实例化了的参数。是个map
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: integer
+            - type: object
+        dynamic_params:
+          description: 动态参数。是个map
+          type: object
+          additionalProperties: {}
+    ActionCondition:
+      description: 行动条件
+      required:
+      - field
+      - object_type_id
+      - operation
+      - sub_conditions
+      - value
+      - value_from
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 字段名称，也即对象类的属性名称
+          type: string
+        operation:
+          description: 操作符
+          enum:
+          - and
+          - or
+          - ==
+          - '!='
+          - '>'
+          - '>='
+          - <
+          - <=
+          - in
+          - not_in
+          - range
+          - out_range
+          - exist
+          - not_exist
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionCondition'
+        value:
+          description: 字段值
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+          - const
+          type: string
+    Affect:
+      description: 行动影响
+      type: object
+      properties:
+        comment:
+          description: 影响描述
+          type: string
+        object_type_id:
+          description: 影响的对象类ID
+          type: string
+    ActionTypeParams:
+      description: 行动类绑定的行动资源参数
+      required:
+      - name
+      - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          - const
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    Schedule:
+      description: 执行频率配置项
+      required:
+      - time_type
+      - frequency
+      - expression
+      - type
+      type: object
+      properties:
+        type:
+          description: 执行类型。枚举，支持配置固定频率(FIX_RATE)和配置crontab表达式（CRON）
+          enum:
+          - FIX_RATE
+          - CRON
+          type: string
+        expression:
+          description: |-
+            执行表达式。
+
+            1.固定频率指以固定周期执行持久化，frequency=< time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天
+          type: string

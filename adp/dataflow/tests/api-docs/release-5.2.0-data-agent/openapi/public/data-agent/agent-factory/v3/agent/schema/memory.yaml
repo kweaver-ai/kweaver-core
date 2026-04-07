@@ -1,0 +1,9 @@
+memory:
+  type: object
+  description: |
+    - 长期记忆配置（基于对话消息进行总结，基于记忆 Agent 可以做出更智能、个性化的反应）
+  properties:
+    is_enabled:
+      type: boolean
+      description: 是否启用（默认关闭）
+      example: false

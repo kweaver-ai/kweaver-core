@@ -1,0 +1,31 @@
+tool_interrupt_info:
+  description: 工具中断信息
+  type: object
+  properties:
+    session_id:
+      type: string
+      description: 会话id
+    tool_name:
+      type: string
+      description: 工具名称
+    tool_args:
+      type: array
+      description: 工具参数列表
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+            description: 参数名称
+          value:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: array
+              - type: object
+              - type: 'null'
+            description: 参数值
+          type:
+            type: string
+            description: 参数类型

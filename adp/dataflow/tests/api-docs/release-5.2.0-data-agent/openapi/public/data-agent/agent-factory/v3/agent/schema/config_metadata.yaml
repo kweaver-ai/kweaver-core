@@ -1,0 +1,20 @@
+config_metadata:
+  type: object
+  description: |
+    - 配置元数据
+      - 这块是系统来维护的，创建和编辑时不需要用户来设置
+  properties:
+    config_tpl_version:
+      type: string
+      description: |
+        - 配置模板版本
+        - 为了以后支持多版本时做准备（数据升级场景等）
+      enum: 
+        - "v1"
+      example: "v1"
+    config_last_set_timestamp:
+      type: integer
+      format: uint64
+      description: |
+        - 配置最后设置时间的时间戳(纳秒)
+      example: 1700000000000000000

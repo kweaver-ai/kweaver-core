@@ -1,0 +1,60 @@
+RunDetail:
+  type: object
+  properties:
+    run_id:
+      type: string
+      description: Run ID
+    agent_id:
+      type: string
+      description: Agent ID
+    agent_version:
+      type: string
+      description: Agent版本
+    conversation_id:
+      type: string
+      description: 对话ID
+    session_id:
+      type: string
+      description: 会话ID
+    user_id:
+      type: string
+      description: 用户ID
+    call_type:
+      type: string
+      description: 调用类型 chat/debugchat/apichat
+    start_time:
+      type: integer
+      format: int64
+      description: 开始时间，毫秒时间戳
+    end_time:
+      type: integer
+      format: int64
+      description: 结束时间
+    ttft:
+      type: integer
+      description: 首token响应时间，单位ms
+    total_time:
+      type: integer
+      format: int64
+      description: 总时间，单位ms
+    total_tokens:
+      type: integer
+      format: int64
+      description: 总token数
+    input_message:
+      type: string
+      description: 输入query
+    tool_call_count:
+      type: integer
+      description: 工具调用次数
+    tool_call_failed_count:
+      type: integer
+      description: 工具调用失败次数
+    progress:
+      type: array
+      items:
+        $ref: '../../components/schema/progress.yaml#/Progress'
+      description: run运行过程
+    status:
+      type: string
+      description: 运行状态 Success / Failed

@@ -1,0 +1,212 @@
+{
+    "componentDefineType": "helm/service",
+    "name": "agent-backend",
+    "version": "1.0.0",
+    "configSchema": {
+        "title": "agent-backend",
+        "description": "组件配置定义",
+        "type": "object",
+        "properties": {
+            "resources": {
+                "type": "object",
+                "title": "容器资源控制",
+                "properties": {
+                    "requests": {
+                        "type": "object",
+                        "description": "容器运行需要的最小资源分配",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    },
+                    "limits": {
+                        "type": "object",
+                        "description": "容器运行最大资源限制",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    }
+                }
+            },
+            "replicaCount": {
+                "type": "number",
+                "title": "服务副本数"
+            },
+            "observability": {
+                "type": "object",
+                "title": "可观测配置",
+                "properties": {
+                    "logEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启日志"
+                    },
+                    "traceEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启链路追踪"
+                    },
+                    "metricEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启指标"
+                    }
+                }
+            },
+            "agentExecutor": {
+                "type": "object",
+                "title": "Agent Executor配置",
+                "properties": {
+                    "telemetry": {
+                        "type": "object",
+                        "title": "可观测配置",
+                        "properties": {
+                            "log": {
+                                "type": "object",
+                                "title": "日志配置",
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "title": "是否开启日志"
+                                    }
+                                }
+                            },
+                            "trace": {
+                                "type": "object",
+                                "title": "链路配置",
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "title": "是否开启链路追踪"
+                                    }
+                                }
+                            },
+                            "metric": {
+                                "type": "object",
+                                "title": "指标配置",
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "title": "是否开启指标"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "agentMemory": {
+                "type": "object",
+                "title": "Agent Memory配置",
+                "properties": {
+                    "llm": {
+                        "type": "object",
+                        "title": "LLM配置",
+                        "properties": {
+                            "model": {
+                                "type": "string",
+                                "title": "大模型名称",
+                                "description": "用于记忆提取和记忆更新所必须的配置，对应模型工厂中注册的模型名称"
+                            }
+                        }
+                    }
+                }
+            },
+            "otel": {
+                "type": "object",
+                "title": "otel配置",
+                "description": "新版 OTel Collector 配置，用于统一管理可观测性数据上报",
+                "properties": {
+                    "service_name": {
+                        "type": "string",
+                        "title": "服务名称",
+                        "description": "在链路追踪中显示的服务名称"
+                    },
+                    "service_version": {
+                        "type": "string",
+                        "title": "服务版本",
+                        "description": "服务的版本号"
+                    },
+                    "environment": {
+                        "type": "string",
+                        "title": "运行环境",
+                        "description": "运行环境标识（如 production, staging, dev）"
+                    },
+                    "otlp_endpoint": {
+                        "type": "string",
+                        "title": "OTLP端点地址",
+                        "description": "OpenTelemetry Collector 的地址，格式：host:port"
+                    },
+                    "trace": {
+                        "type": "object",
+                        "title": "链路追踪配置",
+                        "properties": {
+                            "enabled": {
+                                "type": "boolean",
+                                "title": "启用链路追踪",
+                                "description": "是否启用分布式链路追踪功能"
+                            },
+                            "sampling_rate": {
+                                "type": "number",
+                                "title": "采样率",
+                                "description": "链路追踪采样率（0.0-1.0），1.0表示全量采集"
+                            }
+                        }
+                    },
+                    "log": {
+                        "type": "object",
+                        "title": "日志配置",
+                        "properties": {
+                            "enabled": {
+                                "type": "boolean",
+                                "title": "启用日志",
+                                "description": "是否启用结构化日志上报"
+                            },
+                            "level": {
+                                "type": "string",
+                                "title": "日志级别",
+                                "description": "日志级别（debug, info, warn, error）"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "dependence": [
+        {
+            "name": "rds"
+        },
+        {
+            "name": "dip-da-dm-pre"
+        },
+        {
+            "name": "authorization"
+        },
+        {
+            "name": "redis"
+        },
+        {
+            "name": "mq"
+        },
+        {
+            "name": "opensearch"
+        },
+        {
+            "name": "mf-model-api"
+        },
+        {
+            "name": "agent-operator-integration"
+        }
+    ]
+}

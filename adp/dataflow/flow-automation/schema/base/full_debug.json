@@ -1,0 +1,60 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "添加管理员",
+    "description": "post /api/automation/v1/admin",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string"
+        },
+        "steps": {
+            "description": "自动化流程定义",
+            "type": "array",
+            "items": {
+                "type": "object"
+            },
+            "minItems": 2,
+            "uniqueItems": true
+        },
+        "trigger_config": {
+            "type": "object",
+            "properties": {
+                "operator": {
+                    "type": "string",
+                    "description": "触发器类型"
+                },
+                "dataSource": {
+                    "type": "object",
+                    "properties": {
+                        "operator": {
+                            "type": "string",
+                            "description": "数据源操作类型"
+                        },
+                        "parameters": {
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "operator",
+                        "parameters"
+                    ]
+                },
+                "cron": {
+                    "type": "string",
+                    "description": "定时任务表达式",
+                    "pattern": "(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\\d+(ns|us|µs|ms|s|m|h))+)|((((\\d+,)+\\d+|(\\d+(\/|-)\\d+)|\\d+|\\*|\\?) ?){5,7})"
+                }
+            },
+            "required": [
+                "operator"
+            ]
+        },
+        "trigger_data": {
+            "type": "object"
+        }
+    },
+    "required": [
+        "steps"
+    ],
+    "additionalProperties": false
+}

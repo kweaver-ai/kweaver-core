@@ -1,0 +1,491 @@
+openapi: 3.0.3
+info:
+  title: 知识网络检索接口
+  description: |
+    agent-retrieval 内独立实现的 kn_search 接口，基于知识网络的智能检索工具。
+    支持传入完整问题或关键词，召回相关概念（object_types、relation_types、action_types）及语义实例（nodes）。
+  version: 1.0.0
+servers:
+  - url: http://agent-retrieval:30779
+    description: agent-retrieval 服务
+paths:
+  /api/agent-retrieval/in/v1/kn/kn_search:
+    post:
+      summary: kn_search
+      description: |
+        基于知识网络的智能检索。支持概念召回（对象类型、关系类型、操作类型）与语义实例召回（nodes）。
+        仅概念模式（only_schema=true）时只返回概念，不召回实例。
+      tags:
+        - kn-search
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+            default: user
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+            default: application/json
+          description: 内容类型
+      requestBody:
+        required: true
+        description: kn_search 请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnSearchRequest'
+      responses:
+        '200':
+          description: 成功返回检索结果（概念 + 可选实例）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnSearchResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    KnSearchRequest:
+      type: object
+      required:
+        - query
+        - kn_id
+      properties:
+        query:
+          type: string
+          description: 用户查询问题或关键词，多个关键词之间用空格隔开
+        kn_id:
+          type: string
+          description: 指定的知识网络ID（单 ID）
+        session_id:
+          type: string
+          nullable: true
+          description: 会话ID，当前实现仅透传
+        additional_context:
+          type: string
+          nullable: true
+          description: 额外的上下文信息，当前实现未使用
+        retrieval_config:
+          type: object
+          nullable: true
+          description: 召回配置。不提供则使用系统默认配置
+          properties:
+            concept_retrieval:
+              $ref: '#/components/schemas/ConceptRetrievalConfig'
+            semantic_instance_retrieval:
+              $ref: '#/components/schemas/SemanticInstanceRetrievalConfig'
+            property_filter:
+              $ref: '#/components/schemas/PropertyFilterConfig'
+        only_schema:
+          type: boolean
+          default: false
+          description: 是否只召回概念（schema），不召回语义实例
+        enable_rerank:
+          type: boolean
+          default: true
+          description: 是否对关系类型启用 Rerank
+
+    ConceptRetrievalConfig:
+      type: object
+      nullable: true
+      description: 概念召回配置
+      properties:
+        top_k:
+          type: integer
+          minimum: 1
+          default: 10
+          description: 概念召回返回最相关关系类型数量
+        skip_llm:
+          type: boolean
+          default: true
+          description: 是否跳过 LLM 筛选（统一使用 MF Rerank）
+        return_union:
+          type: boolean
+          default: false
+          description: 多轮检索是否返回并集
+        include_sample_data:
+          type: boolean
+          default: false
+          description: 是否获取对象类型的样例数据
+        schema_brief:
+          type: boolean
+          default: true
+          description: 是否返回精简 schema
+        enable_coarse_recall:
+          type: boolean
+          default: true
+          description: 是否启用对象/关系粗召回
+        coarse_object_limit:
+          type: integer
+          minimum: 1
+          default: 2000
+          description: 对象类型粗召回最大返回数量
+        coarse_relation_limit:
+          type: integer
+          minimum: 1
+          default: 300
+          description: 关系类型粗召回最大返回数量
+        coarse_min_relation_count:
+          type: integer
+          minimum: 1
+          default: 5000
+          description: 关系类型总数达到该阈值时才启用粗召回
+        enable_property_brief:
+          type: boolean
+          default: true
+          description: 是否对返回的对象属性做相关性裁剪
+        per_object_property_top_k:
+          type: integer
+          minimum: 1
+          default: 8
+          description: 每个对象类型最多保留的属性数量
+        global_property_top_k:
+          type: integer
+          minimum: 1
+          default: 30
+          description: 全局最多保留的属性总数量
+
+    SemanticInstanceRetrievalConfig:
+      type: object
+      nullable: true
+      description: 语义实例召回配置
+      properties:
+        initial_candidate_count:
+          type: integer
+          minimum: 1
+          default: 50
+          description: 语义实例召回的初始候选数量上限
+        per_type_instance_limit:
+          type: integer
+          minimum: 1
+          default: 5
+          description: 每个对象类型最终返回的实例数量上限
+        max_semantic_sub_conditions:
+          type: integer
+          minimum: 1
+          default: 10
+          description: 构造查询时 sub_conditions 的最大数量
+        semantic_field_keep_ratio:
+          type: number
+          minimum: 0.01
+          maximum: 1.0
+          default: 0.2
+          description: 语义字段筛选保留比例
+        semantic_field_keep_min:
+          type: integer
+          minimum: 1
+          default: 5
+          description: 语义字段最少保留数
+        semantic_field_keep_max:
+          type: integer
+          minimum: 1
+          default: 15
+          description: 语义字段最多保留数
+        semantic_field_rerank_batch_size:
+          type: integer
+          minimum: 1
+          default: 128
+          description: 字段语义打分批处理大小
+        min_direct_relevance:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.3
+          description: 直接相关性最低阈值
+        enable_global_final_score_ratio_filter:
+          type: boolean
+          default: true
+          description: 是否启用全局 final_score 相对阈值过滤
+        global_final_score_ratio:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.25
+          description: 全局 final_score 相对阈值比例
+        exact_name_match_score:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.85
+          description: 实例名完全相等时的保底分
+
+    PropertyFilterConfig:
+      type: object
+      nullable: true
+      description: 实例属性过滤配置
+      properties:
+        max_properties_per_instance:
+          type: integer
+          minimum: 1
+          default: 20
+          description: 每个实例最多返回的属性字段数量
+        max_property_value_length:
+          type: integer
+          minimum: 1
+          default: 500
+          description: 属性值的最大长度（字符数）
+        enable_property_filter:
+          type: boolean
+          default: true
+          description: 是否启用实例属性过滤
+
+    KnSearchResponse:
+      type: object
+      description: 检索结果，包含概念与可选语义实例
+      properties:
+        object_types:
+          type: array
+          nullable: true
+          description: 对象类型列表（概念召回）
+          items:
+            $ref: '#/components/schemas/ObjectType'
+        relation_types:
+          type: array
+          nullable: true
+          description: 关系类型列表（概念召回）
+          items:
+            $ref: '#/components/schemas/RelationType'
+        action_types:
+          type: array
+          nullable: true
+          description: 操作类型列表（概念召回）
+          items:
+            $ref: '#/components/schemas/ActionType'
+        nodes:
+          type: array
+          nullable: true
+          description: 语义实例召回结果（非 only_schema 时可能返回）
+          items:
+            $ref: '#/components/schemas/Node'
+        message:
+          type: string
+          nullable: true
+          description: 提示信息（如未召回到概念或实例时的说明）
+
+    ObjectType:
+      type: object
+      required:
+        - concept_id
+        - concept_name
+      properties:
+        concept_type:
+          type: string
+          nullable: true
+          description: 概念类型，如 object_type
+        concept_id:
+          type: string
+          description: 概念ID
+        concept_name:
+          type: string
+          description: 概念名称
+        comment:
+          type: string
+          nullable: true
+          description: 概念描述
+        tags:
+          type: array
+          nullable: true
+          items:
+            type: string
+        data_source:
+          $ref: '#/components/schemas/ResourceInfo'
+        data_properties:
+          type: array
+          nullable: true
+          description: 数据属性列表
+          items:
+            $ref: '#/components/schemas/DataProperty'
+        logic_properties:
+          type: array
+          nullable: true
+          description: 逻辑属性列表
+          items:
+            $ref: '#/components/schemas/LogicProperty'
+        primary_keys:
+          type: array
+          nullable: true
+          items:
+            type: string
+        sample_data:
+          type: object
+          nullable: true
+          description: 样例数据（include_sample_data 为 true 时返回）
+
+    ResourceInfo:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 数据源类型
+        id:
+          type: string
+          description: 数据视图 ID
+        name:
+          type: string
+          description: 视图名称
+
+    DataProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        condition_operations:
+          type: array
+          nullable: true
+          description: 支持的查询条件操作符
+          items:
+            type: string
+
+    LogicProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        data_source:
+          type: object
+          nullable: true
+        parameters:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/PropertyParameter'
+
+    PropertyParameter:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value_from:
+          type: string
+          description: "input, property, const"
+        value:
+          type: object
+          nullable: true
+        if_system_generate:
+          type: boolean
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+
+    RelationType:
+      type: object
+      required:
+        - concept_id
+        - concept_name
+        - source_object_type_id
+        - target_object_type_id
+      properties:
+        concept_type:
+          type: string
+          nullable: true
+        concept_id:
+          type: string
+        concept_name:
+          type: string
+        comment:
+          type: string
+          nullable: true
+        source_object_type_id:
+          type: string
+        target_object_type_id:
+          type: string
+
+    ActionType:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        object_type_id:
+          type: string
+        object_type_name:
+          type: string
+        comment:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          nullable: true
+          items:
+            type: string
+        kn_id:
+          type: string
+
+    Node:
+      type: object
+      description: 语义实例节点
+      properties:
+        object_type_id:
+          type: string
+        object_type_name:
+          type: string
+          nullable: true
+        instance_name:
+          type: string
+          nullable: true
+        unique_identities:
+          type: object
+          description: 对象的唯一标识
+        properties:
+          type: object
+          nullable: true
+          description: 实例属性
+        score:
+          type: number
+          format: double
+          nullable: true
+          description: 相关性分数
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误信息
+        message:
+          type: string
+          description: 错误详情

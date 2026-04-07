@@ -1,0 +1,12 @@
+Augment:
+  type: object
+  required:
+    - enable
+    - data_source
+  properties:
+    enable:
+      type: boolean
+      description: 是否启用
+    data_source:
+      $ref: './augment_data_source.yaml#/AugmentDataSource'
+      description: 图谱数据源配置

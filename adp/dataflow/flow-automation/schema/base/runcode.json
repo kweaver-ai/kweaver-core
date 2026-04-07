@@ -1,0 +1,68 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "执行用户代码",
+    "description": "post /api/automation/v1/pycode/run-by-params",
+    "type": "object",
+    "properties": {
+        "code": {
+            "description": "用户自定义代码，最大长度不超过10000字符",
+            "type": "string",
+            "maxLength": 100000
+        },
+        "input_params": {
+            "description": "输入参数",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "description": "输入参数项",
+                "properties": {
+                    "param_type": {
+                        "type": "string",
+                        "enum": ["string", "int", "object", "array"],
+                        "description": "参数类型"
+                    },
+                    "param_value": {
+                        "type": "string",
+                        "description": "参数值"
+                    },
+                    "param_key": {
+                        "type": "string",
+                        "description": "参数key",
+                        "maxLength": 20,
+                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                    }
+                }
+            }
+        },
+        "output_params": {
+            "description": "输出参数",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "description": "输入参数项",
+                "properties": {
+                    "param_type": {
+                        "type": "string",
+                        "enum": ["string", "int", "object", "array"],
+                        "description": "参数类型"
+                    },
+                    "param_key": {
+                        "type": "string",
+                        "description": "参数key",
+                        "maxLength": 20,
+                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                    }
+                }
+            }
+        },
+        "func": {
+            "description": "需要执行的方法",
+            "type": "string",
+            "maxLength": 20
+        }
+    },
+    "required": [
+        "code"
+    ],
+    "additionalProperties": false
+}

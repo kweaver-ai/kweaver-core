@@ -1,0 +1,53 @@
+[
+    {
+        "tool_id": "PLACEHOLDER_TOOL_ID",
+        "tool_box_id": "PLACEHOLDER_BOX_ID",
+        "tool_input": [
+            {
+                "input_name": "api_key",
+                "input_type": "string",
+                "input_desc": "智谱API密钥",
+                "map_type": "fixedValue",
+                "map_value": "YOUR_ZHIPU_API_KEY_HERE",
+                "enable": true
+            },
+            {
+                "input_name": "query",
+                "input_type": "string",
+                "input_desc": "搜索查询词",
+                "map_type": "auto",
+                "map_value": "",
+                "enable": true
+            }
+        ],
+        "intervention": false,
+        "details": {
+            "tool_type": "tool",
+            "tool_id": "PLACEHOLDER_TOOL_ID",
+            "tool_name": "zhipu_search_tool",
+            "tool_box_id": "PLACEHOLDER_BOX_ID",
+            "tool_box_name": "搜索工具",
+            "tool_desc": "执行智谱搜索\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+            "intervention": false,
+            "tool_input": [
+                {
+                    "input_name": "api_key",
+                    "input_type": "string",
+                    "input_desc": "智谱API密钥",
+                    "map_type": "fixedValue",
+                    "map_value": "YOUR_ZHIPU_API_KEY_HERE",
+                    "enable": true
+                },
+                {
+                    "input_name": "query",
+                    "input_type": "string",
+                    "input_desc": "搜索查询词",
+                    "map_type": "auto",
+                    "map_value": "",
+                    "enable": true
+                }
+            ],
+            "tool_timeout": 300
+        }
+    }
+]

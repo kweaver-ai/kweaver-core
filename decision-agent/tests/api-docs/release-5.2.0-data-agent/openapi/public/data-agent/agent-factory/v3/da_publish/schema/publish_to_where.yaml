@@ -1,0 +1,9 @@
+publish_to_where:
+  type: array
+  description: |
+    - 发布到的目标
+      - custom_space: 发布到自定义空间
+      - square: 发布到广场
+  items:
+    type: string
+    enum: ["custom_space", "square"]

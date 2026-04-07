@@ -1,0 +1,47 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_knowledge_network",
+        "object_type": "COLUMN",
+        "operation_type": "MODIFY",
+        "object_name": "f_comment",
+        "object_property": "VARCHAR(1000) NOT NULL DEFAULT ''",
+        "object_comment": "备注"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_object_type",
+        "object_type": "COLUMN",
+        "operation_type": "MODIFY",
+        "object_name": "f_comment",
+        "object_property": "VARCHAR(1000) NOT NULL DEFAULT ''",
+        "object_comment": "备注"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_relation_type",
+        "object_type": "COLUMN",
+        "operation_type": "MODIFY",
+        "object_name": "f_comment",
+        "object_property": "VARCHAR(1000) NOT NULL DEFAULT ''",
+        "object_comment": "备注"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_action_type",
+        "object_type": "COLUMN",
+        "operation_type": "MODIFY",
+        "object_name": "f_comment",
+        "object_property": "VARCHAR(1000) NOT NULL DEFAULT ''",
+        "object_comment": "备注"
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_concept_group",
+        "object_type": "COLUMN",
+        "operation_type": "MODIFY",
+        "object_name": "f_comment",
+        "object_property": "VARCHAR(1000) NOT NULL DEFAULT ''",
+        "object_comment": "备注"
+    }
+]

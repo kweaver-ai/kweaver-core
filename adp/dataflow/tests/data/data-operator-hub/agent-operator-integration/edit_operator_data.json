@@ -1,0 +1,41 @@
+[
+    {
+        "title": "编辑算子，必填参数operator_id未传，编辑失败",
+        "params": {
+            "version": "d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"
+        }
+    },
+    
+    {
+        "title": "编辑算子，operator_id为整型，编辑失败",
+        "params": {
+            "operator_id": 1
+        }
+    },
+    {
+        "title": "编辑算子，operator_id为浮点型，编辑失败",
+        "params": {
+            "operator_id": 1.1
+        }
+    },
+    {
+        "title": "编辑算子，operator_id为列表类型，编辑失败",
+        "params": {
+            "operator_id": ["d1cd9a7e-cafe-4cc2-a8b2-2df22cc2c9ed"]
+        }
+    },
+    {
+        "title": "编辑算子，operator_id为布尔型，编辑失败",
+        "params": {
+            "operator_id": false
+        }
+    },
+    {
+        "title": "编辑算子，operator_id为json类型，编辑失败",
+        "params": {
+            "operator_id": {
+                "operator_id": "string"
+            }
+        }
+    }
+]

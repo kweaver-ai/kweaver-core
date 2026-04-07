@@ -1,0 +1,140 @@
+# Common
+[BknBackend.CountExceeded.TagTotal]
+Description = "Number of Tags Exceed 5"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.DataTagName]
+Description = "Invalid Data Tag Name"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Direction]
+Description = "Invalid Sort Direction"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Condition]
+Description = "Invalid Condition"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.ID]
+Description = "Invalid ID"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.ImportMode]
+Description = "Invalid Import Mode"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Mode]
+Description = "Invalid Mode"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Limit]
+Description = "Invalid Pagination Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.ModuleType]
+Description = "Invalid Module Name"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Offset]
+Description = "Invalid Offset"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.OverrideMethod]
+Description = "Invalid Override Method"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.RequestBody]
+Description = "Request Body Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.Sort]
+Description = "Invalid Sort Type"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidParameter.ConditionValue]
+Description = "Invalid Condition Value"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.LengthExceeded.Comment]
+Description = "The Length Of Comment Exceeds The Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.NullParameter.ConditionName]
+Description = "Condition Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.NullParameter.ConditionOperation]
+Description = "Condition Operation Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.UnsupportConditionOperation]
+Description = "Unsupported Condition Operation"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.CountExceeded.Conditions]
+Description = "The Number Of Conditions Exceeds The Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.InvalidRequestHeader.ContentType]
+Description = "Invalid ContentType"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[BknBackend.InternalError.CheckPermissionFailed]
+Description = "An internal server error occurred while check permission"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.CreateResourcesFailed]
+Description = "An internal server error occurred while create resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.DeleteResourcesFailed]
+Description = "An internal server error occurred while delete resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.FilterResourcesFailed]
+Description = "An internal server error occurred while filter resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.UpdateResourceFailed]
+Description = "An internal server error occurred while update resource name"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.MQPublishMsgFailed]
+Description = "An internal server error occurred while mq publish message"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.MarshalDataFailed]
+Description = "An internal server error occurred while marshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[BknBackend.InternalError.UnMarshalDataFailed]
+Description = "An internal server error occurred while unMarshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"

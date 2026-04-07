@@ -1,0 +1,86 @@
+paths:
+  /agent-factory/v3/personal-space/agent-list:
+    get:
+      summary: 个人空间下Agent列表
+      description: 个人空间下Agent列表
+      tags:
+        - 个人空间
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+        - $ref: '../components/components.yaml#/components/parameters/publishStatus'
+        - $ref: '../components/components.yaml#/components/parameters/name'
+        - $ref: '../components/components.yaml#/components/parameters/toBeFlag'
+        - $ref: '../components/components.yaml#/components/parameters/agentCreatedType'
+        - name: pagination_marker_str
+          in: query
+          description: |
+            - 分页marker（用于获取下一页数据）
+            - base64编码的json字符串
+            - base64编码前的json格式：
+              ```
+              {
+                "updated_at": 111,
+                "last_agent_id": "xxx"
+              }
+              ```
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/agent_list.yaml#/agent_list'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/personal-space/agent-tpl-list:
+    get:
+      summary: 个人空间下Agent模板列表
+      description: 个人空间下Agent模板列表
+      tags:
+        - 个人空间
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+        - $ref: '../components/components.yaml#/components/parameters/name'
+        - $ref: '../components/components.yaml#/components/parameters/publishStatus'
+        - $ref: '../components/components.yaml#/components/parameters/agentTplCreatedType'
+        - name: pagination_marker_str
+          in: query
+          description: |
+            - 分页marker（用于获取下一页数据）
+            - base64编码的json字符串
+            - base64编码前的json格式：
+              ```
+              {
+                "updated_at": 111,
+                "last_tpl_id": 222
+              }
+              ```
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/tpl_list.yaml#/tpl_list' 
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      
+    

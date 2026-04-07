@@ -1,0 +1,124 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "LLM Chat Completion",
+    "description": "DataFlow 大模型节点参数",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "system_message": {
+                    "type": "string"
+                },
+                "user_message": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "default": 1.0
+                },
+                "top_p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 1.0
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "top_k": {
+                    "type": "integer"
+                },
+                "presence_penalty": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2,
+                    "default": 0.0
+                },
+                "frequency_penalty": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2,
+                    "default": 0.0
+                },
+                "attachements": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "source_type": {
+                                        "type": "string",
+                                        "const": "docid"
+                                    },
+                                    "docid": {
+                                        "type": "string"
+                                    },
+                                    "version": {
+                                        "type": "string"
+                                    },
+                                    "media_type": {
+                                        "type": "string",
+                                        "enum": ["video", "image"]
+                                    }
+                                },
+                                "required": ["source_type", "docid", "media_type"]
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "source_type": {
+                                        "type": "string",
+                                        "const": "url"
+                                    },
+                                    "url": {
+                                        "type": "string"
+                                    },
+                                    "media_type": {
+                                        "type": "string",
+                                        "enum": ["video", "image"]
+                                    }
+                                },
+                                "required": ["source_type", "url", "media_type"]
+                            }
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "model",
+                "system_message"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

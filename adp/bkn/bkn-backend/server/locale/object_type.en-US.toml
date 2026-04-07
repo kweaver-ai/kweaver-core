@@ -1,0 +1,140 @@
+# ObjectType
+[BknBackend.ObjectType.Duplicated.IDInFile]
+Description = "Same Object Type ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.Duplicated.Name]
+Description = "Same Object Type Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InvalidParameter.ConceptCondition]
+Description = "Invalid Concept Condition Parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InvalidParameter.PropertyName]
+Description = "Invalid Property Name"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InvalidParameter.SmallModel]
+Description = "Invalid Small Model Parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.ObjectTypeIDExisted]
+Description = "Same ID Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.ObjectTypeNameExisted]
+Description = "Same Object Type Name Existed"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.ObjectTypeBoundByActionType]
+Description = "Object type is bound by action type, cannot delete"
+Solution = "Please delete the bound action type first, or use force_delete=true to force delete."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.ObjectTypeBoundByRelationType]
+Description = "Object type is bound by relation type, cannot delete"
+Solution = "Please delete the bound relation type first, or use force_delete=true to force delete."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.LengthExceeded.Name]
+Description = "The Length of Object Type Name Out of Limit"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.NullParameter.Name]
+Description = "Object Type Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.NullParameter.PrimaryKeys]
+Description = "Object Type PrimaryKeys Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.NullParameter.DisplayKey]
+Description = "Object Type DisplayKey Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.NullParameter.PropertyName]
+Description = "Object Type Property Name Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.ObjectTypeNotFound]
+Description = "The Object Type Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.SmallModelNotFound]
+Description = "The Small Model Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.BeginTransactionFailed]
+Description = "Begin Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.MissingTransaction]
+Description = "Missing Transaction"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.CheckObjectTypeIfExistFailed]
+Description = "Check Object Type Exist Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.CreateConceptGroupRelationFailed]
+Description = "Create Concept Group Relation Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.GetDataViewByIDFailed]
+Description = "Get Data View By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.GetMetricModelByIDFailed]
+Description = "Get Metric Model By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.GetObjectTypeByIDFailed]
+Description = "Get Object Type By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.GetObjectTypesByIDsFailed]
+Description = "Get Object Type By IDs Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.GetSmallModelByIDFailed]
+Description = "Get Small Model By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.ObjectType.InternalError.InsertOpenSearchDataFailed]
+Description = "Insert Object Type Data Into OpenSearch Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

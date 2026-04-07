@@ -1,0 +1,6 @@
+RelatedQuestion:
+  type: object
+  description: 相关查询
+  properties:
+    query:
+      type: string

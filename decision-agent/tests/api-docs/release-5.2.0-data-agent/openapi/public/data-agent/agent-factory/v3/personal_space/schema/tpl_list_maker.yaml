@@ -1,0 +1,14 @@
+tpl_pagination_marker_str:
+  type: string
+  description: |
+    - 分页marker（用于获取下一页数据）
+    - base64编码的json字符串
+    - json格式：
+      ```
+      {
+        "updated_at": 1718774400123,
+        "last_tpl_id": 222
+      }
+      ```
+  example: eyJwdWJsaXNoZWRfYXQiOjE3MTg3NzQ0MDAxMjMsImxhc3RfcmVsZWFzZV9pZCI6IjE0In0=
+      

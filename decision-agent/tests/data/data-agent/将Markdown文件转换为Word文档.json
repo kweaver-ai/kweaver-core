@@ -1,0 +1,67 @@
+[
+    {
+    "tool_id": "9c254044-aef2-4877-b04a-5effe8e2e0ed",
+    "tool_box_id": "d8332414-e923-4a46-9437-62d2c8847d7c",
+    "tool_timeout": 300,
+    "tool_input": [
+        {
+        "input_name": "session_id",
+        "input_type": "string",
+        "input_desc": "",
+        "map_type": "var",
+        "map_value": "self_config.conversation_id",
+        "enable": true
+        },
+        {
+        "input_name": "image_height",
+        "input_type": "integer",
+        "input_desc": "图片高度(像素),null表示保持比例",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "image_width",
+        "input_type": "integer",
+        "input_desc": "图片宽度(像素)",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "markdown_file",
+        "input_type": "string",
+        "input_desc": "Markdown文件名",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+        },
+        {
+        "input_name": "output_file",
+        "input_type": "string",
+        "input_desc": "输出Word文件名(可选,默认从markdown_file自动生成)",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": true
+        },
+        {
+        "input_name": "style",
+        "input_type": "string",
+        "input_desc": "文档样式",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        },
+        {
+        "input_name": "template_file",
+        "input_type": "string",
+        "input_desc": "Word模板文件路径(相对于项目根目录,如\"template.docx\",可选)",
+        "map_type": "auto",
+        "map_value": "",
+        "enable": false
+        }
+    ],
+    "intervention": false,
+    "result_process_strategies": null
+    }
+]

@@ -1,0 +1,9 @@
+InternalServerError:
+  allOf:
+    - $ref: './error.yaml#/Error'
+  example:
+    error_code: "AgentApp.InternalError"
+    description: "internal server error"
+    error_detail: "some text"
+    error_link: "some text"
+    solution: "some text"

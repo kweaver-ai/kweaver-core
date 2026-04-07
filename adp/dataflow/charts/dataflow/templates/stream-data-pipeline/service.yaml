@@ -1,0 +1,21 @@
+{{- if .Values.components.streamDataPipeline.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.streamDataPipeline.moduleName }}-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.streamDataPipeline.moduleName }}
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  type: {{ .Values.streamDataPipeline.service.streamDataPipeline.type }}
+  ports:
+    - name: {{ .Values.streamDataPipeline.moduleName }}
+      port: {{ .Values.streamDataPipeline.service.streamDataPipeline.port }}
+      protocol: TCP
+      targetPort: sdp-pub
+      {{- if eq .Values.streamDataPipeline.service.streamDataPipeline.type "NodePort" }}
+      nodePort: {{ .Values.streamDataPipeline.service.streamDataPipeline.nodePort }}
+      {{- end }}
+{{- end }}

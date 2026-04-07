@@ -1,0 +1,117 @@
+# 运行环境
+run:
+  timeout: 10m
+  issues-exit-code: 0
+  tests: true
+  # 不检测的目录列表，在vscode中虽然有错误提示，但不会出现在错误报告中
+  exclude-dirs:
+    - tapi
+
+# 检测输出
+output:
+  formats: checkstyle
+
+# 检查配置
+linters-settings:
+  depguard:
+    list-type: blacklist
+    # 黑名单，列举公司禁用的组件
+    packages:
+    # 黑名单错误提示
+    packages-with-error-message:
+  # 函数检测（最大行数和声明最大长度）
+  funlen:
+    lines: 200
+    statements: 80
+  # 常量检测（出现指定次数的字符串使用常量表达）
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  # 诊断组件集
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  # 检测循环复杂度
+  gocyclo:
+    min-complexity: 15
+  # goimports配置需求
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
+  # golint最小置信度
+  golint:
+    min-confidence: 1
+  # 检测参数、条件语句和返回值
+  mnd:
+    settings:
+      # don't include the "operation" and "assign"
+      checks: argument,case,condition,return
+      ignored-numbers:
+        - "0755"
+  # 类型转换检测
+  govet:
+    shadow: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  # 代码长度检测
+  lll:
+    line-length: 200
+  # 拼写检测
+  misspell:
+    locale: US
+  # 检测不规范或不充分的注释
+  nolintlint:
+    allow-leading-space: true # don't require machine-readable nolint directives (i.e. with no leading space)
+    allow-unused: false # report any unused nolint directives
+    require-explanation: false # don't require an explanation for nolint directives
+    require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+
+# 检测组件使能
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - funlen
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - revive
+    - mnd
+    - goprintffuncname
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nolintlint
+    - rowserrcheck
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+
+issues:
+  exclude-use-default: false

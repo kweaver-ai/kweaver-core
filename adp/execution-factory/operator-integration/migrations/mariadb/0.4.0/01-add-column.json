@@ -1,0 +1,11 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_metadata_function",
+        "object_type": "COLUMN",
+        "operation_type": "ADD",
+        "object_name": "f_dependencies_url",
+        "object_property": "text",
+        "object_comment": "依赖库安装源地址"
+    }
+]

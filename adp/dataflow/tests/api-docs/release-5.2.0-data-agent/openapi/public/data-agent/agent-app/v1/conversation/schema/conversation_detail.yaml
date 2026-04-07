@@ -1,0 +1,31 @@
+ConversationDetail:
+  description: 会话详情
+  type: object
+  properties:
+    id:
+      type: string
+      description: 会话ID
+    title:
+      type: string
+      description: 会话标题
+    message_index:
+      type: integer
+      description: 最新会话消息下标
+    read_message_index:
+      type: integer
+      description: 最新已读的会话消息下标	
+    messages:
+      type: array
+      description: 会话消息列表
+      items:
+        $ref: './conversation_message.yaml#/ConversationMessage'
+    create_time:
+      type: integer
+      description: 创建时间
+    update_time:
+      type: integer
+      description: 更新时间
+  required:
+    - id
+    - title
+        

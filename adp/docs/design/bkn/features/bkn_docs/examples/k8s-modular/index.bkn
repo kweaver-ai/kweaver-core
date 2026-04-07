@@ -1,0 +1,84 @@
+---
+type: network
+id: k8s-modular
+name: Kubernetes模块化网络
+version: 1.0.0
+tags: [Kubernetes, 拓扑架构, 运维]
+description: 采用每定义一文件的模块化组织方式，适合大规模知识网络
+---
+
+# Kubernetes模块化网络
+
+采用模块化组织的 Kubernetes 知识网络，每个实体、关系、行动都是独立文件。
+
+## 网络概览
+
+```mermaid
+graph TB
+    subgraph Entities["实体 (entities/)"]
+        Pod["pod.bkn"]
+        Node["node.bkn"]
+        Service["service.bkn"]
+    end
+    
+    subgraph Relations["关系 (relations/)"]
+        PodNode["pod_belongs_node.bkn"]
+        ServicePod["service_routes_pod.bkn"]
+    end
+    
+    subgraph Actions["行动 (actions/)"]
+        Restart["restart_pod.bkn"]
+        Cordon["cordon_node.bkn"]
+    end
+    
+    Node --> Pod
+    Service --> Pod
+    Pod -.-> Restart
+    Node -.-> Cordon
+```
+
+## 目录结构
+
+```
+k8s-modular/
+├── index.bkn                    # 本文件（网络索引）
+├── entities/
+│   ├── pod.bkn                  # Pod 实体
+│   ├── node.bkn                 # Node 实体
+│   └── service.bkn              # Service 实体
+├── relations/
+│   ├── pod_belongs_node.bkn     # Pod-Node 关系
+│   └── service_routes_pod.bkn   # Service-Pod 关系
+└── actions/
+    ├── restart_pod.bkn          # 重启 Pod 行动
+    └── cordon_node.bkn          # 隔离 Node 行动
+```
+
+## 优势
+
+| 特性 | 说明 |
+|------|------|
+| 人类友好 | 每个文件 50-100 行，专注单一定义 |
+| LLM 友好 | 小文件无 token 限制，易于生成 |
+| 增量导入 | 任何文件可单独导入更新 |
+| 团队协作 | 不同人可并行编辑不同文件 |
+| 版本控制 | Git diff 清晰，冲突少 |
+
+## 增量导入示例
+
+添加新实体，只需创建新文件并导入：
+
+```bash
+# 创建 deployment.bkn
+# 导入到 k8s-modular 网络
+```
+
+更新已有实体，修改对应文件并重新导入，自动覆盖。
+
+## 统计
+
+| 类型 | 数量 | 文件 |
+|------|------|------|
+| 实体 | 3 | entities/*.bkn |
+| 关系 | 2 | relations/*.bkn |
+| 行动 | 2 | actions/*.bkn |

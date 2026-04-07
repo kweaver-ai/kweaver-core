@@ -1,0 +1,55 @@
+{{- if .Values.components.ecronManagement.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dataflow.ecronManagement.fullname" . }}-yaml
+  namespace: {{ .Values.namespace }}
+data:
+  cronsvr.yaml: |
+    LC_ALL: {{ .Values.ecronManagement.service.language }}
+
+    #配置文件路径/sysvol/conf/cronsvr.yaml
+    lang: {{ .Values.ecronManagement.service.language }} #系统语言
+    webhook: {{ .Values.ecronManagement.service.webhook }} #任务结果监听地址
+    job_failures: {{ .Values.ecronManagement.service.jobFailures }} #任务执行失败次数上限
+
+    #消费队列
+    mq_host: {{ index .Values "depServices" "mq" "mqHost" }}
+    mq_port: {{ index .Values "depServices" "mq" "mqPort" }}
+    mq_lookupd_host: {{ index .Values "depServices" "mq" "mqLookupdHost" }}
+    mq_lookupd_port: {{ index .Values "depServices" "mq" "mqLookupdPort" }}
+    mq_connector_type: {{ index .Values "depServices" "mq" "connectorType" }}
+
+    #定时服务，multi_node=true表示定时服务可以多节点运行，端口号动态选择
+    cron_addr: {{ index .Values "depServices" "ecron-management" "host" }}
+    cron_port: {{ index .Values "depServices" "ecron-management" "port" }}
+    cron_protocol: {{ index .Values "depServices" "ecron-management" "protocol" }}
+    anlys_port: {{ .Values.ecronManagement.service.ecronAnlysPort }}
+    multi_node: false
+
+    #SSL证书
+    ssl_on: {{ .Values.ecronManagement.service.sslOn }}
+    cert_file: {{ .Values.ecronManagement.service.certFile }}
+    key_file: {{ .Values.ecronManagement.service.keyFile }}
+
+    #sleep时间，单位秒
+    analysis_load_sleep: {{ .Values.ecronManagement.service.sleep.analysisLoad }}
+    analysis_refresh_sleep: {{ .Values.ecronManagement.service.sleep.analysisRefresh }}
+    job_status_refresh_sleep: {{ .Values.ecronManagement.service.sleep.jobStatusRefresh }}
+    msmq_client_op_sleep: {{ .Values.ecronManagement.service.sleep.msmqClientOp }}
+    db_client_ping_sleep: {{ .Values.ecronManagement.service.sleep.dbClientPing }}
+    lost_immediate_job_sleep: {{ .Values.ecronManagement.service.sleep.lostImmediateJobExecute }}
+    token_refresh_sleep: {{ .Values.ecronManagement.service.sleep.tokenRefresh }}
+
+    #授权服务
+    oauth_public_addr: {{ .Values.depServices.hydra.publicHost }}
+    oauth_public_port: {{ .Values.depServices.hydra.publicPort }}
+    oauth_public_protocol: {{ .Values.depServices.hydra.publicProtocol }}
+    oauth_admin_addr: {{ .Values.depServices.hydra.administrativeHost }}
+    oauth_admin_port: {{ .Values.depServices.hydra.administrativePort }}
+    oauth_admin_protocol: {{ .Values.depServices.hydra.administrativeProtocol }}
+    auth_enabled: {{ .Values.auth.enabled | quote }}
+
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}
+{{- end }}

@@ -1,0 +1,73 @@
+{
+    "componentDefineType": "helm/service",
+    "name": "agent-retrieval",
+    "version": "1.0.0",
+    "configSchema": {
+        "title": "agent-retrieval",
+        "description": "组件配置定义",
+        "type": "object",
+        "properties": {
+            "resources": {
+                "type": "object",
+                "title": "容器资源控制",
+                "properties": {
+                    "requests": {
+                        "type": "object",
+                        "description": "容器运行需要的最小资源分配",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    },
+                    "limits": {
+                        "type": "object",
+                        "description": "容器运行最大资源限制",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    }
+                }
+            },
+            "replicaCount": {
+                "type": "number",
+                "title": "服务副本数"
+            },
+            "observability": {
+                "type": "object",
+                "title": "可观测配置",
+                "properties": {
+                    "logEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启日志"
+                    },
+                    "traceEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启链路追踪"
+                    },
+                    "metricsEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启指标"
+                    }
+                }
+            }
+        }
+    },
+    "dependence": [
+        {
+            "name": "hydra"
+        }
+    ]
+}

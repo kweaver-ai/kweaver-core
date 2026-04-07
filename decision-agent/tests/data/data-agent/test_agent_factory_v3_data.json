@@ -1,0 +1,100 @@
+{
+  "agent_config": {
+    "name": "测试智能体",
+    "profile": "这是一个用于测试的智能体",
+    "key": "test-agent-{timestamp}",
+    "avatar_type": 1,
+    "avatar": "1",
+    "product_key": "dip",
+    "is_system_agent": 0,
+    "config": {
+      "input": {
+        "fields": [
+          {
+            "name": "query",
+            "type": "string"
+          }
+        ],
+        "is_temp_zone_enabled": 0
+      },
+      "system_prompt": "你是一个测试助手",
+      "is_dolphin_mode": 0,
+      "data_source": {
+        "doc": [],
+        "kg": [],
+        "metric": [],
+        "kn_entry": [],
+        "knowledge_network": []
+      },
+      "skills": {
+        "tools": [],
+        "agents": [],
+        "mcps": null
+      },
+      "llms": [
+        {
+          "is_default": true,
+          "llm_config": {
+            "id": "1901307417048780800",
+            "name": "aaron-model-dv3",
+            "model_type": "llm",
+            "temperature": 1,
+            "top_p": 1,
+            "top_k": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0,
+            "max_tokens": 1000
+          }
+        }
+      ],
+      "output": {
+        "variables": {
+          "answer_var": "answer"
+        },
+        "default_format": "markdown"
+      }
+    }
+  },
+  "publish_config": {
+    "category_id": "",
+    "description": "测试发布描述",
+    "publish_to_where": ["square"],
+    "pms_control": {},
+    "publish_to_be": ["api_agent", "web_sdk_agent"]
+  },
+  "product_config": {
+    "name": "测试产品-{timestamp}",
+    "profile": "这是一个测试产品"
+  },
+  "agent_fields": ["name"],
+  "published_agent_list_request": {
+    "page": 1,
+    "size": 10
+  },
+  "published_agent_info_list_request": {
+    "agent_keys": [],
+    "need_config_fields": ["input"]
+  },
+  "permission_check_request": {
+    "agent_id": "{agent_id}",
+    "agent_version": "v0"
+  },
+  "personal_space_params": {
+    "page": 1,
+    "size": 10
+  },
+  "product_list_params": {
+    "page": 1,
+    "size": 10
+  },
+  "batch_index_status_request": {
+    "agent_uniq_flags": [
+      {
+        "agent_id": "{agent_id}",
+        "agent_version": "v0"
+      }
+    ],
+    "is_show_fail_infos": false
+  }
+}
+

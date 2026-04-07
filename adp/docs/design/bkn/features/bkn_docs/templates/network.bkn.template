@@ -1,0 +1,126 @@
+---
+type: network
+id: {network_id}
+name: {网络名称}
+version: 1.0.0
+tags: [{标签1}, {标签2}]
+description: {网络描述}
+---
+
+# {网络名称}
+
+{详细描述}
+
+## 网络概览
+
+```mermaid
+graph TB
+    %% 在此添加实体和关系的可视化
+    Entity1["实体1"] --> Entity2["实体2"]
+```
+
+---
+
+# 实体定义
+
+## Entity: {entity_id}
+
+**{实体名称}** - {简短描述}
+
+### 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | {view_id} | {view_name} |
+
+> **主键**: `{primary_key}` | **显示属性**: `{display_key}`
+
+### 属性覆盖
+
+<!-- 可选：仅声明需要特殊配置的属性 -->
+
+| 属性名 | 显示名 | 索引配置 | 说明 |
+|--------|--------|----------|------|
+| {property} | {显示名} | {索引配置} | {说明} |
+
+### 逻辑属性
+
+<!-- 可选：指标、算子等扩展属性 -->
+
+#### {logic_property_name}
+
+- **类型**: metric | operator
+- **来源**: {source_id} ({source_type})
+- **说明**: {说明}
+
+| 参数名 | 来源 | 绑定值 |
+|--------|------|--------|
+| {param} | property | {property_name} |
+| {param} | input | - |
+
+---
+
+# 关系定义
+
+## Relation: {relation_id}
+
+**{关系名称}** - {简短描述}
+
+| 起点 | 终点 | 类型 |
+|------|------|------|
+| {source_entity} | {target_entity} | direct |
+
+### 映射规则
+
+| 起点属性 | 终点属性 |
+|----------|----------|
+| {source_prop} | {target_prop} |
+
+### 业务语义
+
+{关系的业务含义说明}
+
+---
+
+# 行动定义
+
+## Action: {action_id}
+
+**{行动名称}** - {简短描述}
+
+| 绑定实体 | 行动类型 |
+|----------|----------|
+| {entity_id} | add | modify | delete |
+
+### 触发条件
+
+```yaml
+condition:
+  object_type_id: {entity_id}
+  field: {property_name}
+  operation: {operator}
+  value: {value}
+```
+
+### 工具配置
+
+| 类型 | 工具ID |
+|------|--------|
+| tool | {tool_id} |
+
+### 参数绑定
+
+| 参数 | 来源 | 绑定 | 说明 |
+|------|------|------|------|
+| {param} | property | {property_name} | {说明} |
+| {param} | input | - | {说明} |
+
+### 调度配置
+
+| 类型 | 表达式 |
+|------|--------|
+| FIX_RATE | {interval} |
+
+### 执行说明
+
+{详细的执行流程说明}

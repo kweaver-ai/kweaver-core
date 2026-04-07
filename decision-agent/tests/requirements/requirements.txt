@@ -1,0 +1,17 @@
+--index-url http://repository.aishu.cn:8081/repository/pypi/simple
+--trusted-host repository.aishu.cn
+allure-python-commons==2.8.40
+allure-pytest==2.8.40
+pytest==6.2.3
+Requests==2.31.0
+ruamel.yaml==0.17.21
+urllib3==1.25.11
+pycryptodome==3.20.0
+paramiko==3.4.0
+jsonschema==4.21.1
+jsonschema-specifications==2023.7.1
+M2Crypto==0.40.0
+thrift==0.20.0
+pyyaml==6.0.1
+pymysql==1.1.0
+swig==4.3.0

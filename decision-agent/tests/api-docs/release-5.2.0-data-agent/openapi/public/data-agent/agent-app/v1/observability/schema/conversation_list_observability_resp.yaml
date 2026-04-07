@@ -1,0 +1,11 @@
+ConversationListObservabilityResp:
+  type: object
+  properties:
+    entries:
+      type: array
+      items:
+        $ref: './conversation_detail.yaml#/ConversationDetail'
+      description: 对话列表
+    total_count:
+      type: integer
+      description: 总数量

@@ -1,0 +1,69 @@
+published_agent_list_req:
+  type: object
+  description: 已发布智能体列表req
+  properties:
+    name:
+      type: string
+      description: 根据名称模糊查询
+    ids:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        description: agent ID
+      description: agent ID数组
+    agent_keys:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        description: agent key
+      description: agent key数组
+    exclude_agent_keys:
+      type: array
+      maxItems: 1000
+      items:
+        type: string
+        description: agent key
+      description: 需要排除的agent keys
+    category_id:
+      type: string
+      description: 分类ID
+    publish_to_be:
+      type: string
+      description: 发布为标识("api_agent", "web_sdk_agent", "skill_agent", "data_flow_agent")
+      enum: ["api_agent", "web_sdk_agent", "skill_agent", "data_flow_agent"]
+    custom_space_id:
+      type: string
+      description: 自定义空间ID（如果不是自定义空间，传空。如广场）
+    # page:
+    #   type: integer
+    #   description: 分页页码
+    #   default: 1
+    size:
+      type: integer
+      description: 每页返回条数
+      default: 10
+    pagination_marker_str:
+      $ref: './published_agent_list_maker.yaml#/pagination_marker_str'
+    is_to_custom_space:
+      type: integer
+      description: |
+        获取发布到自定义空间的智能体
+        0或不传，此字段不生效
+        1: 获取发布到自定义空间的智能体(f_is_to_custom_space=1)
+    is_to_square:
+      type: integer
+      description: |
+        获取发布到广场的智能体
+        0或不传，此字段不生效
+        1: 获取发布到广场的智能体（根据此字段进行过滤,f_is_to_square=1）
+    business_domain_ids:
+      type: array
+      items:
+        type: string
+      description: |
+        - 业务域ID数组
+        - 如果不传，会使用header中的“x-business-domain”。如果该header也没有传，会默认使用“公共业务域”进行过滤
+      example: ["bd-001", "bd-002"]
+      maxItems: 2

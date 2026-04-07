@@ -1,0 +1,95 @@
+nameOverride: ""
+fullnameOverride: ""
+
+mode: deployment
+
+image:
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+  repository: dip/opentelemetry-collector-contrib
+  pullPolicy: IfNotPresent
+  tag: "0.148.0"
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+service:
+  type: ClusterIP
+  annotations: {}
+  ports:
+    grpc: 4317
+    http: 4318
+
+opensearchExporter:
+  enabled: true
+  http:
+    endpoint:  http://opensearch-cluster-master.resource.svc.cluster.local:9200
+    tls:
+      insecure: true
+  auth:
+    enabled: false
+    username: ""
+    password: ""
+  dataset: default
+  namespace: namespace
+  logsIndex: ""
+  logsIndexFallback: unknown
+  logsIndexTimeFormat: ""
+  tracesIndex: ""
+  tracesIndexFallback: unknown
+  tracesIndexTimeFormat: ""
+  mapping:
+    mode: ss4o
+    timestampField: ""
+    unixTimestamp: false
+    dedup: false
+    dedot: false
+  bulkAction: create
+
+debugExporter:
+  enabled: false
+  verbosity: detailed
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+  processors:
+    batch: {}
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [opensearch]
+      logs:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [opensearch]
+
+extraArgs: []
+extraEnvs: []

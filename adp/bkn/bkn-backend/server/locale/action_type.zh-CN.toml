@@ -1,0 +1,75 @@
+# 行动类
+[BknBackend.ActionType.Duplicated.IDInFile]
+Description = "存在重复的行动类ID"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.Duplicated.Name]
+Description = "存在重复的行动类名称"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InvalidParameter.ConceptCondition]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.ActionTypeIDExisted]
+Description = "行动类ID已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.ActionTypeNameExisted]
+Description = "行动类名称已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.LengthExceeded.Name]
+Description = "行动类名称长度超出限制"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.NullParameter.Name]
+Description = "行动类名称为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.ActionTypeNotFound]
+Description = "行动类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError.MissingTransaction]
+Description = "缺少事务"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError.BeginTransactionFailed]
+Description = "开启事务异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError.CheckActionTypeIfExistFailed]
+Description = "检查行动类名称是否存在失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError.GetActionTypesByIDsFailed]
+Description = "按ID获取行动类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ActionType.InternalError.InsertOpenSearchDataFailed]
+Description = "行动类概念索引插入失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

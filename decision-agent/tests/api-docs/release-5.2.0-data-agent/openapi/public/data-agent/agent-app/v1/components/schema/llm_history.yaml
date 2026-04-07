@@ -1,0 +1,10 @@
+LLMHistory:
+  type: object
+  description: 历史上下文
+  properties:
+    role:
+      type: string
+      description: 角色
+    content:
+      type: string
+      description: 内容

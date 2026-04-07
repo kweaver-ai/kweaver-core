@@ -1,0 +1,148 @@
+openapi: "3.0.3"
+info:
+  # [必填] API集合名称
+  title: "请API集合名称"
+
+  # [必填] 算子详细描述，支持多行文本
+  description: |
+    请详细描述算子的功能、用途和使用场景; 可以包含多行文本，支持 Markdown 格式。
+
+  # [必填] 算子版本号
+  version: "1.0.0"
+  # [必填] 算子作者
+  contact:
+    name: API 支持团队
+    email: support@example.com
+
+# [必填] 服务器配置
+# 注意：至少需要定义一个服务器
+servers:
+  - url: "http://127.0.0.1:9000"
+    description: "url描述"
+
+# [必填] API 路径定义
+paths:
+  # 主要执行路径
+  /execute:
+    post:
+      # [必填] 执行算子
+      summary: "执行算子"
+      # [选填] 执行算子描述
+      description: "提交任务执行算子"
+
+      # [必填] 请求体定义
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                # [必填] 输入数据定义
+                data:
+                  type: object
+                  description: "输入数据"
+                  # 请根据实际需求定义数据结构
+                  properties:
+                    # 示例：输入文件路径
+                    inputPath:
+                      type: string
+                      description: "输入数据路径"
+                      example: "hdfs://data/input.csv"
+                # [必填] 算子参数定义
+                parameters:
+                  type: object
+                  description: "算子参数"
+                  # 请根据实际需求定义参数结构
+                  properties:
+                    # 示例参数，请替换为实际参数
+                    batchSize:
+                      type: integer
+                      description: "批处理大小"
+                      default: 100
+                      minimum: 1
+                      maximum: 1000
+
+                    modelType:
+                      type: string
+                      description: "模型类型"
+                      enum: ["linear", "tree", "neural"]
+                      default: "linear"
+
+
+      # [必填] 响应定义
+      responses:
+        '200':
+          description: "执行成功"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Output'
+
+        '400':
+          description: "请求参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+# [必填] 组件定义
+components:
+  schemas:
+    # [必填] 输出数据模型
+    Output:
+      type: object
+      properties:
+        # [必填] 输出结果定义
+        result:
+          type: object
+          description: "处理结果"
+          # 请根据实际需求定义结果结构
+          properties:
+            # 示例：输出文件路径
+            outputPath:
+              type: string
+              description: "输出数据路径"
+              example: "hdfs://data/output.csv"
+
+        # [可选] 执行指标
+        metrics:
+          type: object
+          description: "执行指标"
+          properties:
+            executionTime:
+              type: number
+              description: "执行时间（秒）"
+              example: 10.5
+
+            processedRecords:
+              type: integer
+              description: "处理记录数"
+              example: 1000
+
+    # [必填] 错误模型
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "错误代码"
+          example: "INVALID_PARAMETER"
+
+        message:
+          type: string
+          description: "错误消息"
+          example: "Invalid parameter: batchSize must be between 1 and 1000"
+
+        details:
+          type: object
+          description: "错误详情"

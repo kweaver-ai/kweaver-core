@@ -1,0 +1,42 @@
+### 解析SSE-自定义local mcp server
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/parse/sse
+Content-Type: application/json
+Authorization: Bearer ory_at_xpIZ-_vxHKCpkh4iMZHBN-wL6T0wobKD9o-TkkmxVd8.nLmQflLhUdpSEvfoU_n26ulEIUPQgBKHwiP-J-M-VWc
+
+{
+    "mode": "sse",
+    "url": "http://localhost:8080/sse"
+}
+
+
+### 注册MCP服务，sse模式
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp
+Content-Type: application/json
+Authorization: Bearer ory_at_xpIZ-_vxHKCpkh4iMZHBN-wL6T0wobKD9o-TkkmxVd8.nLmQflLhUdpSEvfoU_n26ulEIUPQgBKHwiP-J-M-VWc
+
+{
+    "name": "my-mcp-server-test",
+    "description": "这个一段测试描述,用于描述MCP服务的信息",
+    "mode": "sse",
+    "url": "http://localhost:8080/sse",
+    "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer 1234567890",
+        "X-Custom-Header": "custom-value"
+    },
+    "source": "custom",
+    "category": "test"
+}
+
+
+### 调用MCP工具 - local mcp server
+POST http://localhost:9000/api/agent-operator-integration/internal-v1/mcp/proxy/tool/call
+Content-Type: application/json
+
+{
+   "mcp_id": "ca19c058-6906-4ab0-93d7-4b5a63697bdd",
+   "tool_name": "echo",
+   "parameters": {
+       "message": "这是一个测试工具"
+    }
+}

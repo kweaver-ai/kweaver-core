@@ -1,0 +1,53 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+image:
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+  repository: agent-observability
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: class-443
+  annotations: {}
+  host: ""
+  paths:
+    - /api/agent-observability/v1
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+opensearch:
+  endpoint:  http://opensearch-cluster-master.resource.svc.cluster.local:9200
+  traceIndex: ss4o_traces-default-anyshare
+  auth:
+    enabled: false
+    username: ""
+    password: ""

@@ -1,0 +1,37 @@
+KGAdvancedConfig:
+  type: object
+  required:
+    - text_match_entity_nums
+    - vector_match_entity_nums
+    - graph_rag_topk
+    - long_text_length
+    - reranker_sim_threshold
+    - retrieval_max_length
+  properties:
+    text_match_entity_nums:
+      type: integer
+      minimum: 40
+      maximum: 100
+      description: 文本匹配召回实体数量
+    vector_match_entity_nums:
+      type: integer
+      minimum: 40
+      maximum: 100
+      description: 向量匹配召回实体数量
+    graph_rag_topk:
+      type: integer
+      minimum: 10
+      maximum: 100
+      description: 重排序后保留参考信息数量
+    long_text_length:
+      type: integer
+      minimum: 50
+      description: 长文本长度
+    reranker_sim_threshold:
+      type: number
+      minimum: -10
+      maximum: 10
+      description: 图谱rerank bge相似度过滤阈值
+    retrieval_max_length:
+      type: integer
+      description: 召回文档最大长度

@@ -1,0 +1,67 @@
+apiVersion: v1
+data:
+  RDSHOST: {{ .Values.depServices.rds.host | quote }}
+  RDSPORT: {{ quote .Values.depServices.rds.port }}
+  RDSUSER: {{ .Values.depServices.rds.user }}
+  RDSPASS: {{ .Values.depServices.rds.password }}
+  DB_TYPE: {{ .Values.depServices.rds.type | quote}}
+  RDSDBNAME: {{ .Values.depServices.rds.database | quote }}
+  OPENSEARCH_HOST: {{ .Values.depServices.opensearch.host | quote}}
+  OPENSEARCHRED: {{ .Values.depServices.opensearch.read | quote}}
+  OPENSEARCHWRITE: {{ .Values.depServices.opensearch.write | quote}}
+  OPENSEARCH_PORT: {{ quote .Values.depServices.opensearch.port }}
+  OPENSEARCH_USER: {{ .Values.depServices.opensearch.user | quote}}
+  OPENSEARCH_PASS: {{ .Values.depServices.opensearch.password | quote}}
+  REDISCLUSTERMODE: {{ .Values.depServices.redis.connectType | quote}}
+  REDISUSER: {{ .Values.depServices.redis.connectInfo.username | quote}}
+  REDISPASS: {{ .Values.depServices.redis.connectInfo.password | quote}}
+  {{- if eq .Values.depServices.redis.connectType "sentinel" }}
+  REDISHOST: {{ quote .Values.depServices.redis.connectInfo.sentinelHost }}
+  REDISPORT: {{ quote .Values.depServices.redis.connectInfo.sentinelPort }}
+  SENTINELMASTER: {{ .Values.depServices.redis.connectInfo.masterGroupName | quote }}
+  SENTINELUSER: {{ .Values.depServices.redis.connectInfo.sentinelUsername | quote}}
+  SENTINELPASS: {{ .Values.depServices.redis.connectInfo.sentinelPassword | quote}}
+  {{- else if eq .Values.depServices.redis.connectType "standalone" }}
+  REDISHOST: {{ quote .Values.depServices.redis.connectInfo.host }}
+  REDISPORT: {{ quote .Values.depServices.redis.connectInfo.port }}
+  {{- else if eq .Values.depServices.redis.connectType "master-slave" }}
+  REDISREADHOST: {{ .Values.depServices.redis.connectInfo.slaveHost | quote}}
+  REDISREADPORT: {{ quote .Values.depServices.redis.connectInfo.slavePort }}
+  REDISREADUSER: {{ .Values.depServices.redis.connectInfo.username | quote}}
+  REDISREADPASS: {{ .Values.depServices.redis.connectInfo.password | quote}}
+  REDISWRITEHOST: {{ .Values.depServices.redis.connectInfo.masterHost | quote}}
+  REDISWRITEPORT: {{ quote .Values.depServices.redis.connectInfo.masterPort }}
+  REDISWRITEUSER: {{ .Values.depServices.redis.connectInfo.username | quote}}
+  REDISWRITEPASS: {{ .Values.depServices.redis.connectInfo.password | quote}}
+  {{- end }}
+  KAFKAHOST: {{ .Values.depServices.mq.mqHost | quote }}
+  KAFKAPORT: {{ quote .Values.depServices.mq.mqPort }}
+  KAFKAUSER: {{ .Values.depServices.mq.auth.username | quote }}
+  KAFKAPASS: {{ .Values.depServices.mq.auth.password | quote }}
+  TEXTVECTORMAPPING: {{ quote .Values.depServices.text_vector.mapping | quote }}
+  VLMVECTORMAPPING: {{ quote .Values.depServices.text_vector.mapping | quote }}
+  TEXTRERANKERMAPPING: {{ quote .Values.depServices.text_reranker.mapping | quote }}
+  # 授权服务
+  OAUTHPUBLICHOST: {{ .Values.depServices.hydra.publicHost | quote }}
+  OAUTHPUBLICPORT: {{ .Values.depServices.hydra.publicPort | quote }}
+  OAUTHADMINHOST: {{ .Values.depServices.hydra.administrativeHost | quote }}
+  OAUTHADMINPORT: {{ .Values.depServices.hydra.administrativePort | quote }}
+  # user-management服务
+  USERMANAGEMENTPUBLICHOST: {{ .Values.depServices.user_management.publicHost | quote }}
+  USERMANAGEMENTPUBLICPORT: {{ .Values.depServices.user_management.publicPort | quote }}
+  USERMANAGEMENTPRIVATEHOST: {{ .Values.depServices.user_management.privateHost | quote }}
+  USERMANAGEMENTPRIVATEPORT: {{ .Values.depServices.user_management.privatePort | quote }}
+  # authorization服务
+  AUTHORIZATIONPRIVATEHOST: {{ .Values.depServices.authorization.privateHost | quote }}
+  AUTHORIZATIONPRIVATEPORT: {{ .Values.depServices.authorization.privatePort | quote }}
+  dm_svc.conf: |
+    TIME_ZON=(480)
+    LANGUAGE=(cn)
+    DM={{ printf "(%s)" .Values.depServices.rds.host }}
+    [DM]
+    LOGIN_MODE=(1)
+
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-yaml
+  namespace: {{ .Values.namespace }}

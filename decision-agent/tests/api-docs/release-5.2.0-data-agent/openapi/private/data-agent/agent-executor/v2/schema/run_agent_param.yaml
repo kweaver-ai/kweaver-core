@@ -1,0 +1,36 @@
+run_agent_param:
+  properties:
+    agent_id:
+      type: string
+      title: agent_id
+      description: |
+        - agent id
+        - agent_config和agent_id 不能同时为空。agent_config优先级高于agent_id。
+      example: '1830930776523276288'
+    agent_version:
+      type: string
+      title: agent_version
+      description: |
+        - agent版本号,与agent_id配合使用
+        - 当agent_id提供时,此字段为required
+        - 当agent_config提供时,则忽略agent_version和agent_id
+      example: 'latest'
+    agent_config:
+      $ref: '../../../../../public/data-agent/agent-factory/v3/agent/schema/config_req.yaml#/config'
+    agent_input:
+      $ref: './agent_input.yaml#/agent_input'
+      title: agent_input
+      description: agent输入
+      example:
+        query: 你好
+    _options:
+      $ref: './agent_options.yaml#/agent_options'
+      title: options
+      description: Agent运行选项
+  type: object
+  required:
+    - agent_input
+  title: RunAgentParam
+  description: |
+    - Agent运行request
+    - agent_config和agent_id 不能同时为空

@@ -1,0 +1,318 @@
+
+paths:
+  /agent-factory/v3/agent-tpl/{id}:
+    get:
+      operationId: getAgentTpl
+      summary: 获取agent模板详情
+      deprecated: false
+      description: 获取agent模板详情
+      tags:
+        - 模板
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/detail.yaml#/tpl_detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    put:
+      operationId: updateAgentTpl
+      summary: 编辑agent模板
+      deprecated: false
+      description: 编辑agent模板
+      tags:
+        - 模板
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/update_req.yaml#/tpl_update_req'
+            example:
+              name: "信息收集与图片生成小助手"
+              profile: "这是一个信息收集与图片生成小助手"
+              avatar_type: 1
+              avatar: "2"
+              config:
+                input:
+                  fields:
+                    - name: "query"
+                      type: "string"
+                    - name: "tmp_files"
+                      type: "file"
+                  is_temp_zone_enabled: 1
+                  temp_zone_config:
+                    name: "临时上传区"
+                    tmp_file_use_type: "upload"
+                    max_file_count: 50
+                    single_file_size_limit: 100
+                    single_file_size_limit_unit: "MB"
+                    support_data_type: [ "file" ]
+                    allowed_file_categories: [ "document", "pdf", "text" ]
+                system_prompt: "你是一个专业的客服助手，请用友好的语气回答用户的问题。根据提供的知识库内容，准确回答用户咨询。如果不确定，请明确告知用户。"
+                dolphin: "/explore/(system_prompt="#工具调用\n你可以不使用工具直接回答用户问题，也可以调用以下工具回答用户问题：\n##1. 知识库检索工具：\n当用户提出问题时，可以先使用此工具来检索知识库中的内容。\n##2. 执行Web搜索：\n当用户提出需要搜索网络信息时，或者当前的知识不足以回答用户问题时，可以使用此工具，使用Tavily API执行Web搜索并返回结果\n##3. PlantUML图片生成：\n当用户提出生成PlantUML支持的图形时，生成对应的PlantUML脚本。对生成的脚步进行检查，确保脚本的正确性，如果脚本不正确，则重新生成脚本。先看看目前是否有足够的知识或信息来生成对应的脚本，如果有则根据生成的脚本使用“PlantUML图片生成”工具来生成并获得图片url。并简单介绍生成的图形，并提供可访问的图片地址。如果当前信息不足以生成，则明确告诉用户无法生成。\n##4. Markdown转HTML：\n将对用户最后的回答内容的markdown内容通过此工具转换为HTML格式，并将html链接返回给用户，让用户点击此链接查看回答内容。要求：1. 如果前面有生成PlantUML图片，则将PlantUML图片链接放在回答内容的最前面，PlantUML图片介绍放在回答内容的后面。2. 只包含回答给用户的内容，不要包含任何其他内容（比如思考过程、工具调用过程等）。") 要求：当用户想要生成一些图片时，先从知识库中搜索下，然后在从网络中搜下，然后再生成相应的图片（如流程图等）。在直接回答用户的问题后，将回答的内容转换为HTML格式，并提供可访问的HTML链接。调用api接口工具时，注意是http协议还是https协议。用户的问题是：$query ->answer"
+                is_dolphin_mode: 0
+                data_source:
+                  doc: [ { "ds_id": "181","fields": [ { "name": "代码规范","path": "测试数据/代码规范","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/AEBB543FEA1A4FD9917594CA013FC671" },{ "name": "华控数据源","path": "测试数据/华控数据源","source": "gns://92EE2D87255142B78A6F1DFB6BBB836B/4CB822D4A40340CC924AAC57F60147D3" } ] } ]
+                  kg: [ { "kg_id": "129","fields": [ "regions","comments" ],"output_fields": [ "comments" ],"field_properties": { "regions": [ "※vid","regions" ],"comments": [ "※vid","CONTENT","VOTES","COMMENT_TIME" ] } } ]
+                  advanced_config:
+                    doc:
+                      document_threshold: -5.5
+                      retrieval_slices_num: 150
+                      max_slice_per_cite: 16
+                      rerank_topk: 15
+                      slice_head_num: 0
+                      slice_tail_num: 2
+                      documents_num: 8
+                      retrieval_max_length: 32000
+                    kg:
+                      graph_rag_topk: 25
+                      long_text_length: 256
+                      reranker_sim_threshold: -5.5
+                      text_match_entity_nums: 60
+                      vector_match_entity_nums: 60
+                      # enable_rag: true
+                      # enable_ngql: false
+                      retrieval_max_length: 32000
+                tools:
+                  - tool_id: "1901300419510927360"
+                    tool_type: "tool"
+                    tool_box_id: "1901300419502538752"
+                    tool_use_description: "使用Tavily API执行Web搜索并返回结果"
+                    tool_input: null
+                    intervention: false
+                  - tool_id: "tool-123"
+                    tool_type: "agent"
+                    tool_box_id: "box-456"
+                    tool_use_description: "用于查询订单状态的工具"
+                    tool_input:
+                      - enable: true
+                        input_name: "order_id"
+                        input_type: "string"
+                        map_type: "var"
+                        map_value: "query"
+                    intervention: false
+                llms:
+                  - is_default: true
+                    llm_config:
+                      id: "1901307417048780800"
+                      name: "aaron-model-dv3"
+                      model_type: llm
+                      temperature: 1
+                      top_p: 1
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      max_tokens: 1000
+                      # retrieval_max_tokens: 32
+                  - is_default: false
+                    llm_config:
+                      id: "1901307417048780801"
+                      name: "gpt-4"
+                      model_type: llm
+                      temperature: 0.5
+                      top_p: 0.95
+                      max_tokens: 2000
+                      top_k: 1
+                      frequency_penalty: 0
+                      presence_penalty: 0
+                      # retrieval_max_tokens: 32
+                is_data_flow_set_enabled: 1
+                opening_remark_config:
+                  type: fixed
+                  fixed_opening_remark: "您好！我是智能客服助手，很高兴为您服务。请问有什么可以帮助您的吗？"
+                preset_questions:
+                  - question: "如何查询我的订单状态？"
+                  - question: "如何申请退款？"
+                  - question: "产品有哪些功能？"
+                output:
+                  variables:
+                    answer_var: "answer"
+                    doc_retrieval_var: "doc_retrieval_res"
+                    graph_retrieval_var: "graph_retrieval_res"
+                  default_format: "markdown"
+
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    delete:
+      operationId: deleteAgentTpl
+      summary: 删除agent模板
+      deprecated: false
+      description: 删除agent模板
+      tags:
+        - 模板
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/TplID'
+  /agent-factory/v3/agent-tpl/{id}/publish:
+    post:
+      operationId: publishAgentTpl
+      summary: 发布智能体模板
+      description: 发布智能体模板
+      tags:
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/TplID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/publish_upsert_req.yaml#/publish_upsert_req'
+      responses:
+        '200':
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/publish_upsert_res.yaml#/publish_upsert_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/agent-tpl/{id}/unpublish:
+    put:
+      operationId: unpublishAgentTpl
+      summary: 取消发布智能体模板
+      description: 通过发布 ID 取消已发布的智能体模板
+      tags:
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/TplID'
+      responses:
+        '204':
+          description: 取消发布成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/agent-tpl/{id}/publish-info:
+    get:
+      operationId: getPublishInfo
+      summary: 获取模板发布信息
+      description: 获取模板发布信息
+      tags:
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/TplID'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    description: 分类列表
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: 分类 ID
+                        name:
+                          type: string
+                          description: 分类名称
+          description: 获取成功
+
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+    put:
+      operationId: updatePublishInfo
+      summary: 更新模板发布信息
+      description: 更新模板发布信息
+      tags:
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/TplID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/publish_upsert_req.yaml#/publish_upsert_req'
+            examples:
+              example1:
+                value:
+                  category_ids: [ "id1", "id2", "id3" ]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/publish_upsert_res.yaml#/publish_upsert_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+      security: [ ]
+  /agent-factory/v3/agent-tpl/{id}/copy:
+    post:
+      operationId: copyAgentTpl
+      summary: 复制智能体模板
+      description: 复制智能体模板
+      tags:
+        - 模板
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/TplID'
+      responses:
+        '201':
+          description: 复制成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/copy_res.yaml#/copy_res'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'

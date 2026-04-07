@@ -1,0 +1,104 @@
+openapi: 3.0.2
+info:
+  title: AGENT-APP服务 API
+  version: 1.0.0
+  description: |
+    API to access DIP
+
+    如有任何疑问，可到开发者社区提问：https://developers.aishu.cn
+
+servers:
+  - url: 'https://{host}:{port}/'
+    description: 'host: DIP服务器IP, port: 默认端口443'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '443'
+        description: https默认端口443
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: Agent应用管理
+  - name: 会话管理
+  - name: 会话收藏
+  - name: 对话
+  - name: 系统
+  - name: 可观测性
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=261242083)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/744857)
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: AGENT APP
+    tags:
+      - Agent应用管理
+      - 会话管理
+      - 会话收藏
+      - 对话
+      - 系统
+      - 可观测性
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+paths:
+  /health:
+    get:
+      summary: 健康检查
+      tags:
+        - 系统
+      responses:
+        '200':
+          description: 服务正常
+  /api/agent-app/v1/app/{app_key}/conversation/{id}:
+    $ref: './conversation/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1conversation~1{id}'
+  /api/agent-app/v1/app/{app_key}/conversation:
+    $ref: './conversation/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1conversation'
+  /api/agent-app/v1/app/{app_key}/conversation/{id}/mark_read:
+    $ref: './conversation/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1conversation~1{id}~1mark_read'
+  # /api/agent-app/v1/conversation/favorite/{id}:
+  #   $ref: './conversation/paths.yaml#/paths/~1api~1agent-app~1v1~1conversation~1favorite~1{id}'
+  # /api/agent-app/v1/conversation/favorite:
+  #   $ref: './conversation/paths.yaml#/paths/~1api~1agent-app~1v1~1conversation~1favorite'
+  /api/intelli-search/v2/bots/{id}/chat:
+    $ref: './chat/paths.yaml#/paths/~1api~1intelli-search~1v2~1bots~1{id}~1chat'
+  /api/agent-app/v1/app/{app_key}/chat/completion:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1chat~1completion'
+  /api/agent-app/v1/app/{app_key}/chat/termination:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1chat~1termination'
+  /api/agent-app/v1/app/{app_key}/debug/completion:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1debug~1completion'
+  /api/agent-app/v1/app/{app_key}:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}'
+  /api/agent-app/v1/app/{app_key}/chat/resume:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1chat~1resume'
+  /api/agent-app/v1/app/{app_key}/api/chat/completion:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1api~1chat~1completion'
+  /api/agent-app/v1/app/{app_key}/api/doc:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1app~1{app_key}~1api~1doc'
+  /api/agent-app/v1/file/check:
+    $ref: './chat/paths.yaml#/paths/~1api~1agent-app~1v1~1file~1check'
+  /api/agent-app/v1/observability/agent/{agent_id}/detail:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_id}~1detail'
+  /api/agent-app/v1/observability/agent/{agent_key}/conversation:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_key}~1conversation'
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_id}~1conversation~1{conversation_id}~1session'
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_id}~1conversation~1{conversation_id}~1session~1{session_id}~1detail'
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_id}~1conversation~1{conversation_id}~1session~1{session_id}~1run'
+  /api/agent-app/v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail:
+    $ref: './observability/paths.yaml#/paths/~1api~1agent-app~1v1~1observability~1agent~1{agent_id}~1conversation~1{conversation_id}~1session~1{session_id}~1run~1{run_id}~1detail'
+# components:
+#   $ref: './components/components.yaml#/components'
+security:
+  - ApiKeyAuth: []

@@ -1,0 +1,32 @@
+DebugInput:
+  type: object
+  properties:
+    query:
+      type: string
+      description: 用户问题
+    temp_files:
+      type: array
+      description: 临时文件
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: 文档ID
+          type:
+            type: string
+            description: 类型(doc)
+          name:
+            type: string
+            description: 文档名称
+            
+    custom_querys:
+      type: object
+      description: 自定义输入变量，map[string]any
+    history:
+      type: array
+      description: 历史上下文
+      items:
+        $ref: './llm_history.yaml#/LLMHistory'
+    tool:
+      $ref: './ask_tool.yaml#/AskTool'

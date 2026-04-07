@@ -1,0 +1,27 @@
+{{- if .Values.components.ecronManagement.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dataflow.ecronManagement.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "dataflow.labels" . | nindent 4 }}
+    app: {{ include "dataflow.ecronManagement.fullname" . }}
+spec:
+  {{- if .Values.ecronManagement.service.enableDualStack }}
+  ipFamilies:
+  - IPv6
+  - IPv4
+  ipFamilyPolicy: PreferDualStack
+  {{- end }}
+  ports:
+    - port: {{ .Values.ecronManagement.service.ecronMgntPort }}
+      protocol: TCP
+      targetPort: {{ .Values.ecronManagement.service.ecronMgntPort }}
+      {{- if eq .Values.ecronManagement.service.type "NodePort" }}
+      nodePort: {{ .Values.ecronManagement.service.ecronMgntPort }}
+      {{- end}}
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  type: {{ .Values.ecronManagement.service.type }}
+{{- end }}

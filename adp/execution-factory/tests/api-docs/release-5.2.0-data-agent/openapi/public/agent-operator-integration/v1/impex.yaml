@@ -1,0 +1,691 @@
+openapi: "3.0.1"
+info:
+  title: "算子平台组件导入导出"
+  description: "算子平台组件导入导出相关接口"
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration/v1
+    description: 服务器地址
+
+paths:
+  /impex/export/{type}/{id}:
+    get:
+      summary: 导出组件
+      description: 导出组件
+      operationId: export
+      tags:
+        - "导入导出"
+      parameters:
+        - name: Authorization
+          in: header
+          description: 认证信息
+          required: true
+          schema:
+            type: string
+          example: "Bearer 123456"
+        - name: type
+          in: path
+          description: 组件类型
+          required: true
+          schema:
+            type: string
+            enum:
+              - "operator"
+              - "toolbox"
+              - "mcp"
+          example: "operator"
+        - name: id
+          in: path
+          description: 组件ID
+          required: true
+          schema:
+            type: string
+          example: "123456"
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResp"
+        "400":
+          description: "非法请求"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "组件不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "组件已存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /impex/import/{type}:
+    post:
+      summary: 导入组件
+      description: 导入组件
+      operationId: import
+      tags:
+        - "导入导出"
+      parameters:
+        - name: Authorization
+          in: header
+          description: 认证信息
+          required: true
+          schema:
+            type: string
+          example: "Bearer 123456"
+        - name: x-business-domain
+          in: header
+          required: true
+          schema:
+            type: string
+          description: 业务域ID
+        - name: type
+          in: path
+          description: 组件类型
+          required: true
+          schema:
+            type: string
+            enum:
+              - "operator"
+              - "toolbox"
+              - "mcp"
+          example: "operator"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ImportReq"
+      responses:
+        "201":
+          description: 成功
+        "400":
+          description: "非法请求"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "组件已存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      description: "错误信息"
+      properties:
+        code:
+          type: string
+          description: "错误码"
+        description:
+          type: string
+          description: "错误信息"
+        detail:
+          type: object
+          description: "错误详情"
+        solution:
+          type: string
+          description: "错误解决方案"
+        link:
+          type: string
+          description: "错误链接"
+    ExportReq:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            description: "组件ID"
+    ExportResp:
+      type: object
+      description: "组件配置"
+      properties:
+        operator:
+          $ref: "#/components/schemas/OperatorConfig"
+        toolbox:
+          $ref: "#/components/schemas/ToolBoxConfig"
+        mcp:
+          $ref: "#/components/schemas/MCPConfig"
+    ImportResp:
+      type: object
+      description: "导入组件响应"
+      properties:
+        type:
+          type: string
+          description: "组件类型"
+          enum:
+            - "operator"
+            - "toolbox"
+            - "mcp"
+        id:
+          type: string
+          description: "组件ID"
+    OperatorConfig:
+      type: object
+      description: "Operator配置"
+      properties:
+        configs:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperatorImpexItem"
+        composite_configs:
+          type: array
+          items:
+            type: object
+            description: 从DataFlow导出数据为准，不解析只传递。
+    ToolBoxConfig:
+      type: object
+      description: "ToolBox配置"
+      properties:
+        configs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolBoxImpexItem"
+    MCPConfig:
+      type: object
+      description: "MCP配置"
+      properties:
+        configs:
+          type: array
+          items:
+            $ref: "#/components/schemas/MCPConfigItem"
+    ImportReq:
+      type: object
+      description: "导入组件请求"
+      required:
+        - "data"
+        - "mode"
+      properties:
+        data:
+          type: string
+          format: binary
+          description: "组件导入数据"
+        mode:
+          type: string
+          description: "导入模式"
+          enum:
+            - "create"
+            - "upsert"
+    MCPConfigItem:
+      type: object
+      description: "MCP Server配置"
+      properties:
+        mcp_id:
+          type: string
+          description: "MCP ID"
+        version:
+          type: string
+          description: "MCP版本"
+        creation_type:
+          type: string
+          description: "创建类型"
+        name:
+          type: string
+          description: "MCP Server名称"
+        description:
+          type: string
+          description: "MCP Server描述"
+        status:
+          type: string
+          description: "MCP Server状态"
+        source:
+          type: string
+          description: "MCP Server来源"
+        is_internal:
+          type: boolean
+          description: "是否内部MCP Server"
+        category:
+          type: string
+          description: "MCP Server分类"
+        mode:
+          type: string
+          description: "MCP Server模式"
+        command:
+          type: string
+          description: "MCP Server命令"
+        args:
+          type: array
+          description: "MCP Server参数"
+          items:
+            type: string
+        url:
+          type: string
+          description: "MCP Server地址"
+        headers:
+          type: object
+          description: "MCP Server请求头"
+          additionalProperties:
+            type: string
+        env:
+          type: object
+          description: "MCP Server环境变量"
+          additionalProperties:
+            type: string
+        create_user:
+          type: string
+          description: "创建用户"
+        create_time:
+          type: integer
+          description: "创建时间"
+        update_user:
+          type: string
+          description: "更新用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        mcp_tools:
+          type: array
+          description: "MCP Server工具列表"
+          items:
+            $ref: "#/components/schemas/MCPToolInfo"
+    MCPToolInfo:
+      type: object
+      description: "MCP Server工具信息"
+      properties:
+        mcp_tool_id:
+          type: string
+          description: "MCP Server工具ID"
+        mcp_id:
+          type: string
+          description: "MCP Server ID"
+        mcp_version:
+          type: string
+          description: "MCP Server版本"
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        tool_id:
+          type: string
+          description: "工具ID"
+        name:
+          type: string
+          description: "工具名称"
+        description:
+          type: string
+          description: "工具描述"
+        use_rule:
+          type: string
+          description: "工具使用规则"
+    ToolBoxImpexItem:
+      type: object
+      description: "ToolBox配置"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱类型"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        status:
+          type: string
+          description: "工具箱状态"
+        category_type:
+          type: string
+          description: "工具箱分类"
+        category_name:
+          type: string
+          description: "工具箱分类名称"
+        is_internal:
+          type: boolean
+          description: "是否内部工具箱"
+        source:
+          type: string
+          description: "工具箱来源"
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+    ToolInfo:
+      type: object
+      description: "工具箱工具信息"
+      properties:
+        tool_id:
+          type: string
+          description: "工具ID"
+        name:
+          type: string
+          description: "工具名称"
+        description:
+          type: string
+          description: "工具描述"
+        status:
+          type: string
+          description: "工具状态,启用/禁用"
+          default: "disabled" # 默认禁用
+          enum:
+            - "enabled" # 启用
+            - "disabled" # 禁用
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        metadata:
+          type: object
+          description: "元数据"
+          properties:
+            openapi:
+              $ref: "#/components/schemas/OpenAPIStruct"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+    OpenAPIStruct:
+      type: object
+      description: "openapi类型元数据"
+      properties:
+        summary:
+          type: string
+          description: "摘要"
+        path:
+          type: string
+          description: "路径"
+        method:
+          type: string
+          description: "方法"
+        description:
+          type: string
+          description: "描述"
+        server_url:
+          type: string
+          description: "服务器地址"
+        api_spec:
+          type: object
+          properties:
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "参数名称"
+                  in:
+                    type: string
+                    description: "参数位置，如path/query/header/cookie"
+                  description:
+                    type: string
+                    description: "参数描述"
+                  required:
+                    type: boolean
+                    default: false
+                  schema:
+                    $ref: "#/components/schemas/ParameterSchema"
+            request_body:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: "请求体描述"
+                required:
+                  type: boolean
+                  default: false
+                content:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      schema:
+                        $ref: "#/components/schemas/ExampleRequest"
+                      example:
+                        $ref: "#/components/schemas/ExampleRequest"
+            responses:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  description:
+                    type: string
+                    description: "响应描述"
+                  content:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        schema:
+                          $ref: "#/components/schemas/ExampleResponse"
+                        example:
+                          $ref: "#/components/schemas/ExampleResponse"
+            schemas:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/ParameterSchema"
+            security:
+              type: array
+              items:
+                type: object
+                properties:
+                  securityScheme:
+                    type: string
+                    enum: ["apiKey", "http", "oauth2"]
+    ParameterSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["string", "number", "integer", "boolean", "array"]
+        format:
+          type: string
+          enum: ["int32", "int64", "float", "double", "byte"]
+        example:
+          type: string
+    ExampleRequest:
+      type: object
+      properties:
+        field1:
+          type: string
+          example: "sample_value"
+        field2:
+          type: integer
+          format: int32
+          example: 123
+    ExampleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        data:
+          type: object
+          properties:
+            result:
+              type: string
+              example: "success"
+    OperatorImpexItem:
+      type: object
+      description: "Operator组件配置"
+      properties:
+        operator_id:
+          type: string
+          description: "算子ID"
+        version:
+          type: string
+          description: "算子版本"
+        status:
+          type: string
+          description: "算子状态"
+        metadata_type:
+          type: string
+          description: "算子元数据类型"
+        metadata:
+          type: object
+          description: "算子元数据"
+        extend_info:
+          type: object
+          description: "算子扩展信息"
+          additionalProperties: true
+        operator_info:
+          $ref: "#/components/schemas/OperatorInfo"
+        operator_execute_control:
+          $ref: "#/components/schemas/OperatorExecuteControl"
+        create_user:
+          type: string
+          description: "创建用户"
+        create_time:
+          type: integer
+          description: "创建时间"
+        update_user:
+          type: string
+          description: "更新用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        is_internal:
+          type: boolean
+          description: "是否为内部算子"
+    OperatorInfo:
+      type: object
+      description: "算子信息"
+      properties:
+        operator_type:
+          type: string
+          description: "basic: 基础算子, composite: 组合算子, 默认为basic"
+          default: "basic"
+          enum:
+            - "basic"
+            - "composite"
+        execution_mode:
+          type: string
+          description: "sync: 同步执行, async: 异步执行, 默认为sync"
+          default: "sync"
+          enum:
+            - "sync"
+            - "async"
+        category:
+          type: string
+          description: "算子分类，默认为other_category（其他/数据处理/数据转换/数据存储/数据分析/数据查询/数据抽取/数据分割/模型训练）"
+          default: "other_category"
+          enum:
+            - "other_category" # 自定义
+            - "data_process" # 数据处理
+            - "data_transform" # 数据转换
+            - "data_store" # 数据存储
+            - "data_analysis" # 数据分析
+            - "data_query" # 数据查询
+            - "data_extract" # 数据抽取
+            - "data_split" # 数据分割
+            - "model_train" # 模型训练
+        category_name:
+          type: string
+          description: "算子分类名称"
+        source:
+          type: string
+          description: "算子来源, 默认为unknown, 可选值为system/unknown, 如果是system不允许修改"
+          default: "unknown"
+          enum:
+            - "system"
+            - "unknown"
+        is_data_source:
+          type: boolean
+          description: "是否为数据源算子"
+          default: false
+    OperatorExecuteControl:
+      type: object
+      description: "算子执行控制"
+      properties:
+        timeout:
+          type: integer
+          description: "超时时间（毫秒）"
+        retry_policy:
+          type: object
+          description: "重试策略"
+          properties:
+            max_attempts:
+              type: integer
+              description: "最大重试次数"
+              default: 3
+            initial_delay:
+              type: integer
+              description: "初始延迟时间(毫秒)"
+              default: 1000
+            max_delay:
+              type: integer
+              description: "最大延迟时间(毫秒)"
+              default: 6000
+            backoff_factor:
+              type: integer
+              description: "退避因子"
+              default: 2
+            retry_conditions:
+              type: object
+              description: "重试条件"
+              properties:
+                status_code:
+                  type: array
+                  description: "HTTP状态码"
+                  items:
+                    type: integer
+                error_codes:
+                  type: array
+                  description: "异常类型"
+                  items:
+                    type: string

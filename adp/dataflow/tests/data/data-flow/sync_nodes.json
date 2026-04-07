@@ -1,0 +1,16 @@
+[
+  {
+    "id": "2",
+    "operator": "@internal/json/set",
+    "parameters": {
+      "json": "{}",
+      "fields": [
+        {
+          "key": "a",
+          "type": "string",
+          "value": "{{__0.fields.str}}"
+        }
+      ]
+    }
+  }
+] 

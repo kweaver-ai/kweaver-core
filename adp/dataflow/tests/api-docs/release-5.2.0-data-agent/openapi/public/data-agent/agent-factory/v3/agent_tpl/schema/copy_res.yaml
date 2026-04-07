@@ -1,0 +1,15 @@
+copy_res:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: agent 模板id
+      example: xxx
+    key:
+      type: string
+      description: agent 模板标识
+      example: xxx
+    name:
+      type: string
+      description: agent 模板名称
+      example: xxx

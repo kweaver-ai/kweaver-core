@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "coderunner.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "coderunner.fullname" . }}
+{{ include "coderunner.labels" . | indent 4 }}
+data:
+  TZ: {{ .Values.env.timezone | quote }}
+  LANG: {{ .Values.env.language | quote }}
+  SERVICE_LANG: {{ .Values.service.language | quote }}
+  API_SERVER_PORT: {{ add1 .Values.service.port | quote }}
+  DEBUG: {{ .Values.service.debug | quote }}
+  LOG_LEVEL: {{ .Values.service.coderunnerLogLevel | quote }}
+  PYTHON_MAX_WORKERS: {{ .Values.service.pythonMaxWorkers | quote }}
+  {{- if .Values.service.logger}}
+  LOGOUT: {{ .Values.service.logger }}
+  {{- end}}
+  DATA_FLOW_TOOLS_PRIVATE_HOST: "dataflowtools-private"
+  DATA_FLOW_TOOLS_PRIVATE_PORT: {{ .Values.service.privatePort | quote }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dataflowtools.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "coderunner.fullname" . }}
+{{ include "coderunner.labels" . | indent 4 }}
+data:
+  TZ: {{ .Values.env.timezone | quote }}
+  LANG: {{ .Values.env.language | quote }}
+  SERVICE_LANG: {{ .Values.service.language | quote }}
+  API_SERVER_PORT: {{ .Values.service.privatePort | quote }}
+  API_SERVER_PUBLIC_PORT: {{ .Values.service.publicPort | quote }}
+  DEBUG: {{ .Values.service.debug | quote }}
+  LOG_LEVEL: {{ .Values.service.coderunnerLogLevel | quote }}
+  PYTHON_MAX_WORKERS: {{ .Values.service.pythonMaxWorkers | quote }}
+  AUTH_ENABLED: {{ .Values.auth.enabled | quote }}
+  T4TH_HOST: {{ index .Values "depServices" "ocr-engine" "t4th" "host" | quote }}
+  T4TH_PORT: {{ index .Values "depServices" "ocr-engine" "t4th" "port" | quote }}
+  T4TH_PROTOCOL: {{ index .Values "depServices" "ocr-engine" "t4th" "protocol" | quote }}
+  T4TH_ENABLE: {{ index .Values "depServices" "ocr-engine" "t4th" "switch" | quote }}
+  T4TH_CONNECTORTYPE: {{ index .Values "depServices" "ocr-engine" "t4th" "connectType" | quote }}
+  {{- if .Values.service.logger}}
+  LOGOUT: {{ .Values.service.logger }}
+  {{- end}}
+  DB_HOST: {{ .Values.depServices.rds.host | quote }}
+  DB_PORT: {{ .Values.depServices.rds.port | quote }}
+  DB_TYPE: {{ .Values.depServices.rds.type | quote }}
+  DB_NAME: {{ include "rds.realDatabase" . | quote }}
+  DB_USER: {{ .Values.depServices.rds.user | quote }}
+  OAUTH_ADMIN_HOST: {{ .Values.depServices.hydra.administrativeHost | quote }}
+  OAUTH_ADMIN_PORT: {{ .Values.depServices.hydra.administrativePort | quote }}
+  USERMANAGEMENT_PRIVATE_HOST: {{ index .Values "depServices" "user-management" "privateHost" | quote }}
+  USERMANAGEMENT_PRIVATE_PORT: {{ index .Values "depServices" "user-management" "privatePort" | quote }}
+  OSSGATEWAY_PRIVATE_HOST: {{ .Values.depServices.ossgatewaymanager.privateHost | quote }}
+  OSSGATEWAY_PRIVATE_PORT: {{ .Values.depServices.ossgatewaymanager.privatePort | quote }}
+  OPENDOC_PUBLIC_HOST: {{ index .Values "depServices" "open-doc" "publicHost" | quote }}
+  OPENDOC_PUBLIC_PORT: {{ index .Values "depServices" "open-doc" "publicPort" | quote }}
+  DOCSET_PRIVATE_HOST: {{ .Values.depServices.docset.privateHost | quote }}
+  DOCSET_PRIVATE_PORT: {{ .Values.depServices.docset.privatePort | quote }}
+  CODE_RUNNER_PRIVATE_HOST: "coderunner-private"
+  CODE_RUNNER_PRIVATE_PORT: {{ .Values.service.port | quote }}
+  REDIS_CLUSTER_MODE: {{ .Values.depServices.redis.connectType | quote }}
+  {{- if eq .Values.depServices.redis.connectType "sentinel"}}
+  REDIS_HOST: {{ .Values.depServices.redis.connectInfo.sentinelHost | quote }}
+  REDIS_PORT: {{ .Values.depServices.redis.connectInfo.sentinelPort | quote }}
+  REDIS_MASTER_GROUPNAME: {{ .Values.depServices.redis.connectInfo.masterGroupName }}
+  {{- end}}
+  {{- if eq .Values.depServices.redis.connectType "master-slave"}}
+  REDIS_HOST: {{ .Values.depServices.redis.connectInfo.masterHost | quote }}
+  REDIS_PORT: {{ .Values.depServices.redis.connectInfo.masterPort | quote }}
+  REDIS_SLAVE_HOST: {{ .Values.depServices.redis.connectInfo.slaveHost | quote }}
+  REDIS_SLAVE_PORT: {{ .Values.depServices.redis.connectInfo.slavePort | quote }}
+  {{- end}}
+  {{- if eq .Values.depServices.redis.connectType "standalone"}}
+  REDIS_HOST: {{ .Values.depServices.redis.connectInfo.host | quote }}
+  REDIS_PORT: {{ .Values.depServices.redis.connectInfo.port | quote }}
+  {{- end}}
+  {{- if eq .Values.depServices.redis.connectType "cluster"}}
+  REDIS_HOST: {{ .Values.depServices.redis.connectInfo.host | quote }}
+  REDIS_PORT: {{ .Values.depServices.redis.connectInfo.port | quote }}
+  {{- end}}
+
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}

@@ -1,0 +1,124 @@
+namespace: dip
+moduleName: vega-backend
+
+# 环境变量：语言/时区
+env:
+  timezone: Asia/Shanghai
+  language: en_US.UTF-8
+
+replicaCount: 1
+
+# 节点选择器
+nodeSelector: {}
+
+image:
+  registry: acr.aishu.cn
+  repository: dip/vega-backend
+  tag: tag
+  pullPolicy: IfNotPresent
+
+service:
+  vegaBackend:
+    type: ClusterIP
+    port: 13014
+    nodePort: 31014
+    ingress:
+      enabled: true
+      interface:
+        path:
+          - /api/vega-backend/v1
+
+# 反亲和性设置
+antiAffinity:
+  enabled: true
+  rule: "soft" # 可选参数 hard, soft
+
+# 认证开关
+auth:
+  enabled: true
+
+# 微服务通信依赖配置
+depServices:
+  class-443:
+    ingressClass: class-443
+  rds:
+    host: mariadb-mariadb-master.resource.svc.cluster.local.
+    port: 3330
+    user: root
+    password: ""
+    type: MariaDB
+  mq:
+    mqType: kafka
+    mqHost: kafka-headless.resource.svc.cluster.local.
+    mqPort: 9097
+    protocol: sasl_plaintext
+    tenant: default
+    auth:
+      username: admin
+      password: ""
+      mechanism: PLAIN
+  opensearch:
+    host: opensearch-master.resource.svc.cluster.local.
+    port: 9200
+    protocol: http
+    user: admin
+    password: ""
+  redis:
+    connectInfo:
+      username: root
+      password: ''
+      sentinelHost: proton-redis-proton-redis-sentinel.resource.svc.cluster.local
+      sentinelPort: 26379
+      sentinelUsername: root
+      sentinelPassword: ''
+      masterGroupName: mymaster
+      host: ""
+      port: 0
+      masterHost: ""
+      masterPort: 0
+      slaveHost: ""
+      slavePort: 0
+    connectType: sentinel
+  authorization-private:
+    host: authorization-private
+    port: 30920
+    protocol: http
+  user-management:
+    host: user-management-private
+    port:  30980
+    protocol: http
+  hydra-admin:
+    host: hydra-admin
+    port: 4445
+    protocol: http
+
+config:
+  server:
+    runMode: release
+    httpPort: 13014
+    language: zh-CN
+    readTimeOut: 600
+    writeTimeOut: 600
+  log:
+    logLevel: info
+    developMode: false
+    maxAge: 100
+    maxBackups: 20
+    maxSize: 100
+  # RSA 公钥配置
+  crypto:
+    enabled: false
+    publicKey: ""  # RSA 公钥内容，通过 --set-file crypto.publicKey=./config/rsa_public_key.pem 注入  
+    privateKey: ""  # RSA 私钥内容，通过 --set-file crypto.privateKey=./config/rsa_private_key_pkcs8.pem 注入
+    privateKeyPath: /opt/vega-backend/secret-config/rsa_private_key_pkcs8.pem
+    publicKeyPath: /opt/vega-backend/secret-config/rsa_public_key.pem
+
+
+# 资源配置
+resources:
+  requests:
+    cpu: 0
+    memory: 0Gi
+  limits:
+    cpu: 2
+    memory: 4Gi

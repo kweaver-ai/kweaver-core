@@ -1,0 +1,26 @@
+KgSource:
+  type: object
+  required:
+    - kg_id
+    - fields
+  properties:
+    kg_id:
+      type: string
+      description: 图谱ID
+    fields:
+      type: array
+      items:
+        type: string
+      description: 实体类范围
+    field_properties:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      description: 实体属性列表
+    output_fields:
+      type: array
+      items:
+        type: string
+      description: 结果范围

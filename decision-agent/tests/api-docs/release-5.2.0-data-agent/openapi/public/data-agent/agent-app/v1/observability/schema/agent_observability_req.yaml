@@ -1,0 +1,22 @@
+AgentObservabilityReq:
+  type: object
+  required:
+    - agent_version
+    - start_time
+    - end_time
+  properties:
+    agent_version:
+      type: string
+      description: Agent版本
+    include_config:
+      type: boolean
+      description: 是否包含agent配置信息，默认值为false
+      default: false
+    start_time:
+      type: integer
+      format: int64
+      description: 开始时间戳，单位到毫秒，例如:1646360670123
+    end_time:
+      type: integer
+      format: int64
+      description: 结束时间戳，单位到毫秒，例如:1646360670123

@@ -1,0 +1,11 @@
+AnswerType:
+  type: string
+  description: |
+    - 最终回答（final_answer）类型
+    - prompt：格式如：{"answer":"xxx","think":"xxx"}
+    - explore：explore特有的格式
+    - other：除了 prompt 和 explore以外的
+  enum:
+    - prompt
+    - explore
+    - other

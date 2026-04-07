@@ -1,0 +1,35 @@
+
+[AgentMemory.Validation.Error]
+description = "请求参数验证失败"
+solution = "请检查请求参数是否符合API文档要求"
+error_link = "https://api.example.com/docs/errors/invalid-parameter"
+
+[AgentMemory.InvalidParameter.RequestBody]
+description = "请求参数验证失败"
+solution = "请检查请求参数是否符合API文档要求"
+error_link = "https://api.example.com/docs/errors/invalid-parameter"
+
+[AgentMemory.InvalidParameter.MemoryId]
+description = "无效的记忆ID"
+solution = "请提供有效的记忆ID"
+error_link = "https://api.example.com/docs/errors/invalid-memory-id"
+
+[AgentMemory.NotFound.Memory]
+description = "未找到指定的记忆"
+solution = "请确认记忆ID是否正确，或检查该记忆是否已被删除"
+error_link = "https://api.example.com/docs/errors/memory-not-found"
+
+[AgentMemory.Operation.Failed]
+description = "记忆操作失败"
+solution = "请稍后重试，如果问题持续存在请联系管理员"
+error_link = "https://api.example.com/docs/errors/operation-failed"
+
+[AgentMemory.Service.Unavailable]
+description = "记忆服务暂时不可用"
+solution = "请稍后重试，如果问题持续存在请联系管理员"
+error_link = "https://api.example.com/docs/errors/service-unavailable"
+
+[AgentMemory.Internal.Error]
+description = "服务器内部错误"
+solution = "请稍后重试，如果问题持续存在请联系管理员"
+error_link = "https://api.example.com/docs/errors/internal-error"

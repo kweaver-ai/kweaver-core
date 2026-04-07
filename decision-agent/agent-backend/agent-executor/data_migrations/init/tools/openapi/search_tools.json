@@ -1,0 +1,154 @@
+{
+    "openapi": "3.1.0",
+    "servers": [
+        {
+            "url": "http://agent-executor:30778",
+            "description": "服务器地址"
+        }
+    ],
+    "info": {
+        "title": "内置工具箱-搜索工具",
+        "description": "包含 智谱搜索 工具",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/agent-executor/v1/tools/zhipu_search_tool": {
+            "post": {
+                "tags": [
+                    "internal-tools"
+                ],
+                "summary": "zhipu_search_tool",
+                "description": "执行智谱搜索\n\n- **query**: 搜索查询词\n\n返回搜索结果内容",
+                "operationId": "zhipu_search_api_agent_executor_v1_tools_zhipu_search_tool_post",
+                "parameters": [
+                    {
+                        "name": "api_key",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "智谱API密钥",
+                            "title": "Api-Key"
+                        },
+                        "description": "智谱API密钥"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ZhipuSearchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ZhipuSearchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ZhipuSearchRequest": {
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "title": "Query",
+                        "description": "搜索查询词",
+                        "example": "机器学习"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "query"
+                ],
+                "title": "ZhipuSearchRequest",
+                "description": "智谱搜索请求"
+            },
+            "ZhipuSearchResponse": {
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "title": "Content",
+                        "description": "搜索结果内容"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "content"
+                ],
+                "title": "ZhipuSearchResponse",
+                "description": "智谱搜索响应"
+            },
+            "ErrorResponse": {
+                "properties": {
+                    "Description": {
+                        "description": "错误描述",
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "ErrorCode": {
+                        "description": "错误码",
+                        "title": "Errorcode",
+                        "type": "string"
+                    },
+                    "ErrorDetails": {
+                        "description": "错误详情",
+                        "title": "Errordetails",
+                        "type": "string"
+                    },
+                    "ErrorLink": {
+                        "description": "错误链接",
+                        "title": "Errorlink",
+                        "type": "string"
+                    },
+                    "Solution": {
+                        "description": "解决方法",
+                        "title": "Solution",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "Description",
+                    "ErrorCode",
+                    "ErrorDetails",
+                    "ErrorLink",
+                    "Solution"
+                ],
+                "title": "ErrorResponse",
+                "type": "object"
+            }
+        }
+    }
+}

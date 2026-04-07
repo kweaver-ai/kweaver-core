@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "修改告警规则",
+    "description": "post /api/automation/v1/alarm_rule",
+    "type": "object",
+    "properties": {
+        "alert_users": {
+            "description": "告警用户列表",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$"
+                    },
+                    "type": {
+                        "enum": ["user", "group"]
+                    }
+                },
+                "required": ["id", "type"],
+                "additionalProperties": false
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        },
+        "dag_ids": {
+            "description": "告警工作流列表",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        },
+        "frequency": {
+            "description": "告警频率",
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 1000,
+            "multipleOf": 0.1
+        },
+        "threshold": {
+            "description": "告警阈值",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000 
+        }
+    },
+    "required": [
+        "alert_users", "dag_ids", "frequency", "threshold"
+    ],
+    "additionalProperties": false
+}

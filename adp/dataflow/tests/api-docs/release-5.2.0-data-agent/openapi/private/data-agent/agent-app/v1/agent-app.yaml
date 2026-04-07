@@ -1,0 +1,51 @@
+openapi: 3.0.2
+info:
+  title: Agent App API （内部接口）
+  version: 1.0.0
+
+servers:
+  - url: 'https://{host}:{port}/api/'
+    description: 'host: DIP服务器IP, port: 30777'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '30777'
+        description: 默认端口30777
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: 对话
+  - name: 其他
+  - name: 可观测性
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=261242083)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/744857)
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: DATA AGENT
+    tags:
+      - 对话
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+  - name: 可观测性
+    tags:
+      - 可观测性
+
+paths:
+  # 使用单独的路径引用文件简化路径
+  /agent-app/internal/v1/app/{app_key}/chat/completion:
+    $ref: './path-refs.yaml#/paths/chat_completion'
+  /agent-app/internal/v1/app/{app_key}/api/chat/completion:
+    $ref: './path-refs.yaml#/paths/api_chat_completion'
+  /agent-app/internal/v1/observability/analytics_query:
+    $ref: './observability/paths.yaml#/paths/analytics_query'

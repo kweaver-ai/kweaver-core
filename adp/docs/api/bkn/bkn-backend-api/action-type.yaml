@@ -1,0 +1,1801 @@
+---
+openapi: 3.0.2
+info:
+  title: ActionType
+  version: 0.1.0
+paths:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types:
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: name_pattern
+          description: 根据络名称模糊查询，默认为空
+          schema:
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，默认是update_time
+          schema:
+            enum:
+              - update_time
+              - name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: tag
+          description: 根据标签精准查询，默认为空.
+          schema:
+            type: string
+          in: query
+        - name: group_id
+          description: 按概念分组过滤
+          schema:
+            type: string
+          in: query
+        - name: action_type
+          description: 行动类型
+          schema:
+            enum:
+              - add
+              - modify
+              - delete
+            type: string
+          in: query
+          required: false
+        - name: object_type_id
+          description: 绑定对象类
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListActionTypes"
+          description: ok
+      summary: 获取行动类列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/override"
+            examples:
+              创建行动类:
+                value:
+                  - id: restart_pod
+                    name: 重启pod
+                    tags:
+                      - 拓扑架构
+                    comment: "当pod状态是unknown或者failed时,重启pod"
+                    icon: ""
+                    color: ""
+                    branch: main
+                    action_type: modify
+                    object_type_id: pod
+                    condition:
+                      object_type_id: pod
+                      field: pod_status
+                      operation: in
+                      value_from: const
+                      value:
+                        - Unknown
+                        - Failed
+                    affect:
+                      object_type_id: pod
+                      comment: 重启pod
+                    action_source:
+                      type: tool
+                      box_id: tool_123
+                      tool_id: box_123
+                    parameters:
+                      - name: pod
+                        value_from: property
+                        value: pod_name
+                      - name: namespace
+                        value_from: property
+                        value: pod_namespace
+                      - name: cmd_type
+                        value_from: input
+                        value: ""
+                    schedule:
+                      type: ""
+                      expression: ""
+                    module_type: action_type
+              检索行动类-第一次请求:
+                value:
+                  need_total: true
+                  limit: 1
+                  condition:
+                    operation: and
+                    sub_conditions:
+                      - field: comment
+                        operation: match
+                        value_from: const
+                        value: pod
+                      - field: "*"
+                        operation: knn
+                        value_from: const
+                        value:
+                          - pod
+                          - 10
+              检索行动类-非第一次请求:
+                value:
+                  search_after:
+                    - 5.0170403
+                    - restart_pod
+                  need_total: true
+                  limit: 1
+                  condition:
+                    operation: and
+                    sub_conditions:
+                      - field: comment
+                        operation: match
+                        value_from: const
+                        value: pod
+                      - field: "*"
+                        operation: knn
+                        value_from: const
+                        value:
+                          - pod
+                          - 10
+        required: true
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: x-http-method-override
+          description: 重载请求头
+          schema:
+            enum:
+              - POST
+              - GET
+            type: string
+          in: header
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionTypeSearchResponse"
+              examples:
+                检索行动类-第一次请求:
+                  value:
+                    entries:
+                      - id: restart_pod
+                        name: 重启pod
+                        tags:
+                          - 拓扑架构
+                        comment: "当pod状态是unknown或者failed时,重启pod"
+                        icon: ""
+                        color: ""
+                        branch: main
+                        detail: ""
+                        creator: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        create_time: 1757657606651
+                        updater: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        update_time: 1758098535626
+                        kn_id: kn_system_incident_event_network
+                        action_type: modify
+                        object_type_id: pod
+                        object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        condition:
+                          object_type_id: pod
+                          field: pod_status
+                          operation: in
+                          value_from: const
+                          value:
+                            - Unknown
+                            - Failed
+                        affect:
+                          object_type_id: pod
+                          object_type:
+                            id: ""
+                            name: ""
+                            icon: ""
+                            color: ""
+                          comment: 重启pod
+                        action_source:
+                          type: tool
+                          box_id: tool_123
+                          tool_id: box_123
+                        parameters:
+                          - name: pod
+                            value_from: property
+                            value: pod_name
+                          - name: namespace
+                            value_from: property
+                            value: pod_namespace
+                          - name: cmd_type
+                            value_from: input
+                            value: ""
+                        schedule:
+                          type: ""
+                          expression: ""
+                        IfNameModify: false
+                        module_type: action_type
+                    total_count: 2
+                    search_after:
+                      - 5.0170403
+                      - restart_pod
+                检索行动类-非第一次请求:
+                  value:
+                    entries:
+                      - id: restart_pod_test
+                        name: 重启pod_test
+                        tags:
+                          - 拓扑架构
+                        comment: "当pod状态是unknown或者failed时,重启pod"
+                        icon: ""
+                        color: ""
+                        branch: main
+                        detail: ""
+                        creator: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        create_time: 1758346280120
+                        updater: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        update_time: 1758346280120
+                        kn_id: kn_system_incident_event_network
+                        action_type: modify
+                        object_type_id: pod
+                        object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        condition:
+                          object_type_id: pod
+                          field: pod_status
+                          operation: in
+                          value_from: const
+                          value:
+                            - Unknown
+                            - Failed
+                        affect:
+                          object_type_id: pod
+                          object_type:
+                            id: ""
+                            name: ""
+                            icon: ""
+                            color: ""
+                          comment: 重启pod
+                        action_source:
+                          type: tool
+                          box_id: tool_123
+                          tool_id: box_123
+                        parameters:
+                          - name: pod
+                            value_from: property
+                            value: pod_name
+                          - name: namespace
+                            value_from: property
+                            value: pod_namespace
+                          - name: cmd_type
+                            value_from: input
+                            value: ""
+                        schedule:
+                          type: ""
+                          expression: ""
+                        IfNameModify: false
+                        module_type: action_type
+                    search_after:
+                      - 5.011528
+                      - restart_pod_test
+          description: "重载GET, 检索行动类"
+        "201":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ID"
+          description: ok
+      summary: 创建或检索行动类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+   /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types/{at_id}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateActionType"
+        required: true
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          in: path
+          required: true
+        - name: at_id
+          description: 行动类ID
+          in: path
+          required: true
+      summary: 修改行动类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        in: path
+        required: true
+      - name: at_id
+        description: 行动类ID
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types/{at_ids}:
+    get:
+      parameters:
+        - name: include_detail
+          description: 是否包含说明书信息，默认false，不包含。
+          schema:
+            type: boolean
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionTypeDetails"
+          description: ok
+      summary: 获取行动类详情
+    delete:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: at_ids
+          description: 行动类ID
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: 删除成功
+      summary: 删除行动类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: at_ids
+        description: 行动类ID
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+components:
+  schemas:
+    BasicInfo:
+      description: 资源的基本信息，包含id和名称
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 资源ID
+          type: string
+        name:
+          description: 资源名称
+          type: string
+    ConceptTypeResponse:
+      description: 对象类、关系类、行动类的查询返回结构
+      required:
+        - concept_type
+        - id
+        - name
+        - tags
+        - groups
+      type: object
+      properties:
+        concept_type:
+          description: 概念类型
+          enum:
+            - object_type
+            - relation_type
+            - action_type
+          type: string
+        id:
+          description: 概念id
+          type: string
+        name:
+          description: 概念名称
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        groups:
+          description: 所属概念分组ID
+          type: array
+          items:
+            type: string
+    Object:
+      description: json，字段不定
+      type: object
+    Affect:
+      description: 行动影响
+      required: []
+      type: object
+      properties:
+        comment:
+          description: 影响描述
+          type: string
+        object_type_id:
+          description: 影响的对象类ID
+          type: string
+    Schedule:
+      description: 执行频率配置项
+      required:
+        - time_type
+        - frequency
+        - expression
+        - type
+      type: object
+      properties:
+        type:
+          description: 执行类型。枚举，支持配置固定频率(FIX_RATE)和配置crontab表达式（CRON）
+          enum:
+            - FIX_RATE
+            - CRON
+          type: string
+        expression:
+          description: |-
+            执行表达式。
+
+            1.固定频率指以固定周期执行持久化，frequency=< time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天
+          type: string
+    ID:
+      description: id
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: id
+          type: string
+    Branch:
+      description: 分支信息
+      required:
+        - base_version
+        - comment
+        - id
+        - kn_id
+        - name
+        - tags
+      type: object
+      properties:
+        id:
+          description: 分支ID
+          type: string
+        name:
+          description: 分支名称
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        base_version:
+          description: 来源版本
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+    ListActionTypes:
+      description: 行动类列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionType"
+        total_count:
+          description: 总条数
+          type: integer
+    ToolSource:
+      description: 工具资源
+      required:
+        - type
+        - id
+        - tool_id
+        - box_id
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+            - tool
+          type: string
+        box_id:
+          description: 工具箱ID
+          type: string
+        tool_id:
+          description: 工具ID
+          type: string
+    ConceptGroup:
+      description: 概念分组
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 概念分组ID
+          type: string
+        name:
+          description: 概念分组名称
+          type: string
+    SimpleObjectType:
+      description: ""
+      required:
+        - id
+        - name
+        - icon
+        - color
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        icon:
+          description: 对象类图标
+          type: string
+        color:
+          description: 对象类颜色
+          type: string
+    AffectDetail:
+      description: 行动影响
+      required:
+        - object_type
+        - comment
+        - object_type_id
+      type: object
+      properties:
+        comment:
+          description: 影响描述
+          type: string
+        object_type_id:
+          description: 影响的对象类ID
+          type: string
+        object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 对象类信息
+    override:
+      oneOf:
+        - type: object
+        - $ref: "#/components/schemas/ReqActionTypes"
+        - $ref: "#/components/schemas/override--get"
+      discriminator:
+        mapping:
+          x-http-method-override:POST: "#/components/schemas/ReqActionTypes"
+          x-http-method-override:GET: "#/components/schemas/override--get"
+        propertyName": x-http-method-override
+      description: post 重载批量创建、行动类检索接口
+      type: object
+    override--get:
+      oneOf:
+        - $ref: "#/components/schemas/FirstQueryWithSearchAfter"
+        - $ref: "#/components/schemas/PageTurnQueryWithSearchAfter"
+      description: 行动类检索请求体
+      type: object
+    Sort:
+      description: 排序字段。默认按 _score 倒序排序
+      required:
+        - field
+        - direction
+      type: object
+      properties:
+        field:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+            - desc
+            - asc
+          type: string
+    ActionTypeSearchResponse:
+      description: 行动类检索返回结果
+      required:
+        - groups
+        - type
+        - entries
+        - search_after
+      type: object
+      properties:
+        entries:
+          description: 对象实例数据
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionTypeDetail"
+        total_count:
+          description: 总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个文档的排序值，获取这个用于下一次 search_after 分页。
+          type: array
+          items: {}
+    Parameter:
+      description: 工具参数
+      required:
+        - name
+        - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+            - property
+            - input
+            - const
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    ActionTypeDetails:
+      description: 行动类详情
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 行动类详情
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionTypeDetail"
+    ReqActionTypes:
+      description: 批量创建请求体
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 行动类信息
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqActionType"
+    FirstQueryWithSearchAfter:
+      description: 行动类检索第一次请求
+      required:
+        - condition
+        - limit
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组ID数组
+          type: array
+          items:
+            type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 行动类检索条件
+        sort:
+          description: 排序字段，默认使用 _score 排序，排序方向为 desc
+          type: array
+          items:
+            $ref: "#/components/schemas/Sort"
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+    PageTurnQueryWithSearchAfter:
+      description: 分页查询的后续分页查询请求
+      required:
+        - limit
+        - search_after
+        - condition
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组ID数组
+          type: array
+          items:
+            type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 过滤条件
+        sort:
+          description: 排序字段，默认使用 _score 排序，排序方向为 desc
+          type: array
+          items:
+            $ref: "#/components/schemas/Sort"
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        search_after:
+          description: 上次查询返回的最后一个文档的排序值。
+          type: array
+          items: {}
+    MCPSource:
+      description: MCP资源
+      required:
+        - type
+        - mcp_id
+        - tool_name
+      type: object
+      properties:
+        type:
+          description: 资源类型
+          enum:
+            - mcp
+          type: string
+        mcp_id:
+          description: MCP ID
+          type: string
+        tool_name:
+          description: 工具名称
+          type: string
+    ReqActionType:
+      description: 行动类创建信息
+      required:
+        - action_type
+        - groups
+        - kn_id
+        - name
+        - object_type
+        - concept_type
+        - branch
+        - base_version
+        - object_type_id
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        tags:
+          description: 标签。
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        condition:
+          $ref: "#/components/schemas/ActionCondition"
+          description: 行动条件
+        affect:
+          $ref: "#/components/schemas/Affect"
+          description: 行动影响
+        action_source:
+          oneOf:
+            - $ref: "#/components/schemas/ToolSource"
+            - $ref: "#/components/schemas/MCPSource"
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 行动监听参数配置
+    UpdateActionType:
+      description: 行动类更新信息
+      required:
+        - action_type
+        - groups
+        - kn_id
+        - name
+        - object_type
+        - concept_type
+        - branch
+        - base_version
+        - object_type_id
+      type: object
+      properties:
+        name:
+          description: 行动类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        condition:
+          $ref: "#/components/schemas/ActionCondition"
+          description: 行动条件
+        affect:
+          $ref: "#/components/schemas/Affect"
+          description: 行动影响
+        action_source:
+          oneOf:
+            - $ref: "#/components/schemas/ToolSource"
+            - $ref: "#/components/schemas/MCPSource"
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 行动监听参数配置
+    ActionTypeDetail:
+      description: 行动类
+      required:
+        - action_type
+        - comment
+        - groups
+        - id
+        - kn_id
+        - name
+        - tags
+        - condition
+        - affect
+        - action_source
+        - parameters
+        - schedule
+        - module_type
+        - base_branch
+        - branch
+        - color
+        - icon
+        - object_type_id
+        - update_time
+        - updater
+        - create_time
+        - creator
+        - object_type
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 行动类所绑定的对象类名称.
+        condition:
+          $ref: "#/components/schemas/ActionCondition"
+          description: 行动条件
+        affect:
+          $ref: "#/components/schemas/AffectDetail"
+          description: 行动影响
+        action_source:
+          oneOf:
+            - $ref: "#/components/schemas/ToolSource"
+            - $ref: "#/components/schemas/MCPSource"
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 行动监听参数配置
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+            - action_type
+          type: string
+    ActionType:
+      description: 行动类
+      required:
+        - action_type
+        - comment
+        - groups
+        - id
+        - kn_id
+        - name
+        - tags
+        - condition
+        - affect
+        - action_source
+        - parameters
+        - schedule
+        - module_type
+        - base_branch
+        - branch
+        - color
+        - icon
+        - object_type_id
+        - update_time
+        - updater
+        - create_time
+        - creator
+      type: object
+      properties:
+        id:
+          description: 行动类ID
+          type: string
+        name:
+          description: 行动类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        action_type:
+          description: 行动类型
+          enum:
+            - add
+            - modify
+            - delete
+          type: string
+        object_type_id:
+          description: 行动类所绑定的对象类ID
+          type: string
+        condition:
+          $ref: "#/components/schemas/ActionCondition"
+          description: 行动条件
+        affect:
+          $ref: "#/components/schemas/Affect"
+          description: 行动影响
+        action_source:
+          oneOf:
+            - $ref: "#/components/schemas/ToolSource"
+            - $ref: "#/components/schemas/MCPSource"
+          description: 绑定的行动的资源
+        parameters:
+          description: 行动资源参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 行动监听参数配置
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+            - action_type
+          type: string
+    condition_or:
+      description: or 的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - or
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    condition_eq:
+      description: 等于过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，等于支持的字段类型：数值、字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ==
+          type: string
+        value:
+          description: 过滤值
+    condition_not_eq:
+      description: 不等于的过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不等于支持的字段类型：数值、字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - "!="
+          type: string
+        value:
+          description: 过滤值
+    condition_in:
+      description: 包含过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，包含支持所有类型
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_like:
+      description: like过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，相似支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_not_like:
+      description: not_like过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不相似支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_regex:
+      description: regex过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，正则支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - regex
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_multi_match:
+      description: 多字段全文匹配
+      required:
+        - operation
+        - value
+      type: object
+      properties:
+        fields:
+          description:
+            "过滤字段数组，多字段全文匹配支持的字段类型：字符串。为空时，用opensearch中 index.default_field\
+            \ 配置的字段进行查询。当需要对所有字段进行匹配时，此参数传 [\"*\"]. 可支持的字段有：name, comment, detail,\
+            \ *"
+          type: array
+          items:
+            type: string
+        operation:
+          description: 操作符
+          enum:
+            - multi_match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+        match_type:
+          description: 全文匹配类型，默认是 best_fields
+          enum:
+            - best_fields
+            - most_fields
+            - cross_fields
+            - phrase
+            - phrase_prefix
+            - bool_prefix
+          type: string
+    condition_not_in:
+      description: not_in过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不包含支持所有类型
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_match_phrase:
+      description: "match_phrase 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，短语匹配支持的字段类型：字符串
+          enum:
+            - name
+            - comment
+            - detail
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - match_phrase
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_match:
+      description: "match 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，全文匹配支持的字段类型：字符串
+          enum:
+            - name
+            - comment
+            - detail
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_knn:
+      description: 'knn 过滤，支持单个字段和*, * 表示"_vector"'
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，概念索引是内部生成，不对外暴露，所以knn过滤时，field 传 * 即可
+          enum:
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - knn
+          type: string
+        value:
+          description: 过滤值。当limit_key为k时，limit_value为整型；当limit_key为max_distance和min_score时，limit_value为浮点型
+          type: number
+        limit_key:
+          description:
+            "执行径向搜索时使用的过滤和评分行为, k:返回最相似的limit_value个结果；max_distance:返回距\
+            离小于等于limit_value的结果；min_score：返回相似度分数大于等于limit_value的结果。默认值为k"
+          enum:
+            - k
+            - max_distance
+            - min_score
+          type: string
+          default: k
+        limit_value:
+          description: "执行径向搜索使用的值。默认值为100"
+          type: number
+          default: 100
+        sub_conditions:
+          description: knn下的子查询
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    condition_and:
+      description: and的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - and
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    Condition:
+      oneOf:
+        - $ref: "#/components/schemas/condition_and"
+        - $ref: "#/components/schemas/condition_or"
+        - $ref: "#/components/schemas/condition_eq"
+        - $ref: "#/components/schemas/condition_not_eq"
+        - $ref: "#/components/schemas/condition_in"
+        - $ref: "#/components/schemas/condition_not_in"
+        - $ref: "#/components/schemas/condition_like"
+        - $ref: "#/components/schemas/condition_not_like"
+        - $ref: "#/components/schemas/condition_regex"
+        - $ref: "#/components/schemas/condition_match"
+        - $ref: "#/components/schemas/condition_match_phrase"
+        - $ref: "#/components/schemas/condition_knn"
+        - $ref: "#/components/schemas/condition_multi_match"
+    action_condition_and:
+      description: and的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - and
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionCondition"
+    action_condition_or:
+      description: or 的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - or
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionCondition"
+    action_condition_eq:
+      description: 等于过滤条件
+      required:
+        - object_type_id
+        - operation
+        - value
+        - field
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ==
+          type: string
+        value:
+          description: 过滤值
+    action_condition_not_eq:
+      description: 不等于的过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - "!="
+          type: string
+        value:
+          description: 过滤值
+    action_condition_gt:
+      description: 大于的过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ">"
+          type: string
+        value:
+          description: 过滤值
+    action_condition_lt:
+      description: 小于的过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - <
+          type: string
+        value:
+          description: 过滤值
+    action_condition_gte:
+      description: 大于等于的过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ">="
+          type: string
+        value:
+          description: 过滤值
+    action_condition_lte:
+      description: 大于等于的过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为数值、字符串
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - <=
+          type: string
+        value:
+          description: 过滤值
+    action_condition_in:
+      description: 包含过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_not_in:
+      description: 不包含过滤条件
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_out_range:
+      description:
+        "范围外过滤。右侧值为长度为2的数组，边界为左闭右开, 即 [ value[0],  value[1] )。此种情况下，符合过\
+        滤条件的值的区间为 (-inf, value[0] ) & [ value[1], +inf )，即左侧指定字段＜value[0] 或 ≥value[1]\
+        \ 的值。"
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_exist:
+      description: 存在过滤
+      required:
+        - object_type_id
+        - field
+        - operation
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - exist
+          type: string
+    action_condition_range:
+      description: 范围内过滤。右侧值为长度为 2 的数组，边界为左闭右开
+      required:
+        - object_type_id
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为时间类型、数值
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - range
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    action_condition_not_exist:
+      description: 不存在过滤
+      required:
+        - object_type_id
+        - field
+        - operation
+      type: object
+      properties:
+        object_type_id:
+          description: 对象类ID。当时多个对象类的过滤时，需要把对象类ID带上，否则只要属性名属于对象类就会进行过滤。
+          type: string
+        field:
+          description: 过滤字段，即对象类的属性名称。支持的属性类型为所有类型
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_exist
+          type: string
+    ActionCondition:
+      oneOf:
+        - $ref: "#/components/schemas/action_condition_and"
+        - $ref: "#/components/schemas/action_condition_or"
+        - $ref: "#/components/schemas/action_condition_eq"
+        - $ref: "#/components/schemas/action_condition_not_eq"
+        - $ref: "#/components/schemas/action_condition_gt"
+        - $ref: "#/components/schemas/action_condition_gte"
+        - $ref: "#/components/schemas/action_condition_lt"
+        - $ref: "#/components/schemas/action_condition_lte"
+        - $ref: "#/components/schemas/action_condition_in"
+        - $ref: "#/components/schemas/action_condition_not_in"
+        - $ref: "#/components/schemas/action_condition_range"
+        - $ref: "#/components/schemas/action_condition_out_range"
+        - $ref: "#/components/schemas/action_condition_exist"
+        - $ref: "#/components/schemas/action_condition_not_exist"

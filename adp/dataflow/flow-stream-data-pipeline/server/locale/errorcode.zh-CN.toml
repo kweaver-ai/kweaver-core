@@ -1,0 +1,204 @@
+[StreamDataPipeline.CountExceeded.Tags]
+Description = "标签个数超出限制"
+Solution = "请检查参数是否正确"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.CountExceeded.Pipelines]
+Description = "管道个数超出限制"
+Solution = "请检查参数是否正确"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.Duplicated.PipelineID]
+Description = "管道ID已存在"
+Solution = "请使用其他管道ID"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.Duplicated.PipelineName]
+Description = "管道名称已存在"
+Solution = "请使用其他管道名称"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Builtin]
+Description = "内置参数无效"
+Solution = "请检查内置参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Direction]
+Description = "方向参数无效"
+Solution = "请检查方向参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.IndexBase]
+Description = "索引库参数无效"
+Solution = "请检查索引库参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Limit]
+Description = "限制参数无效"
+Solution = "请检查限制参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Offset]
+Description = "偏移参数无效"
+Solution = "请检查偏移参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.OutputType]
+Description = "输出类型无效"
+Solution = "请检查输出类型参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.PipelineID]
+Description = "管道ID无效"
+Solution = "请检查管道ID格式"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.PipelineStatus]
+Description = "管道状态无效"
+Solution = "请检查管道状态"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.RequestBody]
+Description = "请求体无效"
+Solution = "请检查请求体格式"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Sort]
+Description = "排序参数无效"
+Solution = "请检查排序参数"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InvalidParameter.Tag]
+Description = "标签参数无效"
+Solution = "请检查标签格式"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.LengthExceeded.Comment]
+Description = "注释长度超出限制"
+Solution = "请缩短注释内容"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.LengthExceeded.PipelineName]
+Description = "管道名称长度超出限制"
+Solution = "请缩短管道名称"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.LengthExceeded.Tag]
+Description = "标签长度超出限制"
+Solution = "请缩短标签内容"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NullParameter.PipelineID]
+Description = "管道ID不能为空"
+Solution = "请提供管道ID"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NullParameter.PipelineName]
+Description = "管道名称不能为空"
+Solution = "请提供管道名称"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NullParameter.IndexBaseType]
+Description = "索引库类型不能为空"
+Solution = "请提供索引库类型值"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NullParameter.Tag]
+Description = "标签不能为空"
+Solution = "请提供标签值"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.OutOfRange.CpuLimit]
+Description = "CPU限制超出范围"
+Solution = "请检查CPU限制值"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.OutOfRange.MemoryLimit]
+Description = "内存限制超出范围"
+Solution = "请检查内存限制值"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.UnSupported.ResourceType]
+Description = "不支持的资源类型"
+Solution = "请检查资源类型"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NotFound.Pipeline]
+Description = "未找到管道"
+Solution = "请检查管道是否存在"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.CheckPipelineIfExistFailed]
+Description = "检查管道是否存在失败"
+Solution = "请重试或联系管理员"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.CreatePipelineFailed]
+Description = "创建管道失败"
+Solution = "请重试或联系管理员"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.CreateTopicsFailed]
+Description = "创建主题失败"
+Solution = "请重试或联系管理员"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.DataBase]
+Description = "数据库错误"
+Solution = "请重试或联系管理员"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.DeleteTopicsFailed]
+Description = "删除主题失败"
+Solution = "请重试或联系管理员"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.PauseNotRunningPipelineFailed]
+Description = "暂停非运行中的管道失败"
+Solution = "请检查管道状态"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.GetIndexBaseByTypeFailed]
+Description = "获取索引库对象失败"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.NotReady.Pipeline]
+Description = "管道未就绪"
+Solution = "请等待管道就绪"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.Unmarshall.Data]
+Description = "数据解析失败"
+Solution = "请检查数据格式"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.CheckPermissionFailed]
+Description = "校验权限时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.CreateResourcesFailed]
+Description = "创建资源策略时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.DeleteResourcesFailed]
+Description = "删除资源策略时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.FilterResourcesFailed]
+Description = "过滤资源策略时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.UpdateResourceFailed]
+Description = "更新资源名称时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[StreamDataPipeline.InternalError.MQPublishMsgFailed]
+Description = "mq发送消息时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

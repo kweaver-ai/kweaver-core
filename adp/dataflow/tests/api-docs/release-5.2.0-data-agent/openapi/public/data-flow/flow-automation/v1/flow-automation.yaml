@@ -1,0 +1,4005 @@
+openapi: 3.0.2
+info:
+  title: content-automation API
+  version: 1.0.0
+  description: content-automation API相关文档
+  contact:
+    email: siyu.chen@aishu.cn
+tags:
+  - name: "内容自动化服务"
+    description: "内容自动化服务公共接口"
+  - name: "安全策略编排内部接口"
+    description: "安全策略编排内部接口"
+  - name: "安全策略编排外部接口"
+    description: "安全策略编排外部接口"
+  - name: "OCR识别"
+    description: "OCR识别外部接口"
+  - name: "音频转文字"
+    description: "音频转文字外部接口"
+  - name: "自定义文本提取接口"
+    description: "自定义文本提取接口"
+  - name: "流程管理员管理接口"
+    description: "流程管理员管理接口"
+  - name: "配置管理接口"
+    description: "配置管理接口"
+  - name: "告警规则接口"
+    description: "告警规则接口"
+  - name: "算子编排接口"
+    description: "算子编排接口"
+  - name: "流程可观测性"
+    description: "流程可观测性"
+  - name: "数据流"
+    description: "数据流"
+  - name: "流程版本管理"
+    description: "流程版本管理"
+  - name: "数据流调试"
+    description: "数据流调试"
+servers:
+  - url: "https://{host}:{port}/api/automation"
+    description: 内容自动化服务相关接口
+    variables:
+      host:
+        default: host
+        description: 主机或域名
+      port:
+        default: "7010"
+        description: 访问端口
+
+paths:
+  /v1/dags:
+    get:
+      description: "列举任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: query
+          name: "keyword"
+          required: false
+          description: "关键字，用于搜索筛选任务名称"
+          schema:
+            type: string
+        - in: query
+          name: "page"
+          required: false
+          description: "页码，默认值为0"
+          schema:
+            type: integer
+        - in: query
+          name: "limit"
+          required: false
+          description: "每页显示条目数，默认值为20，有效值在1-100之间，-1 取消分页"
+          schema:
+            type: string
+        - in: query
+          name: "sortby"
+          required: false
+          description: "排序字段，默认为updated_at,仅支持name、created_at和updated_at"
+          schema:
+            type: string
+        - in: query
+          name: "order"
+          required: false
+          description: "排序规则。默认为desc，仅支持desc和asc"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/DAGs"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v2/dags:
+    get:
+      description: "根据权限列举任务"
+      tags:
+        - 内容自动化服务
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: query
+          name: "keyword"
+          required: false
+          description: "关键字，用于搜索筛选任务名称"
+          schema:
+            type: string
+        - in: query
+          name: "page"
+          required: false
+          description: "页码，默认值为0"
+          schema:
+            type: integer
+        - in: query
+          name: "limit"
+          required: false
+          description: "每页显示条目数，默认值为20，有效值在1-100之间，-1 取消分页"
+          schema:
+            type: string
+        - in: query
+          name: "sortby"
+          required: false
+          description: "排序字段，默认为updated_at,仅支持name、created_at和updated_at"
+          schema:
+            type: string
+        - in: query
+          name: "order"
+          required: false
+          description: "排序规则。默认为desc，仅支持desc和asc"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/DAGs"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag:
+    post:
+      description: "创建任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/DAG"
+
+      responses:
+        "201":
+          description: "Created"
+          content:
+            "application/json":
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: "433573658636613052"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag/{dagId}:
+    get:
+      description: "获取任务详情"
+      tags:
+        - 内容自动化服务
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+        - name: version
+          description: "历史版本ID"
+          schema:
+            example: "433573658636613068"
+            type: string
+          in: query
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                required: [id, title, status, steps]
+                allOf:
+                  - "$ref": "#/components/schemas/DagDetail"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    put:
+      description: "更新任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/UpdateDag"
+      responses:
+        "204":
+          description: "Nocontent"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      description: "删除任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: "NoContent"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/run-instance/{dagId}:
+    post:
+      description: "运行任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      responses:
+        "201":
+          description: "Created"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/run-instance/{instanceId}:
+    put:
+      description: "取消运行任务"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: instanceId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              required: [status]
+              properties:
+                status:
+                  description: "任务状态\r\n- canceled: 取消"
+                  type: string
+                  example: "canceled"
+      responses:
+        "204":
+          description: "Nocontent"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag/{dagId}/results:
+    get:
+      description: "任务运行统计"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          required: true
+        - in: query
+          name: "type"
+          required: false
+          description: "节点运行状态\r\n- success: 运行成功\r\n- failed: 运行失败\r\n- canceled: 运行取消\r\n- running: 运行中\r\n- schedule:等待中"
+          schema:
+            enum: ["success", "failed", "canceled", "running", "schedule"]
+        - in: query
+          name: "page"
+          required: false
+          description: "页码，默认值为0"
+          schema:
+            type: integer
+        - in: query
+          name: "limit"
+          required: false
+          description: "每页显示条目数，默认值为20，有效值在1-100之间，-1 取消分页"
+          schema:
+            type: string
+        - in: query
+          name: "sortby"
+          required: false
+          description: "排序字段，默认为started_at,仅支持started_at"
+          schema:
+            type: string
+        - in: query
+          name: "order"
+          required: false
+          description: "排序规则。默认为desc，仅支持desc和asc"
+          schema:
+            type: string
+        - in: query
+          name: "start_time"
+          description: "时间范围搜索，起始时间，格式为10位时间戳"
+          schema:
+            type: string
+        - in: query
+          name: "end_time"
+          description: "时间范围搜索，截至时间，格式为10位时间戳"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/TaskResult"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v2/dag/{dagId}/results:
+    get:
+      description: "任务运行统计"
+      tags:
+        - 内容自动化服务
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          required: true
+        - in: query
+          name: "type"
+          required: false
+          description: "节点运行状态\r\n- success: 运行成功\r\n- failed: 运行失败\r\n- canceled: 运行取消\r\n- running: 运行中\r\n- schedule:等待中"
+          schema:
+            enum: ["success", "failed", "canceled", "running", "schedule"]
+        - in: query
+          name: "page"
+          required: false
+          description: "页码，默认值为0"
+          schema:
+            type: integer
+        - in: query
+          name: "limit"
+          required: false
+          description: "每页显示条目数，默认值为20，有效值在1-100之间，-1 取消分页"
+          schema:
+            type: string
+        - in: query
+          name: "sortby"
+          required: false
+          description: "排序字段，默认为started_at,仅支持started_at"
+          schema:
+            type: string
+        - in: query
+          name: "order"
+          required: false
+          description: "排序规则。默认为desc，仅支持desc和asc"
+          schema:
+            type: string
+        - in: query
+          name: "start_time"
+          description: "时间范围搜索，起始时间，格式为10位时间戳"
+          schema:
+            type: string
+        - in: query
+          name: "end_time"
+          description: "时间范围搜索，截至时间，格式为10位时间戳"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/TaskResultV2"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag/{dagId}/count:
+    get:
+      description: "任务运行统计"
+      tags:
+        - 内容自动化服务
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          required: true
+        - in: query
+          name: "type"
+          required: false
+          description: "节点运行状态\r\n- success: 运行成功\r\n- failed: 运行失败\r\n- canceled: 运行取消\r\n- running: 运行中\r\n- schedule:等待中"
+          schema:
+            enum: ["success", "failed", "canceled", "running", "schedule"]
+        - in: query
+          name: "start_time"
+          description: "时间范围搜索，起始时间，格式为10位时间戳"
+          schema:
+            type: string
+        - in: query
+          name: "end_time"
+          description: "时间范围搜索，截至时间，格式为10位时间戳"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                 count:
+                  type: integer
+                  description: "数据流运行记录总数"
+                  example: 100
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag/{dagId}/result/{resultId}:
+    get:
+      description: "任务运行详情"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          required: true
+        - in: path
+          name: resultId
+          description: "任务运行结果ID"
+          schema:
+            example: "433573686587454908"
+            type: string
+          required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/TaskResultDetail"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v2/dag/{dagId}/result/{resultId}:
+    get:
+      description: "分页获取任务运行详情"
+      tags:
+        - 内容自动化服务
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: dagId
+          description: "任务ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          required: true
+        - in: path
+          name: resultId
+          description: "任务运行结果ID"
+          schema:
+            example: "433573686587454908"
+            type: string
+          required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/TaskResultDetailPage"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dag/suggestname/{name}:
+    get:
+      description: "获取创建任务的建议名称"
+      tags:
+        - 内容自动化服务
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: name
+          description: "建议名称公共前缀,不能包含\ / : * ? \" < > | 特殊字符"
+          schema:
+            type: string
+            example: "未命名自动任务"
+          required: true
+      responses:
+        "200":
+          description: "Created"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/SuggestName"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/flows:
+    post:
+      description: "创建安全策略流程"
+      tags:
+        - 安全策略编排外部接口
+      security:
+        - OAuth2: [admin]
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/CreateFlowParams"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/FlowWithId"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/flows/{id}:
+    parameters:
+      - name: id
+        description: "流程ID"
+        schema:
+          example: "433573658636613052"
+          type: string
+        in: path
+        required: true
+    get:
+      description: "获取流程定义"
+      tags:
+        - 安全策略编排外部接口
+      security:
+        - OAuth2: [admin, user]
+      responses:
+        "200":
+          description: Ok
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Flow"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      description: 删除安全策略流程
+      tags:
+        - 安全策略编排外部接口
+      security:
+        - OAuth2: [admin]
+      responses:
+        "200":
+          description: Ok
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/flows/{id}/steps:
+    parameters:
+      - name: id
+        description: "流程ID"
+        schema:
+          example: "433573658636613052"
+          type: string
+        in: path
+        required: true
+    put:
+      description: "更新安全策略流程节点"
+      tags:
+        - 安全策略编排外部接口
+      security:
+        - OAuth2: [admin]
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/FlowSteps"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/flows/{id}/form:
+    parameters:
+      - name: id
+        description: "流程ID"
+        schema:
+          example: "433573658636613052"
+          type: string
+        in: path
+        required: true
+    get:
+      description: "获取流程表单"
+      tags:
+        - 安全策略编排内部接口
+      security:
+        - OAuth2: [admin]
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowForm"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/procs:
+    post:
+      description: "创建流程实例"
+      tags:
+        - 安全策略编排内部接口
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcParams"
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcBasic"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/security-policy/procs/{id}/status:
+    parameters:
+      - name: id
+        description: "流程实例ID"
+        schema:
+          example: "433573658636613052"
+          type: string
+        in: path
+        required: true
+    put:
+      description: "更新流程实例状态"
+      tags:
+        - 安全策略编排内部接口
+        - 安全策略编排外部接口
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcStatusUpdateParams"
+      responses:
+        "200":
+          description: Ok
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/ocr/task:
+    post:
+      description: "创建OCR识别任务"
+      tags:
+        - OCR识别
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OCRTaskRequest"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCRRecognitionResponse"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/convert/task:
+    post:
+      description: "创建音频转文字任务"
+      tags:
+        - 音频转文字
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioTransferRequest"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AudioTransferResponse"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/convert-segments/task:
+    post:
+      description: "音频转文字分段"
+      tags:
+        - 音频转文字
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioSegmentsRequest"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AudioSegmentsResponse"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/uie/training-file:
+    post:
+      description: "上传训练文件"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/TrainFileParams"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainFileResp"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/uie/train:
+    post:
+      description: "模型训练"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/TrainModuleParams"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainModuleResp"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/uie/infer:
+    post:
+      description: "模型推理"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ModuleInferParams"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleInferResp"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/tags/rule:
+    post:
+      description: "创建标签提取规则"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/TagRuleCreateParams"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagRuleCreateResp"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/tags/extract-by-rule:
+    post:
+      description: "根据标签规则提取文本"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ExtractByTagRuleParams"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractByTagRuleResp"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/models/{id}:
+    parameters:
+    - name: id
+      description: "模型ID"
+      schema:
+        example: "433573658636613052"
+        type: string
+      in: path
+      required: true
+    put:
+      description: "更新模型信息"
+      tags:
+      - 自定义文本提取接口
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ModelInfoParams"
+      responses:
+        "204":
+            description: "NoCOntent"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    get:
+      description: "获取模型信息"
+      tags:
+      - 自定义文本提取接口
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelInfoResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      description: "删除模型信息"
+      tags:
+      - 自定义文本提取接口
+      responses:
+        "204":
+            description: "NoCOntent"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/models:
+    get:
+      description: "获取模型信息"
+      tags:
+      - 自定义文本提取接口
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelsResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/admin:
+    post:
+      description: "添加流程管理员"
+      tags:
+      - 流程管理员管理接口
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminReq"
+      responses:
+        "204":
+          description: "NoContent"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/admins:
+    get:
+      description: "列举流程管理员"
+      tags:
+      - 流程管理员管理接口
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminsResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/admins/{id}:
+    delete:
+      description: "列举流程管理员"
+      tags:
+      - 流程管理员管理接口
+      parameters:
+        - name: id
+          description: "主键ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: "NoCOntent"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/configs:
+    get:
+      description: 获取配置列表
+      tags:
+      - 配置管理接口
+      parameters:
+      - 
+        name: key
+        description: "待查询关键字,如果存在多个查询关键字用,隔开"
+        schema:
+          example: "key1,key2"
+          type: string
+        in: query
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/alarm-rule:
+    post:
+      description: 创建告警规则
+      tags:
+      - 告警规则接口
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlarmRuleReq"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rule_id:
+                    type: string
+                example:
+                  rule_id: "548236464173875201"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/alarm-rules/{id}:
+    put:
+      description: 更新告警规则
+      tags:
+      - 告警规则接口
+      parameters:
+        - name: id
+          description: "告警规则ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlarmRuleReq"
+      responses:
+        "204":
+          description: "No Content"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/alarm-rules:
+    get:
+      description: 创建告警规则
+      tags:
+      - 告警规则接口
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlarmRuleList"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v2/dags/{fields}:
+    post:
+      description: 按自定义字段批量获取DAG
+      tags:
+      - 内容自动化服务
+      parameters:
+        - name: fields
+          description: "查询字段名：(可任意组合，若修改多个字段以逗号间隔)\r\n - name\r\n - description\r\n - status\r\n - created_at\r\n - updated_at\r\n - type\r\n - creator\r\n - trigger \n\n例如:\r\n - name,status<br>表示获取工作流名称和状态"
+          schema:
+            example: "title,status"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DagInfoOptionReq"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DagInfoOptionResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "400":
+          $ref: "#/components/responses/400"
+        "500":
+          $ref: "#/components/responses/500"
+  
+  /v1/operators:
+    post:
+      description: 创建组合算子
+      tags:
+        - 算子编排接口
+      security:
+        - OAuth2: [user]
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/ComboOperatorReq"
+
+      responses:
+        "201":
+          description: "Created"
+          content:
+            "application/json":
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: "433573658636613052"
+                  operator_id:
+                    type: string
+                    example: ""
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+    get:
+      description: 列举组合算子
+      tags:
+        - 算子编排接口
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: query
+          name: "page"
+          required: false
+          description: "页码，默认值为0"
+          schema:
+            type: integer
+        - in: query
+          name: "limit"
+          required: false
+          description: "每页显示条目数，默认值为20，有效值在1-100之间，-1 取消分页"
+          schema:
+            type: string
+        - in: query
+          name: "sortby"
+          required: false
+          description: "排序字段，默认为updated_at,仅支持created_at和updated_at"
+          schema:
+            type: string
+        - in: query
+          name: "order"
+          required: false
+          description: "排序规则。默认为desc，仅支持desc和asc"
+          schema:
+            type: string
+        - in: query
+          name: "operator_id"
+          required: false
+          description: "算子id"
+          schema:
+            type: string
+        - in: query
+          name: "name"
+          required: false
+          description: "算子名称"
+          schema:
+            type: string
+        - in: query
+          name: "status"
+          required: false
+          description: "算子状态"
+          schema:
+            type: string
+        - in: query
+          name: "version"
+          required: false
+          description: "算子版本"
+          schema:
+            type: string
+        - in: query
+          name: "category"
+          required: false
+          description: "算子分类"
+          schema:
+            type: string    
+        
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/ComboOperatorResp"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/operators/{id}:
+    put:
+      description: 更新组合算子
+      tags:
+        - 算子编排接口
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/ComboOperatorReq"
+
+      responses:
+        "204":
+          description: "NoContent"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/operators/{id}/executions:
+    post:
+      description: 运行组合算子
+      tags:
+        - 算子编排接口
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "ID"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+        - in: header
+          name: X-Sys-Trace-ID
+          required: false
+          schema:
+            type: string
+            example: xxxxxx
+        - in: header
+          name: X-Sys-Request-ID
+          required: false
+          schema:
+            type: string
+            example: xxxxxx
+        - in: header
+          description: "执行完成回调地址"
+          name: X-Callback-URL
+          required: false
+          schema:
+            type: string
+            example: "http://localhost:port/xxxx"
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/RunComboOperatorReq"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/RunComboOperatorResp"
+        "202":
+          description: "运行中"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/executions/{execution_id}:
+    get:
+      description: 获取运行结果
+      tags:
+        - 算子编排接口
+      security:
+        - OAuth2: [user]
+      parameters:
+        - in: path
+          name: "execution_id"
+          required: true
+          description: "算子流程执行id"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/components/schemas/RunComboOperatorResp"
+        "202":
+          description: "运行中"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/observability/full-view:
+    get:
+      description: 流程全景可观测
+      tags:
+        - 流程可观测性
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: start_time
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 1747391537
+          description: 10位时间戳，起始时间(<=end)
+        - name: end_time
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 1747391537
+          description: 10位时间戳，结束时间(>=start)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [combo-operator, data-flow]
+          description: 筛选类型
+      responses:
+        200:
+          description: 全景观测数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullObservability'
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/observability/runtime-view:
+    get:
+      description: 流程运行可观测
+      tags:
+        - 流程可观测性
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: start_time
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 1747391537
+          description: 10位时间戳，起始时间(<=end)
+        - name: end_time
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 1747391537
+          description: 10位时间戳，结束时间(>=start)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [combo-operator, data-flow]
+          description: 筛选类型
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 0
+          description: 页码, 默认值为0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int64
+            example: 20
+          description: 每页显示条目数，默认值为20
+      responses:
+        200:
+          description: 运行可观测数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeObservability'
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/observability/recent:
+    get:
+      description: 正在运行流程可观测
+      tags:
+        - 流程可观测性
+      security:
+        - OAuth2: [user]
+      responses:
+        200:
+          description: 运行可观测数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecentRunObservability'
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/flow:
+    post:
+      description: "创建数据流"
+      tags:
+        - 数据流
+      security:
+        - OAuth2: [user]
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/DataFlow"
+
+      responses:
+        "201":
+          description: "Created"
+          content:
+            "application/json":
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: "433573658636613052"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/flow/{id}:
+    put:
+      description: "更新数据流"
+      tags:
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "数据流id"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/DataFlowUpdate"
+      responses:
+        "204":
+          description: "NoContent"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      description: "删除数据流"
+      tags:
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "数据流id"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: "NoContent"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/run-instance-form/{id}:
+    post:
+      description: "手动运行-表单"
+      tags:
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "数据流id"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          "application/json":
+            schema:
+              "$ref": "#/components/schemas/RunInstanceFormReq"
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/trigger/cron/{id}:
+    post:
+      description: "手动运行-定时触发"
+      tags:
+        - 数据流
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          description: "数据流id"
+          schema:
+            example: "433573658636613052"
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/{dagId}/versions:
+    get:
+      description: 列举历史版本
+      tags:
+        - 流程版本管理
+      security:
+        - OAuth2: [user]
+      parameters:
+      - name: dagId
+        in: path
+        schema:
+          type: string
+        required: true
+        description: 流程id
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DagVersions'
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/{dagId}/versions/{versionId}/rollback:
+    post:
+      description: 回退指定版本
+      tags:
+        - 流程版本管理
+      security:
+        - OAuth2: [user]
+      parameters:
+      - name: dagId
+        in: path
+        schema:
+          type: string
+        required: true
+        description: 流程id
+      - name: versionId
+        in: path
+        schema:
+          type: string
+        required: true
+        description: 流程版本id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DagRollBackReq'
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version_id: 
+                    type: string
+                example:
+                  version_id: "578859449209353661"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/{dagId}/versions/next:
+    get:
+      description: 获取语义化版本号
+      tags:
+        - 流程版本管理
+      security:
+        - OAuth2: [user]
+      parameters:
+      - name: dagId
+        in: path
+        schema:
+          type: string
+        required: true
+        description: 流程id
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version: 
+                    type: string
+                example:
+                  version: "v1.0.1"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/single-debug:
+    post:
+      description: 单步调试
+      tags:
+        - 数据流调试
+      security:
+        - OAuth2: [user]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SingleDebugRequest'
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: 
+                    type: string
+                example:
+                  id: "589696765620417980"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/full-debug:
+    post:
+      description: 整体调试
+      tags:
+        - 数据流调试
+      security:
+        - OAuth2: [user]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FullDebugRequest'
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: 
+                    type: string
+                example:
+                  id: "589696765620417980"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  /v1/dags/single-debug/result:
+    get:
+      description: 获取单步调试结果
+      tags:
+        - 数据流调试
+      security:
+        - OAuth2: [user]
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: 调试ID
+          schema:
+            type: string
+            example: "589696768959083964"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebugResultResponse'
+        '202':
+          description: "Accept"
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+components:
+  responses:
+    "400":
+      description: 非法请求
+      content:
+        "application/json":
+          schema:
+            "$ref": "#/components/schemas/Error"
+          examples:
+            "invalidParameter":
+              value:
+                code: AppstoreServer.invalidParameter,ErrorUserIDFormat
+                description: "传入参数不正确"
+                solution: "请检查参数"
+                detail:
+                  "params":
+                    ["xxx: Does not match pattern '[/]([-_]?[a-zA-Z0-9])+$'"]
+    "401":
+      description: 未授权
+      content:
+        "application/json":
+          schema:
+            "$ref": "#/components/schemas/Error"
+          examples:
+            "UnauthorizedAccess":
+              value:
+                code: common.UnAuthorization
+                description: "登录已过期"
+                solution: "请重新登录"
+                detail:
+                  "auth": "token expired"
+    "403":
+      description: 权限禁止
+      content:
+        "application/json":
+          schema:
+            "$ref": "#/components/schemas/Error"
+          examples:
+            "PermissionDenied":
+              value:
+                code: AppstoreServer.NoPermission
+                description: "没有权限执行此操作"
+                solution: "请确认是否拥有权限执行此操作"
+                detail: "your permission is insufficient"
+    "404":
+      description: 资源不存在
+      content:
+        "application/json":
+          schema:
+            "$ref": "#/components/schemas/Error"
+          examples:
+            "SourceNotFound":
+              value:
+                code: AppstoreServer.AppNotFound
+                description: "任务不存在"
+                solution: "请确认任务id是否正确"
+                detail: null
+    "500":
+      description: 内部错误
+      content:
+        "application/json":
+          schema:
+            "$ref": "#/components/schemas/Error"
+          examples:
+            "InternalError":
+              value:
+                code: AppstoreServer.InternalError.ExistStageTask
+                description: "请求因服务器内部错误导致异常"
+                solution: "请提交工单或联系技术支持工程师"
+                detail: "package already staged, cannot be staged repeatedly"
+  schemas:
+    Error:
+      description: "接口调用错误信息结构基类"
+      required: ["code", "description", "solution"]
+      type: object
+      properties:
+        {
+          code: { description: "错误码", type: string },
+          description: { description: "错误描述", type: string },
+          solution: { description: "错误处理", type: string },
+          detail: { description: "错误细节", type: object },
+        }
+    BaseFlow:
+      description: "自动化任务配基础参数"
+      type: object
+      properties:
+        title:
+          description: "任务名称,不能包含\ / : * ? \" < > | 特殊字符，长度不能超过128个字符"
+          type: string
+          example: "contentDAG"
+        description:
+          description: "详情描述,不允许换行输入,不允许超过300个字符"
+          type: string
+          example: "内容自动化详情描述"
+        status:
+          description: "任务状态,默认启用\r\n- normal: 启用中 \r\n- stopped: 已停用"
+          type: string
+          example: "normal"
+        steps:
+          description: "自动化流程定义"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Step"
+    DAG:
+      required: [title, steps]
+      allOf:
+      - 
+        $ref: "#/components/schemas/BaseFlow"
+      -
+        type: object
+        properties:
+          emails:
+            description: "任务执行失败时告警邮件发送列表"
+            type: "array"
+            items:
+              type: "string"
+              pattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+              example: "test@gmail.com"
+    UpdateDag:
+      description: "自动化任务配置参数"
+      type: object
+      properties:
+        title:
+          description: "任务名称,不能包含\ / : * ? \" < > | 特殊字符，长度不能超过128个字符"
+          type: string
+          example: "contentDAG"
+        description:
+          description: "详情描述,不允许换行输入,不允许超过300个字符"
+          type: string
+          example: "内容自动化详情描述"
+        status:
+          description: "任务状态,默认启用\r\n- normal: 启用中 \r\n- stopped: 已停用"
+          type: string
+          example: "normal"
+        steps:
+          description: "自动化流程定义"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Step"
+        emails:
+          description: "任务执行失败时告警邮件发送列表"
+          type: "array"
+          items:
+            type: "string"
+            pattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+    Step:
+      description: "自动化任务步骤定义参数"
+      type: object
+      required: [id, title, operator]
+      properties:
+        id:
+          description: "节点id，唯一标识"
+          type: string
+          example: "0"
+        title:
+          description: "节点名称"
+          type: string
+          example: "手动执行"
+        operator:
+          description: "节点函数"
+          type: string
+          example: "@internal/trigger/manual"
+        parameters:
+          description: "节点参数,用户可自定格式为`key:value`任意类型参数"
+          type: object
+        branches:
+          description: "分支节点"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Branch"
+    Branch:
+      description: "自动化任务分支定义参数"
+      type: object
+      required: [id, conditions]
+      properties:
+        id:
+          description: "节点id，唯一标识"
+          type: string
+          example: "0"
+        conditions:
+          description: "分支判断条件配置"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Condition"
+        steps:
+          description: "分支下的节点 同外层steps结构一致"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Step"
+      example:
+        id: "0"
+        conditions:
+          - - id: "1"
+              operator: "@internal/cmp/eq"
+              parameters:
+                a: 1
+                b: 2
+          - - id: "2"
+              operator: "@internal/cmp/eq"
+              parameters:
+                a: "{{__0.docid}}"
+                b: "{{__0.docname}}"
+        steps:
+          - id: "3"
+            operator: "@anyshare/file/copy"
+    Condition:
+      description: "自动化任务分支条件定义参数"
+      type: array
+      items:
+        description: "分支定义参数"
+        type: object
+        required: [id, operator]
+        properties:
+          id:
+            description: "节点id，唯一标识"
+            type: string
+            example: "0"
+          operator:
+            description: "节点函数"
+            type: string
+            example: "@internal/trigger/manual"
+          parameters:
+            description: "节点参数,用户可自定格式为`key:value`任意类型参数"
+            type: object
+    DAGs:
+      type: object
+      properties:
+        dags:
+          description: "任务列表"
+          type: array
+          items:
+            properties:
+              id:
+                description: "任务id"
+                type: string
+                example: "433573658636613052"
+              title:
+                description: "任务名称"
+                type: string
+                example: "每周定时创建文档"
+              actions:
+                description: "任务包含的动作"
+                type: array
+                items:
+                  description: "任务动作信息"
+                  type: string
+                  example: "@internal/trigger/manual"
+              created_at:
+                description: "创建时间"
+                type: integer
+                example: 1668405537
+              updated_at:
+                description: "更新时间降序排列"
+                type: integer
+                example: 1668405537
+              status:
+                description: "任务状态\r\n- normal: 启用中 \r\n- stopped: 已停用"
+                type: string
+                example: "normal"
+        page:
+          description: "页码"
+          type: integer
+          example: 0
+        limit:
+          description: "每页显示数目，-1 取消分页"
+          type: integer
+          example: 20
+        total:
+          description: "任务总数"
+          type: integer
+          example: 20
+      example:
+        dags:
+          - id: "433573658636613052"
+            title: "每周定时复制文档"
+            actions:
+              [
+                "@internal/trigger/manual",
+                "@anyshare/folder/listfile",
+                "@control/flow/branches",
+                "@anyshare/folder/cp",
+              ]
+            updated_at: "1668405678"
+            status: "normal"
+          - id: "433573658636613052"
+            title: "每周定时创建文档"
+            actions:
+              [
+                "@internal/trigger/manual",
+                "@anyshare/folder/listfile",
+                "@control/flow/branches",
+                "@anyshare/folder/listfile",
+              ]
+            updated_at: "1668405537"
+            status: "normal"
+        page: 0
+        limit: 20
+        total: 20
+    DagDetail:
+      allOf:
+        - description: "自动化任务分支条件定义参数"
+          type: object
+          properties:
+            id:
+              description: "节点运行id"
+              type: string
+              example: "433573686587454908"
+            created_at:
+              description: "任务创建时间"
+              type: integer
+              example: 1668746471
+            updated_at:
+              description: "任务更新时间"
+              type: integer
+              example: 1668746471
+        - "$ref": "#/components/schemas/DAG"
+    TaskResult:
+      allOf:
+      - 
+        $ref: "#/components/schemas/BaseTaskResult"
+      - 
+        type: object
+        properties:
+          progress:
+            "$ref": "#/components/schemas/Progress"
+      example:
+        results:
+          - id: "433573686587454908"
+            status: "success"
+            started_at: 1668405537
+            ended_at: 1668405537
+          - id: "433573686587454910"
+            status: "failed"
+            started_at: 1668405588
+            ended_at: 1668405590
+        progress:
+          total: 10
+          success: 2
+          failed: 1
+        page: 0
+        limit: 20
+        total: 10
+    TaskResultV2:
+      allOf:
+      - $ref: "#/components/schemas/BaseTaskResult"
+      example:
+        results:
+          - id: "433573686587454908"
+            status: "success"
+            started_at: 1668405537
+            ended_at: 1668405537
+          - id: "433573686587454910"
+            status: "failed"
+            started_at: 1668405588
+            ended_at: 1668405590
+        page: 0
+        limit: 20
+        total: 10
+    BaseTaskResult:
+      description: "任务运行结果"
+      type: object
+      properties:
+        results:
+          description: "运行结果"
+          type: array
+          items:
+            properties:
+              id:
+                description: "节点运行id"
+                type: string
+                example: "433573686587454908"
+              status:
+                description: "节点运行状态\r\n- success: 运行成功\r\n- failed: 运行失败\r\n- canceled: 运行取消\r\n- running: 运行中\r\n- schedule:等待中"
+                type: string
+                example: "success"
+              started_at:
+                description: "任务开始时间"
+                type: integer
+                example: 1668405537
+              ended_at:
+                description: "任务结束时间"
+                type: integer
+                example: 1668405537
+        progress:
+          "$ref": "#/components/schemas/Progress"
+        page:
+          description: "页码"
+          type: integer
+          example: 0
+        limit:
+          description: "每页显示数目，-1 取消分页"
+          type: integer
+          example: 20
+        total:
+          description: "任务总数"
+          type: integer
+          example: 20
+    Progress:
+      type: object
+      properties:
+        total:
+          description: "总任务数"
+          type: integer
+          example: 10
+        success:
+          description: "运行成功数"
+          type: integer
+          example: 2
+        failed:
+          description: "运行失败数"
+          type: integer
+          example: 1
+    TaskResultDetail:
+      description: "运行结果详情"
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            description: "节点结果id"
+            type: string
+            example: "433573686587454908"
+          operator:
+            description: "节点函数"
+            type: string
+            example: "@internal/trigger/manual"
+          started_at:
+            description: "任务开始时间"
+            type: integer
+            example: 1668405537
+          status:
+            description: "节点运行状态\r\n- success: 运行成功\r\n- failed: 运行失败\r\n- undo: 未运行"
+            type: string
+            example: "success"
+          inputs:
+            description: "节点输入数据"
+            type: object
+          outputs:
+            description: "节点输出数据"
+            type: object
+      example:
+        - id: "433573686587454910"
+          operator: "@internal/trigger/manual"
+          started_at: 1668405537
+          status: "success"
+          inputs: null
+          outputs: null
+        - id: "433573686587454908"
+          operator: "@internal/trigger/cron"
+          started_at: 1668405537
+          status: "success"
+          inputs:
+            code: 0
+            data:
+              body_html: "<p>有自动化任务创建</p>"
+              content_updated_at: "2022-09-05T05:58:25.000Z"
+              action_type: publish
+          outputs:
+            code: 1
+            data:
+              body_html: "<p>有自动化任务创建输出结果</p>"
+              content_updated_at: "2022-09-05T05:58:25.000Z"
+    TaskResultDetailPage:
+      description: "分页运行结果详情"
+      type: object
+      properties:
+        limit:
+          type: integer
+          description: 分页大小
+        page:
+          type: integer
+          description: 当前页
+        total:
+          type: integer
+          description: 总数
+        results:
+          $ref: "#/components/schemas/TaskResultDetail"
+    SuggestName:
+      description: "建议的名称，若传入的名称不存在则使用上传的名称，若存在则根据重名策略生成可用名称"
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: "未命名自动任务(1)"
+    CreateFlowParams:
+      description: 创建安全策略流程节点
+      required: [steps]
+      type: object
+      properties:
+        policy_type:
+          $ref: "#/components/schemas/PolicyType"
+        steps:
+          $ref: "#/components/schemas/FlowSteps"
+    FlowSteps:
+      description: 安全策略流程节点数组，至少包含两个步骤
+      type: array
+      items:
+        $ref: "#/components/schemas/Step"
+      example:
+        - id: "0"
+          title: ""
+          operator: "@trigger/security-policy"
+          parameters:
+            fields:
+              - key: EhWSiRpkGIyHeCmC
+                name: 文件
+                required: true
+                type: asFile
+        - id: "1"
+          operator: "@workflow/approval"
+          parameters:
+            title: 文件审核
+            workflow: Process_gbmuqCsT
+            contents:
+              - type: asFile
+                title: 文件
+                value: "{{__0.fields.EhWSiRpkGIyHeCmC}}"
+    FlowWithId:
+      description: 安全策略流程ID
+      required: [id]
+      type: object
+      properties:
+        id:
+          description: 安全策略流程ID
+          type: string
+    Flow:
+      description: 安全策略流程定义
+      required: [steps, id]
+      type: object
+      properties:
+        id:
+          description: 安全策略流程ID
+          type: string
+        policy_type:
+          $ref: "#/components/schemas/PolicyType"
+        steps:
+          $ref: "#/components/schemas/FlowSteps"
+    FlowFormField:
+      description: 安全策略流程表单项定义
+      required: [key, name, type]
+      type: object
+      properties:
+        key:
+          description: 表单项标识
+          type: string
+        name:
+          description: 表单项显示名称
+          type: string
+        required:
+          description: 是否必填
+          type: boolean
+        type:
+          description: |
+            表单项类型
+            - string 文本
+            - long_string 长文本
+            - number 数字
+            - asPerm 权限
+            - asAccessorPerms 权限配置
+            - asFile 文件
+            - asFolder 文件夹
+            - asMetadata 编目
+            - asTags 标签
+            - asLevel 密级
+          type: string
+          enum:
+            - string
+            - long_string
+            - number
+            - asPerm
+            - asAccessorPerms
+            - asFile
+            - asFolder
+            - asMetadata
+            - asTags
+            - asLevel
+    FlowForm:
+      description: 安全策略流程表单
+      required: [fields]
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowFormField"
+    ProcParams:
+      description: 创建流程实例参数
+      type: object
+      required:
+        - flow_id
+        - source
+      properties:
+        user_id:
+          description: 用户ID
+          type: string
+          example: "77487560-45a1-11e6-a7c9-dcd2fc061321"
+        flow_id:
+          description: 流程ID
+          type: string
+          example: "433573686587454908"
+        source:
+          description: 触发源文件
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/AsDoc"
+            - $ref: "#/components/schemas/AsDocObject"
+          example:
+            docid: "gns://xxx"
+            size: -1
+            name: 文件夹
+            type: "folder"
+        values:
+          description: 用户输入参数
+          type: object
+          example:
+            description: 描述
+            file:
+              docid: "gns://xxx"
+              size: 1
+              name: 文件
+            level: 2
+            perm:
+              allow: ["display", "preview"]
+              deny: ["download"]
+              endtime: -1
+            datetime: "2022-09-05T05:58:25.000Z"
+            tags:
+              - 测试项目
+    PolicyType:
+      description: |
+        安全策略管控行为
+        - `upload` 上传
+        - `perm` 权限申请
+      type: string
+      enum:
+        - upload
+        - perm
+    ProcBasic:
+      description: 流程实例ID"
+      type: object
+      properties:
+        id:
+          description: 流程实例ID
+          type: string
+          example: "433573658636613052"
+        status:
+          $ref: "#/components/schemas/ProcStatus"
+    ProcStatus:
+      description: |
+        流程运行状态
+        - `init`: 初始状态
+        - `scheduled`: 调度中
+        - `running`: 运行中
+        - `blocked`: 中断
+        - `failed`: 运行异常
+        - `success`: 运行完成
+        - `canceled`: 运行取消
+      type: string
+      enum:
+        - init
+        - scheduled
+        - running
+        - blocked
+        - failed
+        - success
+        - canceled
+    ProcStatusUpdateParams:
+      description: 更新流程状态
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - canceled
+    AsDoc:
+      description: 文档对象
+      type: object
+      properties:
+        type:
+          description: 文档类型
+          type: string
+          enum:
+            - file
+            - folder
+          example: "file"
+        name:
+          description: 文档名称
+          type: string
+          example: "文件"
+        id:
+          description: 文档ID
+          type: string
+          example: "gns://21A9B9F01B524CB49D54BF7399F82€B4/32E9B9FD1B524CB49D54BF7399F822AC"
+        rev:
+          description: 文档版本
+          type: string
+          example: "0528735AD33D4CB9A9841551320F1986"
+        size:
+          description: 文档大小
+          type: integer
+          example: 1
+        path:
+          description: 文档路径
+          type: string
+          example: "文档库/test.txt"
+      required:
+        - type
+    AsDocObject:
+      description: 文档对象
+      type: object
+      properties:
+        type:
+          description: 文档类型
+          type: string
+          enum:
+            - file
+            - folder
+          example: "file"
+        object_id:
+          description: 文档 object_id
+          type: string
+          example: "32E9B9FD1B524CB49D54BF7399F822AC"
+    OCRTaskRequest:
+      description: OCR识别任务请求体
+      oneOf:
+      - type: object
+        required:
+          - "docid"
+          - "scene"
+          - "rec_type"
+        properties:
+          docid:
+            type: string
+            pattern: "^gns://([A-Z0-9]{32}/?)+$"
+          scene:
+            type: string
+            enum:
+              - "eleinvoice"
+              - "idcard"
+              - "handwriting"
+          rec_type:
+            type: string
+            enum:
+              - "eleinvoice"
+              - "idcard"
+              - "general"
+        example:
+          "docid": "gns://xxxxxx"
+          "scene": "handwriting"
+          "rec_type": "general" 
+      - type: object
+        required:
+          - "docid"
+          - "scene"
+          - "rec_type"
+          - "task_type"
+          - "uri"
+        properties:
+          docid:
+            type: string
+            pattern: "^gns://([A-Z0-9]{32}/?)+$"
+          scene:
+            type: string
+            enum:
+              - "eleinvoice"
+              - "idcard"
+              - "handwriting"
+          rec_type:
+            type: string
+            enum:
+              - "eleinvoice"
+              - "idcard"
+              - "general"
+          task_type:
+            type: integer
+            enum: 
+             - 1
+             - 100
+             - 101
+          uri:
+            type: string
+            pattern: "^/([a-zA-Z0-9]+/?)+$"
+        example:
+          "docid": "gns://xxxxxx"
+          "scene": "handwriting"
+          "rec_type": "general"
+          "task_type": 100
+          "uri": "/lab/ocr/predict/ticket"
+    OCRRecognitionResponse:
+      oneOf:
+        - type: object
+          description: "通用识别场景提取结果"
+          properties:
+            subTaskList:
+              type: object
+              properties:
+                result:
+                  type: string
+        - type: object
+          description: "发票识别结果"
+          properties:
+            invoice_code:
+              description: "发票代码"
+              type: string
+            invoice_number:
+              description: "发票号码"
+              type: string
+            title:
+              description: "标题"
+              type: string
+            issue_date:
+              description: "开票日期"
+              type: string
+            buyer_name:
+              description: "购买方名称"
+              type: string
+            buyer_tax_id:
+              description: "购买方纳税人识别号"
+              type: string
+            item_name:
+              description: "货物名称"
+              type: string
+            amount:
+              description: "金额"
+              type: string
+            total_amount_in_words:
+              description: "价税合计（大写）"
+              type: string
+            total_amount_numeric:
+              description: "价税合计（小写）"
+              type: string
+            seller_name:
+              description: "销售方名称"
+              type: string
+            seller_tax_id:
+              description: "销售方纳税人识别号"
+              type: string
+            total_amount_excluding_tax:
+              description: "合计金额（不含税）"
+              type: string
+            total_tax_amount:
+              description: "合计税额"
+              type: string
+            verification_code:
+              description: "校验码"
+              type: string
+            tax_rate:
+              description: "税率"
+              type: string
+            tax_amount:
+              description: "税额"
+              type: string
+        - type: object
+          description: "身份证识别结果"
+          properties:
+            name:
+              description: "姓名"
+              type: string
+            gender:
+              description: "性别"
+              type: string
+            date_of_birth:
+              description: "出生"
+              type: string
+            ethnicity:
+              description: "民族"
+              type: string
+            address:
+              description: "地址"
+              type: string
+            id_number:
+              description: "公民身份号码"
+              type: string
+            issuing_authority:
+              description: "签发机关"
+              type: string
+            expiration_date:
+              description: "有效期限"
+              type: string
+    AudioTransferRequest:
+      description: "音频转文字请求体参数"
+      type: object
+      required:
+        - "docid"
+      properties:
+        docid:
+          type: string
+          pattern: "^gns://([A-Z0-9]{32}/?)+$"
+      example: 
+        "docid": "gns://xxxxx"
+    AudioSegmentsRequest:
+      description: "音频转文字请求体参数"
+      type: object
+      required:
+        - "url"
+        - "max_segments"
+        - "make_segment_type"
+        - "need_abstract"
+        - "abstract_type"
+        - "callback"
+      properties:
+        url:
+          description: "音频文件下载地址"
+          type: string
+          pattern: "^https{0,1}://(([\\w-]+\\.?)*(:{0,1}\\d)?[\\w-]+)(/[\\w-./?%&=]*)?$"
+        summary_type:
+          description: "总结类型"
+          type: string
+          enum:
+            - Semantics
+        max_segments:
+          description: "文本最大分段数"
+          type: integer
+          minimum: 1
+          maximum: 20
+        make_segment_type:
+          description: "文本分段类型\r\n - accurate: 精确分段\r\n - fast: 粗略分段"
+          type: string
+          enum: 
+            - accurate
+            - fast
+        need_abstract:
+          description: "是否需要做摘要\r\n - 0: 不需要摘要\r\n - 1: 需要摘要"
+          type: integer
+          enum: 
+            - 0
+            - 1
+        abstract_type:
+          description: "文本摘要类型\r\n - accurate: 精确分段\r\n - fast: 粗略分段"
+          type: string
+          enum: 
+            - accurate
+            - fast
+        callback:
+          description: "回调函数"
+          type: string
+          pattern: "^https{0,1}://(([\\w-]+\\.?)*(:{0,1}\\d)?[\\w-]+)(/[\\w-./?%&=]*)?$"
+      example: 
+        url: "http://www.baidu.com"
+        max_segments: 5
+        make_segment_type: "fast"
+        need_abstract: 0
+        abstract_type: "fast"
+        callback: "http://www.baidu.com"
+    AudioSegmentsResponse:
+      description: "音频转文字请求体参数"
+      type: object
+      required:
+        - "segments_list"
+        - "valid_states"
+      properties:
+        segments_list:
+          description: "音频文件下载地址"
+          type: array
+          items:
+            type: object
+            properties:
+              segment_id:
+                description: "当前分段的序号（从1开始）"
+              slice_start_time:
+                description: "当前摘要开始时间"
+              slice_end_time:
+                description: "当前摘要结束时间"
+              segment_content:
+                description: "当前段落文本生成的摘要"
+              segment_abstract:
+                description: "摘要内容,默认为空字符串"
+        valid_states:
+          description: "当前提取的章节摘要是否均有意义\r\n - 0: 不需要摘要\r\n - 1: 需要摘要"
+          type: integer
+          enum: 
+            - 0
+            - 1
+      example: 
+        segments_list: 
+          -
+            segment_id: 1
+            slice_start_time: 24
+            slice_end_time: 58
+            segment_content: "第一财经报道，xxxxx"
+            segment_abstract: ""
+        valid_states: 1
+    AudioTransferResponse:
+      description: "音频转文字响应体"
+      type: object
+      properties:
+        result:
+          type: string
+      example:
+        result: "这是音频转文字识别结果"
+    TrainFileParams:
+      description: "上传文件接口请求参数"
+      type: object
+      required:
+      - file
+      properties:
+        file:
+          description: "待训练文件"
+          type: object
+          format: binary
+    TrainFileResp:
+      description: "上传文件接口响应参数"
+      type: object
+      required:
+      - id
+      - count
+      - schema
+      properties:
+        id:
+          description: "训练id"
+          type: string
+        count:
+          description: "训练文件总数"
+          type: integer
+        schema: 
+          description: "待提取实体"
+          type: integer
+      example:
+        id: "506822806021865473"
+        count: 10
+        schema: 5
+    TrainModuleParams:
+      description: "模型训练接口请求参数"
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          description: "待训练模型id"
+          type: string
+      example:
+        id: "506822806021865473"
+    TrainModuleResp:
+      description: "模型训练接口响应参数"
+      type: object
+      required:
+      - id
+      - status
+      properties:
+        id:
+          description: "训练id"
+          type: string
+        status:
+          description: "训练状态"
+          type: string
+      example:
+        id: "506822806021865473"
+        status: "finished"
+    ModuleInferParams:
+      description: "模型推理接口请求参数"
+      type: object
+      required:
+      - id
+      - docid
+      properties:
+        id:
+          description: "模型id"
+          type: string
+        docid:
+          description: "待提取文档id"
+          type: string
+      example:
+        id: "506822806021865473"
+        docid: "gns://E4F6D46EE5F649D4A8E1B5A510FF4375/F5346A1AB6DB422CB4841880575B07BB"
+    ModuleInferResp:
+      description: "模型推理接口响应参数"
+      type: object
+      example:
+        "姓名": 
+        - {
+            "text": "谷爱凌",
+            "start": 28,
+            "end": 31,
+            "probability": 0.9964781704907182
+        }
+    TagRuleCreateParams:
+      description: "标签提取规则请求参数"
+      type: object
+      required: 
+      - rules
+      - name
+      - status
+      properties:
+        name: 
+          description: "标签提取规则名称"
+          type: string
+          pattern: "^[^/:\\*?\"<>\\|]+$"
+          maxLength: 255
+        rules: 
+          description: "标签提取规则集合"
+          type: array
+          items: 
+            type: object
+            properties: 
+              tag_id: 
+                description: "标签id"  
+                type: string
+              rule: 
+                description: "标签提取规则"
+                type: object
+                required: 
+                - tag_id
+                - rule
+                properties: 
+                  or: 
+                    type: array
+                    items: 
+                      type: array
+                      items: 
+                          type: string
+        status: 
+          description: "规则状态，0代表未启用，1代表已启用"
+          type: integer
+          enum: [0, 1]
+        description: 
+          description: "详情描述,不允许换行输入,不允许超过300个字符"
+          type: string
+          maxLength: 300
+    TagRuleCreateResp:
+      description: "标签提取规则响应参数"
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          description: "标签提取规则id"
+          type: string
+      example:
+        id: "506822806021865473"
+    ExtractByTagRuleParams:
+      description: "根据标签规则提取文本请求参数"
+      type: object
+      required: 
+      - target
+      properties: 
+        target: 
+          type: object
+          properties: 
+              docid: 
+                  type: string
+                  pattern: ^gns://([A-Z0-9]32}/?)+$
+              content: 
+                  type: string
+                  maxLength: 10000
+        rule_id: 
+          type: string
+          maxLength: 100
+        rules: 
+          type: array
+          items: 
+            type: object
+            properties: 
+              tag_id: 
+                  type: string
+              tag_path: 
+                  type: string
+              rule: 
+                type: object
+                properties: 
+                  or: 
+                    type: array
+                    items: 
+                      type: array
+                      items: 
+                          type: string
+            
+                required: 
+                - tag_id
+                - tag_path
+                - rule
+    ExtractByTagRuleResp:
+      description: "标签提取文本响应参数"
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          description: "标签提取规则id"
+          type: string
+      example:
+        id: "506822806021865473"
+    ModelInfoParams:
+      description: "创建模型信息请求参数"
+      type: object
+      required: 
+      - name
+      - status
+      properties:
+        name: 
+          description: "标签提取规则名称"
+          type: string
+          pattern: "^[^/:\\*?\"<>\\|]+$"
+          maxLength: 255
+        rules: 
+          description: "标签提取规则集合"
+          type: array
+          items: 
+            type: object
+            properties: 
+              tag_id: 
+                description: "标签id"  
+                type: string
+              rule: 
+                description: "标签提取规则"
+                type: object
+                required: 
+                - tag_id
+                - rule
+                properties: 
+                  or: 
+                    type: array
+                    items: 
+                      type: array
+                      items: 
+                          type: string
+        status: 
+          description: "规则状态，0代表未启用，1代表已启用"
+          type: integer
+          enum: [0, 1]
+        description: 
+          description: "详情描述,不允许换行输入,不允许超过300个字符"
+          type: string
+          maxLength: 300
+    ModelInfoResp:
+      description: "获取模型信息响应参数"
+      type: object
+      properties:
+        name:
+          description: "模型名称"
+          type: string
+        description:
+          description: "模型描述"
+          type: string
+        id:
+          description: "模型id"
+          type: string
+        status:
+          description: "模型状态\r\n - 0: 未发布\r\n - 1:已发布"
+          type: integer
+        created_at:
+          description: "模型创建时间"
+          type: integer
+        updated_at:
+          description: "模型更新时间"
+          type: integer
+        type:
+          description: "模型类型\r\n - 1: 文本提取\r\n - 2:标签提取"
+          type: integer
+        rules:
+          description: "模型描述"
+          oneOf:
+          - type: array
+            description: "文本提取实体数组"
+            items:
+              type: string
+          - type: object
+            description: "标签提取规则"
+      example:
+        name: "test"
+        description: "描述信息"
+        id: "508671944279719937"
+        status: 1
+        created_at: 1711619533173
+        updated_at: 1711619533173
+        type: 1
+        rules: ["实体1", "实体2"]
+    ModelsResp:
+      description: "列举模型信息响应参数"
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            description: "模型名称"
+            type: string
+          id:
+            description: "模型id"
+            type: string
+          status:
+            description: "模型状态\r\n - 0: 未发布\r\n - 1:已发布"
+            type: integer
+          created_at:
+            description: "模型创建时间"
+            type: integer
+          updated_at:
+            description: "模型更新时间"
+            type: integer
+          type:
+            description: "模型类型\r\n - 1: 文本提取\r\n - 2:标签提取"
+            type: integer
+      example:
+      -
+        name: "test"
+        id: "508671944279719937"
+        status: 1
+        created_at: 1711619533173
+        updated_at: 1711619533173
+        type: 1
+    AdminReq:
+      description: "添加管理员请求体"
+      type: object
+      required:
+      - users
+      properties:
+        users:
+          description: "管理员列表"
+          type: array
+          items:
+            type: object
+            required:
+            - user_id
+            - user_name
+            properties:
+              user_id: 
+                type: string
+                pattern: "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$"
+              user_name:
+                type: string
+                maxLength: 128
+                pattern: "^[^/:\\*?\"<>\\|]+$"
+      example:
+        users:
+        -
+          user_id: "1ca0ec58-d6c3-11ee-a3fd-aefd2b31f769"
+          user_name: "b"
+    AdminsResp:
+      description: "管理员列表"
+      type: object
+      properties:
+        admins:
+          description: "管理员列表"
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              user_id: 
+                type: string
+                pattern: "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$"
+              user_name:
+                type: string
+                maxLength: 128
+                pattern: "^[^/:\\*?\"<>\\|]+$"
+      example:
+        admins:
+        -
+          id: "520448466707611649"
+          user_id: "1ca0ec58-d6c3-11ee-a3fd-aefd2b31f769"
+          user_name: "b"
+    ConfigResp:
+      description: "配置列表"
+      type: object
+      properties:
+        configs:
+          description: "配置项"
+          type: array
+          items:
+            type: object
+            properties:
+              key: 
+                type: string
+                description: "关键字"
+              value: 
+                type: string
+                description: "关键字对应值"
+      example:
+        configs:
+        -
+          key: "key1"
+          values: "val1"
+        -
+          key: "key2"
+          values: "val2"
+    AlarmRuleReq:
+      description: "告警规则请求参数"
+      type: object
+      required:
+        - alert_users
+        - dag_ids
+        - frequency
+        - threshold
+      properties:
+        alert_users:
+          type: object
+          description: "告警人列表"
+          required:
+            - id 
+            - type
+          properties:
+            id:
+              type: string
+              description: 用户id
+            type:
+              description: 用户类型
+              enum:
+                - user
+                - group
+        dag_ids:
+          description: "绑定告警规则的工作流ID数组"
+          type: array
+          items:
+            type: string
+        frequency:
+          description: "告警触发频率,小数位取1位"
+          type: number
+          minimum: 0.1
+          maximum: 1000
+        threshold:
+          description: "告警触发阈值"
+          type: number
+          minimum: 1
+          maximum: 100000
+      example:
+        alert_users:
+        -
+          id: "391f7880-586a-11ef-8ebf-6af8a6b45bfa"
+          type: "user"
+        dag_ids: 
+        - "527960097733778805"
+        - "527960183498896828"
+        frequency: 0.1
+        threshold: 10
+    AlarmRuleList:
+      description: "告警规则请求参数"
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              rule_id:
+                type: string
+                description: "告警规则ID"
+              alert_users:
+                type: object
+                description: "告警人列表"
+                properties:
+                  id:
+                    type: string
+                    description: "用户id"
+                  name:
+                    type: string
+                    description: "用户名"
+                  type:
+                    description: "用户类型"
+                    enum:
+                      - user
+                      - group
+              dag_ids:
+                description: "绑定告警规则的工作流ID数组"
+                type: array
+                items:
+                  type: string
+              frequency:
+                description: "告警触发频率,小数位取1位"
+                type: number
+                minimum: 0.1
+                maximum: 1000
+              threshold:
+                description: "告警触发阈值"
+                type: number
+                minimum: 1
+                maximum: 100000
+      example:
+        rules:
+        -
+          rule_id: "548236464173875201"
+          alert_users:
+          -
+            id: "391f7880-586a-11ef-8ebf-6af8a6b45bfa"
+            name: "zhangsan"
+            type: "user"
+          dag_ids: 
+          - "527960097733778805"
+          - "527960183498896828"
+          frequency: 0.1
+          threshold: 10
+    DagInfoOptionReq:
+      type: object
+      required: 
+        - method
+        - dag_ids
+      properties:
+        method:
+          description: "请求方法"
+          enum:
+            - "GET"
+        dag_ids:
+          description: "流程id数组"
+          type: array
+          uniqueItems: true
+          minItems: 1
+          items:
+            type: string
+            pattern: "^[0-9]{18}$"
+      example:
+        method: "GET"
+        dag_ids:
+          - "527960097733778805"
+          - "527960183498896828" 
+    DagInfoOptionResp:
+      type: object
+      required:
+        - id
+      properties:
+        id: 
+          type: string
+          description: "流程id"
+        name:
+          type: string
+          description: "流程名称"
+        description:
+          type: string
+          description: "流程描述"
+        status:
+          type: string
+          description: "流程状态\r\n - normal:启用\r\n - stopped: 停用"
+        created_at:
+          type: integer
+          description: "流程创建时间"
+        updated_at:
+          type: integer
+          description: "流程更新时间"
+        type:
+          type: string
+          description: "流程类型"
+        creator:
+          type: object
+          description: "流程创建者信息"
+          properties:
+            id:
+              type: string
+              description: "流程创建者id"
+            name:
+              type: string
+              description: "流程创建者名称"
+        trigger:
+          type: string
+          description: "触发器类型"
+      example:
+        id: 527960097733778805
+        name: "未命名自动任务"
+        description: "这是一个自动化任务"
+        status: "normal"
+        created_at: 1740989538
+        updated_at: 1740989538
+        type: "data_flow"
+        creator:
+          id: "4fa5fafe-e751-11ef-b014-dac047ec7bab"
+          name: "a"
+        trigger: "event"
+    ComboOperatorReq:
+      description: "组合算子请求参数"
+      required: [title, steps]
+      type: object
+      properties:
+        title:
+          description: "任务名称,不能包含\ / : * ? \" < > | 特殊字符，长度不能超过128个字符"
+          type: string
+          example: "Combo_Operator"
+        description:
+          description: "详情描述,不允许换行输入,不允许超过300个字符"
+          type: string
+          example: "组合算子详情描述"
+        steps:
+          description: "算子流程定义"
+          type: array
+          items:
+            "$ref": "#/components/schemas/Step"
+        exec_mode:
+          description: "执行模式"
+          enum: 
+            - sync
+            - async
+        category:
+          description: "算子分类"
+          type: string
+          pattern: "[a-zA-Z0-9_-]*"
+        outputs:
+          type: array
+          items:
+            "$ref": "#/components/schemas/OutPut"
+    ComboOperatorResp:
+      description: "组合算子列表"
+      type: object
+      properties:
+        ops:
+          type: array
+          items:
+            type: object
+            properties:
+              operator_id:
+                description: "算子ID"
+                type: string
+                example: "1909128114554798080"
+              operator_name:
+                description: "算子名称"
+                type: string
+                example: "组合算子"
+              dag_id:
+                description: "流程ID"
+                type: string
+                example: "1909128114554798080"
+              ceatore_name:
+                description: "创建人名称"
+                type: string
+                example: "zhangsan"
+              created_at:
+                description: "算子注册事件"
+                type: string
+                example: "2025-04-07 14:16:27"
+        page:
+            description: "页码"
+            type: integer
+            example: 0
+        limit:
+          description: "每页显示数目，-1 取消分页"
+          type: integer
+          example: 20
+        total:
+          description: "任务总数"
+          type: integer
+          example: 20
+    RunComboOperatorReq:
+      description: "运行组合算子请求体, 请求参数根据实际表单定义传入"
+      type: object
+    RunComboOperatorResp:
+      description: "运行组合算子响应体, 根据算子实际运行结果返回JSON对象"
+      type: object
+    OutPut:
+      description: "节点输出"
+      type: array
+      items:
+        type: object
+        properties:
+          key: 
+            type: string
+          name:
+            type: string
+          type:
+            enum:
+              - string
+              - number
+              - object
+              - array
+    FullObservability:
+      type: object
+      properties:
+        dag_total:
+          type: integer
+          example: 15
+          description: "已创建工作流总数"
+        success:
+          type: integer
+          example: 120
+          description: "运行成功总数"
+        failed:
+          type: integer
+          example: 5
+          description: "运行失败总数"
+        canceled:
+          type: integer
+          example: 120
+          description: "运行取消总数"
+        running:
+          type: integer
+          example: 5
+          description: "运行中总数"
+        scheduled:
+          type: integer
+          example: 5
+          description: "等待中总数"
+        run_total:
+          type: integer
+          example: 270
+          description: "触发任务总数"
+    RuntimeObservability:
+      type: object
+      properties:
+        totals:
+          type: integer
+          description: "已创建流程总数"
+        page:
+          type: integer
+          description: "当前页码"
+        limit:
+          type: integer
+          description: "当前页数据总数"
+        datas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: "流程id"
+              name:
+                type: string
+                description: "流程名称"
+              creator:
+                type: string
+                description: "流程创建人"
+              metric:
+                type: object
+                properties:
+                  success_rate:
+                    type: number
+                    description: "流程成功率"
+                  failed_rate:
+                    type: number
+                    description: "流程成功率"
+                  avg_run_duration:
+                    type: number
+                    description: "流程平均耗时"
+                description: "流程运行时指标"
+              status_summary:
+                type: object
+                description: "工作流运行状态总数统计"
+                properties:
+                  total:
+                    description: "工作流执行总数"
+                    type: integer
+                  success:
+                    description: "运行成功总数"
+                    type: integer
+                  failed:
+                    description: "运行失败总数"
+                    type: integer
+                  blocked:
+                    description: "阻塞状态总数"
+                    type: integer
+                  canceled:
+                    description: "取消状态总数"
+                    type: integer
+                  running:
+                    description: "运行中总数"
+                    type: integer
+                  init:
+                    description: "初始化状态总数"
+                    type: integer
+      example:
+        total: 25
+        page: 0
+        limit: 20
+        datas:
+        - 
+          id: "566250212968913917"
+          name: "上次文件向量索引工作流"
+          creator: "张三"
+          metric: 
+            success_rate: 0.07
+            failed_rate: 0.15
+            run_duration: 10.5
+          status_summary:
+            total: 27
+            success: 27
+            failed: 2
+            blocked: 0
+            canceled: 0
+            running: 0
+            init: 0
+    RecentRunObservability:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: "流程id"
+          name:
+            type: string
+            description: "流程名称"
+          creator:
+            type: string
+            description: "流程创建人"
+          metric:
+            type: object
+            properties:
+              success_rate:
+                type: number
+                description: "流程成功率"
+              failed_rate:
+                type: number
+                description: "流程成功率"
+              avg_run_duration:
+                type: number
+                description: "流程平均耗时"
+            description: "流程运行时指标"
+          status_summary:
+            type: object
+            description: "工作流运行状态总数统计"
+            properties:
+              total:
+                description: "工作流执行总数"
+                type: integer
+              success:
+                description: "运行成功总数"
+                type: integer
+              failed:
+                description: "运行失败总数"
+                type: integer
+              blocked:
+                description: "阻塞状态总数"
+                type: integer
+              canceled:
+                description: "取消状态总数"
+                type: integer
+              running:
+                description: "运行中总数"
+                type: integer
+              init:
+                description: "初始化状态总数"
+                type: integer
+      example:
+        - 
+          id: "566250212968913917"
+          name: "上次文件向量索引工作流"
+          creator: "张三"
+          metric: 
+            success_rate: 0.07
+            failed_rate: 0.15
+            run_duration: 10.5
+          status_summary:
+            total: 27
+            success: 27
+            failed: 2
+            blocked: 0
+            canceled: 0
+            running: 0
+            init: 0
+    DataFlow:
+      required: [title, steps]
+      allOf:
+      - 
+        $ref: "#/components/schemas/BaseFlow"
+      -
+        $ref: "#/components/schemas/TriggerConfig"
+    DataFlowUpdate:
+      allOf:
+      - 
+        $ref: "#/components/schemas/BaseFlow"
+      -
+        $ref: "#/components/schemas/TriggerConfig"
+    TriggerConfig:
+      type: object
+      description: "数据流触发器配置"
+      properties:
+        operator:
+          type: string
+          description: "触发器触发类型"
+          example: "@trigger/manual"
+        cron:
+          type: string
+          description: "定时触发定义的cron表达式"
+          example: "0 */12 * * *"
+        dataSource:
+          $ref: "#/components/schemas/DataSource"
+        parameters:
+          type: object
+          description: "触发器配置的参数信息"
+    RunInstanceFormReq:
+      type: object
+      properties:
+        data:
+          type: object
+          description: "表单节点已定义变量, 例如: xWNsupPOJCIheeKC: das \r\n - key: 创建时随机生成id\r\n - value: 变量取值"
+      example:
+        data:
+          xWNsupPOJCIheeKC: sadf
+    DagVersions:
+      type: array
+      items:
+        $ref: '#/components/schemas/BaseDagVersion'
+      example:
+       - 
+        version_id: "578859449209353660"
+        version: "v0.0.1"
+        change_log: "修改版本"
+        user_id: "4fa5fafe-e751-11ef-b014-dac047ec7bab"
+        created_at: 1754556718
+       - 
+        version_id: "578859449209353661"
+        version: "v1.0.1"
+        change_log: "变更说明"
+        user_id: "4fa5fafe-e751-11ef-b014-dac047ec7bab"
+        created_at: 1754556718
+    DagVersion:
+      allOf:
+        - $ref: '#/components/schemas/BaseDagVersion'
+        - 
+          type: object
+          properties:
+            config:
+              type: string
+              description: "旧流程信息"
+      example:
+        version_id: "578859449209353660"
+        version: "v0.0.1"
+        change_log: "修改版本"
+        user_id: "4fa5fafe-e751-11ef-b014-dac047ec7bab"
+        created_at: 1754556718
+        config: "{\"id\":\"568844703911439936\",\"createdAt\":1748587465,\"updatedAt\":1748587465,\"userid\":\"4fa5fafe-e751-11ef-b014-dac047ec7bab\",\"name\":\"测试日志写入\",\"trigger\":\"manually\",\"vars\":{\"docid\":{},\"userid\":{\"defaultValue\":\"4fa5fafe-e751-11ef-b014-dac047ec7bab\"}},\"status\":\"normal\",\"tasks\":[{\"id\":\"0\",\"actionName\":\"@trigger/manual\"},{\"id\":\"1\",\"dependOn\":[\"0\"],\"actionName\":\"@internal/time/now\"}],\"steps\":[{\"id\":\"0\",\"title\":\"\",\"operator\":\"@trigger/manual\"},{\"id\":\"1\",\"title\":\"\",\"operator\":\"@internal/time/now\"}],\"appinfo\":{},\"priority\":\"lowest\"}"
+    BaseDagVersion:
+      type: object
+      properties:
+        version_id:
+          type: string
+          description: "版本号ID"
+        version:
+          type: string
+          description: "语义化版本号"
+        change_log:
+          type: string
+          description: "变更说明"
+        user_id:
+          type: string
+          description: "创建人id"
+        created_at:
+          type: integer
+          description: "创建时间"
+    DagRollBackReq:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: "语义化版本"
+        change_log:
+          type: string
+          description: "变更说明"
+      example:
+        version: "v1.0.0"
+        change_log: "变更说明"
+    DataSource:
+      type: object
+      required: [operator]
+      properties:
+        id:
+          type: string
+          description: "节点id"
+          example: "1"
+        operator:
+          type: string
+          description: "操作类型"
+          example: "@trigger/manual"
+        parameters:
+          $ref: '#/components/schemas/DataSourceParam'
+
+    DataSourceParam:
+      type: object
+      properties:
+        docid:
+          type: string
+          description: "文档id"
+          example: "gns://14DBFD8763C1445AB7313A06E1962FCF"
+        docids:
+          type: array
+          description: "文档id集合"
+          items:
+            type: string
+          example:
+           - "gns://14DBFD8763C1445AB7313A06E1962FCF"
+           - "gns://14DBFD8763C1445AB7313A06E1962FCD"
+        accessorid:
+          type: string
+          description: "用户id或部门id"
+          example: "00000000-0000-0000-0000-000000000000"
+        depth:
+          type: integer
+          description: "层级"
+          example: 1
+    SingleDebugRequest:
+      type: object
+      required:
+        - id
+        - operator
+        - parameters
+      properties:
+        id:
+          type: string
+          description: 节点id
+          example: "1"
+        operator:
+          type: string
+          description: 节点签名
+          example: "@internal/tool/py3"
+        parameters:
+          type: object
+          description: 节点参数
+          example:
+            docid: "doc_123"
+            filename: "test.txt"
+            content: "Hello World"
+    FullDebugRequest:
+      type: object
+      required:
+        - steps
+        - trigger_config
+        - trigger_data
+      properties:
+        id:
+          type: string
+          description: 调试会话ID
+          example: "589696768942372284"
+        steps:
+          type: array
+          description: 数据流节点配置
+          items:
+            $ref: '#/components/schemas/Step'
+          minItems: 2
+        trigger_config:
+          $ref: '#/components/schemas/TriggerConfig'
+        trigger_data:
+          type: object
+          description: 调试时流程触发变量列表
+          additionalProperties: true
+          example:
+            userid: "user_123"
+            docid: "doc_123"
+    DebugResultResponse:
+      type: object
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          description: 调试执行状态
+          enum: [success, failed, running]
+          example: "success"
+        result:
+          type: object
+          description: 调试结果
+          example:
+            userid: "user_123"
+            docid: "doc_123"
+  headers:
+    X-Sys-Trace-ID:
+      description: "请求traceid用于链路追踪"
+      schema:
+        type: string
+    X-Sys-Request-ID:
+      description: "请求携带requestid"
+      schema:
+        type: string
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: "调用需要鉴权的API，必须将token放在HTTP header中：'Authorization: Bearer ACCESS_TOKEN'"
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://"
+          tokenUrl: "https://"
+          scopes:
+            user: Grant access to add、update、delete、query

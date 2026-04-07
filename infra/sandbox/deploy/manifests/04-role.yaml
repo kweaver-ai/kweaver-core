@@ -1,0 +1,63 @@
+---
+# Control Plane 在 sandbox-system namespace 中的权限
+# （executor pods 也部署在此 namespace）
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sandbox-control-plane
+  namespace: sandbox-system
+rules:
+  # Pod 管理权限（用于创建和管理 executor pods）
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Pod 日志权限
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+
+  # Pod exec 权限（用于调试）
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+
+  # PVC 管理权限（用于 CSI Driver 动态创建 S3 挂载卷）
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # StorageClass 读取权限（用于 CSI Driver）
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+
+  # Event 读取权限
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+
+  # ConfigMap 读取权限
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+
+  # Secret 读取权限
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sandbox-control-plane
+  namespace: sandbox-system
+subjects:
+  - kind: ServiceAccount
+    name: sandbox-control-plane
+    namespace: sandbox-system
+roleRef:
+  kind: Role
+  name: sandbox-control-plane
+  apiGroup: rbac.authorization.k8s.io

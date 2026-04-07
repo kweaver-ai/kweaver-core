@@ -1,0 +1,109 @@
+
+paths:
+  /api/agent-executor/v1/agent/run:
+    post:
+      tags:
+      - Agent运行
+      summary: 运行agent
+      description: 运行agent
+      operationId: v1_agent_run_post
+      parameters:
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-id'
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-type'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/run_agent_param.yaml#/run_agent_param'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: './schema/run_agent_response.yaml#/run_agent_response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'
+  
+  /api/agent-executor/v1/agent/debug:
+    post:
+      tags:
+      - Agent运行
+      summary: 调试agent
+      description: 调试agent
+      operationId: v1_agent_debug_post
+      parameters:
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-id'
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-type'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/run_agent_param.yaml#/run_agent_param'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: './schema/run_agent_response.yaml#/run_agent_response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'
+
+  /api/agent-executor/v1/agent/conversation-session/init:
+    post:
+      tags:
+        - 对话Session
+      summary: 初始化对话Session
+      description: 初始化对话Session
+      operationId: init_conversation_session
+      parameters:
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-id'
+        - $ref: '../../../../common/auth_header.yaml#/common_auth_header/parameters/x-account-type'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema/conversation_session_param.yaml#/conversation_session_param'
+      responses:
+        '200':
+          description: 初始化对话Session成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/conversation_session_response.yaml#/conversation_session_response'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: './schema/error_response.yaml#/error_response'

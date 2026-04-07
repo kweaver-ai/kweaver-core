@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+data:
+  agent-retrieval.yaml: |
+    # 配置文件路径/sysvol/conf/agent-retrieval.yaml
+    project:
+      language: {{ .Values.service.language }}
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      logger_level: {{ .Values.service.loggerLevel }}
+      name: {{ .Values.service.name | quote }}
+      pod_id : {{ .Values.service.podID | quote }}
+      machine_id: {{ .Values.service.machineID | quote }}
+      debug: {{ .Values.service.debug }}
+    concept_search_config:
+      concept_recall_size: {{ .Values.service.concept_search_config.concept_recall_size }}
+      knn_k: {{ .Values.service.concept_search_config.knn_k }}
+    deploy_agent:
+      concept_intention_analysis_agent_key: {{ .Values.service.deploy_agent.concept_intention_analysis_agent_key }}
+      concept_retrieval_strategist_agent_key: {{ .Values.service.deploy_agent.concept_retrieval_strategist_agent_key }}
+      metric_dynamic_params_generator_key: {{ .Values.service.deploy_agent.metric_dynamic_params_generator_key }}
+      operator_dynamic_params_generator_key: {{ .Values.service.deploy_agent.operator_dynamic_params_generator_key }}
+    oauth:
+      public_host: {{ .Values.depServices.hydra.publicHost | quote }}
+      public_port: {{ .Values.depServices.hydra.publicPort }}
+      public_protocol: {{ .Values.depServices.hydra.publicProtocol | quote }}
+      admin_host: {{ .Values.depServices.hydra.administrativeHost | quote }}
+      admin_port: {{ .Values.depServices.hydra.administrativePort }}
+      admin_protocol: {{ .Values.depServices.hydra.administrativeProtocol | quote }}
+      admin_prefix: {{ .Values.depServices.hydra.administrativePrefix | quote }}
+    agent_app:
+      private_protocol: {{ index .Values "depServices" "agent-app" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "agent-app" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "agent-app" "privatePort" }}
+    bkn_backend:
+      private_protocol: {{ index .Values "depServices" "bkn-backend" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "bkn-backend" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "bkn-backend" "privatePort" }}
+    ontology_query:
+      private_protocol: {{ index .Values "depServices" "ontology-query" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "ontology-query" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "ontology-query" "privatePort" }}
+    operator_integration:
+      private_protocol: {{ index .Values "depServices" "agent-operator-integration" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "agent-operator-integration" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "agent-operator-integration" "privatePort" }}
+    data_retrieval:
+      private_protocol: {{ index .Values "depServices" "data-retrieval" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "data-retrieval" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "data-retrieval" "privatePort" }}
+    redis:
+      connectType: {{ .Values.depServices.redis.connectType | quote }}
+      enableSSL: {{ .Values.depServices.redis.enableSSL }}
+      secretName: {{ .Values.depServices.redis.secretName | quote }}
+      caName: {{ .Values.depServices.redis.caName | quote }}
+      certName: {{ .Values.depServices.redis.certName | quote }}
+      keyName: {{ .Values.depServices.redis.keyName | quote }}
+      poolSize: {{ .Values.depServices.redis.connectInfo.poolSize }}
+    mf_model_api:
+      private_protocol: {{ index .Values "depServices" "mf-model-api" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "mf-model-api" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "mf-model-api" "privatePort" }}
+    rerank_llm:
+      model: {{ .Values.service.rerank_llm.model | quote }}
+      temperature: {{ default 0 .Values.service.rerank_llm.temperature }}
+      top_k: {{ default 2 .Values.service.rerank_llm.top_k }}
+      top_p: {{ default 0.5 .Values.service.rerank_llm.top_p }}
+      frequency_penalty: {{ default 0.5 .Values.service.rerank_llm.frequency_penalty }}
+      presence_penalty: {{ default 0.5 .Values.service.rerank_llm.presence_penalty }}
+      max_tokens: {{ default 5000 .Values.service.rerank_llm.max_tokens }}
+
+  observability.yaml: |
+    # 可观测相关配置
+    traceType: {{ .Values.observability.traceType | quote }}
+    logEnabled: {{ .Values.observability.logEnabled }}
+    traceEnabled: {{ .Values.observability.traceEnabled }}
+    metricEnabled: {{ .Values.observability.metricEnabled }}
+    logExporter: {{ .Values.observability.logExporter | quote }}
+    traceProvider: {{ .Values.observability.traceProvider | quote }}
+    metricProvider: {{ .Values.observability.metricProvider | quote }}
+    logLoadInternal: {{ .Values.observability.logLoadInternal }}
+    logLoadMaxLog: {{ .Values.observability.logLoadMaxLog }}
+    traceMaxQueueSize: {{ .Values.observability.traceMaxQueueSize }}
+    metricIntervalSecond: {{ .Values.observability.metricIntervalSecond }}
+    httpLogFeedIngesterUrl: {{ .Values.observability.httpLogFeedIngesterUrl | quote }}
+    httpTraceFeedIngesterUrl: {{ .Values.observability.httpTraceFeedIngesterUrl | quote }}
+    httpMetricFeedIngesterUrl: {{ .Values.observability.httpMetricFeedIngesterUrl | quote }}
+    grpcTraceFeedIngesterUrl: {{ .Values.observability.grpcTraceFeedIngesterUrl | quote }}
+    grpcTraceJobId: {{ .Values.observability.grpcTraceJobId | quote }}

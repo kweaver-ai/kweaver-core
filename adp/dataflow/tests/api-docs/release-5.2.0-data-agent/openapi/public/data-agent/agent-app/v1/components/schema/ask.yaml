@@ -1,0 +1,20 @@
+Ask:
+  type: object
+  description: 工具调用信息
+  properties:
+    session_id:
+      type: string
+    tool_name:
+      type: string
+    tool_args:
+      type: array
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+          value:
+            type: string
+          type:
+            type: string
+  

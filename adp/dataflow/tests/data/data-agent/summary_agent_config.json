@@ -1,0 +1,62 @@
+[
+    {
+        "agent_key": "Summary_Agent",
+        "agent_version": "v0",
+        "agent_input": [
+            {
+                "enable": true,
+                "input_name": "query",
+                "input_type": "string",
+                "map_type": "auto",
+                "input_desc": "query变量"
+            },
+            {
+                "enable": false,
+                "input_name": "ref_list",
+                "input_type": "string",
+                "map_type": "auto",
+                "input_desc": "ref_list变量"
+            }
+        ],
+        "intervention": false,
+        "data_source_config": {
+            "type": "self_configured"
+        },
+        "llm_config": {
+            "type": "self_configured"
+        },
+        "details": {
+            "tool_type": "agent",
+            "tool_id": "Summary_Agent",
+            "tool_name": "Summary_Agent",
+            "tool_box_id": "built-in-agent",
+            "tool_box_name": "Agent",
+            "tool_desc": "负责总结任务的Agent",
+            "intervention": false,
+            "tool_input": [
+                {
+                    "enable": true,
+                    "input_name": "query",
+                    "input_type": "string",
+                    "map_type": "auto",
+                    "input_desc": "query变量"
+                },
+                {
+                    "enable": false,
+                    "input_name": "ref_list",
+                    "input_type": "string",
+                    "map_type": "auto",
+                    "input_desc": "ref_list变量"
+                }
+            ],
+            "agent_version": "v0",
+            "agent_key": "Summary_Agent",
+            "data_source_config": {
+                "type": "self_configured"
+            },
+            "llm_config": {
+                "type": "self_configured"
+            }
+        }
+    }
+]

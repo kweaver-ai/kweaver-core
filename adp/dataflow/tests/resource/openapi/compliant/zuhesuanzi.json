@@ -1,0 +1,160 @@
+{
+    "operator": {
+      "configs": [
+        {
+          "operator_id": "54005a4b-49df-41ec-a7b9-5e73124d7db3",
+          "operator_name": "组合算子",
+          "version": "1d718cfa-cd8b-42ca-9dfb-120c4a29fc33",
+          "status": "published",
+          "metadata_type": "openapi",
+          "metadata": {
+            "version": "1d718cfa-cd8b-42ca-9dfb-120c4a29fc33",
+            "summary": "组合算子",
+            "description": "组合算子，等待3s",
+            "server_url": "http://flow-automation:8680/api/automation/v1",
+            "path": "/operators/593061510259992445/executions",
+            "method": "POST",
+            "create_time": 1763021806923961300,
+            "update_time": 1763021824681770500,
+            "create_user": "116a6852-ab22-11f0-a309-c6666f116050",
+            "update_user": "116a6852-ab22-11f0-a309-c6666f116050",
+            "api_spec": {
+              "parameters": [
+                {
+                  "name": "Authorization",
+                  "in": "header",
+                  "description": "User Token",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "request_body": {
+                "description": "",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "properties": {
+                        "a": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                },
+                "required": false
+              },
+              "responses": [
+                {
+                  "status_code": "200",
+                  "description": "OK",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "properties": {
+                          "b": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              ],
+              "components": {
+                "schemas": {}
+              },
+              "callbacks": null,
+              "security": null,
+              "tags": null,
+              "external_docs": null
+            }
+          },
+          "extend_info": {
+            "dag_id": "593061510259992445"
+          },
+          "operator_info": {
+            "operator_type": "composite",
+            "execution_mode": "sync",
+            "category": "data_process",
+            "source": "unknown",
+            "is_data_source": false
+          },
+          "operator_execute_control": {
+            "timeout": 3000,
+            "retry_policy": {
+              "max_attempts": 3,
+              "initial_delay": 1000,
+              "backoff_factor": 2,
+              "max_delay": 6000,
+              "retry_conditions": {
+                "status_code": null,
+                "error_codes": null
+              }
+            }
+          },
+          "create_user": "116a6852-ab22-11f0-a309-c6666f116050",
+          "create_time": 1763021806886586600,
+          "update_user": "116a6852-ab22-11f0-a309-c6666f116050",
+          "update_time": 1763021824680958000,
+          "is_internal": false
+        }
+      ],
+      "composite_configs": [
+        {
+          "steps": [
+            {
+              "parameters": {
+                "fields": [
+                  {
+                    "description": {
+                      "type": "text"
+                    },
+                    "key": "a",
+                    "type": "string"
+                  }
+                ]
+              },
+              "title": "",
+              "id": "0",
+              "operator": "@trigger/form"
+            },
+            {
+              "id": "1",
+              "operator": "@internal/tool/py3",
+              "parameters": {
+                "output_params": [],
+                "code": "import time\ndef main():\n    time.sleep(3)\n    return ",
+                "input_params": [],
+                "mode": "sync"
+              },
+              "title": ""
+            },
+            {
+              "id": "1001",
+              "operator": "@internal/return",
+              "title": ""
+            }
+          ],
+          "title": "组合算子",
+          "category": "data_process",
+          "description": "组合算子，等待3s",
+          "id": "593061510259992445",
+          "is_root": true,
+          "operator_id": "54005a4b-49df-41ec-a7b9-5e73124d7db3",
+          "outputs": [
+            {
+              "type": "string",
+              "description": {
+                "type": "text"
+              },
+              "key": "b"
+            }
+          ]
+        }
+      ]
+    }
+  }

@@ -1,0 +1,261 @@
+# Default values for sandbox-platform Helm chart
+
+# Global configuration
+namespace: sandbox-system
+imagePullPolicy: IfNotPresent
+image:
+  registry: ""
+  controlPlane:
+    repository: sandbox-control-plane
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  defaultTemplate:
+    repository: sandbox-template-python-basic
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  web:
+    repository: sandbox-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  mariadb:
+    repository: mariadb
+    tag: "11.2"
+    pullPolicy: IfNotPresent
+  minio:
+    repository: quay.io/minio/minio
+    tag: "RELEASE.2025-09-07T16-13-09Z"
+    pullPolicy: IfNotPresent
+# Control Plane configuration
+controlPlane:
+  enabled: true
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 8000
+    annotations: {}
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    paths:
+      - path: /
+        pathType: Prefix
+    tls: []
+
+  # Resource limits and requests
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - sandbox-control-plane
+            topologyKey: kubernetes.io/hostname
+
+  env:
+    ENVIRONMENT: "staging"
+    DEBUG: "false"
+    DATABASE_URL: "mysql+aiomysql://root:password@mariadb.sandbox-system.svc.cluster.local:3306/sandbox"
+    DEFAULT_TIMEOUT: "300"
+    MAX_TIMEOUT: "3600"
+    DEFAULT_CPU: "1"
+    DEFAULT_MEMORY: "512Mi"
+    DEFAULT_DISK: "1Gi"
+    IDLE_THRESHOLD_MINUTES: "30"
+    MAX_LIFETIME_HOURS: "6"
+    CLEANUP_INTERVAL_SECONDS: "300"
+    DISABLE_BWRAP: "true"
+    PYTHONUNBUFFERED: "1"
+
+  s3:
+    endpointUrl: "http://minio.sandbox-system.svc.cluster.local:9000"
+    bucket: "sandbox-workspace"
+    region: "us-east-1"
+
+# Web Console configuration
+web:
+  enabled: true
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 80
+    annotations: {}
+
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    paths:
+      - path: /
+        pathType: Prefix
+    tls: []
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# MariaDB configuration
+mariadb:
+  enabled: true
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 3306
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Persistence
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+  auth:
+    rootPassword: "password"
+    database: "sandbox"
+    username: ""
+    password: ""
+
+  nodeSelector: {}
+  tolerations: []
+
+# MinIO configuration
+minio:
+  enabled: true
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    apiPort: 9000
+    consolePort: 9001
+    annotations: {}
+
+  ingress:
+    enabled: false
+    className: "class-443"
+    annotations: {}
+    paths:
+      - path: /
+        pathType: ImplementationSpecific
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+  defaultBuckets:
+    - sandbox-workspace
+
+  auth:
+    rootUser: "minioadmin"
+    rootPassword: "minioadmin"
+
+  nodeSelector: {}
+  tolerations: []
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  name: "sandbox-control-plane"
+  annotations: {}
+
+# RBAC configuration
+rbac:
+  create: true
+  name: "sandbox-control-plane"
+
+# ConfigMap configuration
+configMap:
+  create: true
+  name: "sandbox-config"
+
+secret:
+  create: true
+  name: "sandbox-secrets"
+  s3:
+    accessKeyId: "minioadmin"
+    secretAccessKey: "minioadmin"
+    region: "us-east-1"
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+
+depServices:
+  class-443:
+    ingressClass: class-443
+  # 数据库连接配置
+  rds:
+    type: MYSQL
+    host: mariadb-mariadb-cluster.resource
+    port: 3330
+    hostRead: mariadb-mariadb-cluster.resource
+    portRead: 3330
+    user: anyshare
+    password: xxx
+    database: adp
+    maxConnections: 30
+    maxReadConnections: 30
+    dbCharset: utf8mb4
+    timeout: 10
+    readTimeout: 10
+    writeTimeout: 10

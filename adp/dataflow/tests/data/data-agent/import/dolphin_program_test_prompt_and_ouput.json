@@ -1,0 +1,25 @@
+{
+  "agents": [
+    {
+      "id": "01KACV6WATBND06G9E0XR1YRQ7",
+      "name": "dolphin_program_test_prompt_and_ouput",
+      "key": "01KACV6WATBND06G9E0ZWDGADC",
+      "profile": "测试prompt语句，包含模型指定，系统提示词，output输出格式",
+      "product_key": "chatbi",
+      "avatar_type": 1,
+      "avatar": "1",
+      "status": "unpublished",
+      "is_built_in": 0,
+      "is_system_agent": 0,
+      "created_at": 1763515265371,
+      "updated_at": 1763522718273,
+      "created_by": "1ced8576-a66b-11f0-a5c5-52328408123a",
+      "updated_by": "1ced8576-a66b-11f0-a5c5-52328408123a",
+      "deleted_at": 0,
+      "deleted_by": "",
+      "config": "{\"input\":{\"fields\":[{\"name\":\"query\",\"type\":\"string\",\"desc\":\"\"},{\"name\":\"history\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"tool\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"header\",\"type\":\"object\",\"desc\":\"\"},{\"name\":\"self_config\",\"type\":\"object\",\"desc\":\"\"}],\"rewrite\":{\"enable\":false,\"llm_config\":{\"id\":\"\",\"name\":\"test\",\"model_type\":\"llm\",\"temperature\":0.5,\"top_p\":0.5,\"top_k\":0,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}},\"augment\":{\"enable\":false,\"data_source\":{\"kg\":[]}},\"is_temp_zone_enabled\":0,\"temp_zone_config\":null},\"system_prompt\":\"\",\"dolphin\":\"# 简单调用\\r\\n/prompt/请输出：我将测试prompt语句的使用...不要输出其他内容 -\\u003e welcome\\r\\n# 指定模型\\r\\n/prompt/(model=\\\"Tome-pro\\\")回答用户的问题:$query -\\u003e answer1\\r\\n# 使用系统提示词\\r\\n/prompt/(system_prompt=\\\"你是一个写唐诗的助手，专注于四言绝句\\\")以明月为主题 -\\u003e answer2\\r\\n# 指定输出格式list_str\\r\\n/prompt/(output=\\\"list_str\\\")请将原始任务拆解成多步骤任务，任务的个数应该在2~3个，前几步应是搜索资料，最后一步应该是总结内容。\\r\\n以list格式返回\\r\\n示例:\\r\\n原始任务:如何提高英语口语能力？\\r\\n拆解结果:[\\\"搜索资料:提高英语口语能力的最佳方法\\\",\\\"搜索资料：适合初学者的英语口语练习技巧\\\",\\\"总结内容：如何提高英语口语能力？\\\"]\\r\\n\\r\\n原始任务:$query\\r\\n拆解结果:-\\u003eplan_list\\r\\n# 指定输出格式json\\r\\n/prompt/(output=\\\"json\\\") 生成用户信息 -\\u003e user_info\\r\\n/prompt/(output=\\\"jsonl\\\") 生成三个用户记录 -\\u003e users\\r\\n\",\"is_dolphin_mode\":1,\"pre_dolphin\":[{\"key\":\"context_organize\",\"name\":\"上下文组织模块\",\"value\":\"\\n{\\\"query\\\": \\\"用户的问题为: \\\"+$query} -\\u003e context\\n\",\"enabled\":true,\"edited\":false}],\"post_dolphin\":[],\"data_source\":{\"kg\":[],\"doc\":[],\"metric\":[],\"kn_entry\":[],\"knowledge_network\":[],\"advanced_config\":{\"kg\":null,\"doc\":null}},\"skills\":{\"tools\":[],\"agents\":[],\"mcps\":[]},\"llms\":[{\"is_default\":true,\"llm_config\":{\"id\":\"1976903244600971264\",\"name\":\"Tome-pro\",\"model_type\":\"llm\",\"temperature\":1,\"top_p\":1,\"top_k\":1,\"frequency_penalty\":0,\"presence_penalty\":0,\"max_tokens\":1000}}],\"is_data_flow_set_enabled\":0,\"opening_remark_config\":null,\"preset_questions\":[],\"output\":{\"variables\":{\"answer_var\":\"users\",\"doc_retrieval_var\":\"doc_retrieval_res\",\"graph_retrieval_var\":\"graph_retrieval_res\",\"related_questions_var\":\"related_questions\",\"other_vars\":null,\"middle_output_vars\":null},\"default_format\":\"markdown\"},\"built_in_can_edit_fields\":null,\"memory\":{\"is_enabled\":false},\"related_question\":{\"is_enabled\":false},\"plan_mode\":null,\"metadata\":{\"config_version\":\"v1\"}}",
+      "created_type": "copy",
+      "create_from": "dip"
+    }
+  ]
+}

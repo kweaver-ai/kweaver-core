@@ -1,0 +1,54 @@
+[VegaBackend.LogicView.InvalidParameter.LogicDefinition]
+Description = "无效的逻辑视图定义"
+Solution = "请检查逻辑视图定义"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.InvalidParameter.FieldName]
+Description = "无效的字段名称"
+Solution = "请检查字段参数"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.LengthExceeded.FieldName]
+Description = "字段名称长度超限"
+Solution = "请缩短名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.LengthExceeded.FieldDisplayName]
+Description = "字段显示名称长度超限"
+Solution = "请缩短显示名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.LengthExceeded.FieldComment]
+Description = "字段备注长度超限"
+Solution = "请缩短备注内容"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.Duplicated.FieldName]
+Description = "数据视图字段名称已存在"
+Solution = "请使用不同的字段名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.Duplicated.FieldDisplayName]
+Description = "数据视图字段显示名称已存在"
+Solution = "请使用不同的显示名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.InvalidParameter.FieldFeatureName]
+Description = "无效的字段特征名称"
+Solution = "请检查特征名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.LengthExceeded.FieldFeatureName]
+Description = "字段特征名称长度超限"
+Solution = "请缩短特征名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.Duplicated.FieldFeatureName]
+Description = "字段特征名称已存在"
+Solution = "请使用不同的特征名称"
+ErrorLink = "暂无"
+
+[VegaBackend.LogicView.LengthExceeded.FieldFeatureComment]
+Description = "字段特征备注长度超限"
+Solution = "请缩短特征备注内容"
+ErrorLink = "暂无"

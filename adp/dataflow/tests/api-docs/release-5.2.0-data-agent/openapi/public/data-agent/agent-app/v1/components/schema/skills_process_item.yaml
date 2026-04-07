@@ -1,0 +1,26 @@
+SkillsProcessItem:
+  type: object
+  description: 技能处理结果
+  properties:
+    agent_name:
+      type: string
+    text:
+      type: string
+    cites:
+      type: object
+      nullable: true
+    status:
+      type: string
+    type:
+      type: string
+    thinking:
+      type: string
+    input_message:
+      type: object
+      nullable: true
+    interrupted:
+      type: boolean
+    related_queries:
+      type: array
+      items:
+        $ref: './related_question.yaml#/RelatedQuestion'

@@ -1,0 +1,185 @@
+# 概念分组
+[BknBackend.ConceptGroup.Duplicated.Name]
+Description = "存在重复的概念分组名称"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无" 
+
+[BknBackend.ConceptGroup.InvalidParameter.ConceptCondition]
+Description = "概念过滤条件不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InvalidParameter.Direction]
+Description = "路径方向不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InvalidParameter.IncludeStatistics]
+Description = "是否包含统计信息不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InvalidParameter.IncludeTypeInfo]
+Description = "是否包含概念信息不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InvalidParameter.PathLength]
+Description = "路径长度不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ConceptGroupIDExisted]
+Description = "概念分组ID已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ConceptGroupNameExisted]
+Description = "概念分组名称已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ConceptGroupRelationExisted]
+Description = "概念与分组的关系已经存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ConceptGroupRelationNotExisted]
+Description = "存在概念与分组的关系不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.LengthExceeded.Name]
+Description = "概念分组名称长度超出限制"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.NullParameter.Direction]
+Description = "方向为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.NullParameter.Name]
+Description = "概念分组名称为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.NullParameter.SourceObjectTypeId]
+Description = "起点对象类为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ConceptGroupNotFound]
+Description = "概念分组不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.ObjectTypeNotFound]
+Description = "对象类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError]
+Description = "内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.AddObjectTypesToConceptGroupFailed]
+Description = "添加对象类到分组失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.MissingTransaction]
+Description = "缺少事务"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.BeginTransactionFailed]
+Description = "开启事务异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.BindBusinessDomainFailed]
+Description = "绑定概念分组业务域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.UnbindBusinessDomainFailed]
+Description = "解绑概念分组业务域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CheckConceptGroupIfExistFailed]
+Description = "检查概念分组名称是否存在失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.GetConceptGroupByIDFailed]
+Description = "按ID获取概念分组失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.UpdateConceptGroupFailed]
+Description = "更新概念分组失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateConceptGroupFailed]
+Description = "创建概念分组失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateConceptGroupRelationFailed]
+Description = "创建概念与分组关系失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateResourcesFailed]
+Description = "创建概念分组资源失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.GetActionTypesTotalFailed]
+Description = "获取概念分组下的行动类数量失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.GetConceptIDsByConceptGroupIDsFailed]
+Description = "获取概念分组下的概念ID失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.GetRelationTypesTotalFailed]
+Description = "获取概念分组下的关系类数量失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.GetVectorFailed]
+Description = "获取概念分组向量失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.InsertOpenSearchDataFailed]
+Description = "概念分组概念索引插入失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateObjectTypesFailed]
+Description = "创建对象类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateRelationTypesFailed]
+Description = "创建关系类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.ConceptGroup.InternalError.CreateActionTypesFailed]
+Description = "创建行动类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

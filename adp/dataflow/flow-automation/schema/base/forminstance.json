@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "以表单的方式运行流程",
+    "description": "post /api/automation/v1/run-instance-form/:dagId",
+    "type": "object",
+    "properties": {
+        "data": {
+            "description": "自定义表单的数据",
+            "type": "object",
+            "maxLength": 100000
+        }
+    },
+    "required": [
+        "data"
+    ],
+    "additionalProperties": false
+}

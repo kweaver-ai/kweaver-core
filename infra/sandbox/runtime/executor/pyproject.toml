@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sandbox-executor"
+version = "1.0.0"
+description = "Sandbox Executor - Code execution daemon with Bubblewrap isolation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Sandbox Team"}
+]
+keywords = ["sandbox", "executor", "bubblewrap", "isolation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Security",
+    "Topic :: System :: Shells",
+]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
+    "httpx>=0.25.0",
+    "structlog>=23.2.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.11.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+]
+
+[project.scripts]
+sandbox-executor = "executor.interfaces.http.rest:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["executor*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.coverage.run]
+source = ["executor"]
+omit = [
+    # HTTP endpoints - better suited for integration tests
+    "*/interfaces/*",
+    # macOS specific isolation
+    "*/macseatbelt.py",
+    # Subprocess management - hard to unit test
+    "*/subprocess.py",
+    # Linux specific bubblewrap isolation
+    "*/bwrap.py",
+    # File system operations
+    "*/persistence/*",
+    # Metrics collection
+    "*/monitoring/*",
+    # Logging configuration
+    "*/logging/*",
+    # Result reporter - simple wrapper
+    "*/result_reporter.py",
+    # DTO modules - simple data structures
+    "*/dto/*",
+    # Test files
+    "tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+fail_under = 90
+
+[tool.uv]
+# 使用清华大学 PyPI 镜像源加速依赖下载
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+]
+# 备用源：阿里云镜像（如需要可取消注释）
+# extra-index-url = ["https://mirrors.aliyun.com/pypi/simple/"]

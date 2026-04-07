@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: 测试报告生成API
+  description: 生成word文件格式的性能测试报告
+  version: 1.0.0
+
+servers:
+  - url: http://192.168.232.15:9999
+    description: 本地测试环境
+
+paths:
+  /generate_report:
+    post:
+      tags:
+        - 生成测试报告
+      summary: 生成测试报告
+      description: 根据markdown格式的内容生成word格式的测试报告文件
+      requestBody:
+        description: 请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Generate' 
+      responses:
+        '200':
+          description: 成功返回数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: string
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: string
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: string
+components:
+  schemas:
+    Generate:
+      required:
+        - content
+        - output_path
+        - filename
+      type: object
+      properties:
+        content:
+          description: 报告内容
+          type: string
+        output_path:
+          description: 文件存储路径
+          type: string
+        filename:
+          description: 文件名
+          type: string         

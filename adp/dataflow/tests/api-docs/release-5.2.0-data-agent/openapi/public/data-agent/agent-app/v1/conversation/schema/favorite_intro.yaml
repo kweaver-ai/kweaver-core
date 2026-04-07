@@ -1,0 +1,21 @@
+FavoriteIntro:
+  description: 收藏简介
+  type: object
+  properties:
+    favorite_id:
+      type: string
+      description: 收藏ID
+    favorite_title:
+      type: string
+      description: 收藏的会话标题
+    create_time:
+      type: integer
+      description: 创建时间
+    agent_id:
+      type: string
+      description: agentID
+  required:
+    - favorite_id
+    - favorite_title
+    - create_time
+    - agent_id

@@ -1,0 +1,50 @@
+{
+    "description": "标签提取参数校验",
+    "type": "object",
+    "properties": {
+        "target": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "type": "string",
+                    "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                },
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "rules": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "tag_id": {
+                        "type":"string"
+                    },
+                    "tag_path": {
+                        "type":"string"
+                    },
+                    "rule": {
+                        "type":"object",
+                        "properties": {
+                            "or": {
+                                "type": "array",
+                                "items": {
+                                    "type":"array",
+                                    "items": {
+                                        "type":"string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "required": [
+        "target"
+    ],
+    "additionalProperties": false
+}

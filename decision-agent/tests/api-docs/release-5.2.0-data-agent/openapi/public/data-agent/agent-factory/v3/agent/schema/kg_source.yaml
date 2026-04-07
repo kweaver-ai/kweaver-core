@@ -1,0 +1,33 @@
+kg_source:
+  type: object
+  properties:
+    kg_id:
+      type: string
+      description: 图谱id
+    fields:
+      type: array
+      items:
+        type: string
+      description: 实体类范围
+    field_properties:
+      type: object
+      description: 实体属性列表
+      example:
+        regions:
+          - ※vid
+          - regions
+        comments:
+          - ※vid
+          - content
+          - votes
+          - comment_time
+    output_fields:
+      type: array
+      items:
+        type: string
+      description: 结果范围，非必填
+  required:
+    - kg_id
+    - fields
+#    - field_properties
+  description: 图谱类型数据源

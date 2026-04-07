@@ -1,0 +1,49 @@
+doc_source:
+  type: object
+  properties:
+    ds_id:
+      type: string
+      description: 数据源id
+      example: 1
+    fields:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: 字段名称
+            example: dir2
+          path:
+            type: string
+            description: 字段路径
+            example: dir1/dir2
+          source:
+            type: string
+            description: 字段来源
+            example: gns://92EE2D87255142B78A6F1DFB6BBB836B/90B7F2F079824711886F317955008C5F
+          type:
+            type: string
+            description: |
+              - 字段类型（文件类型目前只支持anyshare外置数据源，内置数据源目前只支持folder）
+              - file: 文件
+              - folder: 文件夹
+            enum: [ file, folder ]
+            
+        required:
+          - name
+          - path
+          - source
+          - type
+      description: 数据源范围列表
+    datasets:
+      type: array
+      items:
+        type: string
+      description: |
+        - 数据集合id
+        - 【注意】：此字段不需要通过接口传递，后端会根据fields字段自动生成
+  required:
+    - ds_id
+    - fields
+  description: 图谱类型数据源

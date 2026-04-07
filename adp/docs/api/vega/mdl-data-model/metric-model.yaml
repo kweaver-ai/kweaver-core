@@ -1,0 +1,2935 @@
+---
+openapi: 3.0.2
+info:
+  title: 指标模型
+  version: 0.1.0
+servers:
+  - url: "https://{host}:{port}/api"
+    description: host:localhost;port:13020
+    variables:
+      host:
+        default: 服务器ip
+      port:
+        default: 默认端口
+paths:
+  /mdl-data-model/v1/metric-model-groups:
+    get:
+      parameters:
+        - name: sort
+          description: 排序类型，默认是group_name
+          schema:
+            enum:
+              - group_name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认asc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListGroupWithCount"
+              examples:
+                exp1:
+                  value:
+                    entries:
+                      - id: "111"
+                        name: 系统
+                        metric_model_count: 51
+                        comment: some text
+                        update_time: 2022-11-24 17:06:43
+                      - id: "81"
+                        name: some text
+                        metric_model_count: 35
+                        comment: some text
+                        update_time: 1748398506313
+                    total_count: 2
+          description: 查询分组列表成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500GroupInternalError"
+      summary: 查询分组列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqCreateGroup"
+            examples:
+              创建分组:
+                value:
+                  name: some text
+                  comment: some text
+        required: true
+      responses:
+        "201":
+          headers:
+            Location:
+              schema:
+                format: uri
+                type: string
+              description: "`/api/data-model/v1/metric-models-groups/{group_id}`"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupID"
+              examples:
+                新建分组的Id:
+                  value:
+                    id: "76"
+          description: 创建成功
+        "400":
+          $ref: "#/components/responses/400BadRequestGroup"
+        "500":
+          $ref: "#/components/responses/500GroupInternalError"
+      summary: 创建分组
+      description: ""
+  /mdl-data-model/v1/metric-model-groups/{group_id}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqGroup"
+            examples:
+              exp:
+                value:
+                  name: some text
+                  comment: some text
+        required: true
+      responses:
+        "204":
+          description: 修改成功
+        "400":
+          $ref: "#/components/responses/400BadRequestGroup"
+        "404":
+          $ref: "#/components/responses/404GroupNotFound"
+        "500":
+          $ref: "#/components/responses/500GroupInternalError"
+      summary: 修改分组
+      description: 修改分组
+    delete:
+      parameters:
+        - name: force
+          description: |-
+            force为false时，若分组内有指标模型就禁止删除，若没有就删除分组;
+            force为true时，同时删除分组内的所有指标模型;
+            默认为false；
+          schema:
+            type: boolean
+          in: query
+          required: false
+      responses:
+        "204":
+          description: 删除成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                无效的force参数:
+                  value:
+                    error_code: MetricModelGroup.InvalidParameter.Force
+                    error_detail: some text
+                    error_link: some text
+                    description: some text
+                    solution: some text
+          description: 参数错误
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                分组不为空，禁止删除:
+                  value:
+                    description: some text
+                    error_code: DataModel_MetricModelGroup_GroupNotEmpty
+                    error_detail: some text
+                    error_link: some text
+                    solution: some text
+          description: 禁止删除
+        "404":
+          $ref: "#/components/responses/404GroupNotFound"
+        "500":
+          $ref: "#/components/responses/500GroupInternalError"
+      summary: 删除分组
+    parameters:
+      - name: group_id
+        description: 分组ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-model-groups/{group_name}/metric-models/{model_name}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataMetricModelDetail"
+              examples:
+                exp:
+                  value:
+                    id: 72
+                    name: some text
+                    measure_name: __m.aaa
+                    metric_type: atomic
+                    data_view_id: some text
+                    data_view_name: some text
+                    data_view:
+                      indices:
+                        - some text
+                        - some text
+                      must_filters: some text
+                      fields:
+                        "@timestamp": date
+                        "@version": text
+                    query_type: promql
+                    formula:
+                      "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                      ,mode=\"system\"}[5m]))by(name)"
+                    date_field: "@timestamp"
+                    date_format: epoch_millis
+                    measure_field: value
+                    unit_type: storeUnit
+                    unit: Mbps
+                    tags:
+                      - some text
+                      - some text
+                    custom_attribute: {}
+                    comment: some text
+                    update_time: some text
+                    group_id: 111
+                    group_name: 分组111
+                    calendar_persist:
+                      is_open: true
+                      index_base: some text
+                    task:
+                      id: 93
+                      name: task1
+                      model_id: 73
+                      schedule:
+                        time_type: FIX_RATE
+                        frequency: 5m
+                      variables: {}
+                      steps:
+                        - 5m
+                      index_base: indexbasetype1
+                      index_base_name: indexbasename1
+                      retrace_duration: 10d
+                      comment: some text
+                      task_schedule_id: "12333"
+                      schedule_status: ok
+                      schedule_sync_status: 完成
+          description: 查询成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                metric_model_not_found:
+                  value:
+                    description: ""
+                    error_code: MetricModel.MetricModelNotFound
+                    error_detail: some text
+                    error_link: some text
+                    solution: some text
+          description: 未找到
+      summary: 根据名称获取指标模型对象信息
+    parameters:
+      - name: group_name
+        description: 分组名称，若要查询默认分组下的模型，group_name应传空字符串
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: model_name
+        description: 指标模型名称
+        schema:
+          type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-models:
+    get:
+      parameters:
+        - name: name_pattern
+          description: 根据指标模型名称模糊查询，默认为空. 与 name 不能同时存在
+          schema:
+            type: string
+          in: query
+        - name: name
+          description: 根据指标模型名称精确过滤，默认为空.与 name_pattern 不能同时存在(Deprecated )
+          schema:
+            type: string
+          in: query
+        - name: metric_type
+          description: 指标类型，默认为空
+          schema:
+            enum:
+              - atomic
+              - complex
+            type: string
+          in: query
+        - name: query_type
+          description: 指标查询语言，默认为空
+          schema:
+            enum:
+              - promql
+              - dsl
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，默认是update_time
+          schema:
+            enum:
+              - update_time
+              - model_name
+              - group_name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: simple_info
+          description:
+            "是否查询指标模型简单信息；true表示查询指标模型部分字段（id,name,tags,metric_type,query_type,update_time）\
+            ；flase表示查询返回指标模型所有字段信息；默认值flase。（可接受 1, t, T, TRUE, true, True, 0, f, F,\
+            \ FALSE, false, False）"
+          schema:
+            type: boolean
+          in: query
+        - name: tag
+          description: 根据指标模型标签精准查询，默认为空.
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: group_id
+          description: 分组ID，查询该分组内指标模型，可以不填，不填则查询所有指标模型；
+          schema:
+            type: integer
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMetricModels"
+              examples:
+                list_metric_models:
+                  value:
+                    entries:
+                      - id: "86"
+                        name: 主机cpu使用率
+                        measure_name: __m.d0j9igtae41jejvae4l0
+                        metric_type: atomic
+                        query_type: promql
+                        formula:
+                          "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                          ,mode=\"system\"}[5m]))by(name)"
+                        date_field: "@timestamp"
+                        date_format: epoch_millis
+                        measure_field: value
+                        unit_type: timeUnit
+                        unit: ms
+                        builtin: false
+                        is_calendar_interval: 1
+                        tags:
+                          - some text
+                          - some text
+                        comment: 主机cpu使用率
+                        group_id: "1123"
+                        group_name: 系统CPU使用率
+                        create_time: 1747360067146
+                        update_time: 1747360067146
+                    total_count: 1
+                list_simple_metric_models:
+                  value:
+                    entries:
+                      - id: "86"
+                        name: 主机cpu使用率
+                        group_id: "490390573723745164"
+                        group_name: MH
+                        metric_type: atomic
+                        query_type: promql
+                        tags:
+                          - some text
+                          - some text
+                        builtin: false
+                        is_calendar_interval: 0
+                        create_time: 1748315380390
+                        update_time: 1748316236366
+                    total_count: 1
+          description: 查询成功，返回指标模型的列表
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 查询指标模型列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReqMetricModel"
+            examples:
+              import multiple:
+                value:
+                  - name: 主机cpu使用率
+                    metric_type: atomic
+                    data_source:
+                      type: data_view
+                      id: 视图id
+                    query_type: promql
+                    formula:
+                      "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                      ,mode=\"system\"}[5m]))by(name)"
+                    date_field: "@timestamp"
+                    date_format: epoch_millis
+                    measure_field: value
+                    timeUnit: timeUnit
+                    unit: ms
+                    tags:
+                      - some text
+                      - some text
+                    comment: 主机cpu使用率
+                    group_name: 主机监控
+                    task:
+                      name: task1
+                      schedule:
+                        type: FIX_RATE
+                        expression: 1h
+                      variables: {}
+                      steps:
+                        - 1h
+                      index_base: indexbasetype1
+                      retrace_duration: 10d
+                      comment: some text
+                  - name: 主机-cpu使用率-DSL
+                    measure_name: __m.cpu_usage_dsl
+                    metric_type: 原子指标
+                    data_source:
+                      type: data_view
+                      id: 视图id
+                    query_type: dsl
+                    formula:
+                      "{\"size\":0,\"query\":{\"bool\":{\"filter\":[{\"range\"\
+                      :{\"metrics.node_cpu_seconds_total\":{\"gte\":0}}}]}},\"aggs\"\
+                      :{\"ip\":{\"terms\":{\"field\":\"labels.mode.keyword\",\"size\"\
+                      :10000},\"aggs\":{\"time\":{\"date_histogram\":{\"field\":\"@timestamp\"\
+                      ,\"fixed_interval\":\"{{__interval}}\",\"min_doc_count\":1,\"\
+                      order\":{\"_key\":\"asc\"}},\"aggs\":{\"value\":{\"avg\":{\"field\"\
+                      :\"metrics.node_cpu_seconds_total\"}}}}}}}}"
+                    date_field: time
+                    date_format: epoch_millis
+                    measure_field: value
+                    unit_type: timeUnit
+                    unit: ms
+                    tags:
+                      - some text
+                      - some text
+                    comment: 主机cpu使用率
+                    group_name: 主机监控
+                    task:
+                      name: task1
+                      schedule:
+                        type: FIX_RATE
+                        expression: 30m
+                      variables: {}
+                      time_windows:
+                        - 5m
+                        - 1h
+                      steps:
+                        - 5m
+                      index_base: indexbasetype1
+                      retrace_duration: 10d
+                      comment: some text
+              add a new one(dsl):
+                value:
+                  - name: 主机-cpu使用率-DSL
+                    measure_name: __m.cpu_usage
+                    metric_type: 原子指标
+                    data_source:
+                      type: data_view
+                      id: 视图id
+                    query_type: dsl
+                    formula:
+                      "{\"size\":0,\"query\":{\"bool\":{\"filter\":[{\"range\"\
+                      :{\"metrics.node_cpu_seconds_total\":{\"gte\":0}}}]}},\"aggs\"\
+                      :{\"ip\":{\"terms\":{\"field\":\"labels.mode.keyword\",\"size\"\
+                      :10000},\"aggs\":{\"time\":{\"date_histogram\":{\"field\":\"@timestamp\"\
+                      ,\"fixed_interval\":\"{{__interval}}\",\"min_doc_count\":1,\"\
+                      order\":{\"_key\":\"asc\"}},\"aggs\":{\"value\":{\"avg\":{\"field\"\
+                      :\"metrics.node_cpu_seconds_total\"}}}}}}}}"
+                    date_field: time
+                    date_format: epoch_millis
+                    measure_field: value
+                    unit_type: timeUnit
+                    unit: ms
+                    tags:
+                      - some text
+                      - some text
+                    comment: 主机cpu使用率
+                    group_name: 主机监控
+                    task:
+                      name: task1
+                      schedule:
+                        type: FIX_RATE
+                        expression: 30m
+                      variables: {}
+                      time_windows:
+                        - 5m
+                        - 1h
+                      steps:
+                        - 5m
+                      index_base: indexbasetype1
+                      retrace_duration: 10d
+                      comment: some text
+              add a new one(promql):
+                value:
+                  - name: 主机-cpu使用率
+                    measure_name: __m.cpu_usage
+                    metric_type: 原子指标
+                    data_source:
+                      type: data_view
+                      id: 视图id
+                    query_type: promql
+                    formula:
+                      "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                      ,mode=\"system\"}[5m]))by(name)"
+                    date_field: "@timestamp"
+                    date_format: epoch_millis
+                    measure_field: value
+                    unit_type: timeUnit
+                    unit: ms
+                    tags:
+                      - some text
+                      - some text
+                    comment: 主机cpu使用率
+                    group_name: 主机监控
+                    task:
+                      name: task1
+                      schedule:
+                        type: FIX_RATE
+                        expression: 30m
+                      variables: {}
+                      steps:
+                        - 5m
+                      index_base: indexbasetype1
+                      retrace_duration: 10d
+                      comment: some text
+        required: true
+      responses:
+        "201":
+          headers:
+            Location:
+              schema:
+                format: uri
+                type: string
+              description: "`/api/data-model/v1/metric_models/{ids}`"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MetricModelId"
+              examples:
+                import multiple:
+                  value:
+                    - id: "17"
+                    - id: "96"
+                add a new one(dsl):
+                  value:
+                    - id: "69"
+                add a new one(promql):
+                  value:
+                    - id: "70"
+          description: 新增/导入成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 创建指标模型
+      description: 创建指标模型，支持批量创建
+  /mdl-data-model/v1/metric-models/{id}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMetricModel"
+            examples:
+              update promql model:
+                value:
+                  name: 主机-cpu使用率
+                  data_source:
+                    type: data_view
+                    id: 视图1
+                  metric_type: 原子指标
+                  query_type: promql
+                  formula:
+                    "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                    ,mode=\"system\"}[5m]))by(name)"
+                  date_field: "@timestamp"
+                  date_format: epoch_millis
+                  measure_field: value
+                  unit_type: timeUnit
+                  unit: ms
+                  tags:
+                    - some text
+                    - some text
+                  comment: 主机cpu使用率
+                  group_name: 主机监控
+                  task:
+                    name: task1
+                    schedule:
+                      type: FIX_RATE
+                      expression: 30m
+                    variables: {}
+                    steps:
+                      - 5m
+                    index_base: indexbasetype1
+                    retrace_duration: 10d
+                    comment: some text
+              update dsl model:
+                value:
+                  name: 主机-cpu使用率-DSL
+                  data_source:
+                    type: data_view
+                    id: 视图1
+                  metric_type: 原子指标
+                  query_type: dsl
+                  formula:
+                    "{\"size\":0,\"query\":{\"bool\":{\"filter\":[{\"range\"\
+                    :{\"metrics.node_cpu_seconds_total\":{\"gte\":0}}}]}},\"aggs\"\
+                    :{\"ip\":{\"terms\":{\"field\":\"labels.mode.keyword\",\"size\"\
+                    :10000},\"aggs\":{\"time\":{\"date_histogram\":{\"field\":\"@timestamp\"\
+                    ,\"fixed_interval\":\"{{__interval}}\",\"min_doc_count\":1,\"\
+                    order\":{\"_key\":\"asc\"}},\"aggs\":{\"value\":{\"avg\":{\"field\"\
+                    :\"metrics.node_cpu_seconds_total\"}}}}}}}}"
+                  date_field: time
+                  date_format: epoch_millis
+                  measure_field: value
+                  unit_type: timeUnit
+                  unit: ms
+                  tags:
+                    - some text
+                    - some text
+                  comment: 主机cpu使用率
+                  group_name: 主机监控
+                  task:
+                    name: task1
+                    schedule:
+                      type: FIX_RATE
+                      expression: 30m
+                    variables: {}
+                    time_windows:
+                      - 5m
+                      - 1h
+                    steps:
+                      - 5m
+                    index_base: indexbasetype1
+                    comment: some text
+        required: true
+      parameters:
+        - name: id
+          description: 指标模型 id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: 修改成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 修改指标模型
+    parameters:
+      - name: id
+        description: 指标模型 id
+        schema:
+          type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-models/{ids}:
+    get:
+      parameters:
+        - name: include_view
+          description: 是否包含视图的详细信息，true 表示查询结果包含视图的详细信息；false 表示查询结果不包含视图的详细信息；false。
+          schema:
+            type: boolean
+          in: query
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataMetricModelDetail"
+              examples:
+                exp:
+                  value:
+                    - id: "72"
+                      name: some text
+                      measure_name: __m.aaa
+                      data_source:
+                        type: data_view
+                        id: view1
+                      metric_type: atomic
+                      data_view:
+                        indices:
+                          - some text
+                          - some text
+                        must_filters: some text
+                        fields:
+                          "@timestamp": date
+                          "@version": text
+                      query_type: promql
+                      formula:
+                        "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\"\
+                        ,mode=\"system\"}[5m]))by(name)"
+                      date_field: "@timestamp"
+                      date_format: epoch_millis
+                      measure_field: value
+                      unit_type: storeUnit
+                      unit: Mbps
+                      tags:
+                        - some text
+                        - some text
+                      comment: some text
+                      update_time: 1748398506313
+                      group_id: "111"
+                      group_name: 分组111
+                      task:
+                        id: "93"
+                        type: fixed
+                        name: task1
+                        model_id: "73"
+                        schedule:
+                          time_type: FIX_RATE
+                          frequency: 5m
+                        variables: {}
+                        steps:
+                          - 5m
+                        index_base: indexbasetype1
+                        index_base_name: indexbasename1
+                        retrace_duration: 10d
+                        comment: some text
+                        task_schedule_id: "12333"
+                        schedule_status: ok
+                        schedule_sync_status: 完成
+                    - id: "73"
+                      name: some text
+                      measure_name: __m.bbb
+                      data_source:
+                        type: data_view
+                        id: view1
+                      metric_type: atomic
+                      data_view:
+                        indices:
+                          - some text
+                          - some text
+                        must_filters: some text
+                        fields:
+                          "@timestamp": date
+                          "@version": text
+                      query_type: dsl
+                      formula:
+                        "{\"size\":0,\"query\":{\"bool\":{\"filter\":[{\"range\"\
+                        :{\"metrics.node_cpu_seconds_total\":{\"gte\":0}}}]}},\"aggs\"\
+                        :{\"ip\":{\"terms\":{\"field\":\"labels.mode.keyword\",\"size\"\
+                        :10000},\"aggs\":{\"time\":{\"date_histogram\":{\"field\":\"\
+                        @timestamp\",\"fixed_interval\":\"{{__interval}}\",\"min_doc_count\"\
+                        :1,\"order\":{\"_key\":\"asc\"}},\"aggs\":{\"value\":{\"avg\"\
+                        :{\"field\":\"metrics.node_cpu_seconds_total\"}}}}}}}}"
+                      date_field: time
+                      date_format: epoch_millis
+                      measure_field: value
+                      unit_type: storeUnit
+                      unit: Mbps
+                      tags:
+                        - some text
+                        - some text
+                      comment: some text
+                      update_time: 1748398506313
+                      group_id: "111"
+                      group_name: 分组111
+                      task:
+                        id: "93"
+                        type: fixed
+                        name: task1
+                        model_id: "73"
+                        schedule:
+                          time_type: FIX_RATE
+                          frequency: 5m
+                        variables: {}
+                        time_windows:
+                          - 5m
+                          - 1h
+                        steps:
+                          - 5m
+                        index_base: indexbasetype1
+                        index_base_name: indexbasename1
+                        retrace_duration: 10d
+                        comment: some text
+                        task_schedule_id: "12333"
+                        schedule_status: ok
+                        schedule_sync_status: 完成
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 按 ids 批量取指标模型对象信息
+    delete:
+      parameters:
+        - examples:
+            exp:
+              value: "<1,15,56>"
+          name: ids
+          description: 指标模型id数组
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: 删除成功
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 删除指标模型
+      description: 按 id 删除，可批量删除
+    parameters:
+      - examples:
+          exp:
+            value: "<1,15,56>"
+        name: ids
+        description: 指标模型id数组
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-models/{ids}/attributes:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupNameFullName"
+        required: true
+      responses:
+        "204":
+          description: 修改成功
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                model name existed:
+                  value:
+                    description: some text
+                    error_code: MetricModel.ModelNameExisted
+                    error_detail: some text
+                    error_link: some text
+                    solution: some text
+                Invalid Group Name:
+                  value:
+                    description: some text
+                    error_code: MetricModelGroup.InvalidParameter
+                    error_detail: some text
+                    error_link: some text
+                    solution: some text
+          description: 参数错误
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                metric model not found:
+                  value:
+                    description: some text
+                    error_code: MetricModel.MetricModelNotFound
+                    error_detail: some text
+                    error_link: some text
+                    solution: some text
+          description: 未找到
+        "500":
+          $ref: "#/components/responses/500GroupInternalError"
+      summary: 批量修改指标模型分组
+    parameters:
+      - examples:
+          exp:
+            value:
+              - 2
+              - 4
+        name: ids
+        description: 指标模型ID数组
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-models/{id}/fields:
+    summary: 获取指标模型所绑定的数据源的字段列表
+    description: 获取指标模型所绑定的数据源的字段列表。当前数据源是日志分组，所以把日志分组选定的索引库的字段列表返回，字段类型与索引库中保持一致，指标模型中不做加工；索引库中的字段名重复时，保留第一个，后面的放弃。
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Field"
+              examples:
+                metric-model-fields:
+                  value:
+                    - name: xxx
+                      type: keyword
+                    - name: yyy
+                      type: date
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 获取指标模型所绑定的数据源的字段列表
+    parameters:
+      - name: id
+        description: 指标模型id
+        schema:
+          type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-tasks/{id}:
+    summary: 按任务id获取指标模型中持久化任务对象信息
+    description: 按任务id获取指标模型中持久化任务对象信息
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+          description: OK
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 按任务id获取持久化任务信息
+    parameters:
+      - name: id
+        description: 持久化任务id
+        schema:
+          type: string
+        in: path
+        required: true
+  /mdl-data-model/v1/metric-tasks/{id}/attr:
+    summary: 按任务id修改指标模型中持久化任务对象信息
+    description: 按任务id修改指标模型中持久化任务对象信息
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskPlanTime"
+            examples:
+              更新任务计划执行时间:
+                value:
+                  plan_times:
+                    - 1698978600000
+                  execute_status: 4
+        required: true
+      responses:
+        "204":
+          description: 修改成功
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "404":
+          $ref: "#/components/responses/404MetricModelNotFound"
+        "500":
+          $ref: "#/components/responses/500InternalError"
+      summary: 修改任务计划时间和执行状态
+    parameters:
+      - name: id
+        description: 持久化任务id
+        schema:
+          type: string
+        in: path
+        required: true
+components:
+  schemas:
+    Error:
+      description: ""
+      required:
+        - description
+        - error_code
+        - error_detail
+        - error_link
+        - solution
+      type: object
+      properties:
+        description:
+          description: 错误描述
+          type: string
+        error_code:
+          description: 错误码
+          type: string
+        error_detail:
+          description: 错误详情
+          type: string
+        error_link:
+          description: 错误链接
+          type: string
+        solution:
+          description: 处理建议
+          type: string
+      example:
+        description: some text
+        error_code: some text
+        error_detail: some text
+        error_link: some text
+        solution: some text
+    CustomAttributeMap:
+      title: Root Type for CustomAttributeMap
+      description: 自定义属性map
+      type: object
+      properties:
+        key:
+          description: 自定义属性的key值
+          type: string
+      example:
+        key: value
+    string:
+      description: |-
+        <uri>
+        修改指标模型
+      type: object
+    MetricModelId:
+      description: ""
+      required:
+        - model_id
+      type: object
+      properties:
+        id:
+          description: 指标模型id
+          type: string
+      example:
+        id: 98
+    ListMetricModels:
+      description: ""
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/DataMetricModel"
+        total_count:
+          description: 总条数
+          type: integer
+      example:
+        entries:
+          - id: 86
+            name: 主机cpu使用率
+            metric_type: 原子指标
+            data_view_name: 主机监控
+            query_type: promql
+            formula:
+              "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\",mode=\"\
+              system\"}[5m]))by(name)"
+            date_field: "@timestamp"
+            date_format: epoch_millis
+            metric_field: value
+            unit_type: timeUnit
+            unit: ms
+            tags:
+              - some text
+              - some text
+            custom_attribute:
+              key: some text
+            comment: 主机cpu使用率
+            group_id: 1123
+            group_name: 系统CPU使用率
+            update_time: 2022-11-24 17:06:43
+        total_count: 1
+    DataView:
+      description: 数据视图的信息。当查询详情的参数 include_view 为 true 时才返回视图的详细信息。
+      required:
+        - indices
+        - must_filters
+        - fields
+      type: object
+      properties:
+        indices:
+          description: 日志分组包含的日志库信息
+          type: array
+          items:
+            type: string
+        must_filters:
+          description: 日志分组的dsl过滤条件语句
+          type: string
+        fields:
+          description: 日志分组的字段信息，是个 map，key 为字段名称，value 为原始字段类型
+          type: object
+      example:
+        indices:
+          - some text
+          - some text
+        must_filters: some text
+    Filter:
+      description: 过滤条件
+      required:
+        - name
+        - value
+        - operation
+      type: object
+      properties:
+        name:
+          description: 过滤字段名称
+          type: string
+        value:
+          description:
+            "过滤的值。当 operation 是 in 时，value 为任意基本类型的数组，且长度大于等于1；当 operation\
+            \ 是 = 或 != 时，value 为任意基本类型的值；当 operation 是 range 时，value 是个由范围的下边界和上边界\
+            组成的长度为 2 的数值型数组。当 operation 是 out_range 时, value 是一个长度为 2 的数组，对应过滤条件时是\
+            \ 字段 < value[0] || 字段 >= value[1]"
+          type: array
+          items: {}
+        operation:
+          description: 操作符。
+          enum:
+            - in
+            - "="
+            - "!="
+            - range
+            - out_range
+            - like
+            - not_like
+            - ">"
+            - ">="
+            - <
+            - <=
+          type: string
+    Variable:
+      description: 变量过滤
+      type: object
+    GroupID:
+      description: 分组
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 分组ID
+          type: string
+    GroupName:
+      description: 分组名称
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: 分组名称 非空且长度不超过40个字符，要求分组名称唯一
+          type: string
+    GroupWithCount:
+      description: ""
+      required:
+        - id
+        - name
+        - metric_model_count
+        - comment
+        - update_time
+      type: object
+      properties:
+        metric_model_count:
+          description: 分组内指标模型数量
+          type: integer
+        id:
+          description: 分组ID
+          type: string
+        name:
+          description: 分组名称，对于默认分组，查询返回结果为空字符串，由前端根据语言环境进行展示
+          type: string
+        comment:
+          description: 指标模型分组说明
+          type: string
+        update_time:
+          format: int64
+          description: 更新时间
+          type: integer
+    ListGroupWithCount:
+      description: 分组查询列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupWithCount"
+        total_count:
+          description: 总条数
+          type: integer
+    ReqGroup:
+      description: ""
+      required: []
+      type: object
+      properties:
+        name:
+          description: "分组名称,非空字符串"
+          type: string
+        comment:
+          description: 指标模型分组说明
+          type: string
+    ReqCreateGroup:
+      description: ""
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: "分组名称,非空字符串"
+          type: string
+        comment:
+          description: 指标模型分组说明
+          type: string
+    GroupNameFullName:
+      description: 分组ID
+      required:
+        - group_name
+      type: object
+      properties:
+        group_name:
+          description: 分组名称
+          type: string
+    Schedule:
+      description: 执行频率配置项
+      required:
+        - time_type
+        - frequency
+        - expression
+        - type
+      type: object
+      properties:
+        type:
+          description: 执行类型。枚举，支持配置固定频率(FIX_RATE)和配置crontab表达式（CRON）
+          enum:
+            - FIX_RATE
+            - CRON
+          type: string
+        expression:
+          description: |-
+            执行表达式。
+
+            1.固定频率指以固定周期执行持久化，frequency=< time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天
+          type: string
+    UpdateTaskPlanTime:
+      description: 持久化任务
+      required:
+        - plan_time
+        - execute_status
+        - plan_times
+      type: object
+      properties:
+        plan_times:
+          description: "计划时间,与时间窗口对应，用于保证数据查询的连续性"
+          type: array
+          items:
+            type: integer
+        execute_status:
+          description: "任务执行状态。4: 执行成功；5: 执行失败"
+          type: integer
+    Field:
+      description: 指标模型所绑定的日志分组的字段信息列表
+      required:
+        - name
+        - type
+      type: object
+      properties:
+        name:
+          description: 字段名称
+          type: string
+        type:
+          description: 字段类型
+          type: string
+    CalendarPersist:
+      description: 日历步长持久化配置。默认为fasle，不开启。
+      required:
+        - is_open
+        - index_base
+      type: object
+      properties:
+        is_open:
+          description: 是否打开日历步长持久化任务，默认为false
+          type: boolean
+        index_base:
+          description: i日历步长持久化数据存储的索引库。当is_open为true时，必填；当is_open为false，此字段可为空
+          type: string
+    ReqTask:
+      description: 持久化任务
+      required:
+        - name
+        - schedule
+        - index_base
+        - steps
+      type: object
+      properties:
+        name:
+          description: 持久化任务名称
+          type: string
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 执行频率
+        time_windows:
+          description:
+            时间窗口。只有在查询语言是DSL时，必填，promql时不可填。可配置多个时间窗口。time_window=< time_durations
+            >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天；还支持使用 前1小时(previous_hour)、前1天(previous_day)、前一周(previous_week)、前一个月(previous_month)
+          type: array
+          items:
+            type: string
+        steps:
+          description:
+            "持久化步长，支持配置多个步长。step=< time_durations >，用一个数字，后面跟时间单位来定义。时间\
+            单位可以是如下之一： m - 分钟； h - 小时； d - 天； w - 周； y - 年；可选步长为 5m, 10m, 15m, 20m,\
+            \ 30m, 1h, 2h, 3h, 6h, 12h, 1d。"
+          type: array
+          items:
+            type: string
+        index_base:
+          description: 索引库类型
+          type: string
+        retrace_duration:
+          description:
+            追溯时长。新建任务时按追溯时长追溯数据。追溯时长最小单位为小时，追溯上限30天。retrace_duration=<
+            time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一： h - 小时； d - 天；
+          type: string
+        comment:
+          description: 任务说明
+          type: string
+      example:
+        name: some text
+        schedule:
+          time_type: fixed
+          frequency: some text
+        filters:
+          - name: some text
+            value:
+              - {}
+              - {}
+            operation: ">"
+          - name: some text
+            value:
+              - {}
+              - {}
+            operation: range
+        variables: {}
+        time_windows:
+          - some text
+          - some text
+        index_base_name: some text
+        retrace_duration: some text
+        comment: some text
+    UpdateTask:
+      description: 持久化任务
+      required:
+        - model_id
+        - name
+        - schedule
+        - index_base
+        - steps
+      type: object
+      properties:
+        id:
+          description: 持久化任务id，修改模型时，新增的任务的任务id为空
+          type: string
+        name:
+          description: 持久化任务名称
+          type: string
+        model_id:
+          description: 指标模型 ID
+          type: string
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 执行频率
+        time_windows:
+          description:
+            时间窗口。只有在查询语言是DSL时，必填，promql时不可填。可配置多个时间窗口。time_window=< time_durations
+            >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天；还支持使用 前1小时(previous_hour)、前1天(previous_day)、前一周(previous_week)、前一个月(previous_month)
+          type: array
+          items:
+            type: string
+        steps:
+          description:
+            "持久化步长，支持配置多个步长。step=< time_durations >，用一个数字，后面跟时间单位来定义。时间\
+            单位可以是如下之一： m - 分钟； h - 小时； d - 天； w - 周； y - 年；可选步长为 5m, 10m, 15m, 20m,\
+            \ 30m, 1h, 2h, 3h, 6h, 12h, 1d。"
+          type: array
+          items:
+            type: string
+        index_base:
+          description: 索引库类型
+          type: string
+        comment:
+          description: 任务说明
+          type: string
+    Task:
+      description: 持久化任务
+      required:
+        - model_id
+        - name
+        - schedule
+        - index_base_name
+        - comment
+        - id
+        - retrace_duration
+        - schedule_status
+        - schedule_sync_status
+        - task_schedule_id
+        - index_base_type
+        - index_base
+        - update_time
+        - plan_time
+        - measure_name
+        - plan_times
+        - step
+        - time_windows
+        - execute_status
+        - steps
+        - type
+      type: object
+      properties:
+        id:
+          description: 持久化任务id
+          type: string
+        type:
+          description: 任务类型。分为日历步长持久化任务（calendar）和固定步长持久化任务（fixed）两种。
+          enum:
+            - calendar
+            - fixed
+          type: string
+        name:
+          description: 持久化任务名称
+          type: string
+        model_id:
+          description: 指标模型 ID
+          type: string
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+          description: 执行频率
+        time_windows:
+          description:
+            "时间窗口。只有在查询语言是DSL时,才有值，promql时为空。time_window=< time_durations\
+            \ >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一：m - 分钟； h - 小时； d - 天；还支持使用 前1小时(previous_hour)、\
+            前1天(previous_day)、前一周(previous_week)、前一个月(previous_month)"
+          type: array
+          items:
+            type: string
+        steps:
+          description:
+            "持久化步长，支持配置多个步长。step=< time_durations >，用一个数字，后面跟时间单位来定义。时间\
+            单位可以是如下之一： m - 分钟； h - 小时； d - 天； w - 周； y - 年；可选步长为 5m, 10m, 15m, 20m,\
+            \ 30m, 1h, 2h, 3h, 6h, 12h, 1d。"
+          type: array
+          items:
+            type: string
+        plan_times:
+          description: "计划时间,与时间窗口对应，用于保证数据查询的连续性"
+          type: array
+          items:
+            format: int64
+            type: integer
+        index_base_name:
+          description: 索引库名称
+          type: string
+        index_base:
+          description: 索引库类型
+          type: string
+        retrace_duration:
+          description:
+            追溯时长。新建任务时按追溯时长追溯数据。追溯时长最小单位为小时，追溯上限30天。retrace_duration=<
+            time_durations >，用一个数字，后面跟时间单位来定义。时间单位可以是如下之一： h - 小时； d - 天；
+          type: string
+        comment:
+          description: 任务说明
+          type: string
+        task_schedule_id:
+          description: xxl_job 调度的任务id
+          type: integer
+        schedule_status:
+          description: xxl_job 任务的最新状态
+          type: integer
+        schedule_sync_status:
+          description: xxl_job 任务的同步状态
+          enum: []
+          type: integer
+        execute_status:
+          description: "任务执行状态。4: 执行成功；5: 执行失败"
+          type: integer
+        update_time:
+          description: 更新时间
+          pattern: yyyy-MM-dd hh:mm:ss
+          type: string
+        measure_name:
+          description: 度量名称
+          type: string
+    ReqDataSource:
+      description: 数据源
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 数据来源id
+          type: string
+    Condition:
+      description: 数据过滤
+      required:
+        - operation
+      type: object
+      properties:
+        field:
+          description: 字段名称
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - like
+            - not_like
+            - contain
+            - not_contain
+            - range
+            - out_range
+            - exist
+            - not_exist
+            - regex
+            - match
+            - match_phrase
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+        value:
+          description: 字段值
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+            - field
+            - user
+          type: string
+    AggrExpression:
+      description: 度量聚合计算
+      required:
+        - field
+        - aggr
+      type: object
+      properties:
+        field:
+          description: 聚合字段
+          type: string
+        aggr:
+          description: 聚合方式
+          enum:
+            - count_distinct
+            - sum
+            - max
+            - min
+            - avg
+            - count
+          type: string
+    DataSource:
+      description: 数据来源
+      required:
+        - type
+        - name
+        - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型。来源类型是在保存的时候从视图的query_type继承而来
+          enum:
+            - DSL
+            - SQL
+          type: string
+        id:
+          description: 数据来源id
+          type: string
+        name:
+          description: 数据来源名称
+          type: string
+    AtomicFormulaConfig:
+      description: 计算公式配置
+      required: []
+      type: object
+      properties:
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 数据过滤
+        condition_str:
+          description: 对应code模式下的过滤条件
+          type: string
+        aggr_expression:
+          $ref: "#/components/schemas/AggrExpression"
+          description: 度量聚合计算
+        aggr_expression_str:
+          description: 对应code模式下的度量聚合计算
+          type: string
+        group_by_fields:
+          description: 分组字段.（vega技术名称）
+          type: array
+          items:
+            type: string
+    Label:
+      description: 维度
+      required:
+        - name
+        - type
+      type: object
+      properties:
+        name:
+          description: 维度字段名
+          type: string
+        type:
+          description: 维度字段数据类型
+          type: string
+    DerivedFormulaConfig:
+      description: 计算公式配置
+      required:
+        - alias_metric_model
+        - depend_metric_model
+      type: object
+      properties:
+        depend_metric_model:
+          $ref: "#/components/schemas/DependMetricModel"
+          description: 依赖的原子指标模型ID
+        date_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 时间限定。可选字段为原子指标的日期时间标识
+        business_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 业务限定。可选字段为原子指标的分析维度，除去日期时间标识
+        condition_str:
+          description: 对应code模式下的过滤条件，合并了时间限定和业务限定
+          type: string
+    DependMetricModel:
+      description: 依赖的指标模型
+      required:
+        - id
+        - group_name
+        - name
+      type: object
+      properties:
+        id:
+          description: 指标模型ID
+          type: string
+        name:
+          description: 指标模型名称
+          type: string
+        group_name:
+          description: 分组名称
+          type: string
+    ReqDependMetricModel:
+      description: 依赖的指标模型
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 指标模型ID
+          type: string
+    ReqDerivedFormulaConfig:
+      description: 计算公式配置
+      required:
+        - alias_metric_model
+        - depend_metric_model
+      type: object
+      properties:
+        depend_metric_model:
+          $ref: "#/components/schemas/ReqDependMetricModel"
+          description: 依赖的原子指标模型ID
+        date_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 时间限定。可选字段为原子指标的日期时间标识
+        business_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 业务限定。可选字段为原子指标的分析维度，除去日期时间标识
+        condition_str:
+          description: 对应code模式下的过滤条件，合并了时间限定和业务限定
+          type: string
+    AtomicFormulaConfigDetail:
+      description: 计算公式配置
+      required:
+        - group_by_fields_detail
+        - group_by_fields
+        - condition_str
+        - condition
+        - aggr_expression_str
+        - aggr_expression
+      type: object
+      properties:
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 数据过滤
+        condition_str:
+          description: 对应code模式下的过滤条件
+          type: string
+        aggr_expression:
+          $ref: "#/components/schemas/AggrExpression"
+          description: 度量聚合计算
+        aggr_expression_str:
+          description: 对应code模式下的度量聚合计算
+          type: string
+        group_by_fields:
+          description: 分组字段.（vega技术名称）
+          type: array
+          items:
+            type: string
+        group_by_fields_detail:
+          description: 分组字段详细信息
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+    ReqOrderField:
+      description: 排序字段
+      required:
+        - name
+        - type
+        - direction
+      type: object
+      properties:
+        name:
+          description: 字段名
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+            - asc
+            - desc
+          type: string
+    ReqMetricModel:
+      description: ""
+      required:
+        - metric_model_name
+        - model_name
+        - name
+        - unit_type
+        - unit
+        - measure_name
+        - metric_type
+      type: object
+      properties:
+        name:
+          description: 指标模型名称
+          type: string
+        catalogy_id:
+          description: 编目ID
+          type: string
+        catalogy_content:
+          description: 编目内容
+          type: string
+        data_source:
+          $ref: "#/components/schemas/ReqDataSource"
+          description: 数据来源信息。衍生指标、复合指标时不需要输入此字段。
+        metric_type:
+          description: 指标类型
+          enum:
+            - atomic
+            - derived
+            - composite
+          type: string
+        query_type:
+          description: 指标查询语言。当衍生指标、复合指标时不需要配置查询语言
+          enum:
+            - promql
+            - dsl
+            - sql
+          type: string
+        formula:
+          description: 计算公式。当指标类型是复合指标，或者原子指标且查询语言为promql或dsl时，需此字段
+          type: string
+        formula_config:
+          oneOf:
+            - $ref: "#/components/schemas/AtomicFormulaConfig"
+            - $ref: "#/components/schemas/ReqDerivedFormulaConfig"
+          description: 配置化的指标计算公式。sql原子指标、衍生指标时需填此字段
+        order_by_fields:
+          description: 排序字段。
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqOrderField"
+        having_condition:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 值过滤条件。
+        analysis_dimensions:
+          description: 分析维度。即在指标查询时可指定的下钻维度集合
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        date_field:
+          description:
+            时间字段。当查询语言是 promql 时，此字段值为 @timestamp。当查询语言是 dsl 时序分析时，此字段值为
+            dsl 语句中的关于时间聚合分桶的聚合名称。当查询语言是sql时，时间字段可为空。字段列表从数据源中获取。
+          type: string
+        date_format:
+          description:
+            时间格式。当查询语言是 promql 时，此字段值为 epoch_millis。当查询语言是 dsl 时，此字段值为
+            epoch_millis
+          enum:
+            - epoch_millis
+          type: string
+        measure_field:
+          description:
+            度量字段。当查询语言是 promql 时，此字段值为 value，为空时，赋默认值。当查询语言是 dsl 时，必填，此字段值为
+            dsl 语句中的值聚合名称
+          type: string
+        unit_type:
+          description: 单位类型
+          enum:
+            - numUnit
+            - storeUnit
+            - percent
+            - transmissionRate
+            - timeUnit
+            - currencyUnit
+            - percentageUnit
+            - countUnit
+            - weightUnit
+            - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+            - none
+            - K
+            - Mil
+            - Bil
+            - Tri
+            - bit
+            - Byte
+            - KB
+            - MB
+            - GB
+            - TB
+            - PB
+            - bps
+            - Kbps
+            - Mbps
+            - μs
+            - ms
+            - s
+            - m
+            - h
+            - day
+            - week
+            - month
+            - year
+            - quarter
+            - Fen
+            - Jiao
+            - CNY
+            - 10K_CNY
+            - 1M_CNY
+            - 100M_CNY
+            - US_Cent
+            - USD
+            - EUR_Cent
+            - "%"
+            - ‰
+            - household
+            - transaction
+            - piece
+            - item
+            - times
+            - man_day
+            - family
+            - hand
+            - sheet
+            - packet
+            - ton
+            - kg
+            - rank
+          type: string
+        tags:
+          description: 标签。用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 指标模型备注
+          type: string
+        group_name:
+          description: 分组名称 默认为“”(表示默认分组); 创建时根据group_name查询并更新 group_id ，若分组不存在则新建分组；
+          type: string
+        task:
+          $ref: "#/components/schemas/ReqTask"
+          description: 持久化任务
+      example:
+        name: 主机-cpu使用率
+        metric_type: 原子指标
+        data_view_name: 主机监控
+        query_type: promql
+        formula:
+          "avg(irate(node_cpu_seconds_total{name=~\"node-14-35\",mode=\"system\"\
+          }[5m]))by(name)"
+        date_field: "@timestamp"
+        date_format: epoch_second
+        metric_field: value
+        unit_type: numUnit
+        unit: "'Mil'"
+        tags:
+          - some text
+          - some text
+        custom_attribute:
+          link: 指标b
+        comment: 主机cpu使用率
+        tasks:
+          - name: some text
+            schedule:
+              time_type: fixed
+              frequency: some text
+            filters:
+              - name: some text
+                value:
+                  - {}
+                  - {}
+                operation: in
+              - name: some text
+                value:
+                  - {}
+                  - {}
+                operation: ">="
+            variables: {}
+            time_windows:
+              - some text
+              - some text
+            index_base_name: some text
+            retrace_duration: some text
+            comment: some text
+          - name: some text
+            schedule:
+              time_type: fixed
+              frequency: some text
+            filters:
+              - name: some text
+                value:
+                  - {}
+                  - {}
+                operation: <=
+              - name: some text
+                value:
+                  - {}
+                  - {}
+                operation: out_range
+            variables: {}
+            time_windows:
+              - some text
+              - some text
+            index_base_name: some text
+            retrace_duration: some text
+            comment: some text
+    UpdateMetricModel:
+      description: ""
+      required:
+        - data_view_name
+        - name
+        - unit_type
+        - unit
+        - measure_name
+        - metric_type
+      type: object
+      properties:
+        name:
+          description: 指标模型名称
+          type: string
+        catalogy_id:
+          description: 编目ID
+          type: string
+        catalogy_content:
+          description: 编目内容
+          type: string
+        data_source:
+          $ref: "#/components/schemas/ReqDataSource"
+          description: 数据来源信息。衍生指标、复合指标时不需要输入此字段。
+        metric_type:
+          description: 指标类型。
+          enum:
+            - atomic
+            - derived
+            - composite
+          type: string
+        query_type:
+          description: 指标查询语言。当衍生指标、复合指标时不需要配置查询语言
+          enum:
+            - promql
+            - dsl
+            - sql
+          type: string
+        formula:
+          description: 计算公式。当指标类型是复合指标，或者原子指标且查询语言为promql或dsl时，需此字段
+          type: string
+        formula_config:
+          oneOf:
+            - $ref: "#/components/schemas/AtomicFormulaConfig"
+            - $ref: "#/components/schemas/DerivedFormulaConfig"
+          description: 配置化的指标计算公式。sql原子指标、衍生指标时需填此字段
+        order_by_fields:
+          description: 排序字段。
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqOrderField"
+        having_condition:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 值过滤条件
+        analysis_dimensions:
+          description: 分析维度。即在指标查询时可指定的下钻维度集合
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        date_field:
+          description:
+            时间字段。当查询语言是 promql 时，此字段值为 @timestamp。当查询语言是 dsl 时序分析时，此字段值为
+            dsl 语句中的关于时间聚合分桶的聚合名称。当查询语言是sql时，时间字段可为空。字段列表从数据源中获取。
+          type: string
+        date_format:
+          description:
+            时间格式。当查询语言是 promql 时，此字段值为 epoch_millis。当查询语言是 dsl 时，此字段值为
+            epoch_millis
+          enum:
+            - epoch_millis
+          type: string
+        measure_field:
+          description: 度量字段。当查询语言是 promql 时，此字段值为 value。当查询语言是 dsl 时，此字段值为 dsl 语句中的值聚合名称。
+          type: string
+        unit_type:
+          description: 单位类型
+          enum:
+            - numUnit
+            - storeUnit
+            - percent
+            - transmissionRate
+            - timeUnit
+            - currencyUnit
+            - percentageUnit
+            - countUnit
+            - weightUnit
+            - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+            - none
+            - K
+            - Mil
+            - Bil
+            - Tri
+            - bit
+            - Byte
+            - KB
+            - MB
+            - GB
+            - TB
+            - PB
+            - bps
+            - Kbps
+            - Mbps
+            - μs
+            - ms
+            - s
+            - m
+            - h
+            - day
+            - week
+            - month
+            - year
+            - quarter
+            - Fen
+            - Jiao
+            - CNY
+            - 10K_CNY
+            - 1M_CNY
+            - 100M_CNY
+            - US_Cent
+            - USD
+            - EUR_Cent
+            - "%"
+            - ‰
+            - household
+            - transaction
+            - piece
+            - item
+            - times
+            - man_day
+            - family
+            - hand
+            - sheet
+            - packet
+            - ton
+            - kg
+            - rank
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        comment:
+          description: 指标模型备注
+          type: string
+        group_name:
+          description: "分组名称, 若该分组名称不存在，则根据group_name新建分组"
+          type: string
+        task:
+          $ref: "#/components/schemas/UpdateTask"
+          description: 持久化任务
+      example:
+        name: some text
+        measure_name: some text
+        metric_type: atomic
+        data_view_name: some text
+        query_type: promql
+        formula: some text
+        date_field: some text
+        date_format: epoch_millis
+        measure_field: some text
+        unit_type: numUnit
+        unit: none
+        tags:
+          - some text
+          - some text
+        custom_attribute: {}
+        comment: some text
+        group_name: some text
+        task:
+          id: 6
+          name: some text
+          model_id: 11
+          schedule:
+            type: CRON
+            expression: some text
+          time_windows:
+            - some text
+            - some text
+          steps:
+            - some text
+            - some text
+          index_base: some text
+          comment: some text
+    OrderField:
+      description: 排序字段
+      required:
+        - name
+        - type
+        - dispaly_name
+        - direction
+      type: object
+      properties:
+        name:
+          description: 字段名
+          type: string
+        type:
+          description: 类型
+          type: string
+        dispaly_name:
+          description: 显示名
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+            - asc
+            - desc
+          type: string
+    DataMetricModel:
+      description: ""
+      required:
+        - model_name
+        - model_id
+        - tags
+        - update_time
+        - name
+        - id
+        - metric_type
+        - group_id
+        - group_name
+        - unit
+        - unit_type
+        - measure_name
+        - measure_field
+        - is_calendar_interval
+        - date_field
+        - create_time
+        - comment
+        - builtin
+        - catalogy_id
+        - catalogy_content
+      type: object
+      properties:
+        id:
+          description: 指标模型 id
+          type: string
+        name:
+          description: 指标模型名称
+          type: string
+        measure_name:
+          description: 度量名称
+          type: string
+        group_id:
+          description: 分组ID
+          type: string
+        group_name:
+          description: 分组名称，对于默认分组，查询返回结果为空字符串，由前端根据语言环境进行展示
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 指标模型备注（可以为空）
+          type: string
+        catalogy_id:
+          description: 编目ID
+          type: string
+        catalogy_content:
+          description: 编目内容
+          type: string
+        metric_type:
+          description: 指标类型，分原子指标和复合指标。
+          enum:
+            - atomic
+            - derived
+            - composite
+          type: string
+        query_type:
+          description: 指标查询语言。当衍生指标、复合指标时无查询语言
+          enum:
+            - promql
+            - dsl
+            - sql
+          type: string
+        formula:
+          description: 计算公式。当指标类型是复合指标，或者原子指标且查询语言为promql或dsl时，才有此字段
+          type: string
+        formula_config:
+          oneOf:
+            - $ref: "#/components/schemas/AtomicFormulaConfigDetail"
+            - $ref: "#/components/schemas/DerivedFormulaConfig"
+          description: 配置化的指标计算公式。sql原子指标、衍生指标时此字段才返回
+        order_by_fields:
+          description: 排序字段。当为空时，不返回此字段
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderField"
+        having_condition:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 值过滤条件。当为空时，不返回此字段
+        analysis_dimensions:
+          description: 分析维度。即在指标查询时可指定的下钻维度集合。当分析维度为空时，不返回此字段
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        date_field:
+          description:
+            时间字段。当查询语言是 promql 时，此字段值为 @timestamp。当查询语言是 dsl 时序分析时，此字段值为
+            dsl 语句中的关于时间聚合分桶的聚合名称。当查询语言是sql时，必须指定时间字段。字段列表从数据源中获取。
+          type: string
+        date_format:
+          description:
+            时间格式。当查询语言是 promql 时，此字段值为 epoch_millis。当查询语言是 dsl 时，此字段值为
+            epoch_millis
+          enum:
+            - epoch_millis
+          type: string
+        measure_field:
+          description: 度量字段。当查询语言是 promql 时，此字段值为 value。当查询语言是 dsl 时，此字段值为 dsl 语句中的值聚合名称。
+          type: string
+        unit_type:
+          description: 单位类型
+          enum:
+            - numUnit
+            - storeUnit
+            - percent
+            - transmissionRate
+            - timeUnit
+            - currencyUnit
+            - percentageUnit
+            - countUnit
+            - weightUnit
+            - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+            - none
+            - K
+            - Mil
+            - Bil
+            - Tri
+            - bit
+            - Byte
+            - KB
+            - MB
+            - GB
+            - TB
+            - PB
+            - bps
+            - Kbps
+            - Mbps
+            - μs
+            - ms
+            - s
+            - m
+            - h
+            - day
+            - week
+            - month
+            - year
+            - quarter
+            - Fen
+            - Jiao
+            - CNY
+            - 10K_CNY
+            - 1M_CNY
+            - 100M_CNY
+            - US_Cent
+            - USD
+            - EUR_Cent
+            - "%"
+            - ‰
+            - household
+            - transaction
+            - piece
+            - item
+            - times
+            - man_day
+            - family
+            - hand
+            - sheet
+            - packet
+            - ton
+            - kg
+            - rank
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        update_time:
+          format: int64
+          description: 更新时间
+          type: integer
+        builtin:
+          description: 是否内置
+          type: boolean
+        is_calendar_interval:
+          description: "是否日历间隔。0: 非日历间隔； 1: 日历间隔。查询简单信息时无此字段"
+          type: integer
+      example:
+        id: 96
+        name: some text
+        metric_type: complex
+        data_view_id: some text
+        data_view_name: some text
+        query_type: dsl
+        formula: some text
+        date_field: some text
+        date_format: epoch_millis
+        measure_field: some text
+        unit_type: numUnit
+        unit: day
+        tags:
+          - some text
+          - some text
+        custom_attribute: {}
+        comment: some text
+        update_time: some text
+        group_id: 13
+        group_name: some text
+    DataMetricModelDetail:
+      description: ""
+      required:
+        - name
+        - id
+        - metric_type
+        - data_view_name
+        - comment
+        - custom_attribute
+        - tags
+        - update_time
+        - date_field
+        - date_format
+        - measure_field
+        - unit
+        - unit_type
+        - data_view_id
+        - task
+        - measure_name
+        - group_id
+        - group_name
+        - is_calendar_interval
+        - create_time
+        - builtin
+        - catalogy_id
+        - catalogy_content
+      type: object
+      properties:
+        id:
+          description: 指标模型 id
+          type: string
+        name:
+          description: 指标模型名称
+          type: string
+        measure_name:
+          description: 度量名称
+          type: string
+        catalogy_id:
+          description: 编目ID
+          type: string
+        catalogy_content:
+          description: 编目内容
+          type: string
+        data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源信息。衍生指标、复合指标时不返回此字段。
+        metric_type:
+          description: 指标类型，分原子指标和复合指标。
+          enum:
+            - atomic
+            - derived
+            - composite
+          type: string
+        query_type:
+          description: 指标查询语言。当衍生指标、复合指标时无查询语言
+          enum:
+            - promql
+            - dsl
+            - sql
+          type: string
+        formula:
+          description: 计算公式。当指标类型是复合指标，或者原子指标且查询语言为promql或dsl时，才有此字段
+          type: string
+        formula_config:
+          oneOf:
+            - $ref: "#/components/schemas/AtomicFormulaConfigDetail"
+            - $ref: "#/components/schemas/DerivedFormulaConfig"
+          description: 配置化的指标计算公式。sql原子指标、衍生指标时此字段才返回
+        order_by_fields:
+          description: 排序字段。当为空时，不返回此字段
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderField"
+        having_condition:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 值过滤条件。当为空时，不返回此字段
+        analysis_dimensions:
+          description: 分析维度。即在指标查询时可指定的下钻维度集合。当分析维度为空时，不返回此字段
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        date_field:
+          description:
+            时间字段。当查询语言是 promql 时，此字段值为 @timestamp。当查询语言是 dsl 时序分析时，此字段值为
+            dsl 语句中的关于时间聚合分桶的聚合名称。当查询语言是sql时，时间字段可为空。字段列表从数据源中获取。
+          type: string
+        date_format:
+          description:
+            时间格式。当查询语言是 promql 时，此字段值为 epoch_millis。当查询语言是 dsl 时，此字段值为
+            epoch_millis
+          enum:
+            - epoch_millis
+          type: string
+        measure_field:
+          description: 度量字段。当查询语言是 promql 时，此字段值为 value。当查询语言是 dsl 时，此字段值为 dsl 语句中的值聚合名称。
+          type: string
+        unit_type:
+          description: 单位类型
+          enum:
+            - numUnit
+            - storeUnit
+            - percent
+            - transmissionRate
+            - timeUnit
+            - currencyUnit
+            - percentageUnit
+            - countUnit
+            - weightUnit
+            - ordinalRankUnit
+          type: string
+        unit:
+          description: 度量单位
+          enum:
+            - none
+            - K
+            - Mil
+            - Bil
+            - Tri
+            - bit
+            - Byte
+            - KB
+            - MB
+            - GB
+            - TB
+            - PB
+            - bps
+            - Kbps
+            - Mbps
+            - μs
+            - ms
+            - s
+            - m
+            - h
+            - day
+            - week
+            - month
+            - year
+            - quarter
+            - Fen
+            - Jiao
+            - CNY
+            - 10K_CNY
+            - 1M_CNY
+            - 100M_CNY
+            - US_Cent
+            - USD
+            - EUR_Cent
+            - "%"
+            - ‰
+            - household
+            - transaction
+            - piece
+            - item
+            - times
+            - man_day
+            - family
+            - hand
+            - sheet
+            - packet
+            - ton
+            - kg
+            - rank
+          type: string
+        tags:
+          description: 标签（可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 指标模型备注（可以为空）
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        update_time:
+          format: int64
+          description: 更新时间
+          type: integer
+        group_id:
+          description: 分组ID
+          type: string
+        group_name:
+          description: 分组名称，对于默认分组，查询返回结果为空字符串，由前端根据语言环境进行展示
+          type: string
+        builtin:
+          description: 是否内置
+          type: boolean
+        is_calendar_interval:
+          description: "是否日历间隔。0: 非日历间隔； 1: 日历间隔。查询简单信息时无此字段"
+          type: integer
+        task:
+          $ref: "#/components/schemas/Task"
+          description: 持久化任务
+        data_view:
+          $ref: "#/components/schemas/DataView"
+          description: 数据视图信息。当查询详情的参数 include_view 为 true 时才返回视图的详细信息。
+      example:
+        id: 49
+        name: some text
+        measure_name: some text
+        metric_type: complex
+        data_view_id: some text
+        data_view_name: some text
+        data_view:
+          indices:
+            - some text
+            - some text
+          must_filters: some text
+          fields: {}
+        query_type: dsl
+        formula: some text
+        date_field: some text
+        date_format: epoch_millis
+        measure_field: some text
+        unit_type: transmissionRate
+        unit: day
+        tags:
+          - some text
+          - some text
+        custom_attribute: {}
+        comment: some text
+        update_time: some text
+        group_id: 35
+        group_name: some text
+        task:
+          id: 64
+          type: fixed
+          name: some text
+          model_id: 54
+          schedule:
+            type: CRON
+            expression: some text
+          time_windows:
+            - some text
+            - some text
+          steps:
+            - some text
+            - some text
+          plan_times:
+            - 73
+            - 92
+          index_base_name: some text
+          index_base: some text
+          retrace_duration: some text
+          comment: some text
+          task_schedule_id: 38
+          schedule_status: 7
+          schedule_sync_status: 61
+          execute_status: 5
+          update_time: some text
+          measure_name: some text
+    HavingCondition:
+      description: having值数据过滤
+      required:
+        - operation
+        - value
+        - field
+      type: object
+      properties:
+        field:
+          description: 字段名称。只有 __value
+          enum:
+            - __value
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - <
+            - <=
+            - in
+            - not_in
+            - range
+            - out_range
+          type: string
+        value:
+          description: 字段值
+  responses:
+    "500InternalError":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: internel server error
+                error_code: DataModel.MetricModel.InternalError
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 内部错误
+    "400BadRequest":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: Invalid Parameter
+                error_code: DataModel.MetricModel.InvalidParameter
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 参数错误
+    "400InvalidOffset":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.InvalidOffset
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: ""
+    "400InvalidLimit":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.InvalidLimit
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: ""
+    "400InvalidDirection":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.InvalidDirection
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: ""
+    "400InvalidSort":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.InvalidSort
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: ""
+    "404MetricModelNotFound":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                error_code: DataModel.MetricModel.ResourceNotFound
+                description: MetricModel Not Found
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: MetricModel未找到
+    "400MetricModelNameExist":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.DictItemKeyExist
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 指标模型名称已存在
+    "400MetricModelNameNull":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.DictItemKeyOrValueNull
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 指标模型名称为空
+    "404DataViewNotFound":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                error_code: DataDict.NotFound.DictionaryItemNotFound
+                description: DataDictionaryItem Not Found
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 数据视图未找到
+    "400InvalidMetricModelName":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: DataDict.BadRequest.InvalidDictItemKeyOrValue
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 指标模型名称不合法
+    "400DataViewNameNull":
+      description: 数据视图名称为空
+    "400MetricTypeNull":
+      description: 指标类型为空
+    "400FormulaNull":
+      description: 计算公式为空
+    "400GroupNameExsit":
+      description: 分组名称已存在
+    "400BadRequestGroup":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            group name existed:
+              value:
+                description: some text
+                error_code: MetricModelGroup.GroupNameExisted
+                error_detail: some text
+                error_link: some text
+                solution: some text
+            group name length exceed:
+              value:
+                description: some text
+                error_code: MetricModelGroup.LengthExceeded.GroupName
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 分组名称参数错误
+    "404GroupNotFound":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            ex:
+              value:
+                error_code: MetricModelGroup.GroupNotFound
+                error_detail: some text
+                error_link: some text
+                description: some text
+                solution: some text
+      description: Group未找到
+    "500GroupInternalError":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            exp:
+              value:
+                description: some text
+                error_code: MetricModelGroup.InternalError
+                error_detail: some text
+                error_link: some text
+                solution: some text
+      description: 内部错误

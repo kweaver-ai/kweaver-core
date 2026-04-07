@@ -1,0 +1,12 @@
+LlmItem:
+  type: object
+  required:
+    - llm_config
+  properties:
+    is_default:
+      type: boolean
+      default: false
+      description: 是否默认
+    llm_config:
+      $ref: './llm_config.yaml#/LlmConfig'
+      description: LLM配置

@@ -1,0 +1,50 @@
+agent_options:
+  properties:
+    output_vars:
+      items:
+        type: string
+      type: array
+      description: 需要输出的变量
+      title: Output Vars
+    incremental_output:
+      type: boolean
+      title: Incremental Output
+      description: 是否增量输出
+      default: false
+    data_source:
+      $ref: '../../../../../public/data-agent/agent-factory/v3/agent/schema/retriever_data_source.yaml#/retriever_data_source'
+      description: 数据源配置
+      title: Data Source
+    llm_config:
+      $ref: '../../../../../public/data-agent/agent-factory/v3/agent/schema/llm_config.yaml#/llm_config'
+      description: 默认使用的LLM配置
+      title: Llm Config
+    tmp_files:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: 文档ID
+          type:
+            type: string
+            description: 类型(doc/wikidoc/faq)
+          name:
+            type: string
+            description: 文档名称
+      title: Tmp Files
+      description: 临时文件列表
+    
+    agent_run_id:
+      type: string
+      title: Agent Run ID
+      description: Agent运行ID
+    conversation_id:
+      type: string
+      title: Conversation ID
+      description: 会话ID
+      
+  type: object
+  title: AgentOptions
+  description: Agent运行选项, 此处如果有配置项，则覆盖config中的配置

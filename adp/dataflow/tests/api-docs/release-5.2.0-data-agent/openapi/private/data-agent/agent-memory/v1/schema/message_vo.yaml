@@ -1,0 +1,17 @@
+Message:
+  type: object
+  description: |
+    消息对象
+  properties:
+    role:
+      type: string
+      description: |
+        消息角色：
+        - user: 用户
+        - assistant: 助手
+    content:
+      type: string
+      description: 消息内容
+  required:
+    - role
+    - content

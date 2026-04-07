@@ -1,0 +1,50 @@
+DocAdvancedConfig:
+  type: object
+  required:
+    - retrieval_slices_num
+    - max_slice_per_cite
+    - rerank_topk
+    - slice_head_num
+    - slice_tail_num
+    - documents_num
+    - document_threshold
+    - retrieval_max_length
+  properties:
+    retrieval_slices_num:
+      type: integer
+      minimum: 50
+      maximum: 200
+      description: 召回切片数
+    max_slice_per_cite:
+      type: integer
+      minimum: 5
+      maximum: 20
+      description: 每篇文档最大保留切片数
+    rerank_topk:
+      type: integer
+      minimum: 10
+      maximum: 30
+      description: 重排序后保留切片数
+    slice_head_num:
+      type: integer
+      minimum: 0
+      maximum: 3
+      description: 获取上文切片数
+    slice_tail_num:
+      type: integer
+      minimum: 0
+      maximum: 3
+      description: 获取下文切片数
+    documents_num:
+      type: integer
+      minimum: 4
+      maximum: 10
+      description: 来源文档数量
+    document_threshold:
+      type: number
+      minimum: -10
+      maximum: 10
+      description: 文档ranker bge相似度阈值
+    retrieval_max_length:
+      type: integer
+      description: 召回文档最大长度

@@ -1,0 +1,79 @@
+openapi: 3.0.2
+info:
+  title: Agent-Factory API（内部接口）
+  version: 1.0.0
+
+servers:
+  - url: 'https://{host}:{port}/api/'
+    description: 'host: DIP服务器IP, port: 30777'
+    variables:
+      host:
+        default: host
+        description: DIP服务器IP
+      port:
+        default: '30777'
+        description: 默认端口30777
+tags:
+  - $ref: '../../../../common/common_headers.yaml#/common_header_tag'
+  - name: agent-internal
+  - name: 发布相关-internal
+  - name: 已发布-internal
+  - name: 权限-internal
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=261242083)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/744857)
+x-tagGroups:
+  - name: 通用说明
+    tags:
+      - 公共Header说明
+  - name: DATA AGENT
+    tags:
+      - agent-internal
+      - 发布相关-internal
+      - 已发布-internal
+      - 权限-internal
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+
+paths:
+  # 使用单独的路径引用文件简化路径
+
+  # -- agent start --
+  /agent-factory/internal/v3/agent:
+    $ref: './path/path-refs.yaml#/paths/agent'
+  /agent-factory/internal/v3/agent/{agent_id}:
+    $ref: './path/path-refs.yaml#/paths/agent_id'
+  /agent-factory/internal/v3/agent/by-key/{key}:
+    $ref: './path/path-refs.yaml#/paths/agent_by_key'
+  /agent-factory/internal/v3/agent-market/agent/{agent_id}/version/{version}:
+    $ref: './path/path-refs.yaml#/paths/agent_market_agent_version'
+
+  /agent-factory/internal/v3/agent-fields:
+    $ref: './path/path-refs.yaml#/paths/agent_batch_fields'
+  # -- agent end --
+
+  # -- agent publish start --
+  /agent-factory/internal/v3/agent/{agent_id}/publish:
+    $ref: './path/path-refs.yaml#/paths/agent_publish'
+  /agent-factory/internal/v3/agent/{agent_id}/publish-info:
+    $ref: './path/path-refs.yaml#/paths/agent_publish_info'
+  # -- agent publish end --
+
+  # -- agent permission start --
+  /agent-factory/internal/v3/agent-permission/execute:
+    $ref: './path/path-refs.yaml#/paths/agent_permission_execute'
+  /agent-factory/internal/v3/agent-permission/management/user-status:
+    $ref: './path/path-refs.yaml#/paths/agent_permission_management_user_status'
+  # -- agent permission end --
+
+  # -- 已发布 start --
+  /agent-factory/internal/v3/published/agent-list-cache-status:
+    $ref: './path/path-refs.yaml#/paths/published_agent_list_cache_status'
+  # -- 已发布 end --

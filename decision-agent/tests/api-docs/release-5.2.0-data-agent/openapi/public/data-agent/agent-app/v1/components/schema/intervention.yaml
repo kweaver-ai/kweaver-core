@@ -1,0 +1,21 @@
+Intervention:
+  type: object
+  properties:
+      tool_name:
+        type: string
+        description: 技能名
+      tool_call_info:
+        type: object
+        properties:
+          tool_name:
+            type: string
+            description: 技能名
+          args:
+            type: object
+            description: 技能参数
+          assign_type:
+            type: string
+            description: 分配类型
+          output_var:
+            type: string
+            description: 输出变量

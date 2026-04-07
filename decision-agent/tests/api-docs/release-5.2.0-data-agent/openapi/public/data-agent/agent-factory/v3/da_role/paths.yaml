@@ -1,0 +1,233 @@
+
+paths:
+  /agent-factory/v3/role:
+    get:
+      summary: 获取角色列表
+      description: 获取角色列表
+      tags:
+        - 角色
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/name'
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: './schema/list_item.yaml#/role_list_item'
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    post:
+      summary: 创建角色
+      deprecated: false
+      description: 创建角色
+      tags:
+        - 角色
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/create_req.yaml#/role_create_req'
+            example:
+              name: "数据智能体开发角色"
+              key: "data-agent-dev"
+              description: "这是一个用于数据智能体开发的协作角色"
+              members:
+                - obj_type: "user"
+                  obj_id: "user123"
+                - obj_type: "dept"
+                  obj_id: "dept456"
+              resources:
+                - resource_type: "agent"
+                  resource_id: "agent123"
+      responses:
+        201:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: 角色 id
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+
+  /agent-factory/v3/role/{id}:
+    get:
+      summary: 获取角色详情
+      deprecated: false
+      description: 获取角色详情，包括角色基本信息、成员和资源
+      tags:
+        - 角色
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: './schema/detail.yaml#/role_detail'
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    put:
+      summary: 编辑角色
+      deprecated: false
+      description: 编辑角色，包括角色基本信息、成员和资源
+      tags:
+        - 角色
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './schema/update_req.yaml#/role_update_req'
+            example:
+              name: "数据智能体开发角色-更新版"
+              description: "这是一个更新后的数据智能体开发协作角色"
+              members:
+                add:
+                  - obj_type: "user"
+                    obj_id: "user456"
+                remove:
+                  - obj_type: "user"
+                    obj_id: "user123"
+              resources:
+                add:
+                  - resource_type: "agent"
+                    resource_id: "agent456"
+                remove:
+                  - resource_type: "agent"
+                    resource_id: "agent123"
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    delete:
+      summary: 删除角色
+      deprecated: false
+      description: 删除角色
+      tags:
+        - 角色
+      responses:
+        204:
+          description: 请求成功
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/ID'
+
+  /agent-factory/v3/role/{id}/members:
+    get:
+      summary: 获取角色成员列表
+      deprecated: false
+      description: 获取角色成员列表
+      tags:
+        - 角色
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/ID'
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+      responses:
+        200:
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: './schema/member_item.yaml#/role_member_item'
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+      - $ref: '../components/components.yaml#/components/parameters/ID'
+
+  /agent-factory/v3/role/{id}/resources:
+    get:
+      summary: 获取角色资源列表
+      deprecated: false
+      description: 获取角色资源列表
+      tags:
+        - 角色
+      parameters:
+        - $ref: '../components/components.yaml#/components/parameters/ID'
+        - $ref: '../components/components.yaml#/components/parameters/page'
+        - $ref: '../components/components.yaml#/components/parameters/pageLimit'
+        - $ref: '../components/components.yaml#/components/parameters/name'
+      responses:
+        200:
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: './schema/resource_item.yaml#/role_resource_item'
+                  total:
+                    type: integer
+                    description: 总数
+        '400':
+          $ref: '../components/components.yaml#/components/responses/400'
+        '401':
+          $ref: '../components/components.yaml#/components/responses/401'
+        '403':
+          $ref: '../components/components.yaml#/components/responses/403'
+        '500':
+          $ref: '../components/components.yaml#/components/responses/500'
+    parameters:
+    - $ref: '../components/components.yaml#/components/parameters/ID'

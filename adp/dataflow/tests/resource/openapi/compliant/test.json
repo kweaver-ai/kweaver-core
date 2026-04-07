@@ -1,0 +1,508 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "用户管理API",
+      "description": "提供用户注册、查询和管理的 RESTful API",
+      "version": "1.0.0",
+      "contact": {
+        "name": "API 支持团队",
+        "email": "support@example.com",
+        "url": "https://example.com/support"
+      },
+      "license": {
+        "name": "MIT 许可证",
+        "url": "https://opensource.org/licenses/MIT"
+      }
+    },
+    "servers": [
+      {
+        "url": "https://api.example.com/v1",
+        "description": "生产环境服务器"
+      }
+    ],
+    "paths": {
+      "/users": {
+        "get": {
+          "summary": "获取用户列表",
+          "description": "根据查询参数获取用户列表，支持分页和过滤",
+          "tags": ["用户"],
+          "parameters": [
+            {
+              "name": "page",
+              "in": "query",
+              "description": "页码",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "description": "每页记录数",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "default": 10,
+                "maximum": 100
+              }
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "description": "搜索关键词",
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "成功获取用户列表",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserListResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "请求参数错误",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "apiKeyAuth": []
+            }
+          ]
+        },
+        "post": {
+          "summary": "创建新用户",
+          "description": "注册新用户账号",
+          "tags": ["用户"],
+          "requestBody": {
+            "description": "用户注册信息",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCreateRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "用户创建成功",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "请求参数错误",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "用户已存在",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/users/{userId}": {
+        "get": {
+          "summary": "获取用户详情",
+          "description": "根据用户 ID 获取详细信息",
+          "tags": ["用户"],
+          "parameters": [
+            {
+              "name": "userId",
+              "in": "path",
+              "description": "用户 ID",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "成功获取用户详情",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "用户不存在",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "apiKeyAuth": []
+            }
+          ]
+        },
+        "put": {
+          "summary": "更新用户信息",
+          "description": "更新指定用户的信息",
+          "tags": ["用户"],
+          "parameters": [
+            {
+              "name": "userId",
+              "in": "path",
+              "description": "用户 ID",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "requestBody": {
+            "description": "更新的用户信息",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserUpdateRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "用户信息更新成功",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "请求参数错误",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "用户不存在",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "无权限更新此用户",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "apiKeyAuth": []
+            }
+          ]
+        },
+        "delete": {
+          "summary": "删除用户",
+          "description": "删除指定用户账号",
+          "tags": ["用户"],
+          "parameters": [
+            {
+              "name": "userId",
+              "in": "path",
+              "description": "用户 ID",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "responses": {
+            "204": {
+              "description": "用户删除成功，无返回内容"
+            },
+            "404": {
+              "description": "用户不存在",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "无权限删除此用户",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "apiKeyAuth": []
+            },
+            {
+              "adminAuth": []
+            }
+          ]
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "UserBase": {
+          "type": "object",
+          "description": "用户基础信息",
+          "required": ["username", "email"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "用户唯一标识符"
+            },
+            "username": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 20,
+              "description": "用户名"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "用户邮箱"
+            },
+            "fullName": {
+              "type": "string",
+              "description": "用户全名"
+            },
+            "phone": {
+              "type": "string",
+              "description": "联系电话"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "创建时间"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "更新时间"
+            }
+          }
+        },
+        "UserCreateRequest": {
+          "type": "object",
+          "description": "创建用户请求参数",
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/UserBase"
+            }
+          ],
+          "required": ["username", "email", "password"],
+          "properties": {
+            "password": {
+              "type": "string",
+              "minLength": 6,
+              "description": "用户密码（至少6位）",
+              "writeOnly": true
+            },
+            "role": {
+              "type": "string",
+              "enum": ["user", "admin"],
+              "default": "user",
+              "description": "用户角色"
+            }
+          }
+        },
+        "UserUpdateRequest": {
+          "type": "object",
+          "description": "更新用户请求参数",
+          "properties": {
+            "fullName": {
+              "type": "string",
+              "description": "用户全名"
+            },
+            "phone": {
+              "type": "string",
+              "description": "联系电话"
+            },
+            "password": {
+              "type": "string",
+              "minLength": 6,
+              "description": "新密码（可选，留空则不更新）",
+              "writeOnly": true
+            }
+          }
+        },
+        "UserResponse": {
+          "type": "object",
+          "description": "用户响应结果",
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/UserBase"
+            }
+          ],
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["user", "admin"],
+              "description": "用户角色"
+            },
+            "avatar": {
+              "type": "string",
+              "format": "uri",
+              "description": "用户头像 URL"
+            }
+          },
+          "xml": {
+            "name": "User"
+          }
+        },
+        "UserListResponse": {
+          "type": "object",
+          "description": "用户列表响应",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "description": "总记录数"
+            },
+            "page": {
+              "type": "integer",
+              "description": "当前页码"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "每页记录数"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/UserResponse"
+              },
+              "description": "用户列表"
+            }
+          }
+        },
+        "ErrorResponse": {
+          "type": "object",
+          "description": "错误响应",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "description": "错误码"
+            },
+            "message": {
+              "type": "string",
+              "description": "错误信息"
+            },
+            "details": {
+              "type": "object",
+              "description": "错误详情（可选）"
+            }
+          },
+          "example": {
+            "code": 404,
+            "message": "资源不存在",
+            "details": {
+              "resource": "user",
+              "id": "123e4567-e89b-12d3-a456-426655440000"
+            }
+          }
+        }
+      },
+      "securitySchemes": {
+        "apiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "X-API-Key",
+          "description": "API 密钥认证"
+        },
+        "adminAuth": {
+          "type": "oauth2",
+          "flows": {
+            "implicit": {
+              "authorizationUrl": "https://example.com/oauth/authorize",
+              "scopes": {
+                "admin": "获取管理员权限"
+              }
+            }
+          },
+          "description": "管理员 OAuth 认证"
+        }
+      }
+    },
+    "tags": [
+      {
+        "name": "用户",
+        "description": "用户相关的操作"
+      },
+      {
+        "name": "认证",
+        "description": "身份认证相关操作"
+      }
+    ],
+    "externalDocs": {
+      "description": "查看 API 文档的详细说明",
+      "url": "https://example.com/api/docs"
+    }
+  }

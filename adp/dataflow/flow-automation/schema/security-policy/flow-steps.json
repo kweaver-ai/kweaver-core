@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "流程节点数组",
+    "description": "put /api/automation/v1/security-policy/flows/{id}/steps",
+    "type": "array",
+    "items": {
+        "type": "object"
+    },
+    "minItems": 2,
+    "uniqueItems": true
+}

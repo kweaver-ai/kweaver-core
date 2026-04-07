@@ -1,0 +1,16 @@
+[
+    {
+        "ds_id": "0",
+        "fields": [
+            {
+                "name": "AnyBackup Family 8 技术白皮书",
+                "path": "AnyBackup Family 8 技术白皮书",
+                "source": "gns://9CB2AEB17D584B5BAAFC0DDCB9FBE93E/92057B34D53E40F485EE94B6B526C4CE",
+                "type": "folder"
+            }
+        ],
+        "datasets": [
+            "17535fcf23c7492eb8637e956b87af1e"
+        ]
+    }
+]

@@ -1,0 +1,19 @@
+DocSource:
+  type: object
+  required:
+    - ds_id
+    - fields
+  properties:
+    ds_id:
+      type: string
+      description: 数据源ID
+    fields:
+      type: array
+      items:
+        $ref: './doc_source_field.yaml#/DocSourceField'
+      description: 数据源范围列表
+    datasets:
+      type: array
+      items:
+        type: string
+      description: 数据集列表

@@ -1,0 +1,163 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "用户管理API_01",
+      "description": "仅包含获取用户列表的API",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "https://api.example.com/v1",
+        "description": "生产环境服务器"
+      }
+    ],
+    "paths": {
+      "/userlist": {
+        "get": {
+          "summary": "获取用户列表01",
+          "description": "根据查询参数获取用户列表，支持分页和过滤",
+          "tags": ["用户"],
+          "parameters": [
+            {
+              "name": "page",
+              "in": "query",
+              "description": "页码",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "description": "每页记录数",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "default": 10,
+                "maximum": 100
+              }
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "description": "搜索关键词",
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "成功获取用户列表",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserListResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "请求参数错误",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "apiKeyAuth": []
+            }
+          ]
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "User": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "用户唯一标识符"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "用户邮箱"
+            },
+            "fullName": {
+              "type": "string",
+              "description": "用户全名"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "创建时间"
+            }
+          }
+        },
+        "UserListResponse": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "description": "总记录数"
+            },
+            "page": {
+              "type": "integer",
+              "description": "当前页码"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "每页记录数"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/User"
+              },
+              "description": "用户列表"
+            }
+          }
+        },
+        "ErrorResponse": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "description": "错误码"
+            },
+            "message": {
+              "type": "string",
+              "description": "错误信息"
+            },
+            "details": {
+              "type": "object",
+              "description": "错误详情（可选）"
+            }
+          }
+        }
+      },
+      "securitySchemes": {
+        "apiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "X-API-Key",
+          "description": "API 密钥认证"
+        }
+      }
+    }
+  }

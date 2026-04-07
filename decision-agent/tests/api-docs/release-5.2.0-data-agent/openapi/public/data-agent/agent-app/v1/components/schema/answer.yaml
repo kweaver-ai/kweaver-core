@@ -1,0 +1,11 @@
+Answer:
+  type: object
+  properties:
+    text:
+      type: string
+    cites:
+      type: object
+      nullable: true
+    ask:
+      type: object
+      nullable: true

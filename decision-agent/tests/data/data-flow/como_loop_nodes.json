@@ -1,0 +1,67 @@
+[
+    {
+      "id": "0",
+      "title": "",
+      "operator": "@trigger/form",
+      "parameters": {
+        "fields": [
+          {
+            "key": "n",
+            "name": "n",
+            "required": true,
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "title": "",
+      "operator": "@control/flow/loop",
+      "parameters": {
+        "limit": "{{__0.fields.n}}",
+        "outputs": [
+          {
+            "key": "numbers",
+            "value": "{{__1.index}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "title": "",
+      "operator": "@control/flow/loop",
+      "parameters": {
+        "array": "{{__1.outputs.numbers}}",
+        "mode": "array",
+        "outputs": [
+          {
+            "key": "texts",
+            "value": "{{__3.text}}"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "3",
+          "title": "",
+          "operator": "@internal/text/join",
+          "parameters": {
+            "custom": ": ",
+            "separator": "custom",
+            "texts": [
+              "{{__2.index}}",
+              "number: {{__2.value}}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "100",
+      "title": "",
+      "operator": "@internal/return",
+      "parameters": {}
+    }
+  ]

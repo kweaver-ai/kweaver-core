@@ -1,0 +1,54 @@
+---
+type: entity
+id: pod
+name: Pod实例
+version: 1.0.0
+network: k8s-modular
+tags: [拓扑架构, 容器, Kubernetes]
+---
+
+# Pod实例
+
+Kubernetes 中的最小部署单元，一个或多个容器的集合。
+
+## 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380dis0 | pod_info_view |
+
+> **主键**: `id` | **显示属性**: `pod_name`
+
+## 属性覆盖
+
+| 属性名 | 显示名 | 索引配置 | 说明 |
+|--------|--------|----------|------|
+| pod_status | 状态 | fulltext + vector | 支持全文和语义搜索 |
+| pod_name | Pod名称 | keyword + fulltext | 支持精确和模糊匹配 |
+
+## 逻辑属性
+
+### pod_metrics
+
+- **类型**: metric
+- **来源**: pod_metric (metric-model)
+- **说明**: Pod的监控指标
+
+| 参数名 | 来源 | 绑定值 |
+|--------|------|--------|
+| id | property | id |
+| pod_name | property | pod_name |
+| instant | input | - |
+
+## 业务语义
+
+Pod 是 K8s 调度的基本单位，包含共享网络和存储的容器组。
+
+### 常见状态
+
+| 状态 | 说明 |
+|------|------|
+| Running | 正常运行 |
+| Pending | 等待调度 |
+| Failed | 运行失败 |
+| Unknown | 状态未知 |

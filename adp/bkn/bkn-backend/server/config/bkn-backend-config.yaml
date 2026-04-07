@@ -1,0 +1,100 @@
+server:
+  runMode: release
+  httpPort: 13014
+  language: zh-CN
+  readTimeOut: 600
+  writeTimeOut: 600
+  maxConcurrentTasks: 4
+  viewDataLimit: 1000
+  defaultSmallModelName: embedding
+  defaultSmallModelEnabled: false
+  jobMaxRetryTimes: 3
+  reloadJobEnabled: false
+log:
+  logLevel: debug
+  developMode: false
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  logEnabled: false
+  traceEnabled: false
+  metricEnabled: false
+  logExporter: console
+  traceProvider: http
+  metricProvider: http
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  traceMaxQueueSize: 50000
+  metricIntervalSecond: 60
+  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+
+depServices:
+  class-443:
+    ingressClass: class-443
+  rds:
+    host: mariadb-mariadb-master.resource.svc.cluster.local.
+    port: 3330
+    user: root
+    password: ""
+    type: MariaDB
+  mq:
+    mqType: kafka
+    mqHost: kafka-headless.resource.svc.cluster.local.
+    mqPort: 9097
+    protocol: sasl_plaintext
+    tenant: default
+    auth:
+      username: admin
+      password: ""
+      mechanism: PLAIN
+  opensearch:
+    host: opensearch-master.resource.svc.cluster.local.
+    port: 9200
+    protocol: http
+    user: admin
+    password: ""
+  authorization-private:
+    host: authorization-private
+    port: 30920
+    protocol: http
+  user-management:
+    host: user-management-private
+    port:  30980
+    protocol: http
+  hydra-admin:
+    host: hydra-admin
+    port: 4445
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+  data-model:
+    host: mdl-data-model-svc
+    port: 13020
+    protocol: http
+  uniquery:
+    host: mdl-uniquery-svc
+    port: 13011
+    protocol: http
+  business-system:
+    host: business-system-service
+    port: 80
+    protocol: http
+  ontology-query:
+    host: ontology-query-svc
+    port: 13018
+    protocol: http
+  vega-backend:
+    host: vega-backend-svc
+    port: 13014
+    protocol: http

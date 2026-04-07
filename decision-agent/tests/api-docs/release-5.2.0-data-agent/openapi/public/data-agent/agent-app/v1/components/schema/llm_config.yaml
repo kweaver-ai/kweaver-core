@@ -1,0 +1,43 @@
+LlmConfig:
+  type: object
+  required:
+    - name
+    - max_tokens
+  properties:
+    id:
+      type: string
+      description: 模型ID
+    name:
+      type: string
+      description: 模型名
+    model_type:
+      type: string
+      description: 模型类型
+    temperature:
+      type: number
+      minimum: 0
+      maximum: 2
+      description: 温度参数
+    top_p:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: Top-p参数
+    top_k:
+      type: integer
+      minimum: 0
+      description: Top-k参数
+    frequency_penalty:
+      type: number
+      minimum: -2
+      maximum: 2
+      description: 频率惩罚
+    presence_penalty:
+      type: number
+      minimum: -2
+      maximum: 2
+      description: 存在惩罚
+    max_tokens:
+      type: integer
+      minimum: 0
+      description: 最大token数

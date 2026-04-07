@@ -1,0 +1,93 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "任务运行统计",
+    "description": "get /api/automation/v1/dag/{dagId}/results",
+    "type": "object",
+    "properties": {
+        "type": {
+            "description": "节点运行状态",
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            null,
+                            "success",
+                            "failed",
+                            "canceled",
+                            "scheduled",
+                            "running"
+                        ]
+                    },
+                    "uniqueItems": true
+                },
+                {
+                    "type": "string",
+                    "const": ""
+                }
+            ]
+        },
+        "page": {
+            "description": "页码，默认值为0",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "limit": {
+            "description": "每页显示条目数，默认值为20，有效值在1-100之间",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                {
+                    "const": -1
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "sortby": {
+            "description": "排序字段，默认为update_at,仅支持name、started_at和ended_at",
+            "enum": [
+                null,
+                "started_at",
+                "ended_at"
+            ]
+        },
+        "order": {
+            "description": "排序规则。默认为desc，仅支持desc和asc",
+            "enum": [
+                null,
+                "asc",
+                "desc"
+            ]
+        },
+        "start_time": {
+            "description": "开始时间",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999999999
+        },
+        "end_time": {
+            "description": "结束时间",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999999999
+        },
+        "name": {
+            "description": "模糊搜索文件名",
+            "type": "string"
+        }
+    },
+    "additionalProperties": false
+}

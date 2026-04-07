@@ -1,0 +1,69 @@
+[OntologyQuery.KnowledgeNetwork.NullParameter.Direction]
+Description = "Direction Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.SourceObjectTypeId]
+Description = "Source Object Type Id Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.TypePathObjectTypes]
+Description = "Object Types In The Type Path Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.TypePathRelationTypes]
+Description = "Relation Types In The Type Path Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter]
+Description = "Invalid Parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.Direction]
+Description = "Invalid Direction"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.IncludeTypeInfo]
+Description = "Invalid Include Type Info"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.PathLength]
+Description = "Invalid Path Length"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.TypePath]
+Description = "Invalid Include Type Path"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.KnowledgeNetworkNotFound]
+Description = "Knowledge Network Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.RelationTypeNotFound]
+Description = "Relation Type Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetViewDataByIDFailed]
+Description = "Get View Data By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetKnowledgeNetworksByIDFailed]
+Description = "Get Knowledge Networks By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetRelationTypeFailed]
+Description = "Get Relation Type Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

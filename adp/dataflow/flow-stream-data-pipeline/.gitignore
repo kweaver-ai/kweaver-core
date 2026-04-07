@@ -1,0 +1,10 @@
+.idea
+.vscode
+*/__debug_bin
+*/mock
+*/bin
+*/report
+.netrc
+id_rsa
+go.work*
+**/report

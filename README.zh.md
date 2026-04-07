@@ -30,7 +30,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 <div align="center">
 <a href="https://www.bilibili.com/video/BV1nGXVBTEmo/?vd_source=4cdad687b2ac18a0b25e434f1fafe2f7" target="_blank">
-<img src="./docs/demo-cover.png" alt="KWeaver 演示视频" width="75%"/>
+<img src="./help/demo-cover.png" alt="KWeaver 演示视频" width="75%"/>
 </a>
 
 点击图片在 Bilibili 观看 KWeaver 演示视频
@@ -385,7 +385,7 @@ F1 Bench 由 BIRD 测试集中 Formula-1 数据库混合 30 篇非结构化文�
 ## 💬 交流社区
 
 <div align="center">
-<img src="./docs/qrcode.png" alt="KWeaver 交流群二维码" width="30%"/>
+<img src="./help/qrcode.png" alt="KWeaver 交流群二维码" width="30%"/>
 
 扫码加入 KWeaver 交流群
 </div>

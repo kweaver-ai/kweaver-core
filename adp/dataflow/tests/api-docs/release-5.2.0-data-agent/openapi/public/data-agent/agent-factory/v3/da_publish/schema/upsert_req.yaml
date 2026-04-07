@@ -1,0 +1,67 @@
+upsert_req:
+  type: object
+  properties:
+    business_domain_id:
+      type: string
+      description: 业务域ID
+    category_ids:
+      type: array
+      description: 分类ID数组
+      items:
+        type: string
+        description: 分类ID
+    description:
+      type: string
+      description: 发布描述
+    publish_to_where:
+      type: array
+      description: |
+        - 发布到的目标
+          - custom_space: 发布到自定义空间
+          - square: 发布到广场
+      items:
+        type: string
+        enum: [ "custom_space", "square" ]
+    # custom_space_ids:
+    #   type: array
+    #   description: 自定义空间ID列表，当publish_to包含custom_space时有效
+    #   items:
+    #     type: string
+    #     description: 自定义空间ID
+    pms_control:  
+      type: object
+      description: 权限控制信息
+      properties:
+        role_ids:
+          type: array
+          description: 角色列表
+          items:
+            type: string
+            description: 角色ID
+        user_ids:
+          type: array
+          description: 用户列表
+          items:
+            type: string
+            description: 用户ID
+        user_group_ids:
+          type: array
+          description: 用户组列表
+          items:
+            type: string
+            description: 用户组ID
+        department_ids:
+          type: array
+          description: 部门列表
+          items:
+            type: string
+            description: 部门ID
+        app_account_ids:
+          type: array
+          description: 应用账号列表
+          items:
+            type: string
+            description: 应用账号ID
+    publish_to_bes:
+      $ref: './publish_to_bes.yaml#/publish_to_bes'
+

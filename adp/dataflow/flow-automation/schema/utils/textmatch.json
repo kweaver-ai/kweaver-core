@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "匹配文本字符串内容",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "matchtype": {
+                    "type": "string",
+                    "enum": [
+                        "CN_ID_CARD",
+                        "CN_PHONE_NUMBER",
+                        "EMAIL",
+                        "NUMBER",
+                        "CN_BANK_CARD_NUMBER"
+                    ]
+                },
+                "text": {
+                    "type": "string",
+                    "maxLength": 2048
+                }
+            },
+            "required": [
+                "text",
+                "matchtype"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

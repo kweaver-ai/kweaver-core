@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: MCP服务公共接口
+  version: 2.0.0
+  description: |
+    本OpenAPI文档包含MCP服务器配置管理接口、MCP服务市场接口、MCP服务代理接口，涵盖服务端与代理端所有RESTful接口，便于统一查阅与开发。
+servers:
+  - url: http://localhost:8080
+security:
+  - BearerAuth: []
+tags:
+  - name: MCP服务管理
+    description: MCP Server 的注册、解析、删除、查询、详情、更新等接口
+  - name: MCP服务市场
+    description: MCP服务市场管理接口
+paths:
+  # 服务端接口
+  /api/agent-operator-integration/v1/mcp/list:
+    get:
+      tags: [MCP服务管理]
+      summary: 获取MCP_Server列表
+      description: test
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token，格式：Bearer <token>
+        - name: page
+          in: query
+          description: 页码，从1开始，默认为1
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: 每页数量，默认为10，最大为100，当page_size为-1时，返回所有信息
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: status
+          in: query
+          description: 状态，draft:草稿，未发布; published:已发布; offline:已下线; editing:发布编辑中
+          schema:
+            type: string
+            enum: [draft, published, offline, editing]
+        - name: name
+          in: query
+          description: MCP Server名称
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: 分类
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回MCP Server列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServerListResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误描述
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接
+    MCPServerConfigInfo:
+      type: object
+      description: mcp server基本信息
+      properties:
+        id:
+          type: integer
+          description: MCP Server ID
+        name:
+          type: string
+          description: MCP Server名称
+        description:
+          type: string
+          description: 描述信息
+        mode:
+          type: string
+          description: 运行模式
+        url:
+          type: string
+          description: 服务URL
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: 请求头
+        command:
+          type: string
+          description: 运行命令
+        env:
+          type: object
+          additionalProperties:
+            type: string
+          description: 环境变量
+        args:
+          type: array
+          items:
+            type: string
+          description: 运行参数
+        status:
+          type: string
+          description: 状态
+          enum: [draft, published, offline, editing]
+        source:
+          type: string
+          description: 来源
+        category:
+          type: string
+          description: 分类
+        create_user:
+          type: string
+          description: 创建用户
+        create_time:
+          type: integer
+          description: 创建时间
+        update_user:
+          type: string
+          description: 更新用户
+        update_time:
+          type: integer
+          description: 更新时间
+    MCPServerListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 总数
+        page:
+          type: integer
+          description: 页码
+        page_size:
+          type: integer
+          description: 每页数量
+        total_pages:
+          type: integer
+          description: 总页数
+        has_next:
+          type: boolean
+          description: 是否有下一页
+        has_pre:
+          type: boolean
+          description: 是否有上一页
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPServerConfigInfo'

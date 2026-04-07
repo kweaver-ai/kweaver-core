@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "从 AnyData 导入 Agent 作为自定义节点",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "accessors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["user", "department", "contactor", "group"]
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "type"]
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "integer",
+      "enum": [0, 1]
+    },
+    "agent_ids": {
+      "description": "要导入的 Agent ID 列表, 默认导入所有 Agent",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ondup": {
+      "type": "integer",
+      "description": "0 - 跳过, 1 - 合并, 2 - 重命名",
+      "enum": [0, 1, 2],
+      "default": 0
+    },
+    "action_ondup": {
+      "type": "integer",
+      "description": "0 - 跳过, 1 - 覆盖, 2 - 重命名",
+      "enum": [0, 1, 2],
+      "default": 0
+    }
+  },
+  "required": ["name"]
+}

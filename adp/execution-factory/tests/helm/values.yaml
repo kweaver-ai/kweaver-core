@@ -1,0 +1,8 @@
+image:
+  registry: "acr.aishu.cn"
+  pullPolicy: IfNotPresent
+  job:
+    repository: "dip/agent-at"
+    tag: "20250418"
+dir:
+  testdir: "testcases/api/data-operator-hub"

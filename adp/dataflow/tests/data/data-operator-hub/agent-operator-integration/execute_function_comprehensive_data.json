@@ -1,0 +1,365 @@
+[
+    {
+        "title": "正常执行 + stdout/stderr 捕获",
+        "code": "import sys\n\ndef handler(event):\n    name = event.get(\"name\", \"World\")\n    print(\"stdout\")\n    sys.stderr.write(\"stderr\\n\")\n    return {\"statusCode\": 200, \"body\": f\"Hello, {name}!\"}",
+        "event": {
+            "name": "Alice"
+        },
+        "expected_status": 200,
+        "description": "测试正常执行，验证stdout和stderr捕获功能"
+    },
+    {
+        "title": "业务抛异常",
+        "code": "def handler(event):\n    raise ValueError(\"boom\")",
+        "event": {},
+        "expected_status": 500,
+        "description": "测试handler函数抛出异常时的错误处理"
+    },
+    {
+        "title": "代码里没有handler函数",
+        "code": "def not_handler(event):\n    return 123",
+        "event": {},
+        "expected_status": 400,
+        "description": "测试代码中没有handler函数时的错误处理"
+    },
+    {
+        "title": "返回值不可JSON序列化",
+        "code": "def handler(event):\n    return {\"statusCode\": 200, \"body\": set([1,2,3])}",
+        "event": {},
+        "expected_status": 500,
+        "description": "测试返回值包含不可JSON序列化对象时的错误处理"
+    },
+    {
+        "title": "超时测试",
+        "code": "import time\n\ndef handler(event):\n    time.sleep(399)\n    return {\"statusCode\": 200, \"body\": \"done\"}",
+        "event": {},
+        "expected_status": 500,
+        "description": "测试执行超时的情况"
+    },
+    {
+        "title": "网络访问测试（默认禁网）",
+        "code": "import urllib.request\n\ndef handler(event):\n    urllib.request.urlopen(\"http://example.com\", timeout=2)\n    return {\"statusCode\": 200, \"body\": \"network ok\"}",
+        "event": {},
+        "expected_status": 500,
+        "description": "测试网络访问限制"
+    },
+    {
+        "title": "文件系统写入测试",
+        "code": "def handler(event):\n    p = \"/etc/agent_test_write.txt\"\n    with open(p, \"w\") as f:\n        f.write(\"test\")\n    return {\"statusCode\": 200, \"body\": \"write ok\"}",
+        "event": {},
+        "expected_status": 500,
+        "description": "测试文件系统写入限制"
+    },
+    {
+        "title": "缺少handler_code参数",
+        "code": null,
+        "event": {},
+        "expected_status": 400,
+        "description": "测试缺少handler_code参数时的参数校验"
+    },
+    {
+        "title": "缺少event参数",
+        "code": "def handler(event):\n    return {\"statusCode\": 200, \"body\": \"ok\"}",
+        "event": null,
+        "expected_status": 400,
+        "description": "测试缺少event参数时的参数校验"
+    },
+    {
+        "title": "event类型错误",
+        "code": "def handler(event):\n    return {\"statusCode\": 200, \"body\": \"ok\"}",
+        "event": 123,
+        "expected_status": 400,
+        "description": "测试event参数类型错误时的参数校验"
+    },
+    {
+        "title": "handler_code为空字符串",
+        "code": "",
+        "event": {},
+        "expected_status": 400,
+        "description": "测试handler_code为空字符串时的参数校验"
+    },
+    {
+        "title": "Python语法错误",
+        "code": "def handler(event):\n    if True\n        return {\"statusCode\": 200, \"body\": \"ok\"}",
+        "event": {},
+        "expected_status": 400,
+        "description": "测试Python语法错误时的错误处理"
+    },
+    {
+        "title": "返回值缺少statusCode/body",
+        "code": "def handler(event):\n    return \"just a string\"",
+        "event": {},
+        "expected_status": 200,
+        "description": "测试返回值缺少statusCode/body时的处理"
+    },
+    {
+        "title": "stderr大量输出",
+        "code": "import sys\n\ndef handler(event):\n    sys.stderr.write(\"E\" * 200000)\n    return {\"statusCode\": 200, \"body\": \"ok\"}",
+        "event": {},
+        "expected_status": 200,
+        "description": "测试stderr大量输出时的截断/性能"
+    },
+    {
+        "title": "stdout大量输出",
+        "code": "def handler(event):\n    print(\"O\" * 200000)\n    return {\"statusCode\": 200, \"body\": \"ok\"}",
+        "event": {},
+        "expected_status": 200,
+        "description": "测试stdout大量输出时的截断/性能"
+    },
+    {
+        "title": "基础数据处理（字符串处理）",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    text = event.get(\"text\", \"\")\n    operation = event.get(\"operation\", \"upper\")\n    if operation == \"upper\":\n        result = text.upper()\n    elif operation == \"lower\":\n        result = text.lower()\n    elif operation == \"reverse\":\n        result = text[::-1]\n    else:\n        result = text\n    return {\"statusCode\": 200, \"body\": {\"original\": text, \"operation\": operation, \"result\": result}}",
+        "event": {
+            "text": "Hello World",
+            "operation": "upper"
+        },
+        "expected_status": 200,
+        "description": "测试字符串处理功能"
+    },
+    {
+        "title": "数值计算（数学运算）",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    a = event.get(\"a\", 0)\n    b = event.get(\"b\", 0)\n    operation = event.get(\"operation\", \"add\")\n    try:\n        if operation == \"add\":\n            result = a + b\n        elif operation == \"subtract\":\n            result = a - b\n        elif operation == \"multiply\":\n            result = a * b\n        elif operation == \"divide\":\n            if b == 0:\n                raise ValueError(\"Division by zero\")\n            result = a / b\n        else:\n            raise ValueError(f\"Unknown operation: {operation}\")\n        return {\"statusCode\": 200, \"body\": {\"a\": a, \"b\": b, \"operation\": operation, \"result\": result}}\n    except Exception as e:\n        return {\"statusCode\": 500, \"body\": {\"error\": str(e)}}",
+        "event": {
+            "a": 10,
+            "b": 5,
+            "operation": "multiply"
+        },
+        "expected_status": 200,
+        "description": "测试数学运算功能"
+    },
+    {
+        "title": "列表处理（数据转换）",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data = event.get(\"data\", [])\n    operation = event.get(\"operation\", \"filter\")\n    condition = event.get(\"condition\", {})\n    result = []\n    if operation == \"filter\":\n        threshold = condition.get(\"threshold\", 0)\n        result = [x for x in data if x > threshold]\n    elif operation == \"map\":\n        multiplier = condition.get(\"multiplier\", 1)\n        result = [x * multiplier for x in data]\n    elif operation == \"sort\":\n        reverse = condition.get(\"reverse\", False)\n        result = sorted(data, reverse=reverse)\n    elif operation == \"sum\":\n        result = sum(data)\n    else:\n        result = data\n    return {\"statusCode\": 200, \"body\": {\"original\": data, \"operation\": operation, \"result\": result}}",
+        "event": {
+            "data": [1, 5, 3, 9, 2, 7],
+            "operation": "filter",
+            "condition": {
+                "threshold": 5
+            }
+        },
+        "expected_status": 200,
+        "description": "测试列表数据处理功能"
+    },
+    {
+        "title": "字典数据处理（JSON操作）",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data1 = event.get(\"data1\", {})\n    data2 = event.get(\"data2\", {})\n    operation = event.get(\"operation\", \"merge\")\n    if operation == \"merge\":\n        result = {**data1, **data2}\n    elif operation == \"extract\":\n        keys = event.get(\"keys\", [])\n        result = {k: data1.get(k) for k in keys if k in data1}\n    elif operation == \"keys\":\n        result = list(data1.keys())\n    elif operation == \"values\":\n        result = list(data1.values())\n    else:\n        result = data1\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "data1": {
+                "name": "Alice",
+                "age": 30,
+                "city": "Beijing"
+            },
+            "data2": {
+                "age": 31,
+                "country": "China"
+            },
+            "operation": "merge"
+        },
+        "expected_status": 200,
+        "description": "测试字典数据处理功能"
+    },
+    {
+        "title": "条件判断和流程控制",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    value = event.get(\"value\", 0)\n    condition = event.get(\"condition\", \"default\")\n    if condition == \"positive\":\n        if value > 0:\n            result = \"positive\"\n        elif value < 0:\n            result = \"negative\"\n        else:\n            result = \"zero\"\n    elif condition == \"range\":\n        if 0 <= value <= 100:\n            result = \"in_range\"\n        else:\n            result = \"out_of_range\"\n    elif condition == \"even_odd\":\n        if value % 2 == 0:\n            result = \"even\"\n        else:\n            result = \"odd\"\n    else:\n        result = \"unknown\"\n    return {\"statusCode\": 200, \"body\": {\"value\": value, \"condition\": condition, \"result\": result}}",
+        "event": {
+            "value": 42,
+            "condition": "even_odd"
+        },
+        "expected_status": 200,
+        "description": "测试条件判断和流程控制"
+    },
+    {
+        "title": "异常处理和错误返回",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    try:\n        value = event.get(\"value\")\n        divisor = event.get(\"divisor\", 1)\n        if value is None:\n            raise ValueError(\"value is required\")\n        if divisor == 0:\n            raise ZeroDivisionError(\"divisor cannot be zero\")\n        result = value / divisor\n        return {\"statusCode\": 200, \"body\": {\"value\": value, \"divisor\": divisor, \"result\": result}}\n    except ValueError as e:\n        return {\"statusCode\": 400, \"body\": {\"error\": \"ValueError\", \"message\": str(e)}}\n    except ZeroDivisionError as e:\n        return {\"statusCode\": 400, \"body\": {\"error\": \"ZeroDivisionError\", \"message\": str(e)}}\n    except Exception as e:\n        return {\"statusCode\": 500, \"body\": {\"error\": type(e).__name__, \"message\": str(e)}}",
+        "event": {
+            "value": 10,
+            "divisor": 0
+        },
+        "expected_status": 200,
+        "description": "测试异常处理和错误返回"
+    },
+    {
+        "title": "日志输出测试（stdout/stderr）",
+        "code": "from typing import Dict, Any\nimport sys\n\ndef handler(event: Dict[str, Any]) -> Any:\n    message = event.get(\"message\", \"Hello\")\n    log_level = event.get(\"log_level\", \"info\")\n    print(f\"[INFO] Processing message: {message}\")\n    print(f\"[INFO] Log level: {log_level}\")\n    if log_level == \"warning\":\n        sys.stderr.write(f\"[WARNING] This is a warning message\\n\")\n    elif log_level == \"error\":\n        sys.stderr.write(f\"[ERROR] This is an error message\\n\")\n    return {\"statusCode\": 200, \"body\": {\"message\": message, \"log_level\": log_level, \"processed\": True}}",
+        "event": {
+            "message": "Test message",
+            "log_level": "warning"
+        },
+        "expected_status": 200,
+        "description": "测试stdout和stderr输出捕获"
+    },
+    {
+        "title": "JSON库使用（数据序列化/反序列化）",
+        "code": "from typing import Dict, Any\nimport json\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data = event.get(\"data\", {})\n    operation = event.get(\"operation\", \"serialize\")\n    if operation == \"serialize\":\n        json_str = json.dumps(data, ensure_ascii=False, indent=2)\n        result = {\"type\": \"string\", \"value\": json_str}\n    elif operation == \"deserialize\":\n        json_str = event.get(\"json_string\", \"{}\")\n        try:\n            parsed_data = json.loads(json_str)\n            result = {\"type\": \"dict\", \"value\": parsed_data}\n        except json.JSONDecodeError as e:\n            return {\"statusCode\": 400, \"body\": {\"error\": \"JSONDecodeError\", \"message\": str(e)}}\n    elif operation == \"pretty\":\n        json_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)\n        result = {\"type\": \"string\", \"value\": json_str}\n    else:\n        result = data\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "data": {
+                "name": "Alice",
+                "age": 30,
+                "hobbies": ["reading", "coding"]
+            },
+            "operation": "serialize"
+        },
+        "expected_status": 200,
+        "description": "测试JSON库的使用"
+    },
+    {
+        "title": "datetime库使用（日期时间处理）",
+        "code": "from typing import Dict, Any\nfrom datetime import datetime, timedelta\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"now\")\n    if operation == \"now\":\n        now = datetime.now()\n        result = {\"iso_format\": now.isoformat(), \"timestamp\": now.timestamp(), \"formatted\": now.strftime(\"%Y-%m-%d %H:%M:%S\")}\n    elif operation == \"parse\":\n        time_str = event.get(\"time_string\", \"\")\n        format_str = event.get(\"format\", \"%Y-%m-%d %H:%M:%S\")\n        try:\n            dt = datetime.strptime(time_str, format_str)\n            result = {\"parsed\": dt.isoformat(), \"timestamp\": dt.timestamp()}\n        except ValueError as e:\n            return {\"statusCode\": 400, \"body\": {\"error\": \"ValueError\", \"message\": str(e)}}\n    elif operation == \"add_days\":\n        days = event.get(\"days\", 0)\n        base_time = event.get(\"base_time\")\n        if base_time:\n            dt = datetime.fromisoformat(base_time)\n        else:\n            dt = datetime.now()\n        new_dt = dt + timedelta(days=days)\n        result = {\"original\": dt.isoformat(), \"new\": new_dt.isoformat(), \"days_added\": days}\n    elif operation == \"time_diff\":\n        time1_str = event.get(\"time1\")\n        time2_str = event.get(\"time2\")\n        dt1 = datetime.fromisoformat(time1_str)\n        dt2 = datetime.fromisoformat(time2_str)\n        diff = dt2 - dt1\n        result = {\"time1\": dt1.isoformat(), \"time2\": dt2.isoformat(), \"difference_seconds\": diff.total_seconds(), \"difference_days\": diff.days}\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "add_days",
+            "days": 7,
+            "base_time": "2025-01-01T00:00:00"
+        },
+        "expected_status": 200,
+        "description": "测试datetime库的使用"
+    },
+    {
+        "title": "re库使用（正则表达式）",
+        "code": "from typing import Dict, Any\nimport re\n\ndef handler(event: Dict[str, Any]) -> Any:\n    text = event.get(\"text\", \"\")\n    pattern = event.get(\"pattern\", \"\")\n    operation = event.get(\"operation\", \"match\")\n    if operation == \"match\":\n        matches = re.findall(pattern, text)\n        result = {\"matches\": matches, \"count\": len(matches)}\n    elif operation == \"search\":\n        match = re.search(pattern, text)\n        if match:\n            result = {\"found\": True, \"match\": match.group(), \"span\": match.span(), \"groups\": match.groups() if match.groups() else []}\n        else:\n            result = {\"found\": False}\n    elif operation == \"replace\":\n        replacement = event.get(\"replacement\", \"\")\n        new_text = re.sub(pattern, replacement, text)\n        result = {\"original\": text, \"new\": new_text, \"replaced\": text != new_text}\n    elif operation == \"split\":\n        parts = re.split(pattern, text)\n        result = {\"parts\": parts, \"count\": len(parts)}\n    elif operation == \"validate\":\n        is_valid = bool(re.match(pattern, text))\n        result = {\"text\": text, \"pattern\": pattern, \"is_valid\": is_valid}\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "text": "Contact: alice@example.com or bob@test.org",
+            "pattern": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+            "operation": "match"
+        },
+        "expected_status": 200,
+        "description": "测试re库的使用"
+    },
+    {
+        "title": "math库使用（数学运算）",
+        "code": "from typing import Dict, Any\nimport math\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"sqrt\")\n    value = event.get(\"value\", 0)\n    try:\n        if operation == \"sqrt\":\n            result = math.sqrt(value)\n        elif operation == \"pow\":\n            exponent = event.get(\"exponent\", 2)\n            result = math.pow(value, exponent)\n        elif operation == \"sin\":\n            result = math.sin(math.radians(value))\n        elif operation == \"cos\":\n            result = math.cos(math.radians(value))\n        elif operation == \"log\":\n            base = event.get(\"base\", math.e)\n            result = math.log(value, base)\n        elif operation == \"ceil\":\n            result = math.ceil(value)\n        elif operation == \"floor\":\n            result = math.floor(value)\n        elif operation == \"factorial\":\n            result = math.factorial(int(value))\n        elif operation == \"gcd\":\n            value2 = event.get(\"value2\", 1)\n            result = math.gcd(int(value), int(value2))\n        else:\n            return {\"statusCode\": 400, \"body\": {\"error\": \"Unknown operation\", \"operation\": operation}}\n        return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"input\": value, \"result\": result}}\n    except ValueError as e:\n        return {\"statusCode\": 400, \"body\": {\"error\": \"ValueError\", \"message\": str(e)}}\n    except Exception as e:\n        return {\"statusCode\": 500, \"body\": {\"error\": type(e).__name__, \"message\": str(e)}}",
+        "event": {
+            "operation": "factorial",
+            "value": 5
+        },
+        "expected_status": 200,
+        "description": "测试math库的使用"
+    },
+    {
+        "title": "random库使用（随机数生成）",
+        "code": "from typing import Dict, Any\nimport random\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"random\")\n    if operation == \"random\":\n        result = random.random()\n    elif operation == \"randint\":\n        min_val = event.get(\"min\", 1)\n        max_val = event.get(\"max\", 10)\n        result = random.randint(min_val, max_val)\n    elif operation == \"choice\":\n        choices = event.get(\"choices\", [])\n        if choices:\n            result = random.choice(choices)\n        else:\n            return {\"statusCode\": 400, \"body\": {\"error\": \"choices list is empty\"}}\n    elif operation == \"shuffle\":\n        items = event.get(\"items\", []).copy()\n        random.shuffle(items)\n        result = items\n    elif operation == \"sample\":\n        population = event.get(\"population\", [])\n        k = event.get(\"k\", 1)\n        if k > len(population):\n            return {\"statusCode\": 400, \"body\": {\"error\": \"sample size larger than population\"}}\n        result = random.sample(population, k)\n    elif operation == \"uniform\":\n        min_val = event.get(\"min\", 0.0)\n        max_val = event.get(\"max\", 1.0)\n        result = random.uniform(min_val, max_val)\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "sample",
+            "population": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "k": 3
+        },
+        "expected_status": 200,
+        "description": "测试random库的使用"
+    },
+    {
+        "title": "collections库使用（高级数据结构）",
+        "code": "from typing import Dict, Any\nfrom collections import Counter, defaultdict, deque, OrderedDict\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"counter\")\n    data = event.get(\"data\", [])\n    if operation == \"counter\":\n        counter = Counter(data)\n        result = {\"most_common\": counter.most_common(3), \"total\": sum(counter.values()), \"unique\": len(counter)}\n    elif operation == \"defaultdict\":\n        dd = defaultdict(int)\n        for item in data:\n            dd[item] += 1\n        result = dict(dd)\n    elif operation == \"deque\":\n        dq = deque(data)\n        action = event.get(\"action\", \"append\")\n        if action == \"append\":\n            value = event.get(\"value\", 0)\n            dq.append(value)\n        elif action == \"appendleft\":\n            value = event.get(\"value\", 0)\n            dq.appendleft(value)\n        elif action == \"pop\":\n            dq.pop()\n        elif action == \"popleft\":\n            dq.popleft()\n        result = list(dq)\n    elif operation == \"ordered_dict\":\n        od = OrderedDict()\n        for i, item in enumerate(data):\n            od[f\"key_{i}\"] = item\n        result = dict(od)\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "counter",
+            "data": ["apple", "banana", "apple", "orange", "banana", "apple"]
+        },
+        "expected_status": 200,
+        "description": "测试collections库的使用"
+    },
+    {
+        "title": "base64和hashlib库使用（编码和哈希）",
+        "code": "from typing import Dict, Any\nimport base64\nimport hashlib\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"encode\")\n    data = event.get(\"data\", \"\")\n    if operation == \"encode\":\n        encoded = base64.b64encode(data.encode()).decode()\n        result = {\"original\": data, \"encoded\": encoded}\n    elif operation == \"decode\":\n        try:\n            decoded = base64.b64decode(data.encode()).decode()\n            result = {\"encoded\": data, \"decoded\": decoded}\n        except Exception as e:\n            return {\"statusCode\": 400, \"body\": {\"error\": \"DecodeError\", \"message\": str(e)}}\n    elif operation == \"md5\":\n        hash_obj = hashlib.md5(data.encode())\n        result = {\"data\": data, \"hash\": hash_obj.hexdigest()}\n    elif operation == \"sha256\":\n        hash_obj = hashlib.sha256(data.encode())\n        result = {\"data\": data, \"hash\": hash_obj.hexdigest()}\n    elif operation == \"sha1\":\n        hash_obj = hashlib.sha1(data.encode())\n        result = {\"data\": data, \"hash\": hash_obj.hexdigest()}\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "sha256",
+            "data": "Hello World"
+        },
+        "expected_status": 200,
+        "description": "测试base64和hashlib库的使用"
+    },
+    {
+        "title": "itertools库使用（迭代器工具）",
+        "code": "from typing import Dict, Any\nimport itertools\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"chain\")\n    data1 = event.get(\"data1\", [])\n    data2 = event.get(\"data2\", [])\n    if operation == \"chain\":\n        result = list(itertools.chain(data1, data2))\n    elif operation == \"combinations\":\n        r = event.get(\"r\", 2)\n        result = list(itertools.combinations(data1, r))\n    elif operation == \"permutations\":\n        r = event.get(\"r\", len(data1))\n        result = list(itertools.permutations(data1, r))\n    elif operation == \"product\":\n        result = list(itertools.product(data1, data2))\n    elif operation == \"cycle\":\n        n = event.get(\"n\", 5)\n        result = list(itertools.islice(itertools.cycle(data1), n))\n    elif operation == \"repeat\":\n        value = event.get(\"value\", 0)\n        times = event.get(\"times\", 3)\n        result = list(itertools.repeat(value, times))\n    elif operation == \"count\":\n        start = event.get(\"start\", 0)\n        step = event.get(\"step\", 1)\n        n = event.get(\"n\", 5)\n        result = list(itertools.islice(itertools.count(start, step), n))\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "combinations",
+            "data1": [1, 2, 3, 4],
+            "r": 2
+        },
+        "expected_status": 200,
+        "description": "测试itertools库的使用"
+    },
+    {
+        "title": "functools库使用（函数工具）",
+        "code": "from typing import Dict, Any\nfrom functools import reduce, lru_cache, partial\n\ndef handler(event: Dict[str, Any]) -> Any:\n    operation = event.get(\"operation\", \"reduce\")\n    data = event.get(\"data\", [])\n    if operation == \"reduce\":\n        result = reduce(lambda x, y: x + y, data, 0)\n    elif operation == \"reduce_multiply\":\n        result = reduce(lambda x, y: x * y, data, 1)\n    elif operation == \"lru_cache\":\n        @lru_cache(maxsize=128)\n        def fibonacci(n):\n            if n < 2:\n                return n\n            return fibonacci(n-1) + fibonacci(n-2)\n        n = event.get(\"n\", 10)\n        result = fibonacci(n)\n    elif operation == \"partial\":\n        def power(base, exponent):\n            return base ** exponent\n        square = partial(power, exponent=2)\n        cube = partial(power, exponent=3)\n        value = event.get(\"value\", 5)\n        result = {\"value\": value, \"square\": square(value), \"cube\": cube(value)}\n    else:\n        result = {\"error\": \"Unknown operation\"}\n    return {\"statusCode\": 200, \"body\": {\"operation\": operation, \"result\": result}}",
+        "event": {
+            "operation": "reduce_multiply",
+            "data": [1, 2, 3, 4, 5]
+        },
+        "expected_status": 200,
+        "description": "测试functools库的使用"
+    },
+    {
+        "title": "用户信息处理",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    name = event.get(\"name\", \"\")\n    age = event.get(\"age\", 0)\n    city = event.get(\"city\", \"\")\n    result = {\n        \"user_info\": {\n            \"name\": name,\n            \"age\": age,\n            \"city\": city,\n            \"is_adult\": age >= 18\n        },\n        \"greeting\": f\"Hello, {name}! Welcome to {city}.\" if name and city else \"Hello!\"\n    }\n    return result",
+        "event": {
+            "name": "Alice",
+            "age": 25,
+            "city": "Beijing"
+        },
+        "expected_status": 200,
+        "description": "测试用户信息处理功能"
+    },
+    {
+        "title": "数据验证和转换",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data = event.get(\"data\", [])\n    operation = event.get(\"operation\", \"validate\")\n    if not isinstance(data, list):\n        return {\"error\": \"Invalid input\", \"message\": \"data must be a list\"}\n    if operation == \"validate\":\n        validated = []\n        errors = []\n        for i, item in enumerate(data):\n            try:\n                num = float(item)\n                validated.append(num)\n            except (ValueError, TypeError):\n                errors.append(f\"Item {i} ({item}) is not a number\")\n        result = {\"validated\": validated, \"errors\": errors, \"is_valid\": len(errors) == 0}\n    elif operation == \"convert\":\n        result = {\"original\": data, \"converted\": [str(item) for item in data]}\n    else:\n        result = {\"error\": \"Unknown operation\", \"operation\": operation}\n    return result",
+        "event": {
+            "data": [1, 2, "3", 4, "abc"],
+            "operation": "validate"
+        },
+        "expected_status": 200,
+        "description": "测试数据验证和转换功能"
+    },
+    {
+        "title": "API响应格式化",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    api_data = event.get(\"api_data\", {})\n    format_type = event.get(\"format\", \"standard\")\n    if format_type == \"standard\":\n        result = {\"statusCode\": 200, \"body\": api_data, \"timestamp\": event.get(\"timestamp\")}\n    elif format_type == \"minimal\":\n        result = api_data\n    elif format_type == \"detailed\":\n        result = {\"statusCode\": 200, \"body\": api_data, \"metadata\": {\"timestamp\": event.get(\"timestamp\"), \"request_id\": event.get(\"request_id\"), \"version\": \"1.0\"}}\n    else:\n        result = {\"statusCode\": 400, \"body\": {\"error\": \"Invalid format type\", \"format\": format_type}}\n    return result",
+        "event": {
+            "api_data": {
+                "user_id": "12345",
+                "username": "alice",
+                "email": "alice@example.com"
+            },
+            "format": "detailed",
+            "timestamp": "2025-01-01T10:00:00Z",
+            "request_id": "req-abc123"
+        },
+        "expected_status": 200,
+        "description": "测试API响应格式化功能"
+    },
+    {
+        "title": "条件过滤和排序",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    items = event.get(\"items\", [])\n    filter_key = event.get(\"filter_key\")\n    filter_value = event.get(\"filter_value\")\n    sort_key = event.get(\"sort_key\")\n    sort_reverse = event.get(\"sort_reverse\", False)\n    filtered_items = items\n    if filter_key and filter_value is not None:\n        filtered_items = [item for item in items if item.get(filter_key) == filter_value]\n    sorted_items = filtered_items\n    if sort_key:\n        sorted_items = sorted(filtered_items, key=lambda x: x.get(sort_key, 0), reverse=sort_reverse)\n    result = {\"original_count\": len(items), \"filtered_count\": len(filtered_items), \"result\": sorted_items}\n    return result",
+        "event": {
+            "items": [
+                {"id": 1, "name": "Apple", "price": 5.0, "category": "fruit"},
+                {"id": 2, "name": "Banana", "price": 3.0, "category": "fruit"},
+                {"id": 3, "name": "Carrot", "price": 2.0, "category": "vegetable"},
+                {"id": 4, "name": "Orange", "price": 4.0, "category": "fruit"}
+            ],
+            "filter_key": "category",
+            "filter_value": "fruit",
+            "sort_key": "price",
+            "sort_reverse": false
+        },
+        "expected_status": 200,
+        "description": "测试条件过滤和排序功能"
+    },
+    {
+        "title": "错误处理和默认值",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    numerator = event.get(\"numerator\", 0)\n    denominator = event.get(\"denominator\", 1)\n    operation = event.get(\"operation\", \"divide\")\n    try:\n        if operation == \"divide\":\n            if denominator == 0:\n                return {\"error\": \"Division by zero\", \"message\": \"denominator cannot be zero\"}\n            result = numerator / denominator\n        elif operation == \"multiply\":\n            result = numerator * denominator\n        elif operation == \"add\":\n            result = numerator + denominator\n        elif operation == \"subtract\":\n            result = numerator - denominator\n        else:\n            return {\"error\": \"Unknown operation\", \"operation\": operation}\n        return {\"success\": True, \"operation\": operation, \"numerator\": numerator, \"denominator\": denominator, \"result\": result}\n    except Exception as e:\n        return {\"success\": False, \"error\": type(e).__name__, \"message\": str(e)}",
+        "event": {
+            "numerator": 10,
+            "denominator": 2,
+            "operation": "divide"
+        },
+        "expected_status": 200,
+        "description": "测试错误处理和默认值"
+    },
+    {
+        "title": "数据聚合统计",
+        "code": "from typing import Dict, Any\n\ndef handler(event: Dict[str, Any]) -> Any:\n    data = event.get(\"data\", [])\n    stat_type = event.get(\"stat_type\", \"all\")\n    if not data:\n        return {\"error\": \"Empty data\", \"message\": \"data list cannot be empty\"}\n    try:\n        numbers = [float(x) for x in data]\n    except (ValueError, TypeError):\n        return {\"error\": \"Invalid data\", \"message\": \"All items must be numbers\"}\n    stats = {}\n    if stat_type in [\"all\", \"basic\"]:\n        stats[\"count\"] = len(numbers)\n        stats[\"sum\"] = sum(numbers)\n        stats[\"average\"] = sum(numbers) / len(numbers)\n        stats[\"min\"] = min(numbers)\n        stats[\"max\"] = max(numbers)\n    if stat_type in [\"all\", \"advanced\"]:\n        sorted_nums = sorted(numbers)\n        n = len(sorted_nums)\n        if n % 2 == 0:\n            stats[\"median\"] = (sorted_nums[n//2 - 1] + sorted_nums[n//2]) / 2\n        else:\n            stats[\"median\"] = sorted_nums[n//2]\n    result = {\"stat_type\": stat_type, \"statistics\": stats}\n    return result",
+        "event": {
+            "data": [10, 20, 30, 40, 50, 15, 25, 35],
+            "stat_type": "all"
+        },
+        "expected_status": 200,
+        "description": "测试数据聚合统计功能"
+    }
+]
