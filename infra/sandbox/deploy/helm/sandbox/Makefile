@@ -37,10 +37,11 @@ install-dev:
 # Install with local images
 install-local:
 	helm install sandbox ./sandbox --namespace sandbox-system --create-namespace \
-		--set controlPlane.image.repository=sandbox-control-plane \
-		--set controlPlane.image.tag=latest \
-		--set web.image.repository=sandbox-web \
-		--set web.image.tag=latest
+		--set image.registry= \
+		--set image.controlPlane.repository=sandbox-control-plane \
+		--set image.controlPlane.tag=latest \
+		--set image.web.repository=sandbox-web \
+		--set image.web.tag=latest
 
 # Upgrade the Helm chart
 upgrade:

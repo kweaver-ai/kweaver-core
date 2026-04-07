@@ -55,7 +55,20 @@ The following table lists the configurable parameters of the Sandbox chart and t
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `namespace` | Namespace for all resources | `sandbox-system` |
+| `image.registry` | Shared image registry used by chart images | `""` |
 | `imagePullPolicy` | Global image pull policy | `IfNotPresent` |
+| `image.controlPlane.repository` | Control Plane image repository | `sandbox-control-plane` |
+| `image.controlPlane.tag` | Control Plane image tag | `latest` |
+| `image.defaultTemplate.repository` | Default sandbox template image repository | `sandbox-template-python-basic` |
+| `image.defaultTemplate.tag` | Default sandbox template image tag | `v1.0.0` |
+| `image.web.repository` | Web Console image repository | `sandbox-web` |
+| `image.web.tag` | Web Console image tag | `latest` |
+| `image.mariadb.repository` | MariaDB image repository | `mariadb` |
+| `image.mariadb.tag` | MariaDB image tag | `11.2` |
+| `image.minio.repository` | MinIO image repository | `quay.io/minio/minio` |
+| `image.minio.tag` | MinIO image tag | `latest` |
+| `image.busybox.repository` | BusyBox image repository for init containers | `busybox` |
+| `image.busybox.tag` | BusyBox image tag for init containers | `1.36` |
 
 ### Control Plane Parameters
 
@@ -63,8 +76,6 @@ The following table lists the configurable parameters of the Sandbox chart and t
 |-----------|-------------|---------|
 | `controlPlane.enabled` | Enable Control Plane deployment | `true` |
 | `controlPlane.replicaCount` | Number of replicas | `1` |
-| `controlPlane.image.repository` | Control Plane image repository | `sandbox-control-plane` |
-| `controlPlane.image.tag` | Control Plane image tag | `latest` |
 | `controlPlane.service.type` | Kubernetes service type | `ClusterIP` |
 | `controlPlane.service.port` | Service port | `8000` |
 | `controlPlane.resources.requests.cpu` | CPU request | `200m` |
@@ -78,8 +89,6 @@ The following table lists the configurable parameters of the Sandbox chart and t
 |-----------|-------------|---------|
 | `web.enabled` | Enable Web Console deployment | `true` |
 | `web.replicaCount` | Number of replicas | `1` |
-| `web.image.repository` | Web Console image repository | `sandbox-web` |
-| `web.image.tag` | Web Console image tag | `latest` |
 | `web.service.port` | Service port | `80` |
 | `web.env.VITE_API_BASE_URL` | API base URL for web console | `http://sandbox-control-plane.sandbox-system.svc.cluster.local:8000` |
 
@@ -89,8 +98,6 @@ The following table lists the configurable parameters of the Sandbox chart and t
 |-----------|-------------|---------|
 | `mariadb.enabled` | Enable MariaDB deployment | `true` |
 | `mariadb.replicaCount` | Number of replicas | `1` |
-| `mariadb.image.repository` | MariaDB image repository | `mariadb` |
-| `mariadb.image.tag` | MariaDB image tag | `11.2` |
 | `mariadb.auth.rootPassword` | MariaDB root password | `password` |
 | `mariadb.auth.database` | Database name | `sandbox` |
 | `mariadb.persistence.enabled` | Enable persistence | `true` |
@@ -102,8 +109,6 @@ The following table lists the configurable parameters of the Sandbox chart and t
 |-----------|-------------|---------|
 | `minio.enabled` | Enable MinIO deployment | `true` |
 | `minio.replicaCount` | Number of replicas | `1` |
-| `minio.image.repository` | MinIO image repository | `quay.io/minio/minio` |
-| `minio.image.tag` | MinIO image tag | `latest` |
 | `minio.auth.rootUser` | MinIO root user | `minioadmin` |
 | `minio.auth.rootPassword` | MinIO root password | `minioadmin` |
 | `minio.defaultBuckets` | Default buckets to create | `["sandbox-workspace"]` |

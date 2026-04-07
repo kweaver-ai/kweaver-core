@@ -84,22 +84,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      # initContainers:
-      #   - name: wait-for-mariadb
-      #     image: busybox:1.36
-      #     command:
-      #       - sh
-      #       - -c
-      #       - |
-      #         until nc -z mariadb.{{ .Values.namespace }}.svc.cluster.local 3306; do
-      #           echo "Waiting for MariaDB..."
-      #           sleep 2
-      #         done
-      #         echo "MariaDB is ready!"
       containers:
         - name: control-plane
-          image: "{{- if .Values.controlPlane.image.registry }}{{ .Values.controlPlane.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.controlPlane.image.repository }}:{{ .Values.controlPlane.image.tag }}"
-          imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.controlPlane.repository }}:{{ .Values.image.controlPlane.tag }}"
+          imagePullPolicy: {{ .Values.image.controlPlane.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.controlPlane.service.port }}

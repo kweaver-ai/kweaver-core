@@ -59,8 +59,8 @@ spec:
     spec:
       containers:
         - name: mariadb
-          image: "{{- if .Values.mariadb.image.registry }}{{ .Values.mariadb.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
-          imagePullPolicy: {{ .Values.mariadb.image.pullPolicy }}
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.mariadb.repository }}:{{ .Values.image.mariadb.tag }}"
+          imagePullPolicy: {{ .Values.image.mariadb.pullPolicy }}
           ports:
             - name: mysql
               containerPort: 3306
