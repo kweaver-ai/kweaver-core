@@ -2,6 +2,16 @@
 
 本文件记录项目的重要变更。
 
+## [0.2.1] - 2026-04-07
+
+### 优化
+
+- 统一 `agent-observability` 与 `otelcol-contrib` Helm Chart 的镜像 values 结构，改为使用 `image.registry`、`image.repository` 与 `image.tag`，以支持离线打包从默认 values 中提取镜像。
+
+### 升级说明
+
+- 如果部署时将包含 registry 的完整镜像地址覆盖到 `image.repository`，需要按新的 Chart values 结构拆分为 `image.registry` 与 `image.repository`。
+
 ## [0.2.0] - 2026-03-31
 
 ### 优化

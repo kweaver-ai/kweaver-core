@@ -2,19 +2,38 @@
 
 # Global configuration
 namespace: sandbox-system
-imageRegistry: ""
 imagePullPolicy: IfNotPresent
+image:
+  registry: ""
+  controlPlane:
+    repository: sandbox-control-plane
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  defaultTemplate:
+    repository: sandbox-template-python-basic
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  web:
+    repository: sandbox-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  mariadb:
+    repository: mariadb
+    tag: "11.2"
+    pullPolicy: IfNotPresent
+  minio:
+    repository: quay.io/minio/minio
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  busybox:
+    repository: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
 
 # Control Plane configuration
 controlPlane:
   enabled: true
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: sandbox-control-plane
-    tag: "latest"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -59,14 +78,6 @@ controlPlane:
                     - sandbox-control-plane
             topologyKey: kubernetes.io/hostname
 
-  # Default template image configuration
-  defaultTemplate:
-    image:
-      registry: ""
-      repository: "sandbox-template-python-basic"
-      tag: "v1.0.0"
-      pullPolicy: IfNotPresent
-
   env:
     ENVIRONMENT: "staging"
     DEBUG: "false"
@@ -91,12 +102,6 @@ controlPlane:
 web:
   enabled: true
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: sandbox-web
-    tag: "latest"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -128,12 +133,6 @@ web:
 mariadb:
   enabled: true
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: mariadb
-    tag: "11.2"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -167,12 +166,6 @@ mariadb:
 minio:
   enabled: true
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: quay.io/minio/minio
-    tag: "latest"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP

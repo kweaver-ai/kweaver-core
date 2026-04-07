@@ -58,6 +58,11 @@ func NewRESTHandler() RESTHandler {
 func (h *restHandler) RegisterAPIv2(engine *gin.RouterGroup) {
 	engine.POST("/dataflow-doc/trigger/:dagId", middleware.TokenAuth(), h.trigger)
 	engine.POST("/dataflow-doc/complete", middleware.TokenAuth(), h.complete)
+
+	// 文件访问接口
+	engine.GET("/dataflow-doc/files", middleware.TokenAuth(), h.listFiles)
+	engine.GET("/dataflow-doc/files/:file_id", middleware.TokenAuth(), h.getFile)
+	engine.GET("/dataflow-doc/files/:file_id/download", middleware.TokenAuth(), h.downloadFile)
 }
 
 // TriggerMode defines the trigger mode type

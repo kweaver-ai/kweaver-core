@@ -15,3 +15,5 @@ __debug_*
 # Mock server dependencies
 mock-server/go.mod
 mock-server/go.sum
+
+.env.local

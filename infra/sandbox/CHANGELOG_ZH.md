@@ -2,6 +2,20 @@
 
 本分支 (`feature/803264`) 中新增的所有功能和特性记录如下。
 
+## [0.3.2]
+
+### 🔧 改进
+
+- **Helm Chart 镜像提取兼容性**
+  - 将 sandbox Helm Chart 镜像配置统一规范到顶层 `image` values 结构
+  - 将 control plane、web、MariaDB、MinIO、默认模板和 BusyBox 镜像引用改为使用 `image.<name>.repository` 与 `image.<name>.tag`
+  - 移除 Web initContainer 中硬编码的 BusyBox 镜像，使离线打包工具可从 chart values 中提取该镜像
+  - 同步更新 Helm README、本地安装覆盖参数与组件镜像元数据，保持与新镜像结构一致
+
+---
+
+*发布于 2026-04-07*
+
 ## [0.3.1]
 
 ### 🚀 新功能

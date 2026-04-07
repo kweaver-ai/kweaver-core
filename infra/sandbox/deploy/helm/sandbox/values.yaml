@@ -4,16 +4,35 @@ namespace: anyshare
 imagePullPolicy: IfNotPresent
 image:
   registry: "acr.aishu.cn"
+  controlPlane:
+    repository: dip/sandbox-control-plane
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  defaultTemplate:
+    repository: dip/sandbox-template-python-basic
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  web:
+    repository: sandbox-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  mariadb:
+    repository: mariadb
+    tag: "11.2"
+    pullPolicy: IfNotPresent
+  minio:
+    repository: sandbox/minio
+    tag: "RELEASE.2025-09-07T16-13-09Z"
+    pullPolicy: IfNotPresent
+  busybox:
+    repository: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
 
 # Control Plane configuration
 controlPlane:
   enabled: true
   replicaCount: 1
-  image:
-    registry: ""
-    repository: dip/sandbox-control-plane
-    tag: "v1.0.0"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -58,14 +77,6 @@ controlPlane:
                     - sandbox-control-plane
             topologyKey: kubernetes.io/hostname
 
-  # Default template image configuration
-  defaultTemplate:
-    image:
-      registry: ""
-      repository: "dip/sandbox-template-python-basic"
-      tag: "v1.0.0"
-      pullPolicy: IfNotPresent
-
   env:
     ENVIRONMENT: "staging"
     DEBUG: "false"
@@ -92,12 +103,6 @@ controlPlane:
 web:
   enabled: false
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: sandbox-web
-    tag: "latest"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -129,12 +134,6 @@ web:
 mariadb:
   enabled: false
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: mariadb
-    tag: "11.2"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -168,12 +167,6 @@ mariadb:
 minio:
   enabled: true
   replicaCount: 1
-
-  image:
-    registry: ""
-    repository: sandbox/minio
-    tag: "RELEASE.2025-09-07T16-13-09Z"
-    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP

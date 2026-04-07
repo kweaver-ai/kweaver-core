@@ -6,130 +6,127 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/span/v2/field"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentrespvo"
 	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
 	agentresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/resp"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"go.opentelemetry.io/otel/log"
 )
 
-// NOTE: 失败日志上报
-func LogFailedExecution(ctx context.Context, req *agentreq.ChatReq, err error, resp *agentresp.ChatResp) {
-	options := []field.LogOptionFunc{}
-
+func LogFailedExecution(ctx context.Context, req *agentreq.ChatReq, execErr error, resp *agentresp.ChatResp) {
 	toolCallCount := 0
-
 	toolCallFailedCount := 0
 
 	if req.ConversationSessionID == "" {
 		timestamp := cutil.GetCurrentMSTimestamp()
 		req.ConversationSessionID = fmt.Sprintf("%s-%s", req.ConversationID, strconv.FormatInt(timestamp, 10))
 	}
-	// // 如果传入的resp是nil或者是空，则赋为零值
+
+	var progressAttr log.KeyValue
+	var totalTimeAttr log.KeyValue
+	var totalTokensAttr log.KeyValue
+
 	if resp == nil {
-		totalTimeAttr := field.NewAttribute("total_time", field.MallocJsonField(0))
-		totalTokensAttr := field.NewAttribute("total_tokens", field.MallocJsonField(0))
-		// 空json字符串
-		progressAttr := field.NewAttribute("progress", field.MallocJsonField("[]"))
-		toolCallCountAttr := field.NewAttribute("tool_call_count", field.MallocJsonField(0))
-		toolCallFailedCountAttr := field.NewAttribute("tool_call_failed_count", field.MallocJsonField(0))
-		options = append(options, field.WithAttribute(progressAttr))
-		options = append(options, field.WithAttribute(totalTokensAttr))
-		options = append(options, field.WithAttribute(totalTimeAttr))
-		options = append(options, field.WithAttribute(toolCallCountAttr))
-		options = append(options, field.WithAttribute(toolCallFailedCountAttr))
-	} else {
-		// NNOTE:获取progress 避免panic
-		var totaltime float64
+		totalTimeAttr = log.Float64("total_time", 0)
+		totalTokensAttr = log.Int64("total_tokens", 0)
+		progressAttr = log.String("progress", "[]")
+		toolCallCountAttr := log.Int("tool_call_count", 0)
+		toolCallFailedCountAttr := log.Int("tool_call_failed_count", 0)
 
-		var totalTokens int64
+		otellog.LogInfo(ctx, "After process failed",
+			totalTimeAttr,
+			totalTokensAttr,
+			progressAttr,
+			toolCallCountAttr,
+			toolCallFailedCountAttr,
+			log.String("agent_id", req.AgentID),
+			log.String("agent_version", req.AgentVersion),
+			log.String("user_id", req.UserID),
+			log.String("conversation_id", req.ConversationID),
+			log.String("session_id", req.ConversationSessionID),
+			log.String("call_type", string(req.CallType)),
+			log.String("run_id", req.AgentRunID),
+			log.Float64("ttft", float64(req.TTFT)),
+			log.String("status", "failed"),
+			log.String("input_message", req.Query),
+			log.Int64("start_time", req.ReqStartTime),
+			log.Int64("end_time", cutil.GetCurrentMSTimestamp()),
+		)
+		return
+	}
 
-		if assistantContent, ok := resp.Message.Content.(map[string]interface{}); ok {
-			// NOTE: 获取middler answer 的progress
-			// NOTE: 1.判断是否存在middle_answer
-			if middleAnswerVal, ok := assistantContent["middle_answer"]; ok {
-				// NOTE: 2.断言middle_answer
-				if middleAnswer, ok := middleAnswerVal.(map[string]interface{}); ok {
-					// NOTE: 3.判断middle_answer中是否存在progress
-					if val, ok := middleAnswer["progress"]; ok {
-						progressJsonStr, _ := json.Marshal(val)
-						options = append(options, field.WithAttribute(field.NewAttribute("progress", field.MallocJsonField(string(progressJsonStr)))))
+	var totaltime float64
+	var totalTokens int64
 
-						progresses, ok := val.([]interface{})
-						if ok {
-							for _, val := range progresses {
-								progress, ok := val.(map[string]interface{})
-								if !ok {
-									continue
-								}
+	if assistantContent, ok := resp.Message.Content.(map[string]interface{}); ok {
+		if middleAnswerVal, ok := assistantContent["middle_answer"]; ok {
+			if middleAnswer, ok := middleAnswerVal.(map[string]interface{}); ok {
+				if val, ok := middleAnswer["progress"]; ok {
+					progressJsonStr, _ := json.Marshal(val)
+					progressAttr = log.String("progress", string(progressJsonStr))
 
-								if stage, ok := progress["stage"].(string); ok {
-									if stage == "skill" {
-										toolCallCount++
+					progresses, ok := val.([]interface{})
+					if ok {
+						for _, val := range progresses {
+							progress, ok := val.(map[string]interface{})
+							if !ok {
+								continue
+							}
 
-										if status, ok := progress["status"].(string); ok && status == "failed" {
-											toolCallFailedCount++
-										}
+							if stage, ok := progress["stage"].(string); ok {
+								if stage == "skill" {
+									toolCallCount++
+
+									if status, ok := progress["status"].(string); ok && status == "failed" {
+										toolCallFailedCount++
 									}
 								}
 							}
 						}
-					} else {
-						options = append(options, field.WithAttribute(field.NewAttribute("progress", field.MallocJsonField([]agentrespvo.Progress{}))))
 					}
 				} else {
-					options = append(options, field.WithAttribute(field.NewAttribute("progress", field.MallocJsonField([]agentrespvo.Progress{}))))
+					progressJsonStr, _ := json.Marshal([]agentrespvo.Progress{})
+					progressAttr = log.String("progress", string(progressJsonStr))
 				}
 			} else {
-				options = append(options, field.WithAttribute(field.NewAttribute("progress", field.MallocJsonField([]agentrespvo.Progress{}))))
+				progressJsonStr, _ := json.Marshal([]agentrespvo.Progress{})
+				progressAttr = log.String("progress", string(progressJsonStr))
 			}
 		} else {
-			options = append(options, field.WithAttribute(field.NewAttribute("progress", field.MallocJsonField([]agentrespvo.Progress{}))))
+			progressJsonStr, _ := json.Marshal([]agentrespvo.Progress{})
+			progressAttr = log.String("progress", string(progressJsonStr))
 		}
-
-		if resp.Message.Ext != nil {
-			totaltime = resp.Message.Ext.TotalTime
-			totalTokens = resp.Message.Ext.TotalTokens
-		}
-		// total time单位是s，存进去变成毫秒
-		totalTimeAttr := field.NewAttribute("total_time", field.MallocJsonField(totaltime*1000))
-		totalTokensAttr := field.NewAttribute("total_tokens", field.MallocJsonField(totalTokens))
-		options = append(options, field.WithAttribute(totalTokensAttr))
-		options = append(options, field.WithAttribute(totalTimeAttr))
+	} else {
+		progressJsonStr, _ := json.Marshal([]agentrespvo.Progress{})
+		progressAttr = log.String("progress", string(progressJsonStr))
 	}
 
-	agentIdAttr := field.NewAttribute("agent_id", field.MallocJsonField(req.AgentID))
-	agentVersionAttr := field.NewAttribute("agent_version", field.MallocJsonField(req.AgentVersion))
-	userIDAttr := field.NewAttribute("user_id", field.MallocJsonField(req.UserID))
-	conversationIDAttr := field.NewAttribute("conversation_id", field.MallocJsonField(req.ConversationID))
-	sessionIDAttr := field.NewAttribute("session_id", field.MallocJsonField(req.ConversationSessionID))
-	callTypeAttr := field.NewAttribute("call_type", field.MallocJsonField(req.CallType))
-	runIDAttr := field.NewAttribute("run_id", field.MallocJsonField(req.AgentRunID))
-	ttftAttr := field.NewAttribute("ttft", field.MallocJsonField(req.TTFT))
-	executeStatus := field.NewAttribute("status", field.MallocJsonField("failed"))
+	if resp.Message.Ext != nil {
+		totaltime = resp.Message.Ext.TotalTime
+		totalTokens = resp.Message.Ext.TotalTokens
+	}
 
-	inputMessage := field.NewAttribute("input_message", field.MallocJsonField(req.Query))
-	startTime := field.NewAttribute("start_time", field.MallocJsonField(req.ReqStartTime))
-	endTime := field.NewAttribute("end_time", field.MallocJsonField(cutil.GetCurrentMSTimestamp()))
+	totalTimeAttr = log.Float64("total_time", totaltime*1000)
+	totalTokensAttr = log.Int64("total_tokens", totalTokens)
 
-	toolCallCountAttr := field.NewAttribute("tool_call_count", field.MallocJsonField(toolCallCount))
-	toolCallFailedCountAttr := field.NewAttribute("tool_call_failed_count", field.MallocJsonField(toolCallFailedCount))
-	options = append(options, field.WithAttribute(toolCallCountAttr))
-	options = append(options, field.WithAttribute(toolCallFailedCountAttr))
-
-	options = append(options, field.WithAttribute(agentIdAttr))
-	options = append(options, field.WithAttribute(agentVersionAttr))
-	options = append(options, field.WithAttribute(userIDAttr))
-	options = append(options, field.WithAttribute(conversationIDAttr))
-	options = append(options, field.WithAttribute(sessionIDAttr))
-	options = append(options, field.WithAttribute(callTypeAttr))
-	options = append(options, field.WithAttribute(runIDAttr))
-	options = append(options, field.WithAttribute(ttftAttr))
-	options = append(options, field.WithAttribute(executeStatus))
-	options = append(options, field.WithAttribute(inputMessage))
-	options = append(options, field.WithAttribute(startTime))
-	options = append(options, field.WithAttribute(endTime))
-
-	o11y.InfoWithAttr(ctx, "After process failed", options...)
+	otellog.LogInfo(ctx, "After process failed",
+		totalTimeAttr,
+		totalTokensAttr,
+		progressAttr,
+		log.Int("tool_call_count", toolCallCount),
+		log.Int("tool_call_failed_count", toolCallFailedCount),
+		log.String("agent_id", req.AgentID),
+		log.String("agent_version", req.AgentVersion),
+		log.String("user_id", req.UserID),
+		log.String("conversation_id", req.ConversationID),
+		log.String("session_id", req.ConversationSessionID),
+		log.String("call_type", string(req.CallType)),
+		log.String("run_id", req.AgentRunID),
+		log.Float64("ttft", float64(req.TTFT)),
+		log.String("status", "failed"),
+		log.String("input_message", req.Query),
+		log.Int64("start_time", req.ReqStartTime),
+		log.Int64("end_time", cutil.GetCurrentMSTimestamp()),
+	)
 }

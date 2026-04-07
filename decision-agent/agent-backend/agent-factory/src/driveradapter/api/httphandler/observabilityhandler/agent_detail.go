@@ -7,7 +7,8 @@ import (
 	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -31,38 +32,42 @@ func (h *observabilityHTTPHandler) AgentDetail(c *gin.Context) {
 	agentID := c.Param("agent_id")
 	if agentID == "" {
 		h.logger.Errorf("[AgentDetail] agent_id is required")
-		o11y.Error(c, "[AgentDetail] agent_id is required")
-		httpErr := capierr.New400Err(c, "[AgentDetail] agent_id is required")
-		rest.ReplyError(c, httpErr)
+		err := capierr.New400Err(c, "[AgentDetail] agent_id is required")
+		otellog.LogError(c.Request.Context(), "[AgentDetail] agent_id is required", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 2. 获取请求参数
-	var req observabilityreq.AgentDetailReq
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var agentDetailReq observabilityreq.AgentDetailReq
+	if err := c.ShouldBindJSON(&agentDetailReq); err != nil {
 		h.logger.Errorf("[AgentDetail] should bind json err: %v", err)
-		o11y.Error(c, fmt.Sprintf("[AgentDetail] should bind json err: %v", err))
 		httpErr := capierr.New400Err(c, fmt.Sprintf("[AgentDetail] should bind json err: %v", err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("[AgentDetail] should bind json err: %v", err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, httpErr)
 
 		return
 	}
 
 	// 3. 参数验证
-	if req.StartTime == 0 || req.EndTime == 0 {
+	if agentDetailReq.StartTime == 0 || agentDetailReq.EndTime == 0 {
 		err := capierr.New400Err(c, "[AgentDetail] start_time and end_time are required")
 		h.logger.Errorf("[AgentDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[AgentDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[AgentDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
 	}
 
-	if req.StartTime > req.EndTime {
+	if agentDetailReq.StartTime > agentDetailReq.EndTime {
 		err := capierr.New400Err(c, "[AgentDetail] start_time cannot be greater than end_time")
 		h.logger.Errorf("[AgentDetail] time range is invalid: %v", err)
-		o11y.Error(c, "[AgentDetail] time range is invalid")
+		otellog.LogError(c.Request.Context(), "[AgentDetail] time range is invalid", err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		rest.ReplyError(c, err)
 
 		return
@@ -71,27 +76,27 @@ func (h *observabilityHTTPHandler) AgentDetail(c *gin.Context) {
 	// 4. 获取用户信息
 	user := chelper.GetVisitorFromCtx(c)
 	if user == nil {
-		httpErr := capierr.New404Err(c, "[AgentDetail] user not found")
-		o11y.Error(c, "[AgentDetail] user not found")
-		h.logger.Errorf("[AgentDetail] user not found: %v", httpErr)
-		rest.ReplyError(c, httpErr)
+		err := capierr.New404Err(c, "[AgentDetail] user not found")
+		otellog.LogError(c.Request.Context(), "[AgentDetail] user not found", err)
+		h.logger.Errorf("[AgentDetail] user not found: %v", err)
+		rest.ReplyError(c, err)
 
 		return
 	}
 
 	// 5. 设置用户信息到请求对象中
-	req.XAccountID = user.ID
-	req.XAccountType.LoadFromMDLVisitorType(user.Type)
+	agentDetailReq.XAccountID = user.ID
+	agentDetailReq.XAccountType.LoadFromMDLVisitorType(user.Type)
 
 	// 6. 设置AgentID到请求对象中
-	req.AgentID = agentID
+	agentDetailReq.AgentID = agentID
 
 	// 7. 调用服务
 	ctx := c.Request.Context()
-	data, httpErr := h.observabilitySvc.AgentDetail(ctx, &req)
+	data, httpErr := h.observabilitySvc.AgentDetail(ctx, &agentDetailReq)
 
 	if httpErr != nil {
-		o11y.Error(ctx, fmt.Sprintf("[AgentDetail] agent detail query failed: %v", httpErr.Error()))
+		otellog.LogError(ctx, fmt.Sprintf("[AgentDetail] agent detail query failed: %v", httpErr.Error()), httpErr)
 		h.logger.Errorf("[AgentDetail] agent detail query failed: %v", httpErr.Error())
 		rest.ReplyError(c, httpErr)
 

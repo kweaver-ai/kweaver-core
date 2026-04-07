@@ -44,9 +44,7 @@ func (s *httpServer) runPubRouter(engine *gin.Engine, basePath string) {
 		capimiddleware.HandleBizDomain(false),
 
 		// 注入OpenTelemetry中间件
-		otelgin.Middleware(global.GConfig.OtelConfig.ServiceName),
-		// 注入logs和metrics
-		global.GDependencyInjector.Middleware(),
+		otelgin.Middleware(global.GConfig.OtelV2Config.ServiceName),
 	)
 
 	s.agentHandler.RegPubRouter(router)
@@ -67,9 +65,7 @@ func (s *httpServer) runPriRouter(engine *gin.Engine, basePath string) {
 		capimiddleware.HandleBizDomain(true),
 
 		// 注入OpenTelemetry中间件
-		otelgin.Middleware(global.GConfig.OtelConfig.ServiceName),
-		// 注入logs和metrics
-		global.GDependencyInjector.Middleware(),
+		otelgin.Middleware(global.GConfig.OtelV2Config.ServiceName),
 	)
 
 	s.agentHandler.RegPriRouter(internalRouterG)

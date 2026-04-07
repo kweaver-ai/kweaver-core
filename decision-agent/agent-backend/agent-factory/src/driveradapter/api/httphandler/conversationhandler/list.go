@@ -9,8 +9,8 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/apierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -44,7 +44,8 @@ func (h *conversationHTTPHandler) List(c *gin.Context) {
 	page, err := strconv.Atoi(pageStr)
 	if err != nil {
 		h.logger.Errorf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
 		rest.ReplyError(c, httpErr)
 
@@ -56,7 +57,8 @@ func (h *conversationHTTPHandler) List(c *gin.Context) {
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
 		h.logger.Errorf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
 		rest.ReplyError(c, httpErr)
 
@@ -70,7 +72,8 @@ func (h *conversationHTTPHandler) List(c *gin.Context) {
 	list, total, err := h.conversationSvc.List(ctx, req)
 	if err != nil {
 		h.logger.Errorf("list conversation failed cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		o11y.Error(c, fmt.Sprintf("list conversation failed cause: %v, err trace: %+v\n", errors.Cause(err), err))
+		otellog.LogError(c.Request.Context(), fmt.Sprintf("list conversation failed cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
+		oteltrace.EndSpan(c.Request.Context(), err)
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, apierr.ConversationGetListFailed).WithErrorDetails(
 			"list conversation failed:" + errors.Cause(err).Error(),
 		)

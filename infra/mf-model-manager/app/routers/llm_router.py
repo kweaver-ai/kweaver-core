@@ -148,10 +148,10 @@ async def llm_used_openai2(request: LLMUsedOpenAI, head_request: Request):
     return await used_model_openai(request.dict(), userId, language, func_module)
 
 
-@llm_route.post("/encode")
-async def encode(request: Request, params_json: dict = Body(...)):
-    userId, language, role = await get_user_info(request)
-    return await encode_endpoint(params_json, userId, language)
+# @llm_route.post("/encode")
+# async def encode(request: Request, params_json: dict = Body(...)):
+#     userId, language, role = await get_user_info(request)
+#     return await encode_endpoint(params_json, userId, language)
 
 
 @llm_route.get("/llm/monitor/list")

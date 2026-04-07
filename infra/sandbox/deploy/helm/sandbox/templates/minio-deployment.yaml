@@ -59,8 +59,8 @@ spec:
     spec:
       containers:
         - name: minio
-          image: "{{- if .Values.minio.image.registry }}{{ .Values.minio.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}"
-          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.minio.repository }}:{{ .Values.image.minio.tag }}"
+          imagePullPolicy: {{ .Values.image.minio.pullPolicy }}
           args:
             - server
             - /data

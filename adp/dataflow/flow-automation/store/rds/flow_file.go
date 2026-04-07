@@ -125,7 +125,28 @@ func (d *flowFileDao) List(ctx context.Context, opts *rds.FlowFileQueryOptions) 
 		args = append(args, opts.ExpiresBefore)
 	}
 
-	sqlStr := fmt.Sprintf("SELECT f_id, f_dag_id, f_dag_instance_id, f_storage_id, f_status, f_name, f_expires_at, f_created_at, f_updated_at FROM t_flow_file%s ORDER BY f_id", where)
+	sqlStr := fmt.Sprintf("SELECT f_id, f_dag_id, f_dag_instance_id, f_storage_id, f_status, f_name, f_expires_at, f_created_at, f_updated_at FROM t_flow_file%s", where)
+
+	// 构建排序子句
+	orderBy := "f_id"
+	orderDir := "ASC"
+	if opts != nil && opts.OrderBy != "" {
+		// 映射字段名，防止 SQL 注入
+		fieldMap := map[string]string{
+			"id":         "f_id",
+			"created_at": "f_created_at",
+			"updated_at": "f_updated_at",
+			"status":     "f_status",
+		}
+		if dbField, ok := fieldMap[opts.OrderBy]; ok {
+			orderBy = dbField
+		}
+	}
+	if opts != nil && opts.Order != "" && (strings.ToUpper(opts.Order) == "DESC" || strings.ToUpper(opts.Order) == "ASC") {
+		orderDir = strings.ToUpper(opts.Order)
+	}
+	sqlStr = fmt.Sprintf("%s ORDER BY %s %s", sqlStr, orderBy, orderDir)
+
 	if opts.Limit > 0 {
 		sqlStr += " LIMIT ? OFFSET ?"
 		args = append(args, opts.Limit, opts.Offset)
@@ -189,6 +210,10 @@ func (d *flowFileDao) Update(ctx context.Context, id uint64, params *rds.FlowFil
 	if params.ExpiresAt != nil {
 		setClauses = append(setClauses, "f_expires_at = ?")
 		args = append(args, *params.ExpiresAt)
+	}
+	if params.DagInstanceID != nil {
+		setClauses = append(setClauses, "f_dag_instance_id = ?")
+		args = append(args, *params.DagInstanceID)
 	}
 
 	if len(setClauses) == 0 {

@@ -85,7 +85,8 @@ spec:
       {{- end }}
       initContainers:
         - name: wait-for-control-plane
-          image: busybox:1.36
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.busybox.repository }}:{{ .Values.image.busybox.tag }}"
+          imagePullPolicy: {{ .Values.image.busybox.pullPolicy }}
           command:
             - sh
             - -c
@@ -97,8 +98,8 @@ spec:
               echo "Control Plane is ready!"
       containers:
         - name: web
-          image: "{{- if .Values.web.image.registry }}{{ .Values.web.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
-          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.web.repository }}:{{ .Values.image.web.tag }}"
+          imagePullPolicy: {{ .Values.image.web.pullPolicy }}
           # NOTE: DO NOT add VITE_API_BASE_URL environment variable here.
           # The frontend uses runtime URL detection via getApiBaseUrl()
           # which dynamically infers the API URL from the browser's location.
@@ -135,4 +136,3 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
-

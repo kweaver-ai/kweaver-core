@@ -1,5 +1,5 @@
 # Changelog
-## 0.5.2
+## 0.5.3
 
 ### Refactoring & Cleanup
 
@@ -9,6 +9,14 @@
 ### Testing
 
 - Add unit tests for API chat handler and API doc resume-chat flow
+
+## 0.5.2
+
+### Bug Fixes
+
+- Fix logger method calls in agent-executor dolphin paths
+  - Replace `warning` with `warn` when dolphin trace listener creation fails
+  - Replace `warning` with `warn` when run-agent options fall back to auto-generated conversation id
 
 ## 0.5.1
 
