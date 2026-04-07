@@ -234,11 +234,11 @@ func (m *mgnt) triggerFormUpload(ctx context.Context, params *TriggerDataflowDoc
 	}
 
 	// 更新flow_file的dag_instance_id
-	dagInsID := dagIns.ID
-	if err := rds.GetFlowFileDao().Update(ctx, flowFile.ID, &rds.FlowFileUpdateParams{}); err != nil {
+	if err := rds.GetFlowFileDao().Update(ctx, flowFile.ID, &rds.FlowFileUpdateParams{
+		DagInstanceID: &dagIns.ID,
+	}); err != nil {
 		log.Warnf("[triggerFormUpload] Update dag_instance_id err: %s", err.Error())
 	}
-	_ = dagInsID // dag_instance_id需要单独字段存储，这里暂时忽略
 
 	return &TriggerDataflowDocResult{
 		DagID:         params.DagID,
@@ -321,6 +321,13 @@ func (m *mgnt) triggerLocalUpload(ctx context.Context, params *TriggerDataflowDo
 		return nil, ierrors.NewIError(ierrors.InternalError, "", nil)
 	}
 
+	// 更新flow_file的dag_instance_id
+	if err := rds.GetFlowFileDao().Update(ctx, flowFile.ID, &rds.FlowFileUpdateParams{
+		DagInstanceID: &dagIns.ID,
+	}); err != nil {
+		log.Warnf("[triggerLocalUpload] Update dag_instance_id err: %s", err.Error())
+	}
+
 	return &TriggerDataflowDocResult{
 		DagID:         params.DagID,
 		DagInstanceID: dagIns.ID,
@@ -399,6 +406,13 @@ func (m *mgnt) triggerRemoteDownload(ctx context.Context, params *TriggerDataflo
 		rds.GetFlowFileDownloadJobDao().Delete(ctx, downloadJob.ID)
 		rds.GetFlowFileDao().Delete(ctx, flowFile.ID)
 		return nil, ierrors.NewIError(ierrors.InternalError, "", nil)
+	}
+
+	// 更新flow_file的dag_instance_id
+	if err := rds.GetFlowFileDao().Update(ctx, flowFile.ID, &rds.FlowFileUpdateParams{
+		DagInstanceID: &dagIns.ID,
+	}); err != nil {
+		log.Warnf("[triggerRemoteDownload] Update dag_instance_id err: %s", err.Error())
 	}
 
 	return &TriggerDataflowDocResult{

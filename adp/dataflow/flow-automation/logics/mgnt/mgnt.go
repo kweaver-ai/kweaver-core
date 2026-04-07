@@ -290,6 +290,29 @@ type S3ValidationResult struct {
 	Message        string `json:"message,omitempty"`
 }
 
+// FlowFileInfo 文件信息
+type FlowFileInfo struct {
+	FileID        string `json:"file_id"`
+	DocID         string `json:"docid"`
+	DagID         string `json:"dag_id,omitempty"`
+	DagInstanceID string `json:"dag_instance_id,omitempty"`
+	Name          string `json:"name"`
+	Status        string `json:"status"`
+	Size          int64  `json:"size"`
+	ContentType   string `json:"content_type"`
+	CreatedAt     int64  `json:"created_at"`
+	UpdatedAt     int64  `json:"updated_at,omitempty"`
+}
+
+// FlowFileDownloadInfo 文件下载信息
+type FlowFileDownloadInfo struct {
+	FileID string `json:"file_id"`
+	DocID  string `json:"docid"`
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	Size   int64  `json:"size"`
+}
+
 // MgntHandler mgnt interface method
 type MgntHandler interface { //nolint
 	CreateDag(ctx context.Context, param *CreateDagReq, userInfo *drivenadapters.UserInfo) (string, error)
@@ -365,6 +388,11 @@ type MgntHandler interface { //nolint
 	// Dataflow 文件子系统接口
 	TriggerDataflowDoc(ctx context.Context, params *TriggerDataflowDocParams, userInfo *drivenadapters.UserInfo) (*TriggerDataflowDocResult, error)
 	CompleteDataflowDocUpload(ctx context.Context, params *CompleteDataflowDocUploadParams, userInfo *drivenadapters.UserInfo) (*CompleteDataflowDocUploadResult, error)
+
+	// Dataflow 文件访问接口
+	ListFlowFiles(ctx context.Context, dagInstanceID string, userInfo *drivenadapters.UserInfo) ([]*FlowFileInfo, error)
+	GetFlowFile(ctx context.Context, fileID string, userInfo *drivenadapters.UserInfo) (*FlowFileInfo, error)
+	GetFlowFileDownloadURL(ctx context.Context, fileID string, userInfo *drivenadapters.UserInfo) (*FlowFileDownloadInfo, error)
 }
 
 var (
@@ -407,6 +435,8 @@ type mgnt struct {
 	bizDomain         drivenadapters.BusinessDomain
 	s3Adapter         drivenadapters.S3Adapter  // S3适配器
 	ossGateway        drivenadapters.OssGateWay // OssGateway文件存储
+	flowFileDao       rds.FlowFileDao           // FlowFile DAO
+	flowStorageDao    rds.FlowStorageDao        // FlowStorage DAO
 }
 
 // NewMgnt mgnt instance
@@ -456,6 +486,10 @@ func NewMgnt() MgntHandler {
 
 		// Initialize OssGateway for Dataflow file subsystem
 		mIns.ossGateway = drivenadapters.NewOssGateWay()
+
+		// Initialize FlowFile and FlowStorage DAOs
+		mIns.flowFileDao = rds.GetFlowFileDao()
+		mIns.flowStorageDao = rds.GetFlowStorageDao()
 
 		// Initialize S3 adapter if configured
 		s3Conn := s3.NewS3().GetDefaultConnection()

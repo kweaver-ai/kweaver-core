@@ -418,14 +418,17 @@ type FlowFileQueryOptions struct {
 	ExpiresBefore int64 // 过期时间早于此值
 	Limit         int
 	Offset        int
+	OrderBy       string // 排序字段，如 "created_at"
+	Order         string // 排序方向，"asc" 或 "desc"
 }
 
 // FlowFileUpdateParams FlowFile 更新参数
 type FlowFileUpdateParams struct {
-	StorageID *uint64
-	Status    *FlowFileStatus
-	Name      *string
-	ExpiresAt *int64
+	StorageID     *uint64
+	Status        *FlowFileStatus
+	Name          *string
+	ExpiresAt     *int64
+	DagInstanceID *string
 }
 
 // ============================================================

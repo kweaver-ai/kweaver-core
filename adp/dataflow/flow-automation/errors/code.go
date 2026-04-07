@@ -41,12 +41,18 @@ var (
 
 	TaskAlreayInProgress = "TaskAlreadyInProgress"
 	DataSourceIsEmpty    = "DataSourceIsEmpty"
+
+	// 文件相关错误码
+	FileNotReady    = "FileNotReady"
+	StorageNotReady = "StorageNotReady"
 )
 
 var ErrorsHttpCode = map[string]int{
 	ExecutorForbidden: http.StatusForbidden,
 	ExecutorNotFound:  http.StatusNotFound,
 	AgentNotFound:     http.StatusNotFound,
+	FileNotReady:      http.StatusConflict,           // 409
+	StorageNotReady:   http.StatusPreconditionFailed, // 412
 }
 
 // 辅助错误码
@@ -218,6 +224,16 @@ var ErrorsMsg = map[string]map[string][]string{
 		Languages[0]: {"数据源为空", "请稍后再试"},
 		Languages[1]: {"數據源為空", "請稍後再試"},
 		Languages[2]: {"Data source is empty", "Please try again later"},
+	},
+	FileNotReady: {
+		Languages[0]: {"文件未就绪", "文件正在上传或下载中，暂时无法下载"},
+		Languages[1]: {"文件未就緒", "文件正在上傳或下載中，暫時無法下載"},
+		Languages[2]: {"File not ready", "File is uploading or downloading, cannot download now"},
+	},
+	StorageNotReady: {
+		Languages[0]: {"存储对象不可用", "文件存储异常，请联系管理员"},
+		Languages[1]: {"存儲對象不可用", "文件存儲異常，請聯繫管理員"},
+		Languages[2]: {"Storage not ready", "File storage is abnormal, please contact administrator"},
 	},
 	ErrorDepencyService: {
 		Languages[0]: {"服务依赖异常", "请检查相关服务状态后重试"},
