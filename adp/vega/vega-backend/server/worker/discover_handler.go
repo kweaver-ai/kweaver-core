@@ -71,6 +71,8 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 		return err
 	}
 
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, taskInfo.Creator)
+
 	catalogInfo, err := dh.cs.GetByID(ctx, taskInfo.CatalogID, true)
 	if err != nil {
 		logger.Errorf("Failed to get catalog for task %s: %v", taskID, err)
@@ -81,7 +83,9 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now := time.Now().UnixMilli()
 	if err := dh.dts.UpdateStatus(ctx, taskID, interfaces.DiscoverTaskStatusRunning, "", now); err != nil {
 		logger.Errorf("Failed to set start time for task %s: %v", taskID, err)
+		return err
 	}
+
 	// Execute discover : 元数据采集主要逻辑
 	//首先根据 catalog ID 获取 catalog 信息，
 	//然后根据 catalog 信息获取 connector 信息，
@@ -100,6 +104,7 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now = time.Now().UnixMilli()
 	if err := dh.dts.UpdateResult(ctx, taskID, result, now); err != nil {
 		logger.Errorf("Failed to update result for task %s: %v", taskID, err)
+		return err
 	}
 
 	logger.Infof("Discover completed for task: %s, catalog: %s", taskID, catalogInfo.ID)
@@ -379,16 +384,11 @@ func (dh *discoverHandler) createResource(ctx context.Context, catalog *interfac
 		Database:         table.Database,
 		SourceIdentifier: sourceIdentifier,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取刚创建的resource
-	resource, err := dh.rs.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
 	return resource, nil
 }
 
@@ -530,12 +530,12 @@ func (dh *discoverHandler) createIndexResource(ctx context.Context, catalog *int
 		Status:           interfaces.ResourceStatusActive,
 		SourceIdentifier: index.Name,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return dh.rs.GetByID(ctx, id)
+	return resource, nil
 }
 
 // enrichIndexMetadata enriches index resources with detailed metadata.

@@ -275,14 +275,14 @@ func TestCreate_DatasetCategory(t *testing.T) {
 	mockDS.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		Name:     "test-dataset",
 		Category: interfaces.ResourceCategoryDataset,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id == "" {
+	if resource == nil {
 		t.Error("expected non-empty ID")
 	}
 }
@@ -324,14 +324,14 @@ func TestCreate_Success(t *testing.T) {
 	mockRA.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		Name:     "test-resource",
 		Category: "table",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id == "" {
+	if resource == nil {
 		t.Error("expected non-empty ID")
 	}
 }
@@ -343,7 +343,7 @@ func TestCreate_WithExplicitID(t *testing.T) {
 	mockRA.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		ID:       "custom-id",
 		Name:     "test-resource",
 		Category: "table",
@@ -351,8 +351,8 @@ func TestCreate_WithExplicitID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "custom-id" {
-		t.Errorf("expected 'custom-id', got '%s'", id)
+	if resource == nil || resource.ID != "custom-id" {
+		t.Errorf("expected 'custom-id', got '%s'", resource.ID)
 	}
 }
 

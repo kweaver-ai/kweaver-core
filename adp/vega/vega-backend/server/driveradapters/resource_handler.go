@@ -216,7 +216,7 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 		}
 	}
 
-	id, err := r.rs.Create(ctx, &req)
+	resource, err := r.rs.Create(ctx, &req)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -226,9 +226,9 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 
 	// 成功创建记录审计日志
 	audit.NewInfoLog(audit.OPERATION, audit.CREATE, audit.TransforOperator(visitor),
-		interfaces.GenerateResourceAuditObject(id, req.Name), "")
+		interfaces.GenerateResourceAuditObject(resource.ID, req.Name), "")
 
-	result := map[string]any{"id": id}
+	result := map[string]any{"id": resource.ID}
 
 	logger.Debug("Handler CreateResource Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
