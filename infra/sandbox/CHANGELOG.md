@@ -2,6 +2,20 @@
 
 All new features and capabilities added in this branch (`feature/803264`) are documented below.
 
+## [0.3.2]
+
+### 🔧 Improvements
+
+- **Helm Chart Image Extraction Compatibility**
+  - Standardized sandbox Helm chart image settings under the top-level `image` values tree
+  - Updated control plane, web, MariaDB, MinIO, default template, and BusyBox image references to use `image.<name>.repository` and `image.<name>.tag`
+  - Removed the hardcoded web initContainer BusyBox image so offline packaging tools can discover it from chart values
+  - Updated Helm README, local install overrides, and component image metadata to match the new image structure
+
+---
+
+*Released on 2026-04-07*
+
 ## [0.3.1]
 
 ### 🚀 New Features
