@@ -12,10 +12,10 @@ const config: Config = {
   },
 
   url: 'https://kweaver-ai.github.io',
-  baseUrl: '/kweaver/',
+  baseUrl: '/kweaver-core/',
 
   organizationName: 'kweaver-ai',
-  projectName: 'kweaver',
+  projectName: 'kweaver-core',
 
   onBrokenLinks: 'throw',
 
