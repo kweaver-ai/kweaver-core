@@ -99,10 +99,14 @@ func (s *findSkillsServiceImpl) FindSkills(ctx context.Context, req *interfaces.
 	if req.SkillQuery != "" {
 		skillsObjTypes, getErr := s.bknBackend.GetObjectTypeDetail(ctx, req.KnID, []string{fsCfg.SkillsObjectTypeID}, true)
 		if getErr != nil {
-			s.logger.WithContext(ctx).Warnf("[FindSkills] failed to get skills ObjectType detail for condition building: %v", getErr)
-		} else if len(skillsObjTypes) > 0 {
-			skillQueryCond = BuildSkillQueryCondition(req.SkillQuery, skillsObjTypes[0], req.TopK)
+			err = fmt.Errorf("skill_query requires skills ObjectType metadata but GetObjectTypeDetail failed: %w", getErr)
+			return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
 		}
+		if len(skillsObjTypes) == 0 {
+			err = fmt.Errorf("skill_query requires skills ObjectType (id=%s) but none found in kn_id=%s", fsCfg.SkillsObjectTypeID, req.KnID)
+			return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
+		}
+		skillQueryCond = BuildSkillQueryCondition(req.SkillQuery, skillsObjTypes[0], req.TopK)
 	}
 
 	// 3. Apply total timeout

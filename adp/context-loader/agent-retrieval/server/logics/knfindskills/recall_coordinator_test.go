@@ -383,7 +383,7 @@ func TestExtractSubgraph_MixedObjectTypes_OnlySkillsExtracted(t *testing.T) {
 	}
 }
 
-func TestExtractSubgraph_SkillIDEmpty_FallbackToObjID(t *testing.T) {
+func TestExtractSubgraph_SkillIDEmpty_Skipped(t *testing.T) {
 	resp := &interfaces.QueryInstanceSubgraphResp{
 		Entries: []interface{}{
 			map[string]interface{}{
@@ -402,11 +402,8 @@ func TestExtractSubgraph_SkillIDEmpty_FallbackToObjID(t *testing.T) {
 		},
 	}
 	matches := extractSkillMatchesFromSubgraph(resp, "skills", "test", 10)
-	if len(matches) != 1 {
-		t.Fatalf("expected 1 match, got %d", len(matches))
-	}
-	if matches[0].SkillID != "skills-auto-id" {
-		t.Errorf("expected fallback to obj id 'skills-auto-id', got %s", matches[0].SkillID)
+	if len(matches) != 0 {
+		t.Fatalf("expected 0 matches (no skill_id should be skipped), got %d", len(matches))
 	}
 }
 

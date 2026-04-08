@@ -66,6 +66,29 @@ func TestAssemble_TopKTrim(t *testing.T) {
 	}
 }
 
+func TestAssemble_StableSortSamePriorityAndScore(t *testing.T) {
+	matches := []interfaces.SkillMatch{
+		{SkillID: "s_charlie", Name: "C", Priority: 50, Score: 0.5},
+		{SkillID: "s_alpha", Name: "A", Priority: 50, Score: 0.5},
+		{SkillID: "s_bravo", Name: "B", Priority: 50, Score: 0.5},
+	}
+	for run := 0; run < 20; run++ {
+		resp := Assemble(matches, 10)
+		if len(resp.Entries) != 3 {
+			t.Fatalf("run %d: expected 3 entries, got %d", run, len(resp.Entries))
+		}
+		if resp.Entries[0].SkillID != "s_alpha" {
+			t.Errorf("run %d: expected s_alpha first, got %s", run, resp.Entries[0].SkillID)
+		}
+		if resp.Entries[1].SkillID != "s_bravo" {
+			t.Errorf("run %d: expected s_bravo second, got %s", run, resp.Entries[1].SkillID)
+		}
+		if resp.Entries[2].SkillID != "s_charlie" {
+			t.Errorf("run %d: expected s_charlie third, got %s", run, resp.Entries[2].SkillID)
+		}
+	}
+}
+
 func TestAssemble_SkipEmptySkillID(t *testing.T) {
 	matches := []interfaces.SkillMatch{
 		{SkillID: "", Name: "no-id", Priority: 100},

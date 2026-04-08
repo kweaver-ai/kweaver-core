@@ -395,25 +395,24 @@ func extractFromSubgraphEntry(entry map[string]interface{}, skillsOTID, scope st
 
 		props := mapFromMap(objMap, "properties")
 
+		skillID := stringFromMap(props, "skill_id")
+		if skillID == "" {
+			continue
+		}
+
 		m := interfaces.SkillMatch{
-			SkillID:      stringFromMap(props, "skill_id"),
+			SkillID:      skillID,
 			Name:         stringFromMap(props, "name"),
 			Description:  stringFromMap(props, "description"),
 			MatchedScope: scope,
 			Priority:     priority,
 			Score:        float64FromMap(props, "_score"),
 		}
-
-		if m.SkillID == "" {
-			m.SkillID = stringFromMap(objMap, "id")
-		}
 		if m.Name == "" {
 			m.Name = stringFromMap(objMap, "display")
 		}
 
-		if m.SkillID != "" {
-			matches = append(matches, m)
-		}
+		matches = append(matches, m)
 	}
 
 	return matches
