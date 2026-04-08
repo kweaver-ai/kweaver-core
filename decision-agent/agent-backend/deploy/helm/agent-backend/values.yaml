@@ -356,6 +356,7 @@ agentExecutor:
   disableDolphinSdkLLMCache: false
   enableDolphinAgentOutputVariablesCtrl: false
   isSkillAgentNeedProgress: false
+  enableTraceAiEvidence: false
   rps:
     limit: 100
   telemetry:

@@ -21,6 +21,9 @@ class FeaturesConfig:
     # 技能agent调用是否需要返回progress
     is_skill_agent_need_progress: bool = False
 
+    # 是否在 API tool proxy 请求中透传 TraceAI evidence 开关
+    enable_traceai_evidence: bool = False
+
     @classmethod
     def from_dict(cls, data: dict) -> "FeaturesConfig":
         """从字典创建配置对象"""
@@ -35,4 +38,5 @@ class FeaturesConfig:
             is_skill_agent_need_progress=data.get(
                 "is_skill_agent_need_progress", False
             ),
+            enable_traceai_evidence=data.get("enable_traceai_evidence", False),
         )

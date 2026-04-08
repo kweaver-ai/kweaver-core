@@ -77,7 +77,7 @@ memory:        # 记忆相关配置
 document:      # 文档相关配置
 local_dev:     # 本地开发配置
 outer_llm:     # 外部LLM配置
-features:      # 特性开关
+features:      # 特性开关（如 explore_block、TraceAI evidence header）
 o11y:          # 可观测性配置
 dialog_logging: # 对话日志配置
 ```
