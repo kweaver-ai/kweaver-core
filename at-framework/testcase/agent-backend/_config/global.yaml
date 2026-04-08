@@ -14,8 +14,8 @@ agent_config_system_prompt: "你是一个测试助手"
 agent_config_output_format: "markdown"
 
 # LLM 配置
-llm_config_id: "2014253339969196032"
-llm_config_name: "deepseek-v3.1"
+llm_config_id: "1951511743712858112"
+llm_config_name: "deepseek_v3"
 llm_config_model_type: "llm"
 llm_config_temperature: 1
 llm_config_top_p: 1
