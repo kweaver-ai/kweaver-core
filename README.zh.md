@@ -21,7 +21,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 - 📝 [博客](https://kweaver-ai.github.io/kweaver/) - KWeaver 技术文章与更新
 - 🚀 [发布规范](rules/RELEASE.zh.md) - 版本管理与发布流程
 - 🏗️ [架构规范](rules/ARCHITECTURE.zh.md) - 架构设计规范
-- 🧾 [更新日志](rules/CHANGELOG.zh.md) - 重要变更记录
+- 🧾 [版本发布](release-notes/) - 重要变更记录
 - 📄 [许可证](LICENSE.txt) - Apache License 2.0
 - 🐛 [报告 Bug](https://github.com/kweaver-ai/kweaver/issues) - 报告问题或 Bug
 - 💡 [功能建议](https://github.com/kweaver-ai/kweaver/issues) - 提出新功能建议
