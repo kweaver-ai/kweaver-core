@@ -23,13 +23,8 @@ image:
     pullPolicy: IfNotPresent
   minio:
     repository: quay.io/minio/minio
-    tag: "latest"
+    tag: "RELEASE.2025-09-07T16-13-09Z"
     pullPolicy: IfNotPresent
-  busybox:
-    repository: busybox
-    tag: "1.36"
-    pullPolicy: IfNotPresent
-
 # Control Plane configuration
 controlPlane:
   enabled: true

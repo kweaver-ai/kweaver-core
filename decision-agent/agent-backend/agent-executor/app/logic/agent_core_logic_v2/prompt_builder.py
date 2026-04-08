@@ -65,6 +65,7 @@ class PromptBuilder:
                     continue
 
                 # Skip temp-file processing block when the user has no uploaded files
+                # 如果开启了临时区，但是用户没有上次临时区文件，则不构造临时区文件处理 dophin
                 if pre_dolphin.get("key") == "temp_file_process" and not has_temp_files(
                     self.temp_files
                 ):

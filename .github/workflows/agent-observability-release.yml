@@ -126,10 +126,11 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Update chart versions
+      - name: Update chart versions and image tag
         run: |
           sed -i "s/^version: .*/version: ${VERSION}/" ${CHART_PATH}/Chart.yaml
           sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" ${CHART_PATH}/Chart.yaml
+          sed -i "s/^  tag: .*/  tag: \"${VERSION}\"/" ${CHART_PATH}/values.yaml
         env:
           VERSION: ${{ needs.resolve-version.outputs.version }}
 

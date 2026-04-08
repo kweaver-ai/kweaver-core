@@ -10,11 +10,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt) [![skills.sh kweaver-core](https://img.shields.io/badge/skills.sh-kweaver--core-blue)](https://skills.sh/kweaver-ai/kweaver-sdk/kweaver-core) [![skills.sh create-bkn](https://img.shields.io/badge/skills.sh-create--bkn-green)](https://skills.sh/kweaver-ai/kweaver-sdk/create-bkn)
 
-The KWeaver project includes KWeaver Core and KWeaver DIP.
-
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliable in complex enterprises.
-
-KWeaver DIP is an AI-native platform for developing and managing digital employees, built on business knowledge networks for understandable, executable, and governable enterprise intelligence.
 
 ## 📚 Quick Links
 
@@ -72,27 +68,13 @@ kubectl get pods -A
    - Deployment console: `https://<node-ip>/deploy`, account `admin`, initial password `eisoo.com`
    - KWeaver Studio: `https://<node-ip>/studio`
 
-## Platform Architecture
-
-```text
-┌─────────────────────────────────────────────┐
-│                 KWeaver                     │
-│  ┌───────────────────────────────────────┐  │
-│  │           KWeaver SDK                 │  │
-│  ├───────────────────────────────────────┤  │
-│  │           KWeaver DIP                 │  │
-│  ├───────────────────────────────────────┤  │
-│  │           KWeaver Core                │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
+> **No deployment yet?** Try the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) first (username: `kweaver`, password: `111111`).
 
 ### Core Subsystems
 
 | Sub-project | Description | Repository |
 | --- | --- | --- |
 | **KWeaver SDK** | CLI and SDK (TypeScript/Python) for AI agents and developers to access KWeaver knowledge networks and Decision Agents programmatically | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
-| **KWeaver DIP** | Include AI application and component marketplace, DIP Studio - Visual development and management interface | [AI Store](https://github.com/kweaver-ai/ai-store)<br>[DIP Studio](https://github.com/kweaver-ai/studio)|
 | **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
 
 ## KWeaver SDK
@@ -133,6 +115,42 @@ kweaver auth login https://your-kweaver-instance.com
 > ```bash
 > kweaver auth login https://your-kweaver-instance.com -k
 > ```
+
+### Try with Demo Environment
+
+No deployment needed — connect your AI agent to the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) and start exploring immediately:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
+  --skill kweaver-core --skill create-bkn
+
+npm install -g @kweaver-ai/kweaver-sdk
+kweaver auth login https://dip-poc.aishu.cn -k
+```
+
+Then ask your AI agent (Cursor, Claude Code, etc.) using natural language:
+
+```
+List all knowledge networks
+What object types are in the supply chain knowledge network?
+Search the supply chain knowledge network for "supply chain risks"
+Show 2 sample customer records
+List all Decision Agents
+Chat with Agent xxx, ask "What is the current inventory status?"
+```
+
+Or use `/kweaver-core` slash commands (the skill takes over automatically):
+
+```
+/kweaver-core List all knowledge networks
+/kweaver-core What's in the supply chain knowledge network?
+/kweaver-core Search knowledge network for "supply chain risks"
+/kweaver-core Show 2 sample customer records from the knowledge network
+/kweaver-core List all Decision Agents
+/kweaver-core Chat with Agent <agent-id>, ask "What is the current inventory status?"
+```
+
+> **Demo credentials**: username `kweaver`, password `111111`
 
 ### Headless login (SSH, CI, containers — no browser)
 
@@ -363,22 +381,6 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 | **TCO Reduction** | 70% lower with integrated platform |
 | **BKN Build Efficiency** | 300% improvement in knowledge network construction |
 | **Token Cost Savings** | 50% reduction through context optimization and compression |
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](rules/CONTRIBUTING.md) for details on how to contribute to this project.
-
-Quick start:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.
 
 ## 💬 Community
 

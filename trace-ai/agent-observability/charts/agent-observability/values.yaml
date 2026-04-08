@@ -4,8 +4,8 @@ fullnameOverride: ""
 replicaCount: 1
 
 image:
-  registry: swr.cn-east-3.myhuaweicloud.com
-  repository: kweaver-ai/agent-observability
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+  repository: agent-observability
   pullPolicy: IfNotPresent
   tag: "latest"
 

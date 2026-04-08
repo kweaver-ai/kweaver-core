@@ -110,9 +110,10 @@ async def build_tools(
 
             tools[agent_name] = AgentTool(ac, agent)
 
-    # Process MCP tools
+    # 处理MCP工具
     if skills.mcps:
         for mcp in skills.mcps:
+            # 使用__dict__访问动态添加的属性
             mcp_dict = mcp.__dict__
             mcp_tools = await get_mcp_tools(mcp_dict)
 

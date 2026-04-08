@@ -4,8 +4,8 @@ fullnameOverride: ""
 mode: deployment
 
 image:
-  registry: swr.cn-east-3.myhuaweicloud.com
-  repository: kweaver-ai/dip/opentelemetry-collector-contrib
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+  repository: dip/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
   tag: "0.148.0"
 

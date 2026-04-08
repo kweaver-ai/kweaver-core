@@ -65,6 +65,8 @@ jobs:
         run: |
           sed -i "s/^version: .*/version: ${VERSION}/" trace-ai/otelcol-contribute-chart/charts/otelcol-contrib/Chart.yaml
           sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" trace-ai/otelcol-contribute-chart/charts/otelcol-contrib/Chart.yaml
+
+
         env:
           VERSION: ${{ needs.resolve-version.outputs.version }}
 

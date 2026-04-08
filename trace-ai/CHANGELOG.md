@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Improvements
 
 - Standardized the `agent-observability` and `otelcol-contrib` Helm chart image values to use `image.registry`, `image.repository`, and `image.tag`, so offline packaging can extract images from the default values.
+- Updated the `agent-observability` release workflow to write the resolved release version into the chart default `image.tag` before packaging.
 
 ### Upgrade Notes
 
