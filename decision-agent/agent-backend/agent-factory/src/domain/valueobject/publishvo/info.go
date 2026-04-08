@@ -10,7 +10,7 @@ type PublishInfo struct {
 	CategoryIDs []string `json:"category_ids"` // 分类IDs
 	Description string   `json:"description"`  // 发布描述
 
-	PublishToWhere []daenum.PublishToWhere `json:"publish_to_where"` // 发布到的目标 ["custom_space", "square"]
+	PublishToWhere []daenum.PublishToWhere `json:"publish_to_where" enums:"square"` // 发布到的目标 ["square"]
 
 	// CustomSpaceIDs []string `json:"custom_space_ids"` // 自定义空间ID列表
 

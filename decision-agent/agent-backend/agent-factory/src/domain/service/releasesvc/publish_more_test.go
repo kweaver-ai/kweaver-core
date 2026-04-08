@@ -183,6 +183,7 @@ func TestReleaseSvc_Publish_DelCategoryRelError(t *testing.T) {
 	mockHistory := idbaccessmock.NewMockIReleaseHistoryRepo(ctrl)
 	mockReleaseRepo := idbaccessmock.NewMockIReleaseRepo(ctrl)
 	mockCategoryRel := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
+	mockUm := httpaccmock.NewMockUmHttpAcc(ctrl)
 
 	svc := &releaseSvc{
 		SvcBase:                &service.SvcBase{Logger: noopReleaseLogger{}},
@@ -190,6 +191,7 @@ func TestReleaseSvc_Publish_DelCategoryRelError(t *testing.T) {
 		releaseHistoryRepo:     mockHistory,
 		releaseRepo:            mockReleaseRepo,
 		releaseCategoryRelRepo: mockCategoryRel,
+		umHttp:                 mockUm,
 	}
 
 	mockAgentRepo.EXPECT().GetByID(gomock.Any(), "a1").Return(&dapo.DataAgentPo{
@@ -199,6 +201,7 @@ func TestReleaseSvc_Publish_DelCategoryRelError(t *testing.T) {
 	mockReleaseRepo.EXPECT().GetByAgentID(gomock.Any(), "a1").Return(&dapo.ReleasePO{ID: "r1", AgentID: "a1"}, nil)
 	mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 	mockReleaseRepo.EXPECT().Update(gomock.Any(), tx, gomock.Any()).Return(nil)
+	mockUm.EXPECT().GetSingleUserName(gomock.Any(), gomock.Any()).Return("U1", nil)
 	mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, "r1").Return(assert.AnError)
 
 	req := &releasereq.PublishReq{
@@ -207,7 +210,7 @@ func TestReleaseSvc_Publish_DelCategoryRelError(t *testing.T) {
 	}
 	_, _, err := svc.Publish(context.Background(), req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "delete release category rel by release id failed")
+	assert.Contains(t, err.Error(), "handle category failed")
 }
 
 func TestReleaseSvc_Publish_FillPublishedByNameError(t *testing.T) {
@@ -240,7 +243,6 @@ func TestReleaseSvc_Publish_FillPublishedByNameError(t *testing.T) {
 	mockReleaseRepo.EXPECT().GetByAgentID(gomock.Any(), "a1").Return(&dapo.ReleasePO{ID: "r1", AgentID: "a1"}, nil)
 	mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 	mockReleaseRepo.EXPECT().Update(gomock.Any(), tx, gomock.Any()).Return(nil)
-	mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, "r1").Return(nil)
 	mockUm.EXPECT().GetSingleUserName(gomock.Any(), gomock.Any()).Return("", assert.AnError)
 
 	req := &releasereq.PublishReq{
@@ -300,17 +302,19 @@ func TestReleaseSvc_Publish_CreateHistoryError(t *testing.T) {
 	mockHistory := idbaccessmock.NewMockIReleaseHistoryRepo(ctrl)
 	mockReleaseRepo := idbaccessmock.NewMockIReleaseRepo(ctrl)
 	mockPermRepo := idbaccessmock.NewMockIReleasePermissionRepo(ctrl)
+	mockCategoryRel := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
 	mockAuthz := authzaccmock.NewMockAuthZHttpAcc(ctrl)
 	mockUm := httpaccmock.NewMockUmHttpAcc(ctrl)
 
 	svc := &releaseSvc{
-		SvcBase:               &service.SvcBase{Logger: noopReleaseLogger{}},
-		agentConfigRepo:       mockAgentRepo,
-		releaseHistoryRepo:    mockHistory,
-		releaseRepo:           mockReleaseRepo,
-		releasePermissionRepo: mockPermRepo,
-		authZHttp:             mockAuthz,
-		umHttp:                mockUm,
+		SvcBase:                &service.SvcBase{Logger: noopReleaseLogger{}},
+		agentConfigRepo:        mockAgentRepo,
+		releaseHistoryRepo:     mockHistory,
+		releaseRepo:            mockReleaseRepo,
+		releaseCategoryRelRepo: mockCategoryRel,
+		releasePermissionRepo:  mockPermRepo,
+		authZHttp:              mockAuthz,
+		umHttp:                 mockUm,
 	}
 
 	mockAgentRepo.EXPECT().GetByID(gomock.Any(), "a1").Return(&dapo.DataAgentPo{
@@ -321,6 +325,7 @@ func TestReleaseSvc_Publish_CreateHistoryError(t *testing.T) {
 	mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 	mockReleaseRepo.EXPECT().Create(gomock.Any(), tx, gomock.Any()).Return("r-new", nil)
 	mockUm.EXPECT().GetSingleUserName(gomock.Any(), gomock.Any()).Return("U1", nil)
+	mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	mockPermRepo.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	mockAgentRepo.EXPECT().GetIDNameMapByID(gomock.Any(), gomock.Any()).Return(map[string]string{"a1": "agent1"}, nil)
 	mockAuthz.EXPECT().DeleteAgentPolicy(gomock.Any(), "a1").Return(nil)
@@ -349,17 +354,19 @@ func TestReleaseSvc_Publish_UpdateStatusError(t *testing.T) {
 	mockHistory := idbaccessmock.NewMockIReleaseHistoryRepo(ctrl)
 	mockReleaseRepo := idbaccessmock.NewMockIReleaseRepo(ctrl)
 	mockPermRepo := idbaccessmock.NewMockIReleasePermissionRepo(ctrl)
+	mockCategoryRel := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
 	mockAuthz := authzaccmock.NewMockAuthZHttpAcc(ctrl)
 	mockUm := httpaccmock.NewMockUmHttpAcc(ctrl)
 
 	svc := &releaseSvc{
-		SvcBase:               &service.SvcBase{Logger: noopReleaseLogger{}},
-		agentConfigRepo:       mockAgentRepo,
-		releaseHistoryRepo:    mockHistory,
-		releaseRepo:           mockReleaseRepo,
-		releasePermissionRepo: mockPermRepo,
-		authZHttp:             mockAuthz,
-		umHttp:                mockUm,
+		SvcBase:                &service.SvcBase{Logger: noopReleaseLogger{}},
+		agentConfigRepo:        mockAgentRepo,
+		releaseHistoryRepo:     mockHistory,
+		releaseRepo:            mockReleaseRepo,
+		releaseCategoryRelRepo: mockCategoryRel,
+		releasePermissionRepo:  mockPermRepo,
+		authZHttp:              mockAuthz,
+		umHttp:                 mockUm,
 	}
 
 	mockAgentRepo.EXPECT().GetByID(gomock.Any(), "a1").Return(&dapo.DataAgentPo{
@@ -370,6 +377,7 @@ func TestReleaseSvc_Publish_UpdateStatusError(t *testing.T) {
 	mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 	mockReleaseRepo.EXPECT().Create(gomock.Any(), tx, gomock.Any()).Return("r-new", nil)
 	mockUm.EXPECT().GetSingleUserName(gomock.Any(), gomock.Any()).Return("U1", nil)
+	mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	mockPermRepo.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	mockAgentRepo.EXPECT().GetIDNameMapByID(gomock.Any(), gomock.Any()).Return(map[string]string{"a1": "agent1"}, nil)
 	mockAuthz.EXPECT().DeleteAgentPolicy(gomock.Any(), "a1").Return(nil)
@@ -399,17 +407,19 @@ func TestReleaseSvc_Publish_WithPmsControl(t *testing.T) {
 	mockHistory := idbaccessmock.NewMockIReleaseHistoryRepo(ctrl)
 	mockReleaseRepo := idbaccessmock.NewMockIReleaseRepo(ctrl)
 	mockPermRepo := idbaccessmock.NewMockIReleasePermissionRepo(ctrl)
+	mockCategoryRel := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
 	mockAuthz := authzaccmock.NewMockAuthZHttpAcc(ctrl)
 	mockUm := httpaccmock.NewMockUmHttpAcc(ctrl)
 
 	svc := &releaseSvc{
-		SvcBase:               &service.SvcBase{Logger: noopReleaseLogger{}},
-		agentConfigRepo:       mockAgentRepo,
-		releaseHistoryRepo:    mockHistory,
-		releaseRepo:           mockReleaseRepo,
-		releasePermissionRepo: mockPermRepo,
-		authZHttp:             mockAuthz,
-		umHttp:                mockUm,
+		SvcBase:                &service.SvcBase{Logger: noopReleaseLogger{}},
+		agentConfigRepo:        mockAgentRepo,
+		releaseHistoryRepo:     mockHistory,
+		releaseRepo:            mockReleaseRepo,
+		releaseCategoryRelRepo: mockCategoryRel,
+		releasePermissionRepo:  mockPermRepo,
+		authZHttp:              mockAuthz,
+		umHttp:                 mockUm,
 	}
 
 	mockAgentRepo.EXPECT().GetByID(gomock.Any(), "a1").Return(&dapo.DataAgentPo{
@@ -420,6 +430,7 @@ func TestReleaseSvc_Publish_WithPmsControl(t *testing.T) {
 	mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 	mockReleaseRepo.EXPECT().Create(gomock.Any(), tx, gomock.Any()).Return("r-new", nil)
 	mockUm.EXPECT().GetSingleUserName(gomock.Any(), gomock.Any()).Return("U1", nil)
+	mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	// handlePmsCtrl: DelByReleaseID, getAgentName, removeUsePmsByHTTPAcc, handlePmsCtrlRange
 	mockPermRepo.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 	mockAgentRepo.EXPECT().GetIDNameMapByID(gomock.Any(), gomock.Any()).Return(map[string]string{"a1": "agent1"}, nil)

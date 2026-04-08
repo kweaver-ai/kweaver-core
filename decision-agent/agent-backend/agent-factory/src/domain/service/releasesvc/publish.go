@@ -176,13 +176,6 @@ func (svc *releaseSvc) Publish(ctx context.Context, req *releasereq.PublishReq) 
 			err = errors.Wrapf(err, "update release failed")
 			return
 		}
-
-		// 10. 清除分类绑定关系，重新关联
-		err = svc.releaseCategoryRelRepo.DelByReleaseID(ctx, tx, po.ID)
-		if err != nil {
-			err = errors.Wrapf(err, "delete release category rel by release id failed")
-			return
-		}
 	} else {
 		// 如果没有查到结果，表示首次发布
 		po = releasee2p.ReleaseE2P(&entity)

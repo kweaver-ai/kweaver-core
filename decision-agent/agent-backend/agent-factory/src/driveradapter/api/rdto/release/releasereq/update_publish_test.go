@@ -6,6 +6,7 @@ import (
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
 	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdatePublishInfoReq_StructFields(t *testing.T) {
@@ -56,7 +57,6 @@ func TestUpdatePublishInfoReq_CustomCheck_Valid(t *testing.T) {
 	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
-		daenum.PublishToWhereCustomSpace,
 	}
 	req.PublishToBes = []cdaenum.PublishToBe{
 		cdaenum.PublishToBeAPIAgent,
@@ -75,11 +75,12 @@ func TestUpdatePublishInfoReq_CustomCheck_Empty(t *testing.T) {
 
 	err := req.CustomCheck()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "category_ids is required")
+	assert.NoError(t, err)
+	assert.Empty(t, req.CategoryIDs)
+	assert.Empty(t, req.PublishToWhere)
 }
 
-func TestUpdatePublishInfoReq_CustomCheck_DefaultPublishToWhere(t *testing.T) {
+func TestUpdatePublishInfoReq_CustomCheck_EmptyPublishToWhere(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
@@ -88,7 +89,7 @@ func TestUpdatePublishInfoReq_CustomCheck_DefaultPublishToWhere(t *testing.T) {
 	err := req.CustomCheck()
 
 	assert.NoError(t, err)
-	assert.Equal(t, []daenum.PublishToWhere{daenum.PublishToWhereSquare}, req.PublishToWhere)
+	assert.Empty(t, req.PublishToWhere)
 }
 
 func TestUpdatePublishInfoReq_CustomCheck_TrimCategoryIDs(t *testing.T) {
@@ -103,19 +104,18 @@ func TestUpdatePublishInfoReq_CustomCheck_TrimCategoryIDs(t *testing.T) {
 	assert.Equal(t, []string{"cat-1", "cat-2"}, req.CategoryIDs)
 }
 
-func TestUpdatePublishInfoReq_CustomCheck_InvalidPublishToWhere(t *testing.T) {
+func TestUpdatePublishInfoReq_CustomCheck_CustomSpacePublishToWhereInvalid(t *testing.T) {
 	t.Parallel()
 
 	req := &UpdatePublishInfoReq{}
 	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
-		daenum.PublishToWhereSquare,
-		daenum.PublishToWhere("invalid"),
+		daenum.PublishToWhereCustomSpace,
 	}
 
 	err := req.CustomCheck()
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "publish_to_where is invalid")
 }
 
@@ -140,7 +140,6 @@ func TestUpdatePublishInfoReq_CustomCheck_AllValidPublishToWhere(t *testing.T) {
 
 	validTargets := []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
-		daenum.PublishToWhereCustomSpace,
 	}
 
 	for _, target := range validTargets {
@@ -210,7 +209,6 @@ func TestUpdatePublishInfoReq_WithMultiplePublishTargets(t *testing.T) {
 	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
-		daenum.PublishToWhereCustomSpace,
 	}
 	req.PublishToBes = []cdaenum.PublishToBe{
 		cdaenum.PublishToBeAPIAgent,
@@ -220,7 +218,7 @@ func TestUpdatePublishInfoReq_WithMultiplePublishTargets(t *testing.T) {
 
 	err := req.CustomCheck()
 	assert.NoError(t, err)
-	assert.Len(t, req.PublishToWhere, 2)
+	assert.Len(t, req.PublishToWhere, 1)
 	assert.Len(t, req.PublishToBes, 3)
 }
 

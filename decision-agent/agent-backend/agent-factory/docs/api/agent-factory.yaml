@@ -3236,6 +3236,10 @@ components:
             x-enum-varnames:
                 - PublishToWhereCustomSpace
                 - PublishToWhereSquare
+        daenum.WritePublishToWhere:
+            enum:
+                - square
+            type: string
         datasourcevalobj.DocAdvancedConfig:
             properties:
                 document_threshold:
@@ -5007,10 +5011,9 @@ components:
         releasereq.UpdatePublishInfoReq:
             properties:
                 category_ids:
-                    description: 必填，至少传入 1 个分类ID
+                    description: 非必填；为空时清空分类关联
                     items:
                         type: string
-                    minItems: 1
                     type: array
                 description:
                     description: 发布描述
@@ -5031,14 +5034,11 @@ components:
                 publish_to_where:
                     description: |-
                         - 发布到的目标
-                          - custom_space: 发布到自定义空间
                           - square: 发布到广场
-                        - 非必填；为空时默认发布到广场
+                        - 非必填；为空时不发布到任何目标
                     items:
-                        $ref: '#/components/schemas/daenum.PublishToWhere'
+                        $ref: '#/components/schemas/daenum.WritePublishToWhere'
                     type: array
-            required:
-                - category_ids
             type: object
         responses-InternalServerError:
             content:

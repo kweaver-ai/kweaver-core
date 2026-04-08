@@ -61,7 +61,7 @@ service:
   # ========================================
 
   # ========== Swagger 文档配置 ==========
-  enableSwagger: false
+  enableSwagger: true
   swaggerToken: ""
   # ========================================
 

@@ -27,30 +27,16 @@ func TestHandleCategory(t *testing.T) {
 		expectCreate bool
 	}{
 		{
-			name:        "empty category IDs - no operation",
+			name:        "empty category IDs - clear relations only",
 			categoryIDs: []string{},
 			releaseID:   "release-123",
 			setup: func(ctrl *gomock.Controller) (*releaseSvc, *sql.Tx) {
 				repo := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
 				tx := &sql.Tx{}
 
-				svc := &releaseSvc{
-					SvcBase:                service.NewSvcBase(),
-					releaseCategoryRelRepo: repo,
-				}
-				return svc, tx
-			},
-			wantErr:      false,
-			expectDelete: false,
-			expectCreate: false,
-		},
-		{
-			name:        "nil category IDs - no operation",
-			categoryIDs: nil,
-			releaseID:   "release-123",
-			setup: func(ctrl *gomock.Controller) (*releaseSvc, *sql.Tx) {
-				repo := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
-				tx := &sql.Tx{}
+				repo.EXPECT().
+					DelByReleaseID(gomock.Any(), tx, "release-123").
+					Return(nil)
 
 				svc := &releaseSvc{
 					SvcBase:                service.NewSvcBase(),
@@ -59,7 +45,29 @@ func TestHandleCategory(t *testing.T) {
 				return svc, tx
 			},
 			wantErr:      false,
-			expectDelete: false,
+			expectDelete: true,
+			expectCreate: false,
+		},
+		{
+			name:        "nil category IDs - clear relations only",
+			categoryIDs: nil,
+			releaseID:   "release-123",
+			setup: func(ctrl *gomock.Controller) (*releaseSvc, *sql.Tx) {
+				repo := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
+				tx := &sql.Tx{}
+
+				repo.EXPECT().
+					DelByReleaseID(gomock.Any(), tx, "release-123").
+					Return(nil)
+
+				svc := &releaseSvc{
+					SvcBase:                service.NewSvcBase(),
+					releaseCategoryRelRepo: repo,
+				}
+				return svc, tx
+			},
+			wantErr:      false,
+			expectDelete: true,
 			expectCreate: false,
 		},
 		{
@@ -124,6 +132,26 @@ func TestHandleCategory(t *testing.T) {
 
 				repo.EXPECT().
 					BatchCreate(gomock.Any(), tx, gomock.Any()).
+					Return(nil)
+
+				svc := &releaseSvc{
+					SvcBase:                service.NewSvcBase(),
+					releaseCategoryRelRepo: repo,
+				}
+				return svc, tx
+			},
+			wantErr: false,
+		},
+		{
+			name:        "category IDs with only empty strings - clear relations only",
+			categoryIDs: []string{"", "   "},
+			releaseID:   "release-123",
+			setup: func(ctrl *gomock.Controller) (*releaseSvc, *sql.Tx) {
+				repo := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
+				tx := &sql.Tx{}
+
+				repo.EXPECT().
+					DelByReleaseID(gomock.Any(), tx, "release-123").
 					Return(nil)
 
 				svc := &releaseSvc{

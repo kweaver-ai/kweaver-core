@@ -248,10 +248,6 @@ func TestPublishReq_WithValidAgentID(t *testing.T) {
 			AgentID:              agentID,
 			UpdatePublishInfoReq: &UpdatePublishInfoReq{},
 		}
-		req.CategoryIDs = []string{"cat-1"}
-		req.PublishToWhere = []daenum.PublishToWhere{
-			daenum.PublishToWhereSquare,
-		}
 
 		err := req.ReqCheck()
 
@@ -267,8 +263,9 @@ func TestPublishReq_EmptyUpdatePublishInfoReq(t *testing.T) {
 
 	err := req.ReqCheck()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "category_ids is required")
+	assert.NoError(t, err)
+	assert.Empty(t, req.CategoryIDs)
+	assert.Empty(t, req.PublishToWhere)
 }
 
 func TestPublishReq_ReqCheck_WithNilUpdatePublishInfoReq(t *testing.T) {
@@ -278,21 +275,34 @@ func TestPublishReq_ReqCheck_WithNilUpdatePublishInfoReq(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		err := req.ReqCheck()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "category_ids is required")
+		assert.NoError(t, err)
+		assert.Empty(t, req.CategoryIDs)
+		assert.Empty(t, req.PublishToWhere)
 	})
 }
 
-func TestPublishReq_ReqCheck_DefaultPublishToWhere(t *testing.T) {
+func TestPublishReq_ReqCheck_EmptyPublishToWhere(t *testing.T) {
 	t.Parallel()
 
 	req := NewPublishReq()
 	req.AgentID = "agent-123"
-	req.CategoryIDs = []string{"cat-1"}
 
 	err := req.ReqCheck()
 
 	assert.NoError(t, err)
-	assert.Equal(t, []daenum.PublishToWhere{daenum.PublishToWhereSquare}, req.PublishToWhere)
+	assert.Empty(t, req.PublishToWhere)
 	assert.Empty(t, req.PublishToBes)
+}
+
+func TestPublishReq_ReqCheck_CustomSpacePublishToWhereInvalid(t *testing.T) {
+	t.Parallel()
+
+	req := NewPublishReq()
+	req.AgentID = "agent-123"
+	req.PublishToWhere = []daenum.PublishToWhere{daenum.PublishToWhereCustomSpace}
+
+	err := req.ReqCheck()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "publish_to_where is invalid")
 }

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
@@ -201,15 +200,19 @@ func TestReleaseHandler_Publish(t *testing.T) {
 		mockSvc := v3portdrivermock.NewMockIReleaseSvc(ctrl)
 		h := &releaseHandler{releaseSvc: mockSvc, logger: testLogger{}}
 
+		mockSvc.EXPECT().Publish(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *releasereq.PublishReq) (*releaseresp.PublishUpsertResp, auditlogdto.AgentPublishAuditLogInfo, error) {
+			assert.Empty(t, req.CategoryIDs)
+			assert.Empty(t, req.PublishToWhere)
+			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentPublishAuditLogInfo{ID: "agent-1", Name: "name"}, nil
+		})
+
 		c, _ := newTestContext(http.MethodPost, "/", `{}`)
 		c.Params = gin.Params{{Key: "agent_id", Value: "agent-1"}}
 		setInternalAPI(c, true)
 		setVisitor(c, "user-1", false)
 
-		assert.NotPanics(t, func() {
-			h.Publish(c)
-		})
-		assert.NotEmpty(t, c.Errors)
+		assert.NotPanics(t, func() { h.Publish(c) })
+		assert.Empty(t, c.Errors)
 	})
 
 	t.Run("optional fields can be omitted", func(t *testing.T) {
@@ -222,7 +225,7 @@ func TestReleaseHandler_Publish(t *testing.T) {
 
 		mockSvc.EXPECT().Publish(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *releasereq.PublishReq) (*releaseresp.PublishUpsertResp, auditlogdto.AgentPublishAuditLogInfo, error) {
 			assert.Equal(t, []string{"cat-1"}, req.CategoryIDs)
-			assert.Equal(t, []daenum.PublishToWhere{daenum.PublishToWhereSquare}, req.PublishToWhere)
+			assert.Empty(t, req.PublishToWhere)
 			assert.Nil(t, req.PmsControl)
 			assert.Empty(t, req.PublishToBes)
 			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentPublishAuditLogInfo{ID: "agent-1", Name: "name"}, nil
@@ -235,6 +238,24 @@ func TestReleaseHandler_Publish(t *testing.T) {
 
 		h.Publish(c)
 		assert.Equal(t, http.StatusCreated, recorder.Code)
+	})
+
+	t.Run("custom space publish target is rejected", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := v3portdrivermock.NewMockIReleaseSvc(ctrl)
+		h := &releaseHandler{releaseSvc: mockSvc, logger: testLogger{}}
+
+		c, recorder := newTestContext(http.MethodPost, "/", `{"publish_to_where":["custom_space"]}`)
+		c.Params = gin.Params{{Key: "agent_id", Value: "agent-1"}}
+		setInternalAPI(c, true)
+		setVisitor(c, "user-1", false)
+
+		h.Publish(c)
+		assert.NotEqual(t, http.StatusCreated, recorder.Code)
+		assert.NotEmpty(t, c.Errors)
 	})
 
 	t.Run("service error", func(t *testing.T) {
@@ -253,6 +274,42 @@ func TestReleaseHandler_Publish(t *testing.T) {
 		setVisitor(c, "user-1", false)
 
 		h.Publish(c)
+		assert.NotEmpty(t, c.Errors)
+	})
+
+	t.Run("missing category ids enters service", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := v3portdrivermock.NewMockIReleaseSvc(ctrl)
+		h := &releaseHandler{releaseSvc: mockSvc, logger: testLogger{}}
+
+		mockSvc.EXPECT().UpdatePublishInfo(gomock.Any(), "agent-1", gomock.Any()).DoAndReturn(func(ctx context.Context, agentID string, req *releasereq.UpdatePublishInfoReq) (*releaseresp.PublishUpsertResp, auditlogdto.AgentModifyPublishAuditLogInfo, error) {
+			assert.Empty(t, req.CategoryIDs)
+			assert.Empty(t, req.PublishToWhere)
+			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentModifyPublishAuditLogInfo{ID: "agent-1"}, nil
+		})
+
+		c, recorder := newTestContext(http.MethodPut, "/", `{}`)
+		c.Params = gin.Params{{Key: "agent_id", Value: "agent-1"}}
+		setInternalAPI(c, true)
+		h.UpdatePublishInfo(c)
+		assert.Equal(t, http.StatusOK, recorder.Code)
+	})
+
+	t.Run("custom space publish target is rejected", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := v3portdrivermock.NewMockIReleaseSvc(ctrl)
+		h := &releaseHandler{releaseSvc: mockSvc, logger: testLogger{}}
+
+		c, _ := newTestContext(http.MethodPut, "/", `{"publish_to_where":["custom_space"]}`)
+		c.Params = gin.Params{{Key: "agent_id", Value: "agent-1"}}
+		setInternalAPI(c, true)
+		h.UpdatePublishInfo(c)
 		assert.NotEmpty(t, c.Errors)
 	})
 }

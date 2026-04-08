@@ -24,3 +24,12 @@ func (b PublishToWhere) EnumCheck() (err error) {
 
 	return
 }
+
+func (b PublishToWhere) WriteEnumCheck() (err error) {
+	if !cutil.ExistsGeneric([]PublishToWhere{PublishToWhereSquare}, b) {
+		err = errors.New("[PublishToWhere]: invalid publish to where")
+		return
+	}
+
+	return
+}
