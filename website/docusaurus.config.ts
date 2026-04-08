@@ -36,7 +36,7 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/kweaver-ai/kweaver/tree/main/website/',
+          editUrl: 'https://github.com/kweaver-ai/kweaver-core/tree/main/website/',
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
@@ -62,7 +62,7 @@ const config: Config = {
       },
       items: [
         {
-          href: 'https://github.com/kweaver-ai/kweaver',
+          href: 'https://github.com/kweaver-ai/kweaver-core',
           label: 'GitHub',
           position: 'right',
         },
@@ -76,11 +76,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Issues',
-              href: 'https://github.com/kweaver-ai/kweaver/issues',
+              href: 'https://github.com/kweaver-ai/kweaver-core/issues',
             },
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/kweaver-ai/kweaver/discussions',
+              href: 'https://github.com/kweaver-ai/kweaver-core/discussions',
             },
           ],
         },
@@ -89,7 +89,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/kweaver-ai/kweaver',
+              href: 'https://github.com/kweaver-ai/kweaver-core',
             },
           ],
         },

@@ -4,9 +4,9 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
 
-**[ADP (智能数据平台)](https://github.com/kweaver-ai/adp)** 是 KWeaver 生态系统的一部分。如果你喜欢这个项目，请同时也为 **[KWeaver](https://github.com/kweaver-ai/kweaver)** 项目点亮星标⭐。
+**[ADP (智能数据平台)](https://github.com/kweaver-ai/adp)** 是 KWeaver 生态系统的一部分。如果你喜欢这个项目，请同时也为 **[KWeaver](https://github.com/kweaver-ai/kweaver-core)** 项目点亮星标⭐。
 
-**[KWeaver](https://github.com/kweaver-ai/kweaver)** 是一个用于构建、部署和运行决策智能 AI 应用的开源生态系统。该生态系统采用本体作为业务知识网络的核心方法论，以 DIP 为核心平台，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每个人的生产力。
+**[KWeaver](https://github.com/kweaver-ai/kweaver-core)** 是一个用于构建、部署和运行决策智能 AI 应用的开源生态系统。该生态系统采用本体作为业务知识网络的核心方法论，以 DIP 为核心平台，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每个人的生产力。
 
 DIP 平台包含 ADP、Decision Agent、DIP Studio 和 AI Store 等关键子系统。
 

@@ -4,9 +4,9 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
 
-**[ADP (AI Data Platform)](https://github.com/kweaver-ai/adp)** is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver)** project as well.
+**[ADP (AI Data Platform)](https://github.com/kweaver-ai/adp)** is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver-core)** project as well.
 
-**[KWeaver](https://github.com/kweaver-ai/kweaver)** is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
+**[KWeaver](https://github.com/kweaver-ai/kweaver-core)** is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
 
 The DIP platform includes key subsystems such as ADP, Decision Agent, DIP Studio, and AI Store.
 

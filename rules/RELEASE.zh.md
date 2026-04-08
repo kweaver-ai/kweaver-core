@@ -225,7 +225,7 @@ git push origin --delete release/1.2.0
 
 ### 验证发布
 
-- 检查 [GitHub Releases](https://github.com/kweaver-ai/kweaver/releases) 页面
+- 检查 [GitHub Releases](https://github.com/kweaver-ai/kweaver-core/releases) 页面
 - 验证制品下载和完整性
 - 确认 Docker 镜像可拉取
 
