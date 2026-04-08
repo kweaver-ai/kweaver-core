@@ -1,0 +1,51 @@
+name: Branch Name Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  branch-name-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          echo "Checking branch name: $BRANCH_NAME"
+
+          # Skip validation for bots
+          if echo "$BRANCH_NAME" | grep -qE '^(dependabot|renovate)/'; then
+            echo "⏭️  Skipping bot branch: $BRANCH_NAME"
+            exit 0
+          fi
+
+          # Allowed branch name patterns:
+          #   <type>/<kebab-case-description>
+          #   release/<semver>
+          VALID_TYPES="feature|feat|fix|hotfix|docs|refactor|test|chore|ci|perf|build|style|revert"
+
+          # Pattern breakdown:
+          #   1. Standard type branches:  type/description  or  type/N-description (with issue number)
+          #   2. Release branches:        release/1.2.3 or release/1.2.3-rc.1
+          PATTERN="^(${VALID_TYPES})\/[a-z0-9][a-z0-9._-]*$|^release\/[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9._-]+)?$"
+
+          if echo "$BRANCH_NAME" | grep -qE "$PATTERN"; then
+            echo "✅ Branch name is valid: $BRANCH_NAME"
+          else
+            echo "❌ Invalid branch name: $BRANCH_NAME"
+            echo ""
+            echo "Branch names must follow the format: <type>/<description>"
+            echo ""
+            echo "Valid types: ${VALID_TYPES//|/, }"
+            echo "Description: lowercase alphanumeric with hyphens, dots, or underscores"
+            echo ""
+            echo "Examples:"
+            echo "  feature/add-oauth-support"
+            echo "  fix/123-memory-leak-in-loader   (with issue number)"
+            echo "  docs/update-api-reference"
+            echo "  chore/456-upgrade-dependencies   (with issue number)"
+            echo "  refactor/simplify-auth-flow"
+            echo "  release/1.2.0"
+            exit 1
+          fi
