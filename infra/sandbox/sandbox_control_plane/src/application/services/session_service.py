@@ -623,6 +623,7 @@ class SessionService:
             env_vars=session.env_vars,
             execution_id=execution_id,
             session_id=session.id,
+            working_directory=command.working_directory,
         )
 
         logger.info(

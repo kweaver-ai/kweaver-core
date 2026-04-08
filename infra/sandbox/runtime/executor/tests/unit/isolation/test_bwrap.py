@@ -140,3 +140,14 @@ class TestBubblewrapRunnerInit:
         assert "--setenv" in prefix
         assert "EVENT_JSON" in prefix
         assert "PYTHONPATH" in prefix
+
+    def test_build_base_args_uses_custom_working_directory(self):
+        """Test custom working directory is propagated to bwrap chdir."""
+        from pathlib import Path
+        from executor.infrastructure.isolation.bwrap import BubblewrapRunner
+
+        runner = BubblewrapRunner(Path("/tmp/workspace"))
+        args = runner._build_base_args("/workspace/skill/mini-wiki")
+
+        chdir_index = args.index("--chdir")
+        assert args[chdir_index + 1] == "/workspace/skill/mini-wiki"

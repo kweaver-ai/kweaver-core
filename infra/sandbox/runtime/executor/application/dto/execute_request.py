@@ -21,6 +21,10 @@ class ExecuteRequestDTO(BaseModel):
     event: dict = Field(default_factory=dict, description="Business data passed to handler")
     timeout: int = Field(default=300, description="Timeout in seconds", ge=1, le=3600)
     env_vars: dict = Field(default_factory=dict, description="Environment variables")
+    working_directory: str | None = Field(
+        default=None,
+        description="Optional execution directory relative to workspace root",
+    )
 
     def to_domain(self) -> "executor.domain.value_objects.ExecutionRequest":
         """
@@ -39,6 +43,7 @@ class ExecuteRequestDTO(BaseModel):
             session_id=self.session_id,
             event=self.event,
             env_vars=self.env_vars,
+            working_directory=self.working_directory,
         )
 
 

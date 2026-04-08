@@ -294,6 +294,7 @@ class TestDockerSchedulerService:
             event={},
             timeout=60,
             env_vars={},
+            working_directory="src/jobs",
         )
 
         result = await service.execute(
@@ -304,6 +305,7 @@ class TestDockerSchedulerService:
 
         assert result == "exec-123"
         executor_client.submit_execution.assert_called_once()
+        assert executor_client.submit_execution.call_args.kwargs["working_directory"] == "src/jobs"
 
     def test_select_least_loaded(self, service):
         """测试选择负载最低的节点"""

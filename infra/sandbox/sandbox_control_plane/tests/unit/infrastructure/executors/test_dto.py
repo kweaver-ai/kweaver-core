@@ -33,6 +33,7 @@ class TestExecutorExecuteRequest:
         assert request.event == {}
         assert request.timeout == 300  # default
         assert request.env_vars == {}  # default
+        assert request.working_directory is None
 
     def test_create_with_all_fields(self):
         """测试使用所有字段创建"""
@@ -43,7 +44,8 @@ class TestExecutorExecuteRequest:
             language="python",
             event={"name": "World"},
             timeout=60,
-            env_vars={"DEBUG": "true"}
+            env_vars={"DEBUG": "true"},
+            working_directory="src/jobs",
         )
 
         assert request.execution_id == "exec-123"
@@ -53,6 +55,7 @@ class TestExecutorExecuteRequest:
         assert request.event == {"name": "World"}
         assert request.timeout == 60
         assert request.env_vars == {"DEBUG": "true"}
+        assert request.working_directory == "src/jobs"
 
     def test_timeout_minimum(self):
         """测试超时最小值"""
@@ -127,6 +130,20 @@ class TestExecutorExecuteRequest:
         assert data["language"] == "python"
         assert data["event"] == {"name": "World"}
         assert data["timeout"] == 60
+
+    def test_model_dump_includes_working_directory(self):
+        """测试序列化包含工作目录"""
+        request = ExecutorExecuteRequest(
+            execution_id="exec-123",
+            session_id="sess-456",
+            code="echo hello",
+            language="shell",
+            working_directory="skill/mini-wiki",
+        )
+
+        data = request.model_dump()
+
+        assert data["working_directory"] == "skill/mini-wiki"
 
     def test_json_schema_examples(self):
         """测试 JSON schema 示例"""

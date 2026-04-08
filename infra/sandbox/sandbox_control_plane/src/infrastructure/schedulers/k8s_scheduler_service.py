@@ -214,6 +214,7 @@ class K8sSchedulerService(IScheduler):
                 event=execution_request.event,
                 timeout=execution_request.timeout,
                 env_vars=execution_request.env_vars,
+                working_directory=execution_request.working_directory,
             )
 
             logger.info(f"Execution submitted successfully: execution_id={execution_id}, session_id={session_id}")

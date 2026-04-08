@@ -5,11 +5,13 @@ Tests code wrapper generation for Lambda-style handler execution.
 """
 
 import pytest
+from pathlib import Path
 
 from executor.infrastructure.isolation.code_wrapper import (
     generate_python_wrapper,
     generate_javascript_wrapper,
     generate_shell_wrapper,
+    normalize_shell_code,
     validate_python_handler,
     extract_handler_signature,
     wrap_for_execution,
@@ -107,6 +109,38 @@ echo "Step 2"'''
 
         assert 'echo "Step 1"' in wrapper
         assert 'echo "Step 2"' in wrapper
+
+
+class TestNormalizeShellCode:
+    """Tests for normalize_shell_code."""
+
+    def test_normalize_strips_bash_prefix_for_command(self):
+        """Test stripping accidental bash prefix before a normal command."""
+        normalized = normalize_shell_code(
+            "bash python scripts/analyze_project.py",
+            Path("/workspace/skill/mini-wiki"),
+        )
+
+        assert normalized == "python scripts/analyze_project.py"
+
+    def test_normalize_strips_multiple_segments(self):
+        """Test stripping accidental bash prefix across chained commands."""
+        normalized = normalize_shell_code(
+            "bash cd xx/xx/ & bash python xxx.py",
+            Path("/workspace/skill/mini-wiki"),
+        )
+
+        assert normalized == "cd xx/xx/ & python xxx.py"
+
+    def test_normalize_keeps_valid_script_invocation(self, tmp_path: Path):
+        """Test preserving valid bash script invocation."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        (workspace / "run.sh").write_text("#!/bin/sh\necho ok\n")
+
+        normalized = normalize_shell_code("bash run.sh", workspace)
+
+        assert normalized == "bash run.sh"
 
 
 class TestValidatePythonHandler:

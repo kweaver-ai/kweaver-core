@@ -38,11 +38,13 @@ class TestExecutionRequest:
             timeout=60,
             env_vars={"DEBUG": "true"},
             execution_id="exec-123",
-            session_id="sess-456"
+            session_id="sess-456",
+            working_directory="src/tasks",
         )
 
         assert request.execution_id == "exec-123"
         assert request.session_id == "sess-456"
+        assert request.working_directory == "src/tasks"
 
     def test_language_python(self):
         """测试 Python 语言"""
@@ -213,6 +215,31 @@ class TestExecutionRequest:
             env_vars={}
         )
         assert request.event == event
+
+    def test_working_directory_normalized(self):
+        """测试工作目录归一化"""
+        request = ExecutionRequest(
+            code="echo hello",
+            language="shell",
+            event={},
+            timeout=60,
+            env_vars={},
+            working_directory="./skill/mini-wiki",
+        )
+
+        assert request.working_directory == "skill/mini-wiki"
+
+    def test_invalid_working_directory_raises_error(self):
+        """测试非法工作目录抛出错误"""
+        with pytest.raises(ValueError, match="working_directory must be a relative workspace path"):
+            ExecutionRequest(
+                code="echo hello",
+                language="shell",
+                event={},
+                timeout=60,
+                env_vars={},
+                working_directory="../etc",
+            )
 
     def test_is_dataclass(self):
         """测试是数据类"""

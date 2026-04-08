@@ -16,7 +16,7 @@ from typing import Optional
 import structlog
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from executor.application.commands.execute_code import ExecuteCodeCommand
 from executor.application.dto.execute_request import ExecuteRequestDTO
@@ -67,6 +67,20 @@ class ExecuteRequest(BaseModel):
     event: dict = Field(default_factory=dict, description="Business data passed to handler function")
     timeout: int = Field(default=300, description="Timeout in seconds", ge=1, le=3600)
     env_vars: dict = Field(default_factory=dict, description="Environment variables")
+    working_directory: Optional[str] = Field(
+        default=None,
+        description="Optional execution directory relative to workspace root",
+    )
+
+    @field_validator("working_directory")
+    @classmethod
+    def validate_working_directory(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        from executor.domain.value_objects import _normalize_working_directory
+
+        return _normalize_working_directory(value)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -78,7 +92,8 @@ class ExecuteRequest(BaseModel):
                     "language": "python",
                     "event": {"name": "World"},
                     "timeout": 10,
-                    "env_vars": {}
+                    "env_vars": {},
+                    "working_directory": "src"
                 },
                 {
                     "execution_id": "exec_20240115_abc12345",
@@ -87,7 +102,8 @@ class ExecuteRequest(BaseModel):
                     "language": "python",
                     "event": {"name": "Alice", "age": 25},
                     "timeout": 30,
-                    "env_vars": {}
+                    "env_vars": {},
+                    "working_directory": "scripts"
                 }
             ]
         }
@@ -651,6 +667,7 @@ def create_app() -> FastAPI:
             timeout=request.timeout,
             code_length=len(request.code),
             event_keys=list(request.event.keys()) if request.event else [],
+            working_directory=request.working_directory,
         )
 
         command = get_execute_command()
@@ -664,6 +681,7 @@ def create_app() -> FastAPI:
             event=request.event,
             timeout=request.timeout,
             env_vars=request.env_vars,
+            working_directory=request.working_directory,
         )
 
         # Execute in background - return immediately
