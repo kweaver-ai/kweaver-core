@@ -59,6 +59,16 @@ paths:
               - app
               - anonymous
           description: 账户类型：user（用户）、app（应用）、anonymous（匿名）
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - toon
+            default: json
+          description: 响应格式：json 或 toon，默认 json
       requestBody:
         required: true
         content:
