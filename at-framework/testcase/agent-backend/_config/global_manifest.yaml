@@ -1,38 +1,129 @@
 # 全局变量清单：agent-backend 模块
+# 用于智能体/提取等场景
 
 variables:
+  - name: agent_name_prefix
+    description: Agent名称前缀
+    type: string
+    example: "测试智能体"
+    required: false
+
+  - name: agent_profile
+    description: Agent描述
+    type: string
+    example: "这是一个用于测试的智能体"
+    required: false
+
+  - name: agent_avatar_type
+    description: Agent头像类型
+    type: integer
+    example: 1
+    required: false
+
+  - name: agent_avatar
+    description: Agent头像
+    type: string
+    example: "1"
+    required: false
+
+  - name: agent_product_key
+    description: Agent产品Key
+    type: string
+    example: "dip"
+    required: false
+
+  - name: agent_config_system_prompt
+    description: Agent系统提示词
+    type: string
+    example: "你是一个测试助手"
+    required: false
+
+  - name: agent_config_output_format
+    description: Agent输出格式
+    type: string
+    example: "markdown"
+    required: false
+
+  - name: llm_config_name
+    description: LLM配置名称
+    type: string
+    example: "deepseek-v3.1"
+    required: false
+
+  - name: llm_config_temperature
+    description: LLM温度参数
+    type: integer
+    example: 1
+    required: false
+
+  - name: business_domain_id
+    description: 业务域ID
+    type: string
+    example: "bd_public"
+    required: false
+
+  - name: publish_to_where
+    description: 发布位置
+    type: string
+    example: '["square"]'
+    required: false
+
+  - name: test_agent_id
+    description: 测试用Agent ID占位符
+    type: string
+    example: "non_existent_agent_id_12345"
+    required: false
+
+  - name: test_tpl_id
+    description: 测试用模板ID占位符
+    type: string
+    example: "999999999"
+    required: false
+
+  - name: test_product_id
+    description: 测试用产品ID占位符
+    type: string
+    example: "999999999"
+    required: false
+
+  - name: test_conversation_id
+    description: 测试用对话ID占位符
+    type: string
+    example: "non_existent_conversation_id"
+    required: false
+
+  - name: page
+    description: 分页页码
+    type: integer
+    example: 1
+    required: false
+
+  - name: page_limit
+    description: 分页大小
+    type: integer
+    example: 10
+    required: false
+
   - name: agent_id
-    description: Agent ID
+    description: Agent ID（运行时提取）
     type: string
     example: "agent-xxx-xxx-xxx"
-    required: true
-
-  - name: agent_name
-    description: Agent 名称
-    type: string
-    example: "test-agent"
-    required: true
-
-  - name: agent_type
-    description: Agent 类型
-    type: string
-    example: "decision"
     required: false
 
-  - name: task_id
-    description: 任务 ID
+  - name: agent_key
+    description: Agent Key（运行时提取）
     type: string
-    example: "task-xxx-xxx-xxx"
+    example: "test-agent-xxx"
     required: false
 
-  - name: task_status
-    description: 任务状态
+  - name: product_id
+    description: 产品ID（运行时提取）
     type: string
-    example: "running"
+    example: "product-xxx-xxx-xxx"
     required: false
 
-  - name: agent_status
-    description: Agent 状态
+  - name: tpl_id
+    description: 模板ID（运行时提取）
     type: string
-    example: "active"
+    example: "tpl-xxx-xxx-xxx"
     required: false

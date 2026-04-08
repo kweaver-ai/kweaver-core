@@ -1,31 +1,110 @@
 # 路径 → 作用域/标签/建议套件 映射：agent-backend 模块
 
 mappings:
+  # Agent Factory 模块全部API
   - paths:
-      - "agent-backend/**"
-    scope: "agent-backend"
+      - "agent-factory/**"
+    scope: "agent-factory"
     tags:
-      - "agent"
+      - "agent-factory"
       - "smoke"
     suggested_suites:
-      - "smoke_test.yaml"
+      - "agent_crud.yaml"
 
+  # Agent CRUD 相关
   - paths:
-      - "agent-backend/src/main/java/com/eisoo/agent/controller/AgentController.java"
-      - "agent-backend/src/main/java/com/eisoo/agent/service/AgentService.java"
-    scope: "agent"
+      - "agent-factory/src/main/java/**/controller/AgentController.java"
+      - "agent-factory/src/main/java/**/service/AgentService.java"
+    scope: "agent-crud"
     tags:
       - "agent"
       - "crud"
     suggested_suites:
       - "agent_crud.yaml"
 
+  # 产品相关
   - paths:
-      - "agent-backend/src/main/java/com/eisoo/agent/controller/TaskController.java"
-      - "agent-backend/src/main/java/com/eisoo/agent/service/TaskService.java"
-    scope: "task"
+      - "agent-factory/src/main/java/**/controller/ProductController.java"
+      - "agent-factory/src/main/java/**/service/ProductService.java"
+    scope: "product"
     tags:
-      - "task"
-      - "execution"
+      - "product"
+      - "crud"
     suggested_suites:
-      - "task_test.yaml"
+      - "product.yaml"
+
+  # 发布相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/PublishController.java"
+      - "agent-factory/src/main/java/**/service/PublishService.java"
+    scope: "publish"
+    tags:
+      - "publish"
+      - "agent"
+    suggested_suites:
+      - "agent_publish.yaml"
+
+  # 模板相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/AgentTemplateController.java"
+      - "agent-factory/src/main/java/**/service/AgentTemplateService.java"
+    scope: "template"
+    tags:
+      - "template"
+      - "crud"
+    suggested_suites:
+      - "agent_tpl.yaml"
+
+  # 对话管理相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/ConversationController.java"
+      - "agent-factory/src/main/java/**/service/ConversationService.java"
+    scope: "conversation"
+    tags:
+      - "conversation"
+      - "chat"
+    suggested_suites:
+      - "conversation.yaml"
+      - "chat.yaml"
+
+  # 已发布相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/PublishedController.java"
+      - "agent-factory/src/main/java/**/service/PublishedService.java"
+    scope: "published"
+    tags:
+      - "published"
+      - "agent"
+    suggested_suites:
+      - "published.yaml"
+
+  # 个人空间相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/PersonalSpaceController.java"
+      - "agent-factory/src/main/java/**/service/PersonalSpaceService.java"
+    scope: "personal-space"
+    tags:
+      - "personal-space"
+      - "list"
+    suggested_suites:
+      - "personal_space.yaml"
+
+  # 最近访问相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/RecentVisitController.java"
+      - "agent-factory/src/main/java/**/service/RecentVisitService.java"
+    scope: "recent-visit"
+    tags:
+      - "recent-visit"
+    suggested_suites:
+      - "recent_visit.yaml"
+
+  # 工具结果处理策略相关
+  - paths:
+      - "agent-factory/src/main/java/**/controller/ToolStrategyController.java"
+      - "agent-factory/src/main/java/**/service/ToolStrategyService.java"
+    scope: "tool-strategy"
+    tags:
+      - "tool-strategy"
+    suggested_suites:
+      - "tool_strategy.yaml"

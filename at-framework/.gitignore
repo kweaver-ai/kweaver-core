@@ -1,3 +1,9 @@
 /report/
 /venv/
 /.idea
+/**/__pycache__/
+/.github
+/.pytest_cache/
+/**/.claude/
+/**/allure-report/
+/**/logs/

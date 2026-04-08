@@ -1,0 +1,141 @@
+feature: Agent Factory API
+story: 已发布相关
+switch: y
+cases:
+# ==================== 创建用于已发布测试的Agent ====================
+- name: Setup_创建已发布测试Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '已发布测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'published-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "pub_test_agent_id": "$.id"
+    }
+  description: '创建用于已发布测试的Agent'
+
+- name: Setup_获取已发布测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${pub_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "pub_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建已发布测试Agent
+  description: '获取Agent详情以获取key'
+
+# ==================== 获取已发布智能体列表 ====================
+- name: Positive_获取已发布智能体列表_请求成功
+  url: 获取已发布智能体列表
+  body_params: |
+    {
+      "page": ${page},
+      "page_size": ${page_limit},
+      "name": ""
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_published_agent_list'
+
+# ==================== 获取已发布模板列表 ====================
+- name: Positive_获取已发布模板列表_请求成功
+  url: 获取已发布模板列表
+  query_params: |
+    {
+      "name": "",
+      "category_id": "",
+      "pageLimit": ${page_limit}
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_published_tpl_list'
+
+# ==================== 获取已发布智能体信息列表 ====================
+- name: Positive_获取已发布智能体信息列表_请求成功
+  url: 获取已发布智能体信息列表
+  body_params: |
+    {
+      "agent_keys": ["${pub_test_agent_key}"]
+    }
+  code_check: '200'
+  prev_case: Setup_获取已发布测试Agent详情
+  description: 'from pytest: test_get_published_agent_info_list'
+
+# ==================== 获取智能体详情 ====================
+- name: Positive_获取智能体详情_请求成功
+  url: 获取智能体详情(已发布或未发布)
+  path_params: |
+    {
+      "agent_id": "${pub_test_agent_id}",
+      "version": "v0"
+    }
+  code_check: '200'
+  prev_case: Setup_获取已发布测试Agent详情
+  description: 'from pytest: test_get_agent_market_detail'
+
+# ==================== 获取发布历史记录 ====================
+- name: Positive_获取发布历史记录_请求成功
+  url: 获取发布历史记录
+  path_params: |
+    {
+      "agent_id": "${pub_test_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_获取已发布测试Agent详情
+  description: 'from pytest: test_get_release_history'
+
+# ==================== Negative用例 ====================
+- name: Negative_获取已发布模板详情_不存在_请求失败
+  url: 获取已发布模板详情
+  path_params: |
+    {
+      "tpl_id": "${test_tpl_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_published_tpl_detail_not_exists'
+
+- name: Negative_获取智能体详情_不存在的Agent_请求失败
+  url: 获取智能体详情(已发布或未发布)
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}",
+      "version": "v1"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_agent_market_detail_not_exists'
+
+- name: Negative_获取发布历史记录_不存在的Agent_请求失败
+  url: 获取发布历史记录
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_release_history_not_exists - returns empty list'
+
+# ==================== 清理 ====================
+- name: Cleanup_删除已发布测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${pub_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_获取发布历史记录_请求成功
+  description: '清理：删除Agent'

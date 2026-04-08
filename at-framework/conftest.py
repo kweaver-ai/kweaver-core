@@ -17,17 +17,17 @@ def _default_bearer_auth():
     if src in ("login", "get_token", "token_provider"):
         user, pwd = "", ""
         try:
-            from src.common.token_provider import get_token
+            from src.common.token_provider import get_token, clear_token_cache
 
             user, pwd = at_env.admin_credentials(config)
             if user and pwd:
-                tok = get_token(user, pwd)
-                print("tok", tok)
+                # 清理缓存并强制刷新token，避免使用过期的缓存token
+                clear_token_cache(user)
+                tok = get_token(user, pwd, force_refresh=True)
                 if tok:
                     return "Bearer %s" % tok
         except Exception as ex:
-            print("user", user, "pwd", pwd)
-            print("获取 token 异常:", ex)
+            pass
     return "Bearer %s" % static_tok if static_tok else "Bearer "
 
 
@@ -119,20 +119,36 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session", autouse=True)
-@allure.step("会话清理（模块可选）")
 def clean_up(request):
+    print("\n========== CLEANUP FIXTURE STARTED ==========\n")
     # 仅当本会话实际收集到 test_run 中的 API 用例时才执行（避免只跑 tests/ 时误连环境）
     try:
         items = request.session.items or []
         if not any("test_run.py::" in getattr(i, "nodeid", "") or i.nodeid.startswith("test_run.py") for i in items):
+            print("No test_run items, skipping cleanup")
+            yield
             return
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error checking items: {e}")
+        yield
+        return
+
     if not at_env.clean_up_enabled(config):
+        print("Cleanup disabled")
+        yield
         return
+
     clean_up_module = at_env.clean_up_module_name(config)
+    print(f"Module: {_module_name}, clean_up_module: {clean_up_module}")
     if clean_up_module and clean_up_module != _module_name:
+        print("Module mismatch, skipping cleanup")
+        yield
         return
+
+    # yield 让测试先执行，测试结束后再执行清理
+    print("Tests will run now, cleanup after...\n")
+    yield
+    print("\n========== TESTS FINISHED, STARTING CLEANUP ==========\n")
 
     case_dir = os.path.abspath(_case_file)
     fn = load_session_clean_up(case_dir)
@@ -142,4 +158,6 @@ def clean_up(request):
             % _module_name
         )
         return
+    print(f"Calling session_clean_up for: {_module_name}")
     fn(config, allure)
+    print("\n========== CLEANUP FIXTURE COMPLETED ==========\n")

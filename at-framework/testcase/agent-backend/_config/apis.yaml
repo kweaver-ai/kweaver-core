@@ -1,76 +1,369 @@
 # API 列表：agent-backend 模块
+# 包含 Agent Factory API 和 Agent Backend API
 
-- name: 获取 Agent 列表
-  url: /api/agent-backend/v1/agents
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 创建 Agent
-  url: /api/agent-backend/v1/agents
+# ==================== Agent CRUD ====================
+- name: 创建Agent
+  url: /api/agent-factory/v3/agent
   method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 获取 Agent 详情
-  url: /api/agent-backend/v1/agents/${id}
+- name: 获取Agent列表
+  url: /api/agent-factory/v3/agent
   method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 更新 Agent
-  url: /api/agent-backend/v1/agents/${id}
+- name: 获取Agent详情
+  url: /api/agent-factory/v3/agent/${agent_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 更新Agent
+  url: /api/agent-factory/v3/agent/${agent_id}
   method: PUT
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 删除 Agent
-  url: /api/agent-backend/v1/agents/${id}
+- name: 删除Agent
+  url: /api/agent-factory/v3/agent/${agent_id}
   method: DELETE
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 启动 Agent
-  url: /api/agent-backend/v1/agents/${id}/start
-  method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 停止 Agent
-  url: /api/agent-backend/v1/agents/${id}/stop
-  method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 获取 Agent 状态
-  url: /api/agent-backend/v1/agents/${id}/status
+- name: 根据Key获取Agent详情
+  url: /api/agent-factory/v3/agent/by-key/${agent_key}
   method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 获取 Agent 日志
-  url: /api/agent-backend/v1/agents/${id}/logs
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 调用 Agent
-  url: /api/agent-backend/v1/agents/${id}/invoke
+- name: 复制Agent
+  url: /api/agent-factory/v3/agent/${agent_id}/copy
   method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 获取任务列表
-  url: /api/agent-backend/v1/tasks
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 创建任务
-  url: /api/agent-backend/v1/tasks
+- name: 复制Agent为模板
+  url: /api/agent-factory/v3/agent/${agent_id}/copy2tpl
   method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 获取任务状态
-  url: /api/agent-backend/v1/tasks/${id}
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 取消任务
-  url: /api/agent-backend/v1/tasks/${id}/cancel
+- name: 复制Agent为模板并发布
+  url: /api/agent-factory/v3/agent/${agent_id}/copy2tpl-and-publish
   method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
-- name: 健康检查
-  url: /api/agent-backend/v1/health
+- name: 获取SELF_CONFIG字段结构
+  url: /api/agent-factory/v3/agent-self-config-fields
   method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: AI自动生成内容
+  url: /api/agent-factory/v3/agent/ai-autogen
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 批量获取数据处理状态
+  url: /api/agent-factory/v3/agent/batch-check-index-status
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取内置头像
+  url: /api/agent-factory/v3/agent/avatar/built-in/${avatar_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取内置头像列表
+  url: /api/agent-factory/v3/agent/avatar/built-in
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 导出数据
+  url: /api/agent-factory/v3/agent-inout/export
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 导入数据
+  url: /api/agent-factory/v3/agent-inout/import
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取dolphin模板列表
+  url: /api/agent-factory/v3/agent/dolphin-tpl/list
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取文件扩展名映射
+  url: /api/agent-factory/v3/agent/temp-zone/file-ext-map
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 产品相关 ====================
+- name: 获取产品列表
+  url: /api/agent-factory/v3/product
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 创建产品
+  url: /api/agent-factory/v3/product
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取产品详情
+  url: /api/agent-factory/v3/product/${product_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 更新产品
+  url: /api/agent-factory/v3/product/${product_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 删除产品
+  url: /api/agent-factory/v3/product/${product_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 发布相关 ====================
+- name: 发布智能体
+  url: /api/agent-factory/v3/agent/${agent_id}/publish
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 取消发布智能体
+  url: /api/agent-factory/v3/agent/${agent_id}/unpublish
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取智能体分类
+  url: /api/agent-factory/v3/category
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取发布信息
+  url: /api/agent-factory/v3/agent/${agent_id}/publish-info
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 更新发布信息
+  url: /api/agent-factory/v3/agent/${agent_id}/publish-info
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 模板相关 ====================
+- name: 获取Agent模板详情
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 更新Agent模板
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 删除Agent模板
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 发布智能体模板
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}/publish
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 取消发布智能体模板
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}/unpublish
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取模板发布信息
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}/publish-info
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 更新模板发布信息
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}/publish-info
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 复制智能体模板
+  url: /api/agent-factory/v3/agent-tpl/${tpl_id}/copy
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 权限相关 ====================
+- name: 检查执行权限
+  url: /api/agent-factory/v3/agent-permission/execute
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取用户管理权限状态
+  url: /api/agent-factory/v3/agent-permission/management/user-status
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 个人空间相关 ====================
+- name: 获取个人空间Agent列表
+  url: /api/agent-factory/v3/personal-space/agent-list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取个人空间Agent模板列表
+  url: /api/agent-factory/v3/personal-space/agent-tpl-list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 已发布相关 ====================
+- name: 获取已发布智能体列表
+  url: /api/agent-factory/v3/published/agent
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取已发布模板列表
+  url: /api/agent-factory/v3/published/agent-tpl
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取已发布模板详情
+  url: /api/agent-factory/v3/published/agent-tpl/${tpl_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取已发布智能体信息列表
+  url: /api/agent-factory/v3/published/agent-info-list
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取智能体详情(已发布或未发布)
+  url: /api/agent-factory/v3/agent-market/agent/${agent_id}/version/${version}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取发布历史记录
+  url: /api/agent-factory/v3/agent/${agent_id}/release-history
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 最近访问相关 ====================
+- name: 获取最近访问的智能体
+  url: /api/agent-factory/v3/recent-visit/agent
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 工具结果处理策略相关 ====================
+- name: 获取结果处理策略分类列表
+  url: /api/agent-factory/v3/tool-result-process-strategy/category
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 根据分类获取结果处理策略列表
+  url: /api/agent-factory/v3/tool-result-process-strategy/category/${category_id}/strategy
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 对话管理相关 ====================
+- name: 获取对话详情
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 编辑对话
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 删除对话
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取对话列表
+  url: /api/agent-factory/v1/app/${app_key}/conversation
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 初始化对话
+  url: /api/agent-factory/v1/app/${app_key}/conversation
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 删除所有对话
+  url: /api/agent-factory/v1/app/${app_key}/conversation
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 标记对话已读
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}/mark_read
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 管理对话session
+  url: /api/agent-factory/v1/conversation/session/${conversation_id}
+  method: PUT
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 对话相关 ====================
+- name: 对话Completion
+  url: /api/agent-factory/v1/app/${app_key}/chat/completion
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 调试Completion
+  url: /api/agent-factory/v1/app/${app_key}/debug/completion
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: API Chat
+  url: /api/agent-factory/v1/app/${app_key}/api/chat/completion
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 终止对话
+  url: /api/agent-factory/v1/app/${app_key}/chat/termination
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取App详情
+  url: /api/agent-factory/v1/app/${app_key}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 对话恢复
+  url: /api/agent-factory/v1/app/${app_key}/chat/resume
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取Agent API文档
+  url: /api/agent-factory/v1/app/${app_key}/api/doc
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 文件检查
+  url: /api/agent-factory/v1/file/check
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+# ==================== 可观测性相关 ====================
+- name: 查询Agent可观测信息
+  url: /api/agent-factory/v1/observability/agent/${agent_id}/detail
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 查询Agent下的对话列表
+  url: /api/agent-factory/v1/observability/agent/${agent_key}/conversation
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取指定对话的session列表
+  url: /api/agent-factory/v1/observability/agent/${agent_id}/conversation/${conversation_id}/session
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取指定session的详情信息
+  url: /api/agent-factory/v1/observability/agent/${agent_id}/conversation/${conversation_id}/session/${session_id}/detail
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取指定session下的run列表
+  url: /api/agent-factory/v1/observability/agent/${agent_id}/conversation/${conversation_id}/session/${session_id}/run
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
+
+- name: 获取指定run的详情信息
+  url: /api/agent-factory/v1/observability/agent/${agent_id}/conversation/${conversation_id}/session/${session_id}/run/${run_id}/detail
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'

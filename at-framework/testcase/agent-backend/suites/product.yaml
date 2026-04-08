@@ -1,0 +1,133 @@
+feature: Agent Factory API
+story: 产品相关
+switch: y
+cases:
+# ==================== 获取产品列表 ====================
+- name: Positive_获取产品列表_请求成功
+  url: 获取产品列表
+  query_params: |
+    {
+      "page": ${page},
+      "pageLimit": ${page_limit}
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_product_list'
+
+# ==================== 创建产品 ====================
+- name: Setup_创建测试产品
+  url: 创建产品
+  body_params: |
+    {
+      "name": "{{ '测试产品_%s' | format(random_string(6, 8)) }}",
+      "description": "这是一个测试产品",
+      "key": "{{ 'test-product-%s' | format(random_string(6, 8)) }}"
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "created_product_id": "$.id"
+    }
+  description: '创建测试产品用于后续测试'
+
+# ==================== 获取产品详情 ====================
+- name: Positive_获取产品详情_存在的产品_请求成功
+  url: 获取产品详情
+  path_params: |
+    {
+      "product_id": "${created_product_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_创建测试产品
+  description: 'from pytest: test_get_product_detail_exists'
+
+# ==================== 更新产品 ====================
+- name: Positive_更新产品_存在的产品_请求成功
+  url: 更新产品
+  path_params: |
+    {
+      "product_id": "${created_product_id}"
+    }
+  body_params: |
+    {
+      "name": "{{ '更新后的产品_%s' | format(random_string(6, 8)) }}",
+      "description": "更新后的描述"
+    }
+  code_check: '204'
+  prev_case: Setup_创建测试产品
+  description: 'from pytest: test_update_product'
+
+# ==================== 删除产品 ====================
+- name: Positive_删除产品_存在的产品_请求成功
+  url: 删除产品
+  path_params: |
+    {
+      "product_id": "${created_product_id}"
+    }
+  code_check: '204'
+  prev_case: Setup_创建测试产品
+  description: 'from pytest: test_delete_product_success - 清理创建的产品'
+
+# ==================== 创建产品后立即删除 ====================
+- name: Setup_创建临时产品
+  url: 创建产品
+  body_params: |
+    {
+      "name": "{{ '临时产品_%s' | format(random_string(6, 8)) }}",
+      "description": "这是一个临时产品",
+      "key": "{{ 'temp-product-%s' | format(random_string(6, 8)) }}"
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "temp_product_id": "$.id"
+    }
+  description: '创建临时产品用于删除测试'
+
+- name: Positive_删除产品_验证删除成功_请求成功
+  url: 删除产品
+  path_params: |
+    {
+      "product_id": "${temp_product_id}"
+    }
+  code_check: '204'
+  prev_case: Setup_创建临时产品
+  description: '删除临时产品'
+
+# ==================== Negative用例 ====================
+- name: Negative_创建产品_缺少必填字段_请求失败
+  url: 创建产品
+  body_params: '{}'
+  code_check: '400'
+  description: 'from pytest: test_create_product_missing_fields'
+
+- name: Negative_获取产品详情_不存在_请求失败
+  url: 获取产品详情
+  path_params: |
+    {
+      "product_id": "${test_product_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_product_detail_not_exists'
+
+- name: Negative_更新产品_不存在_请求失败
+  url: 更新产品
+  path_params: |
+    {
+      "product_id": "${test_product_id}"
+    }
+  body_params: |
+    {
+      "name": "{{ '更新后的产品_%s' | format(random_string(6, 8)) }}",
+      "description": "更新后的描述"
+    }
+  code_check: '404'
+  description: 'from pytest: test_update_product (negative case)'
+
+- name: Negative_删除产品_不存在_请求失败
+  url: 删除产品
+  path_params: |
+    {
+      "product_id": "${test_product_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_delete_product_not_exists'

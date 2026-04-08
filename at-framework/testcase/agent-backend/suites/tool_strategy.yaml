@@ -1,0 +1,19 @@
+feature: Agent Factory API
+story: 工具结果处理策略
+switch: y
+cases:
+# ==================== 获取结果处理策略分类列表 ====================
+- name: Positive_获取结果处理策略分类列表_请求成功
+  url: 获取结果处理策略分类列表
+  code_check: '200'
+  description: 'from pytest: test_get_tool_strategy_categories'
+
+# ==================== 根据分类获取结果处理策略列表 ====================
+- name: Negative_根据分类获取结果处理策略列表_不存在的分类_请求失败
+  url: 根据分类获取结果处理策略列表
+  path_params: |
+    {
+      "category_id": "999999"
+    }
+  code_check: '400'
+  description: 'from pytest: test_get_tool_strategy_by_category_not_exists'

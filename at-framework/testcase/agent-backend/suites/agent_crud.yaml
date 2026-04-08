@@ -1,0 +1,370 @@
+feature: Agent Factory API
+story: Agent CRUD
+switch: y
+cases:
+# ==================== 创建Agent并测试后清理 ====================
+- name: Setup_创建测试Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "created_agent_id": "$.id"
+    }
+  description: '创建测试Agent用于后续测试'
+
+# ==================== 获取Agent详情 ====================
+- name: Positive_获取Agent详情_存在的Agent_请求成功
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${created_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_创建测试Agent
+  description: 'from pytest: test_get_agent_detail_exists'
+
+# ==================== 更新Agent ====================
+- name: Positive_更新Agent_存在的Agent_请求成功
+  url: 更新Agent
+  path_params: |
+    {
+      "agent_id": "${created_agent_id}"
+    }
+  body_params: |
+    {
+      "name": "{{ '更新后的智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "更新后的描述",
+      "avatar_type": 1,
+      "avatar": "1",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "你是更新后的测试助手",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "markdown"}
+      }
+    }
+  code_check: '204'
+  prev_case: Setup_创建测试Agent
+  description: 'from pytest: test_update_agent_success'
+
+# ==================== 根据Key获取Agent详情 ====================
+- name: Setup_创建带Key的测试Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ 'Key测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'key-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "key_test_agent_id": "$.id"
+    }
+  description: '创建带Key的测试Agent'
+
+- name: Setup_获取带Key的Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${key_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "key_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建带Key的测试Agent
+  description: '获取Agent详情以获取key'
+
+- name: Positive_根据Key获取Agent详情_存在的Key_请求成功
+  url: 根据Key获取Agent详情
+  path_params: |
+    {
+      "agent_key": "${key_test_agent_key}"
+    }
+  code_check: '200'
+  prev_case: Setup_获取带Key的Agent详情
+  description: 'from pytest: test_get_agent_by_key_exists'
+
+- name: Cleanup_删除带Key的测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${key_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Setup_创建带Key的测试Agent
+  description: '清理：删除带Key的测试Agent'
+
+# ==================== 复制Agent ====================
+- name: Setup_创建用于复制的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '复制测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'copy-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "copy_source_agent_id": "$.id"
+    }
+  description: '创建用于复制的测试Agent'
+
+- name: Positive_复制Agent_请求成功
+  url: 复制Agent
+  path_params: |
+    {
+      "agent_id": "${copy_source_agent_id}"
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "copied_agent_id": "$.id"
+    }
+  prev_case: Setup_创建用于复制的Agent
+  description: 'from pytest: test_copy_agent'
+
+- name: Cleanup_删除复制的Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${copied_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_复制Agent_请求成功
+  description: '清理：删除复制的Agent'
+
+- name: Cleanup_删除用于复制的源Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${copy_source_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_删除复制的Agent
+  description: '清理：删除源Agent'
+
+# ==================== 复制Agent为模板 ====================
+- name: Setup_创建用于复制为模板的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '模板测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'tpl-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "tpl_source_agent_id": "$.id"
+    }
+  description: '创建用于复制为模板的测试Agent'
+
+- name: Positive_复制Agent为模板_请求成功
+  url: 复制Agent为模板
+  path_params: |
+    {
+      "agent_id": "${tpl_source_agent_id}"
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "created_tpl_id": "$.id"
+    }
+  prev_case: Setup_创建用于复制为模板的Agent
+  description: 'from pytest: test_copy_agent_to_tpl'
+
+- name: Cleanup_删除创建的模板
+  switch: n
+  url: 删除Agent模板
+  path_params: |
+    {
+      "tpl_id": "${created_tpl_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_复制Agent为模板_请求成功
+  description: '清理：删除创建的模板'
+
+- name: Cleanup_删除用于模板测试的Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${tpl_source_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_删除创建的模板
+  description: '清理：删除源Agent'
+
+# ==================== Negative用例 ====================
+- name: Negative_创建Agent_缺少必填字段_请求失败
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "测试智能体"
+    }
+  code_check: '400'
+  description: 'from pytest: test_create_agent_missing_required_fields'
+
+- name: Negative_获取Agent详情_不存在的Agent_请求失败
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_agent_detail_not_exists'
+
+- name: Negative_更新Agent_不存在的Agent_请求失败
+  url: 更新Agent
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  body_params: |
+    {
+      "name": "{{ '更新后的智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "更新后的描述",
+      "avatar_type": 1,
+      "avatar": "1",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "你是更新后的测试助手",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "markdown"}
+      }
+    }
+  code_check: '404'
+  description: 'from pytest: test_update_agent (negative case)'
+
+- name: Negative_删除Agent_不存在的Agent_请求失败
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_delete_agent_not_exists'
+
+- name: Negative_根据Key获取Agent详情_不存在的Key_请求失败
+  url: 根据Key获取Agent详情
+  path_params: |
+    {
+      "agent_key": "non_existent_agent_key_12345"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_agent_by_key_not_exists'
+
+- name: Negative_复制Agent_不存在的Agent_请求失败
+  url: 复制Agent
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_copy_agent (negative case)'
+
+- name: Negative_复制Agent为模板_不存在的Agent_请求失败
+  url: 复制Agent为模板
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_copy_agent_to_tpl (negative case)'
+
+# ==================== 其他接口 ====================
+- name: Positive_获取SELF_CONFIG字段结构_请求成功
+  url: 获取SELF_CONFIG字段结构
+  code_check: '200'
+  description: 'from pytest: test_get_self_config_fields'
+
+- name: Positive_获取内置头像列表_请求成功
+  url: 获取内置头像列表
+  code_check: '200'
+  description: 'from pytest: test_get_built_in_avatars'
+
+- name: Positive_获取文件扩展名映射_请求成功
+  url: 获取文件扩展名映射
+  code_check: '200'
+  description: 'from pytest: test_get_file_ext_map'
+
+- name: Negative_导出数据_不存在的Agent_请求失败
+  url: 导出数据
+  body_params: |
+    {
+      "agent_ids": ["${test_agent_id}"]
+    }
+  code_check: '404'
+  description: 'from pytest: test_export_data_not_exists'
+
+- name: Negative_导入数据_参数错误_请求失败
+  url: 导入数据
+  body_params: |
+    {
+      "agents": []
+    }
+  code_check: '400'
+  description: 'from pytest: test_import_data_missing_params'
+
+# ==================== 清理初始创建的Agent ====================
+- name: Cleanup_删除测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${created_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Setup_创建测试Agent
+  description: '清理：删除初始创建的测试Agent'

@@ -1,17 +1,62 @@
 # 套件清单：agent-backend 模块
 
 suites:
-  - name: smoke_test.yaml
-    description: 冒烟测试
-    priority: high
-    estimated_duration: "5m"
-
+  # Agent CRUD 操作测试
   - name: agent_crud.yaml
-    description: Agent 增删改查测试
+    description: Agent CRUD操作测试 - 创建、获取、更新、删除Agent等接口
+    priority: high
+    estimated_duration: "15m"
+
+  # 产品相关测试
+  - name: product.yaml
+    description: 产品相关测试 - 产品CRUD接口测试
+    priority: high
+    estimated_duration: "8m"
+
+  # 发布相关测试
+  - name: agent_publish.yaml
+    description: 发布相关测试 - 发布、取消发布、分类等接口
     priority: high
     estimated_duration: "10m"
 
-  - name: task_test.yaml
-    description: 任务执行测试
+  # 模板相关测试
+  - name: agent_tpl.yaml
+    description: 模板相关测试 - 模板CRUD、发布等接口
+    priority: medium
+    estimated_duration: "10m"
+
+  # 对话管理测试
+  - name: conversation.yaml
+    description: 对话管理测试 - 对话CRUD、初始化等接口
+    priority: medium
+    estimated_duration: "8m"
+
+  # 已发布相关测试
+  - name: published.yaml
+    description: 已发布相关测试 - 已发布智能体和模板相关接口
+    priority: medium
+    estimated_duration: "8m"
+
+  # 对话相关测试
+  - name: chat.yaml
+    description: 对话相关测试 - 对话、调试、API Chat等接口
     priority: medium
     estimated_duration: "12m"
+
+  # 个人空间相关测试
+  - name: personal_space.yaml
+    description: 个人空间测试 - 个人空间Agent和模板列表接口
+    priority: medium
+    estimated_duration: "6m"
+
+  # 最近访问相关测试
+  - name: recent_visit.yaml
+    description: 最近访问测试 - 最近访问的智能体接口
+    priority: low
+    estimated_duration: "4m"
+
+  # 工具结果处理策略测试
+  - name: tool_strategy.yaml
+    description: 工具结果处理策略测试 - 策略分类和策略列表接口
+    priority: low
+    estimated_duration: "4m"

@@ -1,0 +1,354 @@
+feature: Agent Factory API
+story: 对话相关
+switch: y
+cases:
+# ==================== 创建并发布Agent用于对话测试 ====================
+- name: Setup_创建用于对话测试的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '对话测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'chat-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "chat_test_agent_id": "$.id"
+    }
+  description: '创建用于对话测试的Agent'
+
+- name: Setup_获取对话测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${chat_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "chat_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建用于对话测试的Agent
+  description: '获取Agent详情以获取key'
+
+- name: Setup_发布对话测试Agent
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${chat_test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "测试对话",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取对话测试Agent详情
+  description: '发布Agent'
+
+# ==================== 对话Completion ====================
+- name: Positive_对话Completion_请求成功
+  url: 对话Completion
+  path_params: |
+    {
+      "app_key": "${chat_test_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "你好，请介绍一下你自己",
+      "conversation_id": "",
+      "stream": false,
+      "agent_id": "${chat_test_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_发布对话测试Agent
+  resp_values: |
+    {
+      "chat_conversation_id": "$.conversation_id"
+    }
+  description: 'from pytest: test_chat_completion'
+
+# ==================== 对话Completion带历史对话 ====================
+- name: Positive_对话Completion_带历史对话_请求成功
+  url: 对话Completion
+  path_params: |
+    {
+      "app_key": "${chat_test_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "继续上一次的话题",
+      "conversation_id": "",
+      "stream": false,
+      "history": [
+        {"role": "user", "content": "你好"},
+        {"role": "assistant", "content": "你好，有什么可以帮助你的吗？"}
+      ],
+      "agent_id": "${chat_test_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_发布对话测试Agent
+  description: 'from pytest: test_chat_completion_with_history'
+
+# ==================== 创建未发布的Agent用于调试测试 ====================
+- name: Setup_创建用于调试测试的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '调试测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'debug-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "debug_test_agent_id": "$.id"
+    }
+  description: '创建用于调试测试的Agent（未发布）'
+
+- name: Setup_获取调试测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${debug_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "debug_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建用于调试测试的Agent
+  description: '获取Agent详情以获取key'
+
+# ==================== 调试Completion ====================
+- name: Positive_调试Completion_请求成功
+  url: 调试Completion
+  path_params: |
+    {
+      "app_key": "${debug_test_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "测试调试对话",
+      "agent_version": "v0",
+      "agent_id": "${debug_test_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Setup_获取调试测试Agent详情
+  description: 'from pytest: test_debug_completion'
+
+- name: Cleanup_删除调试测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${debug_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_调试Completion_请求成功
+  description: '清理：删除调试测试Agent'
+
+# ==================== 创建并发布为API的Agent ====================
+- name: Setup_创建用于API测试的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ 'API测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'api-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "api_test_agent_id": "$.id"
+    }
+  description: '创建用于API测试的Agent'
+
+- name: Setup_获取API测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${api_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "api_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建用于API测试的Agent
+  description: '获取Agent详情以获取key'
+
+- name: Setup_发布API测试Agent
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${api_test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "测试API对话",
+      "publish_to_where": ${publish_to_where},
+      "publish_to_bes": ["api_agent"]
+    }
+  code_check: '201'
+  prev_case: Setup_获取API测试Agent详情
+  description: '发布Agent为API'
+
+# ==================== API Chat ====================
+- name: Positive_API_Chat_请求成功
+  url: API Chat
+  path_params: |
+    {
+      "app_key": "${api_test_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "这是一个API调用测试",
+      "stream": false,
+      "agent_id": "${api_test_agent_id}",
+      "agent_key": "${api_test_agent_key}"
+    }
+  code_check: '200'
+  prev_case: Setup_发布API测试Agent
+  description: 'from pytest: test_api_chat_completion'
+
+# ==================== 获取Agent API文档 ====================
+- name: Positive_获取Agent_API文档_请求成功
+  url: 获取Agent API文档
+  path_params: |
+    {
+      "app_key": "${api_test_agent_key}"
+    }
+  body_params: |
+    {
+      "format": "openapi",
+      "agent_id": "${api_test_agent_id}",
+      "agent_version": "v1"
+    }
+  code_check: '200'
+  prev_case: Setup_发布API测试Agent
+  description: 'from pytest: test_get_agent_api_doc'
+
+- name: Cleanup_取消发布API测试Agent
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${api_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_获取Agent_API文档_请求成功
+  description: '清理：取消发布'
+
+- name: Cleanup_删除API测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${api_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布API测试Agent
+  description: '清理：删除Agent'
+
+# ==================== Negative用例 ====================
+- name: Negative_对话Completion_不存在的App_请求失败
+  url: 对话Completion
+  path_params: |
+    {
+      "app_key": "non_existent_app_key"
+    }
+  body_params: |
+    {
+      "query": "你好，请介绍一下你自己",
+      "conversation_id": "",
+      "stream": false,
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '400'
+  description: 'from pytest: test_chat_completion (negative case)'
+
+- name: Negative_终止对话_不存在的对话_请求失败
+  url: 终止对话
+  path_params: |
+    {
+      "app_key": "${chat_test_agent_key}"
+    }
+  body_params: |
+    {
+      "app_key": "${chat_test_agent_key}",
+      "conversation_id": "${test_conversation_id}"
+    }
+  code_check: '500'
+  prev_case: Setup_发布对话测试Agent
+  description: 'from pytest: test_chat_termination_not_exists'
+
+- name: Negative_对话恢复_不存在的对话_请求失败
+  url: 对话恢复
+  path_params: |
+    {
+      "app_key": "${chat_test_agent_key}"
+    }
+  body_params: |
+    {
+      "conversation_id": "${test_conversation_id}",
+      "session_id": "non_existent_session_id"
+    }
+  code_check: '500'
+  prev_case: Setup_发布对话测试Agent
+  description: 'from pytest: test_chat_resume_not_exists'
+
+# ==================== 清理对话测试Agent ====================
+- name: Cleanup_取消发布对话测试Agent
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${chat_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_对话Completion_带历史对话_请求成功
+  description: '清理：取消发布'
+
+- name: Cleanup_删除对话测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${chat_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布对话测试Agent
+  description: '清理：删除Agent'

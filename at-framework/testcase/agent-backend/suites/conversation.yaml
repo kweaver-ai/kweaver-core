@@ -1,0 +1,207 @@
+feature: Agent Factory API
+story: 对话管理
+switch: y
+cases:
+# ==================== 创建Agent用于对话管理测试 ====================
+- name: Setup_创建对话管理测试Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '对话管理测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'conv-mgmt-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "conv_mgmt_agent_id": "$.id"
+    }
+  description: '创建用于对话管理测试的Agent'
+
+- name: Setup_获取对话管理测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${conv_mgmt_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "conv_mgmt_agent_key": "$.key"
+    }
+  prev_case: Setup_创建对话管理测试Agent
+  description: '获取Agent详情以获取key'
+
+# ==================== 获取对话列表 ====================
+- name: Positive_获取对话列表_请求成功
+  url: 获取对话列表
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}"
+    }
+  query_params: |
+    {
+      "pageOffset": ${page_offset},
+      "pageLimit": ${page_limit}
+    }
+  code_check: '200'
+  prev_case: Setup_获取对话管理测试Agent详情
+  description: 'from pytest: test_get_conversation_list'
+
+# ==================== 初始化对话 ====================
+- name: Positive_初始化对话_请求成功
+  url: 初始化对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}"
+    }
+  body_params: |
+    {
+      "title": "新对话"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "init_conversation_id": "$.id"
+    }
+  prev_case: Setup_获取对话管理测试Agent详情
+  description: 'from pytest: test_init_conversation'
+
+# ==================== 获取对话详情 ====================
+- name: Positive_获取对话详情_请求成功
+  url: 获取对话详情
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${init_conversation_id}"
+    }
+  code_check: '200'
+  prev_case: Positive_初始化对话_请求成功
+  description: 'from pytest: test_get_conversation_detail'
+
+# ==================== 编辑对话 ====================
+- name: Positive_编辑对话_请求成功
+  url: 编辑对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${init_conversation_id}"
+    }
+  body_params: |
+    {
+      "title": "更新后的对话标题"
+    }
+  code_check: '204'
+  prev_case: Positive_初始化对话_请求成功
+  description: 'from pytest: test_update_conversation'
+
+# ==================== 删除对话 ====================
+- name: Positive_删除对话_请求成功
+  url: 删除对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${init_conversation_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_编辑对话_请求成功
+  description: 'from pytest: test_delete_conversation'
+
+# ==================== 删除所有对话 ====================
+- name: Setup_初始化多个对话
+  url: 初始化对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}"
+    }
+  body_params: |
+    {
+      "title": "测试对话1"
+    }
+  code_check: '200'
+  prev_case: Setup_创建对话管理测试Agent
+  description: '初始化测试对话'
+
+- name: Positive_删除所有对话_请求成功
+  url: 删除所有对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}"
+    }
+  code_check: '204'
+  prev_case: Setup_初始化多个对话
+  description: 'from pytest: test_delete_all_conversations'
+
+# ==================== Negative用例 ====================
+- name: Negative_获取对话详情_不存在的对话_请求失败
+  url: 获取对话详情
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${test_conversation_id}"
+    }
+  code_check: '500'
+  prev_case: Setup_创建对话管理测试Agent
+  description: 'from pytest: test_get_conversation_detail_not_exists'
+
+- name: Negative_编辑对话_不存在的对话_请求失败
+  url: 编辑对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${test_conversation_id}"
+    }
+  body_params: |
+    {
+      "title": "更新后的标题"
+    }
+  code_check: '404'
+  prev_case: Setup_创建对话管理测试Agent
+  description: 'from pytest: test_update_conversation_not_exists'
+
+- name: Negative_删除对话_不存在的对话_请求失败
+  url: 删除对话
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${test_conversation_id}"
+    }
+  code_check: '404'
+  prev_case: Setup_创建对话管理测试Agent
+  description: 'from pytest: test_delete_conversation_not_exists'
+
+- name: Negative_标记对话已读_缺少必填参数_请求失败
+  url: 标记对话已读
+  path_params: |
+    {
+      "app_key": "${conv_mgmt_agent_key}",
+      "conversation_id": "${test_conversation_id}"
+    }
+  body_params: |
+    {
+      "is_read": true
+    }
+  code_check: '400'
+  prev_case: Setup_创建对话管理测试Agent
+  description: 'from pytest: test_mark_conversation_read_missing_param'
+
+# ==================== 清理 ====================
+- name: Cleanup_删除对话管理测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${conv_mgmt_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Negative_标记对话已读_缺少必填参数_请求失败
+  description: '清理：删除Agent'

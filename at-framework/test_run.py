@@ -31,13 +31,15 @@ def _resolve_authorization(case_info):
     if src not in ("login", "get_token", "token_provider"):
         return BEARER_AUTH
     try:
-        from src.common.token_provider import get_token
+        from src.common.token_provider import get_token, clear_token_cache
 
         user, pwd = at_env.admin_credentials(config)
         if not user:
             allure.attach("token_source=login 但未配置 test_data.admin_user，已回退默认 Bearer", name="鉴权说明")
             return BEARER_AUTH
-        tok = get_token(user, pwd)
+        # 清理缓存并强制刷新token，避免使用过期的缓存token
+        clear_token_cache(user)
+        tok = get_token(user, pwd, force_refresh=True)
         if tok:
             return "Bearer %s" % tok
         allure.attach(

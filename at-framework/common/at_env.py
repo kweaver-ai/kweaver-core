@@ -19,7 +19,7 @@ get_token 账号（仅读取 [test_data]）：
   AT_CASE_FILE        与 CASE_FILE 相同含义，任一存在即可
 
 会话清理：
-  AT_CLEAN_UP          1 开启（默认关闭）
+  AT_CLEAN_UP          1 开启（默认启用）
   AT_CLEAN_UP_MODULE   限定清理模块名
 """
 from __future__ import annotations
@@ -100,7 +100,7 @@ def clean_up_enabled(ini_config: Dict[str, Dict[str, str]]) -> bool:
     v = _strip(os.environ.get("AT_CLEAN_UP"))
     if v:
         return v == "1"
-    return False
+    return True  # 默认启用清理
 
 
 def clean_up_module_name(ini_config: Dict[str, Dict[str, str]]) -> str:

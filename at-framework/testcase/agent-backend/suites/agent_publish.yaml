@@ -1,0 +1,214 @@
+feature: Agent Factory API
+story: 发布相关
+switch: y
+cases:
+# ==================== 创建并发布Agent ====================
+- name: Setup_创建用于发布的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '发布测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'publish-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "publish_test_agent_id": "$.id"
+    }
+  description: '创建用于发布测试的Agent'
+
+- name: Setup_获取发布测试Agent详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "publish_test_agent_key": "$.key"
+    }
+  prev_case: Setup_创建用于发布的Agent
+  description: '获取Agent详情以获取key'
+
+- name: Positive_发布智能体_正常场景_请求成功
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "测试发布智能体",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取发布测试Agent详情
+  description: 'from pytest: test_publish_agent_success'
+
+# ==================== 获取发布信息 ====================
+- name: Positive_获取发布信息_请求成功
+  url: 获取发布信息
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  code_check: '200'
+  prev_case: Positive_发布智能体_正常场景_请求成功
+  description: 'from pytest: test_get_publish_info'
+
+# ==================== 更新发布信息 ====================
+- name: Positive_更新发布信息_请求成功
+  url: 更新发布信息
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "更新后的发布信息"
+    }
+  code_check: '200'
+  prev_case: Positive_发布智能体_正常场景_请求成功
+  description: 'from pytest: test_update_publish_info'
+
+# ==================== 取消发布 ====================
+- name: Setup_创建用于取消发布的Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '取消发布测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'unpublish-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "unpublish_test_agent_id": "$.id"
+    }
+  description: '创建用于取消发布测试的Agent'
+
+- name: Setup_发布用于取消的Agent
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${unpublish_test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "测试取消发布",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_创建用于取消发布的Agent
+  description: '发布Agent'
+
+- name: Positive_取消发布智能体_请求成功
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${unpublish_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Setup_发布用于取消的Agent
+  description: 'from pytest: test_unpublish_agent'
+
+- name: Cleanup_删除取消发布测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${unpublish_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_取消发布智能体_请求成功
+  description: '清理：删除Agent'
+
+# ==================== 获取分类 ====================
+- name: Positive_获取智能体分类列表_请求成功
+  url: 获取智能体分类
+  code_check: '200'
+  description: 'from pytest: test_get_category'
+
+# ==================== Negative用例 ====================
+- name: Negative_发布智能体_不存在的Agent_请求失败
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "测试发布智能体",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '404'
+  description: 'from pytest: test_publish_agent_not_exists'
+
+- name: Negative_取消发布智能体_不存在的Agent_请求失败
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_unpublish_agent_not_exists'
+
+- name: Negative_获取发布信息_不存在的Agent_请求失败
+  url: 获取发布信息
+  path_params: |
+    {
+      "agent_id": "${test_agent_id}"
+    }
+  code_check: '404'
+  description: 'from pytest: test_get_publish_info_not_exists'
+
+# ==================== 清理发布测试Agent ====================
+- name: Cleanup_取消发布测试Agent
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_更新发布信息_请求成功
+  description: '清理：取消发布'
+
+- name: Cleanup_删除发布测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${publish_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布测试Agent
+  description: '清理：删除Agent'

@@ -1,0 +1,37 @@
+feature: Agent Factory API
+story: 最近访问相关
+switch: y
+cases:
+# ==================== 获取最近访问的智能体 ====================
+- name: Positive_获取最近访问的智能体_请求成功
+  url: 获取最近访问的智能体
+  query_params: |
+    {
+      "name": "",
+      "page": ${page},
+      "pageLimit": ${page_limit}
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_recent_visit_agents'
+
+- name: Positive_获取最近访问的智能体_带名称过滤_请求成功
+  url: 获取最近访问的智能体
+  query_params: |
+    {
+      "name": "测试",
+      "page": ${page},
+      "pageLimit": 20
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_recent_visit_agents_with_name_filter'
+
+- name: Positive_获取最近访问的智能体_分页参数_请求成功
+  url: 获取最近访问的智能体
+  query_params: |
+    {
+      "name": "",
+      "page": 2,
+      "pageLimit": 5
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_recent_visit_agents_pagination'

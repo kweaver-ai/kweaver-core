@@ -1,0 +1,106 @@
+feature: Agent Factory API
+story: 个人空间相关
+switch: y
+cases:
+# ==================== 创建用于个人空间测试的Agent ====================
+- name: Setup_创建个人空间测试Agent
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ '个人空间测试智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "${agent_profile}",
+      "key": "{{ 'personal-test-agent-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "${agent_config_system_prompt}",
+        "llms": [{"is_default": true, "llm_config": {"name": "gpt-4", "temperature": 1}}],
+        "output": {"default_format": "${agent_config_output_format}"}
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "personal_test_agent_id": "$.id"
+    }
+  description: '创建用于个人空间测试的Agent'
+
+# ==================== 获取个人空间Agent列表 ====================
+- name: Positive_获取个人空间Agent列表_请求成功
+  url: 获取个人空间Agent列表
+  query_params: |
+    {
+      "pageLimit": ${page_limit},
+      "name": "",
+      "publish_status": "",
+      "toBeFlag": "",
+      "agentCreatedType": ""
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_personal_agent_list'
+
+- name: Positive_获取个人空间Agent列表_带过滤条件_请求成功
+  url: 获取个人空间Agent列表
+  query_params: |
+    {
+      "pageLimit": 20,
+      "name": "测试",
+      "publish_status": "published",
+      "toBeFlag": "true",
+      "agentCreatedType": "custom"
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_personal_agent_list_with_filter'
+
+- name: Positive_获取个人空间Agent列表_验证创建的Agent_请求成功
+  url: 获取个人空间Agent列表
+  query_params: |
+    {
+      "pageLimit": ${page_limit},
+      "name": "",
+      "publish_status": "",
+      "toBeFlag": "",
+      "agentCreatedType": ""
+    }
+  code_check: '200'
+  prev_case: Setup_创建个人空间测试Agent
+  description: 'from pytest: test_get_personal_agent_list_verify_created'
+
+# ==================== 获取个人空间模板列表 ====================
+- name: Positive_获取个人空间模板列表_请求成功
+  url: 获取个人空间Agent模板列表
+  query_params: |
+    {
+      "pageLimit": ${page_limit},
+      "name": "",
+      "publish_status": "",
+      "agentTplCreatedType": ""
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_personal_tpl_list'
+
+- name: Positive_获取个人空间模板列表_带过滤条件_请求成功
+  url: 获取个人空间Agent模板列表
+  query_params: |
+    {
+      "pageLimit": 20,
+      "name": "模板",
+      "publish_status": "published",
+      "agentTplCreatedType": "custom"
+    }
+  code_check: '200'
+  description: 'from pytest: test_get_personal_tpl_list_with_filter'
+
+# ==================== 清理 ====================
+- name: Cleanup_删除个人空间测试Agent
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${personal_test_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_获取个人空间Agent列表_验证创建的Agent_请求成功
+  description: '清理：删除Agent'

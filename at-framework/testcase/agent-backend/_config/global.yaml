@@ -1,8 +1,42 @@
 # 全局变量：agent-backend 模块
+# Agent Factory API 测试所需的全局变量
 
-agent_id: "agent-test-001"
-agent_name: "test-agent"
-agent_type: "decision"
-task_id: "task-test-001"
-task_status: "running"
-agent_status: "active"
+# Agent 基础配置
+agent_name_prefix: "测试智能体"
+agent_profile: "这是一个用于测试的智能体"
+agent_avatar_type: 1
+agent_avatar: "1"
+agent_product_key: "dip"
+
+# Agent 配置模板
+agent_config_input_fields: [{"name": "query", "type": "string"}]
+agent_config_system_prompt: "你是一个测试助手"
+agent_config_output_format: "markdown"
+
+# LLM 配置
+llm_config_id: "2014253339969196032"
+llm_config_name: "deepseek-v3.1"
+llm_config_model_type: "llm"
+llm_config_temperature: 1
+llm_config_top_p: 1
+llm_config_top_k: 1
+llm_config_frequency_penalty: 0
+llm_config_presence_penalty: 0
+llm_config_max_tokens: 1000
+
+# 发布配置
+business_domain_id: "bd_public"
+biz_domain_id: "bd_public"
+publish_to_where: '["square"]'
+
+# 测试用的ID占位符（运行时会被替换）
+test_agent_id: "non_existent_agent_id_12345"
+test_tpl_id: "999999999"
+test_product_id: "999999999"
+test_conversation_id: "non_existent_conversation_id"
+test_category_id: "test_category_id"
+
+# 分页参数
+page: 1
+page_limit: 10
+page_offset: 0
