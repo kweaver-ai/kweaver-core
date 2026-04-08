@@ -35,7 +35,7 @@ After deployment, open `https://<node-ip>/studio`. Username: `admin`, initial pa
 
 | Item | Minimum | Recommended |
 | --- | --- | --- |
-| OS | CentOS 7/8+, RHEL 8 | CentOS 7 |
+| OS | Ubuntu 20.04+, CentOS 8+, RHEL 8+ | Ubuntu 22.04 LTS |
 | CPU | 16 cores | 24 cores |
 | Memory | 48 GB | 64 GB |
 | Disk | 200 GB | 500 GB |
