@@ -129,8 +129,24 @@ func (ps *PermissionServiceImpl) DeleteResources(ctx context.Context, resourceTy
 	return nil
 }
 
+func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
+	bytes, err := sonic.Marshal(resource)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			verrors.VegaBackend_InternalError_MarshalDataFailed).WithErrorDetails(err)
+	}
+
+	err = ps.mqClient.Pub(interfaces.AUTHORIZATION_RESOURCE_NAME_MODIFY, bytes)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			verrors.VegaBackend_InternalError_UpdateResourceFailed).WithErrorDetails(err)
+	}
+
+	return nil
+}
+
 func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceType string, ids []string,
-	ops []string, allowOperation bool) (map[string]interfaces.PermissionResourceOps, error) {
+	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
 
 	accountInfo := interfaces.AccountInfo{}
 	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
@@ -169,20 +185,4 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 	}
 
 	return idMap, nil
-}
-
-func (ps *PermissionServiceImpl) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
-	bytes, err := sonic.Marshal(resource)
-	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-			verrors.VegaBackend_InternalError_MarshalDataFailed).WithErrorDetails(err)
-	}
-
-	err = ps.mqClient.Pub(interfaces.AUTHORIZATION_RESOURCE_NAME_MODIFY, bytes)
-	if err != nil {
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-			verrors.VegaBackend_InternalError_UpdateResourceFailed).WithErrorDetails(err)
-	}
-
-	return nil
 }

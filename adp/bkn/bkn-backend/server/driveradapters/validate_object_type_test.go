@@ -36,7 +36,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -47,7 +47,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					OTName: "object1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -58,7 +58,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					OTName: "",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ObjectType_NullParameter_Name)
@@ -80,7 +80,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ObjectType_NullParameter_PrimaryKeys)
@@ -102,7 +102,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -122,7 +122,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ObjectType_NullParameter_DisplayKey)
@@ -147,7 +147,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -167,7 +167,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -187,7 +187,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop2",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -212,7 +212,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop2",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -238,7 +238,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					IncrementalKey: "prop2",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -259,7 +259,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					IncrementalKey: "prop2",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -285,7 +285,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					IncrementalKey: "prop2",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -312,7 +312,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -337,12 +337,13 @@ func Test_ValidateObjectType(t *testing.T) {
 							DisplayName: "logic1",
 							DataSource: &interfaces.ResourceInfo{
 								Type: "operator",
+								ID:   "res1",
 							},
 						},
 					},
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -365,6 +366,10 @@ func Test_ValidateObjectType(t *testing.T) {
 							Name:        "logic1",
 							Type:        "metric",
 							DisplayName: "logic1",
+							DataSource: &interfaces.ResourceInfo{
+								Type: "metric",
+								ID:   "metric-model-1",
+							},
 							Parameters: []interfaces.Parameter{
 								{
 									Name: "",
@@ -374,7 +379,65 @@ func Test_ValidateObjectType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with empty logic property type\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "prop1",
+							Type:        "string",
+							DisplayName: "prop1",
+						},
+					},
+					PrimaryKeys: []string{"prop1"},
+					DisplayKey:  "prop1",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "logic1",
+							Type:        "",
+							DisplayName: "logic1",
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Failed with logic property data source missing id\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "prop1",
+							Type:        "string",
+							DisplayName: "prop1",
+						},
+					},
+					PrimaryKeys: []string{"prop1"},
+					DisplayKey:  "prop1",
+					LogicProperties: []*interfaces.LogicProperty{
+						{
+							Name:        "logic1",
+							Type:        "metric",
+							DisplayName: "logic1",
+							DataSource: &interfaces.ResourceInfo{
+								Type: "metric",
+								ID:   "",
+							},
+						},
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -399,12 +462,13 @@ func Test_ValidateObjectType(t *testing.T) {
 							DisplayName: "logic1",
 							DataSource: &interfaces.ResourceInfo{
 								Type: "metric",
+								ID:   "metric-model-1",
 							},
 						},
 					},
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -424,7 +488,7 @@ func Test_ValidateObjectType(t *testing.T) {
 					DisplayKey:  "prop1",
 				},
 			}
-			err := ValidateObjectType(ctx, ot)
+			err := ValidateObjectType(ctx, ot, true)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -471,7 +535,7 @@ func Test_ValidateDataProperties(t *testing.T) {
 					DisplayName: "prop2",
 				},
 			}
-			err := ValidateDataProperties(ctx, propertyNames, dataProperties)
+			err := ValidateDataProperties(ctx, propertyNames, dataProperties, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -489,7 +553,7 @@ func Test_ValidateDataProperties(t *testing.T) {
 					DisplayName: "prop2",
 				},
 			}
-			err := ValidateDataProperties(ctx, propertyNames, dataProperties)
+			err := ValidateDataProperties(ctx, propertyNames, dataProperties, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -502,7 +566,7 @@ func Test_ValidateDataProperties(t *testing.T) {
 					DisplayName: "prop2",
 				},
 			}
-			err := ValidateDataProperties(ctx, propertyNames, dataProperties)
+			err := ValidateDataProperties(ctx, propertyNames, dataProperties, true)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -518,7 +582,7 @@ func Test_ValidateDataProperty(t *testing.T) {
 				Type:        "string",
 				DisplayName: "prop1",
 			}
-			err := ValidateDataProperty(ctx, prop)
+			err := ValidateDataProperty(ctx, prop, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -528,7 +592,7 @@ func Test_ValidateDataProperty(t *testing.T) {
 				Type:        "invalid_type",
 				DisplayName: "prop1",
 			}
-			err := ValidateDataProperty(ctx, prop)
+			err := ValidateDataProperty(ctx, prop, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -541,7 +605,7 @@ func Test_ValidateDataProperty(t *testing.T) {
 					Name: "",
 				},
 			}
-			err := ValidateDataProperty(ctx, prop)
+			err := ValidateDataProperty(ctx, prop, true)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -563,7 +627,7 @@ func Test_ValidateIndexConfig(t *testing.T) {
 					Enabled: false,
 				},
 			}
-			err := ValidateIndexConfig(ctx, config)
+			err := ValidateIndexConfig(ctx, config, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -574,7 +638,7 @@ func Test_ValidateIndexConfig(t *testing.T) {
 					IgnoreAboveLen: 0,
 				},
 			}
-			err := ValidateIndexConfig(ctx, config)
+			err := ValidateIndexConfig(ctx, config, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -585,7 +649,7 @@ func Test_ValidateIndexConfig(t *testing.T) {
 					Analyzer: "invalid_analyzer",
 				},
 			}
-			err := ValidateIndexConfig(ctx, config)
+			err := ValidateIndexConfig(ctx, config, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -596,8 +660,19 @@ func Test_ValidateIndexConfig(t *testing.T) {
 					ModelID: "",
 				},
 			}
-			err := ValidateIndexConfig(ctx, config)
+			err := ValidateIndexConfig(ctx, config, true)
 			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with vector enabled and empty model ID when strictMode is false\n", func() {
+			config := interfaces.IndexConfig{
+				VectorConfig: interfaces.VectorConfig{
+					Enabled: true,
+					ModelID: "",
+				},
+			}
+			err := ValidateIndexConfig(ctx, config, false)
+			So(err, ShouldBeNil)
 		})
 	})
 }
@@ -677,7 +752,7 @@ func Test_ValidateVectorConfig(t *testing.T) {
 			config := interfaces.VectorConfig{
 				Enabled: false,
 			}
-			err := ValidateVectorConfig(ctx, config)
+			err := ValidateVectorConfig(ctx, config, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -686,17 +761,26 @@ func Test_ValidateVectorConfig(t *testing.T) {
 				Enabled: true,
 				ModelID: "model1",
 			}
-			err := ValidateVectorConfig(ctx, config)
+			err := ValidateVectorConfig(ctx, config, true)
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Failed with empty model ID\n", func() {
+		Convey("Failed with empty model ID when strict\n", func() {
 			config := interfaces.VectorConfig{
 				Enabled: true,
 				ModelID: "",
 			}
-			err := ValidateVectorConfig(ctx, config)
+			err := ValidateVectorConfig(ctx, config, true)
 			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with empty model ID when not strict\n", func() {
+			config := interfaces.VectorConfig{
+				Enabled: true,
+				ModelID: "",
+			}
+			err := ValidateVectorConfig(ctx, config, false)
+			So(err, ShouldBeNil)
 		})
 	})
 }

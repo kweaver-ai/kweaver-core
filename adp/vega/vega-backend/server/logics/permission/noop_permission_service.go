@@ -27,18 +27,18 @@ func (n *NoopPermissionService) DeleteResources(ctx context.Context, resourceTyp
 	return nil
 }
 
+func (n *NoopPermissionService) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
+	return nil
+}
+
 func (n *NoopPermissionService) FilterResources(ctx context.Context, resourceType string, ids []string,
-	ops []string, allowOperation bool) (map[string]interfaces.PermissionResourceOps, error) {
+	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
 	result := make(map[string]interfaces.PermissionResourceOps)
 	for _, id := range ids {
 		result[id] = interfaces.PermissionResourceOps{
 			ResourceID: id,
-			Operations: ops,
+			Operations: fullOps,
 		}
 	}
 	return result, nil
-}
-
-func (n *NoopPermissionService) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
-	return nil
 }

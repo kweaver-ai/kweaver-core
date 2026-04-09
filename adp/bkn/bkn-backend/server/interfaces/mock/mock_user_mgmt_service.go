@@ -21,7 +21,6 @@ import (
 type MockUserMgmtService struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserMgmtServiceMockRecorder
-	isgomock struct{}
 }
 
 // MockUserMgmtServiceMockRecorder is the mock recorder for MockUserMgmtService.
@@ -50,7 +49,7 @@ func (m *MockUserMgmtService) GetAccountNames(ctx context.Context, accountInfos 
 }
 
 // GetAccountNames indicates an expected call of GetAccountNames.
-func (mr *MockUserMgmtServiceMockRecorder) GetAccountNames(ctx, accountInfos any) *gomock.Call {
+func (mr *MockUserMgmtServiceMockRecorder) GetAccountNames(ctx, accountInfos interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountNames", reflect.TypeOf((*MockUserMgmtService)(nil).GetAccountNames), ctx, accountInfos)
 }

@@ -112,6 +112,15 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		attr.Key("branch").String(branch),
 	)
 
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 校验业务知识网络存在性
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
@@ -169,7 +178,7 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	// 校验 请求体中目标模型名称合法性
-	err = ValidateObjectTypes(ctx, knID, objectTypes)
+	err = ValidateObjectTypes(ctx, knID, objectTypes, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -178,7 +187,7 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	//调用创建
-	otIDs, err := r.ots.CreateObjectTypes(ctx, nil, objectTypes, mode, true, true)
+	otIDs, err := r.ots.CreateObjectTypes(ctx, nil, objectTypes, mode, true, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -203,6 +212,89 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateObjectTypes Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
+}
+
+// ValidateObjectTypesByIn 仅校验对象类依赖存在性，不写库（内部）
+func (r *restHandler) ValidateObjectTypesByIn(c *gin.Context) {
+	logger.Debug("Handler ValidateObjectTypesByIn Start")
+	v := visitor.GenerateVisitor(c)
+	r.ValidateObjectTypesForKN(c, v)
+}
+
+// ValidateObjectTypesByEx 仅校验对象类依赖存在性，不写库（外部）
+func (r *restHandler) ValidateObjectTypesByEx(c *gin.Context) {
+	logger.Debug("Handler ValidateObjectTypesByEx Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验对象类", trace.WithSpanKind(trace.SpanKindServer))
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.ValidateObjectTypesForKN(c, visitor)
+}
+
+// ValidateObjectTypesForKN 仅校验对象类依赖存在性，不写库
+func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Visitor) {
+	logger.Debug("Handler ValidateObjectTypesForKN Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验对象类", trace.WithSpanKind(trace.SpanKindServer))
+
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
+	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+
+	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	if err != nil {
+		rest.ReplyError(c, err.(*rest.HTTPError))
+		return
+	}
+	if !exist {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		return
+	}
+
+	var requestData struct {
+		Entries []*interfaces.ObjectType `json:"entries"`
+	}
+	if err = c.ShouldBindJSON(&requestData); err != nil {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		return
+	}
+	objectTypes := requestData.Entries
+	if len(objectTypes) == 0 {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("No object type was passed in"))
+		return
+	}
+
+	if err = ValidateObjectTypes(ctx, knID, objectTypes, strictMode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	if err = r.ots.ValidateObjectTypes(ctx, knID, branch, objectTypes, strictMode, nil, mode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 }
 
 // 更新对象类(内部)
@@ -254,8 +346,20 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		attr.Key("branch").String(branch),
 	)
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 校验业务知识网络存在性
-	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	var exist bool
+	_, exist, err = r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -318,7 +422,7 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	// 校验 对象类基本参数的合法性, 非空、长度、是枚举值
-	err = ValidateObjectType(ctx, &objectType)
+	err = ValidateObjectType(ctx, &objectType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -360,7 +464,7 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 	objectType.KNID = knID
 
 	//根据id修改信息
-	err = r.ots.UpdateObjectType(ctx, nil, &objectType)
+	err = r.ots.UpdateObjectType(ctx, nil, &objectType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -407,6 +511,17 @@ func (r *restHandler) UpdateDataProperties(c *gin.Context) {
 		attr.Key("kn_id").String(knID),
 		attr.Key("branch").String(branch),
 	)
+
+	// Whether to validate vector index embedding model deps, default true (same as UpdateObjectType).
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
 
 	// 校验业务知识网络存在性
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
@@ -472,7 +587,7 @@ func (r *restHandler) UpdateDataProperties(c *gin.Context) {
 	}
 
 	// 校验数据属性
-	err = ValidateDataProperties(ctx, propertyNames, requestData.Entries)
+	err = ValidateDataProperties(ctx, propertyNames, requestData.Entries, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -482,7 +597,7 @@ func (r *restHandler) UpdateDataProperties(c *gin.Context) {
 	}
 
 	//根据id修改信息
-	err = r.ots.UpdateDataProperties(ctx, objectType, requestData.Entries)
+	err = r.ots.UpdateDataProperties(ctx, objectType, requestData.Entries, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 

@@ -65,7 +65,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err = js.ps.CheckPermission(ctx, interfaces.Resource{
+	err = js.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   jobInfo.KNID,
 	}, []string{interfaces.OPERATION_TYPE_TASK_MANAGE})
@@ -265,7 +265,7 @@ func (js *jobService) DeleteJobsByIDs(ctx context.Context, knID string, branch s
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err = js.ps.CheckPermission(ctx, interfaces.Resource{
+	err = js.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_TASK_MANAGE})
@@ -372,7 +372,7 @@ func (js *jobService) ListJobs(ctx context.Context, queryParams interfaces.JobsQ
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := js.ps.CheckPermission(ctx, interfaces.Resource{
+	err := js.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   queryParams.KNID,
 	}, []string{interfaces.OPERATION_TYPE_TASK_MANAGE})
@@ -419,7 +419,7 @@ func (js *jobService) ListTasks(ctx context.Context, queryParams interfaces.Task
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := js.ps.CheckPermission(ctx, interfaces.Resource{
+	err := js.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   queryParams.KNID,
 	}, []string{interfaces.OPERATION_TYPE_TASK_MANAGE})

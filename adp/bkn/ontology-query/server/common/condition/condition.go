@@ -17,6 +17,13 @@ import (
 
 const MaxSubCondition = 100
 
+// Filter field names in API are object-type data property names (not view column names).
+const (
+	errFmtUnknownObjectTypeProperty = "过滤字段「%s」不是对象类的数据属性名；请使用对象类中已定义的数据属性作为 field"
+	errFmtBinaryPropertyNoFilter    = "过滤字段「%s」为 binary 类型，不支持过滤"
+	errFmtMissingViewMappedField    = "属性「%s」未配置视图映射字段(mapped_field)，无法通过数据视图查询"
+)
+
 // sql的字符串转义
 var Special = strings.NewReplacer(`\`, `\\\\`, `'`, `\'`, `%`, `\%`, `_`, `\_`)
 
@@ -55,12 +62,12 @@ func NewCondWithOpr(ctx context.Context, cfg *CondCfg, fieldScope uint8, fieldsM
 		if cfg.Name != AllField {
 			field, ok := fieldsMap[cfg.Name]
 			if !ok {
-				return nil, fmt.Errorf("condition config field name '%s' must in view original fields", cfg.Name)
+				return nil, fmt.Errorf(errFmtUnknownObjectTypeProperty, cfg.Name)
 			}
 
 			// 如果字段类型是 binary 类型，则不支持过滤
 			if field.Type == dtype.DATATYPE_BINARY {
-				return nil, fmt.Errorf("condition config field '%s' is binary type, do not support filtering", cfg.Name)
+				return nil, fmt.Errorf(errFmtBinaryPropertyNoFilter, cfg.Name)
 			}
 
 			cfg.NameField = field
@@ -162,7 +169,7 @@ func getFilterFieldName(name string, fieldsMap map[string]*DataProperty, isFullT
 
 	// 全文检索情况下，text 类型的字段不需要添加 keyword 后缀
 	// 精确查询情况下，text 类型的字段配了keyword索引，则给字段名加上后缀 .keyword
-	if !isFullTextQuery &&
+	if !isFullTextQuery && ok1 &&
 		fieldInfo.Type == dtype.DATATYPE_TEXT &&
 		fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.KeywordConfig.Enabled {
 		name = wrapKeyWordFieldName(name)
@@ -214,15 +221,18 @@ func rewriteCondWithOpr(ctx context.Context, cfg *CondCfg, fieldsMap map[string]
 		if cfg.Name != AllField {
 			field, ok := fieldsMap[cfg.Name]
 			if !ok {
-				return nil, fmt.Errorf("condition config field name '%s' must in view original fields", cfg.Name)
+				return nil, fmt.Errorf(errFmtUnknownObjectTypeProperty, cfg.Name)
 			}
 
 			// 如果字段类型是 binary 类型，则不支持过滤
 			if field.Type == dtype.DATATYPE_BINARY {
-				return nil, fmt.Errorf("condition config field '%s' is binary type, do not support filtering", cfg.Name)
+				return nil, fmt.Errorf(errFmtBinaryPropertyNoFilter, cfg.Name)
 			}
 
 			cfg.NameField = field
+			if field.MappedField.Name == "" {
+				return nil, fmt.Errorf(errFmtMissingViewMappedField, cfg.Name)
+			}
 		}
 	}
 

@@ -586,6 +586,10 @@ func Test_objectTypeService_CreateObjectTypes(t *testing.T) {
 		ps := bmock.NewMockPermissionService(mockCtrl)
 		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
 		vba := bmock.NewMockVegaBackendAccess(mockCtrl)
+		dva := bmock.NewMockDataViewAccess(mockCtrl)
+		mfa := bmock.NewMockModelFactoryAccess(mockCtrl)
+		dda := bmock.NewMockDataModelAccess(mockCtrl)
+		aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
 		db, smock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 
 		service := &objectTypeService{
@@ -595,6 +599,10 @@ func Test_objectTypeService_CreateObjectTypes(t *testing.T) {
 			ps:         ps,
 			cga:        cga,
 			vba:        vba,
+			dva:        dva,
+			mfa:        mfa,
+			dda:        dda,
+			aoa:        aoa,
 		}
 
 		Convey("Success creating object types with normal mode\n", func() {
@@ -819,6 +827,202 @@ func Test_objectTypeService_CreateObjectTypes(t *testing.T) {
 			result, err := service.CreateObjectTypes(ctx, nil, objectTypes, interfaces.ImportMode_Normal, false, true)
 			So(err, ShouldNotBeNil)
 			So(len(result), ShouldEqual, 0)
+		})
+	})
+}
+
+func Test_objectTypeService_ValidateObjectTypes(t *testing.T) {
+	Convey("Test ValidateObjectTypes\n", t, func() {
+		ctx := context.Background()
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		ps := bmock.NewMockPermissionService(mockCtrl)
+		ota := bmock.NewMockObjectTypeAccess(mockCtrl)
+		dva := bmock.NewMockDataViewAccess(mockCtrl)
+		mfa := bmock.NewMockModelFactoryAccess(mockCtrl)
+		dda := bmock.NewMockDataModelAccess(mockCtrl)
+		aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
+		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
+		db, smock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+		service := &objectTypeService{
+			db:  db,
+			ps:  ps,
+			ota: ota,
+			dva: dva,
+			mfa: mfa,
+			dda: dda,
+			aoa: aoa,
+			cga: cga,
+		}
+
+		expectImportModeOK := func() {
+			ota.EXPECT().CheckObjectTypeExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+			ota.EXPECT().CheckObjectTypeExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+		}
+
+		Convey("Success with strict mode and no external deps\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTName: "ot1"}, KNID: "kn1"},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Strict mode skips logic property checks when strictMode is false\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						LogicProperties: []*interfaces.LogicProperty{
+							{Name: "lp1", Type: ""},
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, false, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Fails strict mode when metric model does not exist\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						LogicProperties: []*interfaces.LogicProperty{
+							{
+								Name: "lp1",
+								Type: interfaces.LOGIC_PROPERTY_TYPE_METRIC,
+								DataSource: &interfaces.ResourceInfo{
+									Type: interfaces.LOGIC_PROPERTY_TYPE_METRIC,
+									ID:   "mid1",
+								},
+							},
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			dda.EXPECT().GetMetricModelByID(gomock.Any(), "mid1").Return(nil, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success strict mode when metric model exists\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						LogicProperties: []*interfaces.LogicProperty{
+							{
+								Name: "lp1",
+								Type: interfaces.LOGIC_PROPERTY_TYPE_METRIC,
+								DataSource: &interfaces.ResourceInfo{
+									Type: interfaces.LOGIC_PROPERTY_TYPE_METRIC,
+									ID:   "mid1",
+								},
+							},
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			dda.EXPECT().GetMetricModelByID(gomock.Any(), "mid1").Return(&interfaces.MetricModel{ModelID: "mid1"}, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Fails strict mode when operator has empty operator_id\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						LogicProperties: []*interfaces.LogicProperty{
+							{
+								Name: "lp1",
+								Type: interfaces.LOGIC_PROPERTY_TYPE_OPERATOR,
+								DataSource: &interfaces.ResourceInfo{
+									Type: interfaces.LOGIC_PROPERTY_TYPE_OPERATOR,
+									ID:   "op1",
+								},
+							},
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			aoa.EXPECT().GetAgentOperatorByID(gomock.Any(), "op1").Return(interfaces.AgentOperator{}, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success strict mode when operator exists\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						LogicProperties: []*interfaces.LogicProperty{
+							{
+								Name: "lp1",
+								Type: interfaces.LOGIC_PROPERTY_TYPE_OPERATOR,
+								DataSource: &interfaces.ResourceInfo{
+									Type: interfaces.LOGIC_PROPERTY_TYPE_OPERATOR,
+									ID:   "op1",
+								},
+							},
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			aoa.EXPECT().GetAgentOperatorByID(gomock.Any(), "op1").Return(interfaces.AgentOperator{OperatorId: "op1"}, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Strict mode validates concept groups when present\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTName: "ot1"},
+					ConceptGroups:          []*interfaces.ConceptGroup{{CGID: "cg1"}},
+					KNID:                   "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			smock.ExpectBegin()
+			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), "kn1", interfaces.MAIN_BRANCH, []string{"cg1"}).Return([]*interfaces.ConceptGroup{{CGID: "cg1"}}, nil)
+			smock.ExpectRollback()
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("strictMode false skips concept group existence validation\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTName: "ot1"},
+					ConceptGroups:          []*interfaces.ConceptGroup{{CGID: "cg_not_in_db"}},
+					KNID:                   "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, false, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
 		})
 	})
 }
@@ -1074,7 +1278,7 @@ func Test_objectTypeService_UpdateObjectType(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
-			err := service.UpdateObjectType(ctx, nil, objectType)
+			err := service.UpdateObjectType(ctx, nil, objectType, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -1090,7 +1294,7 @@ func Test_objectTypeService_UpdateObjectType(t *testing.T) {
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_InternalError_CheckPermissionFailed))
 
-			err := service.UpdateObjectType(ctx, nil, objectType)
+			err := service.UpdateObjectType(ctx, nil, objectType, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1110,7 +1314,7 @@ func Test_objectTypeService_UpdateObjectType(t *testing.T) {
 			ota.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 			smock.ExpectRollback()
 
-			err := service.UpdateObjectType(ctx, nil, objectType)
+			err := service.UpdateObjectType(ctx, nil, objectType, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1131,7 +1335,7 @@ func Test_objectTypeService_UpdateObjectType(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 			smock.ExpectRollback()
 
-			err := service.UpdateObjectType(ctx, nil, objectType)
+			err := service.UpdateObjectType(ctx, nil, objectType, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1153,7 +1357,7 @@ func Test_objectTypeService_UpdateObjectType(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 			smock.ExpectRollback()
 
-			err := service.UpdateObjectType(ctx, nil, objectType)
+			err := service.UpdateObjectType(ctx, nil, objectType, true)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -1211,7 +1415,43 @@ func Test_objectTypeService_UpdateDataProperties(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
-			err := service.UpdateDataProperties(ctx, objectType, dataProperties)
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with vector index when strictMode false skips model validation\n", func() {
+			objectType := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object_type1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name: "prop1",
+						},
+					},
+				},
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			dataProperties := []*interfaces.DataProperty{
+				{
+					Name: "prop1",
+					IndexConfig: &interfaces.IndexConfig{
+						VectorConfig: interfaces.VectorConfig{
+							Enabled: true,
+							ModelID: "nonexistent-model",
+						},
+					},
+				},
+			}
+
+			smock.ExpectBegin()
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ota.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			smock.ExpectCommit()
+
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -1228,7 +1468,7 @@ func Test_objectTypeService_UpdateDataProperties(t *testing.T) {
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_InternalError_CheckPermissionFailed))
 
-			err := service.UpdateDataProperties(ctx, objectType, dataProperties)
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1257,7 +1497,7 @@ func Test_objectTypeService_UpdateDataProperties(t *testing.T) {
 			ota.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 			smock.ExpectCommit()
 
-			err := service.UpdateDataProperties(ctx, objectType, dataProperties)
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1287,7 +1527,7 @@ func Test_objectTypeService_UpdateDataProperties(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 			smock.ExpectCommit()
 
-			err := service.UpdateDataProperties(ctx, objectType, dataProperties)
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1316,7 +1556,7 @@ func Test_objectTypeService_UpdateDataProperties(t *testing.T) {
 			ota.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
-			err := service.UpdateDataProperties(ctx, objectType, dataProperties)
+			err := service.UpdateDataProperties(ctx, objectType, dataProperties, true)
 			So(err, ShouldBeNil)
 			So(len(objectType.DataProperties), ShouldEqual, 2)
 		})
@@ -2884,7 +3124,7 @@ func Test_objectTypeService_handleGroupRelations(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(conceptGroups, nil)
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-			err := service.handleGroupRelations(ctx, tx, objectType, currentTime)
+			err := service.handleGroupRelations(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -2894,7 +3134,7 @@ func Test_objectTypeService_handleGroupRelations(t *testing.T) {
 
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.handleGroupRelations(ctx, tx, objectType, currentTime)
+			err := service.handleGroupRelations(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -2905,7 +3145,7 @@ func Test_objectTypeService_handleGroupRelations(t *testing.T) {
 
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(conceptGroups, nil)
 
-			err := service.handleGroupRelations(ctx, tx, objectType, currentTime)
+			err := service.handleGroupRelations(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -2922,7 +3162,7 @@ func Test_objectTypeService_handleGroupRelations(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(conceptGroups, nil)
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.handleGroupRelations(ctx, tx, objectType, currentTime)
+			err := service.handleGroupRelations(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -2941,7 +3181,7 @@ func Test_objectTypeService_handleGroupRelations(t *testing.T) {
 			// When ConceptGroups is empty, GetConceptGroupsByIDs will be called with empty cgIDs
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]*interfaces.ConceptGroup{}, nil)
 
-			err := service.handleGroupRelations(ctx, tx, objectType2, currentTime)
+			err := service.handleGroupRelations(ctx, tx, objectType2, currentTime, true)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -2995,7 +3235,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(existingRelation, nil)
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -3022,7 +3262,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(existingRelation, nil)
 			cga.EXPECT().DeleteObjectTypesFromGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 
-			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -3048,7 +3288,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			cga.EXPECT().DeleteObjectTypesFromGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -3058,7 +3298,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -3069,7 +3309,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(conceptGroups, nil)
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -3086,7 +3326,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(conceptGroups, nil)
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -3107,7 +3347,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(existingRelation, nil)
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.syncObjectGroups(ctx, tx, objectType, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType, currentTime, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -3134,7 +3374,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(existingRelation, nil)
 			cga.EXPECT().DeleteObjectTypesFromGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
-			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime, false)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -3154,7 +3394,7 @@ func Test_objectTypeService_syncObjectGroups(t *testing.T) {
 
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(existingRelation, nil)
 
-			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime)
+			err := service.syncObjectGroups(ctx, tx, objectType2, currentTime, false)
 			So(err, ShouldBeNil)
 		})
 	})

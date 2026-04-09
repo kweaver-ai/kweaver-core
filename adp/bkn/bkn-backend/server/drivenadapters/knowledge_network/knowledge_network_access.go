@@ -1004,7 +1004,7 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 }
 
 func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
-	query interfaces.KNsQueryParams) ([]interfaces.Resource, error) {
+	query interfaces.KNsQueryParams) ([]interfaces.PermissionResource, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Select knowledge networks", trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
@@ -1028,7 +1028,7 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
 		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge networks, error: %s", err.Error()))
 		span.SetStatus(codes.Error, "Build sql failed ")
-		return []interfaces.Resource{}, err
+		return []interfaces.PermissionResource{}, err
 	}
 
 	// 记录处理的 sql 字符串
@@ -1039,13 +1039,13 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 		logger.Errorf("list data error: %v\n", err)
 		span.SetStatus(codes.Error, "List data error")
 		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
-		return []interfaces.Resource{}, err
+		return []interfaces.PermissionResource{}, err
 	}
 	defer rows.Close()
 
-	srcs := make([]interfaces.Resource, 0)
+	srcs := make([]interfaces.PermissionResource, 0)
 	for rows.Next() {
-		src := interfaces.Resource{
+		src := interfaces.PermissionResource{
 			Type: interfaces.RESOURCE_TYPE_KN,
 		}
 		err := rows.Scan(
@@ -1056,7 +1056,7 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 			logger.Errorf("row scan failed, err: %v \n", err)
 			span.SetStatus(codes.Error, "Row scan error")
 			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
-			return []interfaces.Resource{}, err
+			return []interfaces.PermissionResource{}, err
 		}
 		srcs = append(srcs, src)
 	}

@@ -30,7 +30,24 @@ func Test_ValidateActionType(t *testing.T) {
 					ObjectTypeID: "ot1",
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with strictMode false: empty ObjectTypeID and invalid condition not validated\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at-relaxed",
+					ATName:       "action_relaxed",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ObjectTypeID: "",
+					Condition: &interfaces.CondCfg{
+						Field: "field1",
+						// Operation omitted — invalid under strict validation
+					},
+				},
+			}
+			err := ValidateActionType(ctx, at, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -43,7 +60,7 @@ func Test_ValidateActionType(t *testing.T) {
 					ObjectTypeID: "ot1",
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -56,7 +73,7 @@ func Test_ValidateActionType(t *testing.T) {
 					ObjectTypeID: "ot1",
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ActionType_NullParameter_Name)
@@ -74,7 +91,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -91,7 +108,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -108,7 +125,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -124,7 +141,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -140,7 +157,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -158,7 +175,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -174,7 +191,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -191,8 +208,54 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with strictMode false: non-empty ActionSource.Type and empty or mixed binding fields allowed\n", func() {
+			atTool := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at-draft-tool",
+					ATName:       "action_draft",
+					ObjectTypeID: "ot1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ActionSource: interfaces.ActionSource{
+						Type:     interfaces.ACTION_SOURCE_TYPE_TOOL,
+						BoxID:    "",
+						ToolID:   "",
+						McpID:    "",
+						ToolName: "",
+					},
+				},
+			}
+			So(ValidateActionType(ctx, atTool, false), ShouldBeNil)
+
+			atToolMixed := *atTool
+			atToolMixed.ActionSource.McpID = "mcp1"
+			atToolMixed.ActionSource.ToolName = "tn"
+			So(ValidateActionType(ctx, &atToolMixed, false), ShouldBeNil)
+
+			atMcp := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at-draft-mcp",
+					ATName:       "action_draft_mcp",
+					ObjectTypeID: "ot1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ActionSource: interfaces.ActionSource{
+						Type:     interfaces.ACTION_SOURCE_TYPE_MCP,
+						McpID:    "",
+						ToolName: "",
+						BoxID:    "",
+						ToolID:   "",
+					},
+				},
+			}
+			So(ValidateActionType(ctx, atMcp, false), ShouldBeNil)
+
+			atMcpMixed := *atMcp
+			atMcpMixed.ActionSource.BoxID = "box1"
+			atMcpMixed.ActionSource.ToolID = "tid1"
+			So(ValidateActionType(ctx, &atMcpMixed, false), ShouldBeNil)
 		})
 
 		Convey("Success with valid condition\n", func() {
@@ -212,7 +275,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -230,7 +293,7 @@ func Test_ValidateActionType(t *testing.T) {
 		// 			},
 		// 		},
 		// 	}
-		// 	err := ValidateActionType(ctx, at)
+		// 	err := ValidateActionType(ctx, at, true)
 		// 	So(err, ShouldNotBeNil)
 		// })
 
@@ -250,7 +313,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -271,7 +334,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -298,7 +361,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil) // and/or operation doesn't require field
 		})
 
@@ -319,7 +382,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -340,7 +403,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -361,7 +424,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -382,7 +445,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -403,7 +466,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -438,7 +501,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -451,7 +514,7 @@ func Test_ValidateActionType(t *testing.T) {
 					ObjectTypeID: "",
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -472,13 +535,34 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ActionType_InvalidParameter)
 		})
 
-		Convey("Failed with empty ObjectTypeID but parameter using property\n", func() {
+		Convey("Success with empty ObjectTypeID and condition when strictMode false\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at1",
+					ATName:       "action1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ObjectTypeID: "",
+					Condition: &interfaces.CondCfg{
+						ObjectTypeID: "ot1",
+						Field:        "field1",
+						Operation:    cond.OperationEq,
+						ValueOptCfg: interfaces.ValueOptCfg{
+							Value: "value1",
+						},
+					},
+				},
+			}
+			err := ValidateActionType(ctx, at, false)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Failed with empty ObjectTypeID but parameter using property (strict)\n", func() {
 			at := &interfaces.ActionType{
 				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
 					ATID:         "at1",
@@ -494,10 +578,30 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ActionType_InvalidParameter)
+		})
+
+		Convey("Success with empty ObjectTypeID and parameter using property when strictMode false\n", func() {
+			at := &interfaces.ActionType{
+				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+					ATID:         "at1",
+					ATName:       "action1",
+					ActionType:   interfaces.ACTION_TYPE_ADD,
+					ObjectTypeID: "",
+					Parameters: []interfaces.Parameter{
+						{
+							Name:      "param1",
+							ValueFrom: interfaces.VALUE_FROM_PROPERTY,
+							Value:     "prop1",
+						},
+					},
+				},
+			}
+			err := ValidateActionType(ctx, at, false)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("Success with empty ObjectTypeID and parameter using const\n", func() {
@@ -516,7 +620,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -535,7 +639,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -555,7 +659,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -575,7 +679,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -594,7 +698,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -623,7 +727,7 @@ func Test_ValidateActionType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateActionType(ctx, at)
+			err := ValidateActionType(ctx, at, true)
 			So(err, ShouldBeNil)
 		})
 	})

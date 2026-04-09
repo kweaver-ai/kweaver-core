@@ -305,7 +305,7 @@ func TestList_ReturnAll(t *testing.T) {
 
 	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}}
 	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(3), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"}, "c3": {ResourceID: "c3"},
 		}, nil)
@@ -334,7 +334,7 @@ func TestList_Pagination(t *testing.T) {
 
 	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}, {ID: "c4"}, {ID: "c5"}}
 	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(5), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"c1": {}, "c2": {}, "c3": {}, "c4": {}, "c5": {},
 		}, nil)
@@ -365,7 +365,7 @@ func TestList_OffsetBeyondTotal(t *testing.T) {
 
 	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}}
 	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(2), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"c1": {}, "c2": {},
 		}, nil)
@@ -394,7 +394,7 @@ func TestList_PermissionFiltersOut(t *testing.T) {
 	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}}
 	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(3), nil)
 	// 权限只返回 c1 和 c3，c2 被过滤
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"c1": {}, "c3": {},
 		}, nil)

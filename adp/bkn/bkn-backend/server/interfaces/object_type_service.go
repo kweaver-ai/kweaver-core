@@ -14,11 +14,12 @@ import (
 type ObjectTypeService interface {
 	CheckObjectTypeExistByID(ctx context.Context, knID string, branch string, otID string) (string, bool, error)
 	CheckObjectTypeExistByName(ctx context.Context, knID string, branch string, otName string) (string, bool, error)
-	CreateObjectTypes(ctx context.Context, tx *sql.Tx, objectTypes []*ObjectType, mode string, needCreateConceptGroupRelation bool, validateDependency bool) ([]string, error)
+	CreateObjectTypes(ctx context.Context, tx *sql.Tx, objectTypes []*ObjectType, mode string, needCreateConceptGroupRelation bool, strictMode bool) ([]string, error)
 	ListObjectTypes(ctx context.Context, tx *sql.Tx, query ObjectTypesQueryParams) ([]*ObjectType, int, error)
 	GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, otIDs []string) ([]*ObjectType, error)
-	UpdateObjectType(ctx context.Context, tx *sql.Tx, objectType *ObjectType) error
-	UpdateDataProperties(ctx context.Context, objectType *ObjectType, dataProperties []*DataProperty) error
+	UpdateObjectType(ctx context.Context, tx *sql.Tx, objectType *ObjectType, strictMode bool) error
+	// UpdateDataProperties updates object type data properties. When strictMode is true, vector index config (if enabled) is validated against the embedding small model service.
+	UpdateDataProperties(ctx context.Context, objectType *ObjectType, dataProperties []*DataProperty, strictMode bool) error
 	DeleteObjectTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, otIDs []string) error
 
 	GetObjectTypeByID(ctx context.Context, tx *sql.Tx, knID string, branch string, otID string) (*ObjectType, error)
@@ -33,4 +34,8 @@ type ObjectTypeService interface {
 
 	// 对象类写索引
 	InsertDatasetData(ctx context.Context, objectTypes []*ObjectType) error
+
+	// ValidateObjectTypes 仅校验依赖存在性，不写库
+	// When batch is nil, behavior matches history (DB existence only). For full-KN / concept-group preflight, pass an index from batchindex.CollectKNFromPayload / batchindex.CollectFromConceptGroups.
+	ValidateObjectTypes(ctx context.Context, knID string, branch string, objectTypes []*ObjectType, strictMode bool, batch *BatchIDIndex, mode string) error
 }

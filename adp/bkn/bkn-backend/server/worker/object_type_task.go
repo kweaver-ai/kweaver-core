@@ -89,6 +89,9 @@ func (ott *ObjectTypeTask) HandleObjectTypeTask(ctx context.Context, jobInfo *in
 	logger.Infof("开始处理 object type %s", objectType.OTID)
 
 	dataSource := objectType.DataSource
+	if dataSource == nil || dataSource.ID == "" {
+		return fmt.Errorf("object type [id:%s, name:%s] has no data source or data source ID is empty", objectType.OTID, objectType.OTName)
+	}
 	if dataSource.Type != "data_view" {
 		logger.Warnf("data source type %s is not data_view", dataSource.Type)
 		return nil

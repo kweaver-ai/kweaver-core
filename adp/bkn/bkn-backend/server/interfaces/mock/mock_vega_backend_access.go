@@ -21,7 +21,6 @@ import (
 type MockVegaBackendAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockVegaBackendAccessMockRecorder
-	isgomock struct{}
 }
 
 // MockVegaBackendAccessMockRecorder is the mock recorder for MockVegaBackendAccess.
@@ -51,7 +50,7 @@ func (m *MockVegaBackendAccess) CreateCatalog(ctx context.Context, req *interfac
 }
 
 // CreateCatalog indicates an expected call of CreateCatalog.
-func (mr *MockVegaBackendAccessMockRecorder) CreateCatalog(ctx, req any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) CreateCatalog(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCatalog", reflect.TypeOf((*MockVegaBackendAccess)(nil).CreateCatalog), ctx, req)
 }
@@ -65,7 +64,7 @@ func (m *MockVegaBackendAccess) CreateResource(ctx context.Context, req *interfa
 }
 
 // CreateResource indicates an expected call of CreateResource.
-func (mr *MockVegaBackendAccessMockRecorder) CreateResource(ctx, req any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) CreateResource(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResource", reflect.TypeOf((*MockVegaBackendAccess)(nil).CreateResource), ctx, req)
 }
@@ -79,7 +78,7 @@ func (m *MockVegaBackendAccess) DeleteDatasetDocumentByID(ctx context.Context, d
 }
 
 // DeleteDatasetDocumentByID indicates an expected call of DeleteDatasetDocumentByID.
-func (mr *MockVegaBackendAccessMockRecorder) DeleteDatasetDocumentByID(ctx, datasetID, docID any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) DeleteDatasetDocumentByID(ctx, datasetID, docID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDatasetDocumentByID", reflect.TypeOf((*MockVegaBackendAccess)(nil).DeleteDatasetDocumentByID), ctx, datasetID, docID)
 }
@@ -93,7 +92,7 @@ func (m *MockVegaBackendAccess) DeleteDatasetDocumentsByQuery(ctx context.Contex
 }
 
 // DeleteDatasetDocumentsByQuery indicates an expected call of DeleteDatasetDocumentsByQuery.
-func (mr *MockVegaBackendAccessMockRecorder) DeleteDatasetDocumentsByQuery(ctx, datasetID, filterCondition any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) DeleteDatasetDocumentsByQuery(ctx, datasetID, filterCondition interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDatasetDocumentsByQuery", reflect.TypeOf((*MockVegaBackendAccess)(nil).DeleteDatasetDocumentsByQuery), ctx, datasetID, filterCondition)
 }
@@ -107,7 +106,7 @@ func (m *MockVegaBackendAccess) DeleteResource(ctx context.Context, id string) e
 }
 
 // DeleteResource indicates an expected call of DeleteResource.
-func (mr *MockVegaBackendAccessMockRecorder) DeleteResource(ctx, id any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) DeleteResource(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResource", reflect.TypeOf((*MockVegaBackendAccess)(nil).DeleteResource), ctx, id)
 }
@@ -122,7 +121,7 @@ func (m *MockVegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (
 }
 
 // GetCatalogByID indicates an expected call of GetCatalogByID.
-func (mr *MockVegaBackendAccessMockRecorder) GetCatalogByID(ctx, id any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) GetCatalogByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCatalogByID", reflect.TypeOf((*MockVegaBackendAccess)(nil).GetCatalogByID), ctx, id)
 }
@@ -137,7 +136,7 @@ func (m *MockVegaBackendAccess) GetResourceByID(ctx context.Context, id string) 
 }
 
 // GetResourceByID indicates an expected call of GetResourceByID.
-func (mr *MockVegaBackendAccessMockRecorder) GetResourceByID(ctx, id any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) GetResourceByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceByID", reflect.TypeOf((*MockVegaBackendAccess)(nil).GetResourceByID), ctx, id)
 }
@@ -152,7 +151,7 @@ func (m *MockVegaBackendAccess) QueryDatasetData(ctx context.Context, datasetID 
 }
 
 // QueryDatasetData indicates an expected call of QueryDatasetData.
-func (mr *MockVegaBackendAccessMockRecorder) QueryDatasetData(ctx, datasetID, params any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) QueryDatasetData(ctx, datasetID, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryDatasetData", reflect.TypeOf((*MockVegaBackendAccess)(nil).QueryDatasetData), ctx, datasetID, params)
 }
@@ -166,7 +165,7 @@ func (m *MockVegaBackendAccess) WriteDatasetDocuments(ctx context.Context, datas
 }
 
 // WriteDatasetDocuments indicates an expected call of WriteDatasetDocuments.
-func (mr *MockVegaBackendAccessMockRecorder) WriteDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
+func (mr *MockVegaBackendAccessMockRecorder) WriteDatasetDocuments(ctx, datasetID, documents interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDatasetDocuments", reflect.TypeOf((*MockVegaBackendAccess)(nil).WriteDatasetDocuments), ctx, datasetID, documents)
 }

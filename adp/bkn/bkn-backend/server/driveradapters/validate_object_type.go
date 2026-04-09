@@ -19,7 +19,7 @@ import (
 	"bkn-backend/interfaces"
 )
 
-func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interfaces.ObjectType) error {
+func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interfaces.ObjectType, strictMode bool) error {
 	tmpNameMap := make(map[string]any)
 	idMap := make(map[string]any)
 	for i := 0; i < len(objectTypes); i++ {
@@ -41,7 +41,7 @@ func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interf
 		}
 
 		// 1. 校验 对象类必要创建参数的合法性, 非空、长度、是枚举值
-		err := ValidateObjectType(ctx, objectTypes[i])
+		err := ValidateObjectType(ctx, objectTypes[i], strictMode)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func ValidateObjectTypes(ctx context.Context, knID string, objectTypes []*interf
 }
 
 // 对象类必要创建参数的非空校验。
-func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType) error {
+func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, strictMode bool) error {
 	// 校验id的合法性
 	err := validateID(ctx, objectType.OTID)
 	if err != nil {
@@ -110,7 +110,7 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType) 
 	// 属性名只包含小写英文字母和数字和下划线(_)和连字符(-)，且不能以下划线开头，不能超过40个字符
 	dataPropMap := map[string]*interfaces.DataProperty{}
 	for _, prop := range objectType.DataProperties {
-		err = ValidateDataProperty(ctx, prop)
+		err = ValidateDataProperty(ctx, prop, strictMode)
 		if err != nil {
 			return err
 		}
@@ -196,29 +196,27 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType) 
 			return err
 		}
 
-		// logic_property.type：非空时，需是有效的类型：metric, operator
-		if prop.Type != "" {
-			if prop.Type != interfaces.LOGIC_PROPERTY_TYPE_METRIC &&
-				prop.Type != interfaces.LOGIC_PROPERTY_TYPE_OPERATOR {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.Type))
-			}
+		// logic_property: type and data_source (type, id) are required; types must match (metric / operator)
+		if prop.Type == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型不能为空", objectType.OTName, prop.Name))
 		}
-
-		// 校验属性类型和绑定的资源是相同的
-		if prop.DataSource != nil {
-			// 逻辑资源类型需有效，当前支持 metric, operator
-			if !interfaces.ValidLogicSourceTypes[prop.DataSource.Type] {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据资源类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.DataSource.Type))
-			}
-
-			// 逻辑属性的类型与资源的类型需保持一致
-			if prop.Type != prop.DataSource.Type {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据类型[%s]与其所绑定的数据资源类型[%s]不一致",
-						objectType.OTName, prop.Name, prop.Type, prop.DataSource.Type))
-			}
+		if prop.Type != interfaces.LOGIC_PROPERTY_TYPE_METRIC && prop.Type != interfaces.LOGIC_PROPERTY_TYPE_OPERATOR {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.Type))
+		}
+		if prop.DataSource == nil || prop.DataSource.Type == "" || prop.DataSource.ID == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据来源(type、id)不能为空", objectType.OTName, prop.Name))
+		}
+		if !interfaces.ValidLogicSourceTypes[prop.DataSource.Type] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据资源类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.DataSource.Type))
+		}
+		if prop.Type != prop.DataSource.Type {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据类型[%s]与其所绑定的数据资源类型[%s]不一致",
+					objectType.OTName, prop.Name, prop.Type, prop.DataSource.Type))
 		}
 
 		//  logic_property.parameters 非空时：参数名称非空
@@ -314,7 +312,7 @@ func ValidatePropertyName(ctx context.Context, name string) error {
 	return nil
 }
 
-func ValidateDataProperties(ctx context.Context, propertyNames []string, dataProperties []*interfaces.DataProperty) error {
+func ValidateDataProperties(ctx context.Context, propertyNames []string, dataProperties []*interfaces.DataProperty, strictMode bool) error {
 	if len(propertyNames) != len(dataProperties) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 			WithErrorDetails("PropertyNames and DataProperties length not equal")
@@ -332,7 +330,7 @@ func ValidateDataProperties(ctx context.Context, propertyNames []string, dataPro
 			return httpErr
 		}
 
-		err := ValidateDataProperty(ctx, prop)
+		err := ValidateDataProperty(ctx, prop, strictMode)
 		if err != nil {
 			return err
 		}
@@ -340,7 +338,7 @@ func ValidateDataProperties(ctx context.Context, propertyNames []string, dataPro
 	return nil
 }
 
-func ValidateDataProperty(ctx context.Context, dataProperty *interfaces.DataProperty) error {
+func ValidateDataProperty(ctx context.Context, dataProperty *interfaces.DataProperty, strictMode bool) error {
 	// 校验属性名的合法性,与id的规则不同，属性名还支持大写字母
 	err := ValidatePropertyName(ctx, dataProperty.Name)
 	if err != nil {
@@ -374,7 +372,7 @@ func ValidateDataProperty(ctx context.Context, dataProperty *interfaces.DataProp
 	}
 
 	if dataProperty.IndexConfig != nil {
-		err = ValidateIndexConfig(ctx, *dataProperty.IndexConfig)
+		err = ValidateIndexConfig(ctx, *dataProperty.IndexConfig, strictMode)
 		if err != nil {
 			return err
 		}
@@ -383,7 +381,7 @@ func ValidateDataProperty(ctx context.Context, dataProperty *interfaces.DataProp
 	return nil
 }
 
-func ValidateIndexConfig(ctx context.Context, indexConfig interfaces.IndexConfig) error {
+func ValidateIndexConfig(ctx context.Context, indexConfig interfaces.IndexConfig, strictMode bool) error {
 	err := ValidateKeywordConfig(ctx, indexConfig.KeywordConfig)
 	if err != nil {
 		return err
@@ -392,7 +390,7 @@ func ValidateIndexConfig(ctx context.Context, indexConfig interfaces.IndexConfig
 	if err != nil {
 		return err
 	}
-	err = ValidateVectorConfig(ctx, indexConfig.VectorConfig)
+	err = ValidateVectorConfig(ctx, indexConfig.VectorConfig, strictMode)
 	if err != nil {
 		return err
 	}
@@ -426,11 +424,11 @@ func ValidateFulltextConfig(ctx context.Context, fulltextConfig interfaces.Fullt
 	return nil
 }
 
-func ValidateVectorConfig(ctx context.Context, vectorConfig interfaces.VectorConfig) error {
+func ValidateVectorConfig(ctx context.Context, vectorConfig interfaces.VectorConfig, strictMode bool) error {
 	if !vectorConfig.Enabled {
 		return nil
 	}
-	if vectorConfig.ModelID == "" {
+	if strictMode && vectorConfig.ModelID == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 			WithErrorDetails("VectorConfig ModelID must be set")
 		return httpErr

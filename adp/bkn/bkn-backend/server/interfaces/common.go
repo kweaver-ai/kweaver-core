@@ -49,9 +49,9 @@ const (
 	DEFAULT_INCLUDE_DETAIL = "false"
 	DEFAULT_FORCE_DELETE   = "false"
 
-	QueryParam_ImportMode         = "import_mode"
-	QueryParam_Mode               = "mode"
-	QueryParam_ValidateDependency = "validate_dependency"
+	QueryParam_ImportMode = "import_mode"
+	QueryParam_Mode       = "mode"
+	QueryParam_StrictMode = "strict_mode"
 
 	// 对象的导入模式
 	ImportMode_Normal    = "normal"

@@ -30,6 +30,7 @@ import (
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
+	"bkn-backend/logics/batchindex"
 	"bkn-backend/logics/object_type"
 	"bkn-backend/logics/permission"
 	"bkn-backend/logics/user_mgmt"
@@ -91,13 +92,13 @@ func (rts *relationTypeService) CheckRelationTypeExistByID(ctx context.Context, 
 }
 
 func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql.Tx,
-	relationTypes []*interfaces.RelationType, mode string, validateDependency bool) ([]string, error) {
+	relationTypes []*interfaces.RelationType, mode string, strictMode bool) ([]string, error) {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create relation type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   relationTypes[0].KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -159,7 +160,7 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 		relationType.UpdateTime = currentTime
 
 		// 校验起点对象类、终点对象类非空时，需校验存在性
-		err = rts.validateDependency(ctx, tx, relationType, validateDependency)
+		err = rts.validateDependency(ctx, tx, relationType, strictMode, nil)
 		if err != nil {
 			return []string{}, err
 		}
@@ -189,7 +190,7 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 
 	// 更新
 	for _, relationType := range updateRelationTypes {
-		err = rts.UpdateRelationType(ctx, tx, relationType)
+		err = rts.UpdateRelationType(ctx, tx, relationType, strictMode)
 		if err != nil {
 			return []string{}, err
 		}
@@ -210,6 +211,43 @@ func (rts *relationTypeService) CreateRelationTypes(ctx context.Context, tx *sql
 	return rtIDs, nil
 }
 
+// ValidateRelationTypes checks dependency existence only; does not write to the database.
+func (rts *relationTypeService) ValidateRelationTypes(ctx context.Context, knID string, branch string,
+	relationTypes []*interfaces.RelationType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
+
+	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateRelationTypes")
+	defer span.End()
+
+	if len(relationTypes) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return nil
+	}
+
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
+		Type: interfaces.RESOURCE_TYPE_KN,
+		ID:   knID,
+	}, []string{interfaces.OPERATION_TYPE_MODIFY})
+	if err != nil {
+		return err
+	}
+	_, _, err = rts.handleRelationTypeImportMode(ctx, mode, relationTypes)
+	if err != nil {
+		return err
+	}
+
+	for _, relationType := range relationTypes {
+		relationType.KNID = knID
+		relationType.Branch = branch
+		err = rts.validateDependency(ctx, nil, relationType, strictMode, batch)
+		if err != nil {
+			return err
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
 func (rts *relationTypeService) ListRelationTypes(ctx context.Context,
 	query interfaces.RelationTypesQueryParams) ([]*interfaces.RelationType, int, error) {
 
@@ -217,7 +255,7 @@ func (rts *relationTypeService) ListRelationTypes(ctx context.Context,
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -310,7 +348,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -452,12 +490,12 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 }
 
 // 更新关系类
-func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType) error {
+func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType, strictMode bool) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update relation type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   relationType.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -513,9 +551,8 @@ func (rts *relationTypeService) UpdateRelationType(ctx context.Context, tx *sql.
 		}()
 	}
 
-	// 校验起点对象类、终点对象类非空时，需校验存在性
-	// 更新操作默认进行依赖校验
-	err = rts.validateDependency(ctx, tx, relationType, true)
+	// 校验起点对象类、终点对象类非空时，需校验存在性（strict_mode 控制）
+	err = rts.validateDependency(ctx, tx, relationType, strictMode, nil)
 	if err != nil {
 		return err
 	}
@@ -550,7 +587,7 @@ func (rts *relationTypeService) DeleteRelationTypesByIDs(ctx context.Context, tx
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -785,7 +822,7 @@ func (rts *relationTypeService) SearchRelationTypes(ctx context.Context,
 	var err error
 
 	// 判断userid是否有查看业务知识网络的权限
-	err = rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err = rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -1105,19 +1142,52 @@ func (rts *relationTypeService) GetTotalWithRTIDs(ctx context.Context,
 }
 
 // 校验关系类相关的对象类、数据视图存在性
-func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType, validateDependency bool) error {
+func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType,
+	strictMode bool, batch *interfaces.BatchIDIndex) error {
+
+	if !strictMode {
+		return nil
+	}
+	resolveOT := func(otID string) (*interfaces.ObjectType, error) {
+		if otID == "" {
+			return nil, nil
+		}
+		if batch != nil && batchindex.HasObjectTypeID(otID, batch) {
+			// 在批量内找数据，当前请求带了 BatchIDIndex（整包 KN / 概念分组预检等）且对象类 ID 在 batch 里时
+			ot := batch.ObjectTypes[otID]
+			if ot == nil {
+				return nil, nil
+			}
+			// 确保对象类有数据属性，构造 propertyMap
+			batchindex.EnsureObjectTypePropertyMap(ot)
+			if len(ot.PropertyMap) == 0 {
+				// 为空，说明批量内仅有 ID、无数据属性：不查库；映射规则侧降级（与预检最低载荷策略一致）
+				return nil, nil
+			}
+			return ot, nil
+		}
+		// GetObjectTypeByID does not populate PropertyMap (json:"-"); build from DataProperties for mapping checks.
+		ot, err := rts.ots.GetObjectTypeByID(ctx, tx, relationType.KNID, relationType.Branch, otID)
+		if err != nil {
+			return nil, err
+		}
+		if ot != nil {
+			batchindex.EnsureObjectTypePropertyMap(ot)
+		}
+		return ot, nil
+	}
+
 	var sourceObjectType *interfaces.ObjectType
 	var targetObjectType *interfaces.ObjectType
 	var err error
 	if relationType.SourceObjectTypeID != "" {
-		// 导入时未提交，在一个事务中get
-		sourceObjectType, err = rts.ots.GetObjectTypeByID(ctx, tx, relationType.KNID, relationType.Branch, relationType.SourceObjectTypeID)
+		sourceObjectType, err = resolveOT(relationType.SourceObjectTypeID)
 		if err != nil {
 			return err
 		}
 	}
 	if relationType.TargetObjectTypeID != "" {
-		targetObjectType, err = rts.ots.GetObjectTypeByID(ctx, tx, relationType.KNID, relationType.Branch, relationType.TargetObjectTypeID)
+		targetObjectType, err = resolveOT(relationType.TargetObjectTypeID)
 		if err != nil {
 			return err
 		}
@@ -1146,13 +1216,13 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 			}
 		case interfaces.RELATION_TYPE_DATA_VIEW:
 			inDirectMappingRules := relationType.MappingRules.(interfaces.InDirectMapping)
-			// validateDependency为true时才校验数据视图存在性,不需要校验时，跳过后续的字段校验
-			if validateDependency && inDirectMappingRules.BackingDataSource != nil && inDirectMappingRules.BackingDataSource.ID != "" {
+			// strictMode为true时才校验数据视图存在性,不需要校验时，跳过后续的字段校验
+			if strictMode && inDirectMappingRules.BackingDataSource != nil && inDirectMappingRules.BackingDataSource.ID != "" {
 				dataView, err := rts.dva.GetDataViewByID(ctx, inDirectMappingRules.BackingDataSource.ID)
 				if err != nil {
 					return err
 				}
-				if validateDependency && dataView == nil {
+				if strictMode && dataView == nil {
 					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 						WithErrorDetails(fmt.Sprintf("关系类中的[%s]数据视图[%s]不存在", relationType.RTID, inDirectMappingRules.BackingDataSource.ID))
 				}

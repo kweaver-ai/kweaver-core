@@ -167,7 +167,7 @@ func Test_KnowledgeNetworkRestHandler_UpdateKN(t *testing.T) {
 		Convey("Success UpdateKN\n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return("kn2", true, nil)
 			kns.EXPECT().CheckKNExistByName(gomock.Any(), kn.KNName, gomock.Any()).Return("", false, nil)
-			kns.EXPECT().UpdateKN(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			kns.EXPECT().UpdateKN(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(kn)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -469,7 +469,7 @@ func Test_KnowledgeNetworkRestHandler_UpdateKNByIn(t *testing.T) {
 		Convey("Success\n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return("kn2", true, nil)
 			kns.EXPECT().CheckKNExistByName(gomock.Any(), "kn1", gomock.Any()).Return("", false, nil)
-			kns.EXPECT().UpdateKN(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			kns.EXPECT().UpdateKN(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(interfaces.KN{KNID: knID, KNName: "kn1", Branch: interfaces.MAIN_BRANCH})
 			req := httptest.NewRequest(http.MethodPut, "/api/bkn-backend/in/v1/knowledge-networks/"+knID, bytes.NewReader(reqParamByte))

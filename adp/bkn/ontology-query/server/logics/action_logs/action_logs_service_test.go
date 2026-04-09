@@ -6,11 +6,14 @@
 package action_logs
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.uber.org/mock/gomock"
 
 	"ontology-query/interfaces"
+	omock "ontology-query/interfaces/mock"
 )
 
 func Test_structToMap(t *testing.T) {
@@ -116,6 +119,40 @@ func Test_GetActionExecutionIndex(t *testing.T) {
 			index := interfaces.GetActionExecutionIndex("")
 			So(index, ShouldEqual, "ontology_action_executions_")
 		})
+	})
+}
+
+func Test_GetExecution_IndexNotExists_ReturnsNotFound(t *testing.T) {
+	Convey("GetExecution when OpenSearch index does not exist", t, func() {
+		ctrl := gomock.NewController(t)
+		mockOSA := omock.NewMockOpenSearchAccess(ctrl)
+		mockOSA.EXPECT().IndexExists(gomock.Any(), gomock.Any()).Return(false, nil)
+
+		svc := &actionLogsService{osAccess: mockOSA}
+		_, err := svc.GetExecution(context.Background(), &interfaces.ActionLogDetailQuery{
+			KNID:  "kn_no_index",
+			LogID: "log_001",
+		})
+
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, "execution not found")
+		So(err.Error(), ShouldContainSubstring, "log_001")
+	})
+}
+
+func Test_QueryExecutions_IndexNotExists_ReturnsEmpty(t *testing.T) {
+	Convey("QueryExecutions when OpenSearch index does not exist", t, func() {
+		ctrl := gomock.NewController(t)
+		mockOSA := omock.NewMockOpenSearchAccess(ctrl)
+		mockOSA.EXPECT().IndexExists(gomock.Any(), gomock.Any()).Return(false, nil)
+
+		svc := &actionLogsService{osAccess: mockOSA}
+		res, err := svc.QueryExecutions(context.Background(), &interfaces.ActionLogQuery{KNID: "kn_no_index"})
+
+		So(err, ShouldBeNil)
+		So(res, ShouldNotBeNil)
+		So(res.Entries, ShouldNotBeNil)
+		So(len(res.Entries), ShouldEqual, 0)
 	})
 }
 

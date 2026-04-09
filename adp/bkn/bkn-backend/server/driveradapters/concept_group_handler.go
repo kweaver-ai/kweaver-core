@@ -77,12 +77,18 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 
-	// 是否校验依赖，默认true
-	validateDependencyStr := c.DefaultQuery(interfaces.QueryParam_ValidateDependency, "true")
-	validateDependency, err := strconv.ParseBool(validateDependencyStr)
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.Query(interfaces.QueryParam_StrictMode)
+	if strictModeStr == "" {
+		strictModeStr = c.Query("validate_dependency")
+	}
+	if strictModeStr == "" {
+		strictModeStr = "true"
+	}
+	strictMode, err := strconv.ParseBool(strictModeStr)
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
-			WithErrorDetails(fmt.Sprintf("Invalid validate_dependency parameter: %s", validateDependencyStr))
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -163,7 +169,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 
 	// 若kn的对象类，关系类，行动类, 概念分组不为空，则应循环调用对象类、关系类、行动类, 概念分组的校验函数
 	if len(cg.ObjectTypes) > 0 {
-		err = ValidateObjectTypes(ctx, cg.KNID, cg.ObjectTypes)
+		err = ValidateObjectTypes(ctx, cg.KNID, cg.ObjectTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -172,7 +178,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		}
 	}
 	if len(cg.RelationTypes) > 0 {
-		err = ValidateRelationTypes(ctx, cg.KNID, cg.RelationTypes)
+		err = ValidateRelationTypes(ctx, cg.KNID, cg.RelationTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -181,7 +187,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		}
 	}
 	if len(cg.ActionTypes) > 0 {
-		err = ValidateActionTypes(ctx, cg.KNID, cg.ActionTypes)
+		err = ValidateActionTypes(ctx, cg.KNID, cg.ActionTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -191,7 +197,7 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	}
 
 	// 调用创建概念分组
-	cgID, err := r.cgs.CreateConceptGroup(ctx, nil, &cg, mode, validateDependency)
+	cgID, err := r.cgs.CreateConceptGroup(ctx, nil, &cg, mode, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -208,6 +214,90 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	logger.Debug("Handler CreateConceptGroup Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, map[string]any{"id": cgID})
+}
+
+// ValidateConceptGroupsByIn 仅校验概念分组依赖存在性，不写库（内部）
+func (r *restHandler) ValidateConceptGroupsByIn(c *gin.Context) {
+	logger.Debug("Handler ValidateConceptGroupsByIn Start")
+	v := visitor.GenerateVisitor(c)
+	r.ValidateConceptGroups(c, v)
+}
+
+// ValidateConceptGroupsByEx 仅校验概念分组依赖存在性，不写库（外部）
+func (r *restHandler) ValidateConceptGroupsByEx(c *gin.Context) {
+	logger.Debug("Handler ValidateConceptGroupsByEx Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验概念分组", trace.WithSpanKind(trace.SpanKindServer))
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.ValidateConceptGroups(c, visitor)
+}
+
+// ValidateConceptGroups 仅校验概念分组依赖存在性，不写库
+func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visitor) {
+	logger.Debug("Handler ValidateConceptGroups Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验概念分组", trace.WithSpanKind(trace.SpanKindServer))
+
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
+	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+
+	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	if err != nil {
+		rest.ReplyError(c, err.(*rest.HTTPError))
+		return
+	}
+	if !exist {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		return
+	}
+
+	var requestData struct {
+		Entries []*interfaces.ConceptGroup `json:"entries"`
+	}
+	if err = c.ShouldBindJSON(&requestData); err != nil {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		return
+	}
+	conceptGroups := requestData.Entries
+	if len(conceptGroups) == 0 {
+		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
+		return
+	}
+
+	for _, cg := range conceptGroups {
+		if err = ValidateConceptGroup(ctx, cg); err != nil {
+			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+			return
+		}
+	}
+	if err = r.cgs.ValidateConceptGroups(ctx, knID, branch, conceptGroups, strictMode, nil, mode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 }
 
 // 更新概念分组(内部)
@@ -258,7 +348,19 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		attr.Key("branch").String(branch),
 	)
 
-	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	var exist bool
+	_, exist, err = r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -365,7 +467,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 	cg.Branch = branch
 
 	//根据id修改信息
-	err = r.cgs.UpdateConceptGroup(ctx, nil, &cg)
+	err = r.cgs.UpdateConceptGroup(ctx, nil, &cg, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -843,8 +945,22 @@ func (r *restHandler) AddObjectTypesToConceptGroup(c *gin.Context, visitor hydra
 		return
 	}
 
+	// Whether to validate dependencies, default true
+	strictModeStr := c.Query(interfaces.QueryParam_StrictMode)
+	if strictModeStr == "" {
+		strictModeStr = "true"
+	}
+	strictMode, parseErr := strconv.ParseBool(strictModeStr)
+	if parseErr != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ConceptGroup_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 调用创建单个知识网络
-	otCGIDs, err := r.cgs.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, requestData.Entries, interfaces.ImportMode_Normal)
+	otCGIDs, err := r.cgs.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, requestData.Entries, interfaces.ImportMode_Normal, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 

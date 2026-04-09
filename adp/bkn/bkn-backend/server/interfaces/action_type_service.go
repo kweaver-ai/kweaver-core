@@ -14,10 +14,10 @@ import (
 type ActionTypeService interface {
 	CheckActionTypeExistByID(ctx context.Context, knID string, branch string, atID string) (string, bool, error)
 	CheckActionTypeExistByName(ctx context.Context, knID string, branch string, atName string) (string, bool, error)
-	CreateActionTypes(ctx context.Context, tx *sql.Tx, actionTypes []*ActionType, mode string) ([]string, error)
+	CreateActionTypes(ctx context.Context, tx *sql.Tx, actionTypes []*ActionType, mode string, strictMode bool) ([]string, error)
 	ListActionTypes(ctx context.Context, query ActionTypesQueryParams) ([]*ActionType, int, error)
 	GetActionTypesByIDs(ctx context.Context, knID string, branch string, atIDs []string) ([]*ActionType, error)
-	UpdateActionType(ctx context.Context, tx *sql.Tx, actionType *ActionType) error
+	UpdateActionType(ctx context.Context, tx *sql.Tx, actionType *ActionType, strictMode bool) error
 	DeleteActionTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, atIDs []string) error
 
 	GetActionTypeIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error)
@@ -27,4 +27,7 @@ type ActionTypeService interface {
 
 	// 写行动类到索引
 	InsertDatasetData(ctx context.Context, actionTypes []*ActionType) error
+
+	// ValidateActionTypes 仅校验依赖存在性，不写库
+	ValidateActionTypes(ctx context.Context, knID string, branch string, actionTypes []*ActionType, strictMode bool, batch *BatchIDIndex, mode string) error
 }

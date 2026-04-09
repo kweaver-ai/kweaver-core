@@ -21,11 +21,11 @@ func NewNoopPermissionService(appSetting *common.AppSetting) interfaces.Permissi
 	return &NoopPermissionService{appSetting: appSetting}
 }
 
-func (n *NoopPermissionService) CheckPermission(ctx context.Context, resource interfaces.Resource, ops []string) error {
+func (n *NoopPermissionService) CheckPermission(ctx context.Context, resource interfaces.PermissionResource, ops []string) error {
 	return nil // 始终通过，不检查 accountInfo
 }
 
-func (n *NoopPermissionService) CreateResources(ctx context.Context, resources []interfaces.Resource, ops []string) error {
+func (n *NoopPermissionService) CreateResources(ctx context.Context, resources []interfaces.PermissionResource, ops []string) error {
 	return nil // 静默跳过
 }
 
@@ -34,11 +34,11 @@ func (n *NoopPermissionService) DeleteResources(ctx context.Context, resourceTyp
 }
 
 func (n *NoopPermissionService) FilterResources(ctx context.Context, resourceType string, ids []string,
-	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.ResourceOps, error) {
+	ops []string, allowOperation bool, fullOps []string) (map[string]interfaces.PermissionResourceOps, error) {
 	// 返回所有资源，不做过滤
-	result := make(map[string]interfaces.ResourceOps)
+	result := make(map[string]interfaces.PermissionResourceOps)
 	for _, id := range ids {
-		result[id] = interfaces.ResourceOps{
+		result[id] = interfaces.PermissionResourceOps{
 			ResourceID: id,
 			Operations: fullOps,
 		}
@@ -46,6 +46,6 @@ func (n *NoopPermissionService) FilterResources(ctx context.Context, resourceTyp
 	return result, nil
 }
 
-func (n *NoopPermissionService) UpdateResource(ctx context.Context, resource interfaces.Resource) error {
+func (n *NoopPermissionService) UpdateResource(ctx context.Context, resource interfaces.PermissionResource) error {
 	return nil // 静默跳过
 }

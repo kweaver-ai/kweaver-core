@@ -210,3 +210,15 @@ type TypeEdge struct {
 type CommonQueryParameters struct {
 	IncludeStatistics bool
 }
+
+// BatchIDIndex holds concept IDs declared in the current request body (KN / concept group tree, etc.)
+// for preflight dependency resolution within the same scope as a creation transaction.
+type BatchIDIndex struct {
+	KNID   string
+	Branch string
+
+	ObjectTypes     map[string]*ObjectType
+	RelationTypeIDs map[string]struct{}
+	ActionTypeIDs   map[string]struct{}
+	ConceptGroupIDs map[string]struct{}
+}

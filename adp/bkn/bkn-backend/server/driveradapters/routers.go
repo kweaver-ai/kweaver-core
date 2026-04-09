@@ -86,10 +86,12 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiV1.PUT("/knowledge-networks/:kn_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateKNByEx)
 		apiV1.GET("/knowledge-networks", r.ListKNsByEx)
 		apiV1.GET("/knowledge-networks/:kn_id", r.GetKNByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateKNByEx)
 		apiV1.POST("/knowledge-networks/:kn_id/relation-type-paths", r.GetRelationTypePathsByEx)
 
 		// 概念分组
 		apiV1.POST("/knowledge-networks/:kn_id/concept-groups", r.verifyJsonContentTypeMiddleWare(), r.CreateConceptGroupByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/concept-groups/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateConceptGroupsByEx)
 		apiV1.DELETE("/knowledge-networks/:kn_id/concept-groups/:cg_id", r.DeleteConceptGroup) // 不支持批量删
 		apiV1.PUT("/knowledge-networks/:kn_id/concept-groups/:cg_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateConceptGroupByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/concept-groups", r.ListConceptGroupsByEx)
@@ -99,6 +101,7 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 
 		// 对象类
 		apiV1.POST("/knowledge-networks/:kn_id/object-types", r.verifyJsonContentTypeMiddleWare(), r.HandleObjectTypeGetOverrideByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/object-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateObjectTypesByEx)
 		apiV1.DELETE("/knowledge-networks/:kn_id/object-types/:ot_ids", r.DeleteObjectTypes) // path上用kn_ids接，实际上只能传一个id
 		apiV1.PUT("/knowledge-networks/:kn_id/object-types/:ot_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateObjectTypeByEx)
 		apiV1.PUT("/knowledge-networks/:kn_id/object-types/:ot_id/data_properties/:property_names", r.verifyJsonContentTypeMiddleWare(), r.UpdateDataProperties)
@@ -107,6 +110,7 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 
 		// 关系类
 		apiV1.POST("/knowledge-networks/:kn_id/relation-types", r.verifyJsonContentTypeMiddleWare(), r.HandleRelationTypeGetOverrideByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/relation-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateRelationTypesByEx)
 		apiV1.DELETE("/knowledge-networks/:kn_id/relation-types/:rt_ids", r.DeleteRelationTypes)
 		apiV1.PUT("/knowledge-networks/:kn_id/relation-types/:rt_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateRelationTypeByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/relation-types", r.ListRelationTypesByEx)
@@ -114,6 +118,7 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 
 		// 行动类
 		apiV1.POST("/knowledge-networks/:kn_id/action-types", r.verifyJsonContentTypeMiddleWare(), r.HandleActionTypeGetOverrideByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/action-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateActionTypesByEx)
 		apiV1.DELETE("/knowledge-networks/:kn_id/action-types/:at_ids", r.DeleteActionTypes)
 		apiV1.PUT("/knowledge-networks/:kn_id/action-types/:at_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateActionTypeByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/action-types", r.ListActionTypesByEx)
@@ -157,10 +162,12 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiInV1.PUT("/knowledge-networks/:kn_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateKNByIn)
 		apiInV1.GET("/knowledge-networks", r.ListKNsByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id", r.GetKNByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateKNByIn)
 		apiInV1.POST("/knowledge-networks/:kn_id/relation-type-paths", r.GetRelationTypePathsByIn)
 
 		// 概念分组
 		apiInV1.POST("/knowledge-networks/:kn_id/concept-groups", r.verifyJsonContentTypeMiddleWare(), r.CreateConceptGroupByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/concept-groups/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateConceptGroupsByIn)
 		apiInV1.PUT("/knowledge-networks/:kn_id/concept-groups/:cg_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateConceptGroupByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/concept-groups", r.ListConceptGroupsByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/concept-groups/:cg_id", r.GetConceptGroupByIn)
@@ -169,18 +176,21 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 
 		// 对象类
 		apiInV1.POST("/knowledge-networks/:kn_id/object-types", r.verifyJsonContentTypeMiddleWare(), r.HandleObjectTypeGetOverrideByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/object-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateObjectTypesByIn)
 		apiInV1.PUT("/knowledge-networks/:kn_id/object-types/:ot_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateObjectTypeByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/object-types", r.ListObjectTypesByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/object-types/:ot_ids", r.GetObjectTypesByIn) // path上用kn_ids接，实际上只能传一个id
 
 		// 关系类
 		apiInV1.POST("/knowledge-networks/:kn_id/relation-types", r.verifyJsonContentTypeMiddleWare(), r.HandleRelationTypeGetOverrideByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/relation-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateRelationTypesByIn)
 		apiInV1.PUT("/knowledge-networks/:kn_id/relation-types/:rt_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateRelationTypeByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/relation-types", r.ListRelationTypesByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/relation-types/:rt_ids", r.GetRelationTypesByIn)
 
 		// 行动类
 		apiInV1.POST("/knowledge-networks/:kn_id/action-types", r.verifyJsonContentTypeMiddleWare(), r.HandleActionTypeGetOverrideByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/action-types/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateActionTypesByIn)
 		apiInV1.PUT("/knowledge-networks/:kn_id/action-types/:at_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateActionTypeByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/action-types", r.ListActionTypesByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/action-types/:at_ids", r.GetActionTypesByIn)

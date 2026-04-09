@@ -141,7 +141,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 
 	// 若kn的对象类，关系类，行动类, 概念分组不为空，则应循环调用对象类、关系类、行动类, 概念分组的校验函数
 	if len(kn.ObjectTypes) > 0 {
-		err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes)
+		err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -150,7 +150,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		}
 	}
 	if len(kn.RelationTypes) > 0 {
-		err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes)
+		err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -159,7 +159,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		}
 	}
 	if len(kn.ActionTypes) > 0 {
-		err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes)
+		err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)

@@ -22,7 +22,6 @@ import (
 type MockActionTypeService struct {
 	ctrl     *gomock.Controller
 	recorder *MockActionTypeServiceMockRecorder
-	isgomock struct{}
 }
 
 // MockActionTypeServiceMockRecorder is the mock recorder for MockActionTypeService.
@@ -53,7 +52,7 @@ func (m *MockActionTypeService) CheckActionTypeExistByID(ctx context.Context, kn
 }
 
 // CheckActionTypeExistByID indicates an expected call of CheckActionTypeExistByID.
-func (mr *MockActionTypeServiceMockRecorder) CheckActionTypeExistByID(ctx, knID, branch, atID any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) CheckActionTypeExistByID(ctx, knID, branch, atID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckActionTypeExistByID", reflect.TypeOf((*MockActionTypeService)(nil).CheckActionTypeExistByID), ctx, knID, branch, atID)
 }
@@ -69,24 +68,24 @@ func (m *MockActionTypeService) CheckActionTypeExistByName(ctx context.Context, 
 }
 
 // CheckActionTypeExistByName indicates an expected call of CheckActionTypeExistByName.
-func (mr *MockActionTypeServiceMockRecorder) CheckActionTypeExistByName(ctx, knID, branch, atName any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) CheckActionTypeExistByName(ctx, knID, branch, atName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckActionTypeExistByName", reflect.TypeOf((*MockActionTypeService)(nil).CheckActionTypeExistByName), ctx, knID, branch, atName)
 }
 
 // CreateActionTypes mocks base method.
-func (m *MockActionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx, actionTypes []*interfaces.ActionType, mode string) ([]string, error) {
+func (m *MockActionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx, actionTypes []*interfaces.ActionType, mode string, strictMode bool) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateActionTypes", ctx, tx, actionTypes, mode)
+	ret := m.ctrl.Call(m, "CreateActionTypes", ctx, tx, actionTypes, mode, strictMode)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateActionTypes indicates an expected call of CreateActionTypes.
-func (mr *MockActionTypeServiceMockRecorder) CreateActionTypes(ctx, tx, actionTypes, mode any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) CreateActionTypes(ctx, tx, actionTypes, mode, strictMode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateActionTypes", reflect.TypeOf((*MockActionTypeService)(nil).CreateActionTypes), ctx, tx, actionTypes, mode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateActionTypes", reflect.TypeOf((*MockActionTypeService)(nil).CreateActionTypes), ctx, tx, actionTypes, mode, strictMode)
 }
 
 // DeleteActionTypesByIDs mocks base method.
@@ -98,7 +97,7 @@ func (m *MockActionTypeService) DeleteActionTypesByIDs(ctx context.Context, tx *
 }
 
 // DeleteActionTypesByIDs indicates an expected call of DeleteActionTypesByIDs.
-func (mr *MockActionTypeServiceMockRecorder) DeleteActionTypesByIDs(ctx, tx, knID, branch, atIDs any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) DeleteActionTypesByIDs(ctx, tx, knID, branch, atIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteActionTypesByIDs", reflect.TypeOf((*MockActionTypeService)(nil).DeleteActionTypesByIDs), ctx, tx, knID, branch, atIDs)
 }
@@ -112,7 +111,7 @@ func (m *MockActionTypeService) DeleteActionTypesByKnID(ctx context.Context, tx 
 }
 
 // DeleteActionTypesByKnID indicates an expected call of DeleteActionTypesByKnID.
-func (mr *MockActionTypeServiceMockRecorder) DeleteActionTypesByKnID(ctx, tx, knID, branch any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) DeleteActionTypesByKnID(ctx, tx, knID, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteActionTypesByKnID", reflect.TypeOf((*MockActionTypeService)(nil).DeleteActionTypesByKnID), ctx, tx, knID, branch)
 }
@@ -127,7 +126,7 @@ func (m *MockActionTypeService) GetActionTypeIDsByKnID(ctx context.Context, knID
 }
 
 // GetActionTypeIDsByKnID indicates an expected call of GetActionTypeIDsByKnID.
-func (mr *MockActionTypeServiceMockRecorder) GetActionTypeIDsByKnID(ctx, knID, branch any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) GetActionTypeIDsByKnID(ctx, knID, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActionTypeIDsByKnID", reflect.TypeOf((*MockActionTypeService)(nil).GetActionTypeIDsByKnID), ctx, knID, branch)
 }
@@ -142,7 +141,7 @@ func (m *MockActionTypeService) GetActionTypesByIDs(ctx context.Context, knID, b
 }
 
 // GetActionTypesByIDs indicates an expected call of GetActionTypesByIDs.
-func (mr *MockActionTypeServiceMockRecorder) GetActionTypesByIDs(ctx, knID, branch, atIDs any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) GetActionTypesByIDs(ctx, knID, branch, atIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActionTypesByIDs", reflect.TypeOf((*MockActionTypeService)(nil).GetActionTypesByIDs), ctx, knID, branch, atIDs)
 }
@@ -156,7 +155,7 @@ func (m *MockActionTypeService) InsertDatasetData(ctx context.Context, actionTyp
 }
 
 // InsertDatasetData indicates an expected call of InsertDatasetData.
-func (mr *MockActionTypeServiceMockRecorder) InsertDatasetData(ctx, actionTypes any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) InsertDatasetData(ctx, actionTypes interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertDatasetData", reflect.TypeOf((*MockActionTypeService)(nil).InsertDatasetData), ctx, actionTypes)
 }
@@ -172,7 +171,7 @@ func (m *MockActionTypeService) ListActionTypes(ctx context.Context, query inter
 }
 
 // ListActionTypes indicates an expected call of ListActionTypes.
-func (mr *MockActionTypeServiceMockRecorder) ListActionTypes(ctx, query any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) ListActionTypes(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActionTypes", reflect.TypeOf((*MockActionTypeService)(nil).ListActionTypes), ctx, query)
 }
@@ -187,21 +186,35 @@ func (m *MockActionTypeService) SearchActionTypes(ctx context.Context, query *in
 }
 
 // SearchActionTypes indicates an expected call of SearchActionTypes.
-func (mr *MockActionTypeServiceMockRecorder) SearchActionTypes(ctx, query any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) SearchActionTypes(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchActionTypes", reflect.TypeOf((*MockActionTypeService)(nil).SearchActionTypes), ctx, query)
 }
 
 // UpdateActionType mocks base method.
-func (m *MockActionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, actionType *interfaces.ActionType) error {
+func (m *MockActionTypeService) UpdateActionType(ctx context.Context, tx *sql.Tx, actionType *interfaces.ActionType, strictMode bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateActionType", ctx, tx, actionType)
+	ret := m.ctrl.Call(m, "UpdateActionType", ctx, tx, actionType, strictMode)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateActionType indicates an expected call of UpdateActionType.
-func (mr *MockActionTypeServiceMockRecorder) UpdateActionType(ctx, tx, actionType any) *gomock.Call {
+func (mr *MockActionTypeServiceMockRecorder) UpdateActionType(ctx, tx, actionType, strictMode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateActionType", reflect.TypeOf((*MockActionTypeService)(nil).UpdateActionType), ctx, tx, actionType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateActionType", reflect.TypeOf((*MockActionTypeService)(nil).UpdateActionType), ctx, tx, actionType, strictMode)
+}
+
+// ValidateActionTypes mocks base method.
+func (m *MockActionTypeService) ValidateActionTypes(ctx context.Context, knID, branch string, actionTypes []*interfaces.ActionType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateActionTypes", ctx, knID, branch, actionTypes, strictMode, batch, mode)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateActionTypes indicates an expected call of ValidateActionTypes.
+func (mr *MockActionTypeServiceMockRecorder) ValidateActionTypes(ctx, knID, branch, actionTypes, strictMode, batch, mode interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateActionTypes", reflect.TypeOf((*MockActionTypeService)(nil).ValidateActionTypes), ctx, knID, branch, actionTypes, strictMode, batch, mode)
 }

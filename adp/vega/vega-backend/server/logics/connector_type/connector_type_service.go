@@ -116,7 +116,7 @@ func (cts *connectorTypeService) GetByType(ctx context.Context, tp string) (*int
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := cts.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CONNECTOR_TYPE, []string{ct.Type},
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -153,7 +153,7 @@ func (cts *connectorTypeService) List(ctx context.Context, params interfaces.Con
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := cts.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CONNECTOR_TYPE, types,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return []*interfaces.ConnectorType{}, 0, err

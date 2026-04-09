@@ -14,6 +14,7 @@ import (
 var (
 	DB             *sql.DB
 	AA             interfaces.AuthAccess
+	AOA            interfaces.AgentOperatorAccess
 	ASA            interfaces.ActionScheduleAccess
 	ATA            interfaces.ActionTypeAccess
 	BSA            interfaces.BusinessSystemAccess
@@ -94,6 +95,10 @@ func SetRelationTypeAccess(rta interfaces.RelationTypeAccess) {
 
 func SetRiskTypeAccess(rta interfaces.RiskTypeAccess) {
 	RiskTypeAccess = rta
+}
+
+func SetAgentOperatorAccess(aoa interfaces.AgentOperatorAccess) {
+	AOA = aoa
 }
 
 func SetUserMgmtAccess(uma interfaces.UserMgmtAccess) {

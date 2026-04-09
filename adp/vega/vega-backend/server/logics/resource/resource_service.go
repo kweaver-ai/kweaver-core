@@ -181,7 +181,7 @@ func (rs *resourceService) GetByID(ctx context.Context, id string) (*interfaces.
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, []string{resource.ID},
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -221,7 +221,7 @@ func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*inter
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -306,7 +306,7 @@ func (rs *resourceService) List(ctx context.Context, params interfaces.Resources
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return []*interfaces.Resource{}, 0, err
@@ -464,7 +464,7 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 
 	// 判断userid是否有删除权限
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_DELETE}, true)
+		[]string{interfaces.OPERATION_TYPE_DELETE}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return err
@@ -601,7 +601,7 @@ func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfac
 		var batchMatchResources map[string]interfaces.PermissionResourceOps
 		// 校验权限管理的操作权限
 		batchMatchResources, err = rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE,
-			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false)
+			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false, interfaces.COMMON_OPERATIONS)
 		if err != nil {
 			return nil, 0, err
 		}

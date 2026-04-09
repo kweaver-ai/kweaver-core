@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -103,6 +104,17 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -167,7 +179,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	// 校验 请求体中目标模型名称合法性
-	err = ValidateActionTypes(ctx, knID, actionTypes)
+	err = ValidateActionTypes(ctx, knID, actionTypes, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -176,7 +188,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	//调用创建
-	atIDs, err := r.ats.CreateActionTypes(ctx, nil, actionTypes, mode)
+	atIDs, err := r.ats.CreateActionTypes(ctx, nil, actionTypes, mode, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -200,6 +212,88 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateActionTypes Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
+}
+
+// ValidateActionTypesByIn 仅校验行动类依赖存在性，不写库（内部）
+func (r *restHandler) ValidateActionTypesByIn(c *gin.Context) {
+	logger.Debug("Handler ValidateActionTypesByIn Start")
+	v := visitor.GenerateVisitor(c)
+	r.ValidateActionTypesForKN(c, v)
+}
+
+// ValidateActionTypesByEx 仅校验行动类依赖存在性，不写库（外部）
+func (r *restHandler) ValidateActionTypesByEx(c *gin.Context) {
+	logger.Debug("Handler ValidateActionTypesByEx Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验行动类", trace.WithSpanKind(trace.SpanKindServer))
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.ValidateActionTypesForKN(c, visitor)
+}
+
+// ValidateActionTypesForKN 仅校验行动类依赖存在性，不写库
+func (r *restHandler) ValidateActionTypesForKN(c *gin.Context, visitor hydra.Visitor) {
+	logger.Debug("Handler ValidateActionTypesForKN Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验行动类", trace.WithSpanKind(trace.SpanKindServer))
+
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
+	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+
+	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	if err != nil {
+		rest.ReplyError(c, err.(*rest.HTTPError))
+		return
+	}
+	if !exist {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		return
+	}
+
+	var requestData struct {
+		Entries []*interfaces.ActionType `json:"entries"`
+	}
+	if err = c.ShouldBindJSON(&requestData); err != nil {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		return
+	}
+	actionTypes := requestData.Entries
+	if len(actionTypes) == 0 {
+		rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
+		return
+	}
+
+	if err = ValidateActionTypes(ctx, knID, actionTypes, strictMode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	if err = r.ats.ValidateActionTypes(ctx, knID, branch, actionTypes, strictMode, nil, mode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 }
 
 // 更新行动类(内部)
@@ -251,8 +345,20 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		attr.Key("branch").String(branch),
 	)
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 校验业务知识网络存在性
-	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	var exist bool
+	_, exist, err = r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -315,7 +421,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	// 校验 行动类基本参数的合法性, 非空、长度、是枚举值
-	err = ValidateActionType(ctx, &actionType)
+	err = ValidateActionType(ctx, &actionType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -357,7 +463,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	actionType.KNID = knID
 
 	//根据id修改信息
-	err = r.ats.UpdateActionType(ctx, nil, &actionType)
+	err = r.ats.UpdateActionType(ctx, nil, &actionType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 

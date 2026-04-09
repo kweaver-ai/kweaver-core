@@ -1622,6 +1622,24 @@ paths:
             type: string
           in: path
           required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true。为 true 时校验数据视图、向量小模型、逻辑属性绑定的指标/算子等外部依赖是否存在；为 false 时不做该校验
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
       responses:
         "204":
           description: ok
@@ -1712,6 +1730,18 @@ paths:
         required: true
   /api/bkn-backend/v1/knowledge-networks/{kn_id}/object-types/{ob_id}/data_properties/{property_names}:
     put:
+      parameters:
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验向量索引依赖的 embedding 小模型，默认为 true。为 true 时，若本次提交的数据属性中启用了向量索引（vector_config.enabled），则校验小模型是否存在、类型是否为 embedding、且维度等参数有效；为 false 时不调用小模型服务做该校验。请求体 JSON 的索引配置格式校验（如启用向量时 model_id 必填）仍会执行
+          schema:
+            type: boolean
+            default: true
+          in: query
       requestBody:
         content:
           application/json:
@@ -1741,6 +1771,74 @@ paths:
           type: string
         in: path
         required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/object-types/validation:
+    post:
+      summary: 校验对象类
+      description: |
+        仅校验概念依赖存在性，不写库。用于导入前预检、批处理前自检等场景。
+        校验数据视图、向量索引小模型、逻辑属性绑定的指标模型与算子、概念分组等依赖是否存在（strict_mode=true 时）。
+
+        同批次引用（例如关系类引用尚未落库的对象类）：单类 validate 接口的请求体若无法包含被引用方定义，strict 下仍只认已落库资源。
+        此时请使用与创建接口同结构的 **整包知识网络校验**（`POST .../knowledge-networks/{kn_id}/validation`）或 **概念分组校验**（嵌套 object_types / relation_types / action_types），服务端会从现有 JSON 推导 BatchIDIndex，等价于创建事务内的同批可见性。
+        关系映射规则校验需要对象类数据属性；若批次内仅声明 OT ID、无属性定义，存在性可通过但映射规则校验可能降级。
+
+        **响应**：HTTP 200 时 body 中 `valid` 为 `true` 表示通过；为 `false` 时带 `detail`（服务端 error.Error()）。请求参数/鉴权/资源不存在等错误仍为非 2xx。
+
+        **内部接口**：`POST /api/bkn-backend/in/v1/.../object-types/validation` 与 `POST /api/ontology-manager/in/v1/.../object-types/validation`，其余相同；Header 解析访问者，无 OAuth。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与创建对象类接口一致；用于对象类 ID/名称与落库冲突的校验语义（normal / ignore / overwrite）。
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  description: 待校验的对象类列表，结构与创建接口一致
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时的说明（error.Error()）
+        "400":
+          description: 请求参数错误等；业务校验「不通过」由 200 + valid:false + detail 表达，而非本状态码
 components:
   schemas:
     BasicInfo:
@@ -1946,7 +2044,6 @@ components:
         - tags
         - updator
         - update_time
-        - base_branch
         - branch
         - color
         - detail
@@ -1975,9 +2072,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源版本
           type: string
         creator:
           description: 创建人ID

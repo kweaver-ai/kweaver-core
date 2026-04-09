@@ -177,6 +177,28 @@ paths:
             type: string
           in: path
           required: true
+        - name: import_mode
+          description: 导入模式，可选normal、ignore、overwrite，默认为normal
+          schema:
+            enum:
+              - normal
+              - ignore
+              - overwrite
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为true。为true时，需校验绑定对象类、影响对象类等依赖是否存在；为false时，依赖不存在不报错
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
         - name: x-http-method-override
           description: 重载请求头
           schema:
@@ -335,7 +357,7 @@ paths:
           type: string
         in: path
         required: true
-   /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types/{at_id}:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types/{at_id}:
     put:
       requestBody:
         content:
@@ -346,12 +368,37 @@ paths:
       parameters:
         - name: kn_id
           description: 业务知识网络ID
+          schema:
+            type: string
           in: path
           required: true
         - name: at_id
           description: 行动类ID
+          schema:
+            type: string
           in: path
           required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true。为 true 时校验绑定的对象类、影响对象类等是否存在；为 false 时不做该校验
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
+      responses:
+        "204":
+          description: ok
       summary: 修改行动类
     parameters:
       - name: kn_id
@@ -413,6 +460,69 @@ paths:
             type: string
         in: path
         required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/action-types/validation:
+    post:
+      summary: 校验行动类
+      description: |
+        仅校验行动类依赖存在性，不写库。校验绑定对象类、影响对象类等依赖是否存在。
+
+        **响应**：HTTP 200 时 `valid`/`detail` 同其它 validate 接口；参数与鉴权错误为非 2xx。
+
+        **内部接口**：`POST /api/bkn-backend/in/v1/.../action-types/validation` 与 `POST /api/ontology-manager/in/v1/.../action-types/validation`；Header 解析访问者，无 OAuth。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与创建行动类接口一致；用于行动类 ID/名称与落库冲突的校验语义（normal / ignore / overwrite）。
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  description: 待校验的行动类列表，结构与创建接口一致
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时的说明（error.Error()）
+        "400":
+          description: 请求参数错误等；业务校验未通过见 200 + valid:false
 components:
   schemas:
     BasicInfo:
@@ -946,7 +1056,6 @@ components:
         - parameters
         - schedule
         - module_type
-        - base_branch
         - branch
         - color
         - icon
@@ -1054,7 +1163,6 @@ components:
         - parameters
         - schedule
         - module_type
-        - base_branch
         - branch
         - color
         - icon

@@ -233,7 +233,7 @@ func Test_ObjectTypeRestHandler_UpdateObjectType(t *testing.T) {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ots.EXPECT().CheckObjectTypeExistByID(gomock.Any(), knID, gomock.Any(), otID).Return("object2", true, nil)
 			ots.EXPECT().CheckObjectTypeExistByName(gomock.Any(), knID, gomock.Any(), objectType.OTName).Return("", false, nil)
-			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(objectType)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -305,7 +305,7 @@ func Test_ObjectTypeRestHandler_UpdateObjectType(t *testing.T) {
 
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ots.EXPECT().CheckObjectTypeExistByID(gomock.Any(), knID, gomock.Any(), otID).Return("object1", true, nil)
-			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any()).Return(err)
+			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(err)
 
 			reqParamByte, _ := sonic.Marshal(objectType)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -460,7 +460,7 @@ func Test_ObjectTypeRestHandler_UpdateDataProperties(t *testing.T) {
 					OTName: "object1",
 				},
 			}, nil)
-			ots.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ots.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any(), true).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(requestData)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -469,6 +469,35 @@ func Test_ObjectTypeRestHandler_UpdateDataProperties(t *testing.T) {
 			engine.ServeHTTP(w, req)
 
 			So(w.Result().StatusCode, ShouldEqual, http.StatusNoContent)
+		})
+
+		Convey("Success UpdateDataProperties with strict_mode=false\n", func() {
+			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), knID, gomock.Any(), otID).Return(&interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   otID,
+					OTName: "object1",
+				},
+			}, nil)
+			ots.EXPECT().UpdateDataProperties(gomock.Any(), gomock.Any(), gomock.Any(), false).Return(nil)
+
+			reqParamByte, _ := sonic.Marshal(requestData)
+			req := httptest.NewRequest(http.MethodPut, url+"?strict_mode=false", bytes.NewReader(reqParamByte))
+			req.Header.Set(interfaces.CONTENT_TYPE_NAME, interfaces.CONTENT_TYPE_JSON)
+			w := httptest.NewRecorder()
+			engine.ServeHTTP(w, req)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNoContent)
+		})
+
+		Convey("Invalid strict_mode returns 400\n", func() {
+			reqParamByte, _ := sonic.Marshal(requestData)
+			req := httptest.NewRequest(http.MethodPut, url+"?strict_mode=maybe", bytes.NewReader(reqParamByte))
+			req.Header.Set(interfaces.CONTENT_TYPE_NAME, interfaces.CONTENT_TYPE_JSON)
+			w := httptest.NewRecorder()
+			engine.ServeHTTP(w, req)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
 		})
 
 		Convey("KN not found\n", func() {
@@ -813,7 +842,7 @@ func Test_ObjectTypeRestHandler_UpdateObjectTypeByIn(t *testing.T) {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ots.EXPECT().CheckObjectTypeExistByID(gomock.Any(), knID, gomock.Any(), otID).Return("object2", true, nil)
 			ots.EXPECT().CheckObjectTypeExistByName(gomock.Any(), knID, gomock.Any(), objectType.OTName).Return("", false, nil)
-			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ots.EXPECT().UpdateObjectType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(objectType)
 			req := httptest.NewRequest(http.MethodPut, "/api/bkn-backend/in/v1/knowledge-networks/"+knID+"/object-types/"+otID, bytes.NewReader(reqParamByte))
@@ -975,8 +1004,8 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckKNExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_KnowledgeNetwork_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return("", false, httpErr)
@@ -996,8 +1025,8 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckObjectTypeExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ObjectType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
@@ -1010,8 +1039,8 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when ListRelationTypes returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ObjectType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
@@ -1037,8 +1066,8 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when ListActionTypes returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ObjectType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)

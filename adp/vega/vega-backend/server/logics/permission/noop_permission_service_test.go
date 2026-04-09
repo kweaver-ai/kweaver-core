@@ -46,7 +46,8 @@ func TestNoopPermission_FilterResources(t *testing.T) {
 	ids := []string{"r1", "r2", "r3"}
 	ops := []string{"view_detail", "modify"}
 
-	result, err := svc.FilterResources(context.Background(), "catalog", ids, ops, true)
+	result, err := svc.FilterResources(context.Background(), "catalog",
+		ids, ops, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -62,8 +63,8 @@ func TestNoopPermission_FilterResources(t *testing.T) {
 		if r.ResourceID != id {
 			t.Errorf("expected ResourceID '%s', got '%s'", id, r.ResourceID)
 		}
-		if len(r.Operations) != 2 {
-			t.Errorf("expected 2 operations, got %d", len(r.Operations))
+		if len(r.Operations) != len(interfaces.COMMON_OPERATIONS) {
+			t.Errorf("expected %d operations, got %d", len(interfaces.COMMON_OPERATIONS), len(r.Operations))
 		}
 	}
 }

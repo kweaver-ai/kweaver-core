@@ -8,6 +8,8 @@ package action_type
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -20,6 +22,7 @@ import (
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	bmock "bkn-backend/interfaces/mock"
+	"bkn-backend/logics/batchindex"
 )
 
 func Test_actionTypeService_CheckActionTypeExistByID(t *testing.T) {
@@ -1106,7 +1109,7 @@ func Test_actionTypeService_UpdateActionType(t *testing.T) {
 			ata.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
-			err := service.UpdateActionType(ctx, nil, actionType)
+			err := service.UpdateActionType(ctx, nil, actionType, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -1122,7 +1125,7 @@ func Test_actionTypeService_UpdateActionType(t *testing.T) {
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_ActionType_InternalError))
 
-			err := service.UpdateActionType(ctx, nil, actionType)
+			err := service.UpdateActionType(ctx, nil, actionType, false)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1140,7 +1143,7 @@ func Test_actionTypeService_UpdateActionType(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			ata.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 			smock.ExpectCommit()
-			err := service.UpdateActionType(ctx, nil, actionType)
+			err := service.UpdateActionType(ctx, nil, actionType, false)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1159,7 +1162,7 @@ func Test_actionTypeService_UpdateActionType(t *testing.T) {
 			ata.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 			smock.ExpectCommit()
-			err := service.UpdateActionType(ctx, nil, actionType)
+			err := service.UpdateActionType(ctx, nil, actionType, false)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -1209,7 +1212,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			ata.EXPECT().CreateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldBeNil)
 			So(len(atIDs), ShouldEqual, 1)
 		})
@@ -1229,7 +1232,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_ActionType_InternalError))
 
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldNotBeNil)
 			So(len(atIDs), ShouldEqual, 0)
 		})
@@ -1252,7 +1255,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			ata.EXPECT().CheckActionTypeExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("at1", true, nil)
 			ata.EXPECT().CheckActionTypeExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldNotBeNil)
 			So(len(atIDs), ShouldEqual, 0)
 			httpErr := err.(*rest.HTTPError)
@@ -1282,7 +1285,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			}).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldBeNil)
 			So(len(atIDs), ShouldEqual, 1)
 		})
@@ -1305,7 +1308,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			ata.EXPECT().CheckActionTypeExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("at1", true, nil)
 			ata.EXPECT().CheckActionTypeExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldBeNil)
 			So(len(atIDs), ShouldEqual, 0)
 		})
@@ -1330,7 +1333,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			ata.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldBeNil)
 			So(len(atIDs), ShouldEqual, 0)
 		})
@@ -1355,7 +1358,7 @@ func Test_actionTypeService_CreateActionTypes(t *testing.T) {
 			ata.EXPECT().CreateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 			smock.ExpectCommit()
-			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode)
+			atIDs, err := service.CreateActionTypes(ctx, nil, actionTypes, mode, false)
 			So(err, ShouldNotBeNil)
 			So(len(atIDs), ShouldEqual, 0)
 		})
@@ -1620,6 +1623,189 @@ func Test_actionTypeService_SearchActionTypes_extraCases(t *testing.T) {
 			result, err := service.SearchActionTypes(ctx, query)
 			So(err, ShouldBeNil)
 			So(len(result.Entries), ShouldEqual, 1)
+		})
+	})
+}
+
+func Test_actionTypeService_ValidateActionTypes(t *testing.T) {
+	Convey("Test ValidateActionTypes\n", t, func() {
+		ctx := context.Background()
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		ps := bmock.NewMockPermissionService(mockCtrl)
+		ots := bmock.NewMockObjectTypeService(mockCtrl)
+		ata := bmock.NewMockActionTypeAccess(mockCtrl)
+
+		service := &actionTypeService{
+			ps:  ps,
+			ots: ots,
+			ata: ata,
+		}
+
+		expectATImportOK := func() {
+			ata.EXPECT().CheckActionTypeExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+			ata.EXPECT().CheckActionTypeExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+		}
+
+		Convey("strictMode false skips object type existence checks\n", func() {
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName:       "at1",
+						ObjectTypeID: "missing_ot",
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, false, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("strictMode true fails when bound object type not found\n", func() {
+			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ObjectType_InternalError)
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName:       "at1",
+						ObjectTypeID: "missing_ot",
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, httpErr)
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("strictMode true skips DB when batch contains object type id\n", func() {
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName:       "at1",
+						ObjectTypeID: "ot_batch",
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			batch := batchindex.NewBatchIDIndex("kn1", interfaces.MAIN_BRANCH)
+			batch.ObjectTypes["ot_batch"] = &interfaces.ObjectType{}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, batch, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("strictMode true validates Affect.ObjectTypeID\n", func() {
+			httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ObjectType_InternalError)
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						Affect: &interfaces.ActionAffect{
+							ObjectTypeID: "affect_ot",
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			ots.EXPECT().GetObjectTypeByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, httpErr)
+			err := service.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("strictMode true fails when tool binding check fails\n", func() {
+			aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
+			svc := &actionTypeService{
+				ps:  ps,
+				aoa: aoa,
+				ata: ata,
+			}
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						ActionSource: interfaces.ActionSource{
+							Type:   interfaces.ACTION_SOURCE_TYPE_TOOL,
+							BoxID:  "b1",
+							ToolID: "t1",
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			aoa.EXPECT().GetToolByID(gomock.Any(), "b1", "t1").Return(errors.New("tool not found"))
+			err := svc.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("strictMode true succeeds when tool binding check passes\n", func() {
+			aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
+			svc := &actionTypeService{
+				ps:  ps,
+				aoa: aoa,
+				ata: ata,
+			}
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						ActionSource: interfaces.ActionSource{
+							Type:   interfaces.ACTION_SOURCE_TYPE_TOOL,
+							BoxID:  "b1",
+							ToolID: "t1",
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			aoa.EXPECT().GetToolByID(gomock.Any(), "b1", "t1").Return(nil)
+			err := svc.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("strictMode true fails when MCP tool binding check fails\n", func() {
+			aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
+			svc := &actionTypeService{
+				ps:  ps,
+				aoa: aoa,
+				ata: ata,
+			}
+			actionTypes := []*interfaces.ActionType{
+				{
+					ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
+						ATName: "at1",
+						ActionSource: interfaces.ActionSource{
+							Type:     interfaces.ACTION_SOURCE_TYPE_MCP,
+							McpID:    "m1",
+							ToolName: "fn",
+						},
+					},
+					KNID:   "kn1",
+					Branch: interfaces.MAIN_BRANCH,
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectATImportOK()
+			aoa.EXPECT().GetMcpToolByName(gomock.Any(), "m1", "fn").Return(errors.New("mcp tool not found"))
+			err := svc.ValidateActionTypes(ctx, "kn1", interfaces.MAIN_BRANCH, actionTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
 		})
 	})
 }

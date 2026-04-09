@@ -55,7 +55,7 @@ func Test_RestHandler_ListResources(t *testing.T) {
 		url := "/api/bkn-backend/v1/resources"
 
 		Convey("Success ListResources with KN type\n", func() {
-			kns.EXPECT().ListKnSrcs(gomock.Any(), gomock.Any()).Return([]interfaces.Resource{}, 0, nil)
+			kns.EXPECT().ListKnSrcs(gomock.Any(), gomock.Any()).Return([]interfaces.PermissionResource{}, 0, nil)
 
 			req := httptest.NewRequest(http.MethodGet, url+"?resource_type="+interfaces.RESOURCE_TYPE_KN, nil)
 			w := httptest.NewRecorder()

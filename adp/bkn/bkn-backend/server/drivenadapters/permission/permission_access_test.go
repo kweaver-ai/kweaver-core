@@ -58,11 +58,11 @@ func Test_permissionAccess_CheckPermission(t *testing.T) {
 		pa := newTestPermissionAccess(appSetting, mockHTTPClient)
 
 		check := interfaces.PermissionCheck{
-			Accessor: interfaces.Accessor{
+			Accessor: interfaces.PermissionAccessor{
 				ID:   "user1",
 				Type: interfaces.ACCESSOR_TYPE_USER,
 			},
-			Resource: interfaces.Resource{
+			Resource: interfaces.PermissionResource{
 				ID:   "res1",
 				Type: interfaces.RESOURCE_TYPE_KN,
 			},
@@ -176,11 +176,11 @@ func Test_permissionAccess_CreateResources(t *testing.T) {
 
 		policies := []interfaces.PermissionPolicy{
 			{
-				Accessor: interfaces.Accessor{
+				Accessor: interfaces.PermissionAccessor{
 					ID:   "user1",
 					Type: interfaces.ACCESSOR_TYPE_USER,
 				},
-				Resource: interfaces.Resource{
+				Resource: interfaces.PermissionResource{
 					ID:   "res1",
 					Type: interfaces.RESOURCE_TYPE_KN,
 				},
@@ -248,7 +248,7 @@ func Test_permissionAccess_DeleteResources(t *testing.T) {
 		mockHTTPClient := rmock.NewMockHTTPClient(mockCtrl)
 		pa := newTestPermissionAccess(appSetting, mockHTTPClient)
 
-		resources := []interfaces.Resource{
+		resources := []interfaces.PermissionResource{
 			{
 				ID:   "res1",
 				Type: interfaces.RESOURCE_TYPE_KN,
@@ -316,8 +316,8 @@ func Test_permissionAccess_FilterResources(t *testing.T) {
 		mockHTTPClient := rmock.NewMockHTTPClient(mockCtrl)
 		pa := newTestPermissionAccess(appSetting, mockHTTPClient)
 
-		filter := interfaces.ResourcesFilter{
-			Accessor: interfaces.Accessor{
+		filter := interfaces.PermissionResourcesFilter{
+			Accessor: interfaces.PermissionAccessor{
 				ID:   "user1",
 				Type: interfaces.ACCESSOR_TYPE_USER,
 			},
@@ -326,7 +326,7 @@ func Test_permissionAccess_FilterResources(t *testing.T) {
 		// httpUrl := "http://test-permission/resource-filter"
 
 		Convey("Success filtering resources", func() {
-			result := []interfaces.ResourceOps{
+			result := []interfaces.PermissionResourceOps{
 				{
 					ResourceID: "res1",
 					Operations: []string{interfaces.OPERATION_TYPE_VIEW_DETAIL},
