@@ -1,6 +1,6 @@
 [
     {
-        "db_name": "dip_data_agent",
+        "db_name": "adp",
         "table_name": "t_data_agent_datasource_dataset_assoc",
         "object_type": "TABLE",
         "operation_type": "DROP",
@@ -9,7 +9,7 @@
         "object_comment": ""
     },
     {
-        "db_name": "dip_data_agent",
+        "db_name": "adp",
         "table_name": "t_data_agent_datasource_dataset_obj",
         "object_type": "TABLE",
         "operation_type": "DROP",
@@ -18,7 +18,7 @@
         "object_comment": ""
     },
     {
-        "db_name": "dip_data_agent",
+        "db_name": "adp",
         "table_name": "t_data_agent_datasource_dataset",
         "object_type": "TABLE",
         "operation_type": "DROP",
