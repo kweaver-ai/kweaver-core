@@ -1,9 +1,0 @@
-{
-  "federalAi": {
-    "config": {
-      "parameter": "Parameter",
-      "smartParameter": "Intelligent parameter adjustment",
-      "fixParam": "Fixed parameters"
-    }
-  }
-}

@@ -1,9 +1,0 @@
-{
-  "federalAi": {
-    "config": {
-      "parameter": "参数",
-      "smartParameter": "智能调参",
-      "fixParam": "固定参数"
-    }
-  }
-}
