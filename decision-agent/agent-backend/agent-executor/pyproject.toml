@@ -31,7 +31,7 @@ dependencies = [
     #"telemetrysdk-python@git+ssh://devops.aishu.cn:22/AISHUDevOps/One-Architecture/_git/TelemetrySDK-Python@2.6.1",
     #    "telemetrysdk-python@git+https://github.com/kweaver-ai/TelemetrySDK-Python@2.4.2",
     #    "tlogging",
-    "kweaver-dolphin==0.5.1",
+    "kweaver-dolphin==0.5.4",
     "python-dotenv>=1.0.0",
 ]
 
@@ -57,7 +57,10 @@ lint = [
     "ruff>=0.15.0",
 ]
 [tool.uv]
-index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+index-url = "https://mirrors.aliyun.com/pypi/simple"
+extra-index-url = [
+    "https://pypi.tuna.tsinghua.edu.cn/simple"
+]
 
 
 #[[tool.uv.index]]

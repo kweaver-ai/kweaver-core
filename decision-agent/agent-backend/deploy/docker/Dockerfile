@@ -90,7 +90,7 @@ COPY agent-backend/agent-memory/src /build/src
 # 安装依赖并构建 agent-memory
 RUN set -ex; \
     cd /build; \
-    python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt; \
+    python3 -m pip install -i  https://mirrors.aliyun.com/pypi/simple  -r requirements.txt; \
     pyinstaller agent-memory.spec
 
 # ==================== 生产阶段：supervisor 管理三个服务 ====================
