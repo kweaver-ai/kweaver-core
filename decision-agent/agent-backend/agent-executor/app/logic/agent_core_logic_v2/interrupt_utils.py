@@ -115,6 +115,10 @@ def _check_and_prepare_evidence(
         StandLogger.info_log("[_check_and_prepare_evidence] END: no valid tool results\n" + "="*60)
         return evidence_store_key
 
+    StandLogger.info_log(
+        f"[_check_and_prepare_evidence] Found {len(tool_call_results)} tool results"
+    )
+
     try:
         import uuid
 
@@ -128,11 +132,22 @@ def _check_and_prepare_evidence(
         if not evidence_store_key:
             evidence_store_key = f"ev_{uuid.uuid4().hex[:12]}"
             store.add(evidence_store_key, [])
+            StandLogger.info_log(
+                f"[_check_and_prepare_evidence] Created new evidence key: {evidence_store_key}"
+            )
 
         current_evidences = store.get(evidence_store_key) or []
 
         for tool_name, result in tool_call_results.items():
+            StandLogger.info_log(
+                f"[_check_and_prepare_evidence] Processing tool={tool_name}, "
+                f"result_type={type(result).__name__}"
+            )
+
             if not isinstance(result, dict):
+                StandLogger.info_log(
+                    f"[_check_and_prepare_evidence] SKIP: result is not dict, type={type(result).__name__}"
+                )
                 continue
 
             try:
@@ -199,8 +214,20 @@ def _check_and_prepare_evidence(
             f"evidences, key={evidence_store_key}"
         )
 
+        StandLogger.info_log(
+            f"[_check_and_prepare_evidence] END: "
+            f"processed={len(tool_call_results)} tools, "
+            f"total_evidences={len(current_evidences)}, "
+            f"key={evidence_store_key}\n"
+            f"{'='*60}\n"
+        )
+
     except Exception as e:
         logger.error(f"[_check_and_prepare_evidence] Error: {e}", exc_info=True)
+        StandLogger.info_log(
+            f"[_check_and_prepare_evidence] ERROR: {e}\n"
+            f"{'='*60}\n"
+        )
 
     return evidence_store_key
 
