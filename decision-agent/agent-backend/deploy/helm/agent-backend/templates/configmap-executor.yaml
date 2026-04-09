@@ -161,7 +161,7 @@ data:
       enable_alias_match: {{ .Values.agentExecutor.enableAliasMatch }}
       min_sentence_length: {{ .Values.agentExecutor.minSentenceLength }}
 
-    # 10. o11y 相关
+    # 11. o11y 相关
     o11y:
       log_enabled: {{ .Values.agentExecutor.telemetry.log.enabled }}
       trace_enabled: {{ .Values.otel.trace.enabled }}

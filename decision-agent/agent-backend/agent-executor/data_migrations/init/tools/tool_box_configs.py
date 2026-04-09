@@ -83,15 +83,4 @@ tool_box_configs = [
         "file_path": openapi_file_path / "sandbox-exec.yaml",
         "content_type": "application/yaml",
     },
-    {
-        "box_id": "c1e2a3b4-d5f6-7890-abcd-ef1234567890",
-        "box_name": "证据准备工具",
-        "box_desc": "从工具调用结果中提取和标准化证据",
-        "metadata_type": "openapi",
-        "source": "internal",
-        "config_version": "1.0.0",
-        "config_source": "auto",
-        "file_path": openapi_file_path / "evidence_tools.json",
-        "content_type": "application/json",
-    },
 ]
