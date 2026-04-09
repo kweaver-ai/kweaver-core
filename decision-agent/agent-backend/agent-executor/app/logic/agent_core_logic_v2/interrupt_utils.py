@@ -230,20 +230,50 @@ async def process_arun_loop(
 
     current_evidence_key = evidence_store_key
 
+    StandLogger.info_log(
+        f"\n{'='*60}\n"
+        f"[process_arun_loop] START\n"
+        f"  is_debug: {is_debug}\n"
+        f"  initial_evidence_key: {evidence_store_key}\n"
+        f"{'='*60}\n"
+    )
+
+    iteration_count = 0
+
     async for item in agent.arun():
+        iteration_count += 1
+
+        StandLogger.info_log(
+            f"\n[process_arun_loop] Iteration {iteration_count}: "
+            f"item_type={type(item).__name__}, "
+            f"item_keys={list(item.keys()) if isinstance(item, dict) else 'N/A'}"
+        )
+
         # 检查是否是中断，如果是则抛出 ToolInterrupt
         check_and_raise_interrupt(item)
 
         # 检查并准备证据（在工具完成后）
+        before_evidence_key = current_evidence_key
         current_evidence_key = _check_and_prepare_evidence(
             item, current_evidence_key
         )
 
+        if current_evidence_key != before_evidence_key:
+            StandLogger.info_log(
+                f"[process_arun_loop] Evidence key changed: "
+                f"{before_evidence_key} -> {current_evidence_key}"
+            )
+
         # 正常处理
         if not is_debug and item.get("_progress"):
+            progress_count = len(item["_progress"])
             item["_progress"] = [
                 p for p in item["_progress"] if p.get("stage") != "assign"
             ]
+            StandLogger.info_log(
+                f"[process_arun_loop] Filtered progress: "
+                f"{progress_count} -> {len(item['_progress'])} entries"
+            )
 
         item_value = {key: get_dolphin_var_value(value) for key, value in item.items()}
 
@@ -255,4 +285,18 @@ async def process_arun_loop(
         if current_evidence_key:
             output["evidence_store_key"] = current_evidence_key
 
+        StandLogger.info_log(
+            f"[process_arun_loop] Output: "
+            f"answer_keys={list(output['answer'].keys()) if isinstance(output['answer'], dict) else type(output['answer']).__name__}, "
+            f"context_keys={list(output['context'].keys()) if isinstance(output['context'], dict) else type(output['context']).__name__}, "
+            f"has_evidence_store_key={bool(current_evidence_key)}"
+        )
+
         yield output
+
+    StandLogger.info_log(
+        f"\n[process_arun_loop] END: "
+        f"total_iterations={iteration_count}, "
+        f"final_evidence_key={current_evidence_key}\n"
+        f"{'='*60}\n"
+    )

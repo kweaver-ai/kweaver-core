@@ -55,8 +55,27 @@ class EvidenceInjectProcessor:
         self._buffer = ""
         self._processed_offset = 0
 
+        StandLogger.info_log(
+            f"\n[EvidenceInjectProcessor.__init__] START\n"
+            f"  evidences_count: {len(evidences)}\n"
+            f"  enable_alias_match: {enable_alias_match}\n"
+            f"  min_sentence_length: {min_sentence_length}"
+        )
+
         if evidences:
+            StandLogger.info_log("  Evidences:")
+            for ev in evidences:
+                StandLogger.info_log(
+                    f"    - {ev.get('local_id')}: "
+                    f"name={ev.get('object_type_name')}, "
+                    f"aliases={ev.get('aliases', [])}"
+                )
             self._build_match_index()
+            StandLogger.info_log(
+                f"  Match index built: {len(self._match_index)} entries\n"
+            )
+        else:
+            StandLogger.info_log("  No evidences provided\n")
 
     async def process(
         self,
@@ -188,11 +207,18 @@ class EvidenceInjectProcessor:
 
         resolved = self._resolve_overlaps(matches)
 
+        StandLogger.info_log(
+            f"[_annotate_text] text_len={len(text)}, "
+            f"raw_matches={len(matches)}, "
+            f"resolved={len(resolved)}"
+        )
+
         evidence_meta: Dict[str, Any] = {}
 
         for local_id, start, end in resolved:
             ev = self._find_evidence_by_local_id(local_id)
             if ev is None:
+                StandLogger.info_log(f"  Warning: local_id={local_id} not found in evidences")
                 continue
 
             name = ev.get("object_type_name", "")
@@ -204,6 +230,15 @@ class EvidenceInjectProcessor:
                 }
 
             evidence_meta[local_id]["positions"].append([start, end])
+
+            matched_text = text[start:end] if end <= len(text) else ""
+            StandLogger.info_log(
+                f"  + {local_id} ({name}): [{start}, {end}] = '{matched_text}'"
+            )
+
+        StandLogger.info_log(
+            f"[_annotate_text] Result: {len(evidence_meta)} entities annotated\n"
+        )
 
         return text, evidence_meta
 
