@@ -1,3 +1,10 @@
+-- Copyright The kweaver.ai Authors.
+--
+-- Licensed under the Apache License, Version 2.0.
+-- See the LICENSE file in the project root for details.
+
+SET SCHEMA adp;
+
 -- AnyShare fileset connector (local)
 INSERT INTO t_connector_type (f_type, f_name, f_description, f_mode, f_category, f_field_config, f_enabled)
 SELECT 'anyshare', 'anyshare', 'AnyShare 连接器', 'local', 'fileset',

@@ -64,3 +64,6 @@ sandbox_web/dist/
 /kw-studio/coverage
 /kw-studio/build
 /kw-studio/report
+
+go.work
+go.work.sum
