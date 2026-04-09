@@ -358,37 +358,55 @@ async def create_evidence_injection_stream(
             create_evidence_injection_stream._last_key = item_evidence_key
 
         # 检查是否应该处理此项目
-        answer = item.get("answer", "")
+        answer = item.get("answer", {})
+        actual_text = None
+
+        # answer 通常是字典，需要从中提取实际文本
+        if isinstance(answer, dict):
+            actual_text = answer.get("answer", "")
+        elif isinstance(answer, str):
+            actual_text = answer
+
+        text_len = len(actual_text) if isinstance(actual_text, str) else 0
         should_process = (
             current_processor and
-            isinstance(answer, str) and
-            len(answer) > 50  # 只处理有实际文本内容的项目
+            isinstance(actual_text, str) and
+            text_len > 20  # 只处理有实际文本内容的项目
         )
 
         StandLogger.info_log(
             f"[create_evidence_injection_stream] item: "
             f"evidence_store_key={item_evidence_key}, "
             f"answer_type={type(answer).__name__}, "
-            f"answer_len={len(answer) if isinstance(answer, str) else 'N/A'}, "
+            f"actual_text_type={type(actual_text).__name__}, "
+            f"text_len={text_len}, "
             f"should_process={should_process}"
         )
 
         # 如果有处理器且应该处理，则进行注入；否则直接透传
         if should_process:
             StandLogger.info_log(
-                f"[EvidenceInject] 🔄 Processing with EvidenceInjectProcessor"
+                f"[EvidenceInject] 🔄 Processing with EvidenceInjectProcessor, text={actual_text[:50]}..."
             )
-            # 将单个 item 转换为异步流以供处理器使用
-            async def single_item_stream():
-                yield item
+            # 调用处理器进行标注
+            _, evidence_meta = current_processor._annotate_text(actual_text)
 
-            async for processed_item in current_processor.process(
-                single_item_stream()
-            ):
-                if processed_item.get("_evidence"):
-                    StandLogger.info_log(
-                        f"[EvidenceInject] ✅ Injected evidence: {processed_item.get('_evidence')}"
-                    )
-                yield processed_item
+            if evidence_meta:
+                # 将 _evidence 元数据添加到 answer 字典中
+                if isinstance(answer, dict):
+                    answer["_evidence"] = evidence_meta
+                else:
+                    # 如果 answer 不是字典，创建新结构
+                    item["answer"] = {"answer": answer, "_evidence": evidence_meta}
+
+                StandLogger.info_log(
+                    f"[EvidenceInject] ✅ Injected evidence: {evidence_meta}"
+                )
+            else:
+                StandLogger.info_log(
+                    f"[EvidenceInject] ℹ️ No evidence found in text"
+                )
+
+            yield item
         else:
             yield item
