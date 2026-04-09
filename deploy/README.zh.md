@@ -10,7 +10,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/kweaver-ai/kweaver.git
+git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver/deploy
 
 # 2. 编辑配置文件（可选，使用默认配置可跳过）
@@ -35,7 +35,7 @@ bash ./deploy.sh kweaver-dip install
 
 | 项目 | 最低配置 | 推荐配置 |
 |------|---------|---------|
-| OS | CentOS 7/8+, RHEL 8 | CentOS 7 |
+| OS | Ubuntu 20.04+, CentOS 8+, RHEL 8+ | Ubuntu 22.04 LTS |
 | CPU | 16 核 | 24 核 |
 | 内存 | 48 GB | 64 GB |
 | 磁盘 | 200 GB | 500 GB |

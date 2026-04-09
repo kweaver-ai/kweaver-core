@@ -4,15 +4,15 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
 
-Decision Agent is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver)** project as well.
+Decision Agent is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver-core)** project as well.
 
-**[KWeaver](https://github.com/kweaver-ai/kweaver)** is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
+**[KWeaver](https://github.com/kweaver-ai/kweaver-core)** is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
 
 The DIP platform includes key subsystems such as ADP, Decision Agent, DIP Studio, and AI Store.
 
 ## 📚 Quick Links
 
-- 🤝 [Contributing](CONTRIBUTING.md) - Guidelines for contributing to the project
+- 🤝 [Contributing](../rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 📄 [License](LICENSE.txt) - Apache License 2.0
 - 🐛 [Report Bug](https://github.com/kweaver-ai/decision-agent) - Report a bug or issue
 - 💡 [Request Feature](https://github.com/kweaver-ai/decision-agent) - Suggest a new feature
@@ -174,7 +174,7 @@ Through security policy layers (permission verification, sensitive information f
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
+We welcome contributions! Please see our [Contributing Guide](../rules/CONTRIBUTING.md) for details on how to contribute to this project.
 
 Quick start:
 
@@ -221,7 +221,7 @@ This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE
 
 ## Support & Contact
 
-- **Contributing**: [Contributing Guide](CONTRIBUTING.md)
+- **Contributing**: [Contributing Guide](../rules/CONTRIBUTING.md)
 - **Issues**: [GitHub Issues](https://github.com/kweaver-ai/decision-agent)
 - **License**: [Apache License 2.0](LICENSE.txt)
 

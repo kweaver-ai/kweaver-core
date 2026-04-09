@@ -4,15 +4,15 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
 
-**[ADP (智能数据平台)](https://github.com/kweaver-ai/adp)** 是 KWeaver 生态系统的一部分。如果你喜欢这个项目，请同时也为 **[KWeaver](https://github.com/kweaver-ai/kweaver)** 项目点亮星标⭐。
+**[ADP (智能数据平台)](https://github.com/kweaver-ai/adp)** 是 KWeaver 生态系统的一部分。如果你喜欢这个项目，请同时也为 **[KWeaver](https://github.com/kweaver-ai/kweaver-core)** 项目点亮星标⭐。
 
-**[KWeaver](https://github.com/kweaver-ai/kweaver)** 是一个用于构建、部署和运行决策智能 AI 应用的开源生态系统。该生态系统采用本体作为业务知识网络的核心方法论，以 DIP 为核心平台，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每个人的生产力。
+**[KWeaver](https://github.com/kweaver-ai/kweaver-core)** 是一个用于构建、部署和运行决策智能 AI 应用的开源生态系统。该生态系统采用本体作为业务知识网络的核心方法论，以 DIP 为核心平台，旨在提供弹性、敏捷、可靠的企业级决策智能，进一步释放每个人的生产力。
 
 DIP 平台包含 ADP、Decision Agent、DIP Studio 和 AI Store 等关键子系统。
 
 ## 📚 快速链接
 
-- 🤝 [贡献指南](CONTRIBUTING.zh.md) - 项目贡献指引
+- 🤝 [贡献指南](../rules/CONTRIBUTING.zh.md) - 项目贡献指引
 - 📄 [许可证](LICENSE.txt) - Apache License 2.0
 - 🐛 [报告 Bug](https://github.com/kweaver-ai/adp/issues) - 报告错误或问题
 - 💡 [请求功能](https://github.com/kweaver-ai/adp/issues) - 建议新功能
@@ -125,7 +125,7 @@ DataFlow 是一个专为数据处理设计的可视化流程编排引擎。
 
 ## 贡献
 
-我们欢迎贡献！有关如何为本项目做出贡献的详细信息，请参阅我们的 [贡献指南](CONTRIBUTING.zh.md)。
+我们欢迎贡献！有关如何为本项目做出贡献的详细信息，请参阅我们的 [贡献指南](../rules/CONTRIBUTING.zh.md)。
 
 ## 许可证
 
@@ -134,4 +134,4 @@ DataFlow 是一个专为数据处理设计的可视化流程编排引擎。
 ## 支持与联系
 
 - **Issues**: [GitHub Issues](https://github.com/kweaver-ai/adp/issues)
-- **贡献**: [贡献指南](CONTRIBUTING.zh.md)
+- **贡献**: [贡献指南](../rules/CONTRIBUTING.zh.md)

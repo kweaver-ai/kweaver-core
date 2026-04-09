@@ -1,7 +1,0 @@
-[
-    {
-        "error_source":"[AfterProcess]: agent call failed, cause: dolphinsdk exception, details: [AgentLifecycleException: EXECUTION_FAILED, DolphinException: RUN_COROUTINE_FAILED, Failed to parse variable: var_before_str = temp0[\"xxx\"]; local_variables = {'temp0': {'host': 'agent-executor:30778', 'user-agent': 'Go-http-client/1.1', 'content-length': '5602', 'authorization': 'Bearer ory_at_1Xk8Q5YJmDbLRrhGRY9eSoLmcqBnLTLiNX9XfxpseGA.hsscTeU3nUsATvazUxueQV9nNG3WZB5a8dwwVFc2lOE', 'cache-control': 'no-cache', 'connection-type': 'keep-alive', 'token': 'ory_at_1Xk8Q5YJmDbLRrhGRY9eSoLmcqBnLTLiNX9XfxpseGA.hsscTeU3nUsATvazUxueQV9nNG3WZB5a8dwwVFc2lOE', 'traceparent': '00-729b06831cde8918b1a51106dbe71a73-4adefc79ec55c581-01', 'x-accel-buffering': 'no', 'x-account-id': 'bdb78b62-6c48-11f0-af96-fa8dcc0a06b2', 'x-account-type': 'user', 'x-business-domain': 'bd_public', 'x-user': 'bdb78b62-6c48-11f0-af96-fa8dcc0a06b2', 'x-visitor-type': 'user', 'accept-encoding': 'gzip'}}; error = 'xxx'], context info: [agent_id: 01KE3A9J44146NRQGRXW83TZAF, session_id: 01KER3ZZS7JT7XQV2W2HSW0VWJ, user_id: bdb78b62-6c48-11f0-af96-fa8dcc0a06b2]",
-        "possible_reason":"赋值时尝试获取一个不存在的key，请检查目标key是否存在",
-        "possible_resolved_methods":"1.如果是尝试获取系统内置变量，请查看智能体实施和操作文档。2.如果是工具返回的结果，请注释报错语句以下的内容，并在调试页面查看工具具体的返回结构。"
-    }
-]

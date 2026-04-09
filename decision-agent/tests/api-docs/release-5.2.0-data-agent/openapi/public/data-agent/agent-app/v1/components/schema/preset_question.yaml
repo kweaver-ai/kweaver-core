@@ -1,8 +1,0 @@
-PresetQuestion:
-  type: object
-  required:
-    - question
-  properties:
-    question:
-      type: string
-      description: 问题内容
