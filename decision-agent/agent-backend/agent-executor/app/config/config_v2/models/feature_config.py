@@ -24,6 +24,23 @@ class FeaturesConfig:
     # 是否在 API tool proxy 请求中透传 TraceAI evidence 开关
     enable_traceai_evidence: bool = False
 
+    # ===== 证据注入功能配置 =====
+
+    # 证据注入功能总开关
+    enable_evidence_injection: bool = False
+
+    # EvidenceStore 配置
+    evidence_store_max_size: int = 1000
+    evidence_store_ttl_seconds: int = 3600
+
+    # LLM 提取配置
+    llm_extraction_timeout: int = 30
+    llm_extraction_model: str = ""
+
+    # 规则匹配配置
+    enable_alias_match: bool = True
+    min_sentence_length: int = 10
+
     @classmethod
     def from_dict(cls, data: dict) -> "FeaturesConfig":
         """从字典创建配置对象"""
@@ -39,4 +56,26 @@ class FeaturesConfig:
                 "is_skill_agent_need_progress", False
             ),
             enable_traceai_evidence=data.get("enable_traceai_evidence", False),
+            # 证据注入配置
+            enable_evidence_injection=data.get(
+                "enable_evidence_injection", False
+            ),
+            evidence_store_max_size=int(data.get(
+                "evidence_store_max_size", 1000
+            )),
+            evidence_store_ttl_seconds=int(data.get(
+                "evidence_store_ttl_seconds", 3600
+            )),
+            llm_extraction_timeout=int(data.get(
+                "llm_extraction_timeout", 30
+            )),
+            llm_extraction_model=data.get(
+                "llm_extraction_model", ""
+            ),
+            enable_alias_match=data.get(
+                "enable_alias_match", True
+            ),
+            min_sentence_length=int(data.get(
+                "min_sentence_length", 10
+            )),
         )

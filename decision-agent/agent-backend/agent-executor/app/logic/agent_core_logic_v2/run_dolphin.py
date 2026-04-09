@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any, AsyncGenerator, Dict, Optional, TYPE_CHECKING
 from dolphin.sdk.agent.dolphin_agent import DolphinAgent
 from dolphin.core.config.global_config import GlobalConfig
@@ -31,6 +32,123 @@ if TYPE_CHECKING:
     from .agent_core_v2 import AgentCoreV2
 
 from .agent_instance_manager import agent_instance_manager
+
+logger = logging.getLogger(__name__)
+
+
+async def _prepare_evidence(
+    context_variables: Dict[str, Any],
+    headers: Dict[str, str],
+) -> Optional[str]:
+    """
+    检查上下文中的工具调用结果，调用 evidence_prepare 提取证据，
+    保存到 EvidenceStore 并返回 evidence_store_key。
+
+    Args:
+        context_variables: 上下文变量（可能包含 _tool_call_results）
+        headers: HTTP 请求头
+
+    Returns:
+        evidence_store_key 或 None
+    """
+    if not getattr(Config.features, "enable_evidence_injection", False):
+        return None
+
+    tool_results = context_variables.get("_tool_call_results")
+    if not tool_results or not isinstance(tool_results, dict):
+        return None
+
+    all_evidences = []
+    evidence_id = None
+
+    try:
+        from app.logic.tool.evidence_prepare import evidence_prepare
+        from app.logic.agent_core_logic_v2.evidence_store import (
+            get_global_evidence_store,
+        )
+        import uuid
+
+        evidence_id = f"ev_{uuid.uuid4().hex[:12]}"
+
+        for tool_name, result in tool_results.items():
+            if not isinstance(result, dict):
+                continue
+
+            try:
+                prepare_result = await evidence_prepare(
+                    tool_call_result=result,
+                    config={
+                        "llm_extraction_timeout": getattr(
+                            Config.features,
+                            "llm_extraction_timeout",
+                            30,
+                        ),
+                        "llm_extraction_model": getattr(
+                            Config.features,
+                            "llm_extraction_model",
+                            "",
+                        ),
+                    },
+                    context={"tool_name": tool_name},
+                )
+
+                evidences = prepare_result.get("evidences", [])
+                if evidences:
+                    all_evidences.extend(evidences)
+                    logger.info(
+                        f"[_prepare_evidence] tool={tool_name}, "
+                        f"extracted={len(evidences)} evidences"
+                    )
+
+            except Exception as e:
+                logger.warning(
+                    f"[_prepare_evidence] Failed to process {tool_name}: {e}"
+                )
+
+        if all_evidences:
+            store = get_global_evidence_store()
+            store.add(evidence_id, all_evidences)
+            context_variables["evidence_store_key"] = evidence_id
+
+            logger.info(
+                f"[_prepare_evidence] Prepared {len(all_evidences)} "
+                f"evidences, key={evidence_id}"
+            )
+            return evidence_id
+
+    except Exception as e:
+        logger.error(f"[_prepare_evidence] Error: {e}", exc_info=True)
+
+    return None
+
+
+async def _run_with_evidence_injection(
+    agent: DolphinAgent,
+    evidence_store_key: str,
+    is_debug: bool = False,
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    包装 process_arun_loop 的输出，通过 EvidenceInjectProcessor 注入证据标注。
+
+    Args:
+        agent: DolphinAgent 实例
+        evidence_store_key: EvidenceStore 中的证据 ID
+        is_debug: 调试模式
+
+    Yields:
+        包含 _evidence 元数据的输出字典
+    """
+    from .interrupt_utils import process_arun_loop
+    from .evidence_inject_processor import create_evidence_injection_stream
+
+    original_stream = process_arun_loop(agent, is_debug)
+
+    async for item in create_evidence_injection_stream(
+        original_stream=original_stream,
+        evidence_store_key=evidence_store_key,
+        is_debug=is_debug,
+    ):
+        yield item
 
 
 @internal_span()
@@ -229,11 +347,30 @@ async def run_dolphin(
     # 12. 执行agent
     output = {}
 
+    # 证据准备阶段（在 LLM 执行前）
+    evidence_store_key = None
+
+    if getattr(Config.features, "enable_evidence_injection", False):
+        evidence_store_key = await _prepare_evidence(
+            context_variables, headers
+        )
+        if evidence_store_key:
+            o11y_logger().info(
+                f"[run_dolphin] Evidence injection enabled, "
+                f"evidence_store_key={evidence_store_key}"
+            )
+
     # 使用公共的 arun 循环处理方法
     from .interrupt_utils import process_arun_loop
 
-    async for output in process_arun_loop(agent, is_debug):
-        yield output
+    if evidence_store_key:
+        async for output in _run_with_evidence_injection(
+            agent, evidence_store_key, is_debug
+        ):
+            yield output
+    else:
+        async for output in process_arun_loop(agent, is_debug):
+            yield output
 
     yield output
     # StandLogger.debug_log(

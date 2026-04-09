@@ -1,0 +1,236 @@
+{
+  "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "http://agent-executor:30778",
+      "description": "服务器地址"
+    }
+  ],
+  "info": {
+    "title": "内置工具箱-证据准备工具",
+    "description": "包含 evidence_prepare 工具，用于从工具调用结果中提取和标准化证据",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/agent-executor/v1/tools/evidence_prepare": {
+      "post": {
+        "tags": [
+          "internal-tools"
+        ],
+        "summary": "evidence_prepare",
+        "description": "从工具调用结果中提取和标准化证据\n\n- **tool_call_result**: 工具调用的返回结果（JSON 对象）\n- **config**: 可选配置参数\n\n返回标准化的证据结构，包含 evidence_id、evidences 列表和摘要。",
+        "operationId": "evidence_prepare_api_agent_executor_v1_tools_evidence_prepare_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidencePrepareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePrepareResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EvidencePrepareRequest": {
+        "properties": {
+          "tool_call_result": {
+            "type": "object",
+            "title": "Tool Call Result",
+            "description": "工具调用的返回结果，通常包含 nodes、answer 等字段",
+            "example": {
+              "nodes": [
+                {
+                  "object_type_name": "张三",
+                  "object_type_id": "ot_employee",
+                  "score": 0.95
+                }
+              ],
+              "answer": "查询到员工张三的信息"
+            }
+          },
+          "config": {
+            "type": "object",
+            "title": "Config",
+            "description": "可选配置参数",
+            "properties": {
+              "llm_extraction_timeout": {
+                "type": "integer",
+                "title": "LLM Extraction Timeout",
+                "description": "LLM 提取超时时间(秒)",
+                "default": 30,
+                "example": 30
+              },
+              "llm_extraction_model": {
+                "type": "string",
+                "title": "LLM Extraction Model",
+                "description": "用于实体提取的 LLM 模型名称",
+                "example": "deepseek-v3"
+              }
+            }
+          },
+          "context": {
+            "type": "object",
+            "title": "Context",
+            "description": "可选上下文信息"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_call_result"
+        ],
+        "title": "EvidencePrepareRequest",
+        "description": "证据准备请求"
+      },
+      "EvidencePrepareResponse": {
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "title": "Evidence ID",
+            "description": "唯一证据标识符",
+            "example": "ev_a1b2c3d4e5f6"
+          },
+          "evidences": {
+            "type": "array",
+            "description": "标准化后的证据列表",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            }
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "证据摘要描述",
+            "example": "张三等 1 个证据"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidence_id",
+          "evidences",
+          "summary"
+        ],
+        "title": "EvidencePrepareResponse",
+        "description": "证据准备响应"
+      },
+      "EvidenceItem": {
+        "properties": {
+          "local_id": {
+            "type": "string",
+            "title": "Local ID",
+            "description": "本地唯一标识",
+            "example": "e1"
+          },
+          "object_type_name": {
+            "type": "string",
+            "title": "Object Type Name",
+            "description": "实体名称",
+            "example": "张三"
+          },
+          "aliases": {
+            "type": "array",
+            "description": "别名列表",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "员工张三"
+            ]
+          },
+          "object_type_id": {
+            "type": "string",
+            "title": "Object Type ID",
+            "description": "实体类型 ID",
+            "example": "ot_employee"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "置信度分数 (0-1)",
+            "example": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "local_id",
+          "object_type_name"
+        ],
+        "title": "EvidenceItem",
+        "description": "单个证据项"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "Description": {
+            "description": "错误描述",
+            "title": "Description",
+            "type": "string"
+          },
+          "ErrorCode": {
+            "description": "错误码",
+            "title": "Errorcode",
+            "type": "string"
+          },
+          "ErrorDetails": {
+            "description": "错误详情",
+            "title": "Errordetails",
+            "type": "string"
+          },
+          "ErrorLink": {
+            "description": "错误链接",
+            "title": "Errorlink",
+            "type": "string"
+          },
+          "Solution": {
+            "description": "解决方法",
+            "title": "Solution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "Description",
+          "ErrorCode",
+          "ErrorDetails",
+          "ErrorLink",
+          "Solution"
+        ],
+        "title": "ErrorResponse",
+        "description": "错误响应"
+      }
+    }
+  }
+}
