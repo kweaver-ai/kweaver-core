@@ -13,7 +13,7 @@
 
 ### Refactoring & Cleanup
 
-- Refactor publish request validation in `agent-factory`: use constructor semantics, validate and normalize `CategoryIDs`, default `PublishToWhere` to `square`
+- Refactor publish request validation in `agent-factory`: use constructor semantics, validate and trim request fields, return 400 with explicit error messages instead of 500
 - Reorganize database migration file structure, removing redundant `pre` directory paths
 - Remove unused `ENABLE_EVIDENCE_EXTRACTION` env var and dict copy from deployment; update `agent-executor` dependencies and optimize Dockerfile
 

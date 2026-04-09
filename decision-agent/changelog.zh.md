@@ -13,7 +13,7 @@
 
 ### 重构与清理
 
-- 重构 `agent-factory` 发布请求校验：使用构造函数语义，对 `CategoryIDs` 进行清洗和非空校验，`PublishToWhere` 默认值设为 `square`
+- 重构 `agent-factory` 发布请求校验：使用构造函数语义，对请求字段进行校验和清洗，校验失败时返回 400 并携带明确错误信息，而非 500
 - 重组数据库迁移文件结构，移除冗余的 `pre` 目录层级
 - 从部署中移除未使用的 `ENABLE_EVIDENCE_EXTRACTION` 环境变量和字典文件；更新 `agent-executor` 依赖并优化 Dockerfile
 
