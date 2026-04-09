@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `t_sandbox_template` (
   `f_default_memory_mb` int(11) NOT NULL,
   `f_default_disk_mb` int(11) NOT NULL,
   `f_default_timeout_sec` int(11) NOT NULL,
-  `` text NOT NULL,
+  `f_pre_installed_packages` text NOT NULL,
   `f_default_env_vars` text NOT NULL,
   `f_security_context` text NOT NULL,
   `f_is_active` int(11) NOT NULL,
