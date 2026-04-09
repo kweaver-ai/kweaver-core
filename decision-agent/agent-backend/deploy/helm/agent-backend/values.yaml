@@ -357,6 +357,15 @@ agentExecutor:
   enableDolphinAgentOutputVariablesCtrl: false
   isSkillAgentNeedProgress: false
   enableTraceAiEvidence: false
+  # 证据注入相关配置
+  enableEvidenceInjection: false
+  llmAnnotationTimeout: 120
+  llmAnnotationModel: "deepseek-v3.2"
+  annotateOnlyFinalAnswer: true
+  evidenceStoreMaxSize: 1000
+  evidenceStoreTtlSeconds: 3600
+  enableAliasMatch: true
+  minSentenceLength: 10
   rps:
     limit: 100
   telemetry:

@@ -145,6 +145,22 @@ data:
       is_skill_agent_need_progress: {{ .Values.agentExecutor.isSkillAgentNeedProgress }}
       enable_traceai_evidence: {{ .Values.agentExecutor.enableTraceAiEvidence }}
 
+    # 10. 证据注入相关配置
+    evidence:
+      # 证据注入功能总开关
+      enable: {{ .Values.agentExecutor.enableEvidenceInjection }}
+      # LLM 标注配置（文本→证据位置）
+      llm_annotation_timeout: {{ .Values.agentExecutor.llmAnnotationTimeout }}
+      llm_annotation_model: {{ .Values.agentExecutor.llmAnnotationModel | quote }}
+      # 仅标注最终答案（避免流式输出卡顿）
+      annotate_only_final_answer: {{ .Values.agentExecutor.annotateOnlyFinalAnswer }}
+      # 证据存储配置
+      store_max_size: {{ .Values.agentExecutor.evidenceStoreMaxSize }}
+      store_ttl_seconds: {{ .Values.agentExecutor.evidenceStoreTtlSeconds }}
+      # 规则匹配配置
+      enable_alias_match: {{ .Values.agentExecutor.enableAliasMatch }}
+      min_sentence_length: {{ .Values.agentExecutor.minSentenceLength }}
+
     # 10. o11y 相关
     o11y:
       log_enabled: {{ .Values.agentExecutor.telemetry.log.enabled }}
