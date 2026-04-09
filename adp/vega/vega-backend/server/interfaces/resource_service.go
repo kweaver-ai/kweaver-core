@@ -12,7 +12,7 @@ import "context"
 //go:generate mockgen -source ../interfaces/resource_service.go -destination ../interfaces/mock/mock_resource_service.go
 type ResourceService interface {
 	// Create creates a new Resource.
-	Create(ctx context.Context, req *ResourceRequest) (string, error)
+	Create(ctx context.Context, req *ResourceRequest) (*Resource, error)
 	// Get retrieves a Resource by ID.
 	GetByID(ctx context.Context, id string) (*Resource, error)
 	// GetByIDs retrieves Resources by IDs.

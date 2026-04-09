@@ -65,9 +65,14 @@ type FileConnector interface {
 }
 
 // FilesetConnector defines the interface for file/document storage connectors.
-// Implementations: s3, hdfs, minio, feishu, notion, etc.
+// Implementations: anyshare, s3, hdfs, minio, feishu, notion, etc.
 type FilesetConnector interface {
 	Connector
+	// ListFilesets lists file and folder objects for discovery (typically one level per parent).
+	ListFilesets(ctx context.Context) ([]*interfaces.FilesetMeta, error)
+	// GetObjectDownloadInfo returns vendor-specific download instructions (e.g. presigned URL + headers).
+	// docID is the source object id (e.g. AnyShare gns id).
+	GetObjectDownloadInfo(ctx context.Context, resourceName, docID string) (map[string]any, error)
 }
 
 // TopicConnector defines the interface for message queue connectors.

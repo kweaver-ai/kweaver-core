@@ -36,6 +36,12 @@ type tableDiscoverItem struct {
 	tableMeta *interfaces.TableMeta
 }
 
+// filesetDiscoverItem represents a fileset discover item.
+type filesetDiscoverItem struct {
+	resource *interfaces.Resource
+	meta     *interfaces.FilesetMeta
+}
+
 // discoverHandler handles discover tasks.
 type discoverHandler struct {
 	appSetting *common.AppSetting
@@ -71,6 +77,8 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 		return err
 	}
 
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, taskInfo.Creator)
+
 	catalogInfo, err := dh.cs.GetByID(ctx, taskInfo.CatalogID, true)
 	if err != nil {
 		logger.Errorf("Failed to get catalog for task %s: %v", taskID, err)
@@ -81,7 +89,9 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now := time.Now().UnixMilli()
 	if err := dh.dts.UpdateStatus(ctx, taskID, interfaces.DiscoverTaskStatusRunning, "", now); err != nil {
 		logger.Errorf("Failed to set start time for task %s: %v", taskID, err)
+		return err
 	}
+
 	// Execute discover : 元数据采集主要逻辑
 	//首先根据 catalog ID 获取 catalog 信息，
 	//然后根据 catalog 信息获取 connector 信息，
@@ -100,6 +110,7 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now = time.Now().UnixMilli()
 	if err := dh.dts.UpdateResult(ctx, taskID, result, now); err != nil {
 		logger.Errorf("Failed to update result for task %s: %v", taskID, err)
+		return err
 	}
 
 	logger.Infof("Discover completed for task: %s, catalog: %s", taskID, catalogInfo.ID)
@@ -158,8 +169,151 @@ func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfa
 
 // discoverFileResources discovers file resources from a file connector.
 func (dh *discoverHandler) discoverFileResources(ctx context.Context, catalog *interfaces.Catalog, connector connectors.Connector) (*interfaces.DiscoverResult, error) {
-	// TODO: 实现文件资源发现逻辑
-	return nil, fmt.Errorf("file resource discover not implemented yet")
+	filesetConnector, ok := connector.(connectors.FilesetConnector)
+	if !ok {
+		return nil, fmt.Errorf("connector does not support fileset discover")
+	}
+
+	sourceFilesets, err := filesetConnector.ListFilesets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list filesets: %w", err)
+	}
+	logger.Infof("Discovered %d fileset objects from source", len(sourceFilesets))
+
+	existingResources, err := dh.rs.GetByCatalogID(ctx, catalog.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing resources: %w", err)
+	}
+
+	result, items, err := dh.reconcileFilesetResources(ctx, catalog, sourceFilesets, existingResources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconcile fileset resources: %w", err)
+	}
+
+	if err := dh.enrichFilesetMetadata(ctx, items); err != nil {
+		return nil, fmt.Errorf("failed to enrich fileset metadata: %w", err)
+	}
+
+	logger.Infof("Discover completed for catalog %s: new=%d, stale=%d, unchanged=%d", catalog.ID, result.NewCount, result.StaleCount, result.UnchangedCount)
+
+	return result, nil
+}
+
+func (dh *discoverHandler) reconcileFilesetResources(ctx context.Context, catalog *interfaces.Catalog, source []*interfaces.FilesetMeta, existingResources []*interfaces.Resource) (*interfaces.DiscoverResult, []filesetDiscoverItem, error) {
+	result := &interfaces.DiscoverResult{
+		CatalogID: catalog.ID,
+	}
+	var items []filesetDiscoverItem
+
+	existingMap := make(map[string]*interfaces.Resource)
+	for _, r := range existingResources {
+		if r.Category != interfaces.ResourceCategoryFileset {
+			continue
+		}
+		existingMap[r.SourceIdentifier] = r
+	}
+
+	sourceMap := make(map[string]*interfaces.FilesetMeta)
+	for _, fs := range source {
+		sid := filesetSourceIdentifier(fs)
+		sourceMap[sid] = fs
+	}
+
+	for _, fs := range source {
+		sourceIdentifier := filesetSourceIdentifier(fs)
+		if resource, ok := existingMap[sourceIdentifier]; ok {
+			if resource.Status == interfaces.ResourceStatusStale {
+				if err := dh.rs.UpdateStatus(ctx, resource.ID, interfaces.ResourceStatusActive, ""); err != nil {
+					logger.Errorf("Failed to reactivate resource %s: %v", resource.ID, err)
+				}
+			}
+			result.UnchangedCount++
+			items = append(items, filesetDiscoverItem{resource: resource, meta: fs})
+		} else {
+			resource, err := dh.createFilesetResource(ctx, catalog, fs, sourceIdentifier)
+			if err != nil {
+				logger.Errorf("Failed to create fileset resource %s: %v", sourceIdentifier, err)
+			} else {
+				result.NewCount++
+				items = append(items, filesetDiscoverItem{resource: resource, meta: fs})
+			}
+		}
+	}
+
+	for sourceIdentifier, existing := range existingMap {
+		if _, ok := sourceMap[sourceIdentifier]; !ok {
+			if existing.Status != interfaces.ResourceStatusStale {
+				if err := dh.rs.UpdateStatus(ctx, existing.ID, interfaces.ResourceStatusStale, ""); err != nil {
+					logger.Errorf("Failed to mark resource %s as stale: %v", existing.ID, err)
+				} else {
+					result.StaleCount++
+				}
+			}
+		}
+	}
+
+	result.Message = fmt.Sprintf("Discover completed: %d new, %d stale, %d unchanged", result.NewCount, result.StaleCount, result.UnchangedCount)
+	return result, items, nil
+}
+
+func filesetSourceIdentifier(fs *interfaces.FilesetMeta) string {
+	if fs.DisplayPath != "" {
+		return fs.DisplayPath
+	}
+	return fs.ID
+}
+
+func (dh *discoverHandler) createFilesetResource(ctx context.Context, catalog *interfaces.Catalog, fs *interfaces.FilesetMeta, sourceIdentifier string) (*interfaces.Resource, error) {
+	meta := cloneMetadata(fs.SourceMetadata)
+	req := &interfaces.ResourceRequest{
+		CatalogID:        catalog.ID,
+		Name:             fs.Name,
+		Category:         interfaces.ResourceCategoryFileset,
+		Status:           interfaces.ResourceStatusActive,
+		Database:         "",
+		SourceIdentifier: sourceIdentifier,
+		SourceMetadata:   meta,
+	}
+	resource, err := dh.rs.Create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resource, nil
+}
+
+func cloneMetadata(m map[string]any) map[string]any {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+func (dh *discoverHandler) enrichFilesetMetadata(ctx context.Context, items []filesetDiscoverItem) error {
+	for _, item := range items {
+		fs := item.meta
+		resource := item.resource
+		sourceMetadata := cloneMetadata(resource.SourceMetadata)
+		if sourceMetadata == nil {
+			sourceMetadata = make(map[string]any)
+		}
+		if fs.SourceMetadata != nil {
+			for k, v := range fs.SourceMetadata {
+				sourceMetadata[k] = v
+			}
+		}
+		resource.SourceMetadata = sourceMetadata
+		resource.SchemaDefinition = nil
+		if err := dh.rs.UpdateResource(ctx, resource); err != nil {
+			logger.Errorf("Failed to update fileset resource %s: %v", resource.ID, err)
+			return err
+		}
+		logger.Infof("Enriched fileset resource %s (%s)", resource.Name, fs.ID)
+	}
+	return nil
 }
 
 // createAndConnectConnector creates and connects a connector for the catalog.
@@ -379,16 +533,11 @@ func (dh *discoverHandler) createResource(ctx context.Context, catalog *interfac
 		Database:         table.Database,
 		SourceIdentifier: sourceIdentifier,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取刚创建的resource
-	resource, err := dh.rs.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
 	return resource, nil
 }
 
@@ -530,12 +679,12 @@ func (dh *discoverHandler) createIndexResource(ctx context.Context, catalog *int
 		Status:           interfaces.ResourceStatusActive,
 		SourceIdentifier: index.Name,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return dh.rs.GetByID(ctx, id)
+	return resource, nil
 }
 
 // enrichIndexMetadata enriches index resources with detailed metadata.

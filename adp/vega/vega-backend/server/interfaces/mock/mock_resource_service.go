@@ -87,10 +87,10 @@ func (mr *MockResourceServiceMockRecorder) CheckExistByName(ctx, catalogID, name
 }
 
 // Create mocks base method.
-func (m *MockResourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (string, error) {
+func (m *MockResourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (*interfaces.Resource, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, req)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*interfaces.Resource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

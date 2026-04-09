@@ -249,6 +249,11 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 	ctx, span := ar_trace.Tracer.Start(ctx, "Get catalogs")
 	defer span.End()
 
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Catalog{}, nil
+	}
+
 	catalogs, err := cs.ca.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get catalog failed")
@@ -308,6 +313,11 @@ func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQu
 	ids := make([]string, 0)
 	for _, m := range catalogsArr {
 		ids = append(ids, m.ID)
+	}
+
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Catalog{}, 0, nil
 	}
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
