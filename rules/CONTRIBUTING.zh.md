@@ -141,14 +141,31 @@ git checkout -b fix/bug-description
 
 **分支命名规范：**
 
+分支名称会在每次 Pull Request 时由 CI 自动校验。
+
+格式：`<类型>/<描述>` 或 `<类型>/<Issue编号>-<描述>`（关联 Issue 时）
+
 | 分支类型 | 命名格式 | 说明 | 示例 |
 | --- | --- | --- | --- |
-| 功能分支 | `feature/*` | 新功能开发 | `feature/add-oauth-support` |
-| 修复分支 | `fix/*` | Bug 修复 | `fix/memory-leak-in-loader` |
-| 发布分支 | `release/x.x.x` | 发布准备 | `release/1.2.0` |
+| 功能分支 | `feature/*` 或 `feat/*` | 新功能开发 | `feature/add-oauth-support` |
+| 修复分支 | `fix/*` | Bug 修复 | `fix/123-memory-leak-in-loader` |
+| 紧急修复 | `hotfix/*` | 紧急生产修复 | `hotfix/critical-auth-bypass` |
 | 文档分支 | `docs/*` | 文档更改 | `docs/update-api-reference` |
 | 重构分支 | `refactor/*` | 代码重构 | `refactor/simplify-auth-flow` |
 | 测试分支 | `test/*` | 添加或更新测试 | `test/add-unit-tests-for-loader` |
+| 杂务分支 | `chore/*` | 维护任务 | `chore/upgrade-dependencies` |
+| CI 分支 | `ci/*` | CI/CD 配置更改 | `ci/add-branch-name-lint` |
+| 性能分支 | `perf/*` | 性能优化 | `perf/optimize-query-execution` |
+| 构建分支 | `build/*` | 构建系统或依赖 | `build/update-go-module` |
+| 样式分支 | `style/*` | 代码样式 / 格式化 | `style/fix-linter-warnings` |
+| 回滚分支 | `revert/*` | 回滚之前的更改 | `revert/rollback-auth-change` |
+| 发布分支 | `release/x.x.x` | 发布准备 | `release/1.2.0` |
+
+规则：
+- 如果分支关联了 Issue，将 Issue 编号放在最前面：`<类型>/<N>-<描述>`（如 `fix/123-memory-leak`）
+- `<描述>` 必须为小写，使用连字符（`-`）、点（`.`）或下划线（`_`）作为分隔符
+- 分支名必须以有效的类型前缀开头，后跟 `/`
+- Bot 分支（`dependabot/*`、`renovate/*`）自动豁免
 
 > **说明**：分支策略、版本规则和发布流程请参阅 [发布规范](RELEASE.zh.md)。
 
@@ -330,6 +347,35 @@ git push origin feature/my-feature
 1. **批准**: 一旦批准，维护者将合并你的 PR
    - PR 将使用 squash merge 或 rebase merge 合并，以保持线性历史
    - 请在请求审查前确保你的分支是最新的
+
+---
+
+## ⚙️ CI Workflow 规范
+
+所有 GitHub Actions workflow 文件位于 `.github/workflows/`。GitHub **不支持**子目录——嵌套文件夹中的文件会被静默忽略。
+
+### 文件命名规范
+
+使用**分类前缀**对 workflow 文件进行分组，使相关文件在列表中自然排列在一起：
+
+| 前缀 | 用途 | 示例 |
+| --- | --- | --- |
+| `lint-` | 代码 / Commit / 分支校验 | `lint-branch-name.yml`、`lint-commit.yml` |
+| `release-` | 构建与发布 | `release-agent-observability.yml` |
+| `deploy-` | 部署任务 | `deploy-pages.yml` |
+| `test-` | CI 测试流水线 | `test-unit.yml`、`test-integration.yml` |
+| `build-` | 构建验证 | `build-docker.yml` |
+
+规则：
+- 文件名必须使用小写 kebab-case，扩展名统一为 `.yml`
+- 始终使用分类前缀，便于分组和查找
+- 如果 workflow 内部引用了自身文件路径（如 `on.push.paths`），重命名时**必须**同时更新文件名和内部路径引用
+
+### 可复用 Workflow 与 Composite Action
+
+当 workflow 数量增多或出现共享逻辑时：
+- **可复用 workflow** 放在 `.github/workflows/` 中，通过 `uses: ./.github/workflows/xxx.yml` 调用
+- **Composite Action** 放在 `.github/actions/<name>/action.yml` 中，用于 step 级别的复用
 
 ---
 

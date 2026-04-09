@@ -142,14 +142,31 @@ git checkout -b fix/bug-description
 
 **Branch Naming Convention:**
 
+Branch names are validated automatically by CI on every Pull Request.
+
+Format: `<type>/<description>` or `<type>/<issue-number>-<description>` (when linked to an Issue)
+
 | Branch Type | Format | Description | Example |
 | --- | --- | --- | --- |
-| Feature | `feature/*` | New feature development | `feature/add-oauth-support` |
-| Fix | `fix/*` | Bug fixes | `fix/memory-leak-in-loader` |
-| Release | `release/x.x.x` | Release preparation | `release/1.2.0` |
+| Feature | `feature/*` or `feat/*` | New feature development | `feature/add-oauth-support` |
+| Fix | `fix/*` | Bug fixes | `fix/123-memory-leak-in-loader` |
+| Hotfix | `hotfix/*` | Urgent production fixes | `hotfix/critical-auth-bypass` |
 | Docs | `docs/*` | Documentation changes | `docs/update-api-reference` |
 | Refactor | `refactor/*` | Code refactoring | `refactor/simplify-auth-flow` |
 | Test | `test/*` | Adding or updating tests | `test/add-unit-tests-for-loader` |
+| Chore | `chore/*` | Maintenance tasks | `chore/upgrade-dependencies` |
+| CI | `ci/*` | CI/CD configuration changes | `ci/add-branch-name-lint` |
+| Performance | `perf/*` | Performance improvements | `perf/optimize-query-execution` |
+| Build | `build/*` | Build system or dependencies | `build/update-go-module` |
+| Style | `style/*` | Code style / formatting | `style/fix-linter-warnings` |
+| Revert | `revert/*` | Reverting previous changes | `revert/rollback-auth-change` |
+| Release | `release/x.x.x` | Release preparation | `release/1.2.0` |
+
+Rules:
+- If the branch is linked to an Issue, prepend the issue number: `<type>/<N>-<description>` (e.g. `fix/123-memory-leak`)
+- `<description>` must be lowercase, using hyphens (`-`), dots (`.`), or underscores (`_`) as separators
+- Branch names must start with a valid type prefix followed by `/`
+- Bot branches (`dependabot/*`, `renovate/*`) are automatically exempted
 
 > **Note**: For branching strategy, versioning rules, and release process, see [Release Guidelines](RELEASE.md).
 
@@ -331,6 +348,35 @@ git push origin feature/my-feature
 3. **Approval**: Once approved, a maintainer will merge your PR
    - PRs will be merged using squash merge or rebase merge to maintain linear history
    - Please ensure your branch is up to date before requesting review
+
+---
+
+## ⚙️ CI Workflow Guidelines
+
+All GitHub Actions workflow files live in `.github/workflows/`. GitHub does **not** support subdirectories — files in nested folders will be silently ignored.
+
+### File Naming Convention
+
+Use a **category prefix** to group related workflows, so they sort together in the file list:
+
+| Prefix | Purpose | Example |
+| --- | --- | --- |
+| `lint-` | Code / commit / branch linting | `lint-branch-name.yml`, `lint-commit.yml` |
+| `release-` | Build & publish releases | `release-agent-observability.yml` |
+| `deploy-` | Deployment tasks | `deploy-pages.yml` |
+| `test-` | CI test pipelines | `test-unit.yml`, `test-integration.yml` |
+| `build-` | Build verification | `build-docker.yml` |
+
+Rules:
+- File names must be lowercase kebab-case with a `.yml` extension
+- Always use a category prefix to keep related workflows visually grouped
+- If a workflow references its own file path (e.g. in `on.push.paths`), rename both the file **and** the internal path reference together
+
+### Reusable Workflows & Composite Actions
+
+When workflow count grows or shared logic emerges:
+- **Reusable workflows** can be placed in `.github/workflows/` and called via `uses: ./.github/workflows/xxx.yml`
+- **Composite actions** can be placed in `.github/actions/<name>/action.yml` for step-level reuse
 
 ---
 
