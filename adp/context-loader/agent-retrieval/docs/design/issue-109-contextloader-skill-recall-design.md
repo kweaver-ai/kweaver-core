@@ -34,7 +34,7 @@
 - 支持三种召回模式，每种模式的底层查询路径不同：
   - 网络级（仅 `kn_id`）：先检查 `skills` Object Type 是否与任意其他 Object Type 存在 RelationType；仅在完全无关联时，才通过 `QueryObjectInstances` 直接查询 skills 实例
   - 对象类级（`kn_id + object_type_id`）：先查 `object_type_id` 与 `skills` 的 RelationType；仅在关系存在时，通过 `QueryInstanceSubgraph` 沿关系路径获取 skills 实例
-  - 实例级（`kn_id + object_type_id + instance_identities`）：先查 `object_type_id` 与 `skills` 的 RelationType；仅在关系存在时，通过 `QueryInstanceSubgraph` 从具体实例出发获取 skills 实例，并补充对象类级召回结果
+  - 实例级（`kn_id + object_type_id + instance_identities`）：先查 `object_type_id` 与 `skills` 的 RelationType；仅在关系存在时，通过 `QueryInstanceSubgraph` 从具体实例出发获取 skills 实例
 - 返回最小化 Skill 元数据（`skill_id`、`name`、`description`），不返回 Skill 完整配置包。
 - 支持可选的 `skill_query`，作为 skills 实例的 `name`/`description` 字段查询条件，在各召回模式中一起下发。
 - 在 `kn_schema_search`（即 `kn_search`）中默认将 `skills` Object Type 纳入 schema 召回范围。
@@ -209,20 +209,16 @@ sequenceDiagram
         Service->>BKN: SearchRelationTypes(kn_id, source=object_type_id, target="skills")
         BKN-->>Service: RelationType 信息（relation_type_id）
         alt 关系存在
-            par 并发召回
-                Service->>OQ: QueryInstanceSubgraph(kn_id, path=[object_type_id→skills], skills.condition=skill_query_condition)
-                Note over OQ: 对象类级
-                Service->>OQ: QueryInstanceSubgraph(kn_id, path=[object_type_id→skills], source.condition=instance_filter, skills.condition=skill_query_condition)
-                Note over OQ: 实例级
-            end
-            OQ-->>Service: 两路 skills 实例
+            Service->>OQ: QueryInstanceSubgraph(kn_id, path=[object_type_id→skills], source.condition=instance_filter, skills.condition=skill_query_condition)
+            Note over OQ: 实例级
+            OQ-->>Service: 实例级 skills 实例
         else 关系不存在
             Service->>Service: 返回空结果
         end
     end
 
     Service->>Service: 按 skill_id 去重，保留最高命中层级
-    Service->>Service: 按优先级排序 + top_k 裁剪（模式3为实例级 > 对象类级）
+    Service->>Service: 按优先级排序 + top_k 裁剪
 
     Service-->>Handler: FindSkillsResponse
     Handler-->>Agent: HTTP 200 + entries 列表
@@ -240,7 +236,7 @@ sequenceDiagram
 | skill_query 条件类型选择 | A. 固定使用 match / B. 根据字段 ConditionOperations 动态选择 | B | 检查 `name`/`description` 字段支持的操作符，优先 `knn` > `match` > `like` |
 | Skill Object Type 识别 | A. 按名称 / B. 按 tags / C. 按固定 `object_type_id` | C | `object_type_id = "skills"` 为本期唯一运行时识别键 |
 | 全局网络判定 | A. 默认所有 Skill 都可网络级召回 / B. 仅当 `skills` 无任何 RelationType 时视为全局网络 | B | 当前无法准确判断单个 Skill 是否具备全局语义，因此采用保守的临时规则 |
-| 多路召回并发策略 | A. 串行 / B. 按模式并发 | B | 模式2只走对象类级单路；模式3在 RelationType 查询完成后并发执行对象类级与实例级 |
+| 多路召回并发策略 | A. 串行 / B. 按模式并发 | A（当前阶段） | 模式2只走对象类级单路；模式3只走实例级单路（当前关系类配置功能调整期，暂不同时召回对象类级） |
 | 去重策略 | A. 返回所有命中记录 / B. 按 skill_id 去重保留最高优先级 | B | 同一 Skill 被多路命中时只保留一份，内部命中层级取最高优先级，对外响应不暴露 `matched_scope` |
 
 ---
@@ -258,13 +254,13 @@ sequenceDiagram
 ### 性能
 - 模式1会先做一次轻量级 RelationType 存在性检查；仅当 `skills` 无任何关联时才调用 `QueryObjectInstances`。
 - 对象类级/实例级先查 `RelationType`（轻量 schema 查询），再走 `QueryInstanceSubgraph`（单次调用包含关系遍历和实例过滤）。
-- 模式2只有单路 `QueryInstanceSubgraph`；模式3在 RelationType 确认后并发执行对象类级与实例级两路召回。
+- 模式2只有单路 `QueryInstanceSubgraph`；模式3只走实例级单路 `QueryInstanceSubgraph`。
 - skill_query 条件在查询阶段完成过滤，避免拉取全量数据再做后处理。
 - `top_k` 默认 10，最大 20，限制返回体积。
 
 ### 可用性
 - ontology-query 不可达时，`find_skills` 返回 502 错误，不降级为全局搜索。
-- 模式3中单路召回失败不阻塞另一条召回路径结果返回（降级策略：部分返回 + 错误日志）。
+- 模式3为实例级单路召回，失败时返回错误。
 - 模式1若发现 `skills` 存在任意关联，直接返回空结果，不再执行网络级召回。
 - 模式2/模式3在 RelationType 不存在时返回空结果，不报错、不降级。
 
@@ -445,20 +441,15 @@ flowchart TB
 
     subgraph Mode3["模式 3：实例级"]
         M3_RT["SearchRelationTypes\n(object_type_id → skills)"]
-        M3_RT -->|"关系存在"| M3_Par
+        M3_RT -->|"关系存在"| M3_Inst["实例级:\nQueryInstanceSubgraph\n(object_type_id → skills,\nsource.condition = instance_filter,\nskills.condition = skill_query_condition)"]
         M3_RT -->|"关系不存在"| M3_Empty["返回空结果"]
-
-        subgraph M3_Par["并发"]
-            M3_OT["对象类级:\nQueryInstanceSubgraph\n(object_type_id → skills)"]
-            M3_Inst["实例级:\nQueryInstanceSubgraph\n(object_type_id → skills,\nsource.condition = instance_filter,\nskills.condition = skill_query_condition)"]
-        end
     end
 
     M1_Query --> Merge["合并多路结果"]
     M1_Empty --> Merge
     M2_OT --> Merge
     M2_Empty --> Merge
-    M3_Par --> Merge
+    M3_Inst --> Merge
     M3_Empty --> Merge
 
     Merge --> Dedup["按 skill_id 去重\n保留最高优先级"]
@@ -630,12 +621,8 @@ func BuildSkillQueryCondition(skillQuery string, skillsObjType *interfaces.Objec
 
 **实例级：**
 1. 同对象类级 Step 1。
-2. 若关系存在，并发执行：
-   - 对象类级：`QueryInstanceSubgraph`（无起点过滤）
-   - 实例级：`QueryInstanceSubgraph`（起点增加 `instance_identities` 过滤条件）
+2. 若关系存在，执行实例级 `QueryInstanceSubgraph`（起点增加 `instance_identities` 过滤条件）。
 3. 若关系不存在，返回空结果。
-
-每路召回独立超时控制（`errgroup` + context 超时），模式3中的单路失败记录 WARN 日志但不阻塞另一条路径。
 
 ### SubgraphRequestBuilder
 
@@ -683,7 +670,7 @@ func Assemble(matches []SkillMatch, topK int) *FindSkillsResp
 
 - 按 `skill_id` 分组，每组取 `Priority` 最高的 `MatchedScope`。
 - 排序规则：
-  1. 主排序：`Priority` 降序（模式3为实例级 100 > 对象类级 50；模式1仅存在网络级 10）
+  1. 主排序：`Priority` 降序（实例级 100、对象类级 50、网络级 10）
   2. 次排序：`Score` 降序（ontology-query 返回的 `_score`）
   3. 兜底排序：`update_time` 降序
 - 截取前 `top_k` 条。
@@ -701,7 +688,7 @@ func Assemble(matches []SkillMatch, topK int) *FindSkillsResp
 | ontology-query 返回非 2xx | `UPSTREAM_ERROR` | 502 | 透传上游错误码和描述 |
 | 模式1下发现 `skills` 与任意其他 Object Type 存在 RelationType | - | 200 | 直接返回空结果，不执行网络级召回 |
 | `object_type_id` 与 `skills` 之间不存在 RelationType | - | 200 | 模式2/模式3返回空结果，不降级到网络级 |
-| 单路召回失败（模式3多路中的一路） | - | 200 | 记录 WARN 日志，返回其他路的结果 |
+| 模式3实例级召回失败 | `UPSTREAM_ERROR` | 502 | 记录错误，返回上游错误 |
 | 无命中结果 | - | 200 | 正常返回空 `entries` 列表 |
 
 ---
@@ -754,7 +741,7 @@ type FindSkillsConfig struct {
 ### Logging
 
 - INFO：请求入口记录 `kn_id`、`recall_mode`；请求出口记录返回 Skill 数量和总耗时。
-- WARN：模式2/模式3下 RelationType 不存在（返回空结果）、模式3单路召回失败。
+- WARN：模式2/模式3下 RelationType 不存在（返回空结果）。
 - ERROR：ontology-query 不可达、内部异常。
 
 ---
@@ -768,7 +755,7 @@ type FindSkillsConfig struct {
 | `skill_query` 条件类型依赖 skills 字段的 ConditionOperations | 若 `name`/`description` 不支持 `knn` 也不支持 `match`，退化为 `like` | 降级路径已在 `SkillQueryConditionBuilder` 中处理：`knn` > `match` > `like` |
 | RelationType 方向不确定 | 绑定关系可能是 `object_type → skills`（正向）也可能是 `skills → object_type`（反向） | `SearchRelationTypes` 返回的 `RelationType` 已包含 `source_object_type_id` / `target_object_type_id`；`SubgraphRequestBuilder` 根据这两个字段判断方向，自动生成正确的 `TypeEdge` 和 `object_types` 顺序，无需硬编码方向假设 |
 | 当前“无关联即全局网络”只是临时规则 | 一旦未来出现“部分 Skill 绑定对象类、部分 Skill 全局可用”的混合场景，模式1会误伤全局 Skill | 后续引入显式作用域字段（如 `scope=global`）替代推断 |
-| 模式3并发双路召回中某一路超时 | 拖慢整体响应 | 每路独立超时 + `total_timeout_ms` 兜底 |
+| 模式3实例级召回超时 | 请求超时 | `total_timeout_ms` 兜底 |
 
 ---
 
@@ -781,7 +768,7 @@ type FindSkillsConfig struct {
 | `ContextNormalizer` | 三种模式识别、参数校验边界 |
 | `SkillQueryConditionBuilder` | knn/match/like 条件选择、多字段 OR 组合、skill_query 为空时返回 nil |
 | `SubgraphRequestBuilder` | RelationTypePath 结构正确性、实例过滤条件注入、skill_query 条件注入到 skills 节点 |
-| `RecallCoordinator` | 模式1全局判定、对象类级两步查、模式2/3关系不存在返回空、模式3并发、单路失败 |
+| `RecallCoordinator` | 模式1全局判定、对象类级两步查、模式2/3关系不存在返回空、模式3实例级单路召回 |
 | `ResultAssembler` | 去重逻辑、优先级排序、top_k 裁剪、空结果 |
 | `FindSkillsHandler` | 参数绑定、错误响应格式 |
 
@@ -793,7 +780,7 @@ type FindSkillsConfig struct {
 | 仅传 `kn_id` 且 `skills` 存在任意关联 | SearchRelationTypes 被调用，直接返回空结果 |
 | 传 `kn_id + object_type_id`，关系存在 | SearchRelationTypes + QueryInstanceSubgraph 被调用，仅返回对象类级 Skill |
 | 传 `kn_id + object_type_id`，关系不存在 | 返回空结果，不降级到网络级 |
-| 传完整三级参数且关系存在 | 对象类级 + 实例级双路召回，排序符合 `实例 > 对象类` |
+| 传完整三级参数且关系存在 | 仅实例级召回，返回实例绑定的 Skill |
 | 传完整三级参数且关系不存在 | 返回空结果 |
 | 同一 Skill 被多路命中 | 结果中只出现一次 |
 | 传 `skill_query`（description 支持 knn） | skills 节点 condition 包含 knn 条件 |
@@ -804,7 +791,7 @@ type FindSkillsConfig struct {
 
 ### 压测
 
-- 目标：P99 < 500ms（模式3双路并发召回场景下）。
+- 目标：P99 < 500ms（模式3实例级召回场景下）。
 - 基准：RelationType 查询 P99 < 50ms，单次 ontology-query 调用 P99 < 200ms。
 
 ---
@@ -869,7 +856,7 @@ type FindSkillsConfig struct {
 3. 仅传 `kn_id` 且 `skills` 完全无关联时，走 `QueryObjectInstances`，返回网络级 Skill。
 4. 传 `object_type_id` 且关系存在时，走 `SearchRelationTypes` + `QueryInstanceSubgraph`，仅返回对象类级 Skill。
 5. 传 `object_type_id` 但关系不存在时，返回空结果，不降级为网络级。
-6. 传实例标识且关系存在时，仅执行对象类级 + 实例级双路召回，排序符合 `实例 > 对象类`。
+6. 传实例标识且关系存在时，仅执行实例级单路召回，返回实例绑定的 Skill。
 7. 同一 Skill 被多条绑定命中时，结果只返回一次。
 8. 传 `skill_query` 时，条件注入到 `QueryObjectInstances.condition`（仅模式1满足前提时）或 `ObjectTypeOnPath.condition`。
 9. `kn_search` 默认可以发现 `skills` Object Type。

@@ -39,10 +39,8 @@ func BuildSkillQueryCondition(skillQuery string, skillsObjType *interfaces.Objec
 			continue
 		}
 
-		cond := buildFieldCondition(name, skillQuery, prop.ConditionOperations, topK)
-		if cond != nil {
-			subConditions = append(subConditions, cond)
-		}
+		conds := buildFieldConditions(name, skillQuery, prop.ConditionOperations, topK)
+		subConditions = append(subConditions, conds...)
 	}
 
 	if len(subConditions) == 0 {
@@ -57,9 +55,11 @@ func BuildSkillQueryCondition(skillQuery string, skillsObjType *interfaces.Objec
 	}
 }
 
-// buildFieldCondition picks the best condition type for a single field.
-// Priority: knn > match > like
-func buildFieldCondition(fieldName, query string, ops []interfaces.KnOperationType, topK int) *interfaces.KnCondition {
+// buildFieldConditions returns all applicable conditions for a single field.
+// When both knn and match are supported, both are returned as separate items
+// so the caller can flatten them into a single-level OR.
+// When neither knn nor match is supported, like is used as fallback.
+func buildFieldConditions(fieldName, query string, ops []interfaces.KnOperationType, topK int) []*interfaces.KnCondition {
 	var hasKnn, hasMatch, hasLike bool
 	for _, op := range ops {
 		switch op {
@@ -72,31 +72,39 @@ func buildFieldCondition(fieldName, query string, ops []interfaces.KnOperationTy
 		}
 	}
 
-	switch {
-	case hasKnn:
-		return &interfaces.KnCondition{
+	var conds []*interfaces.KnCondition
+
+	if hasKnn {
+		conds = append(conds, &interfaces.KnCondition{
 			Field:      fieldName,
 			Operation:  interfaces.KnOperationTypeKnn,
 			Value:      query,
 			ValueFrom:  interfaces.CondValueFromConst,
 			LimitKey:   interfaces.CondLimitKeyK,
 			LimitValue: topK,
-		}
-	case hasMatch:
-		return &interfaces.KnCondition{
+		})
+	}
+	if hasMatch {
+		conds = append(conds, &interfaces.KnCondition{
 			Field:     fieldName,
 			Operation: interfaces.KnOperationTypeMatch,
 			Value:     query,
 			ValueFrom: interfaces.CondValueFromConst,
-		}
-	case hasLike:
-		return &interfaces.KnCondition{
+		})
+	}
+
+	if len(conds) > 0 {
+		return conds
+	}
+
+	if hasLike {
+		return []*interfaces.KnCondition{{
 			Field:     fieldName,
 			Operation: interfaces.KnOperationTypeLike,
 			Value:     query,
 			ValueFrom: interfaces.CondValueFromConst,
-		}
-	default:
-		return nil
+		}}
 	}
+
+	return nil
 }

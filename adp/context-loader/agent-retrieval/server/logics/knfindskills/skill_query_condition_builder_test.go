@@ -48,9 +48,42 @@ func TestBuildSkillQueryCondition_NilObjectType(t *testing.T) {
 	}
 }
 
-func TestBuildSkillQueryCondition_KnnPreferred(t *testing.T) {
+func TestBuildSkillQueryCondition_KnnAndMatch(t *testing.T) {
 	ot := makeSkillsObjType(
 		[]interfaces.KnOperationType{interfaces.KnOperationTypeKnn, interfaces.KnOperationTypeMatch},
+		[]interfaces.KnOperationType{interfaces.KnOperationTypeKnn, interfaces.KnOperationTypeMatch},
+	)
+	cond := BuildSkillQueryCondition("审查", ot, 10)
+	if cond == nil {
+		t.Fatal("expected non-nil condition")
+	}
+	if cond.Operation != interfaces.KnOperationTypeOr {
+		t.Fatalf("expected OR root, got %s", cond.Operation)
+	}
+	// 2 fields x 2 ops = 4 flat sub-conditions: name_knn, name_match, desc_knn, desc_match
+	if len(cond.SubConditions) != 4 {
+		t.Fatalf("expected 4 flat sub-conditions, got %d", len(cond.SubConditions))
+	}
+	expect := []struct {
+		field string
+		op    interfaces.KnOperationType
+	}{
+		{"name", interfaces.KnOperationTypeKnn},
+		{"name", interfaces.KnOperationTypeMatch},
+		{"description", interfaces.KnOperationTypeKnn},
+		{"description", interfaces.KnOperationTypeMatch},
+	}
+	for i, e := range expect {
+		sub := cond.SubConditions[i]
+		if sub.Field != e.field || sub.Operation != e.op {
+			t.Errorf("sub[%d]: expected %s/%s, got %s/%s", i, e.field, e.op, sub.Field, sub.Operation)
+		}
+	}
+}
+
+func TestBuildSkillQueryCondition_KnnOnly(t *testing.T) {
+	ot := makeSkillsObjType(
+		[]interfaces.KnOperationType{interfaces.KnOperationTypeKnn},
 		[]interfaces.KnOperationType{interfaces.KnOperationTypeKnn},
 	)
 	cond := BuildSkillQueryCondition("审查", ot, 10)
@@ -60,12 +93,42 @@ func TestBuildSkillQueryCondition_KnnPreferred(t *testing.T) {
 	if cond.Operation != interfaces.KnOperationTypeOr {
 		t.Fatalf("expected OR root, got %s", cond.Operation)
 	}
-	if len(cond.SubConditions) != 2 {
-		t.Fatalf("expected 2 sub-conditions, got %d", len(cond.SubConditions))
-	}
 	for _, sub := range cond.SubConditions {
 		if sub.Operation != interfaces.KnOperationTypeKnn {
 			t.Errorf("expected knn for field %s, got %s", sub.Field, sub.Operation)
+		}
+	}
+}
+
+func TestBuildSkillQueryCondition_MixedKnnMatchPerField(t *testing.T) {
+	// name supports knn+match, description supports only match
+	ot := makeSkillsObjType(
+		[]interfaces.KnOperationType{interfaces.KnOperationTypeKnn, interfaces.KnOperationTypeMatch},
+		[]interfaces.KnOperationType{interfaces.KnOperationTypeMatch},
+	)
+	cond := BuildSkillQueryCondition("审查", ot, 10)
+	if cond == nil {
+		t.Fatal("expected non-nil condition")
+	}
+	if cond.Operation != interfaces.KnOperationTypeOr {
+		t.Fatalf("expected OR root, got %s", cond.Operation)
+	}
+	// name contributes knn + match, description contributes match → 3 flat sub-conditions
+	if len(cond.SubConditions) != 3 {
+		t.Fatalf("expected 3 flat sub-conditions, got %d", len(cond.SubConditions))
+	}
+	expect := []struct {
+		field string
+		op    interfaces.KnOperationType
+	}{
+		{"name", interfaces.KnOperationTypeKnn},
+		{"name", interfaces.KnOperationTypeMatch},
+		{"description", interfaces.KnOperationTypeMatch},
+	}
+	for i, e := range expect {
+		sub := cond.SubConditions[i]
+		if sub.Field != e.field || sub.Operation != e.op {
+			t.Errorf("sub[%d]: expected %s/%s, got %s/%s", i, e.field, e.op, sub.Field, sub.Operation)
 		}
 	}
 }

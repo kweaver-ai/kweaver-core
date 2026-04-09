@@ -8,8 +8,6 @@ package knfindskills
 import (
 	"context"
 	"fmt"
-	"sync"
-	"time"
 
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 
@@ -90,19 +88,18 @@ func (rc *recallCoordinator) recallObjectType(
 }
 
 // recallInstance handles Mode 3: instance-level recall.
-// Runs object-type-level and instance-level recalls concurrently.
+// Queries skills bound to specific instances via QueryInstanceSubgraph.
 func (rc *recallCoordinator) recallInstance(
 	ctx context.Context,
 	req *interfaces.FindSkillsReq,
 	skillQueryCond *interfaces.KnCondition,
 ) ([]interfaces.SkillMatch, error) {
-	var spanErr error
+	var err error
 	ctx, _ = o11y.StartInternalSpan(ctx)
-	defer o11y.EndSpan(ctx, spanErr)
+	defer o11y.EndSpan(ctx, err)
 
 	rt, err := rc.findRelationType(ctx, req.KnID, req.ObjectTypeID)
 	if err != nil {
-		spanErr = err
 		return nil, err
 	}
 	if rt == nil {
@@ -110,62 +107,14 @@ func (rc *recallCoordinator) recallInstance(
 		return nil, nil
 	}
 
-	timeoutMs := rc.config.RecallTimeoutMs
-	if timeoutMs <= 0 {
-		timeoutMs = 5000
-	}
-	recallCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
-	defer cancel()
-
-	var (
-		mu             sync.Mutex
-		allMatches     []interfaces.SkillMatch
-		otLevelErr     error
-		instLevelErr   error
-		wg             sync.WaitGroup
-	)
-
-	// Object-type-level path
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		subReq := BuildSubgraphRequest(req.KnID, req.ObjectTypeID, rt, nil, skillQueryCond, req.TopK, rc.config.SkillsObjectTypeID)
-		resp, err := rc.ontologyQuery.QueryInstanceSubgraph(recallCtx, subReq)
-		mu.Lock()
-		defer mu.Unlock()
-		if err != nil {
-			otLevelErr = err
-			rc.logger.WithContext(ctx).Warnf("[FindSkills] object_type-level recall failed: %v", err)
-			return
-		}
-		allMatches = append(allMatches, extractSkillMatchesFromSubgraph(resp, rc.config.SkillsObjectTypeID, "object_type", 50)...)
-	}()
-
-	// Instance-level path
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		instCond := buildInstanceFilterCondition(req.InstanceIdentities)
-		subReq := BuildSubgraphRequest(req.KnID, req.ObjectTypeID, rt, instCond, skillQueryCond, req.TopK, rc.config.SkillsObjectTypeID)
-		resp, err := rc.ontologyQuery.QueryInstanceSubgraph(recallCtx, subReq)
-		mu.Lock()
-		defer mu.Unlock()
-		if err != nil {
-			instLevelErr = err
-			rc.logger.WithContext(ctx).Warnf("[FindSkills] instance-level recall failed: %v", err)
-			return
-		}
-		allMatches = append(allMatches, extractSkillMatchesFromSubgraph(resp, rc.config.SkillsObjectTypeID, "object_selector", 100)...)
-	}()
-
-	wg.Wait()
-
-	if otLevelErr != nil && instLevelErr != nil {
-		spanErr = fmt.Errorf("both recall paths failed: ot=%v, inst=%v", otLevelErr, instLevelErr)
-		return nil, spanErr
+	instCond := buildInstanceFilterCondition(req.InstanceIdentities)
+	subReq := BuildSubgraphRequest(req.KnID, req.ObjectTypeID, rt, instCond, skillQueryCond, req.TopK, rc.config.SkillsObjectTypeID)
+	resp, err := rc.ontologyQuery.QueryInstanceSubgraph(ctx, subReq)
+	if err != nil {
+		return nil, fmt.Errorf("QueryInstanceSubgraph(instance): %w", err)
 	}
 
-	return allMatches, nil
+	return extractSkillMatchesFromSubgraph(resp, rc.config.SkillsObjectTypeID, "object_selector", 100), nil
 }
 
 // skillsHaveAnyRelation checks if the skills ObjectType participates in any RelationType.

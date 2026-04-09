@@ -146,7 +146,7 @@ func TestRecallObjectType_NoRelation_ReturnsEmpty(t *testing.T) {
 	}
 }
 
-func TestRecallInstance_RelationExists_DualPath(t *testing.T) {
+func TestRecallInstance_RelationExists_InstanceOnly(t *testing.T) {
 	bkn := &testBknBackend{
 		searchRelationTypesFunc: func(_ context.Context, _ *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
 			return &interfaces.RelationTypeConcepts{
@@ -157,14 +157,12 @@ func TestRecallInstance_RelationExists_DualPath(t *testing.T) {
 		},
 	}
 
-	callCount := 0
 	oq := &testOntologyQuery{
 		queryInstanceSubgraphFunc: func(_ context.Context, req *interfaces.QueryInstanceSubgraphReq) (*interfaces.QueryInstanceSubgraphResp, error) {
-			callCount++
 			return &interfaces.QueryInstanceSubgraphResp{
 				Entries: makeSubgraphEntries("skills", map[string]interface{}{
-					"skill_id":    fmt.Sprintf("skill_%d", callCount),
-					"name":        fmt.Sprintf("技能_%d", callCount),
+					"skill_id":    "skill_inst",
+					"name":        "实例技能",
 					"description": "描述",
 					"_score":      0.8,
 				}),
@@ -183,12 +181,17 @@ func TestRecallInstance_RelationExists_DualPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Both paths should be called concurrently
-	if oq.subgraphCallCount != 2 {
-		t.Errorf("expected 2 subgraph calls (ot-level + instance-level), got %d", oq.subgraphCallCount)
+	if oq.subgraphCallCount != 1 {
+		t.Errorf("expected 1 subgraph call (instance-level only), got %d", oq.subgraphCallCount)
 	}
-	if len(matches) < 1 {
-		t.Errorf("expected at least 1 match, got %d", len(matches))
+	if len(matches) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(matches))
+	}
+	if matches[0].MatchedScope != "object_selector" {
+		t.Errorf("expected scope=object_selector, got %s", matches[0].MatchedScope)
+	}
+	if matches[0].Priority != 100 {
+		t.Errorf("expected priority=100, got %d", matches[0].Priority)
 	}
 }
 
@@ -216,7 +219,7 @@ func TestRecallInstance_NoRelation_ReturnsEmpty(t *testing.T) {
 	}
 }
 
-func TestRecallInstance_SinglePathFailure_PartialReturn(t *testing.T) {
+func TestRecallInstance_SubgraphFailure_ReturnsError(t *testing.T) {
 	bkn := &testBknBackend{
 		searchRelationTypesFunc: func(_ context.Context, _ *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
 			return &interfaces.RelationTypeConcepts{
@@ -227,19 +230,8 @@ func TestRecallInstance_SinglePathFailure_PartialReturn(t *testing.T) {
 		},
 	}
 
-	callIdx := 0
 	oq := &testOntologyQuery{
 		queryInstanceSubgraphFunc: func(_ context.Context, _ *interfaces.QueryInstanceSubgraphReq) (*interfaces.QueryInstanceSubgraphResp, error) {
-			callIdx++
-			if callIdx == 1 {
-				return &interfaces.QueryInstanceSubgraphResp{
-					Entries: makeSubgraphEntries("skills", map[string]interface{}{
-						"skill_id": "skill_ok",
-						"name":     "OK",
-						"_score":   0.9,
-					}),
-				}, nil
-			}
 			return nil, fmt.Errorf("simulated failure")
 		},
 	}
@@ -251,12 +243,9 @@ func TestRecallInstance_SinglePathFailure_PartialReturn(t *testing.T) {
 		InstanceIdentities: []map[string]interface{}{{"id": "1"}},
 		TopK:               10,
 	}
-	matches, err := rc.recallInstance(context.Background(), req, nil)
-	if err != nil {
-		t.Fatalf("unexpected error (should partial return): %v", err)
-	}
-	if len(matches) == 0 {
-		t.Error("expected partial results from the successful path")
+	_, err := rc.recallInstance(context.Background(), req, nil)
+	if err == nil {
+		t.Fatal("expected error when subgraph call fails")
 	}
 }
 
