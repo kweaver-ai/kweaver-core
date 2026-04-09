@@ -347,25 +347,26 @@ async def run_dolphin(
     # 12. 执行agent
     output = {}
 
-    # 证据准备阶段（在 LLM 执行前）
-    evidence_store_key = None
-
-    if getattr(Config.features, "enable_evidence_injection", False):
-        evidence_store_key = await _prepare_evidence(
-            context_variables, headers
-        )
-        if evidence_store_key:
-            o11y_logger().info(
-                f"[run_dolphin] Evidence injection enabled, "
-                f"evidence_store_key={evidence_store_key}"
-            )
-
     # 使用公共的 arun 循环处理方法
+    # 证据准备在 arun 循环内部进行（在工具完成后触发）
     from .interrupt_utils import process_arun_loop
+    from .evidence_inject_processor import create_evidence_injection_stream
 
-    if evidence_store_key:
-        async for output in _run_with_evidence_injection(
-            agent, evidence_store_key, is_debug
+    is_evidence_injection_enabled = getattr(
+        Config.features, "enable_evidence_injection", False
+    )
+
+    if is_evidence_injection_enabled:
+        o11y_logger().info("[run_dolphin] Evidence injection enabled")
+
+        original_stream = process_arun_loop(
+            agent, is_debug, evidence_store_key=None
+        )
+
+        async for output in create_evidence_injection_stream(
+            original_stream=original_stream,
+            evidence_store_key=None,
+            is_debug=is_debug,
         ):
             yield output
     else:
