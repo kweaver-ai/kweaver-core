@@ -118,10 +118,16 @@ func (c *PostgresqlConnector) New(cfg interfaces.ConnectorConfig) (connectors.Co
 		return nil, fmt.Errorf("database name exceeds maximum length of %d characters", databaseNameMaxLength)
 	}
 
+	seen := make(map[string]bool)
 	for _, s := range pCfg.Schemas {
 		if len(s) > databaseNameMaxLength {
 			return nil, fmt.Errorf("schema name '%s' exceeds maximum length of %d characters", s, databaseNameMaxLength)
 		}
+		// 检查数组中是否存在重复元素
+		if seen[s] {
+			return nil, fmt.Errorf("duplicate element found in 'schemas': %s", s)
+		}
+		seen[s] = true
 	}
 
 	return &PostgresqlConnector{

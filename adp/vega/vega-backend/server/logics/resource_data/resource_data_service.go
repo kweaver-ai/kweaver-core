@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
@@ -109,6 +110,14 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		}
 		return data, total, nil
 
+	case interfaces.ResourceCategoryFileset:
+		data, total, err := rds.QueryData(ctx, resource, params)
+		if err != nil {
+			span.SetStatus(codes.Error, "Query fileset data failed")
+			return nil, 0, err
+		}
+		return data, total, nil
+
 	default:
 		span.SetStatus(codes.Error, "Unsupported resource category")
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
@@ -168,10 +177,43 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 		}
 		return result.Rows, result.Total, nil
 
+	case interfaces.ResourceCategoryFileset:
+		fc, ok := connector.(connectors.FilesetConnector)
+		if !ok {
+			span.SetStatus(codes.Error, "Connector does not support fileset operations")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+				WithErrorDetails(fmt.Sprintf("connector %s does not support fileset operations", catalog.ConnectorType))
+		}
+		docID := filesetDocIDFromResource(resource)
+		if docID == "" {
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError).
+				WithErrorDetails("fileset resource missing document id (source_metadata.id)")
+		}
+		info, err := fc.GetObjectDownloadInfo(ctx, resource.Name, docID)
+		if err != nil {
+			span.SetStatus(codes.Error, "Fileset download info failed")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
+				WithErrorDetails(err.Error())
+		}
+		row := map[string]any{
+			"doc_id":     docID,
+			"osdownload": info,
+		}
+		return []map[string]any{row}, 1, nil
+
 	default:
 		span.SetStatus(codes.Error, "Connector does not support table operations")
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 			WithErrorDetails(connector.GetCategory())
 	}
 
+}
+
+func filesetDocIDFromResource(r *interfaces.Resource) string {
+	if r.SourceMetadata != nil {
+		if id, ok := r.SourceMetadata["id"].(string); ok && id != "" {
+			return id
+		}
+	}
+	return strings.TrimSpace(r.SourceIdentifier)
 }

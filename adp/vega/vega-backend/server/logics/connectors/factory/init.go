@@ -6,6 +6,7 @@
 package factory
 
 import (
+	"vega-backend/logics/connectors/local/fileset/anyshare"
 	"vega-backend/logics/connectors/local/index/opensearch"
 	"vega-backend/logics/connectors/local/table/mariadb"
 	"vega-backend/logics/connectors/local/table/postgresql"
@@ -18,4 +19,5 @@ func (cf *ConnectorFactory) InitLocalConnectors() {
 	//cf.connectors["oracle"] = oracle.NewOracleConnector()
 	cf.connectors["mariadb"] = mariadb.NewMariaDBConnector()
 	cf.connectors["postgresql"] = postgresql.NewPostgresqlConnector()
+	cf.connectors["anyshare"] = anyshare.NewAnyShareConnector()
 }

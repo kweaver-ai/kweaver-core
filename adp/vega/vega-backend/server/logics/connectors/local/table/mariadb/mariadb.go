@@ -133,11 +133,17 @@ func (c *MariaDBConnector) New(cfg interfaces.ConnectorConfig) (connectors.Conne
 		return nil, fmt.Errorf("port %d is out of valid range (%d-%d)", mCfg.Port, PORT_MIN, PORT_MAX)
 	}
 
-	// 验证 databases 名称长度（MariaDB 数据库名最大 64 字符）
+	seen := make(map[string]bool)
 	for _, db := range mCfg.Databases {
+		// 验证 databases 名称长度（MariaDB 数据库名最大 64 字符）
 		if len(db) > DATABASE_NAME_MAX_LENGTH {
 			return nil, fmt.Errorf("database name '%s' exceeds maximum length of %d characters", db, DATABASE_NAME_MAX_LENGTH)
 		}
+		// 检查数组中是否存在重复元素
+		if seen[db] {
+			return nil, fmt.Errorf("duplicate element found in 'databases': %s", db)
+		}
+		seen[db] = true
 	}
 
 	return &MariaDBConnector{

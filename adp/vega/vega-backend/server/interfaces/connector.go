@@ -75,6 +75,14 @@ type FileMeta struct {
 	ContentType  string `json:"content_type"`
 }
 
+// FilesetMeta represents a file or folder object from a fileset-capable source (e.g. AnyShare).
+type FilesetMeta struct {
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	DisplayPath    string         `json:"display_path"` // human-readable path hint for UI / source_identifier option
+	SourceMetadata map[string]any `json:"-"`            // flattened into Resource.SourceMetadata on discover
+}
+
 // TopicMeta represents message topic metadata.
 type TopicMeta struct {
 	Name       string `json:"name"`
