@@ -191,4 +191,3 @@ CREATE INDEX t_sandbox_execution_idx_created_at ON t_sandbox_execution(f_created
 CREATE INDEX t_sandbox_execution_idx_deleted_at ON t_sandbox_execution(f_deleted_at);
 CREATE INDEX t_sandbox_execution_idx_created_by ON t_sandbox_execution(f_created_by);
 
-COMMIT;
