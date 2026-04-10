@@ -1,4 +1,4 @@
-USE kweaver;
+SET SCHEMA kweaver;
 
 -- 迁移数据从 adp 到 kweaver schema
 -- 注意：使用 WHERE NOT EXISTS 避免重复插入数据

@@ -95,7 +95,7 @@ depServices:
     connTimeout: 30
     readTimeout: 30
     writeTimeout: 30
-    database: adp
+    database: kweaver
     dbCharset: utf8mb4
     system_id: ""
   hydra:

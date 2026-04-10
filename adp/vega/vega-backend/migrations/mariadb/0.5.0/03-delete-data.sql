@@ -7,3 +7,5 @@ USE adp;
 
 DELETE FROM t_catalog WHERE f_id='adp_bkn_catalog';
 DELETE FROM t_resource WHERE f_catalog_id='adp_bkn_catalog';
+
+ALTER TABLE t_resource DROP COLUMN IF EXISTS f_logic_definition_type;

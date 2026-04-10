@@ -41,7 +41,7 @@ depServices:
     user: 'username'
     password: 'password'
     type: ""
-    database: "adp"
+    database: "kweaver"
     maxConnections: 5
   opensearch:
     read: "opensearch-read"

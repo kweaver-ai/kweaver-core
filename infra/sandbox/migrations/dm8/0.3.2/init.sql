@@ -20,8 +20,7 @@
 -- - t_sandbox_template: 沙箱模板定义表
 -- - t_sandbox_runtime_node: 运行时节点注册表
 -- ================================================================
-
-USE kweaver;
+SET SCHEMA kweaver;
 
 -- ================================================================
 -- Table: t_sandbox_template

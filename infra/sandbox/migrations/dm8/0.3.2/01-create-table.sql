@@ -1,4 +1,4 @@
-USE kweaver;
+SET SCHEMA kweaver;
 
 -- ================================================================
 -- Table: t_sandbox_template

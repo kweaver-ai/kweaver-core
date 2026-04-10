@@ -41,7 +41,7 @@ depServices:
     port: 3330
     user: root
     password: xxxxxx
-    database: adp
+    database: kweaver
     type: MariaDB
   opensearch:
     host: opensearch-master.resource.svc.cluster.local.

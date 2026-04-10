@@ -45,7 +45,7 @@ depServices:
       connectType: ocr
   rds:
     host: mariadb-mariadb-master.resource
-    database: adp
+    database: kweaver
     password: xxxxxx
     port: 3330
     type: MariaDB
