@@ -98,6 +98,7 @@ type IndexConnector interface {
 	// ExecuteQuery executes a query on the index
 	ExecuteQuery(ctx context.Context, indexName string, resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) (*interfaces.QueryResult, error)
 	ExecuteQueryWithDsl(ctx context.Context, resourceName string, dsl string) (*interfaces.QueryResult, error)
+	ExecuteRawQuery(ctx context.Context, index string, query map[string]any) (*interfaces.SQLQueryResponse, error)
 	// for dataset
 	Create(ctx context.Context, name string, schemaDefinition []*interfaces.Property) error
 	Update(ctx context.Context, name string, schemaDefinition []*interfaces.Property) error
@@ -116,4 +117,9 @@ type IndexConnector interface {
 // Implementations: rest, graphql, etc.
 type APIConnector interface {
 	Connector
+}
+
+// MariaDBSQLExecutor defines the interface for executing raw SQL on MariaDB
+type MariaDBSQLExecutor interface {
+	ExecuteRawSQL(ctx context.Context, sql string) (*interfaces.SQLQueryResponse, error)
 }

@@ -19,6 +19,8 @@ const (
 	VegaBackend_InvalidParameter_Description              = "VegaBackend.InvalidParameter.Description"
 	VegaBackend_InvalidParameter_Tag                      = "VegaBackend.InvalidParameter.Tag"
 	VegaBackend_InvalidParameter_RequestBody              = "VegaBackend.InvalidParameter.RequestBody"
+	VegaBackend_InvalidParameter_ResourceType             = "VegaBackend.InvalidParameter.ResourceType"
+	VegaBackend_InvalidParameter_StreamSize               = "VegaBackend.InvalidParameter.StreamSize"
 	VegaBackend_InvalidParameter_Limit                    = "VegaBackend.InvalidParameter.Limit"
 	VegaBackend_InvalidParameter_Offset                   = "VegaBackend.InvalidParameter.Offset"
 	VegaBackend_InvalidParameter_Sort                     = "VegaBackend.InvalidParameter.Sort"
@@ -57,6 +59,8 @@ var (
 		VegaBackend_InvalidParameter_Tag,
 
 		VegaBackend_InvalidParameter_RequestBody,
+		VegaBackend_InvalidParameter_ResourceType,
+		VegaBackend_InvalidParameter_StreamSize,
 		VegaBackend_InvalidParameter_Limit,
 		VegaBackend_InvalidParameter_Offset,
 		VegaBackend_InvalidParameter_Sort,

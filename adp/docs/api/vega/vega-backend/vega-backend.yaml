@@ -449,71 +449,61 @@ definitions:
       - category
       - mode
     type: object
-  interfaces.QueryExecuteRequest:
+  interfaces.SQLQueryRequest:
     properties:
-      query_id:
-        description: 必填，同一轮查询一致
+      query:
+        description: 查询语句，与query_id不能同时存在
         minLength: 1
         type: string
-      tables:
-        description: 表列表
-        items:
-          $ref: '#/definitions/interfaces.TableInQuery'
-        minItems: 1
-        type: array
-      joins:
-        description: JOIN 定义；单表时为空
-        items:
-          $ref: '#/definitions/interfaces.JoinSpec'
-        type: array
-      output_fields:
-        description: 输出列，可带表别名
-        items:
-          type: string
-        type: array
-      filter_condition:
-        description: 过滤条件
-        type: object
-      sort:
-        description: 排序
-        items:
-          $ref: '#/definitions/interfaces.SortField'
-        type: array
-      offset:
-        description: 分页偏移
-        minimum: 0
-        type: integer
-      limit:
-        description: 每页条数，最大 10000
-        maximum: 10000
+      resource_type:
+        description: 必填，数据源类型
+        enum: [mariadb, mysql, opensearch, postgresql]
+        minLength: 1
+        type: string
+      resource_id:
+        description: 查询opensearch数据源必填参数，其他数据源不填
+        minLength: 1
+        type: string
+      query_type:
+        description: 非必填，查询类型，不填则默认为标准查询
+        enum: [standard, stream]
+        minLength: 1
+        type: string
+      query_id:
+        description: SQL类流式查询必填参数，首次请求不需要，从第二次请求开始往后每次请求都必须填写
+        minLength: 1
+        type: string
+      query_timeout:
+        description: 单位：秒。超时后可以选择是否继续等待，如果继续等待，根据响应中的query_id发起下一次请求
+        maximum: 3600
         minimum: 1
         type: integer
-      need_total:
-        description: 是否返回总条数
-        type: boolean
+      stream_size:
+        description: 流式查询指定每批次返回的记录数，默认值10000
+        maximum: 100000
+        minimum: 100
+        type: integer
     required:
-      - query_id
-      - tables
+      - resource_type
     type: object
-  interfaces.QueryExecuteResponse:
+  interfaces.SQLQueryResponse:
     properties:
-      query_id:
-        description: 后端生成或回传，用于后续分页
-        type: string
+      columns:
+        description: 查询结果元数据
+        items:
+          type: object
+        type: array
       entries:
         description: 查询结果数据
         items:
           type: object
         type: array
       total_count:
-        description: 总条数（仅在need_total为true时返回）
+        description: 总条数
         type: integer
-      next_offset:
-        description: 下一页偏移量
-        type: integer
-      has_more:
-        description: 是否还有更多数据
-        type: boolean
+      stats:
+        description: 查询状态信息
+        type: object
     type: object
   interfaces.TableInQuery:
     properties:
@@ -2052,25 +2042,25 @@ paths:
       summary: Set connector type enabled
       tags:
         - connector-types
-  /query/execute:
+  /resources/query:
     post:
       consumes:
         - application/json
-      description: Execute a query with join support
+      description: Execute a query with any resource
       parameters:
         - description: Query parameters
           in: body
           name: query
           required: true
           schema:
-            $ref: '#/definitions/interfaces.QueryExecuteRequest'
+            $ref: '#/definitions/interfaces.SQLQueryRequest'
       produces:
         - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/interfaces.QueryExecuteResponse'
+            $ref: '#/definitions/interfaces.SQLQueryResponse'
         "400":
           description: Bad Request
           schema:

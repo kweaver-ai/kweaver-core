@@ -515,10 +515,14 @@ func (dh *discoverHandler) reconcileTableResources(ctx context.Context, catalog 
 
 // buildSourceIdentifier builds the source identifier for a table.
 func (dh *discoverHandler) buildSourceIdentifier(table *interfaces.TableMeta) string {
-	if table.Database != "" {
-		return fmt.Sprintf("%s.%s", table.Database, table.Name)
+	identifier := table.Name
+	if table.Schema != "" {
+		identifier = fmt.Sprintf("%s.%s", table.Schema, identifier)
 	}
-	return table.Name
+	if table.Database != "" {
+		return fmt.Sprintf("%s.%s", table.Database, identifier)
+	}
+	return identifier
 }
 
 // createResource creates a new resource.
