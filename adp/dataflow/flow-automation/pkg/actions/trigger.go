@@ -6,15 +6,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	traceLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/rds"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/store"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/rds"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/store"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 func patchDagInstanceSource(ctx entity.ExecuteContext, data map[string]interface{}, triggerName string) {

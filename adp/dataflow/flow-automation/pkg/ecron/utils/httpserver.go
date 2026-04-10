@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
 
 	"github.com/gin-gonic/gin"
 	"github.com/unrolled/secure"

@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entity "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
+	entity "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
 	bson "go.mongodb.org/mongo-driver/bson"
 	options "go.mongodb.org/mongo-driver/mongo/options"
 	gomock "go.uber.org/mock/gomock"

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	liberrors "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/errors"
-	i18n "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/i18n"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	liberrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/errors"
+	i18n "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/i18n"
 )
 
 func TestMain(t *testing.T) {

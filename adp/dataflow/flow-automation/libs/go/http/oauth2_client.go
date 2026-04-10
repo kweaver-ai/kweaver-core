@@ -12,8 +12,8 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )

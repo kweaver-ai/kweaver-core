@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 var (

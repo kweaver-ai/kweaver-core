@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/s3"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/s3"
 )
 
 type ossGatetWayS3 struct {

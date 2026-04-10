@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	ierrors "github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/rds"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	ierrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/rds"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 const dfsDocPrefix = "dfs://"

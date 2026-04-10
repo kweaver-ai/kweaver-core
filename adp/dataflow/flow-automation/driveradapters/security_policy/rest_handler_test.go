@@ -17,13 +17,13 @@ import (
 	. "github.com/agiledragon/gomonkey/v2"
 	"github.com/gin-gonic/gin"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/driveradapters/middleware"
-	ierrors "github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/mgnt"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_logics"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/driveradapters/middleware"
+	ierrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/mgnt"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_logics"
 )
 
 // MockLogger 实现 commonLog.Logger 接口

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	traceLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
 )
 
 type GotenbergConvertRequest struct {

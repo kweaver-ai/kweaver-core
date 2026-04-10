@@ -2,8 +2,8 @@
 package actions
 
 import (
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
 )
 
 const (

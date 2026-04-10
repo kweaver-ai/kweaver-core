@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 )
 
 const (

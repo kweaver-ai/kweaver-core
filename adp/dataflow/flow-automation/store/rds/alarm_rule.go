@@ -8,10 +8,10 @@ import (
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	cdb "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/db"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/rds"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	cdb "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/db"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/rds"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
 )

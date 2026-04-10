@@ -1,6 +1,6 @@
 package event
 
-import "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
+import "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
 
 const (
 	KeyDagInstanceUpdated = "DagInstanceUpdated"

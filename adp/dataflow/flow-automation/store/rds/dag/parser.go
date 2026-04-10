@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
 )
 
 // ToDagModel 转换为DagModel

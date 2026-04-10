@@ -1,6 +1,6 @@
 package entity
 
-import "github.com/kweaver-ai/adp/autoflow/flow-automation/common"
+import "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
 
 // InBox 消息队列
 type InBox struct {

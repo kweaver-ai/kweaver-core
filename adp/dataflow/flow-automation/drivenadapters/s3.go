@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/config"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/config"
 )
 
 //go:generate mockgen -package mock_drivenadapters -source ../drivenadapters/s3.go -destination ../tests/mock_drivenadapters/s3_mock.go

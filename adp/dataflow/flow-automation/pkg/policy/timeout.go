@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
 )
 
 const TimeOutPolicyName = "TimeOutPolicy"

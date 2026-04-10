@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/actions"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/dependency"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/actions"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/dependency"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
 )
 
 // DebugExecute debug执行上下文

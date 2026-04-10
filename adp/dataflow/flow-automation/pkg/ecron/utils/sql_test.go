@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 )

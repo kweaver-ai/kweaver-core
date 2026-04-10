@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/trace"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/mod"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/trace"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/mod"
 	"github.com/robfig/cron/v3"
 )
 

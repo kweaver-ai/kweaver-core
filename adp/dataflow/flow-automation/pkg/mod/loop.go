@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/render"
-	normalizeutil "github.com/kweaver-ai/adp/autoflow/flow-automation/utils/normalize"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/render"
+	normalizeutil "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils/normalize"
 )
 
 // LoopHandler 循环处理器，从DefExecutor中独立出来

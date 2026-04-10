@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	aerr "github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	aerr "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 )
 
 // PermCheckerMap 所有权限校验checker定义集合

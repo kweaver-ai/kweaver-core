@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
 	"gopkg.in/yaml.v2"
 )
 

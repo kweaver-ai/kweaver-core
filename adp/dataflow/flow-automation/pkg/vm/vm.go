@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	commonErrors "github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/funcs"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/hook"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/opcode"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/vm/state"
+	commonErrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/funcs"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/hook"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/opcode"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/vm/state"
 )
 
 type ContextKey string
