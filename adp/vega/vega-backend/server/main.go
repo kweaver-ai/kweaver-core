@@ -118,9 +118,9 @@ func main() {
 	factory.Init(appSetting)
 	logger.Info("VEGA Manager Init Connector Factory Success")
 
-	// 初始化并启动统一的 TaskWorker，处理所有类型的任务
-	taskWorker := worker.NewTaskWorker(appSetting)
-	taskWorker.Start()
+	// 初始化并启动统一的 TaskWorkerManger，处理所有类型的任务
+	taskWorkerMgr := worker.NewTaskWorkerManager(appSetting)
+	taskWorkerMgr.Start()
 	logger.Info("VEGA Manager Init Task Worker Success")
 
 	// 创建并启动服务

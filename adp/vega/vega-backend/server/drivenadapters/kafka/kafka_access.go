@@ -14,7 +14,9 @@ import (
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/segmentio/kafka-go/sasl/scram"
 
 	"vega-backend/common"
 	"vega-backend/interfaces"
@@ -39,18 +41,59 @@ func NewKafkaAccess(appSetting *common.AppSetting) interfaces.KafkaAccess {
 	return kAccess
 }
 
-// getSASLDialer 创建带 SASL 认证的 Dialer
+// getSASLMechanism 根据配置获取 SASL 机制
+func (ka *kafkaAccess) getSASLMechanism() sasl.Mechanism {
+	switch ka.appSetting.MQSetting.Auth.Mechanism {
+	case "PLAIN":
+		return plain.Mechanism{
+			Username: ka.appSetting.MQSetting.Auth.Username,
+			Password: ka.appSetting.MQSetting.Auth.Password,
+		}
+	case "SCRAM-SHA-256":
+		if mechanism, err := scram.Mechanism(scram.SHA256, ka.appSetting.MQSetting.Auth.Username, ka.appSetting.MQSetting.Auth.Password); err == nil {
+			return mechanism
+		} else {
+			logger.Errorf("Failed to create SCRAM-SHA-256 mechanism: %v", err)
+			// Fallback to PLAIN if SCRAM fails
+			return plain.Mechanism{
+				Username: ka.appSetting.MQSetting.Auth.Username,
+				Password: ka.appSetting.MQSetting.Auth.Password,
+			}
+		}
+	case "SCRAM-SHA-512":
+		if mechanism, err := scram.Mechanism(scram.SHA512, ka.appSetting.MQSetting.Auth.Username, ka.appSetting.MQSetting.Auth.Password); err == nil {
+			return mechanism
+		} else {
+			logger.Errorf("Failed to create SCRAM-SHA-512 mechanism: %v", err)
+			// Fallback to PLAIN if SCRAM fails
+			return plain.Mechanism{
+				Username: ka.appSetting.MQSetting.Auth.Username,
+				Password: ka.appSetting.MQSetting.Auth.Password,
+			}
+		}
+	default:
+		// Default to PLAIN if mechanism is not specified or unsupported
+		return plain.Mechanism{
+			Username: ka.appSetting.MQSetting.Auth.Username,
+			Password: ka.appSetting.MQSetting.Auth.Password,
+		}
+	}
+}
+
+// getSASLDialer 创建 Dialer，根据配置决定是否使用 SASL 认证
 func (ka *kafkaAccess) getSASLDialer() *kafka.Dialer {
-	mechanism := plain.Mechanism{
-		Username: ka.appSetting.MQSetting.Auth.Username,
-		Password: ka.appSetting.MQSetting.Auth.Password,
+	dialer := &kafka.Dialer{
+		Timeout:   10 * time.Second,
+		DualStack: true,
 	}
 
-	return &kafka.Dialer{
-		Timeout:       10 * time.Second,
-		DualStack:     true,
-		SASLMechanism: mechanism,
+	// 只有当认证信息存在时才使用 SASL 认证
+	if ka.appSetting.MQSetting.Auth.Username != "" && ka.appSetting.MQSetting.Auth.Password != "" {
+		mechanism := ka.getSASLMechanism()
+		dialer.SASLMechanism = mechanism
 	}
+
+	return dialer
 }
 
 // getBrokerAddress 获取 broker 地址
@@ -93,12 +136,14 @@ func (ka *kafkaAccess) NewWriter(ctx context.Context, topic string) (*kafka.Writ
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
 		RequiredAcks: kafka.RequireAll,
-		Transport: &kafka.Transport{
-			SASL: plain.Mechanism{
-				Username: ka.appSetting.MQSetting.Auth.Username,
-				Password: ka.appSetting.MQSetting.Auth.Password,
-			},
-		},
+	}
+
+	// 只有当认证信息存在时才使用 SASL 认证
+	if ka.appSetting.MQSetting.Auth.Username != "" && ka.appSetting.MQSetting.Auth.Password != "" {
+		mechanism := ka.getSASLMechanism()
+		w.Transport = &kafka.Transport{
+			SASL: mechanism,
+		}
 	}
 
 	logger.Debugf("Created writer for topic %s on cluster %s", topic, ka.appSetting.MQSetting.MQHost)

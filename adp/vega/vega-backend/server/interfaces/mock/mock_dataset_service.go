@@ -41,21 +41,6 @@ func (m *MockDatasetService) EXPECT() *MockDatasetServiceMockRecorder {
 	return m.recorder
 }
 
-// Build mocks base method.
-func (m *MockDatasetService) Build(ctx context.Context, id string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Build", ctx, id)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Build indicates an expected call of Build.
-func (mr *MockDatasetServiceMockRecorder) Build(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockDatasetService)(nil).Build), ctx, id)
-}
-
 // Create mocks base method.
 func (m *MockDatasetService) Create(ctx context.Context, res *interfaces.Resource) error {
 	m.ctrl.T.Helper()
@@ -68,21 +53,6 @@ func (m *MockDatasetService) Create(ctx context.Context, res *interfaces.Resourc
 func (mr *MockDatasetServiceMockRecorder) Create(ctx, res any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDatasetService)(nil).Create), ctx, res)
-}
-
-// CreateBuildTask mocks base method.
-func (m *MockDatasetService) CreateBuildTask(ctx context.Context, id string, req *interfaces.BuildTaskRequest) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBuildTask", ctx, id, req)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateBuildTask indicates an expected call of CreateBuildTask.
-func (mr *MockDatasetServiceMockRecorder) CreateBuildTask(ctx, id, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBuildTask", reflect.TypeOf((*MockDatasetService)(nil).CreateBuildTask), ctx, id, req)
 }
 
 // CreateDocuments mocks base method.
@@ -156,36 +126,6 @@ func (mr *MockDatasetServiceMockRecorder) DeleteDocumentsByQuery(ctx, res, param
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDocumentsByQuery", reflect.TypeOf((*MockDatasetService)(nil).DeleteDocumentsByQuery), ctx, res, params)
 }
 
-// GetBuildTaskByID mocks base method.
-func (m *MockDatasetService) GetBuildTaskByID(ctx context.Context, id string) (*interfaces.BuildTask, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBuildTaskByID", ctx, id)
-	ret0, _ := ret[0].(*interfaces.BuildTask)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBuildTaskByID indicates an expected call of GetBuildTaskByID.
-func (mr *MockDatasetServiceMockRecorder) GetBuildTaskByID(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTaskByID", reflect.TypeOf((*MockDatasetService)(nil).GetBuildTaskByID), ctx, id)
-}
-
-// GetBuildTasksByResourceID mocks base method.
-func (m *MockDatasetService) GetBuildTasksByResourceID(ctx context.Context, resourceID string) ([]*interfaces.BuildTask, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBuildTasksByResourceID", ctx, resourceID)
-	ret0, _ := ret[0].([]*interfaces.BuildTask)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBuildTasksByResourceID indicates an expected call of GetBuildTasksByResourceID.
-func (mr *MockDatasetServiceMockRecorder) GetBuildTasksByResourceID(ctx, resourceID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTasksByResourceID", reflect.TypeOf((*MockDatasetService)(nil).GetBuildTasksByResourceID), ctx, resourceID)
-}
-
 // GetDocument mocks base method.
 func (m *MockDatasetService) GetDocument(ctx context.Context, id, docID string) (map[string]any, error) {
 	m.ctrl.T.Helper()
@@ -257,4 +197,93 @@ func (m *MockDatasetService) UpdateDocuments(ctx context.Context, id string, upd
 func (mr *MockDatasetServiceMockRecorder) UpdateDocuments(ctx, id, updateRequests any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDocuments", reflect.TypeOf((*MockDatasetService)(nil).UpdateDocuments), ctx, id, updateRequests)
+}
+
+// CreateBuildTask mocks base method.
+func (m *MockDatasetService) CreateBuildTask(ctx context.Context, id string, req *interfaces.BuildTaskRequest) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBuildTask", ctx, id, req)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBuildTask indicates an expected call of CreateBuildTask.
+func (mr *MockDatasetServiceMockRecorder) CreateBuildTask(ctx, id, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBuildTask", reflect.TypeOf((*MockDatasetService)(nil).CreateBuildTask), ctx, id, req)
+}
+
+// GetBuildTaskByID mocks base method.
+func (m *MockDatasetService) GetBuildTaskByID(ctx context.Context, id string) (*interfaces.BuildTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTaskByID", ctx, id)
+	ret0, _ := ret[0].(*interfaces.BuildTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuildTaskByID indicates an expected call of GetBuildTaskByID.
+func (mr *MockDatasetServiceMockRecorder) GetBuildTaskByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTaskByID", reflect.TypeOf((*MockDatasetService)(nil).GetBuildTaskByID), ctx, id)
+}
+
+// GetBuildTaskByResourceID mocks base method.
+func (m *MockDatasetService) GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTaskByResourceID", ctx, resourceID)
+	ret0, _ := ret[0].(*interfaces.BuildTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuildTaskByResourceID indicates an expected call of GetBuildTaskByResourceID.
+func (mr *MockDatasetServiceMockRecorder) GetBuildTaskByResourceID(ctx, resourceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTaskByResourceID", reflect.TypeOf((*MockDatasetService)(nil).GetBuildTaskByResourceID), ctx, resourceID)
+}
+
+// GetBuildTasks mocks base method.
+func (m *MockDatasetService) GetBuildTasks(ctx context.Context, offset, limit int) ([]*interfaces.BuildTask, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTasks", ctx, offset, limit)
+	ret0, _ := ret[0].([]*interfaces.BuildTask)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetBuildTasks indicates an expected call of GetBuildTasks.
+func (mr *MockDatasetServiceMockRecorder) GetBuildTasks(ctx, offset, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTasks", reflect.TypeOf((*MockDatasetService)(nil).GetBuildTasks), ctx, offset, limit)
+}
+
+// UpdateBuildTaskStatus mocks base method.
+func (m *MockDatasetService) UpdateBuildTaskStatus(ctx context.Context, taskID string, req *interfaces.UpdateBuildTaskStatusRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBuildTaskStatus", ctx, taskID, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBuildTaskStatus indicates an expected call of UpdateBuildTaskStatus.
+func (mr *MockDatasetServiceMockRecorder) UpdateBuildTaskStatus(ctx, taskID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBuildTaskStatus", reflect.TypeOf((*MockDatasetService)(nil).UpdateBuildTaskStatus), ctx, taskID, req)
+}
+
+// DeleteBuildTask mocks base method.
+func (m *MockDatasetService) DeleteBuildTask(ctx context.Context, taskID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBuildTask", ctx, taskID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBuildTask indicates an expected call of DeleteBuildTask.
+func (mr *MockDatasetServiceMockRecorder) DeleteBuildTask(ctx, taskID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBuildTask", reflect.TypeOf((*MockDatasetService)(nil).DeleteBuildTask), ctx, taskID)
 }

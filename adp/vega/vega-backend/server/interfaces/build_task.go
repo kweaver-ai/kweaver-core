@@ -9,12 +9,23 @@ const (
 	BuildTaskStatusPending   string = "pending"
 	BuildTaskStatusRunning   string = "running"
 	BuildTaskStatusCompleted string = "completed"
-	BuildTaskStatusFailed    string = "failed"
-	BuildTaskType            string = "build:execute"
+	BuildTaskStatusStopping  string = "stopping"
+	BuildTaskStatusStopped   string = "stopped"
 
-	BuildTaskModeFull        string = "full"
-	BuildTaskModeIncremental string = "incremental"
-	BuildTaskModeRealtime    string = "realtime"
+	BuildTaskTypeBatch     string = "batch:execute"
+	BuildTaskTypeStreaming string = "streaming:execute"
+	BuildTaskTypeEmbedding string = "embedding:execute"
+
+	BuildTaskModeStreaming string = "streaming" // 流式
+	BuildTaskModeBatch     string = "batch"     // 批量
+
+	BuildTaskExecuteTypeIncremental string = "incremental" // 增量
+	BuildTaskExecuteTypeFull        string = "full"        // 全量
+
+	EmptyDocumentID string = "empty_document"
+
+	DATASET_BUILD_MAX_RETRY_COUNT = 50 // 最大重试次数
+	DATASET_BUILD_RETRY_INTERVAL  = 5  // 重试间隔，单位秒
 )
 
 // BuildTask represents a build task entity.
@@ -36,5 +47,11 @@ type BuildTask struct {
 
 // BuildTaskRequest represents create build task request.
 type BuildTaskRequest struct {
-	Mode       string `json:"mode" binding:"required,oneof=full incremental realtime"` // 任务模式：full/incremental/realtime
+	Mode string `json:"mode" binding:"required,oneof=streaming batch"` // 任务模式：streaming/batch
+}
+
+// UpdateBuildTaskStatusRequest represents update build task status request.
+type UpdateBuildTaskStatusRequest struct {
+	Status      string `json:"status" binding:"required,oneof=pending running completed stopping stopped"` // 任务状态
+	ExecuteType string `json:"execute_type,omitempty"`                                                     // 执行类型,for batch mode, default is "incremental"
 }

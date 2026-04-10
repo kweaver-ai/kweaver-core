@@ -110,6 +110,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
 			resources.POST("/dataset/:id/build", r.BuildDataByEx)
 			resources.GET("/dataset/:id/build/:taskid", r.GetBuildTaskByEx)
+			resources.PUT("/dataset/:id/build/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByEx)
+			resources.GET("/dataset/build", r.ListBuildTasksByEx)
+			resources.DELETE("/dataset/build/:taskids", r.DeleteBuildTasksByEx)
 		}
 
 		// ConnectorType APIs - External
@@ -172,6 +175,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
 			resources.POST("/dataset/:id/build", r.BuildDataByIn)
 			resources.GET("/dataset/:id/build/:taskid", r.GetBuildTaskByIn)
+			resources.PUT("/dataset/:id/build/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
+			resources.GET("/dataset/build", r.ListBuildTasksByIn)
+			resources.DELETE("/dataset/build/:taskids", r.DeleteBuildTasksByIn)
 		}
 
 		// Query APIs - Internal

@@ -56,8 +56,6 @@ func (c *OpenSearchConnector) ExecuteQueryWithDsl(ctx context.Context, resourceN
 	if err := json.Unmarshal([]byte(dsl), &dslMap); err != nil {
 		return nil, fmt.Errorf("invalid DSL JSON: %w", err)
 	}
-	// Log the DSL query for debugging
-	fmt.Printf("[OpenSearch DSL Query]:\n%s\n", dsl)
 
 	// Execute search request with the provided DSL
 	// resourceId is used as the index name
@@ -745,14 +743,7 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize query: %w", err)
 	}
-	// Format the JSON query for better readability
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, queryJSON, "", "  ")
-	if err != nil {
-		fmt.Println("[OpenSearch query]:", string(queryJSON))
-	} else {
-		fmt.Println("[OpenSearch query]:\n", prettyJSON.String())
-	}
+
 	// Execute search request
 	req := opensearchapi.SearchRequest{
 		Index: []string{indexName},
@@ -1180,6 +1171,7 @@ func (c *OpenSearchConnector) UpdateDocument(ctx context.Context, name string, d
 		Index:      name,
 		DocumentID: docID,
 		Body:       bytes.NewReader(data),
+		Refresh:    "true",
 	}
 
 	resp, err := req.Do(ctx, c.client)
@@ -1256,7 +1248,8 @@ func (c *OpenSearchConnector) UpdateDocuments(ctx context.Context, name string, 
 	}
 
 	req := opensearchapi.BulkRequest{
-		Body: &bulkBody,
+		Body:    &bulkBody,
+		Refresh: "true",
 	}
 
 	resp, err := req.Do(ctx, c.client)
@@ -1299,7 +1292,8 @@ func (c *OpenSearchConnector) DeleteDocuments(ctx context.Context, name string, 
 	}
 
 	req := opensearchapi.BulkRequest{
-		Body: &bulkBody,
+		Body:    &bulkBody,
+		Refresh: "true",
 	}
 
 	resp, err := req.Do(ctx, c.client)

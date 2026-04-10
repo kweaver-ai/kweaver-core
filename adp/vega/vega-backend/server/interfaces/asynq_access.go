@@ -12,6 +12,12 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+const (
+	HighQueue    = "vega-backend-high"
+	DefaultQueue = "vega-backend-default"
+	LowQueue     = "vega-backend-low"
+)
+
 // AsynqAccess defines the interface for creating Asynq client and server.
 //
 //go:generate mockgen -source ../interfaces/asynq_access.go -destination ../interfaces/mock/mock_asynq_access.go

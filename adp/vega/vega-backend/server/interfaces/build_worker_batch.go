@@ -11,17 +11,18 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-// BuildWorker interface defines build execution functionality.
+// BatchBuildWorker interface defines build execution functionality.
 // This worker is called by the task management service to execute the actual build.
 //
 //go:generate mockgen -source ../interfaces/build_task.go -destination ../interfaces/mock/mock_build_worker.go
 
-// BuildTaskMessage represents a build task message.
-type BuildTaskMessage struct {
-	TaskID     string `json:"task_id"`
+// BatchBuildTaskMessage represents a build task message.
+type BatchBuildTaskMessage struct {
+	TaskID      string `json:"task_id"`
+	ExecuteType string `json:"execute_type"`
 }
 
-type BuildWorker interface {
+type BatchBuildWorker interface {
 	Start()
 
 	Run(ctx context.Context) error

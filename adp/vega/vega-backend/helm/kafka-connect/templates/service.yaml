@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.moduleName }}-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.moduleName }}
+spec:
+  selector:
+    module: {{ .Values.moduleName }}
+  type: {{ .Values.service.kafkaConnect.type }}
+  ports:
+    - name: {{ .Values.moduleName }}
+      port: {{ .Values.service.kafkaConnect.port }}
+      protocol: TCP
+      targetPort: manager
+      {{- if eq .Values.service.kafkaConnect.type "NodePort" }}
+      nodePort: {{ .Values.service.kafkaConnect.nodePort }}
+      {{- end }}

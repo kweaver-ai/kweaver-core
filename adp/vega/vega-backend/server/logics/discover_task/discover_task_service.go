@@ -101,7 +101,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 	// 设置任务执行超时时间为 30 分钟
 	asynqTask := asynq.NewTask(interfaces.DiscoverTaskType, payload)
 	info, err := dts.client.Enqueue(asynqTask,
-		asynq.Queue("high"),
+		asynq.Queue(interfaces.HighQueue),
 		asynq.MaxRetry(3),
 		asynq.Timeout(30*time.Minute),
 		asynq.Deadline(time.Now().Add(12*time.Hour)),

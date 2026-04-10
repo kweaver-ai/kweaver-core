@@ -17,3 +17,28 @@ ErrorLink = "暂无"
 Description = "构建任务已存在"
 Solution = "请检查资源是否已存在构建任务"
 ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.Running]
+Description = "构建任务正在运行"
+Solution = "请等待任务完成或停止后再操作"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidStatus]
+Description = "无效的构建任务状态"
+Solution = "请检查状态值"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InvalidExecuteType]
+Description = "无效的构建任务执行类型"
+Solution = "请检查执行类型值"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.UpdateFailed]
+Description = "更新构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.BuildTask.InternalError.DeleteFailed]
+Description = "删除构建任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
