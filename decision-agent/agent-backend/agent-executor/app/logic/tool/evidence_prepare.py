@@ -110,7 +110,7 @@ async def evidence_prepare(
             StandLogger.info_log(
                 "[evidence_prepare] LLM 未提取到实体，尝试规则回退"
             )
-            fallback_evidences = _fallback_extraction(tool_call_result)
+            fallback_evidences = _fallback_extraction(tool_call_result, tool_name)
             if fallback_evidences:
                 evidences.extend(fallback_evidences)
                 StandLogger.info_log(
@@ -118,7 +118,7 @@ async def evidence_prepare(
                 )
     except Exception as e:
         logger.warning(f"[evidence_prepare] LLM 提取异常: {e}", exc_info=True)
-        fallback_evidences = _fallback_extraction(tool_call_result)
+        fallback_evidences = _fallback_extraction(tool_call_result, tool_name)
         evidences.extend(fallback_evidences)
 
     evidences = _deduplicate_evidences(evidences)
@@ -364,7 +364,10 @@ def _parse_llm_result(result: str) -> List[Dict[str, Any]]:
         return []
 
 
-def _fallback_extraction(tool_call_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _fallback_extraction(
+    tool_call_result: Dict[str, Any],
+    tool_name: str = ""
+) -> List[Dict[str, Any]]:
     """
     规则提取回退策略。
 
@@ -373,12 +376,13 @@ def _fallback_extraction(tool_call_result: Dict[str, Any]) -> List[Dict[str, Any
 
     Args:
         tool_call_result: 工具调用结果
+        tool_name: 工具名称（如"获取agent详情"）
 
     Returns:
         提取到的实体列表
     """
     StandLogger.info_log("\n" + "="*60)
-    StandLogger.info_log("[_fallback_extraction] START")
+    StandLogger.info_log(f"[_fallback_extraction] START, tool_name={tool_name}")
 
     evidences = []
 
@@ -398,19 +402,19 @@ def _fallback_extraction(tool_call_result: Dict[str, Any]) -> List[Dict[str, Any
             if not isinstance(node, dict):
                 continue
 
-            name = node.get("object_type_name") or node.get("name", "")
-            if not name:
+            node_name = node.get("object_type_name") or node.get("name", "")
+            if not node_name:
                 StandLogger.info_log(f"[_fallback_extraction] node {idx} 无 name，跳过")
                 continue
 
             StandLogger.info_log(
                 f"[_fallback_extraction] 提取 node {idx}: "
-                f"name={name}, "
+                f"name={node_name}, "
                 f"type_id={node.get('object_type_id')}, "
                 f"score={node.get('score', 0.7)}"
             )
             evidences.append({
-                "object_type_name": str(name),
+                "object_type_name": str(node_name),
                 "aliases": [],
                 "object_type_id": str(node.get("object_type_id", "")),
                 "score": float(node.get("score", 0.7)),
@@ -419,21 +423,52 @@ def _fallback_extraction(tool_call_result: Dict[str, Any]) -> List[Dict[str, Any
     else:
         StandLogger.info_log("[_fallback_extraction] 未找到 nodes 字段")
 
-        # 2. 从 name 字段提取（用于 agent 等实体）
+        # 2. 从 name 字段提取主要实体（如 agent 名称）
+        # 同时收集 profile、description 等描述性文本作为别名
         name = tool_call_result.get("name")
+        aliases = []
+
+        # 收集描述性文本作为别名
+        for alias_key in ["profile", "description", "summary", "bio", "intro"]:
+            alias_value = tool_call_result.get(alias_key)
+            if alias_value and isinstance(alias_value, str) and len(alias_value) > 2:
+                aliases.append(alias_value)
+                StandLogger.info_log(
+                    f"[_fallback_extraction] 从 {alias_key} 字段收集别名: {alias_value[:50]}..."
+                )
+
         if name and isinstance(name, str):
             StandLogger.info_log(
-                f"[_fallback_extraction] 从 name 字段提取: {name}"
+                f"[_fallback_extraction] 从 name 字段提取: {name}, aliases={len(aliases)}"
             )
             evidences.append({
                 "object_type_name": name,
-                "aliases": [],
+                "aliases": aliases,
                 "object_type_id": "ot_agent",
                 "score": 0.9,
                 "_source": "fallback_name_field",
             })
 
-        # 3. 从 list 字段提取（某些工具返回列表）
+        # 3. 提取工具调用名称本身（如"获取agent详情"）
+        # 因为 LLM 经常在回答中引用工具名称
+        if tool_name and tool_name != "unknown":
+            # 检查是否已经存在同名实体
+            name_exists = any(
+                ev.get("object_type_name") == tool_name for ev in evidences
+            )
+            if not name_exists:
+                StandLogger.info_log(
+                    f"[_fallback_extraction] 添加工具名称作为实体: {tool_name}"
+                )
+                evidences.append({
+                    "object_type_name": tool_name,
+                    "aliases": [],
+                    "object_type_id": "ot_tool",
+                    "score": 0.85,
+                    "_source": "fallback_tool_name",
+                })
+
+        # 4. 从 list 字段提取（某些工具返回列表）
         data_list = tool_call_result.get("list")
         if data_list and isinstance(data_list, list):
             StandLogger.info_log(
@@ -458,7 +493,7 @@ def _fallback_extraction(tool_call_result: Dict[str, Any]) -> List[Dict[str, Any
                     "_source": "fallback_list",
                 })
 
-        # 4. 从 data 字段提取（某些工具使用 data 包装）
+        # 5. 从 data 字段提取（某些工具使用 data 包装）
         data = tool_call_result.get("data")
         if isinstance(data, list):
             StandLogger.info_log(
