@@ -2,6 +2,13 @@
 
 本文件记录项目的重要变更。
 
+## [0.2.2] - 2026-04-10
+
+### 优化
+
+- 将 `agent-observability` Chart 默认 `image.tag` 调整为 `__VERSION__` 占位符，使打包出的 Chart 可以继承发布流程解析出的版本号。
+- 更新 `agent-observability` 发布流程，在打包 Chart 前替换 values 中的 `__VERSION__` 占位符，确保 Chart 默认镜像 tag 与实际发布镜像 tag 保持一致。
+
 ## [0.2.1] - 2026-04-07
 
 ### 优化

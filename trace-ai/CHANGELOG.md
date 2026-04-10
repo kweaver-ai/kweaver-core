@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-04-10
+
+### Improvements
+
+- Changed the default `agent-observability` chart image tag to the `__VERSION__` placeholder so the packaged chart can inherit the resolved release version during the release workflow.
+- Updated the `agent-observability` release workflow to replace the `__VERSION__` placeholder in chart values before packaging, keeping the chart default image tag aligned with the released image tag.
+
 ## [0.2.1] - 2026-04-07
 
 ### Improvements

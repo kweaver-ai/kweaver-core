@@ -4,6 +4,25 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 
 ## [0.3.2]
 
+### 🚀 New Features
+
+- **Archive Upload and Extraction**
+  - Added ZIP archive upload support for session workspaces
+  - Added optional automatic archive extraction to a target workspace path
+  - Added overwrite control, conflict skipping, and extraction metadata in upload responses
+  - Added path-safety validation to reject invalid archive entries and traversal attempts
+
+- **Shell Execution and Working Directory Support**
+  - Added `language=shell` support across control plane, executor, and web UI
+  - Added optional `working_directory` for execute and execute-sync requests
+  - Added shell command normalization for accidental redundant `bash/sh` prefixes
+  - Added end-to-end coverage for shell execution with relative paths and chained commands
+
+### 📚 Documentation
+
+- Added PRD and design docs for session archive upload and shell execution
+- Updated sandbox OpenAPI documentation for archive upload and shell execution request changes
+
 ### 🔧 Improvements
 
 - **Helm Chart Image Extraction Compatibility**

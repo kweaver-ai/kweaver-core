@@ -17,6 +17,7 @@ import structlog
 
 from executor.domain.entities import Execution
 from executor.domain.value_objects import ExecutionResult, ExecutionStatus, ExecutionMetrics
+from executor.infrastructure.isolation.code_wrapper import normalize_shell_code
 from executor.infrastructure.config import settings
 from executor.infrastructure.isolation.result_parser import remove_markers_from_output
 
@@ -86,7 +87,7 @@ class BubblewrapRunner:
         self.workspace_path = workspace_path
         self._base_args = self._build_base_args()
 
-    def _build_base_args(self) -> List[str]:
+    def _build_base_args(self, container_working_directory: str = "/workspace") -> List[str]:
         """
         Build base Bubblewrap arguments for isolation.
 
@@ -106,7 +107,7 @@ class BubblewrapRunner:
             "--ro-bind", dependency_path, dependency_path,
             # Workspace (writable)
             "--bind", str(self.workspace_path), "/workspace",
-            "--chdir", "/workspace",
+            "--chdir", container_working_directory,
             # Temporary directory (tmpfs)
             "--tmpfs", "/tmp",
             # Minimal /proc and /dev
@@ -345,10 +346,11 @@ except Exception as e:
 
         Uses python3 -c to execute code directly in memory with Lambda-style wrapper.
         """
+        execution.context.resolve_working_directory_path()
         # Generate wrapper code for handler execution
         wrapper_code = self._generate_wrapper_code(execution.code)
 
-        cmd = self._base_args + [
+        cmd = self._build_base_args(execution.context.container_working_directory()) + [
             "--",
             "python3",
             "-c",
@@ -358,6 +360,7 @@ except Exception as e:
 
     def _build_node_command(self, execution: Execution) -> tuple[List[str], dict]:
         """Build command for Node.js execution."""
+        execution.context.resolve_working_directory_path()
         # Wrap user code in AWS Lambda handler pattern
         wrapper_code = f'''
 {execution.code}
@@ -374,7 +377,7 @@ console.log('===SANDBOX_RESULT===' + JSON.stringify(result) + '===SANDBOX_RESULT
         code_file = self.workspace_path / "user_code.js"
         code_file.write_text(wrapper_code)
 
-        cmd = self._base_args + [
+        cmd = self._build_base_args(execution.context.container_working_directory()) + [
             "--ro-bind", str(code_file), "/workspace/user_code.js",
             "--",
             "node",
@@ -384,11 +387,13 @@ console.log('===SANDBOX_RESULT===' + JSON.stringify(result) + '===SANDBOX_RESULT
 
     def _build_shell_command(self, execution: Execution) -> tuple[List[str], dict]:
         """Build command for shell execution."""
-        cmd = self._base_args + [
+        resolved_cwd = execution.context.resolve_working_directory_path()
+        normalized_code = normalize_shell_code(execution.code, resolved_cwd)
+        cmd = self._build_base_args(execution.context.container_working_directory()) + [
             "--",
             "bash",
             "-c",
-            execution.code,
+            normalized_code,
         ]
         return cmd, self._build_execution_env(execution)
 

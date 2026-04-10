@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
+  Checkbox,
   Input,
   Table,
   Modal,
@@ -64,6 +65,8 @@ export default function SessionsPage() {
   const [uploadSessionName, setUploadSessionName] = useState<string>('');
   const [filePath, setFilePath] = useState<string>('');
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [extractArchive, setExtractArchive] = useState(false);
+  const [overwriteOnExtract, setOverwriteOnExtract] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showInstallDependenciesModal, setShowInstallDependenciesModal] = useState(false);
   const [installSessionId, setInstallSessionId] = useState<string>('');
@@ -247,14 +250,34 @@ export default function SessionsPage() {
     try {
       for (const file of fileList) {
         if (file.originFileObj) {
-          // 使用文件名作为默认路径，如果用户没有指定路径的话
+          const isZip = file.name.toLowerCase().endsWith('.zip');
           const uploadPath = filePath || file.name;
-          await filesApi.uploadFile(uploadSessionId, file.originFileObj, uploadPath);
+          const response = await filesApi.uploadFile(
+            uploadSessionId,
+            file.originFileObj,
+            uploadPath,
+            {
+              extract: extractArchive,
+              overwrite: overwriteOnExtract,
+            },
+          );
+
+          if (extractArchive) {
+            message.success(
+              `${file.name} 解压完成，写入 ${response.extracted_file_count ?? 0} 个文件，跳过 ${response.skipped_file_count ?? 0} 个文件`,
+            );
+          } else if (isZip) {
+            message.success(`${file.name} 上传成功`);
+          }
         }
       }
-      message.success('文件上传成功');
+      if (!extractArchive) {
+        message.success('文件上传成功');
+      }
       setFileList([]);
       setFilePath('');
+      setExtractArchive(false);
+      setOverwriteOnExtract(false);
       setShowUploadModal(false);
     } catch (error) {
       message.error('文件上传失败');
@@ -912,6 +935,8 @@ export default function SessionsPage() {
           setShowUploadModal(false);
           setFileList([]);
           setFilePath('');
+          setExtractArchive(false);
+          setOverwriteOnExtract(false);
         }}
         confirmLoading={uploading}
         okText="上传"
@@ -925,16 +950,42 @@ export default function SessionsPage() {
         </div>
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
-            文件路径 <span style={{ color: '#8c8c8c' }}>(可选，默认使用文件名)</span>
+            {extractArchive ? '目标目录' : '文件路径'} <span style={{ color: '#8c8c8c' }}>(可选，默认使用文件名)</span>
           </label>
           <Input
-            placeholder="例如: data/input.csv 或 scripts/main.py"
+            placeholder={
+              extractArchive
+                ? '例如: data/ 或 skill/mini-wiki'
+                : '例如: data/input.csv 或 scripts/main.py'
+            }
             value={filePath}
             onChange={(e) => setFilePath(e.target.value)}
             style={{ width: '100%' }}
           />
           <div style={{ fontSize: 12, color: '#677489', marginTop: 8 }}>
-            可指定文件在工作空间中的路径，留空则使用原文件名
+            {extractArchive
+              ? 'ZIP 解压时此路径表示目标目录，留空则使用 ZIP 文件名'
+              : '可指定文件在工作空间中的路径，留空则使用原文件名'}
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <Space direction="vertical" size={8}>
+            <Checkbox
+              checked={extractArchive}
+              onChange={(e) => setExtractArchive(e.target.checked)}
+            >
+              ZIP 自动解压
+            </Checkbox>
+            <Checkbox
+              checked={overwriteOnExtract}
+              onChange={(e) => setOverwriteOnExtract(e.target.checked)}
+              disabled={!extractArchive}
+            >
+              解压时覆盖同名文件
+            </Checkbox>
+          </Space>
+          <div style={{ fontSize: 12, color: '#677489', marginTop: 8 }}>
+            仅对 ZIP 文件生效。启用后会调用后端解压能力，将压缩包内容直接写入会话工作区。
           </div>
         </div>
         <Upload

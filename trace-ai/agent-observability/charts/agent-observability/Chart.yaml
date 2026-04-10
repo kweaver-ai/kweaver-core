@@ -4,9 +4,9 @@ description: Helm chart for agent-observability service
 type: application
 version: 0.1.1
 appVersion: "0.1.1"
-home: https://github.com/kweaver-ai/agent-observability
+home: https://github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability
 sources:
-  - https://github.com/kweaver-ai/agent-observability
+  - https://github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability
 keywords:
   - agent
   - observability

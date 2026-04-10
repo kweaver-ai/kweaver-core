@@ -9,7 +9,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Dict, Any, Literal
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import re
 
 
 class ExecutionStatus(str, Enum):
@@ -209,6 +210,7 @@ class ExecutionContext:
         control_plane_url: URL of control plane for callbacks
         env_vars: Environment variables to inject
         event: Business data passed to handler function
+        working_directory: Optional execution directory relative to workspace root
     """
 
     workspace_path: Path
@@ -217,6 +219,41 @@ class ExecutionContext:
     control_plane_url: str
     env_vars: Dict[str, str] = field(default_factory=dict)
     event: Dict[str, Any] = field(default_factory=dict)
+    working_directory: Optional[str] = None
+
+    def __post_init__(self):
+        """Validate working directory if provided."""
+        if self.working_directory is not None:
+            normalized = _normalize_working_directory(self.working_directory)
+            object.__setattr__(self, "working_directory", normalized)
+
+    def resolve_working_directory_path(self) -> Path:
+        """Resolve the execution directory on the host filesystem."""
+        if self.working_directory in (None, ".", ""):
+            target = self.workspace_path
+        else:
+            target = self.workspace_path / self.working_directory
+
+        workspace_root = self.workspace_path.resolve()
+        resolved = target.resolve()
+
+        try:
+            resolved.relative_to(workspace_root)
+        except ValueError as exc:
+            raise ValueError("working_directory must stay within workspace root") from exc
+
+        if not resolved.exists():
+            raise ValueError(f"working_directory does not exist: {self.working_directory}")
+        if not resolved.is_dir():
+            raise ValueError(f"working_directory is not a directory: {self.working_directory}")
+
+        return resolved
+
+    def container_working_directory(self) -> str:
+        """Resolve the execution directory inside the isolated container."""
+        if self.working_directory in (None, ".", ""):
+            return "/workspace"
+        return f"/workspace/{self.working_directory}"
 
 
 @dataclass(frozen=True)
@@ -298,6 +335,7 @@ class ExecutionRequest:
         execution_id: Unique execution identifier (pattern: exec_[0-9]{8}_[a-z0-9]{8})
         session_id: Session identifier
         env_vars: Environment variables to inject
+        working_directory: Optional execution directory relative to workspace root
     """
 
     code: str
@@ -307,6 +345,7 @@ class ExecutionRequest:
     session_id: Optional[str] = None
     event: Dict[str, Any] = field(default_factory=dict)
     env_vars: Dict[str, str] = field(default_factory=dict)
+    working_directory: Optional[str] = None
 
     def __post_init__(self):
         """Validate execution request."""
@@ -314,6 +353,9 @@ class ExecutionRequest:
             raise ValueError("Code size exceeds 1MB limit")
         if self.timeout < 1 or self.timeout > 3600:
             raise ValueError("Timeout must be between 1 and 3600 seconds")
+        if self.working_directory is not None:
+            normalized = _normalize_working_directory(self.working_directory)
+            object.__setattr__(self, "working_directory", normalized)
 
     def to_context(
         self,
@@ -337,4 +379,25 @@ class ExecutionRequest:
             control_plane_url=control_plane_url,
             event=self.event,
             env_vars=self.env_vars,
+            working_directory=self.working_directory,
         )
+
+
+def _normalize_working_directory(path: str) -> str:
+    stripped = path.strip()
+    if not stripped or stripped.startswith("/") or "\\" in stripped:
+        raise ValueError("working_directory must be a relative workspace path")
+    if re.match(r"^[A-Za-z]:", stripped):
+        raise ValueError("working_directory must be a relative workspace path")
+
+    normalized = PurePosixPath(stripped).as_posix()
+    parts = PurePosixPath(normalized).parts
+    if any(part == ".." for part in parts):
+        raise ValueError("working_directory must be a relative workspace path")
+
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    if not normalized:
+        raise ValueError("working_directory must be a relative workspace path")
+
+    return normalized

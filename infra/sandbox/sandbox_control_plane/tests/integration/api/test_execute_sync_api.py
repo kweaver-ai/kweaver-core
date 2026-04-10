@@ -97,6 +97,166 @@ def handler(event):
         assert data["return_value"]["greeting"] == "Hello, Alice!"
         assert data["return_value"]["age_doubled"] == 50
 
+    async def test_execute_sync_shell_script(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str
+    ):
+        """Test execute-sync with shell script content."""
+        request_data = {
+            "code": 'echo "shell-ok"',
+            "language": "shell",
+            "timeout": 10
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=request_data
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ("success", "completed")
+        assert "shell-ok" in (data.get("stdout") or "")
+        assert data.get("language") == "shell"
+
+    async def test_execute_sync_shell_with_working_directory(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str
+    ):
+        """Test execute-sync with working_directory and relative script path."""
+        setup_request = {
+            "code": (
+                "mkdir -p skill/mini-wiki && "
+                "printf '#!/bin/sh\\npwd\\necho shell-wd-ok\\n' > skill/mini-wiki/run.sh && "
+                "chmod +x skill/mini-wiki/run.sh"
+            ),
+            "language": "shell",
+            "timeout": 10,
+        }
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=setup_request,
+        )
+        assert setup_response.status_code == 200
+
+        request_data = {
+            "code": "sh run.sh",
+            "language": "shell",
+            "timeout": 10,
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=request_data
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ("success", "completed")
+        assert "/workspace/skill/mini-wiki" in (data.get("stdout") or "")
+        assert "shell-wd-ok" in (data.get("stdout") or "")
+
+    async def test_execute_sync_shell_supports_bash_python_prefix(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str
+    ):
+        """Test execute-sync supports accidental `bash python ...` prefix."""
+        setup_request = {
+            "code": (
+                "mkdir -p skill/mini-wiki/scripts && "
+                "printf 'import os\\nprint(os.getcwd())\\nprint(\"sync-bash-python-ok\")\\n' "
+                "> skill/mini-wiki/scripts/analyze_project.py"
+            ),
+            "language": "shell",
+            "timeout": 10,
+        }
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=setup_request,
+        )
+        assert setup_response.status_code == 200
+
+        request_data = {
+            "code": "bash python scripts/analyze_project.py",
+            "language": "shell",
+            "timeout": 10,
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=request_data
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ("success", "completed")
+        assert "/workspace/skill/mini-wiki" in (data.get("stdout") or "")
+        assert "sync-bash-python-ok" in (data.get("stdout") or "")
+
+    async def test_execute_sync_shell_supports_chained_bash_prefix_commands(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str
+    ):
+        """Test execute-sync supports chained shell content with redundant bash prefixes."""
+        setup_request = {
+            "code": (
+                "mkdir -p skill/mini-wiki/scripts && "
+                "printf 'import os\\nprint(os.getcwd())\\nprint(\"sync-chained-bash-ok\")\\n' "
+                "> skill/mini-wiki/scripts/analyze_project.py"
+            ),
+            "language": "shell",
+            "timeout": 10,
+        }
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=setup_request,
+        )
+        assert setup_response.status_code == 200
+
+        request_data = {
+            "code": "bash cd scripts & bash python analyze_project.py",
+            "language": "shell",
+            "timeout": 10,
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=request_data
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ("success", "completed")
+        assert "/workspace/skill/mini-wiki/scripts" in (data.get("stdout") or "")
+        assert "sync-chained-bash-ok" in (data.get("stdout") or "")
+
+    async def test_execute_sync_rejects_invalid_working_directory(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str
+    ):
+        """Test execute-sync rejects invalid working_directory."""
+        request_data = {
+            "code": "echo hi",
+            "language": "shell",
+            "timeout": 10,
+            "working_directory": "../etc",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute-sync",
+            json=request_data
+        )
+
+        assert response.status_code == 422
+
     async def test_execute_sync_poll_interval_boundary(
         self,
         http_client: AsyncClient,

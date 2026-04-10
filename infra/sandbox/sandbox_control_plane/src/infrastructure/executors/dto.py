@@ -22,6 +22,10 @@ class ExecutorExecuteRequest(BaseModel):
     event: Dict[str, Any] = Field(default_factory=dict, description="Event data passed to handler")
     timeout: int = Field(default=300, description="Timeout in seconds", ge=1, le=3600)
     env_vars: Dict[str, str] = Field(default_factory=dict, description="Environment variables")
+    working_directory: Optional[str] = Field(
+        default=None,
+        description="Optional execution directory relative to workspace root",
+    )
 
     class Config:
         json_schema_extra = {
@@ -33,7 +37,8 @@ class ExecutorExecuteRequest(BaseModel):
                     "language": "python",
                     "event": {"name": "World"},
                     "timeout": 10,
-                    "env_vars": {}
+                    "env_vars": {},
+                    "working_directory": "src"
                 }
             ]
         }
