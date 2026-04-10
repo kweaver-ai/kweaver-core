@@ -65,7 +65,7 @@ VEGA-SQL查询模式和方言查询模式流程基本相同，处理流程如下
 
 | 字段名           | 类型     | 必填 | 说明                                                                                                   |
 |---------------|--------|----|------------------------------------------------------------------------------------------------------|
-| query         | any    | 否  | 查询语句。流式查询获取首页数据必填，获取后续数据不用填。query与query_id不可同时存在。                                                    |
+| query         | any    | 否  | 查询语句。sql类查询为string，opensearch查询为object类型，流式查询获取首页数据必填，获取后续数据不用填。query与query_id不可同时存在。                |
 | resource_type | string | 是  | 数据源类型，必选值：`opensearch`、`mysql`、`mariadb`、`postgresql`。                                               |
 | resource_id   | string | 否  | 查询opensearch必填参数                                                                                     |
 | query_type    | string | 否  | 查询类型，只在SQL类查询中有效，可选值：`standard`（标准查询，最多返回10000条数据，如需获取更多数据，请使用stream 流式查询）、`stream`（流式查询）。不填则默认为同步查询 |

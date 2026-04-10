@@ -621,8 +621,8 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 	}
 
 	// 构建响应
-	// total_count统一设置为实际返回的数据条数
-	totalCount := int64(len(entries))
+	// total_count设置为OpenSearch返回的总数据量
+	totalCount := searchResp.Hits.Total.Value
 
 	response := &interfaces.SQLQueryResponse{
 		Columns:    columns,

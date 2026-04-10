@@ -60,6 +60,9 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 	ctx, span := ar_trace.Tracer.Start(ctx, "SQLQueryExecute")
 	defer span.End()
 
+	// 记录请求参数
+	logger.Infof("SQLQueryRequest - query_type: %s, resource_type: %s, query: %v", req.QueryType, req.ResourceType, req.Query)
+
 	// 1. 校验请求
 	if err := s.validateRequest(ctx, req); err != nil {
 		span.SetStatus(codes.Error, "validate request failed")
@@ -221,7 +224,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 			}
 
 			// 直接执行SQL，不进行转换
-			result, err := s.executeSQL(ctx, catalog, replacedSQL)
+			result, err := s.executeSQLWithQueryType(ctx, catalog, replacedSQL, req.QueryType)
 			if err != nil {
 				return nil, err
 			}
@@ -298,7 +301,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 	}
 
 	// 11. 执行转换后的SQL
-	result, err := s.executeSQL(ctx, dataSource, finalSQL)
+	result, err := s.executeSQLWithQueryType(ctx, dataSource, finalSQL, req.QueryType)
 	if err != nil {
 		return nil, err
 	}
@@ -453,6 +456,7 @@ func (s *sqlQueryService) checkSameDataSource(ctx context.Context, resourceIds [
 // replaceResourceIdWithSchemaTable 将resource_id替换为catalog.schema.table格式
 func (s *sqlQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, sql any, resourceIds []string, catalog *interfaces.Catalog) (string, error) {
 	replacedSQL := sql.(string)
+	logger.Infof("Before replace - sql: %s, resource_ids: %v", replacedSQL, resourceIds)
 
 	for _, resourceId := range resourceIds {
 		// 获取资源信息
@@ -476,11 +480,20 @@ func (s *sqlQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, 
 		replacedSQL = regexp.MustCompile(regexp.QuoteMeta(placeholder2)).ReplaceAllString(replacedSQL, resource.SourceIdentifier)
 	}
 
+	logger.Infof("After replace - sql: %s", replacedSQL)
 	return replacedSQL, nil
 }
 
 // executeSQL 执行SQL查询
 func (s *sqlQueryService) executeSQL(ctx context.Context, catalog *interfaces.Catalog, sql string) (*interfaces.SQLQueryResponse, error) {
+	return s.executeSQLWithQueryType(ctx, catalog, sql, "")
+}
+
+// executeSQLWithQueryType 执行SQL查询并记录日志
+func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *interfaces.Catalog, sql string, queryType string) (*interfaces.SQLQueryResponse, error) {
+	// 打印SQL日志，包含查询类型
+	logger.Infof("Executing %s query - sql: %s, catalog: %s", queryType, sql, catalog.Name)
+
 	// 创建connector
 	connector, err := factory.GetFactory().CreateConnectorInstance(ctx, catalog.ConnectorType, catalog.ConnectorCfg)
 	if err != nil {
@@ -509,6 +522,7 @@ func (s *sqlQueryService) executeSQL(ctx context.Context, catalog *interfaces.Ca
 			WithErrorDetails(err.Error())
 	}
 
+	logger.Infof("SQL query executed successfully - query_type: %s, returned rows: %d", queryType, len(result.Entries))
 	return result, nil
 }
 
@@ -540,7 +554,7 @@ func (s *sqlQueryService) executeNativeSQL(ctx context.Context, req *interfaces.
 	}
 
 	// 直接执行SQL，不添加任何LIMIT限制
-	result, err := s.executeSQL(ctx, catalog, sql)
+	result, err := s.executeSQLWithQueryType(ctx, catalog, sql, req.QueryType)
 	if err != nil {
 		return nil, err
 	}
@@ -640,15 +654,25 @@ func (s *sqlQueryService) executeOpenSearchQuery(ctx context.Context, req *inter
 			WithErrorDetails(err.Error())
 	}
 
-	// 如果是流式查询，设置has_more
+	// 设置has_more
 	if isStreamQuery {
-		// 判断是否还有更多数据
+		// 流式查询：判断是否还有更多数据
 		size := 10 // 默认值
 		if s, ok := queryMap["size"].(float64); ok {
 			size = int(s)
 		}
 		result.Stats.HasMore = len(result.Entries) >= size
 		// search_after值已经由OpenSearch连接器在ExecuteRawQuery中设置
+	} else {
+		// 标准查询：判断是否还有更多数据
+		const maxStandardQuerySize = 10000
+		// 如果返回的数据量达到最大限制，说明可能还有更多数据
+		if len(result.Entries) >= maxStandardQuerySize {
+			result.Stats.HasMore = true
+		} else {
+			// 否则，比较返回的数据条数和总数据量
+			result.Stats.HasMore = int64(len(result.Entries)) < result.TotalCount
+		}
 	}
 
 	return result, nil
@@ -819,20 +843,30 @@ func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interf
 	var finalSQL string
 	// 匹配 LIMIT 子句（可能包含 OFFSET）
 	limitRegex := regexp.MustCompile(`(?i)\bLIMIT\s+(\d+)\s*(?:OFFSET\s+(\d+))?\s*$`)
+	logger.Infof("Before LIMIT/OFFSET processing - sql: %s", sqlParseResult.SQL)
+	logger.Infof("LIMIT regex match: %v", limitRegex.MatchString(sqlParseResult.SQL))
+
+	// 计算当前页应该返回的数据量
+	limitSize := currentSession.StreamSize
 	if limitRegex.MatchString(sqlParseResult.SQL) {
-		// 如果已经包含LIMIT子句，保留用户指定的LIMIT值，只添加或替换OFFSET
+		// 如果SQL中包含LIMIT子句，解析出原始LIMIT值
 		matches := limitRegex.FindStringSubmatch(sqlParseResult.SQL)
-		if len(matches) >= 2 {
-			userLimit := matches[1]
-			// 使用用户指定的LIMIT值，并添加或替换OFFSET
-			finalSQL = limitRegex.ReplaceAllString(sqlParseResult.SQL, fmt.Sprintf("LIMIT %s OFFSET %d", userLimit, currentSession.Offset))
-		} else {
-			// 如果正则匹配失败，使用StreamSize
-			finalSQL = limitRegex.ReplaceAllString(sqlParseResult.SQL, fmt.Sprintf("LIMIT %d OFFSET %d", currentSession.StreamSize, currentSession.Offset))
+		if len(matches) > 1 {
+			originalLimit := 0
+			fmt.Sscanf(matches[1], "%d", &originalLimit)
+			// 计算剩余需要返回的数据量
+			remaining := originalLimit - currentSession.Offset
+			if remaining > 0 && remaining < limitSize {
+				limitSize = remaining
+			}
 		}
+		// 使用计算后的limitSize替换用户指定的LIMIT值，并添加或替换OFFSET
+		finalSQL = limitRegex.ReplaceAllString(sqlParseResult.SQL, fmt.Sprintf("LIMIT %d OFFSET %d", limitSize, currentSession.Offset))
+		logger.Infof("Replaced existing LIMIT clause - finalSQL: %s", finalSQL)
 	} else {
 		// 如果没有包含LIMIT子句，使用StreamSize添加它
-		finalSQL = fmt.Sprintf("%s LIMIT %d OFFSET %d", sqlParseResult.SQL, currentSession.StreamSize, currentSession.Offset)
+		finalSQL = fmt.Sprintf("%s LIMIT %d OFFSET %d", sqlParseResult.SQL, limitSize, currentSession.Offset)
+		logger.Infof("Added new LIMIT clause - finalSQL: %s", finalSQL)
 	}
 
 	// 记录执行查询的详细信息
@@ -840,7 +874,7 @@ func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interf
 		currentSession.QueryID, currentSession.Offset, currentSession.StreamSize, finalSQL)
 
 	// 7. 使用会话中的catalog执行查询
-	result, err := s.executeSQL(ctx, currentSession.Catalog, finalSQL)
+	result, err := s.executeSQLWithQueryType(ctx, currentSession.Catalog, finalSQL, "stream")
 	if err != nil {
 		return nil, err
 	}
@@ -852,11 +886,16 @@ func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interf
 	// 设置已获取到的数据总数
 	result.Stats.Offset = currentSession.Offset
 
+	logger.Infof("Stream query result - query_id: %s, returned rows: %d, stream_size: %d, has_more: %v, offset: %d",
+		currentSession.QueryID, len(result.Entries), currentSession.StreamSize, result.Stats.HasMore, currentSession.Offset)
+
 	// 9. 只有在还有更多数据时才更新偏移量，为下一次查询做准备
 	if result.Stats.HasMore {
 		currentSession.Offset += currentSession.StreamSize
+		logger.Infof("Updated offset for next query - query_id: %s, new offset: %d", currentSession.QueryID, currentSession.Offset)
 	} else {
 		// 如果没有更多数据，删除会话，防止重复请求
+		logger.Infof("No more data - removing session - query_id: %s", currentSession.QueryID)
 		streamManager.RemoveSession(currentSession.QueryID)
 	}
 

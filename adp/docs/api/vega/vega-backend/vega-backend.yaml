@@ -452,9 +452,9 @@ definitions:
   interfaces.SQLQueryRequest:
     properties:
       query:
-        description: 查询语句，与query_id不能同时存在
+        description: 查询语句，与query_id不能同时存在，sql类查询为string，opensearch查询为object
         minLength: 1
-        type: string
+        type: any
       resource_type:
         description: 必填，数据源类型
         enum: [mariadb, mysql, opensearch, postgresql]
@@ -480,18 +480,14 @@ definitions:
         type: integer
       stream_size:
         description: 流式查询指定每批次返回的记录数，默认值10000
-        maximum: 100000
+        maximum: 10000
         minimum: 100
         type: integer
     required:
       - resource_type
     type: object
   interfaces.SQLQueryResponse:
-    properties:
-      columns:
-        description: 查询结果元数据
         items:
-          type: object
         type: array
       entries:
         description: 查询结果数据
