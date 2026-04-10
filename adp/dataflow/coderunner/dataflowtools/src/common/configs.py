@@ -5,7 +5,7 @@ import tempfile
 
 db_configs = {
     "type": os.getenv("DB_TYPE", "MariaDB"),
-    "name": os.getenv("DB_NAME", "adp"),
+    "name": os.getenv("DB_NAME", "kweaver"),
     "host": os.getenv("DB_HOST", "mariadb-mariadb-master.resource"),
     "port": os.getenv("DB_PORT", "3330"),
     "user": os.getenv("DB_USER", "anyshare"),
