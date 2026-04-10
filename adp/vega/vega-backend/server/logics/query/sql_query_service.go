@@ -484,11 +484,6 @@ func (s *sqlQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, 
 	return replacedSQL, nil
 }
 
-// executeSQL 执行SQL查询
-func (s *sqlQueryService) executeSQL(ctx context.Context, catalog *interfaces.Catalog, sql string) (*interfaces.SQLQueryResponse, error) {
-	return s.executeSQLWithQueryType(ctx, catalog, sql, "")
-}
-
 // executeSQLWithQueryType 执行SQL查询并记录日志
 func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *interfaces.Catalog, sql string, queryType string) (*interfaces.SQLQueryResponse, error) {
 	// 打印SQL日志，包含查询类型
@@ -853,7 +848,10 @@ func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interf
 		matches := limitRegex.FindStringSubmatch(sqlParseResult.SQL)
 		if len(matches) > 1 {
 			originalLimit := 0
-			fmt.Sscanf(matches[1], "%d", &originalLimit)
+			_, err := fmt.Sscanf(matches[1], "%d", &originalLimit)
+			if err != nil {
+				return nil, err
+			}
 			// 计算剩余需要返回的数据量
 			remaining := originalLimit - currentSession.Offset
 			if remaining > 0 && remaining < limitSize {

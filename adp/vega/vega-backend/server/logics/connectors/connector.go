@@ -70,9 +70,12 @@ type FilesetConnector interface {
 	Connector
 	// ListFilesets lists file and folder objects for discovery (typically one level per parent).
 	ListFilesets(ctx context.Context) ([]*interfaces.FilesetMeta, error)
-	// GetObjectDownloadInfo returns vendor-specific download instructions (e.g. presigned URL + headers).
+	// SearchFiles searches files based on query parameters.
 	// docID is the source object id (e.g. AnyShare gns id).
-	GetObjectDownloadInfo(ctx context.Context, resourceName, docID string) (map[string]any, error)
+	// keyword is the search keyword for fuzzy search.
+	// rows is the number of results to return.
+	// start is the starting index for pagination.
+	SearchFiles(ctx context.Context, docID, keyword string, rows, start int) ([]map[string]any, int64, error)
 }
 
 // TopicConnector defines the interface for message queue connectors.

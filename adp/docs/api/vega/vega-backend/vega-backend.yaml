@@ -220,8 +220,10 @@ definitions:
     properties:
       filter_condition: {}
       limit:
+        description: 返回结果的最大数量。对于AnyShare知识库类资源，limit不能大于100
         type: integer
       need_total:
+        description: 是否返回总数。对于AnyShare知识库类资源，只有第一页(offset=0)会返回
         type: boolean
       offset:
         type: integer
