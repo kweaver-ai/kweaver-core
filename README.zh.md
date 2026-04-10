@@ -44,7 +44,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 ```bash
 git clone https://github.com/kweaver-ai/kweaver-core.git
-cd kweaver/deploy
+cd kweaver-core/deploy
 chmod +x deploy.sh
 
 # 完整一键部署（推荐）
