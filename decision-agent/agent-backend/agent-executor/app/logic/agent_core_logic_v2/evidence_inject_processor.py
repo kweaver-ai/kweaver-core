@@ -638,32 +638,42 @@ def _inject_evidence_to_progress(
         progress_array = answer_dict["_progress"]
 
         if isinstance(progress_array, list) and progress_array:
-            latest_progress = progress_array[-1]
+            # 从后往前查找最后一个 LLM stage 的 progress 条目
+            # 因为最后一个可能是 "assign" stage，我们需要找到 LLM 生成的文本
+            llm_progress_index = None
+            for i in range(len(progress_array) - 1, -1, -1):
+                if progress_array[i].get("stage") == "llm":
+                    llm_progress_index = i
+                    break
 
-            if latest_progress.get("stage") == "llm":
-                latest_progress["_evidence"] = evidence_meta
+            if llm_progress_index is not None:
+                llm_progress = progress_array[llm_progress_index]
+                llm_progress["_evidence"] = evidence_meta
                 StandLogger.info_log(
-                    f"[_inject_evidence_to_progress] ✅ Injected into item['answer']['_progress'][-1]: "
-                    f"stage={latest_progress.get('stage')}, "
-                    f"evidence_count={len(evidence_meta)}"
+                    f"[_inject_evidence_to_progress] ✅ Injected into item['answer']['_progress'][{llm_progress_index}]: "
+                    f"stage={llm_progress.get('stage')}, "
+                    f"evidence_count={len(evidence_meta)}, "
+                    f"answer_preview={str(llm_progress.get('answer', ''))[:50]}..."
                 )
 
                 # 同时注入到 item["_progress"]（如果存在且是不同的对象）
                 if "_progress" in item and isinstance(item["_progress"], list):
                     top_progress_array = item["_progress"]
-                    if top_progress_array and len(top_progress_array) > 0:
-                        if top_progress_array[-1] is not latest_progress:
-                            for idx, p in enumerate(top_progress_array):
-                                if (p.get("stage") == "llm" and
-                                    p.get("id") == latest_progress.get("id")):
-                                    p["_evidence"] = evidence_meta
-                                    StandLogger.info_log(
-                                        f"[_inject_evidence_to_progress] ✅ Injected into item['_progress'][{idx}]"
-                                    )
-                                    break
+                    # 找到对应的 LLM stage 条目
+                    for idx, p in enumerate(top_progress_array):
+                        if p.get("stage") == "llm":
+                            # 通过 answer 内容匹配（因为 id 可能不同）
+                            if (p.get("answer") == llm_progress.get("answer") or
+                                p.get("id") == llm_progress.get("id")):
+                                p["_evidence"] = evidence_meta
+                                StandLogger.info_log(
+                                    f"[_inject_evidence_to_progress] ✅ Injected into item['_progress'][{idx}]"
+                                )
+                                break
             else:
                 StandLogger.info_log(
-                    f"[_inject_evidence_to_progress] ⚠️ Latest progress is not LLM stage: {latest_progress.get('stage')}"
+                    f"[_inject_evidence_to_progress] ⚠️ No LLM stage found in progress array "
+                    f"(total={len(progress_array)}, stages={[p.get('stage') for p in progress_array[-5:]]})"
                 )
         else:
             StandLogger.info_log(
