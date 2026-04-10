@@ -248,38 +248,3 @@ CREATE INDEX IF NOT EXISTS t_sandbox_execution_idx_status ON t_sandbox_execution
 CREATE INDEX IF NOT EXISTS t_sandbox_execution_idx_created_at ON t_sandbox_execution(f_created_at);
 CREATE INDEX IF NOT EXISTS t_sandbox_execution_idx_deleted_at ON t_sandbox_execution(f_deleted_at);
 CREATE INDEX IF NOT EXISTS t_sandbox_execution_idx_created_by ON t_sandbox_execution(f_created_by);
-
--- ================================================================
--- Triggers for ON UPDATE behavior
--- ================================================================
-CREATE OR REPLACE TRIGGER trg_t_sandbox_template_updated_at
-BEFORE UPDATE ON t_sandbox_template
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
-CREATE OR REPLACE TRIGGER trg_t_sandbox_runtime_node_updated_at
-BEFORE UPDATE ON t_sandbox_runtime_node
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
-CREATE OR REPLACE TRIGGER trg_t_sandbox_session_updated_at
-BEFORE UPDATE ON t_sandbox_session
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
-CREATE OR REPLACE TRIGGER trg_t_sandbox_execution_updated_at
-BEFORE UPDATE ON t_sandbox_execution
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/

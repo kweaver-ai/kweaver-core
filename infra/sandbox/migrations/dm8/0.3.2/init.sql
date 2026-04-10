@@ -291,44 +291,4 @@ CREATE INDEX t_sandbox_execution_idx_created_at ON t_sandbox_execution(f_created
 CREATE INDEX t_sandbox_execution_idx_deleted_at ON t_sandbox_execution(f_deleted_at);
 CREATE INDEX t_sandbox_execution_idx_created_by ON t_sandbox_execution(f_created_by);
 
--- ================================================================
--- Triggers for ON UPDATE behavior (updated_at 自动更新)
--- ================================================================
-
--- Trigger for t_sandbox_template.updated_at
-CREATE OR REPLACE TRIGGER trg_t_sandbox_template_updated_at
-BEFORE UPDATE ON t_sandbox_template
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
--- Trigger for t_sandbox_runtime_node.updated_at
-CREATE OR REPLACE TRIGGER trg_t_sandbox_runtime_node_updated_at
-BEFORE UPDATE ON t_sandbox_runtime_node
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
--- Trigger for t_sandbox_session.updated_at
-CREATE OR REPLACE TRIGGER trg_t_sandbox_session_updated_at
-BEFORE UPDATE ON t_sandbox_session
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
--- Trigger for t_sandbox_execution.updated_at
-CREATE OR REPLACE TRIGGER trg_t_sandbox_execution_updated_at
-BEFORE UPDATE ON t_sandbox_execution
-FOR EACH ROW
-BEGIN
-    NEW.f_updated_at := TIMESTAMPDIFF2(SECOND, '1970-01-01 00:00:00', SYSDATE) * 1000;
-END;
-/
-
 COMMIT;
