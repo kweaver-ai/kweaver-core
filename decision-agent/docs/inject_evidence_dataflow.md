@@ -357,7 +357,65 @@ StandLogger.info_log(
 3. ✅ `_progress` 中有 `stage="skill"` 条目
 4. ✅ 工具结果是 dict 类型
 
-## 9. 关键文件
+## 9. 已修复问题
+
+### 9.1 修复 actual_text_type=dict 导致注入失败
+
+**问题**: `create_evidence_injection_stream` 中 `answer.get("answer")` 返回 dict 而非字符串
+
+**原因**:
+- `item["answer"]` 包含所有字段（query, header, _progress, answer...）
+- `answer["answer"]` 可能仍是 dict（包含其他元数据）
+- 导致 `text_len=0`, `should_process=False`
+
+**修复** (`evidence_inject_processor.py`):
+```python
+# 增强的文本提取逻辑
+if isinstance(answer, dict):
+    candidate = answer.get("answer", "")
+    if isinstance(candidate, str):
+        actual_text = candidate
+    elif isinstance(candidate, dict):
+        # 从 _progress 获取最新的 LLM stage answer
+        progress_array = item.get("_progress", [])
+        if progress_array:
+            for p in reversed(progress_array):
+                if p.get("stage") == "llm":
+                    p_answer = p.get("answer")
+                    if isinstance(p_answer, str):
+                        actual_text = p_answer
+                        break
+```
+
+### 9.2 增强 _fallback_extraction 实体提取能力
+
+**问题**: 规则回退只能从 `nodes` 字段提取实体，对其他格式无效
+
+**修复** (`evidence_prepare.py`):
+- 新增从 `name` 字段提取（用于 agent 等实体）
+- 新增从 `list` 字段提取
+- 新增从 `data` 字段提取
+
+```python
+# 从 name 字段提取（如 agent 名称）
+name = tool_call_result.get("name")
+if name and isinstance(name, str):
+    evidences.append({
+        "object_type_name": name,
+        "object_type_id": "ot_agent",
+        "score": 0.9,
+        "_source": "fallback_name_field",
+    })
+```
+
+### 9.3 增强 _check_and_prepare_evidence 日志诊断
+
+**修复** (`interrupt_utils.py`):
+- 添加详细的 progress entry 扫描日志
+- 显示每个 stage 和 skill_info 的内容
+- 便于诊断为什么没有找到工具结果
+
+## 10. 关键文件
 
 | 文件 | 作用 |
 |------|------|
