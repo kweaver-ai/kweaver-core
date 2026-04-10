@@ -347,7 +347,17 @@ StandLogger.info_log(
 - **匹配性能**: 对每个 LLM 输出都进行全文匹配，O(n*m) 复杂度
 - **Progress 数组**: 随着对话变长，_progress 数组会增长
 
-## 8. 关键文件
+## 8. evidence_prepare 调用条件
+
+详见: [evidence_prepare_call_conditions.md](evidence_prepare_call_conditions.md)
+
+**简要**: 只有满足以下所有条件才会调用:
+1. ✅ `enable_evidence_injection = true`
+2. ✅ item 包含 `_progress` 数组
+3. ✅ `_progress` 中有 `stage="skill"` 条目
+4. ✅ 工具结果是 dict 类型
+
+## 9. 关键文件
 
 | 文件 | 作用 |
 |------|------|
