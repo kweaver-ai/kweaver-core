@@ -486,9 +486,10 @@ async def create_evidence_injection_stream(
         )
 
         # 判断是否应该处理：有工具结果 + 有足够长的文本
+        # 阈值设为 5，允许对短文本进行证据标注
         should_process = (
             current_tool_results and
-            text_len > 20
+            text_len > 5
         )
 
         StandLogger.info_log(
@@ -549,9 +550,12 @@ async def create_evidence_injection_stream(
 
                 # 无论是否提取到证据，都添加 _evidence 字段（空字典作为占位）
                 # 只对 LLM stage 的 progress 条目添加
-                if "_progress" in item and isinstance(item["_progress"], list):
-                    if item["_progress"]:
-                        latest_progress = item["_progress"][-1]
+                # _progress 在 answer 字典中
+                answer_dict = item.get("answer")
+                if isinstance(answer_dict, dict) and "_progress" in answer_dict:
+                    progress_array = answer_dict["_progress"]
+                    if isinstance(progress_array, list) and progress_array:
+                        latest_progress = progress_array[-1]
                         # 只对 LLM stage 添加 _evidence
                         if latest_progress.get("stage") == "llm":
                             latest_progress["_evidence"] = evidence_meta
@@ -565,8 +569,8 @@ async def create_evidence_injection_stream(
                             # 验证注入是否成功
                             StandLogger.info_log(
                                 f"[EvidenceInject] Verification: "
-                                f"item['_progress'][-1] has _evidence: {'_evidence' in item['_progress'][-1]}, "
-                                f"keys={list(item['_progress'][-1].keys()) if item['_progress'] else 'N/A'}"
+                                f"item['answer']['_progress'][-1] has _evidence: {'_evidence' in latest_progress}, "
+                                f"keys={list(latest_progress.keys())}"
                             )
 
             except Exception as e:
