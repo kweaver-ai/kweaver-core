@@ -47,7 +47,7 @@ def check_and_raise_interrupt(item: Dict[str, Any]) -> None:
         raise ToolInterruptException(interrupt_info)
 
 
-def _check_and_prepare_evidence(
+async def _check_and_prepare_evidence(
     item: Dict[str, Any],
     evidence_store_key: Optional[str],
 ) -> Optional[str]:
@@ -155,8 +155,6 @@ def _check_and_prepare_evidence(
             )
 
             try:
-                import asyncio
-
                 StandLogger.info_log(
                     f"[_check_and_prepare_evidence] About to call evidence_prepare, "
                     f"result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}"
@@ -169,24 +167,22 @@ def _check_and_prepare_evidence(
                     f"llm_extraction_model='{getattr(Config.features, 'llm_extraction_model', '')}'"
                 )
 
-                loop = asyncio.get_event_loop()
-                prepare_result = loop.run_until_complete(
-                    evidence_prepare(
-                        tool_call_result=result,
-                        config={
-                            "llm_extraction_timeout": getattr(
-                                Config.features,
-                                "llm_extraction_timeout",
-                                30,
-                            ),
-                            "llm_extraction_model": getattr(
-                                Config.features,
-                                "llm_extraction_model",
-                                "",
-                            ),
-                        },
-                        context={"tool_name": tool_name},
-                    )
+                # 直接使用 await 调用 async 函数
+                prepare_result = await evidence_prepare(
+                    tool_call_result=result,
+                    config={
+                        "llm_extraction_timeout": getattr(
+                            Config.features,
+                            "llm_extraction_timeout",
+                            30,
+                        ),
+                        "llm_extraction_model": getattr(
+                            Config.features,
+                            "llm_extraction_model",
+                            "",
+                        ),
+                    },
+                    context={"tool_name": tool_name},
                 )
 
                 StandLogger.info_log(
@@ -298,7 +294,7 @@ async def process_arun_loop(
 
         # 检查并准备证据（在工具完成后）
         before_evidence_key = current_evidence_key
-        current_evidence_key = _check_and_prepare_evidence(
+        current_evidence_key = await _check_and_prepare_evidence(
             item, current_evidence_key
         )
 
