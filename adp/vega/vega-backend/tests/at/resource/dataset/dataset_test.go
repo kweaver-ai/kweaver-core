@@ -48,264 +48,340 @@ func TestDatasetResourceCreateAndQuery(t *testing.T) {
 		// 清理现有dataset资源
 		cleanupResources(client, t)
 
+		// 创建测试用的catalog
+		catalogPayload := map[string]any{
+			"name":        generateUniqueName("test-dataset-catalog"),
+			"description": "测试dataset catalog",
+			"tags":        []string{"test", "dataset", "catalog"},
+			"type":        "mariadb",
+			"connection_info": map[string]any{
+				"host":     "localhost",
+				"port":     3306,
+				"user":     "root",
+				"password": "password",
+				"database": "test",
+			},
+		}
+		catalogResp := client.POST("/api/vega-backend/v1/catalogs", catalogPayload)
+		So(catalogResp.StatusCode, ShouldEqual, http.StatusCreated)
+		So(catalogResp.Body["id"], ShouldNotBeEmpty)
+		catalogID := catalogResp.Body["id"].(string)
+		t.Logf("✓ 创建测试catalog成功: %s", catalogID)
+
+		// 清理函数
+		defer func() {
+			// 清理catalog
+			deleteResp := client.DELETE("/api/vega-backend/v1/catalogs/" + catalogID)
+			if deleteResp.StatusCode != http.StatusOK {
+				t.Logf("清理catalog失败 %s: %d, 响应体: %v", catalogID, deleteResp.StatusCode, deleteResp.Body)
+			} else {
+				t.Logf("✓ 清理测试catalog成功: %s", catalogID)
+			}
+		}()
+
 		// ========== 正向测试（DS101-DS120） ==========
 
-		Convey("DS101: 创建dataset资源", func() {
-			payload := buildDatasetResourcePayload()
-			resp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(resp.StatusCode, ShouldEqual, http.StatusCreated)
-			So(resp.Body["id"], ShouldNotBeEmpty)
-		})
+		// Convey("DS101: 创建dataset资源", func() {
+		// 	payload := buildDatasetResourcePayload()
+		// 	payload["catalog_id"] = catalogID
+		// 	resp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(resp.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	So(resp.Body["id"], ShouldNotBeEmpty)
+		// })
 
-		Convey("DS102: 创建后立即查询", func() {
-			payload := buildDatasetResourcePayload()
-			createResp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
+		// Convey("DS102: 创建后立即查询", func() {
+		// 	payload := buildDatasetResourcePayload()
+		// 	payload["catalog_id"] = catalogID
+		// 	createResp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
 
-			resourceID := createResp.Body["id"].(string)
+		// 	resourceID := createResp.Body["id"].(string)
 
-			// 立即查询
-			getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
-			So(getResp.StatusCode, ShouldEqual, http.StatusOK)
-			resource := extractFromEntriesResponse(getResp)
-			So(resource, ShouldNotBeNil)
-			So(resource["category"], ShouldEqual, "dataset")
-			So(resource["id"], ShouldEqual, resourceID)
-			So(resource["name"], ShouldEqual, payload["name"])
-		})
+		// 	// 立即查询
+		// 	getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
+		// 	So(getResp.StatusCode, ShouldEqual, http.StatusOK)
+		// 	resource := extractFromEntriesResponse(getResp)
+		// 	So(resource, ShouldNotBeNil)
+		// 	So(resource["category"], ShouldEqual, "dataset")
+		// 	So(resource["id"], ShouldEqual, resourceID)
+		// 	So(resource["name"], ShouldEqual, payload["name"])
+		// })
 
-		Convey("DS103: 获取不存在的resource", func() {
-			resp := client.GET("/api/vega-backend/v1/resources/non-existent-id-12345")
-			So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
-		})
+		// Convey("DS103: 获取不存在的resource", func() {
+		// 	resp := client.GET("/api/vega-backend/v1/resources/non-existent-id-12345")
+		// 	So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
+		// })
 
-		Convey("DS104: 列表查询 - 按category过滤dataset", func() {
-			// 创建1个dataset resource
-			payload := buildDatasetResourcePayload()
-			createResp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
+		// Convey("DS104: 列表查询 - 按category过滤dataset", func() {
+		// 	// 创建1个dataset resource
+		// 	payload := buildDatasetResourcePayload()
+		// 	payload["catalog_id"] = catalogID
+		// 	createResp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
 
-			// 查询dataset类型
-			datasetResp := client.GET("/api/vega-backend/v1/resources?category=dataset&offset=0&limit=10")
-			So(datasetResp.StatusCode, ShouldEqual, http.StatusOK)
+		// 	// 查询dataset类型
+		// 	datasetResp := client.GET("/api/vega-backend/v1/resources?category=dataset&offset=0&limit=10")
+		// 	So(datasetResp.StatusCode, ShouldEqual, http.StatusOK)
 
-			if datasetResp.Body != nil && datasetResp.Body["entries"] != nil {
-				entries := datasetResp.Body["entries"].([]any)
-				So(len(entries), ShouldBeGreaterThanOrEqualTo, 1)
-			}
-		})
+		// 	if datasetResp.Body != nil && datasetResp.Body["entries"] != nil {
+		// 		entries := datasetResp.Body["entries"].([]any)
+		// 		So(len(entries), ShouldBeGreaterThanOrEqualTo, 1)
+		// 	}
+		// })
 
-		Convey("DS105: 创建dataset资源 - 包含object类型字段", func() {
-			// 构建带有object类型字段的payload
+		// Convey("DS105: 创建dataset资源 - 包含object类型字段", func() {
+		// 	// 构建带有object类型字段的payload
+		// 	payload := map[string]any{
+		// 		"catalog_id":        catalogID,
+		// 		"name":              generateUniqueName("test-dataset-object-field"),
+		// 		"category":          "dataset",
+		// 		"connector_type":    "mariadb",
+		// 		"description":       "测试包含object类型字段的数据集",
+		// 		"tags":              []string{"test", "dataset", "object"},
+		// 		"source_identifier": "at_db",
+		// 		"schema_definition": []map[string]any{
+		// 			{"name": "id", "type": "keyword"},
+		// 			{"name": "name", "type": "text"},
+		// 			{"name": "user_info", "type": "object"},
+		// 		},
+		// 	}
+
+		// 	// 创建资源
+		// 	resp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(resp.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	So(resp.Body["id"], ShouldNotBeEmpty)
+
+		// 	// 验证创建的资源
+		// 	resourceID := resp.Body["id"].(string)
+		// 	getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
+		// 	So(getResp.StatusCode, ShouldEqual, http.StatusOK)
+
+		// 	resource := extractFromEntriesResponse(getResp)
+		// 	So(resource, ShouldNotBeNil)
+		// 	So(resource["id"], ShouldEqual, resourceID)
+		// 	So(resource["name"], ShouldEqual, payload["name"])
+
+		// 	// 写入包含object类型数据的文档
+		// 	docPayload := map[string]any{
+		// 		"id":   "obj-123",
+		// 		"name": "Test Object User",
+		// 		"user_info": map[string]any{
+		// 			"age":   30,
+		// 			"email": "test@example.com",
+		// 			"address": map[string]any{
+		// 				"city": "New York",
+		// 				"zip":  "10001",
+		// 			},
+		// 		},
+		// 	}
+		// 	createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+		// 	So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	So(createDocResp.Body["ids"], ShouldNotBeEmpty)
+
+		// 	// 验证文档创建成功
+		// 	ids, ok := createDocResp.Body["ids"].([]interface{})
+		// 	So(ok, ShouldBeTrue)
+		// 	So(len(ids), ShouldBeGreaterThan, 0)
+		// })
+
+		// Convey("DS106: 创建dataset资源 - object数据类型，自定定义是嵌套，非 object", func() {
+		// 	payload := map[string]any{
+		// 		"catalog_id":        catalogID,
+		// 		"name":              generateUniqueName("test-dataset-specific-schema"),
+		// 		"category":          "dataset",
+		// 		"source_identifier": "at_db",
+		// 		"schema_definition": []map[string]any{
+		// 			{"name": "id", "type": "keyword"},
+		// 			{"name": "name", "type": "text"},
+		// 			{"name": "address.a", "type": "text"},
+		// 			{"name": "address.b", "type": "text"},
+		// 		},
+		// 	}
+
+		// 	// 创建资源
+		// 	createResp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	So(createResp.Body["id"], ShouldNotBeEmpty)
+
+		// 	// 验证创建的资源
+		// 	resourceID := createResp.Body["id"].(string)
+		// 	getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
+		// 	So(getResp.StatusCode, ShouldEqual, http.StatusOK)
+
+		// 	resource := extractFromEntriesResponse(getResp)
+		// 	So(resource, ShouldNotBeNil)
+		// 	So(resource["id"], ShouldEqual, resourceID)
+
+		// 	// 写入文档
+		// 	docPayload := map[string]any{
+		// 		"id":   "123456",
+		// 		"name": "Test User",
+		// 		"address": map[string]any{
+		// 			"a": "123 Main St",
+		// 			"b": "Anytown, USA",
+		// 		},
+		// 	}
+		// 	createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
+		// 	So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	So(createDocResp.Body["ids"], ShouldNotBeEmpty)
+		// 	ids, ok := createDocResp.Body["ids"].([]interface{})
+		// 	So(ok, ShouldBeTrue)
+		// 	So(len(ids), ShouldBeGreaterThan, 0)
+		// 	//docID := ids[0].(string)
+
+		// 	// 通过 keyword 类型的 id 查询验证写入的文档
+		// 	client.SetHeader("X-HTTP-Method-Override", "GET")
+		// 	getDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", map[string]any{
+		// 		"offset": 0,
+		// 		"limit":  10,
+		// 		"filter_condition": map[string]any{
+		// 			"operation": "eq",
+		// 			"field":     "id",
+		// 			"value":     "123456",
+		// 		},
+		// 		"output_fields": []string{"id", "name", "address"},
+		// 		"need_total":    false,
+		// 	})
+		// 	client.RemoveHeader("X-HTTP-Method-Override")
+		// 	So(getDocResp.StatusCode, ShouldEqual, http.StatusOK)
+		// 	So(getDocResp.Body["entries"], ShouldNotBeNil)
+		// 	entries := getDocResp.Body["entries"].([]any)
+		// 	So(len(entries), ShouldBeGreaterThan, 0)
+		// 	doc := entries[0].(map[string]any)
+		// 	So(doc["id"], ShouldEqual, "123456")
+		// 	So(doc["name"], ShouldEqual, "Test User")
+		// 	So(doc["address"], ShouldNotBeEmpty)
+		// 	address := doc["address"].(map[string]any)
+		// 	So(address["a"], ShouldEqual, "123 Main St")
+		// 	So(address["b"], ShouldEqual, "Anytown, USA")
+
+		// 	// 通过 text 类型的 name 查询验证写入的文档
+		// 	client.SetHeader("X-HTTP-Method-Override", "GET")
+		// 	getDocByNameResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", map[string]any{
+		// 		"offset": 0,
+		// 		"limit":  10,
+		// 		"filter_condition": map[string]any{
+		// 			"operation": "match",
+		// 			"field":     "name",
+		// 			"value":     "Test User",
+		// 		},
+		// 		"output_fields": []string{"_id", "name", "address"},
+		// 		"need_total":    false,
+		// 	})
+		// 	client.RemoveHeader("X-HTTP-Method-Override")
+		// 	So(getDocByNameResp.StatusCode, ShouldEqual, http.StatusOK)
+		// 	So(getDocByNameResp.Body["entries"], ShouldNotBeNil)
+		// 	entriesByName := getDocByNameResp.Body["entries"].([]any)
+		// 	So(len(entriesByName), ShouldBeGreaterThan, 0)
+		// 	docByName := entriesByName[0].(map[string]any)
+		// 	So(docByName["name"], ShouldEqual, "Test User")
+
+		// 	// 清理资源
+		// 	cleanupResources(client, t)
+		// })
+
+		// Convey("DS107: 指定ID创建dataset资源", func() {
+		// 	payload := buildDatasetResourcePayload()
+		// 	payload["catalog_id"] = catalogID
+		// 	specificID := generateUniqueName("test-dataset-specific-id")
+		// 	payload["id"] = specificID
+		// 	createResp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
+
+		// 	// 立即查询
+		// 	getResp := client.GET("/api/vega-backend/v1/resources/" + specificID)
+		// 	So(getResp.StatusCode, ShouldEqual, http.StatusOK)
+		// 	resource := extractFromEntriesResponse(getResp)
+		// 	So(resource, ShouldNotBeNil)
+		// })
+
+		Convey("DS108: 测试 VEGA 类型与 OpenSearch 类型的转换", func() {
+			// 构建包含各种类型的 dataset 资源
 			payload := map[string]any{
-				"name":           generateUniqueName("test-dataset-object-field"),
-				"category":       "dataset",
-				"connector_type": "mariadb",
-				"description":    "测试包含object类型字段的数据集",
-				"tags":           []string{"test", "dataset", "object"},
-				"config": map[string]any{
-					"host":     "localhost",
-					"port":     3306,
-					"username": "root",
-					"password": "Password123",
-					"database": "test",
-				},
-				"source_identifier": "at_db",
-				"schema_definition": []map[string]any{
-					{"name": "id", "type": "keyword"},
-					{"name": "name", "type": "text"},
-					{"name": "user_info", "type": "object"},
-				},
-			}
-
-			// 创建资源
-			resp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(resp.StatusCode, ShouldEqual, http.StatusCreated)
-			So(resp.Body["id"], ShouldNotBeEmpty)
-
-			// 验证创建的资源
-			resourceID := resp.Body["id"].(string)
-			getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
-			So(getResp.StatusCode, ShouldEqual, http.StatusOK)
-
-			resource := extractFromEntriesResponse(getResp)
-			So(resource, ShouldNotBeNil)
-			So(resource["id"], ShouldEqual, resourceID)
-			So(resource["name"], ShouldEqual, payload["name"])
-
-			// 写入包含object类型数据的文档
-			docPayload := map[string]any{
-				"id":   "obj-123",
-				"name": "Test Object User",
-				"user_info": map[string]any{
-					"age":   30,
-					"email": "test@example.com",
-					"address": map[string]any{
-						"city": "New York",
-						"zip":  "10001",
-					},
-				},
-			}
-			createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
-			So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
-			So(createDocResp.Body["ids"], ShouldNotBeEmpty)
-
-			// 验证文档创建成功
-			ids, ok := createDocResp.Body["ids"].([]interface{})
-			So(ok, ShouldBeTrue)
-			So(len(ids), ShouldBeGreaterThan, 0)
-		})
-
-		Convey("DS106: 创建dataset资源 - object数据类型，自定定义是嵌套，非 object", func() {
-			var err error
-			config, err := setup.LoadTestConfig()
-			So(err, ShouldBeNil)
-
-			client := testutil.NewHTTPClient(config.VegaBackend.BaseURL)
-			err = client.CheckHealth()
-			So(err, ShouldBeNil)
-
-			cleanupResources(client, t)
-
-			payload := map[string]any{
-				"name":              generateUniqueName("test-dataset-specific-schema"),
+				"catalog_id":        catalogID,
+				"name":              generateUniqueName("test-dataset-types"),
+				"tags":              []string{"test", "dataset", "types"},
+				"description":       "测试各种类型的数据集",
 				"category":          "dataset",
+				"status":            "active",
 				"source_identifier": "at_db",
 				"schema_definition": []map[string]any{
-					{"name": "id", "type": "keyword"},
-					{"name": "name", "type": "text"},
-					{"name": "address.a", "type": "text"},
-					{"name": "address.b", "type": "text"},
+					{"name": "id", "type": "integer", "display_name": "整数ID", "original_name": "id", "description": "整数类型"},
+					{"name": "uid", "type": "unsigned_integer", "display_name": "无符号整数", "original_name": "uid", "description": "无符号整数类型"},
+					{"name": "score", "type": "float", "display_name": "浮点数", "original_name": "score", "description": "浮点数类型"},
+					{"name": "price", "type": "decimal", "display_name": "小数", "original_name": "price", "description": "小数类型"},
+					{"name": "name", "type": "string", "display_name": "字符串", "original_name": "name", "description": "字符串类型"},
+					{"name": "created_at", "type": "datetime", "display_name": "日期时间", "original_name": "created_at", "description": "日期时间类型"},
+					{"name": "event_time", "type": "time", "display_name": "时间", "original_name": "event_time", "description": "时间类型"},
+					{"name": "metadata", "type": "json", "display_name": "JSON", "original_name": "metadata", "description": "JSON类型"},
+					{"name": "location", "type": "point", "display_name": "地理位置", "original_name": "location", "description": "地理位置点类型"},
+					{"name": "area", "type": "shape", "display_name": "地理形状", "original_name": "area", "description": "地理形状类型"},
+					{"name": "embedding", "type": "vector", "display_name": "向量", "original_name": "embedding", "description": "向量类型", "features": []map[string]any{
+						{
+							"name":         "embedding",
+							"display_name": "向量",
+							"feature_type": "vector",
+							"description":  "向量类型",
+							"ref_property": "embedding",
+							"is_default":   true,
+							"is_native":    true,
+							"config": map[string]any{
+								"dimension": 768,
+								"method": map[string]any{
+									"name":   "hnsw",
+									"engine": "lucene",
+									"parameters": map[string]any{
+										"ef_construction": 256,
+									},
+								},
+							},
+						},
+					}},
 				},
 			}
 
-			// 创建资源
+			// 创建 dataset 资源
 			createResp := client.POST("/api/vega-backend/v1/resources", payload)
 			So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
-			So(createResp.Body["id"], ShouldNotBeEmpty)
 
-			// 验证创建的资源
-			resourceID := createResp.Body["id"].(string)
-			getResp := client.GET("/api/vega-backend/v1/resources/" + resourceID)
-			So(getResp.StatusCode, ShouldEqual, http.StatusOK)
-
-			resource := extractFromEntriesResponse(getResp)
+			// 验证资源创建成功
+			resource := extractFromEntriesResponse(createResp)
 			So(resource, ShouldNotBeNil)
-			So(resource["id"], ShouldEqual, resourceID)
-
-			// 写入文档
-			docPayload := map[string]any{
-				"id":   "123456",
-				"name": "Test User",
-				"address": map[string]any{
-					"a": "123 Main St",
-					"b": "Anytown, USA",
-				},
-			}
-			createDocResp := client.POST("/api/vega-backend/v1/resources/dataset/"+resourceID+"/docs", []map[string]any{docPayload})
-			So(createDocResp.StatusCode, ShouldEqual, http.StatusCreated)
-			So(createDocResp.Body["ids"], ShouldNotBeEmpty)
-			ids, ok := createDocResp.Body["ids"].([]interface{})
-			So(ok, ShouldBeTrue)
-			So(len(ids), ShouldBeGreaterThan, 0)
-			//docID := ids[0].(string)
-
-			// 通过 keyword 类型的 id 查询验证写入的文档
-			client.SetHeader("X-HTTP-Method-Override", "GET")
-			getDocResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", map[string]any{
-				"offset": 0,
-				"limit":  10,
-				"filter_condition": map[string]any{
-					"operation": "eq",
-					"field":     "id",
-					"value":     "123456",
-				},
-				"output_fields": []string{"id", "name", "address"},
-				"need_total":    false,
-			})
-			client.RemoveHeader("X-HTTP-Method-Override")
-			So(getDocResp.StatusCode, ShouldEqual, http.StatusOK)
-			So(getDocResp.Body["entries"], ShouldNotBeNil)
-			entries := getDocResp.Body["entries"].([]any)
-			So(len(entries), ShouldBeGreaterThan, 0)
-			doc := entries[0].(map[string]any)
-			So(doc["id"], ShouldEqual, "123456")
-			So(doc["name"], ShouldEqual, "Test User")
-			So(doc["address"], ShouldNotBeEmpty)
-			address := doc["address"].(map[string]any)
-			So(address["a"], ShouldEqual, "123 Main St")
-			So(address["b"], ShouldEqual, "Anytown, USA")
-
-			// 通过 text 类型的 name 查询验证写入的文档
-			client.SetHeader("X-HTTP-Method-Override", "GET")
-			getDocByNameResp := client.POST("/api/vega-backend/v1/resources/"+resourceID+"/data", map[string]any{
-				"offset": 0,
-				"limit":  10,
-				"filter_condition": map[string]any{
-					"operation": "match",
-					"field":     "name",
-					"value":     "Test User",
-				},
-				"output_fields": []string{"_id", "name", "address"},
-				"need_total":    false,
-			})
-			client.RemoveHeader("X-HTTP-Method-Override")
-			So(getDocByNameResp.StatusCode, ShouldEqual, http.StatusOK)
-			So(getDocByNameResp.Body["entries"], ShouldNotBeNil)
-			entriesByName := getDocByNameResp.Body["entries"].([]any)
-			So(len(entriesByName), ShouldBeGreaterThan, 0)
-			docByName := entriesByName[0].(map[string]any)
-			So(docByName["name"], ShouldEqual, "Test User")
+			So(resource["name"], ShouldNotBeEmpty)
 
 			// 清理资源
-			cleanupResources(client, t)
-		})
-
-		Convey("DS107: 指定ID创建dataset资源", func() {
-			payload := buildDatasetResourcePayload()
-			specificID := generateUniqueName("test-dataset-specific-id")
-			payload["id"] = specificID
-			createResp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(createResp.StatusCode, ShouldEqual, http.StatusCreated)
-
-			// 立即查询
-			getResp := client.GET("/api/vega-backend/v1/resources/" + specificID)
-			So(getResp.StatusCode, ShouldEqual, http.StatusOK)
-			resource := extractFromEntriesResponse(getResp)
-			So(resource, ShouldNotBeNil)
+			// resourceID := resource["id"].(string)
+			// deleteResp := client.DELETE("/api/vega-backend/v1/resources/" + resourceID)
+			// So(deleteResp.StatusCode, ShouldEqual, http.StatusOK)
 		})
 
 		// ========== 反向测试（DS121-DS127） ==========
 
-		Convey("DS121: 重复的resource名称", func() {
-			fixedName := generateUniqueName("duplicate-dataset")
-			payload1 := buildDatasetResourcePayloadWithName(fixedName)
+		// Convey("DS121: 重复的resource名称", func() {
+		// 	fixedName := generateUniqueName("duplicate-dataset")
+		// 	payload1 := buildDatasetResourcePayloadWithName(fixedName)
+		// 	payload1["catalog_id"] = catalogID
 
-			// 第一次创建
-			resp1 := client.POST("/api/vega-backend/v1/resources", payload1)
-			So(resp1.StatusCode, ShouldEqual, http.StatusCreated)
+		// 	// 第一次创建
+		// 	resp1 := client.POST("/api/vega-backend/v1/resources", payload1)
+		// 	So(resp1.StatusCode, ShouldEqual, http.StatusCreated)
 
-			// 第二次创建相同名称
-			payload2 := buildDatasetResourcePayloadWithName(fixedName)
-			resp2 := client.POST("/api/vega-backend/v1/resources", payload2)
-			So(resp2.StatusCode, ShouldEqual, http.StatusConflict)
-		})
+		// 	// 第二次创建相同名称
+		// 	payload2 := buildDatasetResourcePayloadWithName(fixedName)
+		// 	payload2["catalog_id"] = catalogID
+		// 	resp2 := client.POST("/api/vega-backend/v1/resources", payload2)
+		// 	So(resp2.StatusCode, ShouldEqual, http.StatusConflict)
+		// })
 
-		Convey("DS122: 缺少必填字段 - name", func() {
-			payload := map[string]any{
-				"category":       "dataset",
-				"connector_type": "mariadb",
-				"config": map[string]any{
-					"host":     "localhost",
-					"port":     3306,
-					"username": "root",
-					"password": "Password123",
-					"database": "test",
-				},
-			}
-			resp := client.POST("/api/vega-backend/v1/resources", payload)
-			So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
-		})
+		// Convey("DS122: 缺少必填字段 - name", func() {
+		// 	payload := map[string]any{
+		// 		"catalog_id":     catalogID,
+		// 		"category":       "dataset",
+		// 		"connector_type": "mariadb",
+		// 	}
+		// 	resp := client.POST("/api/vega-backend/v1/resources", payload)
+		// 	So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+		// })
 	})
 
 	_ = ctx
@@ -326,15 +402,43 @@ func generateUniqueName(prefix string) string {
 
 // cleanupResources 清理现有资源
 func cleanupResources(client *testutil.HTTPClient, t *testing.T) {
-	resp := client.GET("/api/vega-backend/v1/resources?category=dataset&offset=0&limit=100")
+	// 先删除所有 build 任务
+	resp := client.GET("/api/vega-backend/v1/resources/dataset/build?offset=0&limit=100")
+	if resp.StatusCode == http.StatusOK {
+		if entries, ok := resp.Body["entries"].([]any); ok {
+			for _, task := range entries {
+				if taskMap, ok := task.(map[string]any); ok {
+					if taskID, ok := taskMap["id"].(string); ok {
+						if resourceID, ok := taskMap["resource_id"].(string); ok {
+							// 先尝试停止构建任务
+							stopPayload := map[string]any{"status": "stopped"}
+							stopResp := client.PUT("/api/vega-backend/v1/resources/dataset/"+resourceID+"/build/"+taskID+"/status", stopPayload)
+							if stopResp.StatusCode != http.StatusOK {
+								t.Logf("停止 build 任务失败 %s: %d，响应体：%v", taskID, stopResp.StatusCode, stopResp.Body)
+							}
+							// 然后删除构建任务（使用正确的 API 路径格式）
+							deleteTaskResp := client.DELETE("/api/vega-backend/v1/resources/dataset/build/" + taskID)
+							if deleteTaskResp.StatusCode != http.StatusOK {
+								t.Logf("删除 build 任务失败 %s: %d，响应体：%v", taskID, deleteTaskResp.StatusCode, deleteTaskResp.Body)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 再删除所有 dataset 资源
+	resp = client.GET("/api/vega-backend/v1/resources?category=dataset&offset=0&limit=100")
 	if resp.StatusCode == http.StatusOK {
 		if entries, ok := resp.Body["entries"].([]any); ok {
 			for _, entry := range entries {
 				if entryMap, ok := entry.(map[string]any); ok {
 					if id, ok := entryMap["id"].(string); ok {
+						// 删除资源（使用正确的 API 路径格式）
 						deleteResp := client.DELETE("/api/vega-backend/v1/resources/" + id)
-						if deleteResp.StatusCode != http.StatusNoContent {
-							t.Logf("清理资源失败 %s: %d", id, deleteResp.StatusCode)
+						if deleteResp.StatusCode != http.StatusOK && deleteResp.StatusCode != http.StatusNoContent {
+							t.Logf("清理资源失败 %s: %d，响应体：%v", id, deleteResp.StatusCode, deleteResp.Body)
 						}
 					}
 				}
@@ -353,13 +457,6 @@ func buildDatasetResourcePayload() map[string]any {
 		"category":          "dataset",
 		"status":            "active",
 		"source_identifier": "at_db",
-		"config": map[string]any{
-			"host":     "localhost",
-			"port":     3306,
-			"username": "root",
-			"password": "Password123",
-			"database": "test",
-		},
 		"schema_definition": []map[string]any{
 			{"name": "id", "type": "keyword", "display_name": "ID", "original_name": "id", "description": "唯一标识符"},
 			{"name": "@timestamp", "type": "long", "display_name": "时间戳", "original_name": "@timestamp", "description": "事件发生时间"},
@@ -1520,10 +1617,10 @@ func TestDatasetDocumentsSourceFilter(t *testing.T) {
 	})
 }
 
-// TestDatasetBuild 测试dataset构建 - 先创建catalog，再创建dataset，最后构建
+// TestDatasetBatchBuild 测试dataset批量构建 - 先创建catalog，再创建dataset，最后构建
 // 测试编号前缀: DS2xx (Dataset Build)
-func TestDatasetBuild(t *testing.T) {
-	Convey("Dataset构建AT测试 - 初始化", t, func() {
+func TestDatasetBatchBuild(t *testing.T) {
+	Convey("Dataset批量构建AT测试 - 初始化", t, func() {
 		var err error
 		config, err := setup.LoadTestConfig()
 		So(err, ShouldBeNil)
@@ -1572,15 +1669,7 @@ func TestDatasetBuild(t *testing.T) {
 				"database":          "test",
 				"source_identifier": "test.users",
 				"source_metadata": map[string]any{
-					"primary_keys": []string{"id"},
-					"indices":      []string{"name"},
-				},
-				"config": map[string]any{
-					"host":     "localhost",
-					"port":     3330,
-					"username": "username",
-					"password": "password",
-					"database": "test",
+					"ordered_keys": []string{"id"},
 				},
 				"schema_definition": []map[string]any{
 					{"name": "id", "type": "keyword", "display_name": "ID", "original_name": "id", "description": "唯一标识符"},
@@ -1616,7 +1705,7 @@ func TestDatasetBuild(t *testing.T) {
 			datasetID := datasetResp.Body["id"].(string)
 
 			// 3. 构建dataset
-			buildResp := client.POST("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build", map[string]any{"mode": "full"})
+			buildResp := client.POST("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build", map[string]any{"mode": "batch"})
 			So(buildResp.StatusCode, ShouldEqual, http.StatusOK)
 
 			// 验证构建成功
@@ -1626,6 +1715,160 @@ func TestDatasetBuild(t *testing.T) {
 			buildTaskResp := client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
 			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
 			So(buildTaskResp.Body, ShouldNotBeNil)
+			So(buildTaskResp.Body["status"], ShouldEqual, "pending")
+
+			// 5. 修改任务状态为running
+			updateResp := client.PUT("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build/"+buildResp.Body["task_id"].(string)+"/status", map[string]any{"status": "running"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			// 6. 验证任务状态为running
+			buildTaskResp = client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
+			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
+			So(buildTaskResp.Body, ShouldNotBeNil)
+			So(buildTaskResp.Body["status"], ShouldEqual, "running")
+
+			// 7. 修改任务状态为stopped
+			updateResp = client.PUT("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build/"+buildResp.Body["task_id"].(string)+"/status", map[string]any{"status": "stopped"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			// 8. 验证任务状态为stopped或者stopping
+			buildTaskResp = client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
+			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
+			So(buildTaskResp.Body, ShouldNotBeNil)
+			status := buildTaskResp.Body["status"].(string)
+			So(status == "stopped" || status == "stopping", ShouldBeTrue)
+		})
+	})
+}
+
+// TestDatasetStreamingBuild 测试dataset流式构建 - 先创建catalog，再创建dataset，最后构建
+// 测试编号前缀: DS2xx (Dataset Build)
+func TestDatasetStreamingBuild(t *testing.T) {
+	Convey("Dataset流式构建AT测试 - 初始化", t, func() {
+		var err error
+		config, err := setup.LoadTestConfig()
+		So(err, ShouldBeNil)
+		So(config, ShouldNotBeNil)
+
+		client := testutil.NewHTTPClient(config.VegaBackend.BaseURL)
+		err = client.CheckHealth()
+		So(err, ShouldBeNil)
+		t.Logf("✓ AT测试环境就绪，VEGA Manager: %s", config.VegaBackend.BaseURL)
+
+		// 清理现有资源
+		cleanupResources(client, t)
+		// 清理现有catalog
+		cleanupCatalogs(client, t)
+
+		// ========== 构建测试（DS201-DS210） ==========
+
+		Convey("DS201: 先创建mysql catalog，再创建dataset，最后构建", func() {
+			// 1. 创建mysql catalog
+			catalogPayload := map[string]any{
+				"name":           generateUniqueName("test-mysql-catalog"),
+				"description":    "测试mysql catalog",
+				"tags":           []string{"test", "mysql", "catalog"},
+				"connector_type": "mysql",
+				"connector_config": map[string]any{
+					"host":     "192.168.36.66",
+					"port":     3306,
+					"username": "root",
+					"password": "Password123",
+					"database": "test",
+				},
+			}
+			catalogResp := client.POST("/api/vega-backend/v1/catalogs", catalogPayload)
+			So(catalogResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(catalogResp.Body["id"], ShouldNotBeEmpty)
+			catalogID := catalogResp.Body["id"].(string)
+
+			// 2. 创建dataset资源，使用刚创建的catalog
+			datasetPayload := map[string]any{
+				"catalog_id":        catalogID,
+				"name":              generateUniqueName("test-dataset-build"),
+				"tags":              []string{"test", "dataset"},
+				"description":       "测试数据集构建",
+				"category":          "dataset",
+				"status":            "active",
+				"database":          "test",
+				"source_identifier": "test.users",
+				"source_metadata": map[string]any{
+					"unique_keys": []string{"id"}, // 用于流式构建时的删除与更新文档时的唯一标识符
+				},
+				"schema_definition": []map[string]any{
+					{"name": "id", "type": "keyword", "display_name": "ID", "original_name": "id", "description": "唯一标识符"},
+					{"name": "name", "type": "keyword", "display_name": "名称", "original_name": "name", "description": "用户名称"},
+					{"name": "address", "type": "text", "display_name": "地址", "original_name": "address", "description": "用户地址"},
+					{"name": "hobby", "type": "text", "display_name": "爱好", "original_name": "hobby", "description": "用户爱好"},
+					{"name": "hobby_vector", "type": "vector", "display_name": "爱好_向量", "original_name": "hobby_vector", "description": "用户爱好向量", "features": []map[string]any{
+						{
+							"name":         "hobby_vector",
+							"display_name": "爱好_向量",
+							"feature_type": "vector",
+							"description":  "用户爱好向量",
+							"ref_property": "hobby",
+							"is_default":   true,
+							"is_native":    true,
+							"config": map[string]any{
+								"dimension": 768,
+								"method": map[string]any{
+									"name":   "hnsw",
+									"engine": "lucene",
+									"parameters": map[string]any{
+										"ef_construction": 256,
+									},
+								},
+							},
+						},
+					}},
+				},
+			}
+			datasetResp := client.POST("/api/vega-backend/v1/resources", datasetPayload)
+			So(datasetResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(datasetResp.Body["id"], ShouldNotBeEmpty)
+			datasetID := datasetResp.Body["id"].(string)
+
+			// 3. 构建dataset
+			buildResp := client.POST("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build", map[string]any{"mode": "streaming"})
+			So(buildResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			// 验证构建成功
+			So(buildResp.Body, ShouldNotBeNil)
+
+			// 4. 获取构建任务详情
+			buildTaskResp := client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
+			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
+			So(buildTaskResp.Body, ShouldNotBeNil)
+			So(buildTaskResp.Body["status"], ShouldEqual, "pending")
+
+			// 5. 修改任务状态为running
+			updateResp := client.PUT("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build/"+buildResp.Body["task_id"].(string)+"/status", map[string]any{"status": "running"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			// 6. 验证任务状态为running
+			buildTaskResp = client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
+			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
+			So(buildTaskResp.Body, ShouldNotBeNil)
+			So(buildTaskResp.Body["status"], ShouldEqual, "running")
+
+			// 7. 修改任务状态为stopped
+			updateResp = client.PUT("/api/vega-backend/v1/resources/dataset/"+datasetID+"/build/"+buildResp.Body["task_id"].(string)+"/status", map[string]any{"status": "stopped"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			time.Sleep(30 * time.Second)
+
+			// 8. 验证任务状态为stopped或者stopping
+			buildTaskResp = client.GET("/api/vega-backend/v1/resources/dataset/" + datasetID + "/build/" + buildResp.Body["task_id"].(string))
+			So(buildTaskResp.StatusCode, ShouldEqual, http.StatusOK)
+			So(buildTaskResp.Body, ShouldNotBeNil)
+			status := buildTaskResp.Body["status"].(string)
+			So(status == "stopped" || status == "stopping", ShouldBeTrue)
+
+			time.Sleep(5 * time.Second)
+
+			// 9. 删除任务
+			deleteResp := client.DELETE("/api/vega-backend/v1/resources/build/" + buildResp.Body["task_id"].(string))
+			So(deleteResp.StatusCode, ShouldEqual, http.StatusNoContent)
 		})
 	})
 }

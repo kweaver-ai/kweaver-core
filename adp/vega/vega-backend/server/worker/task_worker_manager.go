@@ -22,34 +22,36 @@ import (
 
 var (
 	taskWorkerOnce sync.Once
-	taskWorker     *TaskWorker
+	taskWorkerMgr  *TaskWorkerManger
 )
 
-// TaskWorker provides unified task processing functionality.
-type TaskWorker struct {
+// TaskWorkerManger provides unified task processing functionality.
+type TaskWorkerManger struct {
 	appSetting       *common.AppSetting
 	aqa              interfaces.AsynqAccess
 	discoverHandler  *discoverHandler
-	buildHandler     *buildHandler
+	btBuildHandler   *batchBuildHandler
+	stBuildHandler   *streamingBuildHandler
 	embeddingHandler *embeddingHandler
 }
 
-// NewTaskWorker creates or returns the singleton TaskWorker.
-func NewTaskWorker(appSetting *common.AppSetting) *TaskWorker {
+// NewTaskWorkerManager creates or returns the singleton TaskWorkerManger.
+func NewTaskWorkerManager(appSetting *common.AppSetting) *TaskWorkerManger {
 	taskWorkerOnce.Do(func() {
-		taskWorker = &TaskWorker{
+		taskWorkerMgr = &TaskWorkerManger{
 			appSetting:       appSetting,
 			aqa:              asynq_access.NewAsynqAccess(appSetting),
 			discoverHandler:  NewDiscoverHandler(appSetting),
-			buildHandler:     NewBuildHandler(appSetting),
-			embeddingHandler: NewEmbeddingHandler(appSetting),
+			btBuildHandler:   NewBatchBuildHandler(appSetting),
+			stBuildHandler:   NewStreamingBuildHandler(appSetting),
+			embeddingHandler: NewEmbeddingBuildHandler(appSetting),
 		}
 	})
-	return taskWorker
+	return taskWorkerMgr
 }
 
 // Start starts the task worker.
-func (tw *TaskWorker) Start() {
+func (tw *TaskWorkerManger) Start() {
 	// Start server in a goroutine
 	go func() {
 		for {
@@ -62,7 +64,7 @@ func (tw *TaskWorker) Start() {
 }
 
 // Run runs the task worker.
-func (tw *TaskWorker) Run(ctx context.Context) error {
+func (tw *TaskWorkerManger) Run(ctx context.Context) error {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Errorf("Task worker failed: %v", err)
@@ -74,10 +76,11 @@ func (tw *TaskWorker) Run(ctx context.Context) error {
 	// Register task handlers
 	mux := asynq.NewServeMux()
 	mux.Handle(interfaces.DiscoverTaskType, tw)
-	mux.Handle(interfaces.BuildTaskType, tw)
-	mux.Handle(interfaces.EmbeddingTaskType, tw)
+	mux.Handle(interfaces.BuildTaskTypeBatch, tw)
+	mux.Handle(interfaces.BuildTaskTypeEmbedding, tw)
+	mux.Handle(interfaces.BuildTaskTypeStreaming, tw)
 
-	logger.Infof("Task worker starting, listening for task types: %s, %s, %s", interfaces.DiscoverTaskType, interfaces.BuildTaskType, interfaces.EmbeddingTaskType)
+	logger.Infof("Task worker starting, listening for task types: %s, %s, %s, %s", interfaces.DiscoverTaskType, interfaces.BuildTaskTypeBatch, interfaces.BuildTaskTypeEmbedding, interfaces.BuildTaskTypeStreaming)
 	if err := srv.Run(mux); err != nil {
 		logger.Errorf("Task worker failed: %v", err)
 		return err
@@ -86,14 +89,16 @@ func (tw *TaskWorker) Run(ctx context.Context) error {
 }
 
 // ProcessTask processes a task from the queue.
-func (tw *TaskWorker) ProcessTask(ctx context.Context, task *asynq.Task) error {
+func (tw *TaskWorkerManger) ProcessTask(ctx context.Context, task *asynq.Task) error {
 	switch task.Type() {
 	case interfaces.DiscoverTaskType:
 		return tw.discoverHandler.HandleTask(ctx, task)
-	case interfaces.BuildTaskType:
-		return tw.buildHandler.HandleTask(ctx, task)
-	case interfaces.EmbeddingTaskType:
+	case interfaces.BuildTaskTypeBatch:
+		return tw.btBuildHandler.HandleTask(ctx, task)
+	case interfaces.BuildTaskTypeEmbedding:
 		return tw.embeddingHandler.HandleTask(ctx, task)
+	case interfaces.BuildTaskTypeStreaming:
+		return tw.stBuildHandler.HandleTask(ctx, task)
 	default:
 		return fmt.Errorf("unknown task type: %s", task.Type())
 	}

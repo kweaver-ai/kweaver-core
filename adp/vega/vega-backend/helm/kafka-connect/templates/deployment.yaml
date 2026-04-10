@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.moduleName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.moduleName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      module: {{ .Values.moduleName }}
+  template:
+    metadata:
+      labels:
+        module: {{ .Values.moduleName }}
+    spec:
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      dnsConfig:
+        options:
+          - name: single-request-reopen
+          - name: use-vc
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      {{- if .Values.antiAffinity.enabled }}
+      affinity:
+        {{- if eq .Values.antiAffinity.rule "soft" }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: module
+                      operator: In
+                      values:
+                        - {{ .Values.moduleName }}
+        {{- else if eq .Values.antiAffinity.rule "hard" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                  - key: module
+                    operator: In
+                    values:
+                      - {{ .Values.moduleName }}
+        {{- end }}
+      {{- end }}
+      containers:
+      - name: kafka-connect
+        image: {{ template "kafka-connect.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - name: manager
+            containerPort: {{ .Values.service.kafkaConnect.port }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.kafkaConnect.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 30
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.kafkaConnect.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 30
+          failureThreshold: 3
+        env:
+          - name: TZ
+            value: {{ .Values.env.timezone }}
+          - name: LANG
+            value: {{ .Values.env.language }}
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+          - name: {{ .Values.moduleName }}-cm
+            mountPath: /opt/kafka-connect
+      restartPolicy: Always
+      volumes:
+      - name: {{ .Values.moduleName }}-cm
+        configMap:
+          name: {{ .Values.moduleName }}-cm

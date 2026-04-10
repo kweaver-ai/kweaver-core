@@ -23,16 +23,16 @@ var (
 
 // discoverWorker provides resource discover functionality.
 type discoverWorker struct {
-	appSetting *common.AppSetting
-	taskWorker *TaskWorker
+	appSetting    *common.AppSetting
+	taskWorkerMgr *TaskWorkerManger
 }
 
 // NewDiscoverWorker creates or returns the singleton DiscoverWorker.
 func NewDiscoverWorker(appSetting *common.AppSetting) interfaces.DiscoverWorker {
 	dWorkerOnce.Do(func() {
 		dWorker = &discoverWorker{
-			appSetting: appSetting,
-			taskWorker: NewTaskWorker(appSetting),
+			appSetting:    appSetting,
+			taskWorkerMgr: NewTaskWorkerManager(appSetting),
 		}
 	})
 	return dWorker
@@ -40,15 +40,15 @@ func NewDiscoverWorker(appSetting *common.AppSetting) interfaces.DiscoverWorker 
 
 func (dw *discoverWorker) Start() {
 	// Start the unified task worker
-	dw.taskWorker.Start()
+	dw.taskWorkerMgr.Start()
 }
 
 func (dw *discoverWorker) Run(ctx context.Context) error {
 	// Delegate to the unified task worker
-	return dw.taskWorker.Run(ctx)
+	return dw.taskWorkerMgr.Run(ctx)
 }
 
 func (dw *discoverWorker) ProcessTask(ctx context.Context, task *asynq.Task) error {
 	// Delegate to the unified task worker
-	return dw.taskWorker.ProcessTask(ctx, task)
+	return dw.taskWorkerMgr.ProcessTask(ctx, task)
 }

@@ -11,18 +11,17 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-// EmbeddingWorker interface defines embedding execution functionality.
+// EmbeddingBuildWorker interface defines embedding execution functionality.
 // This worker is called by the task management service to execute the actual embedding.
 //
-//go:generate mockgen -source ../interfaces/embedding_task.go -destination ../interfaces/mock/mock_embedding_worker.go
+//go:generate mockgen -source ../interfaces/embedding_build_task.go -destination ../interfaces/mock/mock_embedding_build_worker.go
 
-// EmbeddingTaskMessage represents an embedding task message.
-type EmbeddingTaskMessage struct {
-	TaskID     string `json:"task_id"`
-	ResourceID string `json:"resource_id"`
+// EmbeddingBuildTaskMessage represents an embedding task message.
+type EmbeddingBuildTaskMessage struct {
+	TaskID string `json:"task_id"`
 }
 
-type EmbeddingWorker interface {
+type EmbeddingBuildWorker interface {
 	Start()
 
 	Run(ctx context.Context) error

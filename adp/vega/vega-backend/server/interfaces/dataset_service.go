@@ -25,11 +25,11 @@ type DatasetService interface {
 	DeleteDocuments(ctx context.Context, id string, docIDs string) error
 	DeleteDocumentsByQuery(ctx context.Context, res *Resource, params *ResourceDataQueryParams) error
 
-	// Build builds a resource by batch reading data from source and writing to dataset.
-	Build(ctx context.Context, id string) (string, error)
-
 	// Build task management methods
-	CreateBuildTask(ctx context.Context, id string,req *BuildTaskRequest) (string, error)
+	CreateBuildTask(ctx context.Context, id string, req *BuildTaskRequest) (string, error)
 	GetBuildTaskByID(ctx context.Context, id string) (*BuildTask, error)
-	GetBuildTasksByResourceID(ctx context.Context, resourceID string) ([]*BuildTask, error)
+	GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*BuildTask, error)
+	GetBuildTasks(ctx context.Context, offset, limit int) ([]*BuildTask, int64, error)
+	UpdateBuildTaskStatus(ctx context.Context, taskID string, req *UpdateBuildTaskStatusRequest) error
+	DeleteBuildTask(ctx context.Context, taskID string) error
 }

@@ -18,21 +18,21 @@ import (
 
 var (
 	eWorkerOnce sync.Once
-	eWorker     interfaces.EmbeddingWorker
+	eWorker     interfaces.EmbeddingBuildWorker
 )
 
 // embeddingWorker provides embedding functionality.
 type embeddingWorker struct {
-	appSetting *common.AppSetting
-	taskWorker *TaskWorker
+	appSetting    *common.AppSetting
+	taskWorkerMgr *TaskWorkerManger
 }
 
-// NewEmbeddingWorker creates or returns the singleton EmbeddingWorker.
-func NewEmbeddingWorker(appSetting *common.AppSetting) interfaces.EmbeddingWorker {
+// NewEmbeddingWorker creates or returns the singleton EmbeddingBuildWorker.
+func NewEmbeddingWorker(appSetting *common.AppSetting) interfaces.EmbeddingBuildWorker {
 	eWorkerOnce.Do(func() {
 		eWorker = &embeddingWorker{
-			appSetting: appSetting,
-			taskWorker: NewTaskWorker(appSetting),
+			appSetting:    appSetting,
+			taskWorkerMgr: NewTaskWorkerManager(appSetting),
 		}
 	})
 	return eWorker
@@ -40,15 +40,15 @@ func NewEmbeddingWorker(appSetting *common.AppSetting) interfaces.EmbeddingWorke
 
 func (ew *embeddingWorker) Start() {
 	// Start the unified task worker
-	ew.taskWorker.Start()
+	ew.taskWorkerMgr.Start()
 }
 
 func (ew *embeddingWorker) Run(ctx context.Context) error {
 	// Delegate to the unified task worker
-	return ew.taskWorker.Run(ctx)
+	return ew.taskWorkerMgr.Run(ctx)
 }
 
 func (ew *embeddingWorker) ProcessTask(ctx context.Context, task *asynq.Task) error {
 	// Delegate to the unified task worker
-	return ew.taskWorker.ProcessTask(ctx, task)
+	return ew.taskWorkerMgr.ProcessTask(ctx, task)
 }

@@ -96,9 +96,12 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	// 检查catalog是否存在
 	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
 	if err != nil {
-		return nil, err
+		span.SetStatus(codes.Error, "Check catalog exist failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
 	}
 	if !exists {
+		span.SetStatus(codes.Error, "Catalog not found")
 		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
 	}
 
@@ -551,6 +554,17 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 	for _, resource := range resources {
 		switch resource.Category {
 		case interfaces.ResourceCategoryDataset:
+			// Check if dataset has build tasks
+			buildTask, err := rs.ds.GetBuildTaskByResourceID(ctx, resource.ID)
+			if err != nil {
+				span.SetStatus(codes.Error, "Get build task failed")
+				return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+					WithErrorDetails(err.Error())
+			} else if buildTask != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Exist).
+					WithErrorDetails("Cannot delete dataset, please delete build task first")
+			}
+			// Delete dataset
 			if err := rs.ds.Delete(ctx, resource); err != nil {
 				logger.Errorf("Delete dataset failed: %v", err)
 				// 数据集删除失败不影响资源删除，只记录错误
