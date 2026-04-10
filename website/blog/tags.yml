@@ -47,3 +47,13 @@ agent:
   label: Agent
   permalink: /agent
   description: AI agent related posts
+
+bkn:
+  label: BKN
+  permalink: /bkn
+  description: Business Knowledge Network (BKN) posts
+
+ontology:
+  label: Ontology
+  permalink: /ontology
+  description: Ontology and semantic modeling posts
