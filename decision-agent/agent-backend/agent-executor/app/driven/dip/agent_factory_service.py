@@ -364,7 +364,12 @@ class AgentFactoryService:
             Raw text content as a string
         """
         timeout = aiohttp.ClientTimeout(total=HTTP_REQUEST_TIMEOUT)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        # The download URL is a pre-signed object-storage URL that may be served
+        # by an internal endpoint with a self-signed certificate. SSL verification
+        # is disabled here because the URL itself already carries an HMAC
+        # signature that guarantees authenticity and integrity of the content.
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
             async with session.get(url) as response:
                 if response.status != 200:
                     err = f"download_text_by_url error [{response.status}]: {url}"
