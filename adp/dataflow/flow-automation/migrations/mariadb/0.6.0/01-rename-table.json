@@ -1,0 +1,482 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_model",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_model",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_train_file",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_train_file",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_automation_executor",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_automation_executor",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_automation_executor_accessor",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_automation_executor_accessor",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_automation_executor_action",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_automation_executor_action",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_content_admin",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_content_admin",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_audio_segments",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_audio_segments",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_automation_agent",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_automation_agent",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_alarm_rule",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_alarm_rule",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_alarm_user",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_alarm_user",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_automation_dag_instance_ext_data",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_automation_dag_instance_ext_data",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_0",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_0",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_1",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_1",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_2",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_2",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_3",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_3",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_4",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_4",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_5",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_5",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_6",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_6",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_7",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_7",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_8",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_8",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_9",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_9",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_a",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_a",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_b",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_b",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_c",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_c",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_d",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_d",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_e",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_e",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_task_cache_f",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_task_cache_f",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_dag_instance_event",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_dag_instance_event",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_cron_job",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_cron_job",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_cron_job_status",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_cron_job_status",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_var",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_var",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_instance_keyword",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_instance_keyword",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_step",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_step",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_accessor",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_accessor",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_version",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_version",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_dag_instance",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_dag_instance",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_inbox",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_inbox",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_outbox",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_outbox",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_task_instance",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_task_instance",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_token",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_token",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_client",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_client",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_switch",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_switch",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_log",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_log",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_storage",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_storage",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_file",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_file",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_file_download_job",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_file_download_job",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_flow_task_resume",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_flow_task_resume",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

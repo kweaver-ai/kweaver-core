@@ -1,0 +1,22 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_internal_app",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_internal_app",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_stream_data_pipeline",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_stream_data_pipeline",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]
