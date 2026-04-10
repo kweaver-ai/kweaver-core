@@ -50,8 +50,8 @@ cases:
     }
   query_params: |
     {
-      "pageOffset": ${page_offset},
-      "pageLimit": ${page_limit}
+      "page": ${page_offset},
+      "size": ${page_limit}
     }
   code_check: '200'
   prev_case: Setup_获取对话管理测试Agent详情
@@ -82,7 +82,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${init_conversation_id}"
+      "id": "${init_conversation_id}"
     }
   code_check: '200'
   prev_case: Positive_初始化对话_请求成功
@@ -94,7 +94,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${init_conversation_id}"
+      "id": "${init_conversation_id}"
     }
   body_params: |
     {
@@ -110,7 +110,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${init_conversation_id}"
+      "id": "${init_conversation_id}"
     }
   code_check: '204'
   prev_case: Positive_编辑对话_请求成功
@@ -147,7 +147,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${test_conversation_id}"
+      "id": "${test_conversation_id}"
     }
   code_check: '500'
   prev_case: Setup_创建对话管理测试Agent
@@ -158,7 +158,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${test_conversation_id}"
+      "id": "${test_conversation_id}"
     }
   body_params: |
     {
@@ -173,7 +173,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${test_conversation_id}"
+      "id": "${test_conversation_id}"
     }
   code_check: '404'
   prev_case: Setup_创建对话管理测试Agent
@@ -184,7 +184,7 @@ cases:
   path_params: |
     {
       "app_key": "${conv_mgmt_agent_key}",
-      "conversation_id": "${test_conversation_id}"
+      "id": "${test_conversation_id}"
     }
   body_params: |
     {

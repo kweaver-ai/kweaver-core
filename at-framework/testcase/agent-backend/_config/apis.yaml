@@ -257,17 +257,17 @@
 
 # ==================== 对话管理相关 ====================
 - name: 获取对话详情
-  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${id}
   method: GET
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
 - name: 编辑对话
-  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${id}
   method: PUT
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
 - name: 删除对话
-  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${id}
   method: DELETE
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
@@ -287,7 +287,7 @@
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
 - name: 标记对话已读
-  url: /api/agent-factory/v1/app/${app_key}/conversation/${conversation_id}/mark_read
+  url: /api/agent-factory/v1/app/${app_key}/conversation/${id}/mark_read
   method: PUT
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 

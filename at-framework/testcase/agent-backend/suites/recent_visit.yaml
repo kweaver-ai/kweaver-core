@@ -9,7 +9,7 @@ cases:
     {
       "name": "",
       "page": ${page},
-      "pageLimit": ${page_limit}
+      "size": ${page_limit}
     }
   code_check: '200'
   description: 'from pytest: test_get_recent_visit_agents'
@@ -20,7 +20,7 @@ cases:
     {
       "name": "测试",
       "page": ${page},
-      "pageLimit": 20
+      "size": 20
     }
   code_check: '200'
   description: 'from pytest: test_get_recent_visit_agents_with_name_filter'
@@ -31,7 +31,7 @@ cases:
     {
       "name": "",
       "page": 2,
-      "pageLimit": 5
+      "size": 5
     }
   code_check: '200'
   description: 'from pytest: test_get_recent_visit_agents_pagination'

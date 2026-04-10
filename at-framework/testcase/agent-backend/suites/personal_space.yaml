@@ -32,11 +32,11 @@ cases:
   url: 获取个人空间Agent列表
   query_params: |
     {
-      "pageLimit": ${page_limit},
+      "size": ${page_limit},
       "name": "",
       "publish_status": "",
-      "toBeFlag": "",
-      "agentCreatedType": ""
+      "publish_to_be": "",
+      "agent_created_type": ""
     }
   code_check: '200'
   description: 'from pytest: test_get_personal_agent_list'
@@ -45,11 +45,11 @@ cases:
   url: 获取个人空间Agent列表
   query_params: |
     {
-      "pageLimit": 20,
+      "size": 20,
       "name": "测试",
       "publish_status": "published",
-      "toBeFlag": "true",
-      "agentCreatedType": "custom"
+      "publish_to_be": "api_agent",
+      "agent_created_type": "create"
     }
   code_check: '200'
   description: 'from pytest: test_get_personal_agent_list_with_filter'
@@ -58,11 +58,11 @@ cases:
   url: 获取个人空间Agent列表
   query_params: |
     {
-      "pageLimit": ${page_limit},
+      "size": ${page_limit},
       "name": "",
       "publish_status": "",
-      "toBeFlag": "",
-      "agentCreatedType": ""
+      "publish_to_be": "",
+      "agent_created_type": ""
     }
   code_check: '200'
   prev_case: Setup_创建个人空间测试Agent
@@ -73,10 +73,10 @@ cases:
   url: 获取个人空间Agent模板列表
   query_params: |
     {
-      "pageLimit": ${page_limit},
+      "size": ${page_limit},
       "name": "",
       "publish_status": "",
-      "agentTplCreatedType": ""
+      "agent_tpl_created_type": ""
     }
   code_check: '200'
   description: 'from pytest: test_get_personal_tpl_list'
@@ -85,10 +85,10 @@ cases:
   url: 获取个人空间Agent模板列表
   query_params: |
     {
-      "pageLimit": 20,
+      "size": 20,
       "name": "模板",
       "publish_status": "published",
-      "agentTplCreatedType": "custom"
+      "agent_tpl_created_type": "copy_from_agent"
     }
   code_check: '200'
   description: 'from pytest: test_get_personal_tpl_list_with_filter'
