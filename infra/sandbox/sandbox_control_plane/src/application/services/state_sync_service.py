@@ -3,10 +3,11 @@
 
 负责同步 Session 状态与实际容器状态，支持启动时同步和定时健康检查。
 """
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from src.domain.entities.session import Session, SessionStatus
 from src.domain.repositories.session_repository import ISessionRepository
+from src.domain.repositories.template_repository import ITemplateRepository
 from src.infrastructure.container_scheduler.base import IContainerScheduler
 from src.infrastructure.logging import get_logger
 
@@ -30,11 +31,13 @@ class StateSyncService:
         self,
         session_repo: ISessionRepository,
         container_scheduler: IContainerScheduler,
+        template_repo: Optional[ITemplateRepository] = None,
         scheduler=None,
         control_plane_url: str = "http://control-plane:8000",
     ):
         self._session_repo = session_repo
         self._container_scheduler = container_scheduler
+        self._template_repo = template_repo
         self._scheduler = scheduler
         self._control_plane_url = control_plane_url
 
@@ -173,8 +176,10 @@ class StateSyncService:
         try:
             from src.infrastructure.container_scheduler.base import ContainerConfig
 
+            image = await self._get_recovery_image(session)
+
             config = ContainerConfig(
-                image="sandbox-template-python-basic:latest",
+                image=image,
                 name=f"sandbox-{session.id}",
                 env_vars={
                     **(session.env_vars or {}),
@@ -198,7 +203,7 @@ class StateSyncService:
             await self._container_scheduler.start_container(container_id)
 
             session.container_id = container_id
-            session.runtime_node = "docker-local"
+            session.runtime_node = session.runtime_node or self._get_recovery_runtime_node()
             session.status = SessionStatus.RUNNING
             await self._session_repo.save(session)
 
@@ -228,6 +233,31 @@ class StateSyncService:
                 )
 
             return False
+
+    async def _get_recovery_image(self, session: Session) -> str:
+        """解析恢复容器时应使用的镜像。"""
+        if self._template_repo is None:
+            raise RuntimeError("Template repository is required for session recovery")
+
+        template = await self._template_repo.find_by_id(session.template_id)
+        if template is None:
+            raise RuntimeError(f"Template not found during recovery: {session.template_id}")
+
+        logger.info(
+            "Resolved recovery image from template",
+            session_id=session.id,
+            template_id=session.template_id,
+            image=template.image,
+        )
+        return template.image
+
+    def _get_recovery_runtime_node(self) -> str:
+        """根据当前调度环境推导恢复后的运行时节点。"""
+        if self._scheduler is not None and hasattr(self._scheduler, "_cluster_node"):
+            cluster_node = getattr(self._scheduler, "_cluster_node", None)
+            if cluster_node is not None and getattr(cluster_node, "id", None):
+                return cluster_node.id
+        return "docker-local"
 
     async def check_session_health(self, session_id: str) -> Dict[str, any]:
         """
