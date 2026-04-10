@@ -7,7 +7,7 @@ on:
     paths:
       - 'trace-ai/agent-observability/**'
       - 'trace-ai/VERSION'
-      - '.github/workflows/agent-observability-release.yml'
+      - '.github/workflows/release-agent-observability.yml'
   workflow_dispatch:
 
 env:

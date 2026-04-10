@@ -107,7 +107,7 @@ helm upgrade --install agent-observability charts/agent-observability \
 GitHub Actions 工作流位于：
 
 ```text
-.github/workflows/release.yml
+.github/workflows/release-agent-observability.yml
 ```
 
 分为三个阶段：
