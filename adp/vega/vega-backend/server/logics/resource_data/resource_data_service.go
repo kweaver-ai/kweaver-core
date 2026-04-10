@@ -193,17 +193,15 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails("fileset resource missing document id (source_metadata.id)")
 		}
-		info, err := fc.GetObjectDownloadInfo(ctx, resource.Name, docID)
+
+		// 使用搜索功能获取文件列表
+		files, total, err := fc.SearchFiles(ctx, docID, params.SearchKeyword, params.Limit, params.Offset)
 		if err != nil {
-			span.SetStatus(codes.Error, "Fileset download info failed")
+			span.SetStatus(codes.Error, "Fileset search failed")
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
 		}
-		row := map[string]any{
-			"doc_id":     docID,
-			"osdownload": info,
-		}
-		return []map[string]any{row}, 1, nil
+		return files, total, nil
 
 	default:
 		span.SetStatus(codes.Error, "Connector does not support table operations")
