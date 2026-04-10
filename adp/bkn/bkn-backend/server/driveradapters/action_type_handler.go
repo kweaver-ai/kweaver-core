@@ -461,6 +461,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	}
 	actionType.IfNameModify = ifNameModify
 	actionType.KNID = knID
+	actionType.Branch = branch
 
 	//根据id修改信息
 	err = r.ats.UpdateActionType(ctx, nil, &actionType, strictMode)

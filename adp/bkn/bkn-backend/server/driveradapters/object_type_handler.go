@@ -462,6 +462,7 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 	}
 	objectType.IfNameModify = ifNameModify
 	objectType.KNID = knID
+	objectType.Branch = branch
 
 	//根据id修改信息
 	err = r.ots.UpdateObjectType(ctx, nil, &objectType, strictMode)

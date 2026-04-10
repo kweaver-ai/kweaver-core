@@ -254,6 +254,65 @@ func Test_objectTypeService_GetObjectsByObjectTypeID(t *testing.T) {
 			So(len(result.Datas), ShouldEqual, 1)
 		})
 
+		Convey("成功 - resource 数据源 Sort 从属性名映射为资源列字段", func() {
+			objectType := interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID: objectTypeID,
+					DataProperties: []cond.DataProperty{
+						{
+							Name: "prop1",
+							MappedField: cond.Field{
+								Name: "field1",
+							},
+						},
+					},
+					PrimaryKeys: []string{"id"},
+					DisplayKey:  "prop1",
+					DataSource: &interfaces.ResourceInfo{
+						Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+						ID:   "res1",
+					},
+				},
+				Status: &interfaces.ObjectTypeStatus{
+					IndexAvailable: true,
+					Index:          "should_not_query",
+				},
+			}
+
+			query := &interfaces.ObjectQueryBaseOnObjectType{
+				KNID:         knID,
+				Branch:       branch,
+				ObjectTypeID: objectTypeID,
+				PageQuery: interfaces.PageQuery{
+					Limit:     10,
+					NeedTotal: false,
+					Sort: []*interfaces.SortParams{
+						{Field: "prop1", Direction: interfaces.ASC_DIRECTION},
+					},
+				},
+			}
+
+			stub := &vegaStubForOTQuery{
+				resp: &interfaces.DatasetQueryResponse{
+					TotalCount: 1,
+					Entries: []map[string]any{
+						{"field1": "v1"},
+					},
+				},
+			}
+			service.vba = stub
+
+			omAccess.EXPECT().GetObjectType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(objectType, true, nil)
+
+			result, err := service.GetObjectsByObjectTypeID(ctx, query)
+			So(err, ShouldBeNil)
+			So(stub.lastParams, ShouldNotBeNil)
+			So(len(stub.lastParams.Sort), ShouldEqual, 1)
+			So(stub.lastParams.Sort[0].Field, ShouldEqual, "field1")
+			So(stub.lastParams.Sort[0].Direction, ShouldEqual, interfaces.ASC_DIRECTION)
+			So(len(result.Datas), ShouldEqual, 1)
+		})
+
 		Convey("失败 - 从索引查询时GetTotal失败", func() {
 			objectType := interfaces.ObjectType{
 				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
@@ -1763,11 +1822,13 @@ func Test_generateExecRequest(t *testing.T) {
 
 // vegaStubForOTQuery implements interfaces.VegaBackendAccess for tests.
 type vegaStubForOTQuery struct {
-	resp *interfaces.DatasetQueryResponse
-	err  error
+	resp       *interfaces.DatasetQueryResponse
+	err        error
+	lastParams *interfaces.ResourceDataQueryParams
 }
 
 func (v *vegaStubForOTQuery) QueryResourceData(ctx context.Context, resourceID string, params *interfaces.ResourceDataQueryParams) (*interfaces.DatasetQueryResponse, error) {
+	v.lastParams = params
 	if v.err != nil {
 		return nil, v.err
 	}

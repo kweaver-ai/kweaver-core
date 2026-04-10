@@ -49,7 +49,7 @@ func BuildViewSort(objectType interfaces.ObjectType) []*interfaces.SortParams {
 			if fieldName != "" {
 				// 存在映射，则组装到对象属性中
 				sorts = append(sorts, &interfaces.SortParams{
-					Field:     fieldName,
+					Field:     pri,
 					Direction: interfaces.ASC_DIRECTION,
 				})
 			}
