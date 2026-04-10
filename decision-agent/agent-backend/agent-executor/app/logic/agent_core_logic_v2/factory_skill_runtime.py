@@ -130,6 +130,18 @@ async def load_skill(
 
     skill_md_url: str = content_data.get("url", "")
     files: List[Dict[str, Any]] = content_data.get("files", [])
+    status: str = content_data.get("status", "")
+
+    # Log the full response for debugging
+    StandLogger.info(
+        f"load_skill received content_data type={type(content_data)}, "
+        f"content_data keys={list(content_data.keys()) if isinstance(content_data, dict) else 'NOT_A_DICT'}"
+    )
+    StandLogger.info(
+        f"load_skill extracted values for skill '{skill_id}': "
+        f"url={skill_md_url!r}, url_type={type(skill_md_url)}, url_len={len(skill_md_url)}, "
+        f"files_count={len(files)}, status={status!r}"
+    )
 
     # Step 2: Extract path lists
     available_scripts, available_references = _extract_path_lists(files)
@@ -142,7 +154,7 @@ async def load_skill(
     if not skill_md_url:
         err = (
             f"builtin_skill_load failed for skill '{skill_id}': "
-            "the content API returned no SKILL.md download URL. "
+            f"the content API returned no SKILL.md download URL (status={status!r}). "
             "The skill may not exist or may not be ready yet."
         )
         StandLogger.error(err)
@@ -230,6 +242,18 @@ async def read_skill_file(
     file_url: str = file_meta.get("url", "")
     mime_type: str = file_meta.get("mime_type", "")
     file_type: str = file_meta.get("file_type", "")
+    rel_path_returned: str = file_meta.get("rel_path", "")
+    
+    # Log the API response for debugging
+    StandLogger.info(
+        f"read_skill_file received file_meta type={type(file_meta)}, "
+        f"file_meta keys={list(file_meta.keys()) if isinstance(file_meta, dict) else 'NOT_A_DICT'}"
+    )
+    StandLogger.info(
+        f"read_skill_file extracted values for skill '{skill_id}', path '{file_path}': "
+        f"url={file_url!r}, url_type={type(file_url)}, url_len={len(file_url)}, "
+        f"rel_path={rel_path_returned!r}, mime_type={mime_type!r}, file_type={file_type!r}"
+    )
 
     if not file_url:
         return _error_result_read(
@@ -294,6 +318,20 @@ async def execute_skill_script(
         )
         StandLogger.error(err)
         return _error_result_exec(skill_id, entry_shell, err)
+
+    # Log the execution result for debugging
+    StandLogger.info(
+        f"execute_skill_script received exec_data type={type(exec_data)}, "
+        f"exec_data keys={list(exec_data.keys()) if isinstance(exec_data, dict) else 'NOT_A_DICT'}"
+    )
+    StandLogger.info(
+        f"execute_skill_script extracted values for skill '{skill_id}': "
+        f"exit_code={exec_data.get('exit_code')}, "
+        f"duration_ms={exec_data.get('duration_ms')}, "
+        f"command={exec_data.get('command')!r}, "
+        f"stdout_len={len(exec_data.get('stdout', ''))}, "
+        f"stderr_len={len(exec_data.get('stderr', ''))}"
+    )
 
     result = {
         "skill_id": skill_id,

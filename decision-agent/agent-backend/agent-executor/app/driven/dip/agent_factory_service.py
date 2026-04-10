@@ -281,6 +281,7 @@ class AgentFactoryService:
         """
         url = self._skill_api_base_url + f"/skills/{skill_id}/content"
         timeout = aiohttp.ClientTimeout(total=HTTP_REQUEST_TIMEOUT)
+        StandLogger.info(f"get_skill_content header={self._effective_headers(request_headers)},url={url}")
         async with aiohttp.ClientSession(
             headers=self._effective_headers(request_headers), timeout=timeout
         ) as session:
@@ -291,7 +292,20 @@ class AgentFactoryService:
                     StandLogger.error(error_log, log_oper.SYSTEM_LOG)
                     raise CodeException(errors.ExternalServiceError(), err)
                 res = await response.json()
-                return res.get("data", {})
+                # Log the complete response for debugging
+                StandLogger.info(
+                    f"get_skill_content complete response for skill '{skill_id}': {res}"
+                )
+                data = res.get("data", {})
+                # Log the raw response for debugging
+                StandLogger.info(
+                    f"get_skill_content raw response for skill '{skill_id}': "
+                    f"code={res.get('code')}, msg={res.get('msg')!r}, "
+                    f"data keys={list(data.keys())}, "
+                    f"url_present={'url' in data}, url_value={data.get('url')!r}, "
+                    f"url_empty={data.get('url') == ''}, url_is_none={data.get('url') is None}"
+                )
+                return data
 
     async def read_skill_file_meta(
         self, skill_id: str, rel_path: str, request_headers: dict = None
@@ -314,6 +328,7 @@ class AgentFactoryService:
         url = self._skill_api_base_url + f"/skills/{skill_id}/files/read"
         payload = {"rel_path": rel_path}
         timeout = aiohttp.ClientTimeout(total=HTTP_REQUEST_TIMEOUT)
+        StandLogger.info(f"read_skill_file_meta header={self._effective_headers(request_headers)},url={url},payload={payload}")
         async with aiohttp.ClientSession(
             headers=self._effective_headers(request_headers), timeout=timeout
         ) as session:
@@ -327,7 +342,19 @@ class AgentFactoryService:
                     StandLogger.error(error_log, log_oper.SYSTEM_LOG)
                     raise CodeException(errors.ExternalServiceError(), err)
                 res = await response.json()
-                return res.get("data", {})
+                # Log the complete response for debugging
+                StandLogger.info(
+                    f"read_skill_file_meta complete response for skill '{skill_id}', path '{rel_path}': {res}"
+                )
+                data = res.get("data", {})
+                # Log the raw response for debugging
+                StandLogger.info(
+                    f"read_skill_file_meta raw response for skill '{skill_id}', path '{rel_path}': "
+                    f"code={res.get('code')}, msg={res.get('msg')!r}, "
+                    f"data keys={list(data.keys())}, "
+                    f"url_value={data.get('url')!r}, url_present={'url' in data}"
+                )
+                return data
 
     async def download_text_by_url(self, url: str) -> str:
         """Download raw text content from an object-storage URL.
@@ -422,7 +449,7 @@ class AgentFactoryService:
                     error_log = log_oper.get_error_log(err, sys._getframe())
                     StandLogger.error(error_log, log_oper.SYSTEM_LOG)
                     raise CodeException(errors.ParamException(), err)
-
+        StandLogger.info(f"read_downloaded_skill_text url={url}")
         return await self.download_text_by_url(url)
 
     async def execute_skill_script(
@@ -454,6 +481,7 @@ class AgentFactoryService:
             payload["timeout"] = extra["timeout"]
 
         timeout = aiohttp.ClientTimeout(total=HTTP_REQUEST_TIMEOUT)
+        StandLogger.info(f"execute_skill_script header={self._effective_headers(request_headers)},url={url},payload={payload}")
         async with aiohttp.ClientSession(
             headers=self._effective_headers(request_headers), timeout=timeout
         ) as session:
@@ -467,7 +495,19 @@ class AgentFactoryService:
                     StandLogger.error(error_log, log_oper.SYSTEM_LOG)
                     raise CodeException(errors.ExternalServiceError(), err)
                 res = await response.json()
+                # Log the complete response for debugging
+                StandLogger.info(
+                    f"execute_skill_script complete response for skill '{skill_id}': {res}"
+                )
                 data = res.get("data", {})
+                # Log the raw response for debugging
+                StandLogger.info(
+                    f"execute_skill_script raw response for skill '{skill_id}': "
+                    f"code={res.get('code')}, msg={res.get('msg')!r}, "
+                    f"data keys={list(data.keys())}, "
+                    f"exit_code={data.get('exit_code')}, "
+                    f"execution_time={data.get('execution_time')}"
+                )
                 # Normalise API field name -> contract field name expected by runtime
                 if "execution_time" in data and "duration_ms" not in data:
                     data["duration_ms"] = data["execution_time"]
