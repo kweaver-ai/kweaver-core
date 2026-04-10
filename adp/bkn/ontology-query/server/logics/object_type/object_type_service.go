@@ -435,11 +435,17 @@ func (ots *objectTypeService) getObjectsFromDataView(ctx context.Context, query 
 func (ots *objectTypeService) getObjectsFromResource(ctx context.Context, query *interfaces.ObjectQueryBaseOnObjectType,
 	objectType interfaces.ObjectType, resps *interfaces.Objects, fieldPropMap map[string]string) error {
 
+	resourceSort, err := logics.MapSortFieldsForDataView(query.Sort, objectType)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ObjectType_InvalidParameter).
+			WithErrorDetails(err.Error())
+	}
+
 	viewQuery := interfaces.ViewQuery{
 		NeedTotal:         query.NeedTotal,
 		Limit:             query.Limit,
 		UseSearchAfter:    interfaces.USE_SEARCH_AFTER_TRUE,
-		Sort:              query.Sort,
+		Sort:              resourceSort,
 		SearchAfterParams: query.SearchAfterParams,
 	}
 	if query.ActualCondition != nil {
@@ -468,7 +474,7 @@ func (ots *objectTypeService) getObjectsFromResource(ctx context.Context, query 
 	params := &interfaces.ResourceDataQueryParams{
 		NeedTotal:       query.NeedTotal,
 		Limit:           query.Limit,
-		Sort:            query.Sort,
+		Sort:            resourceSort,
 		SearchAfter:     query.SearchAfter,
 		FilterCondition: logics.CondCfgToFilterMap(viewQuery.Filters),
 		OutputFields:    outputFields,
