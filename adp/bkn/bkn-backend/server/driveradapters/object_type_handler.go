@@ -174,6 +174,7 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	// request来的objectTypes的branch都用url里的branch
 	for i := range objectTypes {
+		objectTypes[i].KNID = knID
 		objectTypes[i].Branch = branch
 	}
 
@@ -396,6 +397,8 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	objectType.OTID = otID
+	objectType.KNID = knID
+	objectType.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("修改对象类请求参数: [%s, %v]", c.Request.RequestURI, objectType))
@@ -410,7 +413,6 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
 			berrors.BknBackend_ObjectType_ObjectTypeNotFound)
@@ -461,8 +463,6 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		}
 	}
 	objectType.IfNameModify = ifNameModify
-	objectType.KNID = knID
-	objectType.Branch = branch
 
 	//根据id修改信息
 	err = r.ots.UpdateObjectType(ctx, nil, &objectType, strictMode)

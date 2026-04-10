@@ -793,6 +793,14 @@ func (r *restHandler) GetRelationTypePaths(c *gin.Context, visitor hydra.Visitor
 	// 设置 trace 的相关 api 的属性
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
+	// 1. 接受 kn_id 参数
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+	span.SetAttributes(
+		attr.Key("kn_id").String(knID),
+		attr.Key("branch").String(branch),
+	)
+
 	//接收绑定参数
 	query := interfaces.RelationTypePathsBaseOnSource{}
 	err := c.ShouldBindJSON(&query)
@@ -805,18 +813,8 @@ func (r *restHandler) GetRelationTypePaths(c *gin.Context, visitor hydra.Visitor
 			httpErr.BaseError.ErrorDetails))
 
 		rest.ReplyError(c, httpErr)
-
 		return
 	}
-
-	// 1. 接受 kn_id 参数
-	knID := c.Param("kn_id")
-	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
-	span.SetAttributes(
-		attr.Key("kn_id").String(knID),
-		attr.Key("branch").String(branch),
-	)
-
 	query.KNID = knID
 	query.Branch = branch
 

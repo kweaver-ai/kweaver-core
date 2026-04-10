@@ -114,6 +114,7 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	// request来的riskTypes的branch都用url里的branch
 	for i := range riskTypes {
+		riskTypes[i].KNID = knID
 		riskTypes[i].Branch = branch
 	}
 

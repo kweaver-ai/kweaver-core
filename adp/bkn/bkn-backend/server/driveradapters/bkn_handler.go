@@ -92,7 +92,6 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	bknNetwork.Branch = branch
 	bknNetwork.BusinessDomain = businessDomain
 
