@@ -349,6 +349,64 @@ definitions:
           $ref: '#/definitions/interfaces.LogicDefinitionNode'
         type: array
     type: object
+  interfaces.ResourceListItem:
+    properties:
+      id:
+        description: resource唯一标识，最大40字符
+        type: string
+      catalog_id:
+        description: 所属catalog ID，最大40字符
+        type: string
+      name:
+        description: 数据资源名称，catalog下唯一，最大255字符
+        type: string
+      tags:
+        description: 标签，JSON数组格式，用于分类和检索，最大255字符
+        items:
+          type: string
+        type: array
+      description:
+        description: 数据资源描述，最大1000字符
+        type: string
+      category:
+        description: 数据资源类型，table表示表，file表示文件，fileset表示文件集，api表示API服务，metric表示时序数据，topic表示消息队列主题，index表示索引，logicview表示逻辑视图，dataset表示数据集
+        enum: [table, file, fileset, api, metric, topic, index, logicview, dataset]
+        type: string
+      status:
+        description: 数据资源状态，active表示活跃，disabled表示已禁用，deprecated表示已废弃，stale表示已过期
+        enum: [active, disabled, deprecated, stale]
+        type: string
+      status_message:
+        description: 状态说明，最大500字符
+        type: string
+      database:
+        description: 所属数据库名称（实例级连接时使用），最大128字符
+        type: string
+      source_identifier:
+        description: 源端标识（表名/文件路径/索引名等），最大500字符
+        type: string
+      creator:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 创建者信息，包含id、type、name
+      create_time:
+        description: 创建时间，Unix时间戳（毫秒）
+        type: integer
+      updater:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 更新者信息，包含id、type、name
+      update_time:
+        description: 最后更新时间，Unix时间戳（毫秒）
+        type: integer
+      operations:
+        description: 可执行的操作列表，如["read", "write", "delete"]
+        items:
+          type: string
+        type: array
+      logic_type:
+        description: 逻辑类型，derived表示衍生，composite表示复合
+        enum: [derived, composite]
+        type: string
+    type: object
   interfaces.ConnectorTypeReq:
     properties:
       type:
@@ -1046,7 +1104,8 @@ paths:
     get:
       consumes:
         - application/json
-      description: Get a list of resources in a catalog
+      description: |-
+        Get a list of resources in a catalog. Note: The response does not include sourceMetadata, schemaDefinition, and logicDefinition fields.
       parameters:
         - description: Catalog ID
           in: path
@@ -1099,7 +1158,7 @@ paths:
               entries:
                 description: List of resources
                 items:
-                  $ref: '#/definitions/interfaces.Resource'
+                  $ref: '#/definitions/interfaces.ResourceListItem'
                 type: array
               total_count:
                 description: Total number of resources
@@ -1128,7 +1187,8 @@ paths:
     get:
       consumes:
         - application/json
-      description: Get a list of resources with pagination and filters
+      description: |-
+        Get a list of resources with pagination and filters. Note: The response does not include sourceMetadata, schemaDefinition, and logicDefinition fields.
       parameters:
         - description: Catalog ID filter
           in: query
@@ -1180,7 +1240,7 @@ paths:
               entries:
                 description: List of resources
                 items:
-                  $ref: '#/definitions/interfaces.Resource'
+                  $ref: '#/definitions/interfaces.ResourceListItem'
                 type: array
               total_count:
                 description: Total number of resources

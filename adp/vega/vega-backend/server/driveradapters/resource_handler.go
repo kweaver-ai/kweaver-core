@@ -561,7 +561,6 @@ func (r *restHandler) ListResources(c *gin.Context) {
 	case interfaces.RESOURCE_TYPE_CATALOG:
 		r.ListCatalogSrcsByEx(c)
 	case interfaces.RESOURCE_TYPE_RESOURCE:
-		// 目标模型的资源实例列表
 		r.ListResourceSrcsByEx(c)
 	case "":
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,

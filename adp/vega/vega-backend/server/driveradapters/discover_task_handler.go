@@ -62,7 +62,7 @@ func (r *restHandler) GetDiscoverTask(c *gin.Context) {
 	rest.ReplyOK(c, http.StatusOK, task)
 }
 
-// ListDiscoverTasks handles GET /api/vega-backend/v1/catalogs/:id/discover/tasks
+// ListDiscoverTasks handles GET /api/vega-backend/v1/discover-tasks
 func (r *restHandler) ListDiscoverTasks(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"ListDiscoverTasks", trace.WithSpanKind(trace.SpanKindServer))
