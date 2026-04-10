@@ -44,6 +44,10 @@ type SessionPool interface {
 	ExecuteCode(ctx context.Context, req *interfaces.ExecuteCodeReq) (*interfaces.ExecuteCodeResp, error)
 	// 获取依赖库列表
 	GetDependencies(ctx context.Context) (resp *DependenciesInfo, err error)
+	// 获取可用会话
+	AcquireSession(ctx context.Context) (sessionID string, err error)
+	// 归还会话
+	ReleaseSession(sessionID string)
 }
 
 type sessionItem struct {
@@ -116,11 +120,11 @@ func GetSessionPool() SessionPool {
 }
 
 func (p *sessionPoolImpl) GetDependencies(ctx context.Context) (resp *DependenciesInfo, err error) {
-	sessionID, err := p.acquireSession(ctx, maxRetryCount)
+	sessionID, err := p.AcquireSession(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer p.releaseSession(sessionID)
+	defer p.ReleaseSession(sessionID)
 
 	exists, detail, err := p.querySessionAndCache(ctx, sessionID)
 	if err != nil {
@@ -154,11 +158,11 @@ func (p *sessionPoolImpl) ExecuteCode(ctx context.Context, req *interfaces.Execu
 		"code":     req.Code,
 		"event":    req.Event,
 	})
-	sessionID, err := p.acquireSession(ctx, maxRetryCount)
+	sessionID, err := p.AcquireSession(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer p.releaseSession(sessionID)
+	defer p.ReleaseSession(sessionID)
 	// 安装依赖库
 	if len(req.Dependencies) > 0 && req.PythonPackageIndexURL != "" {
 		detail, err := p.client.InstallPythonDependencies(ctx, sessionID, &interfaces.InstallDependenciesReq{
@@ -184,6 +188,11 @@ func (p *sessionPoolImpl) ExecuteCode(ctx context.Context, req *interfaces.Execu
 		return nil, err
 	}
 	return resp, nil
+}
+
+// AcquireSession 获取可用会话
+func (p *sessionPoolImpl) AcquireSession(ctx context.Context) (sessionID string, err error) {
+	return p.acquireSession(ctx, maxRetryCount)
 }
 
 func (p *sessionPoolImpl) initSessions() {
@@ -354,6 +363,11 @@ func (p *sessionPoolImpl) releaseSession(sessionID string) {
 		}
 		item.LastUsedAt = time.Now()
 	}
+}
+
+// ReleaseSession 归还会话
+func (p *sessionPoolImpl) ReleaseSession(sessionID string) {
+	p.releaseSession(sessionID)
 }
 
 // invalidateSession 从会话池移除会话槽位，同时异步删除远程资源

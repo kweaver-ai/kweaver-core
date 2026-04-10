@@ -3,6 +3,7 @@ package drivenadapters
 import (
 	"context"
 	"fmt"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -13,6 +14,23 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )
+
+func newHydraTestContext() *gin.Context {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	ctx := common.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+		AccountID:   "user-1",
+		AccountType: interfaces.AccessorTypeUser,
+	})
+	req = req.WithContext(ctx)
+	req.Header.Set(string(interfaces.HeaderXAccountID), "user-1")
+	req.Header.Set(string(interfaces.HeaderXAccountType), string(interfaces.AccessorTypeUser))
+	c.Request = req
+	return c
+}
 
 func TestIntrospect(t *testing.T) {
 	Convey("TestIntrospect", t, func() {
@@ -27,12 +45,7 @@ func TestIntrospect(t *testing.T) {
 			logger:       logger,
 			httpClient:   httpClient,
 		}
-		c := &gin.Context{}
-		ctx := common.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
-			AccountID:   "user-1",
-			AccountType: interfaces.AccessorTypeUser,
-		})
-		c.Request = c.Request.WithContext(ctx)
+		c := newHydraTestContext()
 
 		Convey("HTTP请求错误", func() {
 			logger.EXPECT().Error(gomock.Any()).Return()
@@ -116,12 +129,7 @@ func TestNewHydra_WhenAuthDisabled_ReturnsNoop(t *testing.T) {
 			once = sync.Once{}
 			h = nil
 		}()
-		c := &gin.Context{}
-		ctx := common.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
-			AccountID:   "user-1",
-			AccountType: interfaces.AccessorTypeUser,
-		})
-		c.Request = c.Request.WithContext(ctx)
+		c := newHydraTestContext()
 
 		client := NewHydra()
 		tokenInfo, err := client.Introspect(c)

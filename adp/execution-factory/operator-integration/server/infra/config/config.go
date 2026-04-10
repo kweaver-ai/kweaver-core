@@ -49,6 +49,7 @@ type Config struct {
 	SandboxControlPlane      SandboxControlPlaneConfig `yaml:"sandbox-control-plane"`
 	MFModelAPI               PrivateBaseConfig         `yaml:"mf-model-api"`
 	MFModelManager           PrivateBaseConfig         `yaml:"mf-model-manager"`
+	VegaBackend              PrivateBaseConfig         `yaml:"vega-backend"`
 	AIGenerationConfig       AIGenerationConfig        `yaml:"ai_generation_config"`
 	OSSGatewayBackendConfig  OSSGatewayBackendConfig   `yaml:"oss-gateway-backend"`
 }

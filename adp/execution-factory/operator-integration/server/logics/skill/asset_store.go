@@ -5,11 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"path/filepath"
 
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/drivenadapters"
-	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 )
 
@@ -37,11 +35,6 @@ func newOSSGatewaySkillAssetStore() skillAssetStore {
 
 // Upload 上传技能资产到 OSS 网关后端
 func (s *ossGatewaySkillAssetStore) Upload(ctx context.Context, skillID, version, relPath string, content []byte) (object *interfaces.OssObject, checksum string, err error) {
-	// 检查服务是否ready，否则返回报错
-	if !s.client.IsReady() {
-		err = errors.DefaultHTTPError(ctx, http.StatusInternalServerError, "oss gateway backend is not ready")
-		return
-	}
 	key := s.buildObjectKey(skillID, version, relPath)
 	storageID, err := s.client.CurrentStorageID(ctx)
 	if err != nil {
@@ -58,26 +51,14 @@ func (s *ossGatewaySkillAssetStore) Upload(ctx context.Context, skillID, version
 }
 
 func (s *ossGatewaySkillAssetStore) Download(ctx context.Context, object *interfaces.OssObject) ([]byte, error) {
-	// 检查服务是否ready，否则返回报错
-	if !s.client.IsReady() {
-		return nil, errors.DefaultHTTPError(ctx, http.StatusInternalServerError, "oss gateway backend is not ready")
-	}
 	return s.client.DownloadFile(ctx, object)
 }
 
 func (s *ossGatewaySkillAssetStore) Delete(ctx context.Context, object *interfaces.OssObject) error {
-	// 检查服务是否ready，否则返回报错
-	if !s.client.IsReady() {
-		return errors.DefaultHTTPError(ctx, http.StatusInternalServerError, "oss gateway backend is not ready")
-	}
 	return s.client.DeleteFile(ctx, object)
 }
 
 func (s *ossGatewaySkillAssetStore) GetDownloadURL(ctx context.Context, object *interfaces.OssObject) (string, error) {
-	// 检查服务是否ready，否则返回报错
-	if !s.client.IsReady() {
-		return "", errors.DefaultHTTPError(ctx, http.StatusInternalServerError, "oss gateway backend is not ready")
-	}
 	return s.client.GetDownloadURL(ctx, object)
 }
 

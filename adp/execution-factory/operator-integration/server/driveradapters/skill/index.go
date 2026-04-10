@@ -20,6 +20,7 @@ type SkillHandler interface {
 	GetSkillDetail(c *gin.Context)
 	GetSkillContent(c *gin.Context)
 	ReadSkillFile(c *gin.Context)
+	ExecuteSkill(c *gin.Context)
 }
 
 type skillHandler struct {

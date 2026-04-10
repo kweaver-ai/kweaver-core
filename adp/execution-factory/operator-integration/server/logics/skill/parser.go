@@ -94,6 +94,7 @@ func (p *skillParser) parseSkillContent(content string, req *interfaces.Register
 		ExtendInfo:   utils.ObjectToJSON(fm.Metadata),
 		CreateUser:   req.UserID,
 		UpdateUser:   req.UserID,
+		Category:     req.Category.String(),
 	}
 	return skill, nil
 }

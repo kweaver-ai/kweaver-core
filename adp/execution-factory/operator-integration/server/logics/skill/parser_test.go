@@ -90,14 +90,14 @@ func TestParseRegisterReqZipReturnsAssets(t *testing.T) {
 			}),
 		}
 
-		skill, files, assets, err := parser.parseRegisterReq(req)
-		So(err, ShouldBeNil)
-		So(skill.Name, ShouldEqual, "demo-skill")
-		So(skill.SkillContent, ShouldEqual, "Use this skill carefully.")
-		So(len(files), ShouldEqual, 2)
-		So(len(assets), ShouldEqual, 2)
-	})
-}
+			skill, files, assets, err := parser.parseRegisterReq(req)
+			So(err, ShouldBeNil)
+			So(skill.Name, ShouldEqual, "demo-skill")
+			So(skill.SkillContent, ShouldEqual, "Use this skill carefully.")
+			So(len(files), ShouldEqual, 3)
+			So(len(assets), ShouldEqual, 3)
+		})
+	}
 
 func TestChecksumSHA256(t *testing.T) {
 	Convey("checksumSHA256 returns stable sha256", t, func() {

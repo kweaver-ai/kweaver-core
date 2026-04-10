@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/business_domain"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/category"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/common"
+	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/sandbox"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/utils"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 )
@@ -32,6 +34,9 @@ type skillRegistry struct {
 	skillRepo             model.ISkillRepository
 	fileRepo              model.ISkillFileIndex
 	assetStore            skillAssetStore
+	indexSync             interfaces.SkillIndexSyncService
+	sandboxClient         interfaces.SandBoxControlPlane
+	sessionPool           sandbox.SessionPool
 	dbTx                  model.DBTx
 	AuthService           interfaces.IAuthorizationService
 	BusinessDomainService interfaces.IBusinessDomainService
@@ -48,13 +53,15 @@ var (
 // NewSkillRegistry 创建技能注册器
 func NewSkillRegistry() interfaces.SkillRegistry {
 	registryOnce.Do(func() {
-		conf := config.NewConfigLoader()
 		registryInst = &skillRegistry{
-			Logger:                conf.GetLogger(),
+			Logger:                config.NewConfigLoader().GetLogger(),
 			parser:                newSkillParser(),
 			skillRepo:             dbaccess.NewSkillRepositoryDB(),
 			fileRepo:              dbaccess.NewSkillFileIndexDB(),
 			assetStore:            newOSSGatewaySkillAssetStore(),
+			indexSync:             NewSkillIndexSyncService(),
+			sandboxClient:         drivenadapters.NewSandBoxControlPlaneClient(),
+			sessionPool:           sandbox.GetSessionPool(),
 			dbTx:                  dbaccess.NewBaseTx(),
 			AuthService:           auth.NewAuthServiceImpl(),
 			BusinessDomainService: business_domain.NewBusinessDomainService(),
@@ -188,7 +195,6 @@ func (r *skillRegistry) DeleteSkill(ctx context.Context, req *interfaces.DeleteS
 			fmt.Sprintf("skill can not be deleted in status: %s", skill.Status))
 		return
 	}
-
 	tx, err := r.dbTx.GetTx(ctx)
 	if err != nil {
 		return fmt.Errorf("get tx failed: %w", err)
@@ -275,12 +281,31 @@ func (r *skillRegistry) UpdateSkillStatus(ctx context.Context, req *interfaces.U
 		}
 		// 检查是否重名
 		err = r.checkSkillDuplicateName(ctx, skill.Name, skill.SkillID)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if r.indexSync == nil {
+				return
+			}
+			if syncErr := r.indexSync.UpsertSkill(ctx, skill); syncErr != nil {
+				r.Logger.WithContext(ctx).Errorf("sync published skill index failed, skill_id=%s, err=%v", req.SkillID, syncErr)
+			}
+		}()
 	case interfaces.BizStatusUnpublish, interfaces.BizStatusEditing:
 	case interfaces.BizStatusOffline:
 		err = r.AuthService.CheckUnpublishPermission(ctx, accessor, req.SkillID, interfaces.AuthResourceTypeSkill)
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if r.indexSync == nil {
+				return
+			}
+			if syncErr := r.indexSync.DeleteSkill(ctx, req.SkillID); syncErr != nil {
+				r.Logger.WithContext(ctx).Errorf("delete skill index failed after status update, skill_id=%s, err=%v", req.SkillID, syncErr)
+			}
+		}()
 	}
 	// 更新技能状态
 	if err = r.skillRepo.UpdateSkillStatus(ctx, nil, req.SkillID, string(req.Status), req.UserID); err != nil {
@@ -335,16 +360,97 @@ func (r *skillRegistry) DownloadSkill(ctx context.Context, req *interfaces.Downl
 		err = errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonOperationForbidden, nil)
 		return
 	}
-	skill, err := r.skillRepo.SelectSkillByID(ctx, nil, req.SkillID)
+	skill, fileName, archive, err := r.buildSkillArchive(ctx, req.SkillID)
 	if err != nil {
 		return nil, err
+	}
+
+	return &interfaces.DownloadSkillResp{
+		SkillID:  skill.SkillID,
+		FileName: fileName,
+		Content:  archive,
+	}, nil
+}
+
+// ExecuteSkill 执行技能
+func (r *skillRegistry) ExecuteSkill(ctx context.Context, req *interfaces.ExecuteSkillReq) (resp *interfaces.ExecuteSkillResp, err error) {
+	ctx, _ = o11y.StartInternalSpan(ctx)
+	defer o11y.EndSpan(ctx, err)
+	telemetry.SetSpanAttributes(ctx, map[string]interface{}{
+		"user_id":  req.UserID,
+		"bd_id":    req.BusinessDomainID,
+		"skill_id": req.SkillID,
+	})
+
+	accessor, err := r.AuthService.GetAccessor(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+	authorized, err := r.AuthService.OperationCheckAny(ctx, accessor, req.SkillID, interfaces.AuthResourceTypeSkill,
+		interfaces.AuthOperationTypeExecute, interfaces.AuthOperationTypePublicAccess)
+	if err != nil {
+		return nil, err
+	}
+	if !authorized {
+		return nil, errors.NewHTTPError(ctx, http.StatusForbidden, errors.ErrExtCommonOperationForbidden, nil)
+	}
+
+	skill, fileName, archive, err := r.buildSkillArchive(ctx, req.SkillID)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionID, err := r.sessionPool.AcquireSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.sessionPool.ReleaseSession(sessionID)
+
+	uploadWorkDir := path.Join("skills", req.SkillID)
+
+	uploadResp, err := r.sandboxClient.UploadSkillArchive(ctx, sessionID, &interfaces.UploadSkillArchiveReq{
+		WorkDir:  uploadWorkDir,
+		FileName: fileName,
+		Content:  archive,
+	})
+	if err != nil {
+		return nil, err
+	}
+	execResp, err := r.sandboxClient.ExecuteShell(ctx, sessionID, &interfaces.ExecuteShellReq{
+		WorkDir: uploadResp.WorkDir,
+		Command: req.EntryShell,
+		Timeout: req.Timeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &interfaces.ExecuteSkillResp{
+		SkillID:       skill.SkillID,
+		SessionID:     sessionID,
+		WorkDir:       uploadResp.WorkDir,
+		FileName:      uploadResp.FileName,
+		UploadedPath:  uploadResp.UploadedPath,
+		Command:       execResp.Command,
+		ExitCode:      execResp.ExitCode,
+		Stdout:        execResp.Stdout,
+		Stderr:        execResp.Stderr,
+		ExecutionTime: execResp.ExecutionTime,
+		Mocked:        uploadResp.Mocked || execResp.Mocked,
+	}, nil
+}
+
+func (r *skillRegistry) buildSkillArchive(ctx context.Context, skillID string) (*model.SkillRepositoryDB, string, []byte, error) {
+	skill, err := r.skillRepo.SelectSkillByID(ctx, nil, skillID)
+	if err != nil {
+		return nil, "", nil, err
 	}
 	if skill == nil || skill.IsDeleted {
-		return nil, fmt.Errorf("skill not found: %s", req.SkillID)
+		return nil, "", nil, fmt.Errorf("skill not found: %s", skillID)
 	}
-	files, err := r.fileRepo.SelectSkillFileBySkillID(ctx, nil, req.SkillID, skill.Version)
+	files, err := r.fileRepo.SelectSkillFileBySkillID(ctx, nil, skillID, skill.Version)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	var buf bytes.Buffer
@@ -362,7 +468,7 @@ func (r *skillRegistry) DownloadSkill(ctx context.Context, req *interfaces.Downl
 		skill.Name, skill.Description, skill.Version, skill.SkillContent)
 	if err = writeFile("SKILL.md", []byte(skillMarkdown)); err != nil {
 		_ = zw.Close()
-		return nil, err
+		return nil, "", nil, err
 	}
 	for _, file := range files {
 		content, readErr := r.assetStore.Download(ctx, &interfaces.OssObject{
@@ -371,22 +477,18 @@ func (r *skillRegistry) DownloadSkill(ctx context.Context, req *interfaces.Downl
 		})
 		if readErr != nil {
 			_ = zw.Close()
-			return nil, readErr
+			return nil, "", nil, readErr
 		}
 		if err = writeFile(file.RelPath, content); err != nil {
 			_ = zw.Close()
-			return nil, err
+			return nil, "", nil, err
 		}
 	}
 	if err = zw.Close(); err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
-	return &interfaces.DownloadSkillResp{
-		SkillID:  skill.SkillID,
-		FileName: fmt.Sprintf("%s.zip", skill.Name),
-		Content:  buf.Bytes(),
-	}, nil
+	return skill, fmt.Sprintf("%s.zip", skill.Name), buf.Bytes(), nil
 }
 
 // QuerySkillList 查询技能列表（管理接口）

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
+	icommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	myErr "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
@@ -678,6 +679,11 @@ func TestUpdateOperatorStatus(t *testing.T) {
 				So(httpErr.HTTPCode, ShouldEqual, http.StatusInternalServerError)
 			})
 			Convey("不存在已发布版本: 添加历史版本成功", func() {
+				ctx := icommon.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+					AccountID:   "user-1",
+					AccountType: interfaces.AccessorTypeUser,
+					TokenInfo:   &interfaces.TokenInfo{VisitorID: "user-1"},
+				})
 				mockAuthService.EXPECT().CheckPublishPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockDBOperatorManager.EXPECT().SelectByNameAndStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil, nil).Times(1)
 				mockDBOperatorManager.EXPECT().UpdateOperatorStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -685,7 +691,7 @@ func TestUpdateOperatorStatus(t *testing.T) {
 				mockOpReleaseDB.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockOpReleaseHistoryDB.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any()).Times(1)
-				err := m.UpdateOperatorStatus(context.TODO(), req, "")
+				err := m.UpdateOperatorStatus(ctx, req, "")
 				So(err, ShouldBeNil)
 				time.Sleep(100 * time.Millisecond)
 			})
@@ -741,11 +747,16 @@ func TestUpdateOperatorStatus(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("下架算子操作: 当前无release记录，无需更新，直接下架记录审计日志", func() {
+				ctx := icommon.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+					AccountID:   "user-1",
+					AccountType: interfaces.AccessorTypeUser,
+					TokenInfo:   &interfaces.TokenInfo{VisitorID: "user-1"},
+				})
 				mockAuthService.EXPECT().CheckUnpublishPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockDBOperatorManager.EXPECT().UpdateOperatorStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockOpReleaseDB.EXPECT().SelectByOpID(gomock.Any(), gomock.Any()).Return(false, nil, nil).Times(1)
 				mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any())
-				err := m.UpdateOperatorStatus(context.TODO(), req, "")
+				err := m.UpdateOperatorStatus(ctx, req, "")
 				So(err, ShouldBeNil)
 				time.Sleep(100 * time.Millisecond)
 			})
@@ -786,6 +797,11 @@ func TestUpdateOperatorStatus(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 			Convey("下架算子操作: 存在release记录, 不存在历史记录，添加历史记录成功", func() {
+				ctx := icommon.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+					AccountID:   "user-1",
+					AccountType: interfaces.AccessorTypeUser,
+					TokenInfo:   &interfaces.TokenInfo{VisitorID: "user-1"},
+				})
 				mockAuthService.EXPECT().CheckUnpublishPermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockDBOperatorManager.EXPECT().UpdateOperatorStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockOpReleaseDB.EXPECT().SelectByOpID(gomock.Any(), gomock.Any()).Return(true, &model.OperatorReleaseDB{}, nil).Times(1)
@@ -793,7 +809,7 @@ func TestUpdateOperatorStatus(t *testing.T) {
 				mockOpReleaseHistoryDB.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockOpReleaseDB.EXPECT().UpdateByOpID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any()).MaxTimes(1)
-				err := m.UpdateOperatorStatus(context.TODO(), req, "")
+				err := m.UpdateOperatorStatus(ctx, req, "")
 				So(err, ShouldBeNil)
 				time.Sleep(100 * time.Millisecond)
 			})

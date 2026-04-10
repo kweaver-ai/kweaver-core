@@ -21,6 +21,7 @@ var (
 
 var (
 	chatCompletionsPath = "/v1/chat/completions" // 模型调用路径
+	embeddingsPath      = "/v1/small-model/embeddings"
 )
 
 // mfModelAPIClient 模型管理API客户端
@@ -78,4 +79,25 @@ func (um *mfModelAPIClient) StreamChatCompletion(ctx context.Context, req *inter
 		return nil, nil, err
 	}
 	return streamCh, errCh, nil
+}
+
+// Embeddings 获取 embedding 向量
+func (um *mfModelAPIClient) Embeddings(ctx context.Context, req *interfaces.EmbeddingReq) (resp *interfaces.EmbeddingResp, err error) {
+	src := fmt.Sprintf("%s%s", um.baseURL, embeddingsPath)
+	header := common.GetHeaderFromCtx(ctx)
+	um.logger.WithContext(ctx).Infof("request embeddings, url=%s, inputs=%d", src, len(req.Input))
+	_, result, err := um.httpClient.Post(ctx, src, header, req)
+	if err != nil {
+		um.logger.WithContext(ctx).Warnf("embeddings failed, url=%s, inputs=%d, err=%v", src, len(req.Input), err)
+		return nil, err
+	}
+	resp = &interfaces.EmbeddingResp{}
+	err = utils.AnyToObject(result, resp)
+	if err != nil {
+		err = errors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
+		um.logger.WithContext(ctx).Warnf("parse embeddings response failed, url=%s, err=%v", src, err)
+		return nil, err
+	}
+	um.logger.WithContext(ctx).Infof("embeddings success, url=%s, vectors=%d", src, len(resp.Data))
+	return resp, nil
 }
