@@ -134,6 +134,8 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		rest.ReplyError(c, httpErr)
 		return
 	}
+	cg.KNID = knID
+	cg.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("创建概念分组请求参数: [%s,%v]", c.Request.RequestURI, cg))
@@ -147,9 +149,6 @@ func (r *restHandler) CreateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	cg.KNID = knID
-	// request来的cg的branch都用url里的branch
-	cg.Branch = branch
 
 	// 1. 校验 概念分组必要创建参数的合法性, 非空、长度、是枚举值
 	err = ValidateConceptGroup(ctx, &cg)
@@ -397,6 +396,7 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 	cg.CGID = cgID
+	cg.KNID = knID
 	cg.Branch = branch // 分组的 branch 从query参数中取
 
 	// 记录接口调用参数： c.Request.RequestURI, body
@@ -463,8 +463,6 @@ func (r *restHandler) UpdateConceptGroup(c *gin.Context, visitor hydra.Visitor) 
 		}
 	}
 	cg.IfNameModify = ifNameModify
-	cg.KNID = knID
-	cg.Branch = branch
 
 	//根据id修改信息
 	err = r.cgs.UpdateConceptGroup(ctx, nil, &cg, strictMode)

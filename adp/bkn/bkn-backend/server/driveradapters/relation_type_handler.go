@@ -175,6 +175,7 @@ func (r *restHandler) CreateRelationTypes(c *gin.Context, visitor hydra.Visitor)
 
 	// request来的relationTypes的branch都用url里的branch
 	for i := range relationTypes {
+		relationTypes[i].KNID = knID
 		relationTypes[i].Branch = branch
 	}
 

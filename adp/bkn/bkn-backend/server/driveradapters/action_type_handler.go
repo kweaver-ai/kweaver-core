@@ -175,6 +175,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 
 	// request来的actionTypes的branch都用url里的branch
 	for i := range actionTypes {
+		actionTypes[i].KNID = knID
 		actionTypes[i].Branch = branch
 	}
 
@@ -395,6 +396,8 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	actionType.ATID = atID
+	actionType.KNID = knID
+	actionType.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("修改行动类请求参数: [%s, %v]", c.Request.RequestURI, actionType))
@@ -409,7 +412,6 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
 			berrors.BknBackend_ActionType_ActionTypeNotFound)
@@ -460,8 +462,6 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		}
 	}
 	actionType.IfNameModify = ifNameModify
-	actionType.KNID = knID
-	actionType.Branch = branch
 
 	//根据id修改信息
 	err = r.ats.UpdateActionType(ctx, nil, &actionType, strictMode)

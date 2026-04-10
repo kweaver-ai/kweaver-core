@@ -112,7 +112,6 @@ func (r *restHandler) CreateJob(c *gin.Context, visitor hydra.Visitor) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-
 	reqBody.KNID = knID
 	reqBody.Branch = branch
 
