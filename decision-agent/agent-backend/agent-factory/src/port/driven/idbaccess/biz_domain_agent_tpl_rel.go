@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/biz_domain_agent_tpl_rel.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IBizDomainAgentTplRelRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/biz_domain_agent_tpl_rel.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IBizDomainAgentTplRelRepo
 
 // IBizDomainAgentTplRelRepo 业务域与agent模板关联表操作接口
 type IBizDomainAgentTplRelRepo interface {

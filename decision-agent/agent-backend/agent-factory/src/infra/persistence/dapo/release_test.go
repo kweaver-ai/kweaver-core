@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/daenum"
 )
 
 func TestPublishedToBeStruct_SelectFieldsZero(t *testing.T) {

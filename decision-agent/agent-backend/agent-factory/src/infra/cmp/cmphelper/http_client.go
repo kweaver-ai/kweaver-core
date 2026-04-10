@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/httphelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httphelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 
 	"github.com/gogf/gf/v2/frame/g"
 )

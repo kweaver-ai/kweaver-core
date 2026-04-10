@@ -1,7 +1,7 @@
 package authzhttpreq
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
 )
 
 // SingleCheckReq 单个决策请求

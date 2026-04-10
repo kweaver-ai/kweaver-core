@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/auditlogdto"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releasereq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iv3portdriver/v3portdrivermock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/auditlogdto"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releasereq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver/v3portdrivermock"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 )
 
@@ -203,6 +203,7 @@ func TestReleaseHandler_Publish(t *testing.T) {
 		mockSvc.EXPECT().Publish(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *releasereq.PublishReq) (*releaseresp.PublishUpsertResp, auditlogdto.AgentPublishAuditLogInfo, error) {
 			assert.Empty(t, req.CategoryIDs)
 			assert.Empty(t, req.PublishToWhere)
+
 			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentPublishAuditLogInfo{ID: "agent-1", Name: "name"}, nil
 		})
 
@@ -228,6 +229,7 @@ func TestReleaseHandler_Publish(t *testing.T) {
 			assert.Empty(t, req.PublishToWhere)
 			assert.Nil(t, req.PmsControl)
 			assert.Empty(t, req.PublishToBes)
+
 			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentPublishAuditLogInfo{ID: "agent-1", Name: "name"}, nil
 		})
 
@@ -288,6 +290,7 @@ func TestReleaseHandler_Publish(t *testing.T) {
 		mockSvc.EXPECT().UpdatePublishInfo(gomock.Any(), "agent-1", gomock.Any()).DoAndReturn(func(ctx context.Context, agentID string, req *releasereq.UpdatePublishInfoReq) (*releaseresp.PublishUpsertResp, auditlogdto.AgentModifyPublishAuditLogInfo, error) {
 			assert.Empty(t, req.CategoryIDs)
 			assert.Empty(t, req.PublishToWhere)
+
 			return &releaseresp.PublishUpsertResp{ReleaseId: "r-1"}, auditlogdto.AgentModifyPublishAuditLogInfo{ID: "agent-1"}, nil
 		})
 

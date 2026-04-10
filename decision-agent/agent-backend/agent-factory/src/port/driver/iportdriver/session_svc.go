@@ -3,9 +3,9 @@ package iportdriver
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/session/sessionreq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/session/sessionresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/ctype"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/session/sessionreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/session/sessionresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/ctype"
 )
 
 //go:generate mockgen -source=./session_svc.go -destination ./iportdrivermock/session_svc.go -package iportdrivermock

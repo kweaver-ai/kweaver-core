@@ -3,7 +3,7 @@ package dainject
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iv3portdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver"
 	"github.com/stretchr/testify/assert"
 )
 

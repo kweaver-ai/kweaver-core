@@ -1,10 +1,10 @@
 package observabilitysvc
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp/cmpmock"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iuniqueryhttp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iuniqueryhttp/uniquerymock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp/cmpmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iuniqueryhttp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iuniqueryhttp/uniquerymock"
 	"go.uber.org/mock/gomock"
 )
 

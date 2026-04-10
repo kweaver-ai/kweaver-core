@@ -3,9 +3,9 @@ package releasee2p
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/entity/releaseeo"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/releaseeo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

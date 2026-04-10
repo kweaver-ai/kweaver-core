@@ -3,15 +3,15 @@ package agentsvc
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/conf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iagentexecutorhttp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/isandboxhtpp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iv2agentexecutorhttp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iportdriver"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iv3portdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iagentexecutorhttp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/isandboxhtpp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iv2agentexecutorhttp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iportdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver"
 )
 
 type agentSvc struct {

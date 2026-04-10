@@ -1,6 +1,6 @@
 package dapo
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 
 type ReleasePermissionPO struct {
 	ID         int64                  `db:"f_id"`

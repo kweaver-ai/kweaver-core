@@ -1,8 +1,8 @@
 package conversationmsgvo
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentresperr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/v2agentexecutoraccess/v2agentexecutordto"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentresperr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/v2agentexecutoraccess/v2agentexecutordto"
 )
 
 // MessageExt 消息扩展字段

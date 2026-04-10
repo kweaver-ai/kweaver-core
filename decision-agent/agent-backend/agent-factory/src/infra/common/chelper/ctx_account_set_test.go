@@ -3,7 +3,7 @@ package chelper
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 	"github.com/stretchr/testify/assert"
 )
 

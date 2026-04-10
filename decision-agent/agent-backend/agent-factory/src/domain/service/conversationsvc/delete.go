@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/apierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/apierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -18,6 +18,7 @@ func (svc *conversationSvc) Delete(ctx context.Context, id string) (err error) {
 	ctx, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	oteltrace.SetAttributes(ctx, attribute.String("conversation_id", id))
+
 	_, err = svc.conversationRepo.GetByID(ctx, id)
 	if err != nil {
 		if chelper.IsSqlNotFound(err) {
@@ -65,6 +66,7 @@ func (svc *conversationSvc) DeleteByAppKey(ctx context.Context, appKey string) (
 	ctx, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	oteltrace.SetAttributes(ctx, attribute.String("app_key", appKey))
+
 	tx, err := svc.conversationRepo.BeginTx(ctx)
 	if err != nil {
 		otellog.LogError(ctx, fmt.Sprintf("[DeleteByAppKey] begin tx error, appKey: %s, err: %v", appKey, err), err)

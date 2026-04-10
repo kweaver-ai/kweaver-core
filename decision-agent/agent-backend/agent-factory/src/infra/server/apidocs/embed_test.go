@@ -71,6 +71,7 @@ func mustLoadAgentFactoryDoc(t *testing.T) map[string]any {
 	t.Helper()
 
 	var doc map[string]any
+
 	require.NoError(t, json.Unmarshal(AgentFactoryJSON, &doc))
 
 	return doc
@@ -90,6 +91,7 @@ func mustResolveSchemaRef(t *testing.T, doc map[string]any, ref string) map[stri
 	t.Helper()
 
 	const prefix = "#/components/schemas/"
+
 	require.Contains(t, ref, prefix)
 
 	return mustNestedMap(t, doc, "components", "schemas", ref[len(prefix):])

@@ -13,9 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	auditlogdto "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/auditlogdto"
-	releasereq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releasereq"
-	releaseresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
+	auditlogdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/auditlogdto"
+	releasereq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releasereq"
+	releaseresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
 	gomock "go.uber.org/mock/gomock"
 )
 

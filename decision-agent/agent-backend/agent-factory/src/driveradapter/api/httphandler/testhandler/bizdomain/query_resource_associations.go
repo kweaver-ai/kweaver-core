@@ -2,7 +2,7 @@ package bizdomain
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
 )
 
 // QueryResourceAssociationsTestHandler 测试关联关系查询

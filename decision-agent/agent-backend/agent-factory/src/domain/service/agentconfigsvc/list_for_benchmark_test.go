@@ -7,14 +7,14 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/cconf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/conf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/global"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
-	idbaccessmock "github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess/idbaccessmock"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/ibizdomainacc/bizdomainaccmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
+	idbaccessmock "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess/idbaccessmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/ibizdomainacc/bizdomainaccmock"
 	"github.com/stretchr/testify/assert"
 )
 

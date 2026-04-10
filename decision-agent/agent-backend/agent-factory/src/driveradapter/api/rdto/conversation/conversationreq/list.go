@@ -1,10 +1,10 @@
 package conversationreq
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/common"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/common"
 
 type ListReq struct {
 	AgentAPPKey string `json:"-"`
 	UserId      string `json:"-"`
-	Title       string `json:"title"`
+	Title       string `form:"title" json:"title"`
 	common.PageSize
 }

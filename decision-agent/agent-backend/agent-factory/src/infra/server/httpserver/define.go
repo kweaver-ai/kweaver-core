@@ -3,8 +3,8 @@ package httpserver
 import (
 	"net/http"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/httphandler/personalspacehandler"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/ihandlerportdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/httphandler/personalspacehandler"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/ihandlerportdriver"
 )
 
 // httpServer HTTP服务器结构体

@@ -3,10 +3,10 @@ package icmp
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/dto/efastarg"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/dto/efastret"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/eftypes"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/dto/efastarg"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/dto/efastret"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/eftypes"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 )
 
 //go:generate mockgen -package cmpmock -source efast.go -destination ./cmpmock/efast_mock.go

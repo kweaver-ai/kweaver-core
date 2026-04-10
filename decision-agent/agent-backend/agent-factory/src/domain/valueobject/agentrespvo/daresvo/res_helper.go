@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentconfigvo"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentrespvo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentconfigvo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentrespvo"
 	"github.com/pkg/errors"
 )
 

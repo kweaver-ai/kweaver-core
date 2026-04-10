@@ -3,13 +3,13 @@ package dainject
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service"
-	agentsvc "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/agentrunsvc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/dbaccess/conversationdbacc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/dbaccess/conversationmsgdbacc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/httpinject"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/global"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iportdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service"
+	agentsvc "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/agentrunsvc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/conversationdbacc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/conversationmsgdbacc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/httpinject"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iportdriver"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
 

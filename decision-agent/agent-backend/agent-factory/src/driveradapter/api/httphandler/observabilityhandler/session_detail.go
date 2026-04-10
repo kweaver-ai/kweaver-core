@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	observabilityreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/observability/req"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +37,7 @@ func (h *observabilityHTTPHandler) SessionDetail(c *gin.Context) {
 
 	if agentID == "" {
 		h.logger.Errorf("[SessionDetail] agent_id is required")
+
 		err := capierr.New400Err(c, "[SessionDetail] agent_id is required")
 		otellog.LogError(c.Request.Context(), "[SessionDetail] agent_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)
@@ -47,6 +48,7 @@ func (h *observabilityHTTPHandler) SessionDetail(c *gin.Context) {
 
 	if conversationID == "" {
 		h.logger.Errorf("[SessionDetail] conversation_id is required")
+
 		err := capierr.New400Err(c, "[SessionDetail] conversation_id is required")
 		otellog.LogError(c.Request.Context(), "[SessionDetail] conversation_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)
@@ -57,6 +59,7 @@ func (h *observabilityHTTPHandler) SessionDetail(c *gin.Context) {
 
 	if sessionID == "" {
 		h.logger.Errorf("[SessionDetail] session_id is required")
+
 		err := capierr.New400Err(c, "[SessionDetail] session_id is required")
 		otellog.LogError(c.Request.Context(), "[SessionDetail] session_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)

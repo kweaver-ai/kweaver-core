@@ -3,10 +3,10 @@ package conversationdbacc
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/pkg/errors"
@@ -14,7 +14,7 @@ import (
 
 // ListByAgentID implements idbaccess.IConversationRepo.
 func (repo *ConversationRepo) ListByAgentID(ctx context.Context, agentID, title string, page, size int) (rt []*dapo.ConversationPO, count int64, err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("agentID", agentID))
 

@@ -3,7 +3,7 @@ package comvalobj
 import (
 	"errors"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/constant/cdaconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/cdaconstant"
 )
 
 type DataAgentUniqFlag struct {

@@ -1,6 +1,6 @@
 package mqvo
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 
 type UpdateAgentNameMqMsg struct {
 	ID   string               `json:"id"`

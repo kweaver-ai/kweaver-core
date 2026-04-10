@@ -3,10 +3,10 @@ package dbaulid
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cconstant"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cglobal"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cglobal"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 
 	"github.com/kweaver-ai/proton-rds-sdk-go/sqlx"

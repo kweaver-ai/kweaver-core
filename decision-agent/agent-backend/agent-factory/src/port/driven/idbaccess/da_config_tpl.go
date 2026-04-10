@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/da_config_tpl.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IDataAgentTplRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/da_config_tpl.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IDataAgentTplRepo
 type IDataAgentTplRepo interface {
 	IDBAccBaseRepo
 

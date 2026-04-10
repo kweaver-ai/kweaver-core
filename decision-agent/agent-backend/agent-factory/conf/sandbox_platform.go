@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/cconf"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
 
 // SandboxPlatformConf Sandbox Platform 配置
 type SandboxPlatformConf struct {

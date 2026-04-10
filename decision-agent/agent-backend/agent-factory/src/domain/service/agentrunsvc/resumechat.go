@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/panichelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/panichelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 )
 
 // ResumeChat 恢复聊天（Session恢复）

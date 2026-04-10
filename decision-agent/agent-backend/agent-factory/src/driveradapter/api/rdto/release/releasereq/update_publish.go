@@ -3,8 +3,8 @@ package releasereq
 import (
 	"strings"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/publishvo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/daenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/publishvo"
 	"github.com/pkg/errors"
 )
 
@@ -25,6 +25,7 @@ func (req *UpdatePublishInfoReq) CustomCheck() (err error) {
 	}
 
 	categoryIDs := make([]string, 0, len(req.CategoryIDs))
+
 	for _, categoryID := range req.CategoryIDs {
 		categoryID = strings.TrimSpace(categoryID)
 		if categoryID == "" {

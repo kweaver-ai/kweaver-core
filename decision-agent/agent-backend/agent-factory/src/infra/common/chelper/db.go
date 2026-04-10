@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
 )
 
 // joinErrors 合并错误，如果原错误不为nil，则将新错误与原错误合并

@@ -1,7 +1,7 @@
 package authzhttpres
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
 )
 
 // PolicyOperation 策略操作

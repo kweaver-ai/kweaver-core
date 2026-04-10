@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
 )
 
 type AgentFactoryConf struct {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/p2e/conversationp2e"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/p2e/conversationp2e"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )

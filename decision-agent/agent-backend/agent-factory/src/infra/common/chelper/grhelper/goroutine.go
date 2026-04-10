@@ -1,8 +1,8 @@
 package grhelper
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/panichelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/panichelper"
 )
 
 // GoSafe 安全地执行一个 goroutine，会自动捕获和处理 panic

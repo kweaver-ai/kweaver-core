@@ -1,9 +1,9 @@
 package authzhttpreq
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 )
 
 func NewSingleAppAccountCheckReq(appAccountID string, resourceID string, resourceType cdaenum.ResourceType, operation []cdapmsenum.Operator) *SingleCheckReq {

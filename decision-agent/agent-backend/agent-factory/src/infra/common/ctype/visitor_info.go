@@ -1,6 +1,6 @@
 package ctype
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 
 type VisitorInfo struct {
 	XAccountID   string            `json:"x_account_id"`

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/internal/openapidoc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	pkgerrors "github.com/pkg/errors"
 )
 
@@ -19,6 +19,12 @@ func runGenerate(args []string) error {
 	outJSONPath := fs.String("out-json", defaultOutJSONPath, "Final OpenAPI JSON output path")
 	outYAMLPath := fs.String("out-yaml", defaultOutYAMLPath, "Final OpenAPI YAML output path")
 	outHTMLPath := fs.String("out-html", defaultOutHTMLPath, "Final Scalar HTML output path")
+	outFaviconPath := fs.String("out-favicon", defaultPublicFaviconPath, "Public favicon output path")
+	runtimeJSONPath := fs.String("runtime-json", defaultRuntimeJSONPath, "Runtime OpenAPI JSON output path")
+	runtimeYAMLPath := fs.String("runtime-yaml", defaultRuntimeYAMLPath, "Runtime OpenAPI YAML output path")
+	runtimeHTMLPath := fs.String("runtime-html", defaultRuntimeHTMLPath, "Runtime Scalar HTML output path")
+	runtimeFaviconPath := fs.String("runtime-favicon", defaultRuntimeFaviconPath, "Runtime favicon output path")
+	faviconSourcePath := fs.String("favicon-source", defaultFaviconSourcePath, "Source favicon path")
 	reportPath := fs.String("report", defaultReportPath, "Compare report output path")
 
 	if err := fs.Parse(args); err != nil {
@@ -35,16 +41,18 @@ func runGenerate(args []string) error {
 		return err
 	}
 
-	if err := openapidoc.WriteFile(*outJSONPath, artifacts.JSON); err != nil {
-		return pkgerrors.Wrap(err, "write final json")
-	}
-
-	if err := openapidoc.WriteFile(*outYAMLPath, artifacts.YAML); err != nil {
-		return pkgerrors.Wrap(err, "write final yaml")
-	}
-
-	if err := openapidoc.WriteFile(*outHTMLPath, artifacts.HTML); err != nil {
-		return pkgerrors.Wrap(err, "write final html")
+	if err := writeGeneratedArtifacts(docOutputPaths{
+		PublicJSONPath:     *outJSONPath,
+		PublicYAMLPath:     *outYAMLPath,
+		PublicHTMLPath:     *outHTMLPath,
+		PublicFaviconPath:  *outFaviconPath,
+		RuntimeJSONPath:    *runtimeJSONPath,
+		RuntimeYAMLPath:    *runtimeYAMLPath,
+		RuntimeHTMLPath:    *runtimeHTMLPath,
+		RuntimeFaviconPath: *runtimeFaviconPath,
+		FaviconSourcePath:  *faviconSourcePath,
+	}, artifacts); err != nil {
+		return pkgerrors.Wrap(err, "write generated artifacts")
 	}
 
 	if report := strings.TrimSpace(artifacts.CompareReport); report != "" && optionalPath(*reportPath) != "" {
@@ -59,6 +67,7 @@ func runGenerate(args []string) error {
 	fmt.Printf("generated raw spec: %d paths / %d operations\n", generatedPaths, generatedOps)
 	fmt.Printf("generated final spec: %d paths / %d operations\n", finalPaths, finalOps)
 	fmt.Printf("wrote %s\nwrote %s\nwrote %s\n", *outJSONPath, *outYAMLPath, *outHTMLPath)
+	fmt.Printf("wrote %s\nwrote %s\nwrote %s\n", *runtimeJSONPath, *runtimeYAMLPath, *runtimeHTMLPath)
 
 	if optionalPath(*reportPath) != "" && strings.TrimSpace(artifacts.CompareReport) != "" {
 		fmt.Printf("wrote %s\n", *reportPath)

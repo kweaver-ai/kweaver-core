@@ -14,9 +14,9 @@ import (
 	sql "database/sql"
 	reflect "reflect"
 
-	auditlogdto "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/auditlogdto"
-	agenttplreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent_tpl/agenttplreq"
-	agenttplresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent_tpl/agenttplresp"
+	auditlogdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/auditlogdto"
+	agenttplreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_tpl/agenttplreq"
+	agenttplresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_tpl/agenttplresp"
 	gomock "go.uber.org/mock/gomock"
 )
 

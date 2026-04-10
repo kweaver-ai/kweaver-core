@@ -1,7 +1,7 @@
 package squareresp
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/entity/daconfeo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/daconfeo"
 )
 
 type UserInfo struct {

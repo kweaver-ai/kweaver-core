@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/bizdomainsvc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/inject/v3/dainject"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/bizdomainsvc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/inject/v3/dainject"
 )
 
 // BizDomainTestHandler 业务域测试handler
