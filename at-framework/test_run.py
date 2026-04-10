@@ -70,7 +70,8 @@ def _jinja_random_string(length=8, model=8):
         chars += _str.punctuation + r"·！￥……（）【】、：；“‘《》，。？、"
     if not chars:
         chars = _str.ascii_lowercase + _str.digits
-    return "".join(random.choices(chars, k=max(1, int(length))))
+
+    return json.dumps(''.join(random.choices(chars, k=max(1, int(length))))).strip('"')
 
 
 _jinja_env = Environment()
