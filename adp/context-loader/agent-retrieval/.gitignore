@@ -8,4 +8,5 @@ coverage_report
 .ktctl*
 .agent/
 coverage.out
+test-result/
 config/local/
