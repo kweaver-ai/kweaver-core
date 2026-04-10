@@ -22,6 +22,7 @@ import (
 type MockJobService struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockJobServiceMockRecorder is the mock recorder for MockJobService.
@@ -51,7 +52,7 @@ func (m *MockJobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobI
 }
 
 // CreateJob indicates an expected call of CreateJob.
-func (mr *MockJobServiceMockRecorder) CreateJob(ctx, jobInfo interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) CreateJob(ctx, jobInfo any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateJob", reflect.TypeOf((*MockJobService)(nil).CreateJob), ctx, jobInfo)
 }
@@ -65,7 +66,7 @@ func (m *MockJobService) DeleteJobsByIDs(ctx context.Context, knID, branch strin
 }
 
 // DeleteJobsByIDs indicates an expected call of DeleteJobsByIDs.
-func (mr *MockJobServiceMockRecorder) DeleteJobsByIDs(ctx, knID, branch, jobIDs interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) DeleteJobsByIDs(ctx, knID, branch, jobIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJobsByIDs", reflect.TypeOf((*MockJobService)(nil).DeleteJobsByIDs), ctx, knID, branch, jobIDs)
 }
@@ -79,7 +80,7 @@ func (m *MockJobService) DeleteJobsByKnID(ctx context.Context, tx *sql.Tx, knID,
 }
 
 // DeleteJobsByKnID indicates an expected call of DeleteJobsByKnID.
-func (mr *MockJobServiceMockRecorder) DeleteJobsByKnID(ctx, tx, knID, branch interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) DeleteJobsByKnID(ctx, tx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJobsByKnID", reflect.TypeOf((*MockJobService)(nil).DeleteJobsByKnID), ctx, tx, knID, branch)
 }
@@ -94,7 +95,7 @@ func (m *MockJobService) GetJobByID(ctx context.Context, jobID string) (*interfa
 }
 
 // GetJobByID indicates an expected call of GetJobByID.
-func (mr *MockJobServiceMockRecorder) GetJobByID(ctx, jobID interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) GetJobByID(ctx, jobID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobByID", reflect.TypeOf((*MockJobService)(nil).GetJobByID), ctx, jobID)
 }
@@ -109,7 +110,7 @@ func (m *MockJobService) GetJobsByIDs(ctx context.Context, jobIDs []string) (map
 }
 
 // GetJobsByIDs indicates an expected call of GetJobsByIDs.
-func (mr *MockJobServiceMockRecorder) GetJobsByIDs(ctx, jobIDs interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) GetJobsByIDs(ctx, jobIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobsByIDs", reflect.TypeOf((*MockJobService)(nil).GetJobsByIDs), ctx, jobIDs)
 }
@@ -125,7 +126,7 @@ func (m *MockJobService) ListJobs(ctx context.Context, queryParams interfaces.Jo
 }
 
 // ListJobs indicates an expected call of ListJobs.
-func (mr *MockJobServiceMockRecorder) ListJobs(ctx, queryParams interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) ListJobs(ctx, queryParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListJobs", reflect.TypeOf((*MockJobService)(nil).ListJobs), ctx, queryParams)
 }
@@ -141,7 +142,7 @@ func (m *MockJobService) ListTasks(ctx context.Context, queryParams interfaces.T
 }
 
 // ListTasks indicates an expected call of ListTasks.
-func (mr *MockJobServiceMockRecorder) ListTasks(ctx, queryParams interface{}) *gomock.Call {
+func (mr *MockJobServiceMockRecorder) ListTasks(ctx, queryParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTasks", reflect.TypeOf((*MockJobService)(nil).ListTasks), ctx, queryParams)
 }

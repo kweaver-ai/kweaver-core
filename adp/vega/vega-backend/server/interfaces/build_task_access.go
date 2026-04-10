@@ -7,6 +7,8 @@ package interfaces
 
 import "context"
 
+//go:generate mockgen -source ../interfaces/build_task_access.go -destination ../interfaces/mock/mock_build_task_access.go
+
 // BuildTaskAccess defines build task data access interface.
 type BuildTaskAccess interface {
 	// Create creates a new build task.

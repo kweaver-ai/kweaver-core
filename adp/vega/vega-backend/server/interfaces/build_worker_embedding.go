@@ -14,7 +14,7 @@ import (
 // EmbeddingBuildWorker interface defines embedding execution functionality.
 // This worker is called by the task management service to execute the actual embedding.
 //
-//go:generate mockgen -source ../interfaces/embedding_build_task.go -destination ../interfaces/mock/mock_embedding_build_worker.go
+//go:generate mockgen -source ../interfaces/build_worker_embedding.go -destination ../interfaces/mock/mock_build_worker_embedding.go
 
 // EmbeddingBuildTaskMessage represents an embedding task message.
 type EmbeddingBuildTaskMessage struct {

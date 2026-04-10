@@ -18,7 +18,7 @@ var ConnectorClassMapping = map[string]string{
 // StreamingBuildWorker interface defines streaming execution functionality.
 // This worker is called by the task management service to execute the actual streaming.
 //
-//go:generate mockgen -source ../interfaces/build_task.go -destination ../interfaces/mock/mock_streaming_build_worker.go
+//go:generate mockgen -source ../interfaces/build_worker_streaming.go -destination ../interfaces/mock/mock_build_worker_streaming.go
 
 // StreamingBuildTaskMessage represents a streaming task message.
 type StreamingBuildTaskMessage struct {

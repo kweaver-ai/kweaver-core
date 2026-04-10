@@ -14,7 +14,7 @@ import (
 // BatchBuildWorker interface defines build execution functionality.
 // This worker is called by the task management service to execute the actual build.
 //
-//go:generate mockgen -source ../interfaces/build_task.go -destination ../interfaces/mock/mock_build_worker.go
+//go:generate mockgen -source ../interfaces/build_worker_batch.go -destination ../interfaces/mock/mock_build_worker_batch.go
 
 // BatchBuildTaskMessage represents a build task message.
 type BatchBuildTaskMessage struct {

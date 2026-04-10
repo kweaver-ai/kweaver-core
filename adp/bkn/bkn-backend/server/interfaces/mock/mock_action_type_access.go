@@ -22,6 +22,7 @@ import (
 type MockActionTypeAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockActionTypeAccessMockRecorder
+	isgomock struct{}
 }
 
 // MockActionTypeAccessMockRecorder is the mock recorder for MockActionTypeAccess.
@@ -52,7 +53,7 @@ func (m *MockActionTypeAccess) CheckActionTypeExistByID(ctx context.Context, knI
 }
 
 // CheckActionTypeExistByID indicates an expected call of CheckActionTypeExistByID.
-func (mr *MockActionTypeAccessMockRecorder) CheckActionTypeExistByID(ctx, knID, branch, atID interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) CheckActionTypeExistByID(ctx, knID, branch, atID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckActionTypeExistByID", reflect.TypeOf((*MockActionTypeAccess)(nil).CheckActionTypeExistByID), ctx, knID, branch, atID)
 }
@@ -68,7 +69,7 @@ func (m *MockActionTypeAccess) CheckActionTypeExistByName(ctx context.Context, k
 }
 
 // CheckActionTypeExistByName indicates an expected call of CheckActionTypeExistByName.
-func (mr *MockActionTypeAccessMockRecorder) CheckActionTypeExistByName(ctx, knID, branch, atName interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) CheckActionTypeExistByName(ctx, knID, branch, atName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckActionTypeExistByName", reflect.TypeOf((*MockActionTypeAccess)(nil).CheckActionTypeExistByName), ctx, knID, branch, atName)
 }
@@ -82,7 +83,7 @@ func (m *MockActionTypeAccess) CreateActionType(ctx context.Context, tx *sql.Tx,
 }
 
 // CreateActionType indicates an expected call of CreateActionType.
-func (mr *MockActionTypeAccessMockRecorder) CreateActionType(ctx, tx, actionType interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) CreateActionType(ctx, tx, actionType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateActionType", reflect.TypeOf((*MockActionTypeAccess)(nil).CreateActionType), ctx, tx, actionType)
 }
@@ -97,7 +98,7 @@ func (m *MockActionTypeAccess) DeleteActionTypesByIDs(ctx context.Context, tx *s
 }
 
 // DeleteActionTypesByIDs indicates an expected call of DeleteActionTypesByIDs.
-func (mr *MockActionTypeAccessMockRecorder) DeleteActionTypesByIDs(ctx, tx, knID, branch, atIDs interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) DeleteActionTypesByIDs(ctx, tx, knID, branch, atIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteActionTypesByIDs", reflect.TypeOf((*MockActionTypeAccess)(nil).DeleteActionTypesByIDs), ctx, tx, knID, branch, atIDs)
 }
@@ -112,7 +113,7 @@ func (m *MockActionTypeAccess) DeleteActionTypesByKnID(ctx context.Context, tx *
 }
 
 // DeleteActionTypesByKnID indicates an expected call of DeleteActionTypesByKnID.
-func (mr *MockActionTypeAccessMockRecorder) DeleteActionTypesByKnID(ctx, tx, knID, branch interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) DeleteActionTypesByKnID(ctx, tx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteActionTypesByKnID", reflect.TypeOf((*MockActionTypeAccess)(nil).DeleteActionTypesByKnID), ctx, tx, knID, branch)
 }
@@ -127,7 +128,7 @@ func (m *MockActionTypeAccess) GetActionTypeIDsByKnID(ctx context.Context, knID,
 }
 
 // GetActionTypeIDsByKnID indicates an expected call of GetActionTypeIDsByKnID.
-func (mr *MockActionTypeAccessMockRecorder) GetActionTypeIDsByKnID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) GetActionTypeIDsByKnID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActionTypeIDsByKnID", reflect.TypeOf((*MockActionTypeAccess)(nil).GetActionTypeIDsByKnID), ctx, knID, branch)
 }
@@ -142,7 +143,7 @@ func (m *MockActionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID, br
 }
 
 // GetActionTypesByIDs indicates an expected call of GetActionTypesByIDs.
-func (mr *MockActionTypeAccessMockRecorder) GetActionTypesByIDs(ctx, knID, branch, atIDs interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) GetActionTypesByIDs(ctx, knID, branch, atIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActionTypesByIDs", reflect.TypeOf((*MockActionTypeAccess)(nil).GetActionTypesByIDs), ctx, knID, branch, atIDs)
 }
@@ -157,7 +158,7 @@ func (m *MockActionTypeAccess) GetActionTypesTotal(ctx context.Context, query in
 }
 
 // GetActionTypesTotal indicates an expected call of GetActionTypesTotal.
-func (mr *MockActionTypeAccessMockRecorder) GetActionTypesTotal(ctx, query interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) GetActionTypesTotal(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActionTypesTotal", reflect.TypeOf((*MockActionTypeAccess)(nil).GetActionTypesTotal), ctx, query)
 }
@@ -172,7 +173,7 @@ func (m *MockActionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID
 }
 
 // GetAllActionTypesByKnID indicates an expected call of GetAllActionTypesByKnID.
-func (mr *MockActionTypeAccessMockRecorder) GetAllActionTypesByKnID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) GetAllActionTypesByKnID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllActionTypesByKnID", reflect.TypeOf((*MockActionTypeAccess)(nil).GetAllActionTypesByKnID), ctx, knID, branch)
 }
@@ -187,7 +188,7 @@ func (m *MockActionTypeAccess) ListActionTypes(ctx context.Context, query interf
 }
 
 // ListActionTypes indicates an expected call of ListActionTypes.
-func (mr *MockActionTypeAccessMockRecorder) ListActionTypes(ctx, query interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) ListActionTypes(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActionTypes", reflect.TypeOf((*MockActionTypeAccess)(nil).ListActionTypes), ctx, query)
 }
@@ -201,7 +202,7 @@ func (m *MockActionTypeAccess) UpdateActionType(ctx context.Context, tx *sql.Tx,
 }
 
 // UpdateActionType indicates an expected call of UpdateActionType.
-func (mr *MockActionTypeAccessMockRecorder) UpdateActionType(ctx, tx, actionType interface{}) *gomock.Call {
+func (mr *MockActionTypeAccessMockRecorder) UpdateActionType(ctx, tx, actionType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateActionType", reflect.TypeOf((*MockActionTypeAccess)(nil).UpdateActionType), ctx, tx, actionType)
 }

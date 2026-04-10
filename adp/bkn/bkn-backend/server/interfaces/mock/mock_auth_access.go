@@ -22,6 +22,7 @@ import (
 type MockAuthAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthAccessMockRecorder
+	isgomock struct{}
 }
 
 // MockAuthAccessMockRecorder is the mock recorder for MockAuthAccess.
@@ -51,7 +52,7 @@ func (m *MockAuthAccess) VerifyToken(ctx context.Context, c *gin.Context) (hydra
 }
 
 // VerifyToken indicates an expected call of VerifyToken.
-func (mr *MockAuthAccessMockRecorder) VerifyToken(ctx, c interface{}) *gomock.Call {
+func (mr *MockAuthAccessMockRecorder) VerifyToken(ctx, c any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*MockAuthAccess)(nil).VerifyToken), ctx, c)
 }

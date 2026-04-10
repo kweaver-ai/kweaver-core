@@ -115,7 +115,7 @@ func (m *MockOntologyManagerAccess) GetRiskTypesByIDs(ctx context.Context, knID,
 }
 
 // GetRiskTypesByIDs indicates an expected call of GetRiskTypesByIDs.
-func (mr *MockOntologyManagerAccessMockRecorder) GetRiskTypesByIDs(ctx, knID, branch, riskTypeIDs interface{}) *gomock.Call {
+func (mr *MockOntologyManagerAccessMockRecorder) GetRiskTypesByIDs(ctx, knID, branch, riskTypeIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRiskTypesByIDs", reflect.TypeOf((*MockOntologyManagerAccess)(nil).GetRiskTypesByIDs), ctx, knID, branch, riskTypeIDs)
 }

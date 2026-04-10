@@ -107,6 +107,8 @@ type QueryStats struct {
 	Offset      int    `json:"offset"`                 // 已获取到的数据总数（流式查询模式）
 }
 
+//go:generate mockgen -source ../interfaces/query.go -destination ../interfaces/mock/mock_query.go
+
 // SQLQueryService SQL查询服务接口
 type SQLQueryService interface {
 	// Execute 执行SQL查询

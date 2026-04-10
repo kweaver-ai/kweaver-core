@@ -21,6 +21,7 @@ import (
 type MockDataViewAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockDataViewAccessMockRecorder
+	isgomock struct{}
 }
 
 // MockDataViewAccessMockRecorder is the mock recorder for MockDataViewAccess.
@@ -50,7 +51,7 @@ func (m *MockDataViewAccess) GetDataNext(ctx context.Context, id string, searchA
 }
 
 // GetDataNext indicates an expected call of GetDataNext.
-func (mr *MockDataViewAccessMockRecorder) GetDataNext(ctx, id, searchAfter, limit interface{}) *gomock.Call {
+func (mr *MockDataViewAccessMockRecorder) GetDataNext(ctx, id, searchAfter, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDataNext", reflect.TypeOf((*MockDataViewAccess)(nil).GetDataNext), ctx, id, searchAfter, limit)
 }
@@ -65,7 +66,7 @@ func (m *MockDataViewAccess) GetDataStart(ctx context.Context, id, incKey string
 }
 
 // GetDataStart indicates an expected call of GetDataStart.
-func (mr *MockDataViewAccessMockRecorder) GetDataStart(ctx, id, incKey, incValue, limit interface{}) *gomock.Call {
+func (mr *MockDataViewAccessMockRecorder) GetDataStart(ctx, id, incKey, incValue, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDataStart", reflect.TypeOf((*MockDataViewAccess)(nil).GetDataStart), ctx, id, incKey, incValue, limit)
 }
@@ -80,7 +81,7 @@ func (m *MockDataViewAccess) GetDataViewByID(ctx context.Context, id string) (*i
 }
 
 // GetDataViewByID indicates an expected call of GetDataViewByID.
-func (mr *MockDataViewAccessMockRecorder) GetDataViewByID(ctx, id interface{}) *gomock.Call {
+func (mr *MockDataViewAccessMockRecorder) GetDataViewByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDataViewByID", reflect.TypeOf((*MockDataViewAccess)(nil).GetDataViewByID), ctx, id)
 }
