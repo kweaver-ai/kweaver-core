@@ -126,8 +126,8 @@ class DockerScheduler(IContainerScheduler):
             Shell 脚本字符串
 
         工作原理:
-        1. 挂载 S3 bucket 到 /workspace/s3-root
-        2. 创建符号链接 /workspace -> /workspace/s3-root/sessions/{session_id}
+        1. 挂载 S3 bucket 到 /mnt/s3-root
+        2. 使用 bind mount 将 session 目录挂载到 /workspace
         3. 安装依赖到 /workspace/.venv/（如果指定）
         4. 使用 gosu 切换到 sandbox 用户运行 executor
         """
@@ -156,14 +156,14 @@ SESSION_PATH="/mnt/s3-root/{s3_prefix}"
 echo "Ensuring session workspace exists: $SESSION_PATH"
 mkdir -p "$SESSION_PATH"
 
-# 3. 将 /workspace 移动到临时位置
-mv /workspace /workspace-old 2>/dev/null || true
+# 3. 确保 /workspace 挂载点存在
+mkdir -p /workspace
 
-# 4. 创建符号链接从 /workspace 到 session 目录
-ln -s "$SESSION_PATH" /workspace
+# 4. 使用 bind mount 将 session 目录覆盖到 /workspace
+mount --bind "$SESSION_PATH" /workspace
 
-# 5. 验证符号链接
-echo "Workspace symlink: $(ls -la /workspace)"
+# 5. 验证挂载结果
+echo "Workspace bind mounted: $(ls -la /workspace)"
 
 # ========== ✅ 新增：安装依赖 ==========
 {dependency_install_script}

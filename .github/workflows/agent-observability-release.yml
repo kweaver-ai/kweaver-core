@@ -130,7 +130,7 @@ jobs:
         run: |
           sed -i "s/^version: .*/version: ${VERSION}/" ${CHART_PATH}/Chart.yaml
           sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" ${CHART_PATH}/Chart.yaml
-          sed -i "s/^  tag: .*/  tag: \"${VERSION}\"/" ${CHART_PATH}/values.yaml
+          sed -i "s/__VERSION__/${VERSION}/g" ${CHART_PATH}/values.yaml
         env:
           VERSION: ${{ needs.resolve-version.outputs.version }}
 

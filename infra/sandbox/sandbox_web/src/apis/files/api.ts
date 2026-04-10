@@ -14,7 +14,11 @@ import type { FileUploadResponse } from './types';
 export async function uploadFile(
   sessionId: string,
   file: File,
-  path?: string
+  path?: string,
+  options?: {
+    extract?: boolean;
+    overwrite?: boolean;
+  }
 ): Promise<FileUploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
@@ -26,14 +30,18 @@ export async function uploadFile(
     API_ENDPOINTS.UPLOAD_FILE(sessionId),
     formData,
     {
-      params: { path: uploadPath },
+      params: {
+        path: uploadPath,
+        extract: options?.extract ?? false,
+        overwrite: options?.overwrite ?? false,
+      },
       headers: {
         // 覆盖默认的 application/json，让 axios 自动检测 FormData 并设置正确的 Content-Type
         'Content-Type': undefined as any,
       },
     }
   );
-  return response.data;
+  return response;
 }
 
 /**
@@ -46,5 +54,5 @@ export async function downloadFile(sessionId: string, filePath: string): Promise
       responseType: 'blob',
     }
   );
-  return response.data;
+  return response;
 }
