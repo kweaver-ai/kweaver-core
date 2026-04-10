@@ -395,35 +395,55 @@ async def create_evidence_injection_stream(
             candidate = answer.get("answer", "")
             StandLogger.info_log(
                 f"[create_evidence_injection_stream] candidate_type={type(candidate).__name__}, "
-                f"candidate_value={str(candidate)[:100] if candidate else 'None'}..."
+                f"candidate_preview={str(candidate)[:100] if candidate else 'None'}..."
             )
+
             if isinstance(candidate, str):
+                # answer["answer"] 直接是字符串
                 actual_text = candidate
                 StandLogger.info_log(
-                    f"[create_evidence_injection_stream] ✓ Got text from answer['answer'], len={len(actual_text)}"
+                    f"[create_evidence_injection_stream] ✓ Got text from answer['answer'] (string), len={len(actual_text)}"
                 )
             elif isinstance(candidate, dict):
-                # 从 _progress 获取最新的 LLM stage answer
-                progress_array = item.get("_progress", [])
+                # answer["answer"] 是字典，可能包含嵌套的 answer 字段
+                # 检查是否是 LLM stage 的数据结构
+                candidate_stage = candidate.get("stage", "")
+                candidate_answer = candidate.get("answer")
+
                 StandLogger.info_log(
-                    f"[create_evidence_injection_stream] candidate is dict, checking _progress, "
-                    f"progress_count={len(progress_array)}"
+                    f"[create_evidence_injection_stream] candidate dict: stage={candidate_stage}, "
+                    f"has_answer={candidate_answer is not None}, "
+                    f"answer_type={type(candidate_answer).__name__ if candidate_answer is not None else 'None'}"
                 )
-                if progress_array:
-                    for idx, p in enumerate(reversed(progress_array)):
-                        stage = p.get("stage", "")
-                        p_answer = p.get("answer")
-                        StandLogger.info_log(
-                            f"[create_evidence_injection_stream] progress[{len(progress_array)-1-idx}]: "
-                            f"stage={stage}, answer_type={type(p_answer).__name__}, "
-                            f"answer_len={len(p_answer) if isinstance(p_answer, str) else 'N/A'}"
-                        )
-                        if stage == "llm" and isinstance(p_answer, str):
-                            actual_text = p_answer
+
+                # 如果 candidate 本身就是 LLM stage 的数据，直接提取 answer
+                if candidate_stage == "llm" and isinstance(candidate_answer, str):
+                    actual_text = candidate_answer
+                    StandLogger.info_log(
+                        f"[create_evidence_injection_stream] ✓ Got text from candidate['answer'] (LLM stage), len={len(actual_text)}"
+                    )
+                else:
+                    # 尝试从 _progress 获取最新的 LLM stage answer
+                    progress_array = item.get("_progress", [])
+                    StandLogger.info_log(
+                        f"[create_evidence_injection_stream] candidate not LLM stage, checking _progress, "
+                        f"progress_count={len(progress_array)}"
+                    )
+                    if progress_array:
+                        for idx, p in enumerate(reversed(progress_array)):
+                            stage = p.get("stage", "")
+                            p_answer = p.get("answer")
                             StandLogger.info_log(
-                                f"[create_evidence_injection_stream] ✓ Got text from _progress LLM stage, len={len(actual_text)}"
+                                f"[create_evidence_injection_stream] progress[{len(progress_array)-1-idx}]: "
+                                f"stage={stage}, answer_type={type(p_answer).__name__}, "
+                                f"answer_len={len(p_answer) if isinstance(p_answer, str) else 'N/A'}"
                             )
-                            break
+                            if stage == "llm" and isinstance(p_answer, str):
+                                actual_text = p_answer
+                                StandLogger.info_log(
+                                    f"[create_evidence_injection_stream] ✓ Got text from _progress LLM stage, len={len(actual_text)}"
+                                )
+                                break
         elif isinstance(answer, str):
             actual_text = answer
             StandLogger.info_log(
