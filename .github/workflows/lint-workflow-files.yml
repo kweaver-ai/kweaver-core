@@ -1,0 +1,34 @@
+name: Workflow File Naming
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  workflow-file-names:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce workflow filename prefixes
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          FAIL=0
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            base="$(basename "$f")"
+            if [[ "$base" =~ ^(lint|ci|deploy|release|security|automation|reusable)- ]]; then
+              echo "OK: $base"
+            else
+              echo "❌ Invalid workflow filename: $base"
+              echo "   Allowed prefixes: lint-, ci-, deploy-, release-, security-, automation-, reusable-"
+              echo "   See .github/workflows/README.md"
+              FAIL=1
+            fi
+          done
+          if [[ "$FAIL" -ne 0 ]]; then
+            exit 1
+          fi
+          echo "✅ All workflow YAML files follow the naming convention."
