@@ -165,24 +165,84 @@ async def _check_and_prepare_evidence(
         for tool_name, result in tool_call_results.items():
             # 将结果转换为字符串存储（支持任意类型）
             result_str = json.dumps(result, ensure_ascii=False, default=str)
-            tool_results_for_storage.append({
-                "tool_name": tool_name,
-                "result": result_str,
-                "result_type": type(result).__name__,
-            })
-            StandLogger.info_log(
-                f"[_check_and_prepare_evidence] Stored tool result: "
-                f"tool_name={tool_name}, "
-                f"result_length={len(result_str)}, "
-                f"result_type={type(result).__name__}"
-            )
+
+            # 只存储非空且有意义的结果（过滤掉空字符串或过短的结果）
+            if len(result_str) > 10:
+                tool_results_for_storage.append({
+                    "tool_name": tool_name,
+                    "result": result_str,
+                    "result_type": type(result).__name__,
+                })
+                StandLogger.info_log(
+                    f"[_check_and_prepare_evidence] Stored tool result: "
+                    f"tool_name={tool_name}, "
+                    f"result_length={len(result_str)}, "
+                    f"result_type={type(result).__name__}"
+                )
+            else:
+                StandLogger.info_log(
+                    f"[_check_and_prepare_evidence] SKIP tool result (too short): "
+                    f"tool_name={tool_name}, "
+                    f"result_length={len(result_str)}, "
+                    f"result_type={type(result).__name__}"
+                )
 
         # 存储到 EvidenceStore（使用特殊的 key 前缀表示这是原始工具结果）
         if tool_results_for_storage:
             raw_results_key = f"{evidence_store_key}_raw"
-            store.add(raw_results_key, tool_results_for_storage)
+
+            # 累积存储：获取已存储的工具结果，合并新的结果
+            existing_results = store.get(raw_results_key) or []
             StandLogger.info_log(
-                f"[_check_and_prepare_evidence] Stored {len(tool_results_for_storage)} "
+                f"[_check_and_prepare_evidence] Existing tool results: {len(existing_results)}"
+            )
+
+            # 记录已存储的工具名称
+            existing_tool_names = {tr.get("tool_name") for tr in existing_results}
+
+            # 只添加新工具或更新的工具（result 长度更长的）
+            for new_tr in tool_results_for_storage:
+                tool_name = new_tr.get("tool_name")
+                new_result = new_tr.get("result", "")
+                new_length = len(new_result)
+
+                # 检查是否需要添加或更新
+                should_add = True
+                for idx, existing_tr in enumerate(existing_results):
+                    if existing_tr.get("tool_name") == tool_name:
+                        existing_result = existing_tr.get("result", "")
+                        existing_length = len(existing_result)
+
+                        # 只有当新结果更长时才更新
+                        if new_length > existing_length:
+                            StandLogger.info_log(
+                                f"[_check_and_prepare_evidence] Updating tool result: "
+                                f"tool_name={tool_name}, "
+                                f"old_length={existing_length}, "
+                                f"new_length={new_length}"
+                            )
+                            existing_results[idx] = new_tr
+                        else:
+                            StandLogger.info_log(
+                                f"[_check_and_prepare_evidence] Keeping existing tool result: "
+                                f"tool_name={tool_name}, "
+                                f"existing_length={existing_length}, "
+                                f"new_length={new_length}"
+                            )
+                        should_add = False
+                        break
+
+                if should_add:
+                    existing_results.append(new_tr)
+                    StandLogger.info_log(
+                        f"[_check_and_prepare_evidence] Adding new tool result: "
+                        f"tool_name={tool_name}, length={new_length}"
+                    )
+
+            # 存储合并后的结果
+            store.add(raw_results_key, existing_results)
+            StandLogger.info_log(
+                f"[_check_and_prepare_evidence] Stored total {len(existing_results)} "
                 f"raw tool results to {raw_results_key}"
             )
 
