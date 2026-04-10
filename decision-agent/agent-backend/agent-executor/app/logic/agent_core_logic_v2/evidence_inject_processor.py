@@ -347,11 +347,18 @@ async def create_evidence_injection_stream(
     from app.logic.agent_core_logic_v2.evidence_store import (
         get_global_evidence_store,
     )
+    from app.common.config import Config
+
+    # 检查是否仅标注最终答案
+    annotate_only_final = getattr(
+        Config.features, "annotate_only_final_answer", True
+    )
 
     StandLogger.info_log(
         f"\n{'='*60}\n"
         f"[create_evidence_injection_stream] START\n"
         f"  Initial evidence_store_key: {evidence_store_key}\n"
+        f"  annotate_only_final_answer: {annotate_only_final}\n"
         f"{'='*60}\n"
     )
 
@@ -359,288 +366,310 @@ async def create_evidence_injection_stream(
     current_tool_results = []  # 存储当前的工具结果
     _loaded_key = None  # 记录已加载的 key
 
-    async for item in original_stream:
-        # 从当前 item 中获取 evidence_store_key
-        item_evidence_key = item.get("evidence_store_key")
+    # 使用预读取模式实现流结束检测
+    # 这样我们可以在最后一个 item 上进行标注，而不阻塞流式输出
+    cached_item = None
+    try:
+        # 预读取第一个 item
+        cached_item = await original_stream.__anext__()
+    except StopAsyncIteration:
+        # 流为空，直接返回
+        StandLogger.info_log("[create_evidence_injection_stream] Stream is empty")
+        return
 
+    while True:
+        # 尝试预读取下一个 item
+        next_item = None
+        try:
+            next_item = await original_stream.__anext__()
+        except StopAsyncIteration:
+            # 流结束，当前 cached_item 是最后一个 item
+            StandLogger.info_log(
+                "[create_evidence_injection_stream] Stream ending, "
+                "processing final item with LLM annotation"
+            )
+
+            # 对最后一个 item 进行完整处理（包括 LLM 标注）
+            async for result in _process_single_item(
+                cached_item,
+                store,
+                current_tool_results,
+                _loaded_key,
+                is_final_answer=True,  # 标记为最终答案
+                annotate_only_final=annotate_only_final,
+            ):
+                yield result
+
+            # 更新状态
+            processed_item = result
+            current_tool_results = processed_item.get("_cached_tool_results", current_tool_results)
+            _loaded_key = processed_item.get("_cached_loaded_key", _loaded_key)
+
+            break
+
+        # 还有更多 item，当前 cached_item 不是最后一个
         StandLogger.info_log(
-            f"[create_evidence_injection_stream] Processing item: "
-            f"item_evidence_key={item_evidence_key}, "
-            f"_loaded_key={_loaded_key}"
+            "[create_evidence_injection_stream] More items ahead, "
+            "processing current item without LLM annotation"
         )
 
-        # 如果有新的 evidence_store_key（或者还没有加载过，或者当前没有工具结果），从 EvidenceStore 获取原始工具结果
-        if item_evidence_key and (item_evidence_key != _loaded_key or not current_tool_results):
-            raw_results_key = f"{item_evidence_key}_raw"
+        # 对中间 item 进行快速处理（跳过 LLM 标注）
+        async for result in _process_single_item(
+            cached_item,
+            store,
+            current_tool_results,
+            _loaded_key,
+            is_final_answer=False,  # 不是最终答案
+            annotate_only_final=annotate_only_final,
+        ):
+            yield result
+
+        # 更新状态
+        processed_item = result
+        current_tool_results = processed_item.get("_cached_tool_results", current_tool_results)
+        _loaded_key = processed_item.get("_cached_loaded_key", _loaded_key)
+
+        # 移动到下一个 item
+        cached_item = next_item
+
+
+async def _process_single_item(
+    item: Dict[str, Any],
+    store: Any,
+    current_tool_results: List[Dict[str, Any]],
+    _loaded_key: Optional[str],
+    is_final_answer: bool,
+    annotate_only_final: bool,
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    处理单个 item，根据配置决定是否进行 LLM 标注。
+
+    Args:
+        item: 待处理的 item
+        store: EvidenceStore 实例
+        current_tool_results: 当前缓存的工具结果
+        _loaded_key: 已加载的 evidence_store_key
+        is_final_answer: 是否是最终答案
+        annotate_only_final: 是否仅标注最终答案
+
+    Yields:
+        处理后的 item（可能包含 _evidence）
+    """
+    from app.common.config import Config
+
+    # 从当前 item 中获取 evidence_store_key
+    item_evidence_key = item.get("evidence_store_key")
+
+    StandLogger.info_log(
+        f"[_process_single_item] Processing item: "
+        f"item_evidence_key={item_evidence_key}, "
+        f"_loaded_key={_loaded_key}, "
+        f"is_final_answer={is_final_answer}"
+    )
+
+    # 如果有新的 evidence_store_key（或者还没有加载过，或者当前没有工具结果），从 EvidenceStore 获取原始工具结果
+    if item_evidence_key and (item_evidence_key != _loaded_key or not current_tool_results):
+        raw_results_key = f"{item_evidence_key}_raw"
+        StandLogger.info_log(
+            f"[_process_single_item] Attempting to load tool results: "
+            f"raw_results_key={raw_results_key}"
+        )
+        tool_results = store.get(raw_results_key)
+        StandLogger.info_log(
+            f"[_process_single_item] store.get() returned: "
+            f"type={type(tool_results).__name__}, "
+            f"count={len(tool_results) if tool_results else 0}"
+        )
+        if tool_results:
             StandLogger.info_log(
-                f"[EvidenceInject] Attempting to load tool results: "
-                f"raw_results_key={raw_results_key}, "
-                f"_loaded_key={_loaded_key}"
+                f"[_process_single_item] ✅ Loaded {len(tool_results)} raw tool results\n"
+                f"  Tools: {[tr.get('tool_name', '?') for tr in tool_results[:5]]}{'...' if len(tool_results) > 5 else ''}"
             )
-            tool_results = store.get(raw_results_key)
+            current_tool_results = tool_results
+            _loaded_key = item_evidence_key
+        else:
             StandLogger.info_log(
-                f"[EvidenceInject] store.get() returned: "
-                f"type={type(tool_results).__name__}, "
-                f"value={tool_results if tool_results else 'None'}"
+                f"[_process_single_item] ℹ️ No raw tool results found for key={raw_results_key}"
             )
-            if tool_results:
-                StandLogger.info_log(
-                    f"[EvidenceInject] ✅ Loaded {len(tool_results)} raw tool results for key={raw_results_key}\n"
-                    f"  Tools: {[tr.get('tool_name', '?') for tr in tool_results[:5]]}{'...' if len(tool_results) > 5 else ''}"
-                )
-                current_tool_results = tool_results
-                _loaded_key = item_evidence_key
+            current_tool_results = []
+            _loaded_key = item_evidence_key
+
+    # 提取 LLM 生成的文本
+    answer = item.get("answer", {})
+    actual_text = None
+
+    StandLogger.info_log(
+        f"[_process_single_item] Extracting text: "
+        f"answer_type={type(answer).__name__}, "
+        f"has_answer_key={'answer' in answer if isinstance(answer, dict) else 'N/A'}"
+    )
+
+    if isinstance(answer, dict):
+        candidate = answer.get("answer", "")
+        if isinstance(candidate, str):
+            actual_text = candidate
+        elif isinstance(candidate, dict):
+            candidate_stage = candidate.get("stage", "")
+            candidate_answer = candidate.get("answer")
+            if candidate_stage == "llm" and isinstance(candidate_answer, str):
+                actual_text = candidate_answer
             else:
-                StandLogger.info_log(
-                    f"[EvidenceInject] ℹ️ No raw tool results found for key={raw_results_key}"
-                )
-                current_tool_results = []
-                _loaded_key = item_evidence_key
-        elif item_evidence_key:
-            StandLogger.info_log(
-                f"[EvidenceInject] Skipping load: item_evidence_key={item_evidence_key}, "
-                f"_loaded_key={_loaded_key}, keys are equal, "
-                f"has_tool_results={len(current_tool_results) > 0}"
-            )
+                progress_array = item.get("_progress", [])
+                if progress_array:
+                    for p in reversed(progress_array):
+                        if p.get("stage") == "llm" and isinstance(p.get("answer"), str):
+                            actual_text = p.get("answer")
+                            break
+    elif isinstance(answer, str):
+        actual_text = answer
 
-        # 提取 LLM 生成的文本
-        answer = item.get("answer", {})
-        actual_text = None
+    if not isinstance(actual_text, str):
+        actual_text = ""
 
+    text_len = len(actual_text)
+
+    StandLogger.info_log(
+        f"[_process_single_item] text_len={text_len}, "
+        f"tool_results_count={len(current_tool_results)}, "
+        f"is_final_answer={is_final_answer}, "
+        f"annotate_only_final={annotate_only_final}"
+    )
+
+    # 判断是否需要进行 LLM 标注
+    # 条件：有工具结果 + 有足够长的文本 + (是最终答案 或 不限制仅标注最终答案)
+    should_annotate = (
+        current_tool_results and
+        text_len > 5 and
+        (is_final_answer or not annotate_only_final)
+    )
+
+    if should_annotate:
         StandLogger.info_log(
-            f"[create_evidence_injection_stream] Extracting text: "
-            f"answer_type={type(answer).__name__}, "
-            f"has_answer_key={'answer' in answer if isinstance(answer, dict) else 'N/A'}"
+            f"[_process_single_item] 🔄 Performing LLM annotation, "
+            f"text_preview={actual_text[:100]}..."
         )
 
-        if isinstance(answer, dict):
-            candidate = answer.get("answer", "")
-            StandLogger.info_log(
-                f"[create_evidence_injection_stream] candidate_type={type(candidate).__name__}, "
-                f"candidate_preview={str(candidate)[:100] if candidate else 'None'}..."
+        try:
+            from app.logic.agent_core_logic_v2.evidence_llm_annotator import (
+                llm_annotate_evidence,
             )
 
-            if isinstance(candidate, str):
-                # answer["answer"] 直接是字符串
-                actual_text = candidate
-                StandLogger.info_log(
-                    f"[create_evidence_injection_stream] ✓ Got text from answer['answer'] (string), len={len(actual_text)}"
-                )
-            elif isinstance(candidate, dict):
-                # answer["answer"] 是字典，可能包含嵌套的 answer 字段
-                # 检查是否是 LLM stage 的数据结构
-                candidate_stage = candidate.get("stage", "")
-                candidate_answer = candidate.get("answer")
+            annotation_config = {
+                "llm_annotation_timeout": getattr(
+                    Config.features, "llm_annotation_timeout", 30
+                ),
+                "llm_annotation_model": getattr(
+                    Config.features, "llm_annotation_model", "deepseek-v3.2"
+                ),
+            }
 
-                StandLogger.info_log(
-                    f"[create_evidence_injection_stream] candidate dict: stage={candidate_stage}, "
-                    f"has_answer={candidate_answer is not None}, "
-                    f"answer_type={type(candidate_answer).__name__ if candidate_answer is not None else 'None'}"
-                )
-
-                # 如果 candidate 本身就是 LLM stage 的数据，直接提取 answer
-                if candidate_stage == "llm" and isinstance(candidate_answer, str):
-                    actual_text = candidate_answer
-                    StandLogger.info_log(
-                        f"[create_evidence_injection_stream] ✓ Got text from candidate['answer'] (LLM stage), len={len(actual_text)}"
-                    )
-                else:
-                    # 尝试从 _progress 获取最新的 LLM stage answer
-                    progress_array = item.get("_progress", [])
-                    StandLogger.info_log(
-                        f"[create_evidence_injection_stream] candidate not LLM stage, checking _progress, "
-                        f"progress_count={len(progress_array)}"
-                    )
-                    if progress_array:
-                        for idx, p in enumerate(reversed(progress_array)):
-                            stage = p.get("stage", "")
-                            p_answer = p.get("answer")
-                            StandLogger.info_log(
-                                f"[create_evidence_injection_stream] progress[{len(progress_array)-1-idx}]: "
-                                f"stage={stage}, answer_type={type(p_answer).__name__}, "
-                                f"answer_len={len(p_answer) if isinstance(p_answer, str) else 'N/A'}"
-                            )
-                            if stage == "llm" and isinstance(p_answer, str):
-                                actual_text = p_answer
-                                StandLogger.info_log(
-                                    f"[create_evidence_injection_stream] ✓ Got text from _progress LLM stage, len={len(actual_text)}"
-                                )
-                                break
-        elif isinstance(answer, str):
-            actual_text = answer
-            StandLogger.info_log(
-                f"[create_evidence_injection_stream] ✓ Got text from answer (direct string), len={len(actual_text)}"
+            annotation_result = await llm_annotate_evidence(
+                text=actual_text,
+                tool_results=current_tool_results,
+                config=annotation_config,
             )
 
-        if not isinstance(actual_text, str):
-            actual_text = ""
-            StandLogger.info_log(
-                f"[create_evidence_injection_stream] ⚠️ No text found, using empty string"
-            )
+            # 转换为 evidence_meta 格式
+            evidences = annotation_result.get("evidences", [])
+            evidence_meta = {}
 
-        text_len = len(actual_text)
-
-        StandLogger.info_log(
-            f"[create_evidence_injection_stream] Final: text_len={text_len}, "
-            f"text_preview={actual_text[:100] if actual_text else 'EMPTY'}..."
-        )
-
-        # 判断是否应该处理：有工具结果 + 有足够长的文本
-        # 阈值设为 5，允许对短文本进行证据标注
-        should_process = (
-            current_tool_results and
-            text_len > 5
-        )
-
-        StandLogger.info_log(
-            f"[create_evidence_injection_stream] item: "
-            f"evidence_store_key={item_evidence_key}, "
-            f"text_len={text_len}, "
-            f"tool_results_count={len(current_tool_results)}, "
-            f"should_process={should_process}"
-        )
-
-        if should_process:
-            StandLogger.info_log(
-                f"[EvidenceInject] 🔄 Using LLM to annotate evidence, text_preview={actual_text[:100]}..."
-            )
-
-            try:
-                # 调用 LLM 进行标注
-                from app.logic.agent_core_logic_v2.evidence_llm_annotator import (
-                    llm_annotate_evidence,
-                )
-
-                annotation_config = {
-                    "llm_annotation_timeout": getattr(
-                        Config.features, "llm_annotation_timeout", 30
-                    ),
-                    "llm_annotation_model": getattr(
-                        Config.features, "llm_annotation_model", "deepseek-v3.2"
-                    ),
+            for idx, ev in enumerate(evidences):
+                local_id = f"e{idx + 1}"
+                evidence_meta[local_id] = {
+                    "object_type_name": ev.get("object_type_name", ""),
+                    "positions": ev.get("positions", []),
                 }
 
-                annotation_result = await llm_annotate_evidence(
-                    text=actual_text,
-                    tool_results=current_tool_results,
-                    config=annotation_config,
-                )
-
-                # 转换为 evidence_meta 格式
-                # annotation_result: {"evidences": [{"object_type_name": ..., "positions": ...}]}
-                # evidence_meta: {"e1": {"object_type_name": ..., "positions": ...}}
-                evidences = annotation_result.get("evidences", [])
-                evidence_meta = {}
-
-                for idx, ev in enumerate(evidences):
-                    local_id = f"e{idx + 1}"
-                    evidence_meta[local_id] = {
-                        "object_type_name": ev.get("object_type_name", ""),
-                        "positions": ev.get("positions", []),
-                    }
-
-                if evidence_meta:
-                    StandLogger.info_log(
-                        f"[EvidenceInject] ✅ LLM annotated {len(evidence_meta)} evidences"
-                    )
-                else:
-                    StandLogger.info_log(
-                        f"[EvidenceInject] ℹ️ LLM found no evidence in text"
-                    )
-
-                # 无论是否提取到证据，都添加 _evidence 字段（空字典作为占位）
-                # 只对 LLM stage 的 progress 条目添加
-                # _progress 在两个地方：
-                # 1. item["answer"]["_progress"] - answer 字典中的进度数组
-                # 2. item["_progress"] - 顶层进度数组（可能是同一引用）
-
-                # 首先注入到 item["answer"]["_progress"]
-                answer_dict = item.get("answer")
+            if evidence_meta:
                 StandLogger.info_log(
-                    f"[EvidenceInject] Checking injection: "
-                    f"answer_type={type(answer_dict).__name__}, "
-                    f"answer_is_dict={isinstance(answer_dict, dict)}, "
-                    f"item_has_progress={'_progress' in item}"
+                    f"[_process_single_item] ✅ LLM annotated {len(evidence_meta)} evidences"
                 )
-
-                if isinstance(answer_dict, dict):
-                    StandLogger.info_log(
-                        f"[EvidenceInject] answer keys={list(answer_dict.keys())}, "
-                        f"has_progress={'_progress' in answer_dict}"
-                    )
-
-                # 注入到 item["answer"]["_progress"]
-                if isinstance(answer_dict, dict) and "_progress" in answer_dict:
-                    progress_array = answer_dict["_progress"]
-                    StandLogger.info_log(
-                        f"[EvidenceInject] progress_type={type(progress_array).__name__}, "
-                        f"is_list={isinstance(progress_array, list)}, "
-                        f"progress_len={len(progress_array) if isinstance(progress_array, list) else 'N/A'}"
-                    )
-
-                    if isinstance(progress_array, list) and progress_array:
-                        latest_progress = progress_array[-1]
-                        StandLogger.info_log(
-                            f"[EvidenceInject] latest_progress stage={latest_progress.get('stage')}, "
-                            f"is_llm={latest_progress.get('stage') == 'llm'}"
-                        )
-                        # 只对 LLM stage 添加 _evidence
-                        if latest_progress.get("stage") == "llm":
-                            latest_progress["_evidence"] = evidence_meta
-                            StandLogger.info_log(
-                                f"[EvidenceInject] ✅ Injected _evidence into item['answer']['_progress'][-1]: "
-                                f"stage={latest_progress.get('stage')}, "
-                                f"evidence_count={len(evidence_meta)}, "
-                                f"is_placeholder={len(evidence_meta) == 0}"
-                            )
-
-                            # 验证注入是否成功
-                            StandLogger.info_log(
-                                f"[EvidenceInject] Verification (answer['_progress'][-1]): "
-                                f"has _evidence: {'_evidence' in latest_progress}, "
-                                f"keys={list(latest_progress.keys())}"
-                            )
-
-                            # 同时注入到 item["_progress"]（如果存在且是不同的对象）
-                            if "_progress" in item and isinstance(item["_progress"], list):
-                                top_progress_array = item["_progress"]
-                                # 找到对应的 LLM stage 条目（通常是最后一个）
-                                if top_progress_array and len(top_progress_array) > 0:
-                                    # 检查是否是同一个对象
-                                    if top_progress_array[-1] is latest_progress:
-                                        StandLogger.info_log(
-                                            f"[EvidenceInject] item['_progress'][-1] is same object as answer['_progress'][-1], "
-                                            f"no need to inject again"
-                                        )
-                                    else:
-                                        # 找到对应的 LLM stage 条目
-                                        for idx, p in enumerate(top_progress_array):
-                                            if (p.get("stage") == "llm" and
-                                                p.get("id") == latest_progress.get("id")):
-                                                p["_evidence"] = evidence_meta
-                                                StandLogger.info_log(
-                                                    f"[EvidenceInject] ✅ Injected _evidence into item['_progress'][{idx}]: "
-                                                    f"stage={p.get('stage')}, "
-                                                    f"evidence_count={len(evidence_meta)}"
-                                                )
-                                                break
-                        else:
-                            StandLogger.info_log(
-                                f"[EvidenceInject] ⚠️ Latest progress is not LLM stage: {latest_progress.get('stage')}"
-                            )
-                    else:
-                        StandLogger.info_log(
-                            f"[EvidenceInject] ⚠️ Progress array is empty or not a list"
-                        )
-                else:
-                    StandLogger.info_log(
-                        f"[EvidenceInject] ⚠️ answer is not a dict or missing _progress"
-                    )
-
-            except Exception as e:
+            else:
                 StandLogger.info_log(
-                    f"[EvidenceInject] ❌ Annotation failed: {e}"
+                    f"[_process_single_item] ℹ️ LLM found no evidence in text"
                 )
-                logger.error(f"[EvidenceInject] Annotation failed: {e}", exc_info=True)
 
-        yield item
+            # 注入到 _progress
+            _inject_evidence_to_progress(item, evidence_meta)
+
+        except Exception as e:
+            StandLogger.info_log(
+                f"[_process_single_item] ❌ Annotation failed: {e}"
+            )
+    else:
+        # 跳过 LLM 标注，直接返回原 item
+        if annotate_only_final and not is_final_answer:
+            StandLogger.info_log(
+                f"[_process_single_item] ⏭️ Skipping LLM annotation (intermediate item, annotate_only_final=True)"
+            )
+        else:
+            StandLogger.info_log(
+                f"[_process_single_item] ⏭️ Skipping LLM annotation "
+                f"(no text={not actual_text}, no_tools={not current_tool_results})"
+            )
+
+    # 缓存当前状态以供下次使用
+    item["_cached_tool_results"] = current_tool_results
+    item["_cached_loaded_key"] = _loaded_key
+
+    yield item
+
+
+def _inject_evidence_to_progress(
+    item: Dict[str, Any],
+    evidence_meta: Dict[str, Any],
+) -> None:
+    """
+    将 _evidence 注入到 item 的 _progress 数组中。
+
+    Args:
+        item: 待注入的 item
+        evidence_meta: 证据元数据
+    """
+    StandLogger.info_log(
+        f"[_inject_evidence_to_progress] Injecting evidence: "
+        f"evidence_count={len(evidence_meta)}"
+    )
+
+    # 注入到 item["answer"]["_progress"]
+    answer_dict = item.get("answer")
+
+    if isinstance(answer_dict, dict) and "_progress" in answer_dict:
+        progress_array = answer_dict["_progress"]
+
+        if isinstance(progress_array, list) and progress_array:
+            latest_progress = progress_array[-1]
+
+            if latest_progress.get("stage") == "llm":
+                latest_progress["_evidence"] = evidence_meta
+                StandLogger.info_log(
+                    f"[_inject_evidence_to_progress] ✅ Injected into item['answer']['_progress'][-1]: "
+                    f"stage={latest_progress.get('stage')}, "
+                    f"evidence_count={len(evidence_meta)}"
+                )
+
+                # 同时注入到 item["_progress"]（如果存在且是不同的对象）
+                if "_progress" in item and isinstance(item["_progress"], list):
+                    top_progress_array = item["_progress"]
+                    if top_progress_array and len(top_progress_array) > 0:
+                        if top_progress_array[-1] is not latest_progress:
+                            for idx, p in enumerate(top_progress_array):
+                                if (p.get("stage") == "llm" and
+                                    p.get("id") == latest_progress.get("id")):
+                                    p["_evidence"] = evidence_meta
+                                    StandLogger.info_log(
+                                        f"[_inject_evidence_to_progress] ✅ Injected into item['_progress'][{idx}]"
+                                    )
+                                    break
+            else:
+                StandLogger.info_log(
+                    f"[_inject_evidence_to_progress] ⚠️ Latest progress is not LLM stage: {latest_progress.get('stage')}"
+                )
+        else:
+            StandLogger.info_log(
+                f"[_inject_evidence_to_progress] ⚠️ Progress array is empty or not a list"
+            )
+    else:
+        StandLogger.info_log(
+            f"[_inject_evidence_to_progress] ⚠️ answer is not a dict or missing _progress"
+        )
