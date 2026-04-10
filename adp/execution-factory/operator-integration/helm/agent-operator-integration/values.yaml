@@ -183,6 +183,10 @@ depServices:
     storageID: ""
     internalRequest: false
     expires: 3600
+  vega-backend:
+    privateHost: vega-backend-svc
+    privatePort: 13014
+    privateProtocol: http
 
 env:
   language: en_US.UTF-8

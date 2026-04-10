@@ -88,7 +88,8 @@ func TestSkillHandler(t *testing.T) {
 			}, handler.GetSkillContent, "skill-2")
 
 			So(recorder.Code, ShouldEqual, http.StatusOK)
-			So(recorder.Body.String(), ShouldContainSubstring, `"skill_content":"guide"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-2"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"url":"https://download/skill-2/SKILL.md"`)
 		})
 
 		Convey("ReadSkillFile binds body and calls reader", func() {
@@ -114,7 +115,9 @@ func TestSkillHandler(t *testing.T) {
 			}, handler.ReadSkillFile, "skill-3")
 
 			So(recorder.Code, ShouldEqual, http.StatusOK)
-			So(recorder.Body.String(), ShouldContainSubstring, `"content":"body"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-3"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"rel_path":"refs/guide.md"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"url":"https://download/skill-3/refs/guide.md"`)
 		})
 
 		Convey("DownloadSkill binds uri and returns zip response", func() {
@@ -217,6 +220,44 @@ func TestSkillHandler(t *testing.T) {
 			So(recorder.Code, ShouldEqual, http.StatusOK)
 			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-market-2"`)
 			So(recorder.Body.String(), ShouldContainSubstring, `"status":"published"`)
+		})
+
+		Convey("ExecuteSkill binds body and calls registry", func() {
+			mockRegistry := mocks.NewMockSkillRegistry(ctrl)
+			mockMarket := mocks.NewMockSkillMarket(ctrl)
+			mockReader := mocks.NewMockSkillReader(ctrl)
+			handler := &skillHandler{
+				Registry: mockRegistry,
+				Market:   mockMarket,
+				Reader:   mockReader,
+			}
+			mockRegistry.EXPECT().ExecuteSkill(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ any, req *interfaces.ExecuteSkillReq) (*interfaces.ExecuteSkillResp, error) {
+					So(req.SkillID, ShouldEqual, "skill-5")
+					So(req.EntryShell, ShouldEqual, "bash run.sh")
+					return &interfaces.ExecuteSkillResp{
+						SkillID:      "skill-5",
+						SessionID:    "sess-1",
+						WorkDir:      "/workspace/skills/sess-1/demo-skill",
+						UploadedPath: "/workspace/skills/skill-5/demo.zip",
+						Command:      "bash run.sh",
+						ExitCode:     0,
+						Mocked:       true,
+					}, nil
+				},
+			)
+
+			recorder := performSkillRequest(http.MethodPost, "/skills/:skill_id/execute", "application/json",
+				`{"entry_shell":"bash run.sh"}`,
+				map[string]string{
+					"x-business-domain": "bd-test",
+					"user_id":           "user-1",
+				}, handler.ExecuteSkill, "skill-5")
+
+			So(recorder.Code, ShouldEqual, http.StatusOK)
+			So(recorder.Body.String(), ShouldContainSubstring, `"skill_id":"skill-5"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"session_id":"sess-1"`)
+			So(recorder.Body.String(), ShouldContainSubstring, `"mocked":true`)
 		})
 	})
 }

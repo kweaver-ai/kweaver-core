@@ -103,7 +103,7 @@ func TestNewUserManagementClient_WhenAuthDisabled_ReturnsNoop(t *testing.T) {
 
 		userMap, err = client.GetUsersName(context.Background(), []string{""})
 		So(err, ShouldBeNil)
-		So(userMap[""], ShouldEqual, interfaces.UnknownUser)
+		So(userMap[""], ShouldEqual, "")
 	})
 }
 

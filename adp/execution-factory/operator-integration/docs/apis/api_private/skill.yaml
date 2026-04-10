@@ -1,7 +1,7 @@
 openapi: "3.0.2"
 info:
   title: "Agent Skill 私有接口"
-  description: "Agent Skill 私有只读与市场查询接口，用于集群内部服务调用，无需接口认证信息"
+  description: "Agent Skill 私有只读、市场查询与执行接口，用于集群内部服务调用，无需接口认证信息"
   version: "1.0.0"
 servers:
   - url: "http://{host}:{port}/api/agent-operator-integration/internal-v1"
@@ -201,6 +201,55 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           description: "文件或 Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/execute:
+    post:
+      summary: "执行 Skill"
+      description: "执行工厂通过 Session Pool 获取可用 Sandbox 会话，上传 Skill 压缩包，并在上传接口返回的工作目录中执行入口命令。"
+      tags:
+        - "Skill 执行"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteSkillReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecuteSkillResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
           content:
             application/json:
               schema:
@@ -484,6 +533,68 @@ components:
               type: string
             file_type:
               type: string
+
+    ExecuteSkillReq:
+      type: object
+      required:
+        - entry_shell
+      properties:
+        entry_shell:
+          type: string
+          description: "Skill 启动命令，由调用方明确指定，例如 bash run.sh 或 python main.py"
+        timeout:
+          type: integer
+          description: "执行超时时间，单位秒"
+
+    ExecuteSkillResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            session_id:
+              type: string
+              description: "执行工厂从 Session Pool 获取的 Sandbox 会话 ID"
+            work_dir:
+              type: string
+              description: "Sandbox 上传接口返回的解压目录，作为 execute-sync 的 `working_directory`"
+            file_name:
+              type: string
+              description: "上传的 Skill 压缩包文件名"
+            mode:
+              type: string
+              description: "Sandbox 上传模式，ZIP 自动解压时为 `archive_extract`"
+            uploaded_path:
+              type: string
+              description: "Sandbox 上传接口返回的路径；自动解压时与 `work_dir` 一致"
+            extracted_file_count:
+              type: integer
+              description: "ZIP 自动解压时成功写入的文件数量"
+            skipped_file_count:
+              type: integer
+              description: "ZIP 自动解压时因冲突被跳过的文件数量"
+            command:
+              type: string
+              description: "实际执行的入口命令"
+            exit_code:
+              type: integer
+            stdout:
+              type: string
+            stderr:
+              type: string
+            execution_time:
+              type: integer
+              format: int64
+              description: "执行耗时，单位毫秒"
+            mocked:
+              type: boolean
+              description: "当前是否为 mock Sandbox 响应"
 
     Error:
       type: object

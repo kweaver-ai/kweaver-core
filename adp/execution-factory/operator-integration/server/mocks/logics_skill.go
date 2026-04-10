@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	interfaces "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
+	model "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -68,6 +69,21 @@ func (m *MockSkillRegistry) DownloadSkill(ctx context.Context, req *interfaces.D
 func (mr *MockSkillRegistryMockRecorder) DownloadSkill(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadSkill", reflect.TypeOf((*MockSkillRegistry)(nil).DownloadSkill), ctx, req)
+}
+
+// ExecuteSkill mocks base method.
+func (m *MockSkillRegistry) ExecuteSkill(ctx context.Context, req *interfaces.ExecuteSkillReq) (*interfaces.ExecuteSkillResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecuteSkill", ctx, req)
+	ret0, _ := ret[0].(*interfaces.ExecuteSkillResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecuteSkill indicates an expected call of ExecuteSkill.
+func (mr *MockSkillRegistryMockRecorder) ExecuteSkill(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteSkill", reflect.TypeOf((*MockSkillRegistry)(nil).ExecuteSkill), ctx, req)
 }
 
 // GetSkillDetail mocks base method.
@@ -236,4 +252,70 @@ func (m *MockSkillReader) ReadSkillFile(ctx context.Context, req *interfaces.Rea
 func (mr *MockSkillReaderMockRecorder) ReadSkillFile(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadSkillFile", reflect.TypeOf((*MockSkillReader)(nil).ReadSkillFile), ctx, req)
+}
+
+// MockSkillIndexSyncService is a mock of SkillIndexSyncService interface.
+type MockSkillIndexSyncService struct {
+	ctrl     *gomock.Controller
+	recorder *MockSkillIndexSyncServiceMockRecorder
+	isgomock struct{}
+}
+
+// MockSkillIndexSyncServiceMockRecorder is the mock recorder for MockSkillIndexSyncService.
+type MockSkillIndexSyncServiceMockRecorder struct {
+	mock *MockSkillIndexSyncService
+}
+
+// NewMockSkillIndexSyncService creates a new mock instance.
+func NewMockSkillIndexSyncService(ctrl *gomock.Controller) *MockSkillIndexSyncService {
+	mock := &MockSkillIndexSyncService{ctrl: ctrl}
+	mock.recorder = &MockSkillIndexSyncServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSkillIndexSyncService) EXPECT() *MockSkillIndexSyncServiceMockRecorder {
+	return m.recorder
+}
+
+// DeleteSkill mocks base method.
+func (m *MockSkillIndexSyncService) DeleteSkill(ctx context.Context, skillID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSkill", ctx, skillID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSkill indicates an expected call of DeleteSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) DeleteSkill(ctx, skillID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).DeleteSkill), ctx, skillID)
+}
+
+// Init mocks base method.
+func (m *MockSkillIndexSyncService) Init(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Init", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Init indicates an expected call of Init.
+func (mr *MockSkillIndexSyncServiceMockRecorder) Init(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockSkillIndexSyncService)(nil).Init), ctx)
+}
+
+// UpsertSkill mocks base method.
+func (m *MockSkillIndexSyncService) UpsertSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertSkill", ctx, skill)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertSkill indicates an expected call of UpsertSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) UpsertSkill(ctx, skill any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).UpsertSkill), ctx, skill)
 }

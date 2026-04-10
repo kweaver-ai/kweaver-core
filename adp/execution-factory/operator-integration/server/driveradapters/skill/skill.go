@@ -265,3 +265,29 @@ func (h *skillHandler) UpdateSkillStatus(c *gin.Context) {
 	}
 	rest.ReplyOK(c, http.StatusOK, resp)
 }
+
+func (h *skillHandler) ExecuteSkill(c *gin.Context) {
+	req := &interfaces.ExecuteSkillReq{}
+	if err := c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := c.ShouldBindUri(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+	if err := utils.GetBindJSONRaw(c, req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	if err := validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	resp, err := h.Registry.ExecuteSkill(c.Request.Context(), req)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, resp)
+}

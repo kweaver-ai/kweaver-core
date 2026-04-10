@@ -107,6 +107,10 @@ data:
       storage_id: {{ index .Values "depServices" "oss-gateway-backend" "storageID" | quote }}
       internal_request: {{ index .Values "depServices" "oss-gateway-backend" "internalRequest" }}
       expires: {{ index .Values "depServices" "oss-gateway-backend" "expires" }}
+    vega-backend:
+      private_protocol: {{ index .Values "depServices" "vega-backend" "privateProtocol" | quote }}
+      private_host: {{ index .Values "depServices" "vega-backend" "privateHost" | quote }}
+      private_port: {{ index .Values "depServices" "vega-backend" "privatePort" }}
 
   mq_config.yaml: |
     {{- toYaml .Values.depServices.mq | nindent 4 }}
