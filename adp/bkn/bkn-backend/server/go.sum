@@ -174,8 +174,8 @@ github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2 v2.10.3 h1:pE+nTrolc4ddaflWHFa
 github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2 v2.10.3/go.mod h1:UFxm9Z8IHeiOGJwW1ZFtBUGp1UamOBakmMYKqniKpwM=
 github.com/kweaver-ai/TelemetrySDK-Go/span/v2 v2.10.3 h1:RfDAVWBrQ9Beu5kNBCga3HcwWnTjoUSHDX5cxw6DZfI=
 github.com/kweaver-ai/TelemetrySDK-Go/span/v2 v2.10.3/go.mod h1:JrfEsKeZEQG5cic8RTCYqk9L2jBr/T9GhtS9gYini0A=
-github.com/kweaver-ai/bkn-specification/sdk/golang v0.0.8 h1:2coGEdWAKuNXVWRiCq7Yhc62lhUshISuBIFPhOwOX5w=
-github.com/kweaver-ai/bkn-specification/sdk/golang v0.0.8/go.mod h1:YC7M/i0v7IODZIZNCRkK4+QXuiimObe+DGPFXNw4uHE=
+github.com/kweaver-ai/bkn-specification/sdk/golang v0.1.3-0.20260410153834-42446f4ee969 h1:HOORVmrZFlFlpgY9HpmPYI5Ig1/8dlnA5L9+Jyz/274=
+github.com/kweaver-ai/bkn-specification/sdk/golang v0.1.3-0.20260410153834-42446f4ee969/go.mod h1:YC7M/i0v7IODZIZNCRkK4+QXuiimObe+DGPFXNw4uHE=
 github.com/kweaver-ai/kweaver-go-lib v1.0.4 h1:+IybrOgT8O1626GBxTH9GYn0JNX8y+UvMfyoJ/URQ7k=
 github.com/kweaver-ai/kweaver-go-lib v1.0.4/go.mod h1:FAklB3qDakEXEveVHSXT9HlBLWnpyV9MB/+KuV7zETo=
 github.com/kweaver-ai/proton-mq-sdk-go v1.9.1 h1:pYRw/GS2lqdY41V8W2Kpj0H2Y9mx0aNMzxl36xIgy5Q=
