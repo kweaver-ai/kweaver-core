@@ -25,96 +25,68 @@ _LLM_ANNOTATE_PROMPT = """你是一个精确的证据标注专家。你的任务
 {text}
 ```
 
+## 字符位置索引参考（每10个字符标记一次索引）：
+{text_with_index}
+
 ## 标注方法：
 
-### 步骤1：定位引用
-在工具结果中找到关键实体（如 name、profile 等字段），然后在文本中找到这些实体出现的位置。
+### 步骤1：使用上面的索引参考快速定位
+上面的索引参考每10个字符标记一次位置，帮助你快速找到实体在文本中的准确位置。
 
-### 步骤2：计算精确位置
-- 起始位置：实体在文本中第一次出现的字符索引（从0开始计数）
-- 结束位置：起始位置 + 实体字符串的长度
-- 注意：必须是文本中**逐字完全匹配**的子串
+### 步骤2：精确验证
+使用 `text[start:end]` 验证你的位置是否正确：
+- text[start:end] 必须完全等于实体名称
+- 每个字符（包括空格、换行符、标点）都算一个位置
 
-### 步骤3：验证位置
-检查 `text[start:end]` 是否等于实体名称。如果不等于，说明位置错误！
+### 步骤3：返回结果
+只返回文本中实际存在且逐字匹配的实体位置。
 
 ## 关键规则（必须遵守）：
 
-1. **精确匹配原则**：
-   - 位置 [start, end] 必须精确匹配文本中的子串
-   - text[start:end] 必须等于你标注的实体名称
-   - 不能只出现实体名称的一部分
+1. **换行符和空格**：
+   - `\n` 是一个字符，占用1个位置
+   - 空格也是1个字符
+   - 必须把所有字符都计入位置
 
-2. **位置验证**：
-   - start 必须 >= 0
-   - end 必须 <= 文本长度（{text_len}）
-   - end 必须 > start
+2. **精确验证**：
+   - text[start:end] 必须等于实体名称
+   - 如果 text[60:67] ≠ "简单对话助手"，说明位置错误
 
-3. **实体名称**：
-   - 使用工具结果中的原始值
-   - 标注文本中实际出现的完整字符串
+3. **边界检查**：
+   - start >= 0
+   - end <= {text_len}
+   - end > start
 
-4. **多实例处理**：
-   - 同一实体可以在文本中出现多次
-   - 使用 positions 数组记录所有位置：[[start1, end1], [start2, end2], ...]
+## 示例：
 
-## 示例说明：
-
-### 示例1：简单情况
-文本：`"简单对话助手是一个基于简单对话模板创建的助手"`
-工具结果：name="简单对话助手", profile="基于简单对话模板创建"
-
-位置计算：
-- "简单对话助手" 首次出现在索引 0，长度7 → positions=[[0, 7]]
-- "基于简单对话模板创建" 首次出现在索引11，长度12 → positions=[[11, 23]]
-
-验证：
-- text[0:7] = "简单对话助手" ✓
-- text[11:23] = "基于简单对话模板创建" ✓
-
-输出：
-```json
-{{
-  "evidences": [
-    {{"object_type_name": "简单对话助手", "positions": [[0, 7]]}},
-    {{"object_type_name": "基于简单对话模板创建", "positions": [[11, 23]]}}
-  ]
-}}
+文本：
+```
+第1行内容\n第2行内容
 ```
 
-### 示例2：包含 Markdown 格式
-文本：`"**名称**：简单对话助手"`
-工具结果：name="简单对话助手"
+字符位置：
+```
+01234567890123
+第1行内容
+第2行内容
+```
 
-位置计算：
-- "简单对话助手" 出现在索引 7（跳过 **名称**：）
-- 长度仍然是 7
-- positions=[[7, 14]]
-
-验证：
-- text[7:14] = "简单对话助手" ✓
-
-### 错误示例（不要这样做）：
-❌ text[0:5] = "简单对话" → 不完整，错误！
-❌ text[0:10] = "简单对话助手是" → 包含额外字符，错误！
-❌ positions=[[100, 107]] → 超出文本长度，错误！
+"第1行" 的位置是 [0, 3]，因为 text[0:3] = "第1行"
+"第2行" 的位置是 [8, 11]，因为 text[8:11] = "第2行"（注意 \n 占用位置7）
 
 ## 输出格式：
-只返回 JSON，不要其他内容：
 ```json
 {{
   "evidences": [
     {{
-      "object_type_name": "实体名称（必须与工具结果中的值一致）",
+      "object_type_name": "实体名称",
       "positions": [[start1, end1], [start2, end2]]
     }}
   ]
 }}
 ```
 
-如果没有找到任何引用，返回：`{{"evidences": []}}`
-
-现在请仔细分析文本和工具结果，返回精确的标注结果。
+如果没有找到引用，返回：`{{"evidences": []}}`
 """
 
 
@@ -164,10 +136,14 @@ async def llm_annotate_evidence(
     # 格式化工具结果为可读文本
     tool_results_text = _format_tool_results(tool_results)
 
+    # 生成字符位置索引参考（每10个字符标记一次）
+    text_with_index = _generate_index_reference(text)
+
     prompt = _LLM_ANNOTATE_PROMPT.format(
         tool_results=tool_results_text[:10000],  # 限制长度
         text=text,
-        text_len=len(text)
+        text_len=len(text),
+        text_with_index=text_with_index
     )
 
     StandLogger.info_log(
@@ -353,3 +329,49 @@ def _parse_llm_annotation(result: str, original_text: str) -> Dict[str, Any]:
         )
         logger.warning(f"[_parse_llm_annotation] JSON 解析失败: {e}")
         return {"evidences": []}
+
+
+def _generate_index_reference(text: str) -> str:
+    """
+    生成字符位置索引参考，每10个字符标记一次位置。
+
+    Args:
+        text: 待标注的文本
+
+    Returns:
+        带有索引标记的文本，每10个字符显示一次索引
+    """
+    if not text:
+        return ""
+
+    lines = []
+    index_line = []
+    text_line = []
+
+    for i, char in enumerate(text):
+        # 每10个字符标记一次索引
+        if i % 10 == 0:
+            # 补齐索引到两位数，对齐显示
+            index_str = str(i)
+            index_line.append(index_str)
+            # 添加空格对齐（根据索引长度调整）
+            remaining = 10 - (i % 10)
+        else:
+            index_line.append(" " * len(str(i)))
+
+        text_line.append(char)
+
+        # 每80个字符换行（避免单行过长）
+        if (i + 1) % 80 == 0:
+            lines.append("".join(text_line))
+            lines.append("".join(index_line))
+            lines.append("")  # 空行分隔
+            text_line = []
+            index_line = []
+
+    # 添加剩余内容
+    if text_line:
+        lines.append("".join(text_line))
+        lines.append("".join(index_line))
+
+    return "\n".join(lines)

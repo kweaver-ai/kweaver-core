@@ -550,12 +550,17 @@ async def create_evidence_injection_stream(
 
                 # 无论是否提取到证据，都添加 _evidence 字段（空字典作为占位）
                 # 只对 LLM stage 的 progress 条目添加
-                # _progress 在 answer 字典中
+                # _progress 在两个地方：
+                # 1. item["answer"]["_progress"] - answer 字典中的进度数组
+                # 2. item["_progress"] - 顶层进度数组（可能是同一引用）
+
+                # 首先注入到 item["answer"]["_progress"]
                 answer_dict = item.get("answer")
                 StandLogger.info_log(
                     f"[EvidenceInject] Checking injection: "
                     f"answer_type={type(answer_dict).__name__}, "
-                    f"answer_is_dict={isinstance(answer_dict, dict)}"
+                    f"answer_is_dict={isinstance(answer_dict, dict)}, "
+                    f"item_has_progress={'_progress' in item}"
                 )
 
                 if isinstance(answer_dict, dict):
@@ -564,6 +569,7 @@ async def create_evidence_injection_stream(
                         f"has_progress={'_progress' in answer_dict}"
                     )
 
+                # 注入到 item["answer"]["_progress"]
                 if isinstance(answer_dict, dict) and "_progress" in answer_dict:
                     progress_array = answer_dict["_progress"]
                     StandLogger.info_log(
@@ -582,7 +588,7 @@ async def create_evidence_injection_stream(
                         if latest_progress.get("stage") == "llm":
                             latest_progress["_evidence"] = evidence_meta
                             StandLogger.info_log(
-                                f"[EvidenceInject] ✅ Injected _evidence into _progress: "
+                                f"[EvidenceInject] ✅ Injected _evidence into item['answer']['_progress'][-1]: "
                                 f"stage={latest_progress.get('stage')}, "
                                 f"evidence_count={len(evidence_meta)}, "
                                 f"is_placeholder={len(evidence_meta) == 0}"
@@ -590,10 +596,34 @@ async def create_evidence_injection_stream(
 
                             # 验证注入是否成功
                             StandLogger.info_log(
-                                f"[EvidenceInject] Verification: "
-                                f"item['answer']['_progress'][-1] has _evidence: {'_evidence' in latest_progress}, "
+                                f"[EvidenceInject] Verification (answer['_progress'][-1]): "
+                                f"has _evidence: {'_evidence' in latest_progress}, "
                                 f"keys={list(latest_progress.keys())}"
                             )
+
+                            # 同时注入到 item["_progress"]（如果存在且是不同的对象）
+                            if "_progress" in item and isinstance(item["_progress"], list):
+                                top_progress_array = item["_progress"]
+                                # 找到对应的 LLM stage 条目（通常是最后一个）
+                                if top_progress_array and len(top_progress_array) > 0:
+                                    # 检查是否是同一个对象
+                                    if top_progress_array[-1] is latest_progress:
+                                        StandLogger.info_log(
+                                            f"[EvidenceInject] item['_progress'][-1] is same object as answer['_progress'][-1], "
+                                            f"no need to inject again"
+                                        )
+                                    else:
+                                        # 找到对应的 LLM stage 条目
+                                        for idx, p in enumerate(top_progress_array):
+                                            if (p.get("stage") == "llm" and
+                                                p.get("id") == latest_progress.get("id")):
+                                                p["_evidence"] = evidence_meta
+                                                StandLogger.info_log(
+                                                    f"[EvidenceInject] ✅ Injected _evidence into item['_progress'][{idx}]: "
+                                                    f"stage={p.get('stage')}, "
+                                                    f"evidence_count={len(evidence_meta)}"
+                                                )
+                                                break
                         else:
                             StandLogger.info_log(
                                 f"[EvidenceInject] ⚠️ Latest progress is not LLM stage: {latest_progress.get('stage')}"
