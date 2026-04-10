@@ -49,7 +49,7 @@ func (s *httpServer) runPubRouter(engine *gin.Engine, basePath string) {
 
 	s.agentHandler.RegPubRouter(router)
 	s.conversationHandler.RegPubRouter(router)
-	s.observabilityHandler.RegPubRouter(router)
+	//s.observabilityHandler.RegPubRouter(router)
 	s.sessionHandler.RegPubRouter(router)
 }
 
@@ -70,5 +70,5 @@ func (s *httpServer) runPriRouter(engine *gin.Engine, basePath string) {
 
 	s.agentHandler.RegPriRouter(internalRouterG)
 	s.conversationHandler.RegPriRouter(internalRouterG)
-	s.observabilityHandler.RegPriRouter(internalRouterG)
+	//s.observabilityHandler.RegPriRouter(internalRouterG)
 }

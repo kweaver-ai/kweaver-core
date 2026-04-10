@@ -18,7 +18,6 @@ import (
 	// Run侧 handler
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/httphandler/agenthandler"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/httphandler/conversationhandler"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/httphandler/observabilityhandler"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/httphandler/sessionhandler"
 )
 
@@ -45,7 +44,7 @@ func NewHTTPServer() IServer {
 		// Run侧 (V1)
 		agentHandler:         agenthandler.NewAgentHTTPHandler(),
 		conversationHandler:  conversationhandler.NewConversationHTTPHandler(),
-		observabilityHandler: observabilityhandler.NewObservabilityHTTPHandler(),
+		//observabilityHandler: observabilityhandler.NewObservabilityHTTPHandler(),
 		sessionHandler:       sessionhandler.NewSessionHTTPHandler(),
 	}
 

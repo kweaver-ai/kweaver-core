@@ -339,10 +339,10 @@ otel:
   environment: "production"
   otlp_endpoint: "otelcol-contrib:4318"
   trace:
-    enabled: false
+    enabled: true
     sampling_rate: 1.0
   log:
-    enabled: false
+    enabled: true
     level: "info"
 
 # ========== Agent Executor 配置 ==========
