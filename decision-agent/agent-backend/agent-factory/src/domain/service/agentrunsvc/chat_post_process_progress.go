@@ -118,6 +118,11 @@ func (agentSvc *agentSvc) handleProgress(ctx context.Context, req *agentreq.Chat
 
 	// 3. 遍历 progresses
 	for _, pg := range pgs {
+		// DEBUG: 记录 _evidence 字段状态
+		if pg.Evidence != nil && len(pg.Evidence) > 0 {
+			agentSvc.logger.Infof("[handleProgress] Input progress has _evidence: id=%s, stage=%s, count=%d", pg.ID, pg.Stage, len(pg.Evidence))
+		}
+
 		// fmt.Printf("pid: %s,status: %s\n", pg.ID, pg.Status)
 		if _, exist := set[pg.ID]; exist {
 			continue
@@ -144,6 +149,20 @@ func (agentSvc *agentSvc) handleProgress(ctx context.Context, req *agentreq.Chat
 	// 5. append currentProgress
 	if currentProgress != nil {
 		newPgs = append(newPgs, currentProgress)
+	}
+
+	// DEBUG: 检查输出中的 _evidence 字段
+	evidenceCount := 0
+	for _, pg := range newPgs {
+		if pg.Evidence != nil && len(pg.Evidence) > 0 {
+			evidenceCount++
+			agentSvc.logger.Infof("[handleProgress] Output progress has _evidence: id=%s, stage=%s, count=%d", pg.ID, pg.Stage, len(pg.Evidence))
+		}
+	}
+	if evidenceCount > 0 {
+		agentSvc.logger.Infof("[handleProgress] ✅ Output contains %d progress(es) with _evidence", evidenceCount)
+	} else {
+		agentSvc.logger.Infof("[handleProgress] ℹ️ Output contains NO progress with _evidence (total=%d)", len(newPgs))
 	}
 
 	return

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/chat_enum/chatresenum"
@@ -193,6 +194,15 @@ func (agentSvc *agentSvc) AfterProcess(ctx context.Context, callResult []byte, r
 	// 13. 构建chatResponse
 	progresses := result.Answer.Progress
 
+	// DEBUG: 记录 _evidence 字段状态
+	for idx, pg := range progresses {
+		if pg.Evidence != nil && len(pg.Evidence) > 0 {
+			agentSvc.logger.Infof("[AfterProcess] Progress[%d] has _evidence: stage=%s, count=%d", idx, pg.Stage, len(pg.Evidence))
+		} else {
+			agentSvc.logger.Debugf("[AfterProcess] Progress[%d] no _evidence: stage=%s, Evidence=%v", idx, pg.Stage, pg.Evidence)
+		}
+	}
+
 	if req.ChatOption.IsNeedDocRetrivalPostProcess {
 		// NOTE:先对progresses进行处理
 		progresses = agentSvc.addCitesToProgress(ctx, progresses, true)
@@ -360,6 +370,26 @@ func (agentSvc *agentSvc) AfterProcess(ctx context.Context, callResult []byte, r
 		bytes, _ := sonic.Marshal(chatResponse)
 
 		return bytes, false, errors.Wrapf(err, "[AfterProcess] marshal chat response err: %v", err)
+	}
+
+	// DEBUG: 检查序列化后的 JSON 是否包含 _evidence
+	jsonStr := string(newData)
+	if strings.Contains(jsonStr, "_evidence") {
+		agentSvc.logger.Infof("[AfterProcess] ✅ Marshaled JSON contains '_evidence' field")
+		// 查找第一个 _evidence 的位置并打印上下文
+		if idx := strings.Index(jsonStr, "_evidence"); idx > 0 {
+			start := idx - 50
+			if start < 0 {
+				start = 0
+			}
+			end := idx + 100
+			if end > len(jsonStr) {
+				end = len(jsonStr)
+			}
+			agentSvc.logger.Infof("[AfterProcess] Context: ...%s...", jsonStr[start:end])
+		}
+	} else {
+		agentSvc.logger.Warnf("[AfterProcess] ⚠️ Marshaled JSON does NOT contain '_evidence' field")
 	}
 
 	marshalTime := time.Since(startTime)
