@@ -145,116 +145,55 @@ async def _check_and_prepare_evidence(
 
     try:
         import uuid
+        import json
 
         from app.logic.agent_core_logic_v2.evidence_store import (
             get_global_evidence_store,
         )
-        from app.logic.tool.evidence_prepare import evidence_prepare
 
         store = get_global_evidence_store()
 
         if not evidence_store_key:
             evidence_store_key = f"ev_{uuid.uuid4().hex[:12]}"
-            store.add(evidence_store_key, [])
             StandLogger.info_log(
                 f"[_check_and_prepare_evidence] Created new evidence key: {evidence_store_key}"
             )
 
-        current_evidences = store.get(evidence_store_key) or []
-
+        # 新策略：直接存储原始工具结果，不提取实体
+        # 实体提取将在 LLM 输出时由 LLM 自己标注
+        tool_results_for_storage = []
         for tool_name, result in tool_call_results.items():
+            # 将结果转换为字符串存储（支持任意类型）
+            result_str = json.dumps(result, ensure_ascii=False, default=str)
+            tool_results_for_storage.append({
+                "tool_name": tool_name,
+                "result": result_str,
+                "result_type": type(result).__name__,
+            })
             StandLogger.info_log(
-                f"[_check_and_prepare_evidence] Processing tool={tool_name}, "
+                f"[_check_and_prepare_evidence] Stored tool result: "
+                f"tool_name={tool_name}, "
+                f"result_length={len(result_str)}, "
                 f"result_type={type(result).__name__}"
             )
 
-            if not isinstance(result, dict):
-                StandLogger.info_log(
-                    f"[_check_and_prepare_evidence] SKIP: result is not dict, type={type(result).__name__}"
-                )
-                continue
-
+        # 存储到 EvidenceStore（使用特殊的 key 前缀表示这是原始工具结果）
+        if tool_results_for_storage:
+            raw_results_key = f"{evidence_store_key}_raw"
+            store.add(raw_results_key, tool_results_for_storage)
             StandLogger.info_log(
-                f"[_check_and_prepare_evidence] === BEFORE TRY BLOCK ==="
+                f"[_check_and_prepare_evidence] Stored {len(tool_results_for_storage)} "
+                f"raw tool results to {raw_results_key}"
             )
 
-            try:
-                StandLogger.info_log(
-                    f"[_check_and_prepare_evidence] About to call evidence_prepare, "
-                    f"result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}"
-                )
-
-                logger.info(
-                    f"[_check_and_prepare_evidence] Processing tool={tool_name}, "
-                    f"result keys: {list(result.keys()) if isinstance(result, dict) else type(result)}, "
-                    f"config: llm_extraction_timeout={getattr(Config.features, 'llm_extraction_timeout', 30)}, "
-                    f"llm_extraction_model='{getattr(Config.features, 'llm_extraction_model', '')}'"
-                )
-
-                # 直接使用 await 调用 async 函数
-                prepare_result = await evidence_prepare(
-                    tool_call_result=result,
-                    config={
-                        "llm_extraction_timeout": getattr(
-                            Config.features,
-                            "llm_extraction_timeout",
-                            30,
-                        ),
-                        "llm_extraction_model": getattr(
-                            Config.features,
-                            "llm_extraction_model",
-                            "",
-                        ),
-                    },
-                    context={"tool_name": tool_name},
-                )
-
-                StandLogger.info_log(
-                    f"[_check_and_prepare_evidence] evidence_prepare returned, "
-                    f"evidences_count={len(prepare_result.get('evidences', []))}"
-                )
-
-                logger.info(
-                    f"[_check_and_prepare_evidence] evidence_prepare returned: "
-                    f"evidence_id={prepare_result.get('evidence_id')}, "
-                    f"evidences_count={len(prepare_result.get('evidences', []))}, "
-                    f"summary={prepare_result.get('summary')}"
-                )
-
-                evidences = prepare_result.get("evidences", [])
-                if evidences:
-                    current_evidences.extend(evidences)
-                    logger.info(
-                        f"[_check_and_prepare_evidence] tool={tool_name}, "
-                        f"extracted={len(evidences)} evidences, "
-                        f"total_evidences={len(current_evidences)}"
-                    )
-                else:
-                    logger.warning(
-                        f"[_check_and_prepare_evidence] tool={tool_name} returned no evidences"
-                    )
-
-            except Exception as e:
-                StandLogger.info_log(
-                    f"[_check_and_prepare_evidence] Exception: {e}"
-                )
-                logger.error(
-                    f"[_check_and_prepare_evidence] Failed to process {tool_name}: {e}",
-                    exc_info=True
-                )
-
-        if current_evidences:
-            store.add(evidence_store_key, current_evidences)
-
         logger.info(
-            f"[_check_and_prepare_evidence] Total {len(current_evidences)} "
-            f"evidences, key={evidence_store_key}"
+            f"[_check_and_prepare_evidence] Stored {len(tool_call_results)} "
+            f"raw tool results, key={evidence_store_key}"
         )
 
         StandLogger.info_log(
             f"[_check_and_prepare_evidence] END: "
-            f"processed={len(tool_call_results)} tools, "
-            f"total_evidences={len(current_evidences)}, "
+            f"stored={len(tool_results_for_storage)} raw tool results, "
             f"key={evidence_store_key}\n"
             f"{'='*60}\n"
         )
