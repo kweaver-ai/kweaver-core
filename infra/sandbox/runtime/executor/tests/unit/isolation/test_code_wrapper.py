@@ -130,7 +130,7 @@ class TestNormalizeShellCode:
             Path("/workspace/skill/mini-wiki"),
         )
 
-        assert normalized == "cd xx/xx/ & python xxx.py"
+        assert normalized == "cd xx/xx/ && python xxx.py"
 
     def test_normalize_keeps_valid_script_invocation(self, tmp_path: Path):
         """Test preserving valid bash script invocation."""

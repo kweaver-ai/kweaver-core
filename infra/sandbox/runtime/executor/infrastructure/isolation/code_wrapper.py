@@ -184,25 +184,40 @@ def normalize_shell_code(user_code: str, cwd: Path) -> str:
     segments.append("".join(current))
 
     normalized_segments: list[str] = []
+    stripped_flags: list[bool] = []
+    separators = {"&&", "||", ";", "&", "|", "\n"}
+
     for segment in segments:
-        if segment in {"&&", "||", ";", "&", "|", "\n"}:
+        if segment in separators:
             normalized_segments.append(segment)
+            stripped_flags.append(False)
             continue
-        normalized_segments.append(_normalize_shell_segment(segment, cwd))
+
+        normalized_segment, was_stripped = _normalize_shell_segment(segment, cwd)
+        normalized_segments.append(normalized_segment)
+        stripped_flags.append(was_stripped)
+
+    for i, segment in enumerate(normalized_segments):
+        if segment != "&":
+            continue
+        if i == 0 or i == len(normalized_segments) - 1:
+            continue
+        if stripped_flags[i - 1] and stripped_flags[i + 1]:
+            normalized_segments[i] = "&&"
 
     return "".join(normalized_segments)
 
 
-def _normalize_shell_segment(segment: str, cwd: Path) -> str:
+def _normalize_shell_segment(segment: str, cwd: Path) -> tuple[str, bool]:
     match = re.match(r"^(\s*)(bash|sh)(\s+)(\S+)", segment)
     if not match:
-        return segment
+        return segment, False
 
     next_token = match.group(4)
     if not _should_strip_shell_prefix(next_token, cwd):
-        return segment
+        return segment, False
 
-    return match.group(1) + segment[match.start(4):]
+    return match.group(1) + segment[match.start(4):], True
 
 
 def _should_strip_shell_prefix(next_token: str, cwd: Path) -> bool:
