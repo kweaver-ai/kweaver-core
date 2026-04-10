@@ -2,7 +2,7 @@
 package download_pool
 
 import (
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
 )
 
 // Config 下载线程池配置

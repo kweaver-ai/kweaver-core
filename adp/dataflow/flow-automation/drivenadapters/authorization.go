@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	otelHttp "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/http"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	otelHttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/http"
 )
 
 //go:generate mockgen -package mock_drivenadapters -source ../drivenadapters/authorization.go -destination ../tests/mock_drivenadapters/authorization_mock.go

@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/go-playground/assert/v2"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	ierr "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	ierr "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_drivenadapters"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )

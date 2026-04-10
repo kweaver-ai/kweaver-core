@@ -12,10 +12,10 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	otelHttp "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/http"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	otelHttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/http"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 )
 
 //go:generate mockgen -package mock_httpclient -source ../drivenadapters/http_client.go -destination ../tests/mock_httpclient/http_client_mock.go

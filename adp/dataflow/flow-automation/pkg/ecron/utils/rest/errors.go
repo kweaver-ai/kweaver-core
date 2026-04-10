@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
-	errorv2 "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/utils/rest/error"
+	errorv2 "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/utils/rest/error"
 )
 
 var (

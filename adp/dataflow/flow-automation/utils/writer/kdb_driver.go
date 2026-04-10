@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	kdb "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/dialect/kdb"
+	kdb "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/dialect/kdb"
 	"gorm.io/gorm"
 )
 

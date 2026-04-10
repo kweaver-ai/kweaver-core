@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/utils/rest"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/utils/rest"
 
 	jsoniter "github.com/json-iterator/go"
 )

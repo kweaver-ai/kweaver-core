@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	wlCommon "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/common"
+	wlCommon "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/common"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )

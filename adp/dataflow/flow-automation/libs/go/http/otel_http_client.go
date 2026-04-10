@@ -13,8 +13,8 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 

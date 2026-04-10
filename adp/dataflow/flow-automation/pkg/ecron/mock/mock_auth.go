@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	common "github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
+	common "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -1,4 +1,4 @@
-module github.com/kweaver-ai/adp/autoflow/flow-automation
+module github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation
 
 go 1.24.0
 

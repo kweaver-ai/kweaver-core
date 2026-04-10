@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	lock "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/lock"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	store "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/store"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/alarm"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/cronjob"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/outbox"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	lock "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/lock"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	store "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/store"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/alarm"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/cronjob"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/outbox"
 )
 
 const defaultInternal = 30 * time.Second
