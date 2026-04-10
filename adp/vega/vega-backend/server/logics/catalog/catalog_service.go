@@ -201,7 +201,7 @@ func (cs *catalogService) GetByID(ctx context.Context, id string, withSensitiveF
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := cs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CATALOG, []string{catalog.ID},
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -249,6 +249,11 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 	ctx, span := ar_trace.Tracer.Start(ctx, "Get catalogs")
 	defer span.End()
 
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Catalog{}, nil
+	}
+
 	catalogs, err := cs.ca.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get catalog failed")
@@ -263,7 +268,7 @@ func (cs *catalogService) GetByIDs(ctx context.Context, ids []string) ([]*interf
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := cs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CATALOG, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -310,9 +315,14 @@ func (cs *catalogService) List(ctx context.Context, params interfaces.CatalogsQu
 		ids = append(ids, m.ID)
 	}
 
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Catalog{}, 0, nil
+	}
+
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := cs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CATALOG, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return []*interfaces.Catalog{}, 0, err
@@ -477,7 +487,7 @@ func (cs *catalogService) DeleteByIDs(ctx context.Context, ids []string) error {
 
 	// 判断userid是否有删除权限
 	matchResoucesMap, err := cs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CATALOG, ids,
-		[]string{interfaces.OPERATION_TYPE_DELETE}, true)
+		[]string{interfaces.OPERATION_TYPE_DELETE}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return err
@@ -701,7 +711,7 @@ func (cs *catalogService) ListCatalogSrcs(ctx context.Context, params interfaces
 		var batchMatchResources map[string]interfaces.PermissionResourceOps
 		// 校验权限管理的操作权限
 		batchMatchResources, err = cs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_CATALOG,
-			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false)
+			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false, interfaces.COMMON_OPERATIONS)
 		if err != nil {
 			return nil, 0, err
 		}

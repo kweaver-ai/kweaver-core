@@ -3,8 +3,8 @@ package chttpinject
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/umhttpaccess"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iumacc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/umhttpaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
 

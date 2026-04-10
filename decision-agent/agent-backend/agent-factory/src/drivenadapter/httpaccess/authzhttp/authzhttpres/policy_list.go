@@ -3,8 +3,8 @@ package authzhttpres
 import (
 	"time"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
 )
 
 // 策略管理相关的响应结构

@@ -58,6 +58,38 @@ func BuildViewSort(objectType interfaces.ObjectType) []*interfaces.SortParams {
 	return sorts
 }
 
+// MapSortFieldsForDataView maps sort fields from object-type data property names to view column names
+// (MappedField.Name) for virtualized data-view queries. SORT_FIELD_SCORE is passed through unchanged.
+func MapSortFieldsForDataView(sort []*interfaces.SortParams, objectType interfaces.ObjectType) ([]*interfaces.SortParams, error) {
+	if len(sort) == 0 {
+		return sort, nil
+	}
+	propNameToViewField := make(map[string]string, len(objectType.DataProperties))
+	for _, prop := range objectType.DataProperties {
+		propNameToViewField[prop.Name] = prop.MappedField.Name
+	}
+	out := make([]*interfaces.SortParams, len(sort))
+	for i, sp := range sort {
+		if sp == nil {
+			return nil, fmt.Errorf("排序配置不能为空")
+		}
+		field := sp.Field
+		if field == interfaces.SORT_FIELD_SCORE {
+			out[i] = &interfaces.SortParams{Field: field, Direction: sp.Direction}
+			continue
+		}
+		viewField, ok := propNameToViewField[field]
+		if !ok {
+			return nil, fmt.Errorf("排序字段[%s]不是对象类的数据属性", field)
+		}
+		if viewField == "" {
+			return nil, fmt.Errorf("排序字段[%s]未配置视图映射列(mapped_field)，无法在数据视图上排序", field)
+		}
+		out[i] = &interfaces.SortParams{Field: viewField, Direction: sp.Direction}
+	}
+	return out, nil
+}
+
 // 构建对象索引的默认的排序
 func BuildIndexSort(objectType interfaces.ObjectType, propMap map[string]cond.DataProperty) []*interfaces.SortParams {
 	sorts := []*interfaces.SortParams{

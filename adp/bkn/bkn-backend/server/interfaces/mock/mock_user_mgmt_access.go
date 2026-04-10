@@ -21,7 +21,6 @@ import (
 type MockUserMgmtAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserMgmtAccessMockRecorder
-	isgomock struct{}
 }
 
 // MockUserMgmtAccessMockRecorder is the mock recorder for MockUserMgmtAccess.
@@ -50,7 +49,7 @@ func (m *MockUserMgmtAccess) GetAccountNames(ctx context.Context, accountInfos [
 }
 
 // GetAccountNames indicates an expected call of GetAccountNames.
-func (mr *MockUserMgmtAccessMockRecorder) GetAccountNames(ctx, accountInfos any) *gomock.Call {
+func (mr *MockUserMgmtAccessMockRecorder) GetAccountNames(ctx, accountInfos interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountNames", reflect.TypeOf((*MockUserMgmtAccess)(nil).GetAccountNames), ctx, accountInfos)
 }

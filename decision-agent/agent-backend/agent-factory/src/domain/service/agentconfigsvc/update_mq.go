@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/ctopicenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/mqvo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/ctopicenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/mqvo"
 	"github.com/pkg/errors"
 )
 

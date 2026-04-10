@@ -1,7 +1,7 @@
 package daenum
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 	"github.com/pkg/errors"
 )
 
@@ -18,6 +18,15 @@ const (
 
 func (b PublishToWhere) EnumCheck() (err error) {
 	if !cutil.ExistsGeneric([]PublishToWhere{PublishToWhereCustomSpace, PublishToWhereSquare}, b) {
+		err = errors.New("[PublishToWhere]: invalid publish to where")
+		return
+	}
+
+	return
+}
+
+func (b PublishToWhere) WriteEnumCheck() (err error) {
+	if !cutil.ExistsGeneric([]PublishToWhere{PublishToWhereSquare}, b) {
 		err = errors.New("[PublishToWhere]: invalid publish to where")
 		return
 	}

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/internal/openapidoc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,8 +3,8 @@ package dainject
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/squaresvc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iv3portdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/squaresvc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver"
 )
 
 var (

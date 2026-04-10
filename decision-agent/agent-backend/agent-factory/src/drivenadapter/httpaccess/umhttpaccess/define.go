@@ -1,11 +1,11 @@
 package umhttpaccess
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/cconf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/umcmp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cglobal"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iumacc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cglobal"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc"
 )
 
 type umHttpAcc struct {

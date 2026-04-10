@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	observabilityreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/observability/req"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +37,7 @@ func (h *observabilityHTTPHandler) RunList(c *gin.Context) {
 
 	if agentID == "" {
 		h.logger.Errorf("[RunList] agent_id is required")
+
 		err := capierr.New400Err(c, "[RunList] agent_id is required")
 		otellog.LogError(c.Request.Context(), "[RunList] agent_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)
@@ -47,6 +48,7 @@ func (h *observabilityHTTPHandler) RunList(c *gin.Context) {
 
 	if conversationID == "" {
 		h.logger.Errorf("[RunList] conversation_id is required")
+
 		err := capierr.New400Err(c, "[RunList] conversation_id is required")
 		otellog.LogError(c.Request.Context(), "[RunList] conversation_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)
@@ -57,6 +59,7 @@ func (h *observabilityHTTPHandler) RunList(c *gin.Context) {
 
 	if sessionID == "" {
 		h.logger.Errorf("[RunList] session_id is required")
+
 		err := capierr.New400Err(c, "[RunList] session_id is required")
 		otellog.LogError(c.Request.Context(), "[RunList] session_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)

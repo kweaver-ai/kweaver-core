@@ -97,7 +97,7 @@ serviceUtAndCoverage:
 	@echo "========================================="
 # Swagger 文档生成
 gen-swag:
-	$(SWAG_CMD) init -g main.go -o docs --parseDependency
+	$(SWAG_CMD) init -g main.go -o cmd/openapi-docs/generated/swagger --parseDependency
 
 gen-api-docs: gen-swag
 	$(OPENAPI_DOCS_CMD) generate
@@ -109,7 +109,7 @@ view-swag:
 
 # 清理并重新生成 Swagger
 clean-swag:
-	rm -f docs/docs.go docs/swagger.json docs/swagger.yaml
+	rm -f cmd/openapi-docs/generated/swagger/docs.go cmd/openapi-docs/generated/swagger/swagger.json cmd/openapi-docs/generated/swagger/swagger.yaml
 	$(MAKE) gen-swag
 
 compare-api-docs: gen-swag

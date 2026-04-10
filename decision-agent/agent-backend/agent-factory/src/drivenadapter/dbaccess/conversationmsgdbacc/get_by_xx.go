@@ -3,16 +3,16 @@ package conversationmsgdbacc
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 // GetByID implements idbaccess.IConversationMsgRepo.
 func (repo *ConversationMsgRepo) GetByID(ctx context.Context, id string) (po *dapo.ConversationMsgPO, err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("msgID", id))
 

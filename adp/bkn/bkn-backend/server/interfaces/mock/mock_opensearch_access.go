@@ -21,7 +21,6 @@ import (
 type MockOpenSearchAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockOpenSearchAccessMockRecorder
-	isgomock struct{}
 }
 
 // MockOpenSearchAccessMockRecorder is the mock recorder for MockOpenSearchAccess.
@@ -50,7 +49,7 @@ func (m *MockOpenSearchAccess) BulkDeleteData(ctx context.Context, indexName str
 }
 
 // BulkDeleteData indicates an expected call of BulkDeleteData.
-func (mr *MockOpenSearchAccessMockRecorder) BulkDeleteData(ctx, indexName, docIDs any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) BulkDeleteData(ctx, indexName, docIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkDeleteData", reflect.TypeOf((*MockOpenSearchAccess)(nil).BulkDeleteData), ctx, indexName, docIDs)
 }
@@ -64,7 +63,7 @@ func (m *MockOpenSearchAccess) BulkInsertData(ctx context.Context, indexName str
 }
 
 // BulkInsertData indicates an expected call of BulkInsertData.
-func (mr *MockOpenSearchAccessMockRecorder) BulkInsertData(ctx, indexName, dataList any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) BulkInsertData(ctx, indexName, dataList interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkInsertData", reflect.TypeOf((*MockOpenSearchAccess)(nil).BulkInsertData), ctx, indexName, dataList)
 }
@@ -79,7 +78,7 @@ func (m *MockOpenSearchAccess) Count(ctx context.Context, indexName string, quer
 }
 
 // Count indicates an expected call of Count.
-func (mr *MockOpenSearchAccessMockRecorder) Count(ctx, indexName, query any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) Count(ctx, indexName, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockOpenSearchAccess)(nil).Count), ctx, indexName, query)
 }
@@ -93,7 +92,7 @@ func (m *MockOpenSearchAccess) CreateIndex(ctx context.Context, indexName string
 }
 
 // CreateIndex indicates an expected call of CreateIndex.
-func (mr *MockOpenSearchAccessMockRecorder) CreateIndex(ctx, indexName, body any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) CreateIndex(ctx, indexName, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIndex", reflect.TypeOf((*MockOpenSearchAccess)(nil).CreateIndex), ctx, indexName, body)
 }
@@ -107,7 +106,7 @@ func (m *MockOpenSearchAccess) DeleteByQuery(ctx context.Context, indexName stri
 }
 
 // DeleteByQuery indicates an expected call of DeleteByQuery.
-func (mr *MockOpenSearchAccessMockRecorder) DeleteByQuery(ctx, indexName, query any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) DeleteByQuery(ctx, indexName, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByQuery", reflect.TypeOf((*MockOpenSearchAccess)(nil).DeleteByQuery), ctx, indexName, query)
 }
@@ -121,7 +120,7 @@ func (m *MockOpenSearchAccess) DeleteData(ctx context.Context, indexName, docID 
 }
 
 // DeleteData indicates an expected call of DeleteData.
-func (mr *MockOpenSearchAccessMockRecorder) DeleteData(ctx, indexName, docID any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) DeleteData(ctx, indexName, docID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteData", reflect.TypeOf((*MockOpenSearchAccess)(nil).DeleteData), ctx, indexName, docID)
 }
@@ -135,7 +134,7 @@ func (m *MockOpenSearchAccess) DeleteIndex(ctx context.Context, indexName string
 }
 
 // DeleteIndex indicates an expected call of DeleteIndex.
-func (mr *MockOpenSearchAccessMockRecorder) DeleteIndex(ctx, indexName any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) DeleteIndex(ctx, indexName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIndex", reflect.TypeOf((*MockOpenSearchAccess)(nil).DeleteIndex), ctx, indexName)
 }
@@ -150,7 +149,7 @@ func (m *MockOpenSearchAccess) GetIndexStats(ctx context.Context, indexName stri
 }
 
 // GetIndexStats indicates an expected call of GetIndexStats.
-func (mr *MockOpenSearchAccessMockRecorder) GetIndexStats(ctx, indexName any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) GetIndexStats(ctx, indexName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIndexStats", reflect.TypeOf((*MockOpenSearchAccess)(nil).GetIndexStats), ctx, indexName)
 }
@@ -165,7 +164,7 @@ func (m *MockOpenSearchAccess) IndexExists(ctx context.Context, indexName string
 }
 
 // IndexExists indicates an expected call of IndexExists.
-func (mr *MockOpenSearchAccessMockRecorder) IndexExists(ctx, indexName any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) IndexExists(ctx, indexName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IndexExists", reflect.TypeOf((*MockOpenSearchAccess)(nil).IndexExists), ctx, indexName)
 }
@@ -179,7 +178,7 @@ func (m *MockOpenSearchAccess) InsertData(ctx context.Context, indexName, docID 
 }
 
 // InsertData indicates an expected call of InsertData.
-func (mr *MockOpenSearchAccessMockRecorder) InsertData(ctx, indexName, docID, data any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) InsertData(ctx, indexName, docID, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertData", reflect.TypeOf((*MockOpenSearchAccess)(nil).InsertData), ctx, indexName, docID, data)
 }
@@ -193,7 +192,7 @@ func (m *MockOpenSearchAccess) PutIndexTemplate(ctx context.Context, indexTempla
 }
 
 // PutIndexTemplate indicates an expected call of PutIndexTemplate.
-func (mr *MockOpenSearchAccessMockRecorder) PutIndexTemplate(ctx, indexTemplateName, body any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) PutIndexTemplate(ctx, indexTemplateName, body interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutIndexTemplate", reflect.TypeOf((*MockOpenSearchAccess)(nil).PutIndexTemplate), ctx, indexTemplateName, body)
 }
@@ -207,7 +206,7 @@ func (m *MockOpenSearchAccess) Refresh(ctx context.Context, indexName string) er
 }
 
 // Refresh indicates an expected call of Refresh.
-func (mr *MockOpenSearchAccessMockRecorder) Refresh(ctx, indexName any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) Refresh(ctx, indexName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockOpenSearchAccess)(nil).Refresh), ctx, indexName)
 }
@@ -222,7 +221,7 @@ func (m *MockOpenSearchAccess) SearchData(ctx context.Context, indexName string,
 }
 
 // SearchData indicates an expected call of SearchData.
-func (mr *MockOpenSearchAccessMockRecorder) SearchData(ctx, indexName, query any) *gomock.Call {
+func (mr *MockOpenSearchAccessMockRecorder) SearchData(ctx, indexName, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchData", reflect.TypeOf((*MockOpenSearchAccess)(nil).SearchData), ctx, indexName, query)
 }

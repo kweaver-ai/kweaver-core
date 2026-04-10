@@ -325,7 +325,7 @@ func Test_NewMultiMatchCond(t *testing.T) {
 			So(cond, ShouldNotBeNil)
 		})
 
-		Convey("成功 - AllField", func() {
+		Convey("成功 - AllField 展开为可全文检索的具体索引字段", func() {
 			cfg := &CondCfg{
 				Name:      AllField,
 				Operation: OperationMultiMatch,
@@ -339,6 +339,11 @@ func Test_NewMultiMatchCond(t *testing.T) {
 			cond, err := NewMultiMatchCond(ctx, cfg, CUSTOM, fieldsMap)
 			So(err, ShouldBeNil)
 			So(cond, ShouldNotBeNil)
+			dsl, err := cond.Convert(ctx, nil)
+			So(err, ShouldBeNil)
+			So(dsl, ShouldContainSubstring, "text_field")
+			So(dsl, ShouldContainSubstring, "string_field.text")
+			So(dsl, ShouldNotContainSubstring, `"*"`)
 		})
 
 		Convey("成功 - 指定match_type", func() {
@@ -405,6 +410,27 @@ func Test_NewMultiMatchCond(t *testing.T) {
 			cond, err := NewMultiMatchCond(ctx, cfg, CUSTOM, fieldsMap)
 			So(err, ShouldNotBeNil)
 			So(cond, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "match_type")
+		})
+
+		Convey("失败 - fields 为 * 但无可全文检索属性", func() {
+			intOnly := map[string]*DataProperty{
+				"n": {
+					Name:        "n",
+					Type:        dtype.DATATYPE_INTEGER,
+					MappedField: Field{Name: "n_col"},
+				},
+			}
+			cfg := &CondCfg{
+				Name:        AllField,
+				Operation:   OperationMultiMatch,
+				ValueOptCfg: ValueOptCfg{Value: "test"},
+				RemainCfg:   map[string]any{"fields": []any{AllField}},
+			}
+			cond, err := NewMultiMatchCond(ctx, cfg, CUSTOM, intOnly)
+			So(err, ShouldNotBeNil)
+			So(cond, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "*")
 		})
 	})
 }

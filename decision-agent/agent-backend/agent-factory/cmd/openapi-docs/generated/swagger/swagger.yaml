@@ -1,0 +1,4525 @@
+basePath: /api/agent-factory
+definitions:
+  agentconfigenum.ConfigTplVersionT:
+    enum:
+    - v1
+    type: string
+    x-enum-varnames:
+    - ConfigTplVersionV1
+  agentreq.SelectedFile:
+    properties:
+      file_name:
+        description: 文件名
+        type: string
+    required:
+    - file_name
+    type: object
+  agentresperr.RespError:
+    properties:
+      error: {}
+      type:
+        $ref: '#/definitions/agentresperr.RespErrorType'
+    type: object
+  agentresperr.RespErrorType:
+    enum:
+    - agent_factory
+    - agent_executor
+    type: string
+    x-enum-comments:
+      RespErrorTypeAgentExecutor: 来自agent-executor的错误
+      RespErrorTypeAgentFactory: 来自agent-factory的错误
+    x-enum-descriptions:
+    - 来自agent-factory的错误
+    - 来自agent-executor的错误
+    x-enum-varnames:
+    - RespErrorTypeAgentFactory
+    - RespErrorTypeAgentExecutor
+  cdaenum.AvatarType:
+    enum:
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-varnames:
+    - AvatarTypeBuiltIn
+    - AvatarTypeUserUploaded
+    - AvatarTypeAIGenerated
+  cdaenum.BuiltIn:
+    enum:
+    - 0
+    - 1
+    format: int32
+    type: integer
+    x-enum-varnames:
+    - BuiltInNo
+    - BuiltInYes
+  cdaenum.ConversationMsgRole:
+    enum:
+    - user
+    - assistant
+    type: string
+    x-enum-varnames:
+    - MsgRoleUser
+    - MsgRoleAssistant
+  cdaenum.ConversationMsgStatus:
+    enum:
+    - received
+    - processed
+    - processing
+    - succeded
+    - failed
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - MsgStatusReceived
+    - MsgStatusProcessed
+    - MsgStatusProcessing
+    - MsgStatusSucceded
+    - MsgStatusFailed
+    - MsgStatusCancelled
+  cdaenum.DocSourceFieldType:
+    enum:
+    - folder
+    - file
+    type: string
+    x-enum-varnames:
+    - DocSourceFieldTypeFolder
+    - DocSourceFieldTypeFile
+  cdaenum.DolphinMode:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - DolphinModeDisabled
+    - DolphinModeEnabled
+  cdaenum.DolphinTplKey:
+    enum:
+    - memory_retrieve
+    - temp_file_process
+    - doc_retrieve
+    - graph_retrieve
+    - context_organize
+    - related_questions
+    type: string
+    x-enum-varnames:
+    - DolphinTplKeyMemoryRetrieve
+    - DolphinTplKeyTempFileProcess
+    - DolphinTplKeyDocRetrieve
+    - DolphinTplKeyGraphRetrieve
+    - DolphinTplKeyContextOrganize
+    - DolphinTplKeyRelatedQuestions
+  cdaenum.HistoryStrategy:
+    enum:
+    - none
+    - count
+    - time_window
+    - token
+    type: string
+    x-enum-varnames:
+    - HistoryStrategyNone
+    - HistoryStrategyCount
+    - HistoryStrategyTimeWindow
+    - HistoryStrategyToken
+  cdaenum.InputFieldType:
+    enum:
+    - string
+    - file
+    - object
+    type: string
+    x-enum-varnames:
+    - InputFieldTypeString
+    - InputFieldTypeFile
+    - InputFieldTypeJSONObject
+  cdaenum.ModelType:
+    enum:
+    - llm
+    - rlm
+    type: string
+    x-enum-varnames:
+    - ModelTypeLlm
+    - ModelTypeRlm
+  cdaenum.OutputDefaultFormat:
+    enum:
+    - json
+    - markdown
+    type: string
+    x-enum-varnames:
+    - OutputDefaultFormatJson
+    - OutputDefaultFormatMarkdown
+  cdaenum.PublishToBe:
+    enum:
+    - api_agent
+    - web_sdk_agent
+    - skill_agent
+    - data_flow_agent
+    type: string
+    x-enum-varnames:
+    - PublishToBeAPIAgent
+    - PublishToBeWebSDKAgent
+    - PublishToBeSkillAgent
+    - PublishToBeDataFlowAgent
+  cdaenum.Status:
+    enum:
+    - unpublished
+    - published
+    type: string
+    x-enum-varnames:
+    - StatusUnpublished
+    - StatusPublished
+  cenum.YesNoInt8:
+    enum:
+    - 1
+    - 0
+    format: int32
+    type: integer
+    x-enum-varnames:
+    - YesNoInt8Yes
+    - YesNoInt8No
+  chatopt.ChatOption:
+    properties:
+      enable_dependency_cache:
+        description: 是否需要使用缓存
+        type: boolean
+      is_need_doc_retrival_post_process:
+        description: 是否需要文档检索后处理
+        type: boolean
+      is_need_history:
+        description: 是否需要历史上下文
+        type: boolean
+      is_need_progress:
+        description: 是否需要progress
+        type: boolean
+    type: object
+  chatresenum.AnswerType:
+    enum:
+    - prompt
+    - explore
+    - other
+    - explore
+    - prompt
+    - other
+    type: string
+    x-enum-comments:
+      AnswerTypeExplore: explore
+      AnswerTypeOther: other（除了 prompt 和 explore以外的）
+      AnswerTypePrompt: prompt，格式如：{"answer":"xxx","think":"xxx"}
+    x-enum-descriptions:
+    - explore
+    - prompt，格式如：{"answer":"xxx","think":"xxx"}
+    - other（除了 prompt 和 explore以外的）
+    x-enum-varnames:
+    - AnswerTypeExplore
+    - AnswerTypePrompt
+    - AnswerTypeOther
+  comvalobj.LLMMessage:
+    properties:
+      content:
+        type: string
+      role:
+        type: string
+    type: object
+  conversationmsgvo.Message:
+    properties:
+      agent_info:
+        $ref: '#/definitions/valueobject.AgentInfo'
+      content: {}
+      content_type:
+        $ref: '#/definitions/chatresenum.AnswerType'
+      conversation_id:
+        type: string
+      ext:
+        allOf:
+        - $ref: '#/definitions/conversationmsgvo.MessageExt'
+        description: 扩展字段
+      id:
+        type: string
+      index:
+        type: integer
+      reply_id:
+        type: string
+      role:
+        $ref: '#/definitions/cdaenum.ConversationMsgRole'
+      status:
+        $ref: '#/definitions/cdaenum.ConversationMsgStatus'
+    type: object
+  conversationmsgvo.MessageExt:
+    properties:
+      agent_run_id:
+        description: Agent 运行 ID
+        type: string
+      error:
+        allOf:
+        - $ref: '#/definitions/agentresperr.RespError'
+        description: 错误信息
+      interrupt_info:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.ToolInterruptInfo'
+        description: 中断信息
+      related_queries:
+        description: 相关问题（query 列表）
+        items:
+          type: string
+        type: array
+      total_time:
+        description: 总耗时（秒）
+        type: number
+      total_tokens:
+        description: 总 token 数
+        type: integer
+      ttft:
+        description: 首 token 时间（毫秒）
+        type: integer
+    type: object
+  conversationreq.InitReq:
+    properties:
+      agent_id:
+        description: agent id
+        type: string
+      agent_version:
+        description: agent version
+        type: string
+      executor_version:
+        description: executor version v1 或 v2 默认v2
+        type: string
+      temparea_id:
+        description: 临时区域ID
+        type: string
+      title:
+        description: conversation 标题
+        type: string
+      visitor_type:
+        description: 访客类型  user / app
+        type: string
+    type: object
+  daconfvalobj.Augment:
+    properties:
+      data_source:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.AugmentDataSource'
+        description: 图谱数据源配置
+      enable:
+        description: 是否启用
+        type: boolean
+    required:
+    - data_source
+    - enable
+    type: object
+  daconfvalobj.AugmentDataSource:
+    properties:
+      kg:
+        description: 图谱类型数据源
+        items:
+          $ref: '#/definitions/daconfvalobj.KgSource'
+        type: array
+    type: object
+  daconfvalobj.BuiltInCanEditFields:
+    properties:
+      avatar:
+        description: 头像
+        type: boolean
+      data_source.doc:
+        description: 知识来源-文档
+        type: boolean
+      data_source.kg:
+        description: 知识来源-业务知识网络
+        type: boolean
+      input_config:
+        description: 输入配置
+        type: boolean
+      memory:
+        description: 长期记忆配置
+        type: boolean
+      model:
+        description: KnowledgeSource     bool `json:"knowledge_source"`      // 知识来源
+        type: boolean
+      name:
+        description: 名字
+        type: boolean
+      opening_remark_config:
+        description: 开场白配置
+        type: boolean
+      preset_questions:
+        description: 预设问题列表
+        type: boolean
+      profile:
+        description: 描述
+        type: boolean
+      related_question:
+        description: 相关问题配置
+        type: boolean
+      skills:
+        description: 技能
+        type: boolean
+      skills.tools.tool_input:
+        description: skills.tools.tool_input
+        type: boolean
+      system_prompt:
+        description: 角色指令，包括dolpin模式和非dolpin模式
+        type: boolean
+    type: object
+  daconfvalobj.ConfigMetadata:
+    properties:
+      config_last_set_timestamp:
+        description: 配置时间戳(nanoseconds)
+        type: integer
+      config_tpl_version:
+        allOf:
+        - $ref: '#/definitions/agentconfigenum.ConfigTplVersionT'
+        description: 配置版本
+    type: object
+  daconfvalobj.ConversationHistoryConfig:
+    properties:
+      count_params:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.CountParams'
+        description: count策略参数
+      strategy:
+        allOf:
+        - $ref: '#/definitions/cdaenum.HistoryStrategy'
+        description: 会话历史策略：none(无历史), count(按数量), time_window(按时间窗口-预留), token(按token-预留)
+      time_window_params:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.TimeWindowParams'
+        description: time_window策略参数（预留）
+      token_limit_params:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.TokenLimitParams'
+        description: token_limit策略参数（预留）
+    type: object
+  daconfvalobj.CountParams:
+    properties:
+      count_limit:
+        description: 消息数量限制，默认10条，范围1-1000
+        type: integer
+    type: object
+  daconfvalobj.DolphinTpl:
+    properties:
+      edited:
+        description: 是否编辑过
+        type: boolean
+      enabled:
+        description: 是否启用
+        type: boolean
+      key:
+        allOf:
+        - $ref: '#/definitions/cdaenum.DolphinTplKey'
+        description: dolphin块的key
+      name:
+        description: dolphin块的名称
+        type: string
+      value:
+        description: dolphin块的dolphin语句
+        type: string
+    required:
+    - key
+    - value
+    type: object
+  daconfvalobj.Field:
+    properties:
+      desc:
+        description: 参数描述
+        type: string
+      name:
+        description: 参数（字段）名
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.InputFieldType'
+        description: 类型：string-字符串, file-文件, object-json对象
+    required:
+    - name
+    type: object
+  daconfvalobj.Input:
+    properties:
+      augment:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.Augment'
+        description: query增强
+      fields:
+        description: 参数列表
+        items:
+          $ref: '#/definitions/daconfvalobj.Field'
+        type: array
+      rewrite:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.Rewrite'
+        description: query重写
+    required:
+    - fields
+    type: object
+  daconfvalobj.KgSource:
+    properties:
+      field_properties:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: 实体属性列表
+        type: object
+      fields:
+        description: 实体类范围
+        items:
+          type: string
+        type: array
+      kg_id:
+        description: 图谱ID
+        type: string
+      output_fields:
+        description: 结果范围，非必填
+        items:
+          type: string
+        type: array
+    required:
+    - fields
+    - kg_id
+    type: object
+  daconfvalobj.LlmConfig:
+    properties:
+      frequency_penalty:
+        description: 频率惩罚（-2~2）
+        maximum: 2
+        minimum: -2
+        type: number
+      id:
+        description: 模型ID，预留参数，目前无用
+        type: string
+      max_tokens:
+        description: 最大token数
+        minimum: 0
+        type: integer
+      model_type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.ModelType'
+        description: 模型类型
+      name:
+        description: 模型名
+        type: string
+      presence_penalty:
+        description: 存在惩罚（-2~2）
+        maximum: 2
+        minimum: -2
+        type: number
+      temperature:
+        description: 温度参数
+        maximum: 2
+        minimum: 0
+        type: number
+      top_k:
+        description: Top-k参数
+        minimum: 0
+        type: integer
+      top_p:
+        description: Top-p参数
+        maximum: 1
+        minimum: 0
+        type: number
+    required:
+    - max_tokens
+    - name
+    type: object
+  daconfvalobj.LlmItem:
+    properties:
+      is_default:
+        description: 是否默认（从选择的所有llm中选择一个为默认llm）
+        type: boolean
+      llm_config:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.LlmConfig'
+        description: 其他LLM属性
+    required:
+    - llm_config
+    type: object
+  daconfvalobj.MemoryCfg:
+    properties:
+      is_enabled:
+        description: 是否启用
+        type: boolean
+    type: object
+  daconfvalobj.OpeningRemarkConfig:
+    properties:
+      dynamic_opening_remark_prompt:
+        description: 动态开场白提示语
+        type: string
+      fixed_opening_remark:
+        description: 固定开场白
+        type: string
+      type:
+        description: 开场白类型（固定/动态）
+        type: string
+    type: object
+  daconfvalobj.Output:
+    properties:
+      default_format:
+        allOf:
+        - $ref: '#/definitions/cdaenum.OutputDefaultFormat'
+        description: 默认输出格式
+      variables:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.VariablesS'
+        description: 变量名
+    type: object
+  daconfvalobj.PlanMode:
+    properties:
+      is_enabled:
+        description: 是否启用
+        type: boolean
+    type: object
+  daconfvalobj.PresetQuestion:
+    properties:
+      question:
+        description: 问题内容
+        type: string
+    type: object
+  daconfvalobj.RelatedQuestion:
+    properties:
+      is_enabled:
+        description: 是否启用
+        type: boolean
+    type: object
+  daconfvalobj.Rewrite:
+    properties:
+      enable:
+        description: 是否启用
+        type: boolean
+      llm_config:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.LlmConfig'
+        description: LLM配置
+    required:
+    - enable
+    - llm_config
+    type: object
+  daconfvalobj.TimeWindowParams:
+    type: object
+  daconfvalobj.TokenLimitParams:
+    type: object
+  daconfvalobj.VariablesS:
+    properties:
+      answer_var:
+        description: 包含最终回答的变量名
+        type: string
+      doc_retrieval_var:
+        description: 包含文档检索结果的变量名
+        type: string
+      graph_retrieval_var:
+        description: 包含图谱检索结果的变量名
+        type: string
+      middle_output_vars:
+        description: 中间输出变量数组
+        items:
+          type: string
+        type: array
+      other_vars:
+        description: 其他变量数组
+        items:
+          type: string
+        type: array
+      related_questions_var:
+        description: 包含相关问题的变量名
+        type: string
+    type: object
+  daenum.PublishToWhere:
+    enum:
+    - custom_space
+    - square
+    type: string
+    x-enum-varnames:
+    - PublishToWhereCustomSpace
+    - PublishToWhereSquare
+  datasourcevalobj.DocAdvancedConfig:
+    properties:
+      document_threshold:
+        description: 文档ranker bge相似度阈值：-5.5
+        type: number
+      documents_num:
+        description: 来源文档数量：8
+        type: integer
+      max_slice_per_cite:
+        description: 每篇文档最大保留切片数：16
+        type: integer
+      rerank_topk:
+        description: |-
+          CosSimWeight             float64 `json:"cos_sim_weight"`
+          BM25Weight               float64 `json:"bm_25_weight"`
+          RerankerMethod           string  `json:"reranker_method"`
+          AccRankingScoreThreshold float64 `json:"acc_ranking_score_threshold"`
+          ChooseMethod             string  `json:"choose_method"`
+        type: integer
+      retrieval_max_length:
+        description: 召回文档最大长度
+        type: integer
+      retrieval_slices_num:
+        description: 召回切片数：150
+        type: integer
+      slice_head_num:
+        description: 获取上文切片数：2
+        type: integer
+      slice_tail_num:
+        description: 获取下文切片数：0
+        type: integer
+    required:
+    - document_threshold
+    - documents_num
+    - max_slice_per_cite
+    - rerank_topk
+    - retrieval_max_length
+    - retrieval_slices_num
+    - slice_head_num
+    - slice_tail_num
+    type: object
+  datasourcevalobj.DocSource:
+    properties:
+      datasets:
+        description: 数据集列表
+        items:
+          type: string
+        type: array
+      ds_id:
+        description: 数据源ID
+        type: string
+      fields:
+        description: 数据源范围列表
+        items:
+          $ref: '#/definitions/datasourcevalobj.DocSourceField'
+        type: array
+    required:
+    - ds_id
+    - fields
+    type: object
+  datasourcevalobj.DocSourceField:
+    properties:
+      name:
+        description: 字段名称
+        type: string
+      path:
+        description: 字段路径
+        type: string
+      source:
+        description: 字段来源
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.DocSourceFieldType'
+        description: 字段类型
+    required:
+    - name
+    - path
+    - source
+    - type
+    type: object
+  datasourcevalobj.KGAdvancedConfig:
+    properties:
+      graph_rag_topk:
+        description: 重排序后保留参考信息数量：25
+        type: integer
+      long_text_length:
+        description: 长文本：256
+        type: integer
+      reranker_sim_threshold:
+        description: 图谱rerank bge相似度过滤阈值：-5.5
+        type: number
+      retrieval_max_length:
+        description: |-
+          EnableRAG             *bool    `json:"enable_rag" binding:"required"`               // 是否启用RAG
+          EnableNGQL            *bool    `json:"enable_ngql" binding:"required"`              // 是否启用NGQL
+        type: integer
+      text_match_entity_nums:
+        description: 文本匹配召回实体数量：60
+        type: integer
+      vector_match_entity_nums:
+        description: 向量匹配召回实体数量：60
+        type: integer
+    required:
+    - graph_rag_topk
+    - long_text_length
+    - reranker_sim_threshold
+    - retrieval_max_length
+    - text_match_entity_nums
+    - vector_match_entity_nums
+    type: object
+  datasourcevalobj.KgSource:
+    properties:
+      field_properties:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: 实体属性列表
+        type: object
+      fields:
+        description: 实体类范围
+        items:
+          type: string
+        type: array
+      kg_id:
+        description: 图谱ID
+        type: string
+      output_fields:
+        description: 结果范围，非必填
+        items:
+          type: string
+        type: array
+    required:
+    - fields
+    - kg_id
+    type: object
+  datasourcevalobj.KnEntrySource:
+    properties:
+      kn_entry_id:
+        description: 知识条目ID
+        type: string
+    required:
+    - kn_entry_id
+    type: object
+  datasourcevalobj.KnowledgeNetworkSource:
+    properties:
+      knowledge_network_id:
+        description: 业务知识网络ID
+        type: string
+      object_types:
+        description: 对象类型列表
+        items:
+          $ref: '#/definitions/datasourcevalobj.ObjectType'
+        type: array
+    required:
+    - knowledge_network_id
+    type: object
+  datasourcevalobj.MetricSource:
+    properties:
+      metric_model_id:
+        description: 指标模型ID
+        type: string
+    required:
+    - metric_model_id
+    type: object
+  datasourcevalobj.ObjectType:
+    properties:
+      object_type_id:
+        description: 对象类型ID
+        type: string
+    required:
+    - object_type_id
+    type: object
+  datasourcevalobj.RetrieverAdvancedConfig:
+    properties:
+      doc:
+        $ref: '#/definitions/datasourcevalobj.DocAdvancedConfig'
+      kg:
+        $ref: '#/definitions/datasourcevalobj.KGAdvancedConfig'
+    type: object
+  datasourcevalobj.RetrieverDataSource:
+    properties:
+      advanced_config:
+        allOf:
+        - $ref: '#/definitions/datasourcevalobj.RetrieverAdvancedConfig'
+        description: 召回高级配置
+      doc:
+        description: 文档类型数据源
+        items:
+          $ref: '#/definitions/datasourcevalobj.DocSource'
+        type: array
+      kg:
+        description: 图谱类型数据源
+        items:
+          $ref: '#/definitions/datasourcevalobj.KgSource'
+        type: array
+      kn_entry:
+        description: 知识库类型数据源
+        items:
+          $ref: '#/definitions/datasourcevalobj.KnEntrySource'
+        type: array
+      knowledge_network:
+        description: 业务知识网络类型数据源
+        items:
+          $ref: '#/definitions/datasourcevalobj.KnowledgeNetworkSource'
+        type: array
+      metric:
+        description: 指标类型数据源
+        items:
+          $ref: '#/definitions/datasourcevalobj.MetricSource'
+        type: array
+    type: object
+  pmsvo.PmsControlObjS:
+    properties:
+      app_account_ids:
+        description: 应用账号ID列表
+        items:
+          type: string
+        type: array
+      department_ids:
+        description: 部门ID列表
+        items:
+          type: string
+        type: array
+      role_ids:
+        description: 角色ID列表
+        items:
+          type: string
+        type: array
+      user_group_ids:
+        description: 用户组ID列表
+        items:
+          type: string
+        type: array
+      user_ids:
+        description: 用户ID列表
+        items:
+          type: string
+        type: array
+    type: object
+  productreq.CreateReq:
+    properties:
+      key:
+        description: 产品标识，唯一
+        example: smart-customer-service
+        maxLength: 50
+        type: string
+      name:
+        description: 产品名称
+        example: 智能客服
+        maxLength: 50
+        type: string
+      profile:
+        description: 产品简介
+        example: 这是一个智能客服产品
+        maxLength: 100
+        type: string
+    required:
+    - name
+    type: object
+  productreq.UpdateReq:
+    properties:
+      name:
+        description: 产品名称
+        example: 智能客服
+        maxLength: 50
+        type: string
+      profile:
+        description: 产品简介
+        example: 这是一个智能客服产品
+        maxLength: 100
+        type: string
+    required:
+    - name
+    type: object
+  productresp.CreateRes:
+    properties:
+      id:
+        description: 产品ID
+        example: 12345
+        type: integer
+      key:
+        description: 产品Key
+        example: smart-customer-service
+        type: string
+    type: object
+  productresp.DetailRes:
+    properties:
+      created_at:
+        description: 创建时间（时间戳，单位：ms）
+        type: integer
+      id:
+        description: 产品ID
+        type: integer
+      key:
+        description: 产品标识
+        type: string
+      name:
+        description: 产品名称
+        type: string
+      profile:
+        description: 产品简介
+        type: string
+      updated_at:
+        description: 更新时间（时间戳，单位：ms）
+        type: integer
+    type: object
+  productresp.ListItem:
+    properties:
+      created_at:
+        description: 创建时间（时间戳，单位：ms）
+        type: integer
+      id:
+        description: 产品ID
+        type: integer
+      key:
+        description: 产品标识
+        type: string
+      name:
+        description: 产品名称
+        type: string
+      profile:
+        description: 产品简介
+        type: string
+      updated_at:
+        description: 更新时间（时间戳，单位：ms）
+        type: integer
+    type: object
+  productresp.ListRes:
+    properties:
+      entries:
+        description: 产品列表
+        items:
+          $ref: '#/definitions/productresp.ListItem'
+        type: array
+      total:
+        description: 产品总数
+        type: integer
+    type: object
+  pubedreq.PubedAgentListReq:
+    properties:
+      agent_keys:
+        description: 根据智能体标识查询
+        items:
+          type: string
+        type: array
+      business_domain_ids:
+        description: 业务域ID数组；当未禁用业务域时，如果不传会使用 header 中的 "x-business-domain"，若该 header
+          也未传则默认使用“公共业务域”过滤
+        items:
+          type: string
+        type: array
+      category_id:
+        description: 分类ID
+        type: string
+      custom_space_id:
+        description: 自定义空间ID
+        type: string
+      exclude_agent_keys:
+        description: 排除智能体标识
+        items:
+          type: string
+        type: array
+      ids:
+        description: 根据ID查询
+        items:
+          type: string
+        type: array
+      is_to_custom_space:
+        description: 获取发布到自定义空间的智能体
+        type: integer
+      is_to_square:
+        description: 获取发布到广场的智能体
+        type: integer
+      name:
+        description: 根据名称模糊查询
+        type: string
+      pagination_marker_str:
+        description: 上一次查询的最后一条记录对应的pagination_marker_str
+        type: string
+      publish_to_be:
+        allOf:
+        - $ref: '#/definitions/cdaenum.PublishToBe'
+        description: 发布为标识("api_agent", "web_sdk_agent", "skill_agent")
+      size:
+        description: 每页显示数量
+        maximum: 1000
+        type: integer
+    type: object
+  releasereq.UpdatePublishInfoReq:
+    properties:
+      category_ids:
+        description: 分类IDs
+        items:
+          type: string
+        type: array
+      description:
+        description: 发布描述
+        type: string
+      pms_control:
+        allOf:
+        - $ref: '#/definitions/pmsvo.PmsControlObjS'
+        description: 权限控制信息
+      publish_to_bes:
+        description: 发布为什么 ["skill_agent", "api_agent", "web_sdk_agent", "agent_tpl"]
+        items:
+          $ref: '#/definitions/cdaenum.PublishToBe'
+        type: array
+      publish_to_where:
+        description: 发布到的目标 ["square"]
+        items:
+          $ref: '#/definitions/daenum.PublishToWhere'
+          enum:
+          - square
+        type: array
+    type: object
+  rest.BaseError:
+    properties:
+      description:
+        description: 错误描述
+        type: string
+      error_code:
+        description: 错误码
+        type: string
+      error_details:
+        description: 详细内容
+      error_link:
+        description: 错误链接
+        type: string
+      solution:
+        description: 解决方法
+        type: string
+    type: object
+  rest.HTTPError:
+    properties:
+      baseError:
+        $ref: '#/definitions/rest.BaseError'
+      httpcode:
+        type: integer
+      language:
+        type: string
+    type: object
+  sessionreq.ManageReq:
+    properties:
+      action:
+        $ref: '#/definitions/sessionreq.SessionManageActionType'
+      agent_id:
+        type: string
+      agent_version:
+        type: string
+    required:
+    - action
+    - agent_id
+    - agent_version
+    type: object
+  sessionreq.SessionManageActionType:
+    enum:
+    - get_info_or_create
+    - recover_lifetime_or_create
+    type: string
+    x-enum-varnames:
+    - SessionManageActionGetInfoOrCreate
+    - SessionManageActionRecoverLifetimeOrCreate
+  skillenum.Datasource:
+    enum:
+    - inherit_main
+    - self_configured
+    type: string
+    x-enum-comments:
+      DatasourceInheritMain: 继承主 Agent 数据源
+      DatasourceSelfConfigured: 使用自身配置（默认逻辑）
+    x-enum-descriptions:
+    - 继承主 Agent 数据源
+    - 使用自身配置（默认逻辑）
+    x-enum-varnames:
+    - DatasourceInheritMain
+    - DatasourceSelfConfigured
+  skillenum.DatasourceSpecificInherit:
+    enum:
+    - docs_only
+    - graph_only
+    - all
+    type: string
+    x-enum-comments:
+      DatasourceInheritAll: all：继承所有类型数据源
+      DatasourceInheritDocs: docs_only：仅继承文档数据源
+      DatasourceInheritGraph: graph_only：仅继承图谱数据源
+    x-enum-descriptions:
+    - docs_only：仅继承文档数据源
+    - graph_only：仅继承图谱数据源
+    - all：继承所有类型数据源
+    x-enum-varnames:
+    - DatasourceInheritDocs
+    - DatasourceInheritGraph
+    - DatasourceInheritAll
+  skillenum.LLM:
+    enum:
+    - inherit_main
+    - self_configured
+    type: string
+    x-enum-comments:
+      LLMInheritMain: 继承主 Agent 大模型
+      LLMSelfConfiged: 使用自身配置（默认逻辑）
+    x-enum-descriptions:
+    - 继承主 Agent 大模型
+    - 使用自身配置（默认逻辑）
+    x-enum-varnames:
+    - LLMInheritMain
+    - LLMSelfConfiged
+  skillvalobj.Category:
+    properties:
+      description:
+        description: 类型描述
+        type: string
+      id:
+        description: 类型ID
+        type: string
+      name:
+        description: 类型名称
+        type: string
+    type: object
+  skillvalobj.DataSourceConfig:
+    properties:
+      specific_inherit:
+        $ref: '#/definitions/skillenum.DatasourceSpecificInherit'
+      type:
+        $ref: '#/definitions/skillenum.Datasource'
+    type: object
+  skillvalobj.LLMConfig:
+    properties:
+      type:
+        $ref: '#/definitions/skillenum.LLM'
+    type: object
+  skillvalobj.ResultProcessStrategy:
+    properties:
+      category:
+        allOf:
+        - $ref: '#/definitions/skillvalobj.Category'
+        description: 结果处理策略类型
+      strategy:
+        allOf:
+        - $ref: '#/definitions/skillvalobj.Strategy'
+        description: 结果处理策略
+    type: object
+  skillvalobj.Strategy:
+    properties:
+      description:
+        description: 策略描述
+        type: string
+      id:
+        description: 策略ID
+        type: string
+      name:
+        description: 策略名称
+        type: string
+    type: object
+  swagger.APIError:
+    properties:
+      code:
+        example: 400
+        type: integer
+      details:
+        example: 详细错误信息
+        type: string
+      message:
+        example: 请求参数错误
+        type: string
+    type: object
+  swagger.AgentConfigConfig:
+    properties:
+      built_in_can_edit_fields:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.BuiltInCanEditFields'
+        description: 内置 agent 可编辑字段配置
+      conversation_history_config:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.ConversationHistoryConfig'
+        description: 会话历史配置
+      data_source:
+        allOf:
+        - $ref: '#/definitions/datasourcevalobj.RetrieverDataSource'
+        description: 数据源
+      dolphin:
+        description: Dolphin 语句
+        type: string
+      input:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.Input'
+        description: 输入参数
+      is_data_flow_set_enabled:
+        description: 是否启用数据流设置
+        type: integer
+      is_dolphin_mode:
+        allOf:
+        - $ref: '#/definitions/cdaenum.DolphinMode'
+        description: 是否是 dolphin 模式
+      llms:
+        description: LLM 配置
+        items:
+          $ref: '#/definitions/daconfvalobj.LlmItem'
+        type: array
+      memory:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.MemoryCfg'
+        description: 长期记忆配置
+      metadata:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.ConfigMetadata'
+        description: 配置元数据
+      opening_remark_config:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.OpeningRemarkConfig'
+        description: 开场白配置
+      output:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.Output'
+        description: 输出结果
+      plan_mode:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.PlanMode'
+        description: 任务规划模式配置
+      post_dolphin:
+        description: 在用户自定义 dolphin 之后执行的内置 dolphin 语句
+        items:
+          $ref: '#/definitions/daconfvalobj.DolphinTpl'
+        type: array
+      pre_dolphin:
+        description: 在用户自定义 dolphin 之前执行的内置 dolphin 语句
+        items:
+          $ref: '#/definitions/daconfvalobj.DolphinTpl'
+        type: array
+      preset_questions:
+        description: 预设问题列表
+        items:
+          $ref: '#/definitions/daconfvalobj.PresetQuestion'
+        type: array
+      related_question:
+        allOf:
+        - $ref: '#/definitions/daconfvalobj.RelatedQuestion'
+        description: 相关问题配置
+      skills:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigSkills'
+        description: 技能
+      system_prompt:
+        description: 系统提示词
+        type: string
+    type: object
+  swagger.AgentConfigCreateReq:
+    properties:
+      avatar:
+        description: 头像信息
+        type: string
+      avatar_type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.AvatarType'
+        description: 头像类型
+      config:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigConfig'
+        description: agent 配置
+      created_by:
+        description: 创建人 uid（内部接口有效）
+        type: string
+      is_built_in:
+        allOf:
+        - $ref: '#/definitions/cdaenum.BuiltIn'
+        description: 是否内置（内部接口有效）
+      is_system_agent:
+        allOf:
+        - $ref: '#/definitions/cenum.YesNoInt8'
+        description: 是否是系统智能体
+      key:
+        description: agent 标识
+        type: string
+      name:
+        description: 名字
+        type: string
+      product_key:
+        description: 所属产品标识
+        type: string
+      profile:
+        description: 简介
+        type: string
+    type: object
+  swagger.AgentConfigCreateRes:
+    properties:
+      id:
+        description: agent id
+        type: string
+      version:
+        description: agent版本
+        type: string
+    type: object
+  swagger.AgentConfigDetailRes:
+    properties:
+      avatar:
+        description: 头像信息
+        type: string
+      avatar_type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.AvatarType'
+        description: 头像类型
+      config:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigConfig'
+        description: agent 配置
+      id:
+        description: agent id
+        type: string
+      is_built_in:
+        allOf:
+        - $ref: '#/definitions/cdaenum.BuiltIn'
+        description: 是否内置
+      is_published:
+        description: 是否发布过
+        type: boolean
+      is_system_agent:
+        allOf:
+        - $ref: '#/definitions/cenum.YesNoInt8'
+        description: 是否是系统智能体
+      key:
+        description: agent 标识
+        type: string
+      name:
+        description: 名字
+        type: string
+      product_key:
+        description: 所属产品标识
+        type: string
+      product_name:
+        description: 所属产品名称
+        type: string
+      profile:
+        description: 描述
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/cdaenum.Status'
+        description: 状态
+    type: object
+  swagger.AgentConfigSkillAgent:
+    properties:
+      agent_input:
+        description: 技能输入
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillAgentInput'
+        type: array
+      agent_key:
+        description: Agent Key
+        type: string
+      agent_timeout:
+        description: Agent 工具调用超时时间
+        type: integer
+      agent_version:
+        description: Agent 版本
+        type: string
+      current_is_exists_and_published:
+        description: 当前是否存在并已发布
+        type: boolean
+      current_pms_check_status:
+        description: 当前此技能的使用权限状态
+        type: string
+      data_source_config:
+        allOf:
+        - $ref: '#/definitions/skillvalobj.DataSourceConfig'
+        description: 数据源配置
+      intervention:
+        description: 是否启用干预
+        type: boolean
+      intervention_confirmation_message:
+        description: 人工干预确认消息
+        type: string
+      llm_config:
+        allOf:
+        - $ref: '#/definitions/skillvalobj.LLMConfig'
+        description: LLM 配置
+    type: object
+  swagger.AgentConfigSkillAgentInput:
+    properties:
+      children:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigSkillAgentInputs'
+        description: 子字段
+      enable:
+        description: 是否启用
+        type: boolean
+      input_name:
+        description: 输入名称
+        type: string
+      input_type:
+        description: 输入类型
+        type: string
+      map_type:
+        description: 值类型
+        type: string
+      map_value:
+        description: 值
+    type: object
+  swagger.AgentConfigSkillAgentInputs:
+    items:
+      $ref: '#/definitions/swagger.AgentConfigSkillAgentInput'
+    type: array
+  swagger.AgentConfigSkillMCP:
+    properties:
+      mcp_server_id:
+        description: mcp server id
+        type: string
+    type: object
+  swagger.AgentConfigSkillSkill:
+    properties:
+      skill_id:
+        description: skill id
+        type: string
+    type: object
+  swagger.AgentConfigSkillTool:
+    properties:
+      intervention:
+        description: 是否启用人工干预
+        type: boolean
+      intervention_confirmation_message:
+        description: 人工干预确认消息
+        type: string
+      result_process_strategies:
+        description: 结果处理策略
+        items:
+          $ref: '#/definitions/skillvalobj.ResultProcessStrategy'
+        type: array
+      tool_box_id:
+        description: 工具箱 ID
+        type: string
+      tool_id:
+        description: 工具 ID
+        type: string
+      tool_input:
+        description: 输入参数配置
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillToolInput'
+        type: array
+      tool_timeout:
+        description: 工具调用超时时间
+        type: integer
+    type: object
+  swagger.AgentConfigSkillToolInput:
+    properties:
+      children:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigSkillToolInputs'
+        description: 子字段
+      enable:
+        description: 是否启用
+        type: boolean
+      input_desc:
+        description: 输入描述
+        type: string
+      input_name:
+        description: 输入名称
+        type: string
+      input_type:
+        description: 输入类型
+        type: string
+      map_type:
+        description: 值类型
+        type: string
+      map_value:
+        description: 值
+    type: object
+  swagger.AgentConfigSkillToolInputs:
+    items:
+      $ref: '#/definitions/swagger.AgentConfigSkillToolInput'
+    type: array
+  swagger.AgentConfigSkills:
+    properties:
+      agents:
+        description: Agent 技能
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillAgent'
+        type: array
+      mcps:
+        description: MCP 技能
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillMCP'
+        type: array
+      skills:
+        description: skill
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillSkill'
+        type: array
+      tools:
+        description: 工具技能
+        items:
+          $ref: '#/definitions/swagger.AgentConfigSkillTool'
+        type: array
+    type: object
+  swagger.AgentConfigUpdateReq:
+    properties:
+      avatar:
+        description: 头像信息
+        type: string
+      avatar_type:
+        allOf:
+        - $ref: '#/definitions/cdaenum.AvatarType'
+        description: 头像类型
+      config:
+        allOf:
+        - $ref: '#/definitions/swagger.AgentConfigConfig'
+        description: agent 配置
+      is_built_in:
+        allOf:
+        - $ref: '#/definitions/cdaenum.BuiltIn'
+        description: 是否内置（内部接口有效）
+      name:
+        description: 名字
+        type: string
+      product_key:
+        description: 所属产品标识
+        type: string
+      profile:
+        description: 描述
+        type: string
+      updated_by:
+        description: 更新人 uid（内部接口有效）
+        type: string
+    type: object
+  swagger.ChatReq:
+    properties:
+      agent_app_key:
+        description: agent app key
+        type: string
+      agent_id:
+        description: agentID
+        type: string
+      agent_key:
+        description: agentKey
+        type: string
+      agent_run_id:
+        description: Agent运行ID（中断恢复时由前端传入）
+        type: string
+      agent_version:
+        description: agent版本
+        type: string
+      chat_mode:
+        description: 聊天模式
+        type: string
+      chat_option:
+        $ref: '#/definitions/chatopt.ChatOption'
+      conversation_id:
+        description: 会话ID
+        type: string
+      custom_querys:
+        additionalProperties: true
+        description: 自定义查询
+        type: object
+      executor_version:
+        description: executor version v1 或 v2 默认v2
+        type: string
+      history:
+        description: 历史上下文
+        items:
+          $ref: '#/definitions/comvalobj.LLMMessage'
+        type: array
+      inc_stream:
+        description: 是否增量返回
+        type: boolean
+      interrupted_assistant_message_id:
+        description: 中断的助手消息ID
+        type: string
+      model_name:
+        description: 指定使用的大模型名称
+        type: string
+      query:
+        description: 查询内容
+        type: string
+      regenerate_assistant_message_id:
+        description: 重新生成的助手消息ID
+        type: string
+      regenerate_user_message_id:
+        description: ConfirmPlan               bool                                `json:"confirm_plan"`                     //
+          是否确认计划
+        type: string
+      resume_interrupt_info:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.AgentResumeInfo'
+        description: 中断恢复信息（为nil时走正常流程）
+      selected_files:
+        description: 用户选择的临时区文件
+        items:
+          $ref: '#/definitions/agentreq.SelectedFile'
+        type: array
+      stream:
+        description: 'NOTE: 新增stream参数，控制流式返回'
+        type: boolean
+      temp_files:
+        description: 临时文件
+        items:
+          $ref: '#/definitions/valueobject.TempFile'
+        type: array
+    type: object
+  swagger.ChatResp:
+    properties:
+      agent_run_id:
+        description: Agent运行ID（从Executor返回）
+        type: string
+      assistant_message_id:
+        description: 助手消息ID
+        type: string
+      conversation_id:
+        description: 会话ID
+        type: string
+      error:
+        allOf:
+        - $ref: '#/definitions/rest.HTTPError'
+        description: Status  string                    `json:"status"`  // 状态
+      message:
+        allOf:
+        - $ref: '#/definitions/conversationmsgvo.Message'
+        description: 消息
+      user_message_id:
+        description: 用户消息ID
+        type: string
+    type: object
+  swagger.ResumeReq:
+    properties:
+      conversation_id:
+        description: 会话ID
+        type: string
+    required:
+    - conversation_id
+    type: object
+  v2agentexecutordto.AgentResumeInfo:
+    properties:
+      action:
+        description: '操作类型: confirm | skip'
+        type: string
+      data:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.InterruptData'
+        description: 中断详情数据（从响应透传）
+      modified_args:
+        description: 修改后的参数
+        items:
+          $ref: '#/definitions/v2agentexecutordto.ModifiedArg'
+        type: array
+      resume_handle:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.InterruptHandle'
+        description: 复用 InterruptHandle
+    type: object
+  v2agentexecutordto.InterruptConfig:
+    properties:
+      confirmation_message:
+        description: 确认提示消息
+        type: string
+      requires_confirmation:
+        description: 是否需要用户确认
+        type: boolean
+    type: object
+  v2agentexecutordto.InterruptData:
+    properties:
+      interrupt_config:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.InterruptConfig'
+        description: 中断配置
+      tool_args:
+        description: 工具参数列表
+        items:
+          $ref: '#/definitions/v2agentexecutordto.ToolArg'
+        type: array
+      tool_description:
+        description: 工具描述
+        type: string
+      tool_name:
+        description: 工具名称
+        type: string
+    type: object
+  v2agentexecutordto.InterruptHandle:
+    properties:
+      current_block:
+        description: 当前代码块索引
+        type: integer
+      frame_id:
+        description: 执行帧ID
+        type: string
+      interrupt_type:
+        description: 中断类型
+        type: string
+      restart_block:
+        description: 是否重启代码块
+        type: boolean
+      resume_token:
+        description: 恢复令牌
+        type: string
+      snapshot_id:
+        description: 快照ID
+        type: string
+    type: object
+  v2agentexecutordto.ModifiedArg:
+    properties:
+      key:
+        description: 参数名称
+        type: string
+      value:
+        description: 参数值
+    type: object
+  v2agentexecutordto.ToolArg:
+    properties:
+      key:
+        description: 参数名称
+        type: string
+      type:
+        description: 参数类型
+        type: string
+      value:
+        description: 参数值
+    type: object
+  v2agentexecutordto.ToolInterruptInfo:
+    properties:
+      data:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.InterruptData'
+        description: 中断详情
+      handle:
+        allOf:
+        - $ref: '#/definitions/v2agentexecutordto.InterruptHandle'
+        description: 恢复句柄
+    type: object
+  valueobject.AgentInfo:
+    properties:
+      agent_id:
+        type: string
+      agent_name:
+        type: string
+      agent_status:
+        type: string
+      agent_version:
+        type: string
+    type: object
+  valueobject.TempFile:
+    properties:
+      details: {}
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+host: localhost:30777
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Agent Factory 智能体工厂 API 文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Agent Factory API
+  version: "1.0"
+paths:
+  /v1/api/chat/completion:
+    post:
+      consumes:
+      - application/json
+      description: APIChat
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: APIChat
+      tags:
+      - 对话
+      - 对话-internal
+  /v1/app/{app_key}/api/doc:
+    post:
+      consumes:
+      - application/json
+      description: 获取Agent Api文档
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取Agent Api文档
+      tags:
+      - 对话
+  /v1/app/{app_key}/chat/completion:
+    post:
+      consumes:
+      - application/json
+      description: 与 Agent 进行对话交互，支持流式响应
+      parameters:
+      - description: 应用 Key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 对话请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.ChatReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/swagger.ChatResp'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 对话
+      tags:
+      - 对话
+      - 对话-internal
+  /v1/app/{app_key}/chat/resume:
+    post:
+      consumes:
+      - application/json
+      description: 恢复之前的对话会话
+      parameters:
+      - description: 应用 Key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 恢复请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.ResumeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 对话恢复
+      tags:
+      - 对话
+  /v1/app/{app_key}/chat/termination:
+    post:
+      consumes:
+      - application/json
+      description: 终止对话
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 终止对话
+      tags:
+      - 对话
+  /v1/app/{app_key}/conversation:
+    delete:
+      consumes:
+      - application/json
+      description: 删除所有对话
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 所有对话删除成功
+          schema:
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除所有对话
+      tags:
+      - 对话管理
+    get:
+      consumes:
+      - application/json
+      description: 获取指定应用的会话列表，支持分页
+      parameters:
+      - description: 应用 Key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - default: 1
+        description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量，默认10
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 获取对话列表
+      tags:
+      - 对话管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的会话会话
+      parameters:
+      - description: 应用 Key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 初始化请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/conversationreq.InitReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 初始化对话
+      tags:
+      - 对话管理
+  /v1/app/{app_key}/conversation/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除对话
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+          schema:
+            type: object
+        "404":
+          description: 对话不存在
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除对话
+      tags:
+      - 对话管理
+    get:
+      consumes:
+      - application/json
+      description: 根据会话 ID 获取会话详细信息
+      parameters:
+      - description: 应用 Key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "404":
+          description: 会话不存在
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 获取对话详情
+      tags:
+      - 对话管理
+    put:
+      consumes:
+      - application/json
+      description: 编辑对话(修改标题)
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 编辑对话(修改标题)
+      tags:
+      - 对话管理
+  /v1/app/{app_key}/conversation/{id}/mark_read:
+    put:
+      consumes:
+      - application/json
+      description: 标记对话已读
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 标记对话已读
+      tags:
+      - 对话管理
+  /v1/app/{app_key}/debug/completion:
+    post:
+      consumes:
+      - application/json
+      description: 调试
+      parameters:
+      - description: app_key
+        in: path
+        name: app_key
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 调试
+      tags:
+      - 对话
+  /v1/conversation/session/{conversation_id}:
+    put:
+      consumes:
+      - application/json
+      description: 管理指定的对话会话状态
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: conversation_id
+        required: true
+        type: string
+      - description: 管理请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/sessionreq.ManageReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 管理对话session
+      tags:
+      - 对话session管理
+  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定对话的session列表，包含session的详细信息
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: conversation_id
+        in: path
+        name: conversation_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回session列表
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取指定对话的session列表
+      tags:
+      - 可观测性
+  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/detail:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定session的详情信息，包含多个指标
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: conversation_id
+        in: path
+        name: conversation_id
+        required: true
+        type: string
+      - description: session_id
+        in: path
+        name: session_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回session详情
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取指定session的详情信息
+      tags:
+      - 可观测性
+  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定对话的session下的run列表，返回每个run的详情列表
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: conversation_id
+        in: path
+        name: conversation_id
+        required: true
+        type: string
+      - description: session_id
+        in: path
+        name: session_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回run列表
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取指定session下的run列表
+      tags:
+      - 可观测性
+  /v1/observability/agent/{agent_id}/conversation/{conversation_id}/session/{session_id}/run/{run_id}/detail:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定run的详情信息，包含run的完整信息
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: conversation_id
+        in: path
+        name: conversation_id
+        required: true
+        type: string
+      - description: session_id
+        in: path
+        name: session_id
+        required: true
+        type: string
+      - description: run_id
+        in: path
+        name: run_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回run详情
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取指定run的详情信息
+      tags:
+      - 可观测性
+  /v1/observability/agent/{agent_id}/detail:
+    post:
+      consumes:
+      - application/json
+      description: 查询指定Agent的可观测信息，返回结果包含Agent的配置信息以及可观测性的指标，支持时间过滤
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回Agent可观测信息
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 查询指定Agent的可观测信息
+      tags:
+      - 可观测性
+  /v1/observability/agent/{agent_key}/conversation:
+    post:
+      consumes:
+      - application/json
+      description: 查询Agent下的所有对话列表，支持分页和根据对话title模糊查询
+      parameters:
+      - description: agent_key
+        in: path
+        name: agent_key
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回对话列表
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 查询Agent下的所有对话列表
+      tags:
+      - 可观测性
+  /v3/agent:
+    get:
+      consumes:
+      - application/json
+      description: '- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Agent列表（benchmarch）
+      tags:
+      - agent-ignore
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 Agent 配置
+      parameters:
+      - description: Agent 配置
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.AgentConfigCreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 成功
+          schema:
+            $ref: '#/definitions/swagger.AgentConfigCreateRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 创建agent
+      tags:
+      - agent
+      - agent-internal
+  /v3/agent-inout/export:
+    post:
+      consumes:
+      - application/json
+      description: '- 批量导出指定的data agent数据 - 支持导出多个agent - 返回JSON格式的导出文件 - 只能导出\"我的个人空间\"中的agent
+        - 如果提供的agent_id有不存在的，会返回404错误'
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 导出成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 导出数据
+      tags:
+      - 其他
+  /v3/agent-inout/import:
+    post:
+      consumes:
+      - application/json
+      description: '- 从导出的JSON文件中导入data agent数据 - 支持批量导入多个agent - agent标识（key）不可与已存在的重复
+        - 如果重复，需要先删除已存在的agent，再导入 - 重复时，会返回重复的agent列表（包括agent_id、agent_key和agent_name）
+        - 只能导入到\"我的个人空间\"中'
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 导入结果
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 导入数据
+      tags:
+      - 其他
+  /v3/agent-market/agent/{agent_id}/version/{version}:
+    get:
+      consumes:
+      - application/json
+      description: '- 智能体详情 - 包含已发布和未发布'
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 智能体详情（已发布或未发布）
+      tags:
+      - 已发布
+      - agent-internal
+  /v3/agent-permission/execute:
+    post:
+      consumes:
+      - application/json
+      description: '- 检查某个agent是否有执行（使用）权限 - 此接口有`内部接口`和`外部接口`'
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 检查某个agent是否有执行（使用）权限
+      tags:
+      - 权限
+      - 权限-internal
+  /v3/agent-permission/management/user-status:
+    get:
+      consumes:
+      - application/json
+      description: '- 获取用户拥有的管理权限状态 - 这里暂时不针对某个具体的资源实例，而是针对资源类型 - 管理权限和具体的资源实例无关'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户拥有的管理权限状态
+      tags:
+      - 权限
+      - 权限-internal
+  /v3/agent-self-config-fields:
+    get:
+      consumes:
+      - application/json
+      description: '- 获取SELF_CONFIG字段结构定义 - SELF_CONFIG字段对应agent详情接口的config字段（减去了少量字段）
+        - 用于前端动态展示SELF_CONFIG字段树（供用户选择字段）'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取字段结构
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取SELF_CONFIG字段结构
+      tags:
+      - agent
+  /v3/agent-tpl/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除agent模板
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除agent模板
+      tags:
+      - 模板
+    get:
+      consumes:
+      - application/json
+      description: 获取agent模板详情
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取agent模板详情
+      tags:
+      - 模板
+    put:
+      consumes:
+      - application/json
+      description: 编辑agent模板
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 编辑agent模板
+      tags:
+      - 模板
+  /v3/agent-tpl/{id}/copy:
+    post:
+      consumes:
+      - application/json
+      description: 复制智能体模板
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 复制成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 复制智能体模板
+      tags:
+      - 模板
+  /v3/agent-tpl/{id}/publish:
+    post:
+      consumes:
+      - application/json
+      description: 发布智能体模板
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 发布成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 发布智能体模板
+      tags:
+      - 模板
+  /v3/agent-tpl/{id}/publish-info:
+    get:
+      consumes:
+      - application/json
+      description: 获取模板发布信息
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取模板发布信息
+      tags:
+      - 模板
+    put:
+      consumes:
+      - application/json
+      description: 更新模板发布信息
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新模板发布信息
+      tags:
+      - 模板
+  /v3/agent-tpl/{id}/unpublish:
+    put:
+      consumes:
+      - application/json
+      description: 通过发布 ID 取消已发布的智能体模板
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 取消发布成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 取消发布智能体模板
+      tags:
+      - 模板
+  /v3/agent/{agent_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除agent
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除agent
+      tags:
+      - agent
+      - agent-internal
+    get:
+      consumes:
+      - application/json
+      description: 根据 Agent ID 获取 Agent 配置详细信息
+      parameters:
+      - description: Agent ID
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/swagger.AgentConfigDetailRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 获取agent详情
+      tags:
+      - agent
+      - agent-internal
+    put:
+      consumes:
+      - application/json
+      description: 编辑agent
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/swagger.AgentConfigUpdateReq'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 编辑agent
+      tags:
+      - agent
+      - agent-internal
+  /v3/agent/{agent_id}/copy:
+    post:
+      consumes:
+      - application/json
+      description: 复制agent
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 复制成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 复制agent
+      tags:
+      - agent
+  /v3/agent/{agent_id}/copy2tpl:
+    post:
+      consumes:
+      - application/json
+      description: 复制agent为模板
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 复制成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 复制agent为模板
+      tags:
+      - agent
+      - 模板
+  /v3/agent/{agent_id}/copy2tpl-and-publish:
+    post:
+      consumes:
+      - application/json
+      description: 复制agent为模板并发布
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 操作成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 复制agent为模板并发布
+      tags:
+      - agent
+      - 模板
+  /v3/agent/{agent_id}/publish:
+    post:
+      consumes:
+      - application/json
+      description: 可以通过提交已有的 agent_id 发布智能体，或者提交 agent_config 创建并发布智能体
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/releasereq.UpdatePublishInfoReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 发布成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 发布智能体
+      tags:
+      - 发布相关
+      - 发布相关-internal
+  /v3/agent/{agent_id}/publish-info:
+    get:
+      consumes:
+      - application/json
+      description: '- 获取已发布智能体的发布信息 - 如果提供的agent_id不是已发布智能体，会返回404错误'
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取已发布智能体的发布信息
+      tags:
+      - 发布相关
+      - 发布相关-internal
+    put:
+      consumes:
+      - application/json
+      description: 更新发布信息
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/releasereq.UpdatePublishInfoReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新发布信息成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新发布信息
+      tags:
+      - 发布相关
+  /v3/agent/{agent_id}/release-history:
+    get:
+      consumes:
+      - application/json
+      description: 获取发布历史记录列表
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取发布历史记录列表
+      tags:
+      - 已发布
+  /v3/agent/{agent_id}/unpublish:
+    put:
+      consumes:
+      - application/json
+      description: 通过发布 ID 取消已发布的智能体
+      parameters:
+      - description: agent_id
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 取消发布成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 取消发布智能体
+      tags:
+      - 发布相关
+  /v3/agent/ai-autogen:
+    post:
+      consumes:
+      - application/json
+      description: '- 根据提供的提示词，AI自动生成内容'
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: AI自动生成内容
+      tags:
+      - 其他
+  /v3/agent/avatar/built-in:
+    get:
+      consumes:
+      - application/json
+      description: 获取内置头像列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取内置头像列表
+      tags:
+      - 其他
+  /v3/agent/avatar/built-in/{avatar_id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取内置头像
+      parameters:
+      - description: avatar_id
+        in: path
+        name: avatar_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取内置头像
+      tags:
+      - 其他-ignore
+  /v3/agent/by-key/{key}:
+    get:
+      consumes:
+      - application/json
+      description: 获取agent详情
+      parameters:
+      - description: key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 根据key获取agent详情
+      tags:
+      - agent-internal
+  /v3/agent/dolphin-tpl/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取dolphin模板列表
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "404":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取dolphin模板列表
+      tags:
+      - 其他
+  /v3/agent/temp-zone/file-ext-map:
+    get:
+      consumes:
+      - application/json
+      description: 获取文件扩展名映射
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取文件扩展名映射
+      tags:
+      - 其他
+  /v3/category:
+    get:
+      consumes:
+      - application/json
+      description: 获取智能体分类
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取智能体分类
+      tags:
+      - 发布相关
+  /v3/personal-space/agent-list:
+    get:
+      consumes:
+      - application/json
+      description: 个人空间（开发）下Agent列表
+      parameters:
+      - description: '发布状态 - unpublished: | - 未发布（注意包括published_edited） - published:
+          已发布 - published_edited: 发布后有修改'
+        in: query
+        name: publish_status
+        type: string
+      - description: '- 分页marker（用于获取下一页数据） - base64编码的json字符串 - base64编码前的json格式：
+          ``` { \'
+        in: query
+        name: pagination_marker_str
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 个人空间（开发）下Agent列表
+      tags:
+      - 个人空间（开发）
+  /v3/personal-space/agent-tpl-list:
+    get:
+      consumes:
+      - application/json
+      description: 个人空间（开发）下Agent模板列表
+      parameters:
+      - description: '- 分页marker（用于获取下一页数据） - base64编码的json字符串 - base64编码前的json格式：
+          ``` { \'
+        in: query
+        name: pagination_marker_str
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 个人空间（开发）下Agent模板列表
+      tags:
+      - 个人空间（开发）
+      - 模板
+  /v3/product:
+    get:
+      consumes:
+      - application/json
+      description: 获取产品列表，支持分页
+      parameters:
+      - default: 1
+        description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量，默认10
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            items:
+              $ref: '#/definitions/productresp.ListRes'
+            type: array
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 获取产品列表
+      tags:
+      - 产品
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的产品
+      parameters:
+      - description: 产品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/productreq.CreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/productresp.CreateRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 创建产品
+      tags:
+      - 产品
+  /v3/product/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据产品 ID 删除产品
+      parameters:
+      - description: 产品 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 删除产品
+      tags:
+      - 产品
+    get:
+      consumes:
+      - application/json
+      description: 根据产品 ID 获取产品详细信息
+      parameters:
+      - description: 产品 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/productresp.DetailRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 获取产品详情
+      tags:
+      - 产品
+    put:
+      consumes:
+      - application/json
+      description: 更新产品信息
+      parameters:
+      - description: 产品 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 产品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/productreq.UpdateReq'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 编辑产品
+      tags:
+      - 产品
+  /v3/published/agent:
+    post:
+      consumes:
+      - application/json
+      description: 获取已发布的智能体列表，支持分页和筛选
+      parameters:
+      - description: 查询参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/pubedreq.PubedAgentListReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 已发布智能体列表
+      tags:
+      - 已发布
+  /v3/published/agent-info-list:
+    post:
+      consumes:
+      - application/json
+      description: 已发布智能体信息列表
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 已发布智能体信息列表
+      tags:
+      - 已发布
+  /v3/published/agent-tpl:
+    get:
+      consumes:
+      - application/json
+      description: 已发布模板列表
+      parameters:
+      - description: '- 分页marker（用于获取下一页数据） - base64编码的json字符串 - base64编码前的json格式：
+          ``` { \'
+        in: query
+        name: pagination_marker_str
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 已发布模板列表
+      tags:
+      - 已发布
+      - 模板
+  /v3/published/agent-tpl/{tpl_id}:
+    get:
+      consumes:
+      - application/json
+      description: 已发布模板详情
+      parameters:
+      - description: tpl_id
+        in: path
+        name: tpl_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 已发布模板详情
+      tags:
+      - 已发布
+  /v3/recent-visit/agent:
+    get:
+      consumes:
+      - application/json
+      description: 获取最近访问的智能体
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取最近访问的智能体
+      tags:
+      - 最近访问
+  /v3/tool-result-process-strategy/category:
+    get:
+      consumes:
+      - application/json
+      description: 获取结果处理策略分类列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取结果处理策略分类列表
+      tags:
+      - 工具结果处理策略
+  /v3/tool-result-process-strategy/category/{category_id}/strategy:
+    get:
+      consumes:
+      - application/json
+      description: 根据分类获取结果处理策略列表
+      parameters:
+      - description: category_id
+        in: path
+        name: category_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            type: object
+        "400":
+          description: 失败
+          schema:
+            type: object
+        "401":
+          description: 失败
+          schema:
+            type: object
+        "403":
+          description: 失败
+          schema:
+            type: object
+        "500":
+          description: 失败
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 根据分类获取结果处理策略列表
+      tags:
+      - 工具结果处理策略
+securityDefinitions:
+  BearerAuth:
+    description: Bearer {token} - 需要有效的 OAuth 访问令牌
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

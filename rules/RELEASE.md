@@ -225,7 +225,7 @@ git push origin --delete release/1.2.0
 
 ### Verify Release
 
-- Check the [GitHub Releases](https://github.com/kweaver-ai/kweaver/releases) page
+- Check the [GitHub Releases](https://github.com/kweaver-ai/kweaver-core/releases) page
 - Verify artifact downloads and integrity
 - Confirm Docker images are pullable
 

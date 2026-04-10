@@ -4,18 +4,12 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.txt)
 
-Decision Agent is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver)** project as well.
-
-**[KWeaver](https://github.com/kweaver-ai/kweaver)** is an open-source ecosystem for building, deploying, and running decision intelligence AI applications. This ecosystem adopts ontology as the core methodology for business knowledge networks, with DIP as the core platform, aiming to provide elastic, agile, and reliable enterprise-grade decision intelligence to further unleash everyone's productivity.
-
-The DIP platform includes key subsystems such as ADP, Decision Agent, DIP Studio, and AI Store.
+Decision Agent is part of the KWeaver ecosystem. If you like it, please also star⭐ the **[KWeaver](https://github.com/kweaver-ai/kweaver-core)** project as well.
 
 ## 📚 Quick Links
 
-- 🤝 [Contributing](CONTRIBUTING.md) - Guidelines for contributing to the project
-- 📄 [License](LICENSE.txt) - Apache License 2.0
-- 🐛 [Report Bug](https://github.com/kweaver-ai/decision-agent) - Report a bug or issue
-- 💡 [Request Feature](https://github.com/kweaver-ai/decision-agent) - Suggest a new feature
+- 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver-core/issues) - Report a bug or issue
+- 💡 [Request Feature](https://github.com/kweaver-ai/kweaver-core/issues) - Suggest a new feature
 
 ## Decision Agent Definition
 
@@ -143,38 +137,9 @@ Through security policy layers (permission verification, sensitive information f
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Platform Architecture
-
-```text
-┌─────────────────────────────────────────────┐
-│              DIP Platform                   │
-│  ┌───────────────────────────────────────┐  │
-│  │             AI Store                  │  │
-│  ├───────────────────────────────────────┤  │
-│  │            DIP Studio                 │  │
-│  ├───────────────────────────────────────┤  │
-│  │          Decision Agent               │  │
-│  ├───────────────────────────────────────┤  │
-│  │               ADP                     │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
-
-### Core Subsystems
-
-| Sub-project | Description | Repository |
-| --- | --- | --- |
-| **DIP** | Decision Intelligence Platform (DIP) | [kweaver-ai/dip](https://github.com/kweaver-ai/dip) |
-| **AI Store** | AI application and component marketplace | *Coming soon* |
-| **Studio** | DIP Studio - Visual development and management interface | [kweaver-ai/studio](https://github.com/kweaver-ai/studio) |
-| **Decision Agent** | Intelligent decision agent | [kweaver-ai/decision-agent](https://github.com/kweaver-ai/decision-agent) |
-| **ADP** | AI Data Platform - Core development framework, including Ontology Engine, ContextLoader, and VEGA data virtualization engine | [kweaver-ai/adp](https://github.com/kweaver-ai/adp) |
-| **Operator Hub** | Operator management and orchestration platform | [kweaver-ai/operator-hub](https://github.com/kweaver-ai/operator-hub) |
-| **Sandbox** | Sandbox runtime environment | [kweaver-ai/sandbox](https://github.com/kweaver-ai/sandbox) |
-
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
+We welcome contributions! Please see our [Contributing Guide](../rules/CONTRIBUTING.md) for details on how to contribute to this project.
 
 Quick start:
 
@@ -215,14 +180,29 @@ cd agent-backend/agent-memory && make lint
 cd agent-backend/agent-factory && make lint
 ```
 
+## Agent Factory API Docs
+
+If you want to quickly generate or inspect the Agent Factory API documents, run:
+
+```bash
+cd agent-backend/agent-factory
+make gen-api-docs
+make validate-api-docs
+```
+
+Related docs:
+
+- [Public API docs guide](agent-backend/agent-factory/docs/api/README.md)
+- [Agent Factory README](agent-backend/agent-factory/README.md)
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE.txt) file for details.
 
 ## Support & Contact
 
-- **Contributing**: [Contributing Guide](CONTRIBUTING.md)
-- **Issues**: [GitHub Issues](https://github.com/kweaver-ai/decision-agent)
+- **Contributing**: [Contributing Guide](../rules/CONTRIBUTING.md)
+- **Issues**: [GitHub Issues](https://github.com/kweaver-ai/kweaver-core/issues)
 - **License**: [Apache License 2.0](LICENSE.txt)
 
 ---

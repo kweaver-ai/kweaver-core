@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	apidocs "github.com/kweaver-ai/decision-agent/agent-factory/docs/api"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/global"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
+	apidocs "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/server/apidocs"
 	"github.com/tidwall/sjson"
 )
 
@@ -108,6 +108,7 @@ func runtimeServers(c *gin.Context) []map[string]any {
 
 func currentRequestBaseURL(c *gin.Context) string {
 	scheme := currentRequestScheme(c)
+
 	host := firstHeaderValue(c.GetHeader("X-Forwarded-Host"))
 	if host == "" {
 		host = c.Request.Host

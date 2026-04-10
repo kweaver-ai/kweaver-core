@@ -137,6 +137,17 @@ definitions:
       - username (string, optional): 认证用户名
       - password (string, optional): 认证密码
       - index_pattern (string, optional): 索引匹配模式，如log-*
+
+      **AnyShare:**
+      - protocol (string, required): 连接协议，http 或 https
+      - host (string, required): AnyShare服务主机地址
+      - port (integer, required): 服务端口，范围1-65535
+      - auth_type (integer, required): 认证方式，1=访问令牌(Token)，2=AppID/AppSecret
+      - token (string, optional): 访问令牌，auth_type=1时必填，加密存储
+      - app_id (string, optional): 应用账户ID，auth_type=2时必填
+      - app_secret (string, optional): 应用密钥，auth_type=2时必填，加密存储
+      - doc_lib_type (integer, required): 文档库类型，1=知识库
+      - paths (array, optional): 路径列表，按文档库名称路径解析起点，空则按文档库类型枚举
   interfaces.DiscoverResult:
     properties:
       catalog_id:

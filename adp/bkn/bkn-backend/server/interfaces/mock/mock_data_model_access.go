@@ -21,7 +21,6 @@ import (
 type MockDataModelAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockDataModelAccessMockRecorder
-	isgomock struct{}
 }
 
 // MockDataModelAccessMockRecorder is the mock recorder for MockDataModelAccess.
@@ -51,7 +50,7 @@ func (m *MockDataModelAccess) GetMetricModelByID(ctx context.Context, id string)
 }
 
 // GetMetricModelByID indicates an expected call of GetMetricModelByID.
-func (mr *MockDataModelAccessMockRecorder) GetMetricModelByID(ctx, id any) *gomock.Call {
+func (mr *MockDataModelAccessMockRecorder) GetMetricModelByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricModelByID", reflect.TypeOf((*MockDataModelAccess)(nil).GetMetricModelByID), ctx, id)
 }

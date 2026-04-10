@@ -7,6 +7,7 @@ type Skill struct {
 	Tools  []*SkillTool  `json:"tools"`
 	Agents []*SkillAgent `json:"agents"`
 	MCPs   []*SkillMCP   `json:"mcps"`
+	Skills []*SkillSkill `json:"skills"`
 }
 
 // ValObjCheck 验证工具配置
@@ -29,6 +30,13 @@ func (p *Skill) ValObjCheck() (err error) {
 		err = mcp.ValObjCheck()
 		if err != nil {
 			return errors.Wrapf(err, "[Skill]: mcp is invalid")
+		}
+	}
+
+	for _, skill := range p.Skills {
+		err = skill.ValObjCheck()
+		if err != nil {
+			return errors.Wrapf(err, "[Skill]: skills is invalid")
 		}
 	}
 

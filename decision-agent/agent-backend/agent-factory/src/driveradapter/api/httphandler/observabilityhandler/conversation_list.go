@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	observabilityreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/req"
-	observabilityresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/observability/resp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	observabilityreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/observability/req"
+	observabilityresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/observability/resp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +39,7 @@ func (h *observabilityHTTPHandler) ConversationList(c *gin.Context) {
 	agentID := c.Param("agent_id")
 	if agentID == "" {
 		h.logger.Errorf("[ConversationList] agent_id is required")
+
 		err := capierr.New400Err(c, "[ConversationList] agent_id is required")
 		otellog.LogError(c.Request.Context(), "[ConversationList] agent_id is required", err)
 		oteltrace.EndSpan(c.Request.Context(), err)
@@ -74,6 +75,7 @@ func (h *observabilityHTTPHandler) ConversationList(c *gin.Context) {
 
 	if conversationListReq.StartTime > conversationListReq.EndTime {
 		h.logger.Errorf("[ConversationList] start_time must be less than end_time")
+
 		err := capierr.New400Err(c, "[ConversationList] start_time must be less than end_time")
 		otellog.LogError(c.Request.Context(), "[ConversationList] start_time must be less than end_time", err)
 		oteltrace.EndSpan(c.Request.Context(), err)

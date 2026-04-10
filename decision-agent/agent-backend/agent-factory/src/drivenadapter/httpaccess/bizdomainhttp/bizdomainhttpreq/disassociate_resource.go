@@ -1,7 +1,7 @@
 package bizdomainhttpreq
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 )
 
 // DisassociateResourceReq 资源取消关联请求

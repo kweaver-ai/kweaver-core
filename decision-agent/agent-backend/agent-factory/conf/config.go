@@ -3,9 +3,9 @@ package conf
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/cconf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/cenvhelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel"
 )
 
 type AuthConf struct {

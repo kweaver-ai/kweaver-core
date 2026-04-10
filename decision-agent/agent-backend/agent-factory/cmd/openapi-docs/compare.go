@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/internal/openapidoc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	pkgerrors "github.com/pkg/errors"
 )
 

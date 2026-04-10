@@ -10,8 +10,8 @@ One-click deployment of the KWeaver AI platform to a single-node Kubernetes clus
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/kweaver-ai/kweaver.git
-cd kweaver/deploy
+git clone https://github.com/kweaver-ai/kweaver-core.git
+cd kweaver-core/deploy
 
 # 2. Edit the config file (optional; skip to use defaults)
 # vim conf/config.yaml
@@ -35,7 +35,7 @@ After deployment, open `https://<node-ip>/studio`. Username: `admin`, initial pa
 
 | Item | Minimum | Recommended |
 | --- | --- | --- |
-| OS | CentOS 7/8+, RHEL 8 | CentOS 7 |
+| OS | Ubuntu 20.04+, CentOS 8+, RHEL 8+ | Ubuntu 22.04 LTS |
 | CPU | 16 cores | 24 cores |
 | Memory | 48 GB | 64 GB |
 | Disk | 200 GB | 500 GB |

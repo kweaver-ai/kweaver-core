@@ -4,16 +4,16 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/comvalobj"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/square/squarereq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/comvalobj"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/square/squarereq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IReleaseRepo
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_history.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IReleaseHistoryRepo
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_category_rel.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IReleaseCategoryRelRepo
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_permission.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IReleasePermissionRepo
-//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/conversation_history.go github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess IConversationHistoryRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IReleaseRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_history.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IReleaseHistoryRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_category_rel.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IReleaseCategoryRelRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/release_permission.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IReleasePermissionRepo
+//go:generate mockgen -package idbaccessmock -destination ./idbaccessmock/conversation_history.go github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess IConversationHistoryRepo
 type IReleaseRepo interface {
 	IDBAccBaseRepo
 	Create(ctx context.Context, tx *sql.Tx, po *dapo.ReleasePO) (id string, err error)

@@ -3,7 +3,7 @@ package efastcmp
 import (
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 )
 
 func (e *EFast) getUrlPrefix() string {

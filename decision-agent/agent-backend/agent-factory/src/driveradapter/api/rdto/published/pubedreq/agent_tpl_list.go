@@ -1,6 +1,6 @@
 package pubedreq
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/published/pubedresp"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/published/pubedresp"
 
 // 已发布模板列表请求对象
 type PubedTplListReq struct {

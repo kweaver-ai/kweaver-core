@@ -69,8 +69,15 @@ paths:
               - overwrite
             type: string
           in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为true。为true时，需校验对象类的视图、关系类的视图等依赖是否存在；为false时，依赖不存在不报错
+          schema:
+            type: boolean
+            default: true
+          in: query
         - name: validate_dependency
-          description: 是否需要校验依赖，默认为true。为true时，需要校验对象类的视图是否存在、关系类的视图是否存在；为false时，依赖不存在不报错
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
           schema:
             type: boolean
             default: true
@@ -150,6 +157,25 @@ paths:
       summary: 获取业务知识网络详情
       description: 获取本体模型详情，按需包含说明书内容
     put:
+      parameters:
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true。为 true 时，对请求体中嵌套的对象类/关系类/行动类/概念分组等做依赖存在性校验；为 false 时不做该校验
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
       requestBody:
         content:
           application/json:
@@ -180,8 +206,81 @@ paths:
           type: string
         in: path
         required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/validation:
+    post:
+      summary: 校验业务知识网络
+      description: |
+        仅校验知识网络整体依赖存在性，不写库。校验对象类、关系类、行动类、概念分组等全部依赖。
+        服务端从请求体顶层四桶与各 concept_groups 嵌套桶合并构建 BatchIDIndex，整次预检共用该索引，
+        以便仅出现在嵌套分组内的 OT 仍可作为顶层或其它桶内 RT/AT 的引用目标（与 CreateKN 同批语义对齐）。
+
+        **响应**：HTTP 200 表示请求已处理完成。响应体 `valid` 为 `true` 表示校验通过；为 `false` 表示校验未通过或服务端在校验过程中返回错误，原因见 `detail`（为服务端错误的 `Error()` 字符串，可能为结构化错误 JSON）。  
+        请求体无法解析、`strict_mode` 非法、知识网络不存在或无权限等仍返回非 2xx（如 400/403），不返回上述 `valid`/`detail` 包。
+
+        **内部接口**：与上述请求/响应一致，路径为 `POST /api/bkn-backend/in/v1/knowledge-networks/{kn_id}/validation` 或 `POST /api/ontology-manager/in/v1/knowledge-networks/{kn_id}/validation`；访问者从 Header 解析，不经过 OAuth。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与创建接口一致。导入模式；未传且未传 mode 时视为 normal。用于与落库相同的 ID/名称冲突语义（normal 报错、ignore 跳过冲突项、overwrite 按覆盖规则校验）。
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateKNRequestBody"
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                    description: 为 true 表示校验通过；为 false 表示未通过或处理校验时发生错误
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时给出说明（error.Error()）
+        "400":
+          description: 请求参数错误（如请求体非法、strict_mode 无法解析、import_mode/mode 非法等），非业务校验结论
 components:
   schemas:
+    ValidateKNRequestBody:
+      type: object
+      description: 知识网络结构，包含 object_types、relation_types、action_types、concept_groups 等子概念
+      properties:
+        object_types:
+          type: array
+        relation_types:
+          type: array
+        action_types:
+          type: array
+        concept_groups:
+          type: array
     BasicInfo:
       description: 资源的基本信息，包含id和名称
       required:
@@ -847,7 +946,6 @@ components:
         - name
         - primary_keys
         - display_key
-        - base_branch
         - data_properties
       type: object
       properties:
@@ -873,9 +971,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组
@@ -908,7 +1003,6 @@ components:
       required:
         - name
         - branch
-        - base_branch
       type: object
       properties:
         id:
@@ -934,13 +1028,9 @@ components:
         branch:
           description: 分支ID
           type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
-          type: string
     UpdateKnowledgeNetwork:
       description: 业务知识网络创建请求体
       required:
-        - base_branch
         - branch
         - name
       type: object
@@ -965,9 +1055,6 @@ components:
         branch:
           description: 分支ID
           type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
-          type: string
     UpdateObjectType:
       description: 更新对象类
       required:
@@ -977,7 +1064,6 @@ components:
         - data_properties
         - branch
         - base_version
-        - base_branch
       type: object
       properties:
         name:
@@ -999,9 +1085,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组
@@ -1036,7 +1119,6 @@ components:
         - branch
         - base_version
         - type
-        - base_branch
       type: object
       properties:
         id:
@@ -1061,9 +1143,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组
@@ -1096,7 +1175,6 @@ components:
         - base_version
         - source_object_type
         - target_object_type
-        - base_branch
       type: object
       properties:
         name:
@@ -1118,9 +1196,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组
@@ -1155,7 +1230,6 @@ components:
         - concept_type
         - branch
         - base_version
-        - base_branch
         - object_type_id
       type: object
       properties:
@@ -1181,9 +1255,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组id
@@ -1228,7 +1299,6 @@ components:
         - concept_type
         - branch
         - base_version
-        - base_branch
         - object_type_id
       type: object
       properties:
@@ -1251,9 +1321,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         concept_groups:
           description: 概念分组id
@@ -1304,7 +1371,6 @@ components:
         - parameters
         - schedule
         - concept_type
-        - base_branch
         - branch
         - color
         - concept_groups
@@ -1341,9 +1407,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         kn_id:
           description: 业务知识网络ID
@@ -1416,7 +1479,6 @@ components:
         - display_key
         - type
         - concept_type
-        - base_branch
         - branch
         - color
         - icon
@@ -1451,9 +1513,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         kn_id:
           description: 业务知识网络id
@@ -1516,7 +1575,6 @@ components:
         - name
         - tags
         - concept_type
-        - base_branch
         - branch
         - color
         - concept_groups
@@ -1555,9 +1613,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源分支。main的来源分支为空，其他分支的来源分支不能为空
           type: string
         kn_id:
           description: 业务知识网络ID
@@ -1682,7 +1737,6 @@ components:
         - tags
         - updator
         - update_time
-        - base_branch
         - branch
         - color
         - icon
@@ -1712,9 +1766,6 @@ components:
           type: string
         branch:
           description: 分支ID
-          type: string
-        base_branch:
-          description: 来源版本
           type: string
         creator:
           description: 创建人ID

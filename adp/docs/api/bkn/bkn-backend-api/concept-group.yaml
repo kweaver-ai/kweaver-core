@@ -41,6 +41,24 @@ paths:
         - name: group_id
           in: path
           required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true。为 true 时校验概念分组内声明的对象类引用等依赖是否存在；为 false 时不做该校验
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
       responses:
         "204":
           description: ok
@@ -140,8 +158,15 @@ paths:
               - overwrite
             type: string
           in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为true。为true时，需校验对象类的视图、关系类的视图等依赖是否存在；为false时，依赖不存在不报错
+          schema:
+            type: boolean
+            default: true
+          in: query
         - name: validate_dependency
-          description: 是否需要校验依赖，默认为true。为true时，需要校验对象类的视图是否存在、关系类的视图是否存在；为false时，依赖不存在不报错
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
           schema:
             type: boolean
             default: true
@@ -183,6 +208,24 @@ paths:
         - name: group_id
           in: path
           required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为true。为true时，需校验对象类ID是否存在；为false时，对象类不存在不报错
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
       responses:
         "201":
           description: 添加成功
@@ -220,6 +263,70 @@ paths:
       - name: ot_ids
         in: path
         required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/concept-groups/validation:
+    post:
+      summary: 校验概念分组
+      description: |
+        仅校验概念分组依赖存在性，不写库。校验分组内嵌套对象类、关系类、行动类及其依赖。
+        同批概念 ID 从本次请求的 concept_groups 树（含嵌套桶）收集，strict 下可与落库路径一致地解析尚未落库的互相引用。
+
+        **响应**：HTTP 200 时 `valid`/`detail` 语义同知识网络校验接口；参数与鉴权错误为非 2xx。
+
+        **内部接口**：同路径语义，`POST /api/bkn-backend/in/v1/.../concept-groups/validation` 与 `POST /api/ontology-manager/in/v1/.../concept-groups/validation`；Header 解析访问者，无 OAuth。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与创建概念分组接口一致；用于概念分组 ID/名称与落库冲突的校验语义（normal / ignore / overwrite）。
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  description: 待校验的概念分组列表，结构与创建接口一致
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时的说明（error.Error()）
+        "400":
+          description: 请求参数错误等；业务校验未通过见 200 + valid:false
 components:
   schemas:
     ReqConceptGroup:

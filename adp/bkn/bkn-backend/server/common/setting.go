@@ -75,6 +75,10 @@ type AppSetting struct {
 	OntologyQueryUrl string
 	// vega backend url
 	VegaBackendUrl string
+	// AgentOperatorUrl is the single agent-operator-integration internal-v1 base, e.g.
+	// {scheme}://{host}:{port}/api/agent-operator-integration/internal-v1
+	// (A trailing /operator suffix is accepted for backward compatibility and normalized away.)
+	AgentOperatorUrl string
 }
 
 const (
@@ -97,6 +101,7 @@ const (
 	businessSystemServiceName      string = "business-system"
 	ontologyQueryServiceName       string = "ontology-query"
 	vegaBackendServiceName         string = "vega-backend"
+	agentOperatorServiceName       string = "agent-operator-integration"
 
 	DATA_BASE_NAME string = "adp"
 )
@@ -177,6 +182,8 @@ func loadSetting(vp *viper.Viper) {
 	SetOntologyQuerySetting()
 
 	SetVegaBackendSetting()
+
+	SetAgentOperatorSetting()
 
 	serverInfo := o11y.ServerInfo{
 		ServerName:    version.ServerName,
@@ -422,4 +429,17 @@ func SetVegaBackendSetting() {
 	port := setting["port"].(int)
 
 	appSetting.VegaBackendUrl = fmt.Sprintf("%s://%s:%d/api/vega-backend/in/v1", protocol, host, port)
+}
+
+func SetAgentOperatorSetting() {
+	setting, ok := appSetting.DepServices[agentOperatorServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", agentOperatorServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.AgentOperatorUrl = fmt.Sprintf("%s://%s:%d/api/agent-operator-integration/internal-v1", protocol, host, port)
 }

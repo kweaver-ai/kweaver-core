@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum/skillenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum/skillenum"
 	"github.com/stretchr/testify/assert"
 )
 

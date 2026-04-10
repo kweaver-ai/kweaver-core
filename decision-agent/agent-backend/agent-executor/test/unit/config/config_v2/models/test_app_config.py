@@ -222,6 +222,7 @@ class TestFeaturesConfig:
         assert config.disable_dolphin_sdk_llm_cache is False
         assert config.enable_dolphin_agent_output_variables_ctrl is True
         assert config.is_skill_agent_need_progress is False
+        assert config.enable_traceai_evidence is False
 
     def test_with_custom_values(self):
         """测试自定义值"""
@@ -232,12 +233,14 @@ class TestFeaturesConfig:
             disable_dolphin_sdk_llm_cache=True,
             enable_dolphin_agent_output_variables_ctrl=False,
             is_skill_agent_need_progress=True,
+            enable_traceai_evidence=True,
         )
 
         assert config.use_explore_block_v2 is False
         assert config.disable_dolphin_sdk_llm_cache is True
         assert config.enable_dolphin_agent_output_variables_ctrl is False
         assert config.is_skill_agent_need_progress is True
+        assert config.enable_traceai_evidence is True
 
     def test_from_dict_defaults(self):
         """测试从字典创建（默认值）"""
@@ -247,6 +250,7 @@ class TestFeaturesConfig:
 
         assert config.use_explore_block_v2 is True
         assert config.disable_dolphin_sdk_llm_cache is False
+        assert config.enable_traceai_evidence is False
 
     def test_from_dict_with_custom_values(self):
         """测试从字典创建（自定义值）"""
@@ -257,9 +261,11 @@ class TestFeaturesConfig:
             "disable_dolphin_sdk_llm_cache": True,
             "enable_dolphin_agent_output_variables_ctrl": False,
             "is_skill_agent_need_progress": True,
+            "enable_traceai_evidence": True,
         }
 
         config = FeaturesConfig.from_dict(data)
 
         assert config.use_explore_block_v2 is False
         assert config.disable_dolphin_sdk_llm_cache is True
+        assert config.enable_traceai_evidence is True

@@ -1,6 +1,6 @@
 package psdbarg
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/personal_space/personalspacereq"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/personal_space/personalspacereq"
 
 type AgentListArg struct {
 	ListReq                       *personalspacereq.AgentListReq

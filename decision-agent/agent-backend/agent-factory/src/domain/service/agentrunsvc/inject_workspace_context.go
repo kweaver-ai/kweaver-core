@@ -1,8 +1,8 @@
 package agentsvc
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/util"
-	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/util"
+	agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 )
 
 // buildUserQuery 将文件信息注入到用户问题中（已废弃，保留用于向后兼容）

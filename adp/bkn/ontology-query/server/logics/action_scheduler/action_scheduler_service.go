@@ -462,8 +462,7 @@ func (s *actionSchedulerService) getInstancesForAction(ctx context.Context, acti
 		objects, err := s.ots.GetObjectsByObjectTypeID(ctx, objectQuery)
 		if err != nil {
 			logger.Errorf("Failed to scan matching instances: %v", err)
-			return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_ActionExecution_GetActionTypeFailed).
-				WithErrorDetails(fmt.Sprintf("Failed to scan matching instances: %v", err))
+			return nil, nil, err
 		}
 
 		for _, objData := range objects.Datas {
@@ -509,8 +508,7 @@ func (s *actionSchedulerService) getInstancesForAction(ctx context.Context, acti
 			instanceObjects, err := s.ots.GetObjectsByObjectTypeID(ctx, instanceQuery)
 			if err != nil {
 				logger.Errorf("Failed to query instances by identities: %v", err)
-				return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_ActionExecution_GetActionTypeFailed).
-					WithErrorDetails(fmt.Sprintf("Failed to query instances by identities: %v", err))
+				return nil, nil, err
 			}
 
 			if len(instanceObjects.Datas) == 0 {
@@ -582,8 +580,7 @@ func (s *actionSchedulerService) getInstancesForAction(ctx context.Context, acti
 				filteredObjects, err := s.ots.GetObjectsByObjectTypeID(ctx, filteredQuery)
 				if err != nil {
 					logger.Errorf("Failed to filter instances: %v", err)
-					return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_ActionExecution_GetActionTypeFailed).
-						WithErrorDetails(fmt.Sprintf("Failed to filter instances: %v", err))
+					return nil, nil, err
 				}
 
 				for _, objData := range filteredObjects.Datas {
@@ -636,8 +633,7 @@ func (s *actionSchedulerService) getInstancesForAction(ctx context.Context, acti
 			objects, err := s.ots.GetObjectsByObjectTypeID(ctx, objectQuery)
 			if err != nil {
 				logger.Errorf("Failed to filter matching instances: %v", err)
-				return nil, nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_ActionExecution_GetActionTypeFailed).
-					WithErrorDetails(fmt.Sprintf("Failed to filter matching instances: %v", err))
+				return nil, nil, err
 			}
 
 			for _, objData := range objects.Datas {

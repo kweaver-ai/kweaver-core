@@ -3,7 +3,7 @@ package agentrespvo
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/chat_enum/chatresenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/chat_enum/chatresenum"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

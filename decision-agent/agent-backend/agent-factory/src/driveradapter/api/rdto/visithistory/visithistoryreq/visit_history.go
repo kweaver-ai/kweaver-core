@@ -1,7 +1,7 @@
 package visithistoryreq
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/common"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/common"
 )
 
 // VisitHistoryReq 访问日志列表请求

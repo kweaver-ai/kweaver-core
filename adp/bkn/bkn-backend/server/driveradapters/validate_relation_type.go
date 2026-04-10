@@ -19,7 +19,7 @@ import (
 	"bkn-backend/interfaces"
 )
 
-func ValidateRelationTypes(ctx context.Context, knID string, relationTypes []*interfaces.RelationType) error {
+func ValidateRelationTypes(ctx context.Context, knID string, relationTypes []*interfaces.RelationType, strictMode bool) error {
 	idMap := make(map[string]any)
 	for i := 0; i < len(relationTypes); i++ {
 		// 校验导入模型时模块是否是关系类
@@ -40,7 +40,7 @@ func ValidateRelationTypes(ctx context.Context, knID string, relationTypes []*in
 		}
 
 		// 1. 校验 关系类必要创建参数的合法性, 非空、长度、是枚举值
-		err := ValidateRelationType(ctx, relationTypes[i])
+		err := ValidateRelationType(ctx, relationTypes[i], strictMode)
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func ValidateRelationTypes(ctx context.Context, knID string, relationTypes []*in
 }
 
 // 对象类必要创建参数的非空校验。
-func ValidateRelationType(ctx context.Context, relationType *interfaces.RelationType) error {
+func ValidateRelationType(ctx context.Context, relationType *interfaces.RelationType, strictMode bool) error {
 	// 校验id的合法性
 	err := validateID(ctx, relationType.RTID)
 	if err != nil {
@@ -93,6 +93,10 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 				WithErrorDetails(fmt.Sprintf("关系类类型只支持 %s 和 %s，当前类型为: %s",
 					interfaces.RELATION_TYPE_DIRECT, interfaces.RELATION_TYPE_DATA_VIEW, relationType.Type))
 		}
+	}
+
+	if !strictMode {
+		return nil
 	}
 
 	if relationType.SourceObjectTypeID == "" {

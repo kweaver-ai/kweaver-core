@@ -775,7 +775,7 @@ func Test_knowledgeNetworkAccess_ListKnSrcs(t *testing.T) {
 			smock.ExpectQuery(sqlStr).WithArgs().WillReturnError(expectedErr)
 
 			srcs, err := kna.ListKnSrcs(testCtx, query)
-			So(srcs, ShouldResemble, []interfaces.Resource{})
+			So(srcs, ShouldResemble, []interfaces.PermissionResource{})
 			So(err, ShouldResemble, expectedErr)
 
 			if err := smock.ExpectationsWereMet(); err != nil {
@@ -790,7 +790,7 @@ func Test_knowledgeNetworkAccess_ListKnSrcs(t *testing.T) {
 			smock.ExpectQuery(sqlStr).WithArgs().WillReturnRows(rows)
 
 			srcs, err := kna.ListKnSrcs(testCtx, query)
-			So(srcs, ShouldResemble, []interfaces.Resource{})
+			So(srcs, ShouldResemble, []interfaces.PermissionResource{})
 			So(err, ShouldNotBeNil)
 
 			if err := smock.ExpectationsWereMet(); err != nil {

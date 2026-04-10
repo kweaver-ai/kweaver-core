@@ -79,7 +79,7 @@ func Test_ActionTypeRestHandler_CreateActionTypes(t *testing.T) {
 
 		Convey("Success CreateActionTypes \n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
 
 			reqParamByte, _ := sonic.Marshal(requestData)
 			req := httptest.NewRequest(http.MethodPost, url, bytes.NewReader(reqParamByte))
@@ -160,7 +160,7 @@ func Test_ActionTypeRestHandler_CreateActionTypes(t *testing.T) {
 			}
 
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, err)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, err)
 
 			reqParamByte, _ := sonic.Marshal(requestData)
 			req := httptest.NewRequest(http.MethodPost, url, bytes.NewReader(reqParamByte))
@@ -169,6 +169,21 @@ func Test_ActionTypeRestHandler_CreateActionTypes(t *testing.T) {
 			engine.ServeHTTP(w, req)
 
 			So(w.Result().StatusCode, ShouldEqual, http.StatusInternalServerError)
+		})
+
+		Convey("CreateActionTypesByIn - Success\n", func() {
+			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+
+			urlIn := "/api/bkn-backend/in/v1/knowledge-networks/" + knID + "/action-types"
+			reqParamByte, _ := sonic.Marshal(requestData)
+			req := httptest.NewRequest(http.MethodPost, urlIn, bytes.NewReader(reqParamByte))
+			req.Header.Set(interfaces.CONTENT_TYPE_NAME, interfaces.CONTENT_TYPE_JSON)
+			req.Header.Set(interfaces.HTTP_HEADER_ACCOUNT_ID, "user1")
+			w := httptest.NewRecorder()
+			engine.ServeHTTP(w, req)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusCreated)
 		})
 	})
 }
@@ -211,7 +226,7 @@ func Test_ActionTypeRestHandler_UpdateActionType(t *testing.T) {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ats.EXPECT().CheckActionTypeExistByID(gomock.Any(), knID, gomock.Any(), atID).Return("old_action1", true, nil)
 			ats.EXPECT().CheckActionTypeExistByName(gomock.Any(), knID, gomock.Any(), actionType.ATName).Return("", false, nil)
-			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(actionType)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -256,6 +271,23 @@ func Test_ActionTypeRestHandler_UpdateActionType(t *testing.T) {
 			engine.ServeHTTP(w, req)
 
 			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+		})
+
+		Convey("UpdateActionTypeByIn - Success\n", func() {
+			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
+			ats.EXPECT().CheckActionTypeExistByID(gomock.Any(), knID, gomock.Any(), atID).Return("old_action1", true, nil)
+			ats.EXPECT().CheckActionTypeExistByName(gomock.Any(), knID, gomock.Any(), actionType.ATName).Return("", false, nil)
+			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+			urlIn := "/api/bkn-backend/in/v1/knowledge-networks/" + knID + "/action-types/" + atID
+			reqParamByte, _ := sonic.Marshal(actionType)
+			req := httptest.NewRequest(http.MethodPut, urlIn, bytes.NewReader(reqParamByte))
+			req.Header.Set(interfaces.CONTENT_TYPE_NAME, interfaces.CONTENT_TYPE_JSON)
+			req.Header.Set(interfaces.HTTP_HEADER_ACCOUNT_ID, "user1")
+			w := httptest.NewRecorder()
+			engine.ServeHTTP(w, req)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNoContent)
 		})
 	})
 }
@@ -585,7 +617,7 @@ func Test_ActionTypeRestHandler_HandleActionTypeGetOverride(t *testing.T) {
 
 		Convey("HandleActionTypeGetOverrideByEx - Success with POST method (default)\n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
 
 			reqParamByte, _ := sonic.Marshal(requestData)
 			req := httptest.NewRequest(http.MethodPost, urlEx, bytes.NewReader(reqParamByte))
@@ -651,7 +683,7 @@ func Test_ActionTypeRestHandler_CreateActionTypesByIn(t *testing.T) {
 
 		Convey("Success\n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
 
 			actionType := &interfaces.ActionType{
 				ActionTypeWithKeyField: interfaces.ActionTypeWithKeyField{
@@ -700,7 +732,7 @@ func Test_ActionTypeRestHandler_UpdateActionTypeByIn(t *testing.T) {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ats.EXPECT().CheckActionTypeExistByID(gomock.Any(), knID, gomock.Any(), atID).Return("old_action1", true, nil)
 			ats.EXPECT().CheckActionTypeExistByName(gomock.Any(), knID, gomock.Any(), actionType.ATName).Return("", false, nil)
-			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 			reqParamByte, _ := sonic.Marshal(actionType)
 			req := httptest.NewRequest(http.MethodPut, "/api/bkn-backend/in/v1/knowledge-networks/"+knID+"/action-types/"+atID, bytes.NewReader(reqParamByte))
@@ -814,7 +846,7 @@ func Test_ActionTypeRestHandler_HandleActionTypeGetOverrideByIn(t *testing.T) {
 
 		Convey("HandleActionTypeGetOverrideByIn - Success with POST method (default)\n", func() {
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
 
 			reqParamByte, _ := sonic.Marshal(requestData)
 			req := httptest.NewRequest(http.MethodPost, urlIn, bytes.NewReader(reqParamByte))
@@ -894,8 +926,8 @@ func Test_ActionTypeRestHandler_UpdateActionType_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckKNExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return("", false, httpErr)
@@ -910,8 +942,8 @@ func Test_ActionTypeRestHandler_UpdateActionType_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckActionTypeExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
@@ -946,8 +978,8 @@ func Test_ActionTypeRestHandler_UpdateActionType_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckActionTypeExistByName returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
@@ -977,14 +1009,14 @@ func Test_ActionTypeRestHandler_UpdateActionType_extraCases(t *testing.T) {
 
 		Convey("Failed when UpdateActionType service returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			kns.EXPECT().CheckKNExistByID(gomock.Any(), knID, gomock.Any()).Return(knID, true, nil)
 			ats.EXPECT().CheckActionTypeExistByID(gomock.Any(), knID, gomock.Any(), atID).Return("old_name", true, nil)
 			ats.EXPECT().CheckActionTypeExistByName(gomock.Any(), knID, gomock.Any(), actionType.ATName).Return("", false, nil)
-			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any()).Return(httpErr)
+			ats.EXPECT().UpdateActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(httpErr)
 
 			reqParamByte, _ := sonic.Marshal(actionType)
 			req := httptest.NewRequest(http.MethodPut, url, bytes.NewReader(reqParamByte))
@@ -1030,8 +1062,8 @@ func Test_ActionTypeRestHandler_DeleteActionTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckKNExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			as.EXPECT().VerifyToken(gomock.Any(), gomock.Any()).Return(hydra.Visitor{}, nil)
@@ -1045,8 +1077,8 @@ func Test_ActionTypeRestHandler_DeleteActionTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when CheckActionTypeExistByID returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			as.EXPECT().VerifyToken(gomock.Any(), gomock.Any()).Return(hydra.Visitor{}, nil)
@@ -1061,8 +1093,8 @@ func Test_ActionTypeRestHandler_DeleteActionTypes_extraCases(t *testing.T) {
 
 		Convey("Failed when DeleteActionTypesByIDs service returns error\n", func() {
 			httpErr := &rest.HTTPError{
-				HTTPCode: http.StatusInternalServerError,
-				Language: rest.DefaultLanguage,
+				HTTPCode:  http.StatusInternalServerError,
+				Language:  rest.DefaultLanguage,
 				BaseError: rest.BaseError{ErrorCode: berrors.BknBackend_ActionType_InternalError},
 			}
 			as.EXPECT().VerifyToken(gomock.Any(), gomock.Any()).Return(hydra.Visitor{}, nil)

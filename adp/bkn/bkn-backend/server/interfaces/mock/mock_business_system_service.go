@@ -20,7 +20,6 @@ import (
 type MockBusinessSystemService struct {
 	ctrl     *gomock.Controller
 	recorder *MockBusinessSystemServiceMockRecorder
-	isgomock struct{}
 }
 
 // MockBusinessSystemServiceMockRecorder is the mock recorder for MockBusinessSystemService.
@@ -49,7 +48,7 @@ func (m *MockBusinessSystemService) BindResource(ctx context.Context, bd_id, rid
 }
 
 // BindResource indicates an expected call of BindResource.
-func (mr *MockBusinessSystemServiceMockRecorder) BindResource(ctx, bd_id, rid, rtype any) *gomock.Call {
+func (mr *MockBusinessSystemServiceMockRecorder) BindResource(ctx, bd_id, rid, rtype interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BindResource", reflect.TypeOf((*MockBusinessSystemService)(nil).BindResource), ctx, bd_id, rid, rtype)
 }
@@ -63,7 +62,7 @@ func (m *MockBusinessSystemService) UnbindResource(ctx context.Context, bd_id, r
 }
 
 // UnbindResource indicates an expected call of UnbindResource.
-func (mr *MockBusinessSystemServiceMockRecorder) UnbindResource(ctx, bd_id, rid, rtype any) *gomock.Call {
+func (mr *MockBusinessSystemServiceMockRecorder) UnbindResource(ctx, bd_id, rid, rtype interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnbindResource", reflect.TypeOf((*MockBusinessSystemService)(nil).UnbindResource), ctx, bd_id, rid, rtype)
 }

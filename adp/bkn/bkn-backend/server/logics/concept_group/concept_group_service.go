@@ -28,6 +28,7 @@ import (
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
 	"bkn-backend/logics/action_type"
+	"bkn-backend/logics/batchindex"
 	"bkn-backend/logics/object_type"
 	"bkn-backend/logics/permission"
 	"bkn-backend/logics/relation_type"
@@ -121,12 +122,12 @@ func (cgs *conceptGroupService) CheckConceptGroupExistByName(ctx context.Context
 }
 
 // 创建概念分组
-func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup, mode string, validateDependency bool) (string, error) {
+func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup, mode string, strictMode bool) (string, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create concept group")
 	defer span.End()
 
 	// 判断userid是否有创建概念分组的权限（策略决策）
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   conceptGroup.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -225,7 +226,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		}
 
 		if len(conceptGroup.ObjectTypes) > 0 {
-			_, err = cgs.ots.CreateObjectTypes(ctx, tx, conceptGroup.ObjectTypes, mode, false, validateDependency)
+			_, err = cgs.ots.CreateObjectTypes(ctx, tx, conceptGroup.ObjectTypes, mode, false, strictMode)
 			if err != nil {
 				logger.Errorf("CreateObjectTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建对象类失败")
@@ -235,7 +236,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 			}
 
 			//  导入部分：处理分组与本体对象的关系
-			_, err = cgs.AddObjectTypesToConceptGroup(ctx, tx, conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, otIDs, mode)
+			_, err = cgs.AddObjectTypesToConceptGroup(ctx, tx, conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, otIDs, mode, strictMode)
 			if err != nil {
 				logger.Errorf("AddObjectTypesToConceptGroup error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建概念分组与对象类的关系失败")
@@ -246,7 +247,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		}
 
 		if len(conceptGroup.RelationTypes) > 0 {
-			_, err = cgs.rts.CreateRelationTypes(ctx, tx, conceptGroup.RelationTypes, mode, validateDependency)
+			_, err = cgs.rts.CreateRelationTypes(ctx, tx, conceptGroup.RelationTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateRelationTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建关系类失败")
@@ -257,7 +258,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		}
 
 		if len(conceptGroup.ActionTypes) > 0 {
-			_, err = cgs.ats.CreateActionTypes(ctx, tx, conceptGroup.ActionTypes, mode)
+			_, err = cgs.ats.CreateActionTypes(ctx, tx, conceptGroup.ActionTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateActionTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建概念分组动作类失败")
@@ -270,7 +271,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 
 	// 处理更新情况
 	if isUpdate {
-		err = cgs.UpdateConceptGroup(ctx, tx, conceptGroup)
+		err = cgs.UpdateConceptGroup(ctx, tx, conceptGroup, strictMode)
 		if err != nil {
 			logger.Errorf("UpdateConceptGroup error: %s", err.Error())
 			span.SetStatus(codes.Error, "修改概念分组失败")
@@ -281,7 +282,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 
 		if len(conceptGroup.ObjectTypes) > 0 {
 			// 写入对象类
-			_, err = cgs.ots.CreateObjectTypes(ctx, tx, conceptGroup.ObjectTypes, mode, false, validateDependency)
+			_, err = cgs.ots.CreateObjectTypes(ctx, tx, conceptGroup.ObjectTypes, mode, false, strictMode)
 			if err != nil {
 				logger.Errorf("CreateObjectTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建对象类失败")
@@ -291,7 +292,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 			}
 			//  导入部分：处理分组与本体对象的关系,只创建本分组与当前对象类的关系
 			//  更新分组话，需要做个全量同步
-			_, err = cgs.AddObjectTypesToConceptGroup(ctx, tx, conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, otIDs, mode)
+			_, err = cgs.AddObjectTypesToConceptGroup(ctx, tx, conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, otIDs, mode, strictMode)
 			if err != nil {
 				logger.Errorf("AddObjectTypesToConceptGroup error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建概念分组与对象类的关系失败")
@@ -302,7 +303,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		}
 
 		if len(conceptGroup.RelationTypes) > 0 {
-			_, err = cgs.rts.CreateRelationTypes(ctx, tx, conceptGroup.RelationTypes, mode, validateDependency)
+			_, err = cgs.rts.CreateRelationTypes(ctx, tx, conceptGroup.RelationTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateRelationTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建关系类失败")
@@ -313,7 +314,7 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 		}
 
 		if len(conceptGroup.ActionTypes) > 0 {
-			_, err = cgs.ats.CreateActionTypes(ctx, tx, conceptGroup.ActionTypes, mode)
+			_, err = cgs.ats.CreateActionTypes(ctx, tx, conceptGroup.ActionTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateActionTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建动作类失败")
@@ -340,6 +341,67 @@ func (cgs *conceptGroupService) CreateConceptGroup(ctx context.Context, tx *sql.
 	return conceptGroup.CGID, nil
 }
 
+// ValidateConceptGroups checks concept-group dependency existence only; does not write to the database.
+func (cgs *conceptGroupService) ValidateConceptGroups(ctx context.Context, knID string, branch string,
+	conceptGroups []*interfaces.ConceptGroup, strictMode bool, parentBatch *interfaces.BatchIDIndex, mode string) error {
+
+	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateConceptGroups")
+	defer span.End()
+
+	if len(conceptGroups) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return nil
+	}
+
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
+		Type: interfaces.RESOURCE_TYPE_KN,
+		ID:   knID,
+	}, []string{interfaces.OPERATION_TYPE_MODIFY})
+	if err != nil {
+		return err
+	}
+
+	effectiveBatch := parentBatch
+	if effectiveBatch == nil {
+		effectiveBatch, err = batchindex.CollectFromConceptGroups(knID, branch, conceptGroups)
+		if err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest,
+				berrors.BknBackend_ConceptGroup_InvalidParameter).
+				WithErrorDetails(err.Error())
+		}
+	}
+
+	for _, cg := range conceptGroups {
+		cg.KNID = knID
+		cg.Branch = branch
+		if _, _, err := cgs.handleConceptGroupImportMode(ctx, mode, cg); err != nil {
+			return err
+		}
+		if strictMode {
+			// 与 CreateConceptGroup 落库路径对齐：嵌套概念同步做依赖预检
+			if len(cg.ObjectTypes) > 0 {
+				// 与 CreateObjectTypes(strict) 一致：数据视图/逻辑属性/绑定概念分组等，而非仅 ID 是否在库
+				if err := cgs.ots.ValidateObjectTypes(ctx, knID, branch, cg.ObjectTypes, strictMode, effectiveBatch, mode); err != nil {
+					return err
+				}
+			}
+			if len(cg.RelationTypes) > 0 {
+				if err := cgs.rts.ValidateRelationTypes(ctx, knID, branch, cg.RelationTypes, strictMode, effectiveBatch, mode); err != nil {
+					return err
+				}
+			}
+			if len(cg.ActionTypes) > 0 {
+				if err := cgs.ats.ValidateActionTypes(ctx, knID, branch, cg.ActionTypes, strictMode, effectiveBatch, mode); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
 func (cgs *conceptGroupService) ListConceptGroups(ctx context.Context,
 	query interfaces.ConceptGroupsQueryParams) ([]*interfaces.ConceptGroup, int, error) {
 
@@ -347,7 +409,7 @@ func (cgs *conceptGroupService) ListConceptGroups(ctx context.Context,
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -421,7 +483,7 @@ func (cgs *conceptGroupService) GetConceptGroupByID(ctx context.Context, knID st
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -603,17 +665,23 @@ func (cgs *conceptGroupService) GetStatByConceptGroup(ctx context.Context, conce
 }
 
 // 更新概念分组
-func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup) error {
+func (cgs *conceptGroupService) UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *interfaces.ConceptGroup, strictMode bool) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update concept group")
 	defer span.End()
 
 	// 判断userid是否有创建概念分组的权限（策略决策）
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   conceptGroup.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
 	if err != nil {
 		return err
+	}
+
+	if strictMode {
+		if err := cgs.ValidateConceptGroups(ctx, conceptGroup.KNID, conceptGroup.Branch, []*interfaces.ConceptGroup{conceptGroup}, strictMode, nil, interfaces.ImportMode_Overwrite); err != nil {
+			return err
+		}
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -694,7 +762,7 @@ func (cgs *conceptGroupService) DeleteConceptGroupByID(ctx context.Context, tx *
 	defer span.End()
 
 	// 判断userid是否有删除概念分组的权限
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -1010,7 +1078,7 @@ func (cgs *conceptGroupService) InsertDatasetData(ctx context.Context, origConce
 
 // 添加对象类到指定概念分组中
 func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context, tx *sql.Tx, knID string, branch string,
-	cgID string, otIDs []interfaces.ID, importMode string) ([]string, error) {
+	cgID string, otIDs []interfaces.ID, importMode string, strictMode bool) ([]string, error) {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "添加对象类到概念分组中")
 	defer span.End()
@@ -1055,25 +1123,27 @@ func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context
 	// id去重后再查
 	otIDArr := interfaces.GetUniqueIDs(otIDs)
 
-	// 1. 校验对象类id在指定的网络下分支下都存在，有一个不存在就报错，需都存在
-	objectTypes, _, err := cgs.ots.ListObjectTypes(ctx, tx, interfaces.ObjectTypesQueryParams{
-		PaginationQueryParameters: interfaces.PaginationQueryParameters{
-			Limit: -1,
-		},
-		KNID:   knID,
-		Branch: branch,
-		OTIDS:  otIDArr,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(objectTypes) != len(otIDArr) {
-		errStr := fmt.Sprintf("Exists any object types not found, expect object types nums is [%d], actual object types num is [%d]", len(otIDs), len(objectTypes))
-		logger.Errorf(errStr)
-		span.SetStatus(codes.Error, errStr)
+	// 1. When strictMode is true, validate all object type IDs exist in the KN/branch
+	if strictMode {
+		objectTypes, _, err := cgs.ots.ListObjectTypes(ctx, tx, interfaces.ObjectTypesQueryParams{
+			PaginationQueryParameters: interfaces.PaginationQueryParameters{
+				Limit: -1,
+			},
+			KNID:   knID,
+			Branch: branch,
+			OTIDS:  otIDArr,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(objectTypes) != len(otIDArr) {
+			errStr := fmt.Sprintf("Exists any object types not found, expect object types nums is [%d], actual object types num is [%d]", len(otIDs), len(objectTypes))
+			logger.Errorf(errStr)
+			span.SetStatus(codes.Error, errStr)
 
-		return []string{}, rest.NewHTTPError(ctx, http.StatusNotFound,
-			berrors.BknBackend_ConceptGroup_ObjectTypeNotFound).WithErrorDetails(errStr)
+			return []string{}, rest.NewHTTPError(ctx, http.StatusNotFound,
+				berrors.BknBackend_ConceptGroup_ObjectTypeNotFound).WithErrorDetails(errStr)
+		}
 	}
 
 	currentTime := time.Now().UnixMilli()
@@ -1106,7 +1176,7 @@ func (cgs *conceptGroupService) AddObjectTypesToConceptGroup(ctx context.Context
 		case interfaces.ImportMode_Normal:
 			// normal 请求下，关系已存在，报错
 			errStr := fmt.Sprintf("Exists some object types in the concept group [%s] knowledge network [%s] branch [%s], expect relations num is [%d], actual relations num is [%d]",
-				cgID, knID, branch, len(otIDs), len(objectTypes))
+				cgID, knID, branch, len(otIDs), len(cgRelations))
 			logger.Errorf(errStr)
 			span.SetStatus(codes.Error, errStr)
 
@@ -1178,7 +1248,7 @@ func (cgs *conceptGroupService) ListConceptGroupRelations(ctx context.Context,
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -1264,7 +1334,7 @@ func (cgs *conceptGroupService) DeleteObjectTypesFromGroup(ctx context.Context, 
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := cgs.ps.CheckPermission(ctx, interfaces.Resource{
+	err := cgs.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})

@@ -3,7 +3,7 @@ package isandboxhtpp
 import (
 	"context"
 
-	sandboxdto "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
+	sandboxdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
 )
 
 // ISandboxPlatform Sandbox Platform 接口

@@ -30,6 +30,7 @@ import (
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
+	"bkn-backend/logics/batchindex"
 	"bkn-backend/logics/permission"
 	"bkn-backend/logics/user_mgmt"
 )
@@ -42,6 +43,7 @@ var (
 type objectTypeService struct {
 	appSetting *common.AppSetting
 	db         *sql.DB
+	aoa        interfaces.AgentOperatorAccess
 	cga        interfaces.ConceptGroupAccess
 	dda        interfaces.DataModelAccess
 	dva        interfaces.DataViewAccess
@@ -57,6 +59,7 @@ func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeSe
 		otService = &objectTypeService{
 			appSetting: appSetting,
 			db:         logics.DB,
+			aoa:        logics.AOA,
 			cga:        logics.CGA,
 			dda:        logics.DDA,
 			dva:        logics.DVA,
@@ -68,6 +71,82 @@ func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeSe
 		}
 	})
 	return otService
+}
+
+// validateObjectTypeStrictExternalDeps checks data view, vector embedding models, and logic property metric/operator references.
+func (ots *objectTypeService) validateObjectTypeStrictExternalDeps(ctx context.Context, objectType *interfaces.ObjectType) error {
+	if objectType.DataSource != nil && objectType.DataSource.ID != "" {
+		dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
+		if err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest,
+				berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]获取失败: %s", objectType.OTName, objectType.DataSource.ID, err.Error()))
+		}
+		if dataView == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest,
+				berrors.BknBackend_ObjectType_InvalidParameter).
+				WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]不存在", objectType.OTName, objectType.DataSource.ID))
+		}
+	}
+	if objectType.DataProperties != nil {
+		for _, prop := range objectType.DataProperties {
+			if prop.IndexConfig != nil && prop.IndexConfig.VectorConfig.Enabled && prop.IndexConfig.VectorConfig.ModelID != "" {
+				model, err := ots.mfa.GetModelByID(ctx, prop.IndexConfig.VectorConfig.ModelID)
+				if err != nil {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("对象类[%s]属性[%s]的小模型[%s]获取失败: %s",
+							objectType.OTName, prop.Name, prop.IndexConfig.VectorConfig.ModelID, err.Error()))
+				}
+				if model == nil {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("对象类[%s]属性[%s]的小模型[%s]不存在",
+							objectType.OTName, prop.Name, prop.IndexConfig.VectorConfig.ModelID))
+				}
+				if model.ModelType != interfaces.SMALL_MODEL_TYPE_EMBEDDING {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
+						WithErrorDetails(fmt.Sprintf("model type %s is not %s model", model.ModelType, interfaces.SMALL_MODEL_TYPE_EMBEDDING))
+				}
+				if model.EmbeddingDim == 0 || model.BatchSize == 0 || model.MaxTokens == 0 {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
+						WithErrorDetails(fmt.Sprintf("model %s has invalid embedding dim, batch size or max tokens", model.ModelID))
+				}
+			}
+		}
+	}
+	// Schema for logic properties (type, data_source) is validated in driveradapters.ValidateObjectType.
+	for _, lp := range objectType.LogicProperties {
+		switch lp.Type {
+		case interfaces.LOGIC_PROPERTY_TYPE_METRIC:
+			model, err := ots.dda.GetMetricModelByID(ctx, lp.DataSource.ID)
+			if err != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的指标模型[%s]获取失败: %s",
+						objectType.OTName, lp.Name, lp.DataSource.ID, err.Error()))
+			}
+			if model == nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的指标模型[%s]不存在",
+						objectType.OTName, lp.Name, lp.DataSource.ID))
+			}
+		case interfaces.LOGIC_PROPERTY_TYPE_OPERATOR:
+			op, err := ots.aoa.GetAgentOperatorByID(ctx, lp.DataSource.ID)
+			if err != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的算子[%s]获取失败: %s",
+						objectType.OTName, lp.Name, lp.DataSource.ID, err.Error()))
+			}
+			if op.OperatorId == "" {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的算子[%s]不存在",
+						objectType.OTName, lp.Name, lp.DataSource.ID))
+			}
+		}
+	}
+	return nil
 }
 
 func (ots *objectTypeService) CheckObjectTypeExistByID(ctx context.Context,
@@ -113,13 +192,13 @@ func (ots *objectTypeService) CheckObjectTypeExistByName(ctx context.Context,
 }
 
 func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
-	objectTypes []*interfaces.ObjectType, mode string, needCreateConceptGroupRelation bool, validateDependency bool) ([]string, error) {
+	objectTypes []*interfaces.ObjectType, mode string, needCreateConceptGroupRelation bool, strictMode bool) ([]string, error) {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   objectTypes[0].KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -144,18 +223,9 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 		objectType.CreateTime = currentTime
 		objectType.UpdateTime = currentTime
 
-		// 校验数据视图存在性
-		if validateDependency && objectType.DataSource != nil && objectType.DataSource.ID != "" {
-			dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
-			if err != nil {
-				return []string{}, rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]获取失败: %s", objectType.OTName, objectType.DataSource.ID, err.Error()))
-			}
-			if dataView == nil {
-				return []string{}, rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("对象类[%s]的数据视图[%s]不存在", objectType.OTName, objectType.DataSource.ID))
+		if strictMode {
+			if err := ots.validateObjectTypeStrictExternalDeps(ctx, objectType); err != nil {
+				return []string{}, err
 			}
 		}
 
@@ -232,7 +302,7 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 		if needCreateConceptGroupRelation {
 			// 建立对象类到各个组的关系，已经存在的关系就不需要建立，需要先获取一下对象类与组的关系
 			if len(objectType.ConceptGroups) > 0 {
-				err = ots.handleGroupRelations(ctx, tx, objectType, currentTime)
+				err = ots.handleGroupRelations(ctx, tx, objectType, currentTime, strictMode)
 				if err != nil {
 					span.SetStatus(codes.Error, "处理对象类与分组的关系失败")
 					return []string{}, err
@@ -243,8 +313,7 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 
 	// 更新
 	for _, objectType := range updateObjectTypes {
-		// todo: 提交的已存在，需要更新，则版本号+1
-		err = ots.UpdateObjectType(ctx, tx, objectType)
+		err = ots.UpdateObjectType(ctx, tx, objectType, strictMode)
 		if err != nil {
 			return []string{}, err
 		}
@@ -266,6 +335,84 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 	return otIDs, nil
 }
 
+// ValidateObjectTypes checks dependency existence only; does not write to the database.
+func (ots *objectTypeService) ValidateObjectTypes(ctx context.Context, knID string, branch string,
+	objectTypes []*interfaces.ObjectType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
+
+	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateObjectTypes")
+	defer span.End()
+
+	if len(objectTypes) == 0 {
+		return nil
+	}
+
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
+		Type: interfaces.RESOURCE_TYPE_KN,
+		ID:   knID,
+	}, []string{interfaces.OPERATION_TYPE_MODIFY})
+	if err != nil {
+		return err
+	}
+
+	_, _, err = ots.handleObjectTypeImportMode(ctx, mode, objectTypes)
+	if err != nil {
+		return err
+	}
+
+	for _, objectType := range objectTypes {
+		objectType.KNID = knID
+		objectType.Branch = branch
+		if strictMode {
+			if err := ots.validateObjectTypeStrictExternalDeps(ctx, objectType); err != nil {
+				return err
+			}
+
+			// 校验概念分组存在性；batch 中含糊的同批分组 ID 视为将创建，跳过查库
+			if len(objectType.ConceptGroups) > 0 {
+				cgIDs := []string{}
+				for _, cg := range objectType.ConceptGroups {
+					cgIDs = append(cgIDs, cg.CGID)
+				}
+				cgIDs = common.DuplicateSlice(cgIDs)
+
+				var needDBLookup []string
+				for _, id := range cgIDs {
+					if batch != nil && batchindex.HasConceptGroupID(id, batch) {
+						continue
+					}
+					needDBLookup = append(needDBLookup, id)
+				}
+				if len(needDBLookup) == 0 {
+					continue
+				}
+
+				tx, err := ots.db.Begin()
+				if err != nil {
+					return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+						berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
+						WithErrorDetails(err.Error())
+				}
+				defer func() { _ = tx.Rollback() }()
+
+				conceptGroups, err := ots.cga.GetConceptGroupsByIDs(ctx, tx, knID, branch, needDBLookup)
+				if err != nil {
+					return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+						berrors.BknBackend_ObjectType_InternalError).
+						WithErrorDetails(fmt.Sprintf("GetConceptGroupsByIDs failed: %s", err.Error()))
+				}
+				if len(conceptGroups) != len(needDBLookup) {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("Exists any concept group not found, expect [%d], actual [%d]", len(needDBLookup), len(conceptGroups)))
+				}
+			}
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
 func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 	query interfaces.ObjectTypesQueryParams) ([]*interfaces.ObjectType, int, error) {
 
@@ -273,7 +420,7 @@ func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -419,7 +566,7 @@ func (ots *objectTypeService) GetObjectTypesByIDs(ctx context.Context, tx *sql.T
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -628,13 +775,13 @@ func hasAnyDataPropertyIndexAffectingChanges(oldProps, newProps []*interfaces.Da
 }
 
 // 更新对象类
-func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, objectType *interfaces.ObjectType) error {
+func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, objectType *interfaces.ObjectType, strictMode bool) error {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   objectType.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -642,30 +789,9 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 		return err
 	}
 
-	// 校验数据属性
-	for _, prop := range objectType.DataProperties {
-		if prop.IndexConfig != nil && prop.IndexConfig.VectorConfig.Enabled {
-			model, err := ots.mfa.GetModelByID(ctx, prop.IndexConfig.VectorConfig.ModelID)
-			if err != nil {
-				return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-					berrors.BknBackend_ObjectType_InternalError_GetSmallModelByIDFailed).
-					WithErrorDetails(err.Error())
-			}
-			if model == nil {
-				return rest.NewHTTPError(ctx, http.StatusNotFound,
-					berrors.BknBackend_ObjectType_SmallModelNotFound).
-					WithErrorDetails(fmt.Sprintf("model %s not found", prop.IndexConfig.VectorConfig.ModelID))
-			}
-			if model.ModelType != interfaces.SMALL_MODEL_TYPE_EMBEDDING {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
-					WithErrorDetails(fmt.Sprintf("model type %s is not %s model", model.ModelType, interfaces.SMALL_MODEL_TYPE_EMBEDDING))
-			}
-			if model.EmbeddingDim == 0 || model.BatchSize == 0 || model.MaxTokens == 0 {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
-					WithErrorDetails(fmt.Sprintf("model %s has invalid embedding dim, batch size or max tokens", model.ModelID))
-			}
+	if strictMode {
+		if err := ots.validateObjectTypeStrictExternalDeps(ctx, objectType); err != nil {
+			return err
 		}
 	}
 
@@ -761,7 +887,7 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 	}
 
 	// 4. 同步分组关系（全量替换）
-	if err := ots.syncObjectGroups(ctx, tx, *objectType, currentTime); err != nil {
+	if err := ots.syncObjectGroups(ctx, tx, *objectType, currentTime, strictMode); err != nil {
 		return err
 	}
 
@@ -781,13 +907,13 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 
 // 更新对象类数据属性
 func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
-	objectType *interfaces.ObjectType, dataProperties []*interfaces.DataProperty) error {
+	objectType *interfaces.ObjectType, dataProperties []*interfaces.DataProperty, strictMode bool) error {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   objectType.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -795,29 +921,31 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 		return err
 	}
 
-	// 校验数据属性
-	for _, prop := range dataProperties {
-		if prop.IndexConfig != nil && prop.IndexConfig.VectorConfig.Enabled {
-			model, err := ots.mfa.GetModelByID(ctx, prop.IndexConfig.VectorConfig.ModelID)
-			if err != nil {
-				return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-					berrors.BknBackend_ObjectType_InternalError_GetSmallModelByIDFailed).
-					WithErrorDetails(err.Error())
-			}
-			if model == nil {
-				return rest.NewHTTPError(ctx, http.StatusNotFound,
-					berrors.BknBackend_ObjectType_SmallModelNotFound).
-					WithErrorDetails(fmt.Sprintf("model %s not found", prop.IndexConfig.VectorConfig.ModelID))
-			}
-			if model.ModelType != interfaces.SMALL_MODEL_TYPE_EMBEDDING {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
-					WithErrorDetails(fmt.Sprintf("model type %s is not %s model", model.ModelType, interfaces.SMALL_MODEL_TYPE_EMBEDDING))
-			}
-			if model.EmbeddingDim == 0 || model.BatchSize == 0 || model.MaxTokens == 0 {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest,
-					berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
-					WithErrorDetails(fmt.Sprintf("model %s has invalid embedding dim, batch size or max tokens", model.ModelID))
+	// When strictMode is true, validate embedding small model for any submitted property with vector index enabled.
+	if strictMode {
+		for _, prop := range dataProperties {
+			if prop.IndexConfig != nil && prop.IndexConfig.VectorConfig.Enabled {
+				model, err := ots.mfa.GetModelByID(ctx, prop.IndexConfig.VectorConfig.ModelID)
+				if err != nil {
+					return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+						berrors.BknBackend_ObjectType_InternalError_GetSmallModelByIDFailed).
+						WithErrorDetails(err.Error())
+				}
+				if model == nil {
+					return rest.NewHTTPError(ctx, http.StatusNotFound,
+						berrors.BknBackend_ObjectType_SmallModelNotFound).
+						WithErrorDetails(fmt.Sprintf("small model %s not found", prop.IndexConfig.VectorConfig.ModelID))
+				}
+				if model.ModelType != interfaces.SMALL_MODEL_TYPE_EMBEDDING {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
+						WithErrorDetails(fmt.Sprintf("small model type %s is not %s model", model.ModelType, interfaces.SMALL_MODEL_TYPE_EMBEDDING))
+				}
+				if model.EmbeddingDim == 0 || model.BatchSize == 0 || model.MaxTokens == 0 {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest,
+						berrors.BknBackend_ObjectType_InvalidParameter_SmallModel).
+						WithErrorDetails(fmt.Sprintf("small model %s has invalid embedding dim, batch size or max tokens", model.ModelID))
+				}
 			}
 		}
 	}
@@ -958,7 +1086,7 @@ func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sq
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -1210,7 +1338,7 @@ func (ots *objectTypeService) GetObjectTypesMapByIDs(ctx context.Context, knID s
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
-	err := ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err := ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -1354,7 +1482,7 @@ func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 	var err error
 
 	// 判断userid是否有查看业务知识网络的权限
-	err = ots.ps.CheckPermission(ctx, interfaces.Resource{
+	err = ots.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -1807,12 +1935,10 @@ func (ots *objectTypeService) GetObjectTypeByID(ctx context.Context, tx *sql.Tx,
 		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_GetObjectTypeByIDFailed).WithErrorDetails(err.Error())
 	}
-
-	propMap := map[string]string{}
-	for _, prop := range objectType.DataProperties {
-		propMap[prop.Name] = prop.DisplayName
+	if objectType == nil {
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound).
+			WithErrorDetails(fmt.Sprintf("对象类[id:%s]不存在: %v", otID, err))
 	}
-	objectType.PropertyMap = propMap
 
 	span.SetStatus(codes.Ok, "")
 	return objectType, nil
@@ -1897,8 +2023,9 @@ func (ots *objectTypeService) processConditionOperations(objectType *interfaces.
 
 // 处理对象类与组的关系，并保存
 func (ots *objectTypeService) handleGroupRelations(ctx context.Context, tx *sql.Tx,
-	objectType *interfaces.ObjectType, currentTime int64) error {
+	objectType *interfaces.ObjectType, currentTime int64, strictMode bool) error {
 
+	var err error
 	cgIDs := []string{}
 	for _, cg := range objectType.ConceptGroups {
 		cgIDs = append(cgIDs, cg.CGID)
@@ -1906,25 +2033,27 @@ func (ots *objectTypeService) handleGroupRelations(ctx context.Context, tx *sql.
 	// id去重后再查
 	cgIDs = common.DuplicateSlice(cgIDs)
 
-	// 校验分组是否都存在，按分组id获取分组
-	conceptGroups, err := ots.cga.GetConceptGroupsByIDs(ctx, tx, objectType.KNID, objectType.Branch, cgIDs)
-	if err != nil {
-		errStr := fmt.Sprintf("GetConceptGroupsByIDs failed, the kn_id: [%s], branch: [%s], cg_ids: [%v], error: %s",
-			objectType.KNID, objectType.Branch, cgIDs, err.Error())
-		logger.Errorf(errStr)
+	// When strictMode is true, validate all concept groups exist
+	if strictMode {
+		conceptGroups, err := ots.cga.GetConceptGroupsByIDs(ctx, tx, objectType.KNID, objectType.Branch, cgIDs)
+		if err != nil {
+			errStr := fmt.Sprintf("GetConceptGroupsByIDs failed, the kn_id: [%s], branch: [%s], cg_ids: [%v], error: %s",
+				objectType.KNID, objectType.Branch, cgIDs, err.Error())
+			logger.Errorf(errStr)
 
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-			berrors.BknBackend_ObjectType_InternalError).
-			WithErrorDetails(errStr)
-	}
-	if len(conceptGroups) != len(cgIDs) {
-		errStr := fmt.Sprintf("Exists any concept group not found, expect concept group nums is [%d], actual concept group num is [%d]",
-			len(cgIDs), len(conceptGroups))
-		logger.Errorf(errStr)
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ObjectType_InternalError).
+				WithErrorDetails(errStr)
+		}
+		if len(conceptGroups) != len(cgIDs) {
+			errStr := fmt.Sprintf("Exists any concept group not found, expect concept group nums is [%d], actual concept group num is [%d]",
+				len(cgIDs), len(conceptGroups))
+			logger.Errorf(errStr)
 
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
-			berrors.BknBackend_ObjectType_InternalError).
-			WithErrorDetails(errStr)
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ObjectType_InternalError).
+				WithErrorDetails(errStr)
+		}
 	}
 
 	// 创建
@@ -1954,7 +2083,7 @@ func (ots *objectTypeService) handleGroupRelations(ctx context.Context, tx *sql.
 
 // syncObjectGroups 同步分组关系（更新时使用，全量替换）
 func (ots *objectTypeService) syncObjectGroups(ctx context.Context, tx *sql.Tx,
-	objectType interfaces.ObjectType, currentTime int64) error {
+	objectType interfaces.ObjectType, currentTime int64, strictMode bool) error {
 
 	cgIDs := []string{}
 	for _, cg := range objectType.ConceptGroups {
@@ -1963,10 +2092,8 @@ func (ots *objectTypeService) syncObjectGroups(ctx context.Context, tx *sql.Tx,
 	// id去重后再查
 	cgIDs = common.DuplicateSlice(cgIDs)
 
-	// 提交的对象类的分组为空，则需要解绑对象类与概念分组的绑定关系
-	// 当提交的分组不为空时才校验分组是否存在
-	if len(cgIDs) > 0 {
-		// 校验分组是否都存在，按分组id获取分组
+	// When strictMode is true and cgIDs not empty, validate all concept groups exist
+	if strictMode && len(cgIDs) > 0 {
 		conceptGroups, err := ots.cga.GetConceptGroupsByIDs(ctx, tx, objectType.KNID, objectType.Branch, cgIDs)
 		if err != nil {
 			errStr := fmt.Sprintf("GetConceptGroupsByIDs failed, the kn_id: [%s], branch: [%s], cg_ids: [%v], error: %s",
@@ -1977,7 +2104,6 @@ func (ots *objectTypeService) syncObjectGroups(ctx context.Context, tx *sql.Tx,
 				berrors.BknBackend_ObjectType_InternalError).
 				WithErrorDetails(errStr)
 		}
-		// 当提交的分组不为空时才校验分组是否存在
 		if len(conceptGroups) != len(cgIDs) {
 			errStr := fmt.Sprintf("Exists any concept group not found, expect concept group nums is [%d], actual concept group num is [%d]",
 				len(cgIDs), len(conceptGroups))

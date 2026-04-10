@@ -98,7 +98,7 @@ func (rts *riskTypeService) CreateRiskTypes(ctx context.Context, tx *sql.Tx, ris
 	ctx, span := ar_trace.Tracer.Start(ctx, "CreateRiskTypes")
 	defer span.End()
 
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   riskTypes[0].KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -262,7 +262,7 @@ func (rts *riskTypeService) ListRiskTypes(ctx context.Context, query interfaces.
 	ctx, span := ar_trace.Tracer.Start(ctx, "ListRiskTypes")
 	defer span.End()
 
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})
@@ -328,7 +328,7 @@ func (rts *riskTypeService) UpdateRiskType(ctx context.Context, tx *sql.Tx, risk
 	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateRiskType")
 	defer span.End()
 
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   riskType.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -381,7 +381,7 @@ func (rts *riskTypeService) DeleteRiskTypesByIDs(ctx context.Context, tx *sql.Tx
 	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteRiskTypesByIDs")
 	defer span.End()
 
-	err := rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err := rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   knID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -508,7 +508,7 @@ func (rts *riskTypeService) SearchRiskTypes(ctx context.Context, query *interfac
 	response := interfaces.RiskTypes{}
 	var err error
 
-	err = rts.ps.CheckPermission(ctx, interfaces.Resource{
+	err = rts.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   query.KNID,
 	}, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL})

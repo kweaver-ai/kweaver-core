@@ -1,4 +1,22 @@
 # 版本 changelog 说明
+## 0.6.0
+
+### 功能与改进
+
+- 为 `agent-factory` 新增 Skill 类型支持
+  - 添加带校验的 `SkillSkill` 值对象
+  - 在 agent 创建/详情/更新处理器及运行服务中支持 Skill 配置
+- 为 `agent-executor` 新增 TraceAI Evidence 请求头支持
+  - 在 `FeaturesConfig` 中引入 `enable_traceai_evidence` 功能开关
+  - 在 API 工具代理请求中注入 `X-TraceAi-Enable-Evidence` 请求头
+- 添加 v0.6.0 数据库迁移：Skill 相关表及 `agent-memory` 历史表（dm8 和 mariadb）
+
+### 重构与清理
+
+- 重构 `agent-factory` 发布请求校验：使用构造函数语义，对请求字段进行校验和清洗，校验失败时返回 400 并携带明确错误信息，而非 500
+- 重组数据库迁移文件结构，移除冗余的 `pre` 目录层级
+- 从部署中移除未使用的 `ENABLE_EVIDENCE_EXTRACTION` 环境变量和字典文件；更新 `agent-executor` 依赖并优化 Dockerfile
+
 ## 0.5.3
 
 ### 重构与清理

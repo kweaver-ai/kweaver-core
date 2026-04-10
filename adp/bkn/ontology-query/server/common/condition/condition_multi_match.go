@@ -28,50 +28,40 @@ func NewMultiMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fiel
 	if exist {
 		// 存在 fields 时需要是一个数组
 		if !common.IsSlice(cfgFields) {
-			return nil, fmt.Errorf("condition [multi_match] 'fields' value should be an array")
+			return nil, fmt.Errorf("multi_match：remain_cfg.fields 必须是数组（例如 [\"attr_a\"] 或 [\"*\"]）")
 		}
 		// 字段数组里的需要是个字符串数组
 		for _, cfgField := range cfgFields.([]any) {
 			field, ok := cfgField.(string)
 			if !ok {
-				return nil, fmt.Errorf("condition [multi_match] 'fields' value should be a string array, contain non string value[%v]", cfgField)
+				return nil, fmt.Errorf("multi_match：fields 数组元素须全部为字符串，当前存在非字符串元素：%v", cfgField)
 			}
 
-			// 字段数组里的每个元素都需要是字符串
-			name := getFilterFieldName(field, fieldsMap, true)
-			// 如果指定*查询，并且视图的字段范围为部分字段，那么将查询的字段替换成视图的字段列表
-			if name == AllField {
-				// * 只针对text字段和配了全文索引的属性做全文检索
-				for _, fieldInfo := range fieldsMap {
-					if fieldInfo.Type == dtype.DATATYPE_TEXT {
-						// text字段直接拼
-						fields = append(fields, name)
-					} else {
-						if fieldInfo.Type == dtype.DATATYPE_STRING &&
-							fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
-							// 配置了全文索引的属性,可以做match查询,否则报错,不能进行match查询
-							// string 类型做了fulltext, 则match用 xxx.text 进行过滤
-							fields = append(fields, name+"."+dtype.TEXT_SUFFIX)
-						}
-					}
+			if field == AllField {
+				expanded, err := expandIndexFieldNamesForMultiMatchStar(fieldsMap)
+				if err != nil {
+					return nil, err
 				}
-			} else {
-				// 字段是否做了全文索引
-				fieldInfo := fieldsMap[name]
-				if fieldInfo.Type == dtype.DATATYPE_TEXT {
-					// text字段直接拼
-					fields = append(fields, name)
-				} else {
-					if fieldInfo.Type == dtype.DATATYPE_STRING &&
-						fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
-						// 配置了全文索引的属性,可以做match查询,否则报错,不能进行match查询
-						// string 类型做了fulltext, 则match用 xxx.text 进行过滤
-						fields = append(fields, name+"."+dtype.TEXT_SUFFIX)
-					} else {
-						return nil, fmt.Errorf(`the index of property [%s] is not configured for full-text search and cannot be used for [multi_match] filtering. Please check the index configuration of the object type and the current request`, name)
-					}
-				}
+				fields = append(fields, expanded...)
+				continue
 			}
+
+			fieldInfo := fieldsMap[field]
+			if fieldInfo == nil {
+				return nil, fmt.Errorf(errFmtUnknownObjectTypeProperty, field)
+			}
+			name := getFilterFieldName(field, fieldsMap, true)
+
+			if fieldInfo.Type == dtype.DATATYPE_TEXT {
+				fields = append(fields, name)
+				continue
+			}
+			if fieldInfo.Type == dtype.DATATYPE_STRING &&
+				fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
+				fields = append(fields, name+"."+dtype.TEXT_SUFFIX)
+				continue
+			}
+			return nil, fmt.Errorf("multi_match：属性「%s」须为 text 类型，或已启用全文索引的 string 类型后才能用于全文检索，请检查索引配置", field)
 		}
 	}
 
@@ -80,10 +70,10 @@ func NewMultiMatchCond(ctx context.Context, cfg *CondCfg, fieldScope uint8, fiel
 	if exist && matchType != "" {
 		mtype, ok := matchType.(string)
 		if !ok {
-			return nil, fmt.Errorf("condition [multi_match] 'match_type' value should be a string, actual is[%v]", matchType)
+			return nil, fmt.Errorf("multi_match：match_type 须为字符串，当前类型无效：%v", matchType)
 		}
 		if !MatchTypeMap[mtype] {
-			return nil, fmt.Errorf("condition [multi_match] 'match_type' value should be one of [%v], actual is[%v]", MatchTypeMap, mtype)
+			return nil, fmt.Errorf("multi_match：match_type「%s」无效，可选值为：best_fields、most_fields、cross_fields、phrase、phrase_prefix、bool_prefix", mtype)
 		}
 	}
 
@@ -102,16 +92,16 @@ func (cond *MultiMatchCond) Convert(ctx context.Context, vectorizer func(ctx con
 
 	fields, err := sonic.Marshal(cond.mFilterFieldNames)
 	if err != nil {
-		return "", fmt.Errorf("condition [multi_match] marshal fields error: %s", err.Error())
+		return "", fmt.Errorf("multi_match：序列化检索字段列表失败：%s", err.Error())
 	}
 
 	// 默认是 best_fields
 	matchType := "best_fields"
-	if mt, exist := cond.mCfg.RemainCfg["match_type"]; exist {
-		if mtStr, ok := mt.(string); exist && ok {
+	if mt, ok := cond.mCfg.RemainCfg["match_type"]; ok {
+		if mtStr, ok := mt.(string); ok {
 			matchType = mtStr
 		} else {
-			return "", fmt.Errorf("condition [multi_match] match_type[%v] should be a string", mt)
+			return "", fmt.Errorf("multi_match：match_type 须为字符串，当前为 %v", mt)
 		}
 	}
 
@@ -150,29 +140,42 @@ func rewriteMultiMatchCond(cfg *CondCfg, fieldsMap map[string]*DataProperty) (*C
 	if exist {
 		// 存在 fields 时需要是一个数组
 		if !common.IsSlice(cfgFields) {
-			return nil, fmt.Errorf("condition [multi_match] 'fields' value should be an array")
+			return nil, fmt.Errorf("multi_match：remain_cfg.fields 必须是数组（例如 [\"attr_a\"] 或 [\"*\"]）")
 		}
 		// 字段数组里的需要是个字符串数组
 		for _, cfgField := range cfgFields.([]any) {
 			field, ok := cfgField.(string)
 			if !ok {
-				return nil, fmt.Errorf("condition [multi_match] 'fields' value should be a string array, contain non string value[%v]", cfgField)
+				return nil, fmt.Errorf("multi_match：fields 数组元素须全部为字符串，当前存在非字符串元素：%v", cfgField)
 			}
 
 			if field == AllField {
-				fields = append(fields, AllField)
-			} else {
-				// 从属性集中取属性配置
-				fieldInfo, ok1 := fieldsMap[field]
-				if !ok1 {
-					return nil, fmt.Errorf("全文匹配过滤[multi_match]操作符使用的过滤字段[%s]在对象类的属性中不存在", field)
+				expanded, err := expandViewFieldNamesForMultiMatchStar(fieldsMap)
+				if err != nil {
+					return nil, err
 				}
-				// 从属性中获取映射的视图字段
-				if fieldInfo.MappedField.Name == "" {
-					return nil, fmt.Errorf("全文匹配过滤[multi_match]操作符使用的过滤字段[%s]映射的视图字段为空", field)
-				}
-				fields = append(fields, fieldInfo.MappedField.Name)
+				fields = append(fields, expanded...)
+				continue
 			}
+
+			fieldInfo, ok1 := fieldsMap[field]
+			if !ok1 || fieldInfo == nil {
+				return nil, fmt.Errorf(errFmtUnknownObjectTypeProperty, field)
+			}
+			if fieldInfo.MappedField.Name == "" {
+				return nil, fmt.Errorf(errFmtMissingViewMappedField, field)
+			}
+
+			if fieldInfo.Type == dtype.DATATYPE_TEXT {
+				fields = append(fields, fieldInfo.MappedField.Name)
+				continue
+			}
+			if fieldInfo.Type == dtype.DATATYPE_STRING &&
+				fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
+				fields = append(fields, fieldInfo.MappedField.Name+"."+dtype.TEXT_SUFFIX)
+				continue
+			}
+			return nil, fmt.Errorf("multi_match：属性「%s」须为 text 类型，或已启用全文索引的 string 类型后才能用于数据视图全文检索", field)
 		}
 	}
 
@@ -181,10 +184,10 @@ func rewriteMultiMatchCond(cfg *CondCfg, fieldsMap map[string]*DataProperty) (*C
 	if exist && matchType != "" {
 		mtype, ok := matchType.(string)
 		if !ok {
-			return nil, fmt.Errorf("condition [multi_match] 'match_type' value should be a string, actual is[%v]", matchType)
+			return nil, fmt.Errorf("multi_match：match_type 须为字符串，当前类型无效：%v", matchType)
 		}
 		if !MatchTypeMap[mtype] {
-			return nil, fmt.Errorf("condition [multi_match] 'match_type' value should be one of [%v], actual is[%v]", MatchTypeMap, mtype)
+			return nil, fmt.Errorf("multi_match：match_type「%s」无效，可选值为：best_fields、most_fields、cross_fields、phrase、phrase_prefix、bool_prefix", mtype)
 		}
 	}
 
@@ -196,4 +199,51 @@ func rewriteMultiMatchCond(cfg *CondCfg, fieldsMap map[string]*DataProperty) (*C
 		Operation:   cfg.Operation,
 		ValueOptCfg: cfg.ValueOptCfg,
 	}, nil
+}
+
+// expandIndexFieldNamesForMultiMatchStar resolves ["*"] into OpenSearch field names for text and
+// fulltext-enabled string properties (uses .text subfield for the latter).
+func expandIndexFieldNamesForMultiMatchStar(fieldsMap map[string]*DataProperty) ([]string, error) {
+	var out []string
+	for _, fieldInfo := range fieldsMap {
+		if fieldInfo == nil {
+			continue
+		}
+		if fieldInfo.Type == dtype.DATATYPE_TEXT {
+			out = append(out, getFilterFieldName(fieldInfo.Name, fieldsMap, true))
+			continue
+		}
+		if fieldInfo.Type == dtype.DATATYPE_STRING &&
+			fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
+			base := getFilterFieldName(fieldInfo.Name, fieldsMap, true)
+			out = append(out, base+"."+dtype.TEXT_SUFFIX)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("multi_match：当 fields 包含「*」时，对象类中至少需要存在一个 text 类型属性，或已启用全文索引的 string 类型属性，请检查模型与索引配置")
+	}
+	return out, nil
+}
+
+// expandViewFieldNamesForMultiMatchStar resolves ["*"] into view column names (MappedField.Name)
+// for the same property kinds as the index path, skipping properties without mapped_field.
+func expandViewFieldNamesForMultiMatchStar(fieldsMap map[string]*DataProperty) ([]string, error) {
+	var out []string
+	for _, fieldInfo := range fieldsMap {
+		if fieldInfo == nil || fieldInfo.MappedField.Name == "" {
+			continue
+		}
+		if fieldInfo.Type == dtype.DATATYPE_TEXT {
+			out = append(out, fieldInfo.MappedField.Name)
+			continue
+		}
+		if fieldInfo.Type == dtype.DATATYPE_STRING &&
+			fieldInfo.IndexConfig != nil && fieldInfo.IndexConfig.FulltextConfig.Enabled {
+			out = append(out, fieldInfo.MappedField.Name+"."+dtype.TEXT_SUFFIX)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("multi_match：当 fields 包含「*」时，至少需要存在一个可全文检索且已配置视图映射列(mapped_field)的数据属性")
+	}
+	return out, nil
 }

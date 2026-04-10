@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	otherreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/other/otherreq"
-	otherresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/other/otherresp"
+	otherreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/other/otherreq"
+	otherresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/other/otherresp"
 	gomock "go.uber.org/mock/gomock"
 )
 

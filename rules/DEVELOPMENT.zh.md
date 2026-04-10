@@ -16,7 +16,7 @@ related:
 
 # KWeaver 研发规范（DEVELOPMENT）
 
-中文 | English（TODO）
+中文 | [English](DEVELOPMENT.md)
 
 本文件定义 KWeaver 服务的研发规范，覆盖 API 设计、HTTP 语义、请求与响应约定、认证、可观测性等。与 [ARCHITECTURE](ARCHITECTURE.zh.md)（系统怎么拆）、[TESTING](TESTING.zh.md)（怎么测）互补。
 

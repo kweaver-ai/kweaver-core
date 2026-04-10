@@ -43,7 +43,22 @@ func Test_ValidateRelationType(t *testing.T) {
 					BKNRawContent: "bkn1",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with strictMode false despite empty endpoints and mapping\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt-relaxed",
+					RTName:             "relation_relaxed",
+					SourceObjectTypeID: "",
+					TargetObjectTypeID: "",
+					Type:               "",
+					MappingRules:       nil,
+				},
+			}
+			err := ValidateRelationType(ctx, rt, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -54,7 +69,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					RTName: "relation1",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -65,7 +80,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					RTName: "",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_NullParameter_Name)
@@ -79,7 +94,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					Type:   "invalid_type",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -97,7 +112,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -117,7 +132,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -135,7 +150,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -153,7 +168,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -166,7 +181,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					MappingRules: "invalid_format",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -198,7 +213,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldBeNil)
 		})
 
@@ -213,7 +228,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -231,7 +246,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -249,7 +264,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -267,7 +282,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -286,7 +301,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -310,7 +325,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -334,7 +349,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -359,7 +374,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -389,7 +404,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -419,7 +434,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -432,7 +447,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					MappingRules: "invalid_format",
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -450,7 +465,7 @@ func Test_ValidateRelationType(t *testing.T) {
 					},
 				},
 			}
-			err := ValidateRelationType(ctx, rt)
+			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -484,7 +499,7 @@ func Test_ValidateRelationTypes(t *testing.T) {
 				makeRT("rt1", "same_name"),
 				makeRT("rt2", "same_name"),
 			}
-			err := ValidateRelationTypes(ctx, knID, relationTypes)
+			err := ValidateRelationTypes(ctx, knID, relationTypes, true)
 			So(err, ShouldBeNil)
 			So(relationTypes[0].KNID, ShouldEqual, knID)
 			So(relationTypes[1].KNID, ShouldEqual, knID)
@@ -495,7 +510,7 @@ func Test_ValidateRelationTypes(t *testing.T) {
 				makeRT("rt1", "name1"),
 				makeRT("rt1", "name2"),
 			}
-			err := ValidateRelationTypes(ctx, knID, relationTypes)
+			err := ValidateRelationTypes(ctx, knID, relationTypes, true)
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_RelationType_Duplicated_IDInFile)
@@ -507,7 +522,7 @@ func Test_ValidateRelationTypes(t *testing.T) {
 				makeRT("rt2", "name2"),
 				makeRT("rt3", "name1"),
 			}
-			err := ValidateRelationTypes(ctx, knID, relationTypes)
+			err := ValidateRelationTypes(ctx, knID, relationTypes, true)
 			So(err, ShouldBeNil)
 		})
 	})

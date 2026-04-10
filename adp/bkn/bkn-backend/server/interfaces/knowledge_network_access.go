@@ -26,5 +26,5 @@ type KNAccess interface {
 	GetAllKNs(ctx context.Context) (map[string]*KN, error)
 	GetNeighborPathsBatch(ctx context.Context, otIDs []string, query RelationTypePathsBaseOnSource) (map[string][]RelationTypePath, error)
 
-	ListKnSrcs(ctx context.Context, query KNsQueryParams) ([]Resource, error)
+	ListKnSrcs(ctx context.Context, query KNsQueryParams) ([]PermissionResource, error)
 }

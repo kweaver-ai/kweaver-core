@@ -21,7 +21,6 @@ import (
 type MockJobExecutor struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobExecutorMockRecorder
-	isgomock struct{}
 }
 
 // MockJobExecutorMockRecorder is the mock recorder for MockJobExecutor.
@@ -50,7 +49,7 @@ func (m *MockJobExecutor) AddJob(ctx context.Context, jobInfo *interfaces.JobInf
 }
 
 // AddJob indicates an expected call of AddJob.
-func (mr *MockJobExecutorMockRecorder) AddJob(ctx, jobInfo any) *gomock.Call {
+func (mr *MockJobExecutorMockRecorder) AddJob(ctx, jobInfo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddJob", reflect.TypeOf((*MockJobExecutor)(nil).AddJob), ctx, jobInfo)
 }

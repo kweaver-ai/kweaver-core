@@ -3,7 +3,7 @@ package bizdomainhttpreq
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 	"github.com/stretchr/testify/assert"
 )
 

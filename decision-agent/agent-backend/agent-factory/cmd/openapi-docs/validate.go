@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/internal/openapidoc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	pkgerrors "github.com/pkg/errors"
 )
 
@@ -15,7 +15,13 @@ import (
 func runValidate(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
 	inputPath := fs.String("input", defaultOutJSONPath, "OpenAPI document to validate")
+	yamlPath := fs.String("yaml", defaultOutYAMLPath, "Public OpenAPI YAML document to validate")
 	htmlPath := fs.String("html", defaultOutHTMLPath, "Scalar HTML document to validate")
+	publicFaviconPath := fs.String("public-favicon", defaultPublicFaviconPath, "Public favicon document to validate")
+	runtimeJSONPath := fs.String("runtime-json", defaultRuntimeJSONPath, "Runtime OpenAPI JSON document to compare")
+	runtimeYAMLPath := fs.String("runtime-yaml", defaultRuntimeYAMLPath, "Runtime OpenAPI YAML document to compare")
+	runtimeHTMLPath := fs.String("runtime-html", defaultRuntimeHTMLPath, "Runtime Scalar HTML document to compare")
+	runtimeFaviconPath := fs.String("runtime-favicon", defaultRuntimeFaviconPath, "Runtime favicon document to compare")
 	expectPaths := fs.Int("expect-paths", defaultExpectPaths, "Expected path count (0 to skip)")
 	expectOps := fs.Int("expect-ops", defaultExpectOps, "Expected operation count (0 to skip)")
 
@@ -54,6 +60,19 @@ func runValidate(args []string) error {
 		if !strings.Contains(htmlContent, "@scalar/api-reference") || !strings.Contains(htmlContent, "openapi-document") {
 			return pkgerrors.New("scalar html is missing expected embedded reference markup")
 		}
+	}
+
+	if err := validateMirroredArtifacts(mirroredArtifactPaths{
+		PublicJSONPath:     *inputPath,
+		PublicYAMLPath:     *yamlPath,
+		PublicHTMLPath:     *htmlPath,
+		PublicFaviconPath:  *publicFaviconPath,
+		RuntimeJSONPath:    *runtimeJSONPath,
+		RuntimeYAMLPath:    *runtimeYAMLPath,
+		RuntimeHTMLPath:    *runtimeHTMLPath,
+		RuntimeFaviconPath: *runtimeFaviconPath,
+	}); err != nil {
+		return err
 	}
 
 	fmt.Printf("validated %s: %d paths / %d operations\n", *inputPath, paths, ops)

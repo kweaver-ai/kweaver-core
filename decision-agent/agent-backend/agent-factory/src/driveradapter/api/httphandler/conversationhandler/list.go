@@ -3,14 +3,13 @@ package conversationhandler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/apierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/apierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"github.com/gin-gonic/gin"
@@ -35,37 +34,16 @@ func (h *conversationHTTPHandler) List(c *gin.Context) {
 	// 接收语言标识转换为 context.Context
 	ctx := rest.GetLanguageCtx(c)
 
-	req := conversationreq.ListReq{}
-	// TODO:
+	var req conversationreq.ListReq
+
+	if err := c.ShouldBind(&req); err != nil {
+		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
+		rest.ReplyError(c, httpErr)
+
+		return
+	}
+
 	req.AgentAPPKey = c.Param("app_key")
-	pageStr := c.DefaultQuery("page", "1")
-	sizeStr := c.DefaultQuery("size", "10")
-
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		h.logger.Errorf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		otellog.LogError(c.Request.Context(), fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
-		oteltrace.EndSpan(c.Request.Context(), err)
-		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
-		rest.ReplyError(c, httpErr)
-
-		return
-	}
-
-	req.Page = page
-
-	size, err := strconv.Atoi(sizeStr)
-	if err != nil {
-		h.logger.Errorf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err)
-		otellog.LogError(c.Request.Context(), fmt.Sprintf("GetPublishAgentList error cause: %v, err trace: %+v\n", errors.Cause(err), err), err)
-		oteltrace.EndSpan(c.Request.Context(), err)
-		httpErr := capierr.New400Err(c, chelper.ErrMsg(err, &req))
-		rest.ReplyError(c, httpErr)
-
-		return
-	}
-
-	req.Size = size
 	user := chelper.GetVisitorFromCtx(ctx)
 	req.UserId = user.ID
 

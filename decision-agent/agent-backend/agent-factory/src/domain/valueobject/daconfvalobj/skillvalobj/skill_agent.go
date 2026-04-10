@@ -3,7 +3,7 @@ package skillvalobj
 import (
 	"encoding/json"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum/skillenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum/skillenum"
 	"github.com/pkg/errors"
 )
 

@@ -28,6 +28,7 @@ import (
 	"bkn-backend/common"
 	"bkn-backend/drivenadapters/action_schedule"
 	"bkn-backend/drivenadapters/action_type"
+	"bkn-backend/drivenadapters/agent_operator"
 	"bkn-backend/drivenadapters/auth"
 	"bkn-backend/drivenadapters/business_system"
 	"bkn-backend/drivenadapters/concept_group"
@@ -148,6 +149,7 @@ func main() {
 		logics.SetUserMgmtAccess(user_mgmt.NewUserMgmtAccess(appSetting))
 	}
 	logics.SetActionScheduleAccess(action_schedule.NewActionScheduleAccess(appSetting))
+	logics.SetAgentOperatorAccess(agent_operator.NewAgentOperatorAccess(appSetting))
 	logics.SetActionTypeAccess(action_type.NewActionTypeAccess(appSetting))
 	if common.GetBusinessDomainEnabled() {
 		logics.SetBusinessSystemAccess(business_system.NewBusinessSystemAccess(appSetting))

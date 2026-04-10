@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iportdriver/iportdrivermock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iportdriver/iportdrivermock"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 )
 
@@ -120,6 +120,54 @@ func TestConversationHandler_List(t *testing.T) {
 
 		h.List(c)
 		assert.NotEqual(t, http.StatusOK, recorder.Code)
+	})
+
+	t.Run("page=0 should return 400", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := iportdrivermock.NewMockIConversationSvc(ctrl)
+		h := &conversationHTTPHandler{conversationSvc: mockSvc, logger: convTestLogger{}}
+
+		c, recorder := newConversationCtx(http.MethodGet, "/", "")
+		c.Params = gin.Params{{Key: "app_key", Value: "app-1"}}
+		c.Request.URL.RawQuery = "page=0&size=10"
+
+		h.List(c)
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	})
+
+	t.Run("negative page should return 400", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := iportdrivermock.NewMockIConversationSvc(ctrl)
+		h := &conversationHTTPHandler{conversationSvc: mockSvc, logger: convTestLogger{}}
+
+		c, recorder := newConversationCtx(http.MethodGet, "/", "")
+		c.Params = gin.Params{{Key: "app_key", Value: "app-1"}}
+		c.Request.URL.RawQuery = "page=-1&size=10"
+
+		h.List(c)
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	})
+
+	t.Run("size exceeds max should return 400", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockSvc := iportdrivermock.NewMockIConversationSvc(ctrl)
+		h := &conversationHTTPHandler{conversationSvc: mockSvc, logger: convTestLogger{}}
+
+		c, recorder := newConversationCtx(http.MethodGet, "/", "")
+		c.Params = gin.Params{{Key: "app_key", Value: "app-1"}}
+		c.Request.URL.RawQuery = "page=1&size=1001"
+
+		h.List(c)
+		assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	})
 
 	t.Run("service error", func(t *testing.T) {

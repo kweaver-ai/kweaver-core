@@ -19,7 +19,7 @@ import (
 	"bkn-backend/interfaces"
 )
 
-func ValidateActionTypes(ctx context.Context, knID string, actionTypes []*interfaces.ActionType) error {
+func ValidateActionTypes(ctx context.Context, knID string, actionTypes []*interfaces.ActionType, strictMode bool) error {
 	tmpNameMap := make(map[string]any)
 	idMap := make(map[string]any)
 	for i := 0; i < len(actionTypes); i++ {
@@ -41,7 +41,7 @@ func ValidateActionTypes(ctx context.Context, knID string, actionTypes []*interf
 		}
 
 		// 1. 校验 行动类必要创建参数的合法性, 非空、长度、是枚举值
-		err := ValidateActionType(ctx, actionTypes[i])
+		err := ValidateActionType(ctx, actionTypes[i], strictMode)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func ValidateActionTypes(ctx context.Context, knID string, actionTypes []*interf
 }
 
 // 对象类必要创建参数的非空校验。
-func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType) error {
+func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType, strictMode bool) error {
 	// 校验id的合法性
 	err := validateID(ctx, actionType.ATID)
 	if err != nil {
@@ -97,7 +97,7 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType) 
 	}
 
 	// 根据是否绑定对象类，校验行动条件和参数
-	if actionType.ObjectTypeID == "" {
+	if actionType.ObjectTypeID == "" && strictMode {
 		// 未绑定对象类时，行动条件必须为空
 		if actionType.Condition != nil {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
@@ -121,20 +121,23 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType) 
 				WithErrorDetails(fmt.Sprintf("The type of action source is expected one of [tool, map], actual is [%s]",
 					actionType.ActionSource.Type))
 		}
-		switch actionType.ActionSource.Type {
-		case interfaces.ACTION_SOURCE_TYPE_TOOL:
-			// tool 时，mcp_id或者tool_name不为空，则报错
-			if actionType.ActionSource.McpID != "" || actionType.ActionSource.ToolName != "" {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("tool type should not have mcp data, current mcp_id is[%s], tool_name is [%s]",
-						actionType.ActionSource.McpID, actionType.ActionSource.ToolName))
-			}
-		case interfaces.ACTION_SOURCE_TYPE_MCP:
-			// map 时，box_id或者tool_id不为空，则报错
-			if actionType.ActionSource.BoxID != "" || actionType.ActionSource.ToolID != "" {
-				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
-					WithErrorDetails(fmt.Sprintf("mcp type should not have tool data, current box_id is[%s], tool_id is [%s]",
-						actionType.ActionSource.BoxID, actionType.ActionSource.ToolID))
+		// strict_mode off: allow empty or draft combinations for McpID, ToolName, BoxID, ToolID (no cross-kind checks).
+		if strictMode {
+			switch actionType.ActionSource.Type {
+			case interfaces.ACTION_SOURCE_TYPE_TOOL:
+				// tool 时，mcp_id或者tool_name不为空，则报错
+				if actionType.ActionSource.McpID != "" || actionType.ActionSource.ToolName != "" {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("tool type should not have mcp data, current mcp_id is[%s], tool_name is [%s]",
+							actionType.ActionSource.McpID, actionType.ActionSource.ToolName))
+				}
+			case interfaces.ACTION_SOURCE_TYPE_MCP:
+				// map 时，box_id或者tool_id不为空，则报错
+				if actionType.ActionSource.BoxID != "" || actionType.ActionSource.ToolID != "" {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("mcp type should not have tool data, current box_id is[%s], tool_id is [%s]",
+							actionType.ActionSource.BoxID, actionType.ActionSource.ToolID))
+				}
 			}
 		}
 	}
@@ -149,8 +152,8 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType) 
 		}
 	}
 
-	// 行动条件非空时，校验行动条件
-	if actionType.Condition != nil {
+	// 行动条件非空时，校验行动条件（strict_mode 关闭时不校验）
+	if actionType.Condition != nil && strictMode {
 		err = validateActionCondition(ctx, actionType.Condition, actionType.ObjectTypeID)
 		if err != nil {
 			return err

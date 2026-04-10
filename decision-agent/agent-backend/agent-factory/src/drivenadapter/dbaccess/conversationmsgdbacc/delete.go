@@ -4,15 +4,15 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 // Delete implements idbaccess.IConversationMsgRepo.
 func (repo *ConversationMsgRepo) Delete(ctx context.Context, id string) (err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("msgID", id))
 
@@ -50,7 +50,7 @@ func (repo *ConversationMsgRepo) DeleteByConversationID(ctx context.Context, tx 
 
 // DeleteByAPPKey implements idbaccess.IConversationMsgRepo.
 func (repo *ConversationMsgRepo) DeleteByAPPKey(ctx context.Context, tx *sql.Tx, appKey string) (err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("appKey", appKey))
 

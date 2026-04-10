@@ -99,6 +99,7 @@ print(Config.services.agent_factory.port) # 服务配置
 
 print(Config.memory.limit)         # 记忆配置
 print(Config.features.use_explore_block_v2)  # 特性开关
+print(Config.features.enable_traceai_evidence)  # API tool 证据 Header 开关
 ```
 
 ### 2. 向后兼容方式（原方式）
@@ -258,6 +259,7 @@ export AGENT_EXECUTOR_CONFIG_PATH=/path/to/your/config/dir
 
 ### 12. features相关
 - `use_explore_block_v2`: 是否使用explore_block v2版本
+- `enable_traceai_evidence`: 是否在 API tool proxy 请求中发送 `X-TraceAi-Enable-Evidence`
 
 ### 13. o11y相关
 - `log_enabled`: 是否启用o11y日志

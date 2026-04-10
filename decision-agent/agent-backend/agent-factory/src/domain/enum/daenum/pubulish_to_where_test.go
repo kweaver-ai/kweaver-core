@@ -40,6 +40,13 @@ func TestPublishToWhere_EnumCheck_Invalid(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid publish to where")
 }
 
+func TestPublishToWhere_WriteEnumCheck(t *testing.T) {
+	t.Parallel()
+
+	assert.NoError(t, PublishToWhereSquare.WriteEnumCheck())
+	assert.Error(t, PublishToWhereCustomSpace.WriteEnumCheck())
+}
+
 func TestPublishToWhere_EnumCheck_Empty(t *testing.T) {
 	t.Parallel()
 

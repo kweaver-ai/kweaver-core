@@ -57,7 +57,8 @@ lint = [
     "ruff>=0.15.0",
 ]
 [tool.uv]
-index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+#index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+index-url = "https://mirrors.aliyun.com/pypi/simple"
 
 
 #[[tool.uv.index]]

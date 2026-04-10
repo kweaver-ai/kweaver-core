@@ -90,7 +90,7 @@ COPY agent-backend/agent-memory/src /build/src
 # 安装依赖并构建 agent-memory
 RUN set -ex; \
     cd /build; \
-    python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt; \
+    python3 -m pip install -i https://mirrors.aliyun.com/pypi/simple -r requirements.txt; \
     pyinstaller agent-memory.spec
 
 # ==================== 生产阶段：supervisor 管理三个服务 ====================
@@ -119,7 +119,6 @@ ENV MEM0_DIR=/app/agent-memory
 # 从构建阶段复制已构建的二进制文件
 COPY --from=builder-factory --chown=$UID:$GID /build/agent-factory /app/agent-factory/agent-factory
 COPY --from=builder-factory --chown=$UID:$GID /build/locale /app/agent-factory/locale
-COPY --from=builder-factory --chown=$UID:$GID /build/dict /app/agent-factory/dict
 COPY --from=builder-executor --chown=$UID:$GID /build/dist/agent-executor /app/agent-executor
 COPY --from=builder-memory --chown=$UID:$GID /build/dist/agent-memory /app/agent-memory
 

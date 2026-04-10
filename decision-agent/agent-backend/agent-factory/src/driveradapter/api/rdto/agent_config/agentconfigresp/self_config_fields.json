@@ -371,6 +371,18 @@
               "description": "mcp server id"
             }
           ]
+        },
+        {
+          "name": "skills",
+          "type": "array",
+          "description": "skill",
+          "children": [
+            {
+              "name": "skill_id",
+              "type": "string",
+              "description": "skill id"
+            }
+          ]
         }
       ]
     },
@@ -552,4 +564,3 @@
     }
   ]
 }
-

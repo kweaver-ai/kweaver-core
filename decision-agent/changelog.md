@@ -1,4 +1,22 @@
 # Changelog
+## 0.6.0
+
+### Features & Improvements
+
+- Add skill type support in `agent-factory`
+  - Add `SkillSkill` value object with validation
+  - Support skill configuration in agent create/detail/update handlers and run service
+- Add TraceAI evidence header support in `agent-executor`
+  - Introduce `enable_traceai_evidence` feature flag in `FeaturesConfig`
+  - Inject `X-TraceAi-Enable-Evidence` header into API tool proxy requests
+- Add v0.6.0 database migrations: skill-related tables and `agent-memory` history table (dm8 and mariadb)
+
+### Refactoring & Cleanup
+
+- Refactor publish request validation in `agent-factory`: use constructor semantics, validate and trim request fields, return 400 with explicit error messages instead of 500
+- Reorganize database migration file structure, removing redundant `pre` directory paths
+- Remove unused `ENABLE_EVIDENCE_EXTRACTION` env var and dict copy from deployment; update `agent-executor` dependencies and optimize Dockerfile
+
 ## 0.5.3
 
 ### Refactoring & Cleanup

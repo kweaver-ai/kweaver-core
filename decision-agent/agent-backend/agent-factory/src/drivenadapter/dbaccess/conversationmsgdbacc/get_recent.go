@@ -3,17 +3,17 @@ package conversationmsgdbacc
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/pkg/errors"
 )
 
 func (repo *ConversationMsgRepo) GetRecentMessages(ctx context.Context, conversationID string, limit int) (rt []*dapo.ConversationMsgPO, err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("conversationID", conversationID))
 	span.SetAttributes(attribute.Int("limit", limit))

@@ -230,6 +230,7 @@ class TestFeaturesConfigMassive:
         config = FeaturesConfig()
         assert config.use_explore_block_v2 is True
         assert config.disable_dolphin_sdk_llm_cache is False
+        assert config.enable_traceai_evidence is False
 
     def test_use_explore_block_v2_false(self):
         config = FeaturesConfig(use_explore_block_v2=False)
@@ -255,6 +256,10 @@ class TestFeaturesConfigMassive:
         config = FeaturesConfig(is_skill_agent_need_progress=True)
         assert config.is_skill_agent_need_progress is True
 
+    def test_enable_traceai_evidence_true(self):
+        config = FeaturesConfig(enable_traceai_evidence=True)
+        assert config.enable_traceai_evidence is True
+
     def test_from_dict_empty(self):
         config = FeaturesConfig.from_dict({})
         assert config.use_explore_block_v2 is True
@@ -262,6 +267,10 @@ class TestFeaturesConfigMassive:
     def test_from_dict_use_explore(self):
         config = FeaturesConfig.from_dict({"use_explore_block_v2": False})
         assert config.use_explore_block_v2 is False
+
+    def test_from_dict_enable_traceai_evidence(self):
+        config = FeaturesConfig.from_dict({"enable_traceai_evidence": True})
+        assert config.enable_traceai_evidence is True
 
     def test_is_dataclass(self):
         from dataclasses import is_dataclass

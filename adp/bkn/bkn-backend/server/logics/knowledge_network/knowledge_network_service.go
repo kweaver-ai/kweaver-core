@@ -28,6 +28,7 @@ import (
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
 	"bkn-backend/logics/action_type"
+	"bkn-backend/logics/batchindex"
 	"bkn-backend/logics/business_system"
 	"bkn-backend/logics/concept_group"
 	"bkn-backend/logics/job"
@@ -132,12 +133,12 @@ func (kns *knowledgeNetworkService) CheckKNExistByName(ctx context.Context, knNa
 	return KNID, exist, nil
 }
 
-func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces.KN, mode string, validateDependency bool) (string, error) {
+func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces.KN, mode string, strictMode bool) (string, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create knowledge network")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
-	err := kns.ps.CheckPermission(ctx, interfaces.Resource{
+	err := kns.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   interfaces.RESOURCE_ID_ALL,
 	}, []string{interfaces.OPERATION_TYPE_CREATE})
@@ -236,7 +237,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		// 导入概念分组
 		if len(kn.ConceptGroups) > 0 {
 			for _, cg := range kn.ConceptGroups {
-				_, err = kns.cgs.CreateConceptGroup(ctx, tx, cg, mode, validateDependency)
+				_, err = kns.cgs.CreateConceptGroup(ctx, tx, cg, mode, strictMode)
 				if err != nil {
 					logger.Errorf("CreateObjectTypes error: %s", err.Error())
 					span.SetStatus(codes.Error, "创建业务知识网络概念分组失败")
@@ -248,7 +249,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.ObjectTypes) > 0 {
-			_, err = kns.ots.CreateObjectTypes(ctx, tx, kn.ObjectTypes, mode, true, validateDependency)
+			_, err = kns.ots.CreateObjectTypes(ctx, tx, kn.ObjectTypes, mode, true, strictMode)
 			if err != nil {
 				logger.Errorf("CreateObjectTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络对象类失败")
@@ -259,7 +260,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.RelationTypes) > 0 {
-			_, err = kns.rts.CreateRelationTypes(ctx, tx, kn.RelationTypes, mode, validateDependency)
+			_, err = kns.rts.CreateRelationTypes(ctx, tx, kn.RelationTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateRelationTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络关系类失败")
@@ -270,7 +271,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.ActionTypes) > 0 {
-			_, err = kns.ats.CreateActionTypes(ctx, tx, kn.ActionTypes, mode)
+			_, err = kns.ats.CreateActionTypes(ctx, tx, kn.ActionTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateActionTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络动作类失败")
@@ -295,7 +296,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 	// 处理更新情况
 	if isUpdate {
 		// todo: 提交的已存在，需要更新，则版本号+1
-		err = kns.UpdateKN(ctx, tx, kn)
+		err = kns.UpdateKN(ctx, tx, kn, strictMode)
 		if err != nil {
 			logger.Errorf("UpdateKN error: %s", err.Error())
 			span.SetStatus(codes.Error, "修改业务知识网络失败")
@@ -306,7 +307,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 
 		if len(kn.ConceptGroups) > 0 {
 			for _, cg := range kn.ConceptGroups {
-				_, err = kns.cgs.CreateConceptGroup(ctx, tx, cg, mode, validateDependency)
+				_, err = kns.cgs.CreateConceptGroup(ctx, tx, cg, mode, strictMode)
 				if err != nil {
 					logger.Errorf("CreateObjectTypes error: %s", err.Error())
 					span.SetStatus(codes.Error, "创建业务知识网络概念分组失败")
@@ -318,7 +319,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.ObjectTypes) > 0 {
-			_, err = kns.ots.CreateObjectTypes(ctx, tx, kn.ObjectTypes, mode, true, validateDependency)
+			_, err = kns.ots.CreateObjectTypes(ctx, tx, kn.ObjectTypes, mode, true, strictMode)
 			if err != nil {
 				logger.Errorf("CreateObjectTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络对象类失败")
@@ -329,7 +330,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.RelationTypes) > 0 {
-			_, err = kns.rts.CreateRelationTypes(ctx, tx, kn.RelationTypes, mode, validateDependency)
+			_, err = kns.rts.CreateRelationTypes(ctx, tx, kn.RelationTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateRelationTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络关系类失败")
@@ -340,7 +341,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 		}
 
 		if len(kn.ActionTypes) > 0 {
-			_, err = kns.ats.CreateActionTypes(ctx, tx, kn.ActionTypes, mode)
+			_, err = kns.ats.CreateActionTypes(ctx, tx, kn.ActionTypes, mode, strictMode)
 			if err != nil {
 				logger.Errorf("CreateActionTypes error: %s", err.Error())
 				span.SetStatus(codes.Error, "创建业务知识网络动作类失败")
@@ -377,7 +378,7 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 	// 最后才绑定业务域，创建才绑业务域
 	if isCreate {
 		// 注册资源策略
-		err = kns.ps.CreateResources(ctx, []interfaces.Resource{{
+		err = kns.ps.CreateResources(ctx, []interfaces.PermissionResource{{
 			ID:   kn.KNID,
 			Type: interfaces.RESOURCE_TYPE_KN,
 			Name: kn.KNName,
@@ -405,8 +406,63 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 	return kn.KNID, nil
 }
 
-func (kns *knowledgeNetworkService) ListKNs(ctx context.Context,
-	parameter interfaces.KNsQueryParams) ([]*interfaces.KN, int, error) {
+// ValidateKN checks whole-KN dependency existence only; does not write to the database.
+func (kns *knowledgeNetworkService) ValidateKN(ctx context.Context, kn *interfaces.KN, strictMode bool, mode string) error {
+
+	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateKN")
+	defer span.End()
+
+	if kn == nil {
+		span.SetStatus(codes.Ok, "")
+		return nil
+	}
+
+	knID := kn.KNID
+	branch := kn.Branch
+	if branch == "" {
+		branch = interfaces.MAIN_BRANCH
+	}
+	kn.Branch = branch
+
+	// 处理导入模式
+	_, _, err := kns.handleKNImportMode(ctx, mode, kn)
+	if err != nil {
+		return err
+	}
+
+	batch, err := batchindex.CollectKNFromPayload(kn)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest,
+			berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
+			WithErrorDetails(err.Error())
+	}
+
+	if len(kn.ConceptGroups) > 0 {
+		if err := kns.cgs.ValidateConceptGroups(ctx, knID, branch, kn.ConceptGroups, strictMode, batch, mode); err != nil {
+			return err
+		}
+	}
+	if len(kn.ObjectTypes) > 0 {
+		if err := kns.ots.ValidateObjectTypes(ctx, knID, branch, kn.ObjectTypes, strictMode, batch, mode); err != nil {
+			return err
+		}
+	}
+	if len(kn.RelationTypes) > 0 {
+		if err := kns.rts.ValidateRelationTypes(ctx, knID, branch, kn.RelationTypes, strictMode, batch, mode); err != nil {
+			return err
+		}
+	}
+	if len(kn.ActionTypes) > 0 {
+		if err := kns.ats.ValidateActionTypes(ctx, knID, branch, kn.ActionTypes, strictMode, batch, mode); err != nil {
+			return err
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+func (kns *knowledgeNetworkService) ListKNs(ctx context.Context, parameter interfaces.KNsQueryParams) ([]*interfaces.KN, int, error) {
 
 	ctx, span := ar_trace.Tracer.Start(ctx, "查询业务知识网络列表")
 	defer span.End()
@@ -682,17 +738,23 @@ func (kns *knowledgeNetworkService) GetStatByKN(ctx context.Context, kn *interfa
 }
 
 // 更新业务知识网络
-func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN) error {
+func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN, strictMode bool) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update knowledge network")
 	defer span.End()
 
 	// 判断userid是否有创建业务知识网络的权限（策略决策）
-	err := kns.ps.CheckPermission(ctx, interfaces.Resource{
+	err := kns.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   kn.KNID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
 	if err != nil {
 		return err
+	}
+
+	if strictMode {
+		if err := kns.ValidateKN(ctx, kn, strictMode, interfaces.ImportMode_Overwrite); err != nil {
+			return err
+		}
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -766,7 +828,7 @@ func (kns *knowledgeNetworkService) UpdateKN(ctx context.Context, tx *sql.Tx, kn
 
 	// 请求更新资源名称的接口，更新资源的名称
 	if kn.IfNameModify {
-		err = kns.ps.UpdateResource(ctx, interfaces.Resource{
+		err = kns.ps.UpdateResource(ctx, interfaces.PermissionResource{
 			ID:   kn.KNID,
 			Type: interfaces.RESOURCE_TYPE_KN,
 			Name: kn.KNName,
@@ -785,7 +847,7 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 	defer span.End()
 
 	// 判断userid是否有删除业务知识网络的权限
-	err := kns.ps.CheckPermission(ctx, interfaces.Resource{
+	err := kns.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_KN,
 		ID:   kn.KNID,
 	}, []string{interfaces.OPERATION_TYPE_DELETE})
@@ -1331,14 +1393,14 @@ func buildPathKey(path interfaces.RelationTypePath, neighborPath interfaces.Rela
 
 // 获取业务知识网络资源列表
 func (kns *knowledgeNetworkService) ListKnSrcs(ctx context.Context,
-	parameter interfaces.KNsQueryParams) ([]interfaces.Resource, int, error) {
+	parameter interfaces.KNsQueryParams) ([]interfaces.PermissionResource, int, error) {
 
 	listCtx, listSpan := ar_trace.Tracer.Start(ctx, "查询业务知识网络实例列表")
 	defer listSpan.End()
 
 	//获取业务知识网络列表（不分页，获取所有的业务知识网络)
 	knList, err := kns.kna.ListKnSrcs(listCtx, parameter)
-	emptyResources := []interfaces.Resource{}
+	emptyResources := []interfaces.PermissionResource{}
 	if err != nil {
 		logger.Errorf("ListSimpleKns error: %s", err.Error())
 		listSpan.SetStatus(codes.Error, "List simple knowledge networks error")
@@ -1364,7 +1426,7 @@ func (kns *knowledgeNetworkService) ListKnSrcs(ctx context.Context,
 	}
 
 	// 遍历对象
-	results := make([]interfaces.Resource, 0)
+	results := make([]interfaces.PermissionResource, 0)
 	for _, knSrc := range knList {
 		if _, exist := matchResoucesMap[knSrc.ID]; exist {
 			results = append(results, knSrc)

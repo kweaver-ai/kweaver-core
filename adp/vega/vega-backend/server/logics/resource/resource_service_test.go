@@ -113,7 +113,8 @@ func TestGetByID_Success(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
 	mockRA.EXPECT().GetByID(gomock.Any(), "r1").
 		Return(&interfaces.Resource{ID: "r1", Name: "test"}, nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE, []string{"r1"}, gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE,
+		[]string{"r1"}, gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"r1": {ResourceID: "r1", Operations: []string{"view_detail"}},
 		}, nil)
@@ -156,7 +157,8 @@ func TestGetByIDs_Success(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
 	mockRA.EXPECT().GetByIDs(gomock.Any(), []string{"r1", "r2"}).
 		Return([]*interfaces.Resource{{ID: "r1"}, {ID: "r2"}}, nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE, []string{"r1", "r2"}, gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE,
+		[]string{"r1", "r2"}, gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"r1": {ResourceID: "r1", Operations: []string{"view_detail"}},
 			"r2": {ResourceID: "r2", Operations: []string{"view_detail"}},
@@ -194,7 +196,8 @@ func TestList_Pagination(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
 	resources := []*interfaces.Resource{{ID: "r1"}, {ID: "r2"}, {ID: "r3"}, {ID: "r4"}}
 	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(4), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"r1": {}, "r2": {}, "r3": {}, "r4": {},
 		}, nil)
@@ -221,7 +224,8 @@ func TestList_ReturnAll(t *testing.T) {
 	rs, mockRA, mockPS, _, mockUMS, _ := newTestService(t)
 	resources := []*interfaces.Resource{{ID: "r1"}, {ID: "r2"}}
 	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(2), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"r1": {}, "r2": {},
 		}, nil)
@@ -245,7 +249,8 @@ func TestList_OffsetBeyondTotal(t *testing.T) {
 	rs, mockRA, mockPS, _, _, _ := newTestService(t)
 	resources := []*interfaces.Resource{{ID: "r1"}}
 	mockRA.EXPECT().List(gomock.Any(), gomock.Any()).Return(resources, int64(1), nil)
-	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{"r1": {}}, nil)
 
 	result, total, err := rs.List(context.Background(), interfaces.ResourcesQueryParams{
@@ -270,14 +275,14 @@ func TestCreate_DatasetCategory(t *testing.T) {
 	mockDS.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		Name:     "test-dataset",
 		Category: interfaces.ResourceCategoryDataset,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id == "" {
+	if resource == nil {
 		t.Error("expected non-empty ID")
 	}
 }
@@ -294,7 +299,8 @@ func TestDeleteByIDs_Empty(t *testing.T) {
 
 func TestDeleteByIDs_Success(t *testing.T) {
 	rs, mockRA, mockPS, _, _, _ := newTestService(t)
-	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE, []string{"r1"}, gomock.Any(), true).
+	mockPS.EXPECT().FilterResources(gomock.Any(), interfaces.RESOURCE_TYPE_RESOURCE,
+		[]string{"r1"}, gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"r1": {ResourceID: "r1"},
 		}, nil)
@@ -318,14 +324,14 @@ func TestCreate_Success(t *testing.T) {
 	mockRA.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		Name:     "test-resource",
 		Category: "table",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id == "" {
+	if resource == nil {
 		t.Error("expected non-empty ID")
 	}
 }
@@ -337,7 +343,7 @@ func TestCreate_WithExplicitID(t *testing.T) {
 	mockRA.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	mockPS.EXPECT().CreateResources(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	id, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
+	resource, err := rs.Create(context.Background(), &interfaces.ResourceRequest{
 		ID:       "custom-id",
 		Name:     "test-resource",
 		Category: "table",
@@ -345,8 +351,8 @@ func TestCreate_WithExplicitID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if id != "custom-id" {
-		t.Errorf("expected 'custom-id', got '%s'", id)
+	if resource == nil || resource.ID != "custom-id" {
+		t.Errorf("expected 'custom-id', got '%s'", resource.ID)
 	}
 }
 

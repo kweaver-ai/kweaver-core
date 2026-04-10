@@ -60,7 +60,7 @@ func NewResourceService(appSetting *common.AppSetting) interfaces.ResourceServic
 }
 
 // Create creates a new Resource.
-func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (string, error) {
+func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (*interfaces.Resource, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create resource")
 	defer span.End()
 
@@ -70,7 +70,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		ID:   interfaces.RESOURCE_ID_ALL,
 	}, []string{interfaces.OPERATION_TYPE_CREATE})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Get account info from context
@@ -84,11 +84,11 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	case interfaces.ResourceCategoryLogicView:
 		logicType, err = rs.validateLogicDefinition(ctx, req)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		viewFields, err := rs.parseLogicDefinition(ctx, req.LogicDefinition)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		req.SchemaDefinition = viewFields
 	}
@@ -96,10 +96,10 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	// 检查catalog是否存在
 	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !exists {
-		return "", rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
 	}
 
 	now := time.Now().UnixMilli()
@@ -132,7 +132,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		logger.Errorf("Create resource failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Create resource failed: %v", err))
 		span.SetStatus(codes.Error, "Create resource failed")
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
 	}
 
@@ -154,13 +154,13 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	if err != nil {
 		logger.Errorf("CreateResources error: %s", err.Error())
 		span.SetStatus(codes.Error, "创建资源失败")
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			verrors.VegaBackend_Catalog_InternalError_CreateResourcesFailed).
 			WithErrorDetails(err.Error())
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return resource.ID, nil
+	return resource, nil
 }
 
 // Get retrieves a Resource by ID.
@@ -181,7 +181,7 @@ func (rs *resourceService) GetByID(ctx context.Context, id string) (*interfaces.
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, []string{resource.ID},
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -212,6 +212,11 @@ func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*inter
 	ctx, span := ar_trace.Tracer.Start(ctx, "Get resources by IDs")
 	defer span.End()
 
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Resource{}, nil
+	}
+
 	resources, err := rs.ra.GetByIDs(ctx, ids)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get resources failed")
@@ -221,7 +226,7 @@ func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*inter
 
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return nil, err
@@ -304,9 +309,14 @@ func (rs *resourceService) List(ctx context.Context, params interfaces.Resources
 		ids = append(ids, m.ID)
 	}
 
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Resource{}, 0, nil
+	}
+
 	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true)
+		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return []*interfaces.Resource{}, 0, err
@@ -464,7 +474,7 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 
 	// 判断userid是否有删除权限
 	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_DELETE}, true)
+		[]string{interfaces.OPERATION_TYPE_DELETE}, true, interfaces.COMMON_OPERATIONS)
 	if err != nil {
 		span.SetStatus(codes.Error, "Filter resources error")
 		return err
@@ -601,7 +611,7 @@ func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfac
 		var batchMatchResources map[string]interfaces.PermissionResourceOps
 		// 校验权限管理的操作权限
 		batchMatchResources, err = rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE,
-			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false)
+			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false, interfaces.COMMON_OPERATIONS)
 		if err != nil {
 			return nil, 0, err
 		}

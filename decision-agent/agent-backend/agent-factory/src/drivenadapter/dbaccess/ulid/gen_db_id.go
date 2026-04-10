@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	"github.com/bwmarrin/snowflake"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cconstant"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 )
 
 var node *snowflake.Node

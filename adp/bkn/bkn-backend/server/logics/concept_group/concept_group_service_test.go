@@ -1059,7 +1059,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
-			err := service.UpdateConceptGroup(ctx, nil, conceptGroup)
+			err := service.UpdateConceptGroup(ctx, nil, conceptGroup, false)
 			So(err, ShouldBeNil)
 		})
 
@@ -1073,7 +1073,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 403, berrors.BknBackend_ConceptGroup_InternalError))
 
-			err := service.UpdateConceptGroup(ctx, nil, conceptGroup)
+			err := service.UpdateConceptGroup(ctx, nil, conceptGroup, false)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1090,7 +1090,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
-			err := service.UpdateConceptGroup(ctx, nil, conceptGroup)
+			err := service.UpdateConceptGroup(ctx, nil, conceptGroup, false)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -1108,7 +1108,7 @@ func Test_conceptGroupService_UpdateConceptGroup(t *testing.T) {
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
-			err := service.UpdateConceptGroup(ctx, nil, conceptGroup)
+			err := service.UpdateConceptGroup(ctx, nil, conceptGroup, false)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -1523,8 +1523,9 @@ func Test_conceptGroupService_CreateConceptGroup(t *testing.T) {
 
 			smock.ExpectBegin()
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil)
-			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil)
+			// handleConceptGroupImportMode runs in CreateConceptGroup and again in UpdateConceptGroup → ValidateConceptGroups
+			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil).Times(2)
+			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("cg1", true, nil).Times(2)
 			cga.EXPECT().UpdateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(nil).AnyTimes()
 			smock.ExpectCommit()
@@ -1816,7 +1817,7 @@ func Test_conceptGroupService_CreateConceptGroup(t *testing.T) {
 			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			cga.EXPECT().CreateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"at1"}, nil)
 			vba.EXPECT().WriteDatasetDocuments(gomock.Any(), interfaces.BKN_DATASET_ID, gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
@@ -1857,7 +1858,7 @@ func Test_conceptGroupService_CreateConceptGroup(t *testing.T) {
 			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
 			cga.EXPECT().CreateConceptGroup(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
+			ats.EXPECT().CreateActionTypes(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
 			cgID, err := service.CreateConceptGroup(ctx, nil, conceptGroup, mode, true)
@@ -1915,7 +1916,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			smock.ExpectCommit()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldBeNil)
 			So(len(cgrIDs), ShouldEqual, 2)
 		})
@@ -1934,7 +1935,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			ots.EXPECT().ListObjectTypes(gomock.Any(), gomock.Any(), gomock.Any()).Return(objectTypes, 0, nil)
 			smock.ExpectRollback()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldNotBeNil)
 			So(len(cgrIDs), ShouldEqual, 0)
 			httpErr := err.(*rest.HTTPError)
@@ -1971,7 +1972,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().ListConceptGroupRelations(gomock.Any(), gomock.Any(), gomock.Any()).Return(cgRelations, nil)
 			smock.ExpectRollback()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldNotBeNil)
 			So(len(cgrIDs), ShouldEqual, 0)
 			httpErr := err.(*rest.HTTPError)
@@ -1991,7 +1992,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			ots.EXPECT().ListObjectTypes(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, 0, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldNotBeNil)
 			So(len(cgrIDs), ShouldEqual, 0)
 		})
@@ -2018,7 +2019,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().ListConceptGroupRelations(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldNotBeNil)
 			So(len(cgrIDs), ShouldEqual, 0)
 		})
@@ -2046,7 +2047,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(rest.NewHTTPError(ctx, 500, berrors.BknBackend_ConceptGroup_InternalError))
 			smock.ExpectRollback()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldNotBeNil)
 			So(len(cgrIDs), ShouldEqual, 0)
 		})
@@ -2089,7 +2090,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldBeNil)
 			So(len(cgrIDs), ShouldEqual, 1)
 		})
@@ -2132,7 +2133,7 @@ func Test_conceptGroupService_AddObjectTypesToConceptGroup(t *testing.T) {
 			cga.EXPECT().CreateConceptGroupRelation(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
-			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode)
+			cgrIDs, err := service.AddObjectTypesToConceptGroup(ctx, nil, knID, branch, cgID, otIDs, importMode, true)
 			So(err, ShouldBeNil)
 			So(len(cgrIDs), ShouldEqual, 1)
 		})
@@ -2175,6 +2176,69 @@ func Test_conceptGroupService_DeleteConceptGroupsByKnID(t *testing.T) {
 			cga.EXPECT().DeleteConceptGroupsByKnID(gomock.Any(), tx, knID, branch).Return(int64(2), nil)
 			cga.EXPECT().DeleteConceptGroupRelationsByKnID(gomock.Any(), tx, knID, branch).Return(int64(5), nil)
 			err := service.DeleteConceptGroupsByKnID(context.Background(), tx, knID, branch)
+			So(err, ShouldBeNil)
+		})
+	})
+}
+func Test_conceptGroupService_ValidateConceptGroups(t *testing.T) {
+	Convey("Test ValidateConceptGroups\n", t, func() {
+		ctx := context.Background()
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		ps := bmock.NewMockPermissionService(mockCtrl)
+		ots := bmock.NewMockObjectTypeService(mockCtrl)
+		rts := bmock.NewMockRelationTypeService(mockCtrl)
+		ats := bmock.NewMockActionTypeService(mockCtrl)
+		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
+
+		service := &conceptGroupService{
+			ps:  ps,
+			cga: cga,
+			ots: ots,
+			rts: rts,
+			ats: ats,
+		}
+
+		Convey("strictMode false skips nested ValidateObjectTypes and related checks\n", func() {
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), "cg1").Return("", false, nil)
+			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+			conceptGroups := []*interfaces.ConceptGroup{
+				{
+					CGID: "cg1",
+					ObjectTypes: []*interfaces.ObjectType{
+						{
+							ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+								OTName: "ot1",
+								LogicProperties: []*interfaces.LogicProperty{
+									{Name: "lp1", Type: ""},
+								},
+							},
+						},
+					},
+				},
+			}
+			err := service.ValidateConceptGroups(ctx, "kn1", interfaces.MAIN_BRANCH, conceptGroups, false, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("strictMode true delegates to nested ValidateObjectTypes\n", func() {
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			cga.EXPECT().CheckConceptGroupExistByID(gomock.Any(), gomock.Any(), gomock.Any(), "cg1").Return("", false, nil)
+			cga.EXPECT().CheckConceptGroupExistByName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", false, nil)
+			conceptGroups := []*interfaces.ConceptGroup{
+				{
+					CGID: "cg1",
+					ObjectTypes: []*interfaces.ObjectType{
+						{
+							ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTName: "ot1"},
+						},
+					},
+				},
+			}
+			ots.EXPECT().ValidateObjectTypes(gomock.Any(), "kn1", interfaces.MAIN_BRANCH, conceptGroups[0].ObjectTypes, true, gomock.Any(), gomock.Any()).Return(nil)
+			err := service.ValidateConceptGroups(ctx, "kn1", interfaces.MAIN_BRANCH, conceptGroups, true, nil, interfaces.ImportMode_Normal)
 			So(err, ShouldBeNil)
 		})
 	})

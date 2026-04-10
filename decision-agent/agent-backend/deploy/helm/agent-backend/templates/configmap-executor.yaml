@@ -143,6 +143,7 @@ data:
       disable_dolphin_sdk_llm_cache: {{ .Values.agentExecutor.disableDolphinSdkLLMCache }}
       enable_dolphin_agent_output_variables_ctrl: {{ .Values.agentExecutor.enableDolphinAgentOutputVariablesCtrl }}
       is_skill_agent_need_progress: {{ .Values.agentExecutor.isSkillAgentNeedProgress }}
+      enable_traceai_evidence: {{ .Values.agentExecutor.enableTraceAiEvidence }}
 
     # 10. o11y 相关
     o11y:

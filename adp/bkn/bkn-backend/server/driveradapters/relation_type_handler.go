@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -111,6 +112,17 @@ func (r *restHandler) CreateRelationTypes(c *gin.Context, visitor hydra.Visitor)
 		attr.Key("branch").String(branch),
 	)
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 校验业务知识网络存在性
 	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
@@ -167,7 +179,7 @@ func (r *restHandler) CreateRelationTypes(c *gin.Context, visitor hydra.Visitor)
 	}
 
 	// 校验 请求体中目标模型名称合法性
-	err = ValidateRelationTypes(ctx, knID, relationTypes)
+	err = ValidateRelationTypes(ctx, knID, relationTypes, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -177,7 +189,7 @@ func (r *restHandler) CreateRelationTypes(c *gin.Context, visitor hydra.Visitor)
 
 	//调用创建
 	// 直接创建关系类接口默认进行依赖校验
-	rtIDs, err := r.rts.CreateRelationTypes(ctx, nil, relationTypes, mode, true)
+	rtIDs, err := r.rts.CreateRelationTypes(ctx, nil, relationTypes, mode, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -202,6 +214,88 @@ func (r *restHandler) CreateRelationTypes(c *gin.Context, visitor hydra.Visitor)
 	logger.Debug("Handler CreateRelationTypes Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
+}
+
+// ValidateRelationTypesByIn 仅校验关系类依赖存在性，不写库（内部）
+func (r *restHandler) ValidateRelationTypesByIn(c *gin.Context) {
+	logger.Debug("Handler ValidateRelationTypesByIn Start")
+	v := visitor.GenerateVisitor(c)
+	r.ValidateRelationTypesForKN(c, v)
+}
+
+// ValidateRelationTypesByEx 仅校验关系类依赖存在性，不写库（外部）
+func (r *restHandler) ValidateRelationTypesByEx(c *gin.Context) {
+	logger.Debug("Handler ValidateRelationTypesByEx Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验关系类", trace.WithSpanKind(trace.SpanKindServer))
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.ValidateRelationTypesForKN(c, visitor)
+}
+
+// ValidateRelationTypesForKN 仅校验关系类依赖存在性，不写库
+func (r *restHandler) ValidateRelationTypesForKN(c *gin.Context, visitor hydra.Visitor) {
+	logger.Debug("Handler ValidateRelationTypesForKN Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验关系类", trace.WithSpanKind(trace.SpanKindServer))
+
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
+	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+
+	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	if err != nil {
+		rest.ReplyError(c, err.(*rest.HTTPError))
+		return
+	}
+	if !exist {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		return
+	}
+
+	var requestData struct {
+		Entries []*interfaces.RelationType `json:"entries"`
+	}
+	if err = c.ShouldBindJSON(&requestData); err != nil {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		return
+	}
+	relationTypes := requestData.Entries
+	if len(relationTypes) == 0 {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
+		return
+	}
+
+	if err = ValidateRelationTypes(ctx, knID, relationTypes, strictMode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	if err = r.rts.ValidateRelationTypes(ctx, knID, branch, relationTypes, strictMode, nil, mode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": true})
 }
 
 // 更新关系类(内部)
@@ -253,8 +347,20 @@ func (r *restHandler) UpdateRelationType(c *gin.Context, visitor hydra.Visitor) 
 		attr.Key("branch").String(branch),
 	)
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	// 校验业务知识网络存在性
-	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	var exist bool
+	_, exist, err = r.kns.CheckKNExistByID(ctx, knID, branch)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
@@ -291,6 +397,8 @@ func (r *restHandler) UpdateRelationType(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 	relationType.RTID = rtID
+	relationType.KNID = knID
+	relationType.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
 	o11y.Info(ctx, fmt.Sprintf("修改关系类请求参数: [%s, %v]", c.Request.RequestURI, relationType))
@@ -317,7 +425,7 @@ func (r *restHandler) UpdateRelationType(c *gin.Context, visitor hydra.Visitor) 
 	}
 
 	// 校验 关系类基本参数的合法性, 非空、长度、是枚举值
-	err = ValidateRelationType(ctx, &relationType)
+	err = ValidateRelationType(ctx, &relationType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -332,10 +440,8 @@ func (r *restHandler) UpdateRelationType(c *gin.Context, visitor hydra.Visitor) 
 		return
 	}
 
-	relationType.KNID = knID
-
 	//根据id修改信息
-	err = r.rts.UpdateRelationType(ctx, nil, &relationType)
+	err = r.rts.UpdateRelationType(ctx, nil, &relationType, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 

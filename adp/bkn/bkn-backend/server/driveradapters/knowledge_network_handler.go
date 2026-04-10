@@ -79,12 +79,18 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 
-	// 是否校验依赖，默认true
-	validateDependencyStr := c.DefaultQuery(interfaces.QueryParam_ValidateDependency, "true")
-	validateDependency, err := strconv.ParseBool(validateDependencyStr)
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.Query(interfaces.QueryParam_StrictMode)
+	if strictModeStr == "" {
+		strictModeStr = c.Query("validate_dependency")
+	}
+	if strictModeStr == "" {
+		strictModeStr = "true"
+	}
+	strictMode, err := strconv.ParseBool(strictModeStr)
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
-			WithErrorDetails(fmt.Sprintf("Invalid validate_dependency parameter: %s", validateDependencyStr))
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
@@ -139,7 +145,7 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 
 	// 若kn的对象类，关系类，行动类, 概念分组不为空，则应循环调用对象类、关系类、行动类, 概念分组的校验函数
 	if len(kn.ObjectTypes) > 0 {
-		err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes)
+		err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -148,7 +154,7 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 		}
 	}
 	if len(kn.RelationTypes) > 0 {
-		err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes)
+		err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -157,7 +163,7 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 		}
 	}
 	if len(kn.ActionTypes) > 0 {
-		err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes)
+		err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes, strictMode)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -178,7 +184,7 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	// 调用创建单个知识网络
-	knID, err := r.kns.CreateKN(ctx, &kn, mode, validateDependency)
+	knID, err := r.kns.CreateKN(ctx, &kn, mode, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
@@ -195,6 +201,109 @@ func (r *restHandler) CreateKN(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateKN Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, map[string]any{"id": knID})
+}
+
+// ValidateKNByIn 仅校验知识网络整体依赖存在性，不写库（内部）
+func (r *restHandler) ValidateKNByIn(c *gin.Context) {
+	logger.Debug("Handler ValidateKNByIn Start")
+	v := visitor.GenerateVisitor(c)
+	r.ValidateKN(c, v)
+}
+
+// ValidateKNByEx 仅校验知识网络整体依赖存在性，不写库（外部）
+func (r *restHandler) ValidateKNByEx(c *gin.Context) {
+	logger.Debug("Handler ValidateKNByEx Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验业务知识网络", trace.WithSpanKind(trace.SpanKindServer))
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.ValidateKN(c, visitor)
+}
+
+// ValidateKN 仅校验知识网络整体依赖存在性，不写库
+func (r *restHandler) ValidateKN(c *gin.Context, visitor hydra.Visitor) {
+	logger.Debug("Handler ValidateKN Start")
+	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"校验业务知识网络", trace.WithSpanKind(trace.SpanKindServer))
+
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
+	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	knID := c.Param("kn_id")
+	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
+
+	_, exist, err := r.kns.CheckKNExistByID(ctx, knID, branch)
+	if err != nil {
+		rest.ReplyError(c, err.(*rest.HTTPError))
+		return
+	}
+	if !exist {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		return
+	}
+
+	kn := interfaces.KN{}
+	if err = c.ShouldBindJSON(&kn); err != nil {
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
+			WithErrorDetails("Binding Parameter Failed: "+err.Error()))
+		return
+	}
+	kn.KNID = knID
+	kn.Branch = branch
+
+	if err = ValidateKN(ctx, &kn); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	if len(kn.ObjectTypes) > 0 {
+		if err = ValidateObjectTypes(ctx, kn.KNID, kn.ObjectTypes, strictMode); err != nil {
+			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+			return
+		}
+	}
+	if len(kn.RelationTypes) > 0 {
+		if err = ValidateRelationTypes(ctx, kn.KNID, kn.RelationTypes, strictMode); err != nil {
+			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+			return
+		}
+	}
+	if len(kn.ActionTypes) > 0 {
+		if err = ValidateActionTypes(ctx, kn.KNID, kn.ActionTypes, strictMode); err != nil {
+			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+			return
+		}
+	}
+	if len(kn.ConceptGroups) > 0 {
+		for _, cg := range kn.ConceptGroups {
+			if err = ValidateConceptGroup(ctx, cg); err != nil {
+				rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+				return
+			}
+		}
+	}
+	if err = r.kns.ValidateKN(ctx, &kn, strictMode, mode); err != nil {
+		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
+		return
+	}
+	rest.ReplyOK(c, http.StatusOK, map[string]bool{"valid": true})
 }
 
 // 更新业务知识网络(内部)
@@ -245,9 +354,20 @@ func (r *restHandler) UpdateKN(c *gin.Context, visitor hydra.Visitor) {
 		attr.Key("branch").String(branch),
 	)
 
+	// Whether to validate dependencies, default true. Parse priority: strict_mode > validate_dependency (legacy) > true
+	strictModeStr := c.DefaultQuery(interfaces.QueryParam_StrictMode, "true")
+	strictMode, err := strconv.ParseBool(strictModeStr)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	//接收绑定参数
 	kn := interfaces.KN{}
-	err := c.ShouldBindJSON(&kn)
+	err = c.ShouldBindJSON(&kn)
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_KnowledgeNetwork_InvalidParameter).
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
@@ -329,7 +449,7 @@ func (r *restHandler) UpdateKN(c *gin.Context, visitor hydra.Visitor) {
 	kn.IfNameModify = ifNameModify
 
 	//根据id修改信息
-	err = r.kns.UpdateKN(ctx, nil, &kn)
+	err = r.kns.UpdateKN(ctx, nil, &kn, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 

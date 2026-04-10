@@ -55,7 +55,7 @@ helm install vega-gateway-pro ./helm/vega-gateway-pro
 
 ## 贡献
 
-我们欢迎社区贡献！请查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 文件了解如何参与项目开发。
+我们欢迎社区贡献！请查看 [贡献指南](../../rules/CONTRIBUTING.zh.md) 了解如何参与项目开发。
 
 ## 许可证
 

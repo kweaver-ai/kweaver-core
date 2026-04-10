@@ -108,6 +108,10 @@ depServices:
     host: vega-backend-svc
     port: 13014
     protocol: http
+  agent-operator-integration:
+    host: agent-operator-integration
+    port: 9000
+    protocol: http
 
 config:
   server:

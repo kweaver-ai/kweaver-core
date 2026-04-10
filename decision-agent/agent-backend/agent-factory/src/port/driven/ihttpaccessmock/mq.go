@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	ctopicenum "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/ctopicenum"
+	ctopicenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/ctopicenum"
 	gomock "go.uber.org/mock/gomock"
 )
 

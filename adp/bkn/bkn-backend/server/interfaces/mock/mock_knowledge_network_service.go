@@ -22,7 +22,6 @@ import (
 type MockKNService struct {
 	ctrl     *gomock.Controller
 	recorder *MockKNServiceMockRecorder
-	isgomock struct{}
 }
 
 // MockKNServiceMockRecorder is the mock recorder for MockKNService.
@@ -53,7 +52,7 @@ func (m *MockKNService) CheckKNExistByID(ctx context.Context, knID, branch strin
 }
 
 // CheckKNExistByID indicates an expected call of CheckKNExistByID.
-func (mr *MockKNServiceMockRecorder) CheckKNExistByID(ctx, knID, branch any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) CheckKNExistByID(ctx, knID, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckKNExistByID", reflect.TypeOf((*MockKNService)(nil).CheckKNExistByID), ctx, knID, branch)
 }
@@ -69,24 +68,24 @@ func (m *MockKNService) CheckKNExistByName(ctx context.Context, knName, branch s
 }
 
 // CheckKNExistByName indicates an expected call of CheckKNExistByName.
-func (mr *MockKNServiceMockRecorder) CheckKNExistByName(ctx, knName, branch any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) CheckKNExistByName(ctx, knName, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckKNExistByName", reflect.TypeOf((*MockKNService)(nil).CheckKNExistByName), ctx, knName, branch)
 }
 
 // CreateKN mocks base method.
-func (m *MockKNService) CreateKN(ctx context.Context, kn *interfaces.KN, mode string, validateDependency bool) (string, error) {
+func (m *MockKNService) CreateKN(ctx context.Context, kn *interfaces.KN, mode string, strictMode bool) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateKN", ctx, kn, mode, validateDependency)
+	ret := m.ctrl.Call(m, "CreateKN", ctx, kn, mode, strictMode)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateKN indicates an expected call of CreateKN.
-func (mr *MockKNServiceMockRecorder) CreateKN(ctx, kn, mode, validateDependency any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) CreateKN(ctx, kn, mode, strictMode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateKN", reflect.TypeOf((*MockKNService)(nil).CreateKN), ctx, kn, mode, validateDependency)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateKN", reflect.TypeOf((*MockKNService)(nil).CreateKN), ctx, kn, mode, strictMode)
 }
 
 // DeleteKN mocks base method.
@@ -98,7 +97,7 @@ func (m *MockKNService) DeleteKN(ctx context.Context, kn *interfaces.KN) error {
 }
 
 // DeleteKN indicates an expected call of DeleteKN.
-func (mr *MockKNServiceMockRecorder) DeleteKN(ctx, kn any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) DeleteKN(ctx, kn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteKN", reflect.TypeOf((*MockKNService)(nil).DeleteKN), ctx, kn)
 }
@@ -113,7 +112,7 @@ func (m *MockKNService) GetKNByID(ctx context.Context, knID, branch, mode string
 }
 
 // GetKNByID indicates an expected call of GetKNByID.
-func (mr *MockKNServiceMockRecorder) GetKNByID(ctx, knID, branch, mode any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) GetKNByID(ctx, knID, branch, mode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKNByID", reflect.TypeOf((*MockKNService)(nil).GetKNByID), ctx, knID, branch, mode)
 }
@@ -128,7 +127,7 @@ func (m *MockKNService) GetRelationTypePaths(ctx context.Context, query interfac
 }
 
 // GetRelationTypePaths indicates an expected call of GetRelationTypePaths.
-func (mr *MockKNServiceMockRecorder) GetRelationTypePaths(ctx, query any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) GetRelationTypePaths(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRelationTypePaths", reflect.TypeOf((*MockKNService)(nil).GetRelationTypePaths), ctx, query)
 }
@@ -143,7 +142,7 @@ func (m *MockKNService) GetStatByKN(ctx context.Context, kn *interfaces.KN) (*in
 }
 
 // GetStatByKN indicates an expected call of GetStatByKN.
-func (mr *MockKNServiceMockRecorder) GetStatByKN(ctx, kn any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) GetStatByKN(ctx, kn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatByKN", reflect.TypeOf((*MockKNService)(nil).GetStatByKN), ctx, kn)
 }
@@ -159,39 +158,39 @@ func (m *MockKNService) ListKNs(ctx context.Context, query interfaces.KNsQueryPa
 }
 
 // ListKNs indicates an expected call of ListKNs.
-func (mr *MockKNServiceMockRecorder) ListKNs(ctx, query any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) ListKNs(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKNs", reflect.TypeOf((*MockKNService)(nil).ListKNs), ctx, query)
 }
 
 // ListKnSrcs mocks base method.
-func (m *MockKNService) ListKnSrcs(ctx context.Context, query interfaces.KNsQueryParams) ([]interfaces.Resource, int, error) {
+func (m *MockKNService) ListKnSrcs(ctx context.Context, query interfaces.KNsQueryParams) ([]interfaces.PermissionResource, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListKnSrcs", ctx, query)
-	ret0, _ := ret[0].([]interfaces.Resource)
+	ret0, _ := ret[0].([]interfaces.PermissionResource)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
 // ListKnSrcs indicates an expected call of ListKnSrcs.
-func (mr *MockKNServiceMockRecorder) ListKnSrcs(ctx, query any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) ListKnSrcs(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKnSrcs", reflect.TypeOf((*MockKNService)(nil).ListKnSrcs), ctx, query)
 }
 
 // UpdateKN mocks base method.
-func (m *MockKNService) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN) error {
+func (m *MockKNService) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN, strictMode bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateKN", ctx, tx, kn)
+	ret := m.ctrl.Call(m, "UpdateKN", ctx, tx, kn, strictMode)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateKN indicates an expected call of UpdateKN.
-func (mr *MockKNServiceMockRecorder) UpdateKN(ctx, tx, kn any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) UpdateKN(ctx, tx, kn, strictMode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKN", reflect.TypeOf((*MockKNService)(nil).UpdateKN), ctx, tx, kn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKN", reflect.TypeOf((*MockKNService)(nil).UpdateKN), ctx, tx, kn, strictMode)
 }
 
 // UpdateKNDetail mocks base method.
@@ -203,7 +202,21 @@ func (m *MockKNService) UpdateKNDetail(ctx context.Context, knID, branch, detail
 }
 
 // UpdateKNDetail indicates an expected call of UpdateKNDetail.
-func (mr *MockKNServiceMockRecorder) UpdateKNDetail(ctx, knID, branch, detail any) *gomock.Call {
+func (mr *MockKNServiceMockRecorder) UpdateKNDetail(ctx, knID, branch, detail interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKNDetail", reflect.TypeOf((*MockKNService)(nil).UpdateKNDetail), ctx, knID, branch, detail)
+}
+
+// ValidateKN mocks base method.
+func (m *MockKNService) ValidateKN(ctx context.Context, kn *interfaces.KN, strictMode bool, mode string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateKN", ctx, kn, strictMode, mode)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateKN indicates an expected call of ValidateKN.
+func (mr *MockKNServiceMockRecorder) ValidateKN(ctx, kn, strictMode, mode interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateKN", reflect.TypeOf((*MockKNService)(nil).ValidateKN), ctx, kn, strictMode, mode)
 }

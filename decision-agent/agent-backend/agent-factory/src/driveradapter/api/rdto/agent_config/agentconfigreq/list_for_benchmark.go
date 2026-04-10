@@ -1,6 +1,6 @@
 package agentconfigreq
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/common"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/common"
 
 type ListForBenchmarkReq struct {
 	Name string `json:"name" form:"name"`

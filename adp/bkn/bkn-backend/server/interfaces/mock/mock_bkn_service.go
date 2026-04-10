@@ -20,7 +20,6 @@ import (
 type MockBKNService struct {
 	ctrl     *gomock.Controller
 	recorder *MockBKNServiceMockRecorder
-	isgomock struct{}
 }
 
 // MockBKNServiceMockRecorder is the mock recorder for MockBKNService.
@@ -50,7 +49,7 @@ func (m *MockBKNService) ExportToTar(ctx context.Context, knID, branch string) (
 }
 
 // ExportToTar indicates an expected call of ExportToTar.
-func (mr *MockBKNServiceMockRecorder) ExportToTar(ctx, knID, branch any) *gomock.Call {
+func (mr *MockBKNServiceMockRecorder) ExportToTar(ctx, knID, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportToTar", reflect.TypeOf((*MockBKNService)(nil).ExportToTar), ctx, knID, branch)
 }

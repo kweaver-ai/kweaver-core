@@ -40,7 +40,7 @@ func withAccountInfo(ctx context.Context, id, typ string) context.Context {
 func Test_NoopPermissionService_CheckPermission(t *testing.T) {
 	Convey("Test NoopPermissionService CheckPermission always returns nil\n", t, func() {
 		svc := NewNoopPermissionService(&common.AppSetting{})
-		err := svc.CheckPermission(context.Background(), interfaces.Resource{Type: "kn", ID: "kn1"}, []string{"read"})
+		err := svc.CheckPermission(context.Background(), interfaces.PermissionResource{Type: "kn", ID: "kn1"}, []string{"read"})
 		So(err, ShouldBeNil)
 	})
 }
@@ -48,7 +48,7 @@ func Test_NoopPermissionService_CheckPermission(t *testing.T) {
 func Test_NoopPermissionService_CreateResources(t *testing.T) {
 	Convey("Test NoopPermissionService CreateResources always returns nil\n", t, func() {
 		svc := NewNoopPermissionService(&common.AppSetting{})
-		err := svc.CreateResources(context.Background(), []interfaces.Resource{{Type: "kn", ID: "kn1"}}, []string{"read"})
+		err := svc.CreateResources(context.Background(), []interfaces.PermissionResource{{Type: "kn", ID: "kn1"}}, []string{"read"})
 		So(err, ShouldBeNil)
 	})
 }
@@ -87,7 +87,7 @@ func Test_NoopPermissionService_FilterResources(t *testing.T) {
 func Test_NoopPermissionService_UpdateResource(t *testing.T) {
 	Convey("Test NoopPermissionService UpdateResource always returns nil\n", t, func() {
 		svc := NewNoopPermissionService(&common.AppSetting{})
-		err := svc.UpdateResource(context.Background(), interfaces.Resource{Type: "kn", ID: "kn1"})
+		err := svc.UpdateResource(context.Background(), interfaces.PermissionResource{Type: "kn", ID: "kn1"})
 		So(err, ShouldBeNil)
 	})
 }
@@ -112,7 +112,7 @@ func Test_PermissionServiceImpl_CheckPermission(t *testing.T) {
 		svc, mockCtrl, pa, _ := newTestPermissionImpl(t)
 		defer mockCtrl.Finish()
 
-		resource := interfaces.Resource{Type: "kn", ID: "kn1"}
+		resource := interfaces.PermissionResource{Type: "kn", ID: "kn1"}
 		ops := []string{"read"}
 
 		Convey("Failed: missing account info in context\n", func() {
@@ -151,7 +151,7 @@ func Test_PermissionServiceImpl_CreateResources(t *testing.T) {
 		svc, mockCtrl, pa, _ := newTestPermissionImpl(t)
 		defer mockCtrl.Finish()
 
-		resources := []interfaces.Resource{{Type: "kn", ID: "kn1"}}
+		resources := []interfaces.PermissionResource{{Type: "kn", ID: "kn1"}}
 		ops := []string{"read"}
 
 		Convey("Failed: missing account info\n", func() {
@@ -218,7 +218,11 @@ func Test_PermissionServiceImpl_FilterResources(t *testing.T) {
 
 		Convey("Success: returns resource ops map\n", func() {
 			ctx := withAccountInfo(context.Background(), "u1", "user")
-			paResult := []interfaces.ResourceOps{{ResourceID: "kn1", Operations: []string{"read"}}}
+			paResult := map[string]interfaces.PermissionResourceOps{
+				"kn1": {
+					ResourceID: "kn1", Operations: []string{"read"},
+				},
+			}
 			pa.EXPECT().FilterResources(ctx, gomock.Any()).Return(paResult, nil)
 
 			result, err := svc.FilterResources(ctx, "kn", []string{"kn1"}, []string{"read"}, true, []string{"read"})
@@ -243,13 +247,13 @@ func Test_PermissionServiceImpl_UpdateResource(t *testing.T) {
 		defer mockCtrl.Finish()
 
 		Convey("Success: mqClient.Pub returns nil\n", func() {
-			err := svc.UpdateResource(context.Background(), interfaces.Resource{Type: "kn", ID: "kn1", Name: "Test"})
+			err := svc.UpdateResource(context.Background(), interfaces.PermissionResource{Type: "kn", ID: "kn1", Name: "Test"})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Failed: mqClient.Pub returns error\n", func() {
 			mq.pubErr = errors.New("mq unavailable")
-			err := svc.UpdateResource(context.Background(), interfaces.Resource{Type: "kn", ID: "kn1", Name: "Test"})
+			err := svc.UpdateResource(context.Background(), interfaces.PermissionResource{Type: "kn", ID: "kn1", Name: "Test"})
 			So(err, ShouldNotBeNil)
 		})
 	})

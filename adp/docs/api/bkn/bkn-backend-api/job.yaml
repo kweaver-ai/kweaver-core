@@ -220,9 +220,37 @@ components:
           enum:
             - full
           type: string
+        job_concept_config:
+          description: 任务概念配置列表；可选，未传时服务端可能根据知识网络对象类型自动生成
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptConfig"
       example:
         name: some text
         job_type: full
+        job_concept_config:
+          - concept_type: object_type
+            concept_id: some text
+    ConceptConfig:
+      title: ConceptConfig
+      description: 任务概念配置项，与 JobInfo.job_concept_config 数组元素一致
+      type: object
+      required:
+        - concept_type
+        - concept_id
+      properties:
+        concept_type:
+          description: 概念类型
+          enum:
+            - object_type
+            - relation_type
+          type: string
+        concept_id:
+          description: 概念id
+          type: string
+      example:
+        concept_type: object_type
+        concept_id: some text
     ListJobResp:
       title: Root Type for ListResp
       description: 任务列表
@@ -252,6 +280,9 @@ components:
             finished_time: 21
             time_cost: 92
             job_type: full
+            job_concept_config:
+              - concept_type: object_type
+                concept_id: some text
           - id: some text
             name: some text
             kn_id: some text
@@ -262,6 +293,7 @@ components:
             finished_time: 70
             time_cost: 21
             job_type: full
+            job_concept_config: []
         total_count: 48
     ListTaskResp:
       title: Root Type for ListResp
@@ -357,6 +389,11 @@ components:
           enum:
             - full
           type: string
+        job_concept_config:
+          description: 任务概念配置列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptConfig"
       example:
         id: some text
         name: some text
@@ -368,6 +405,9 @@ components:
         finished_time: 37
         time_cost: 26
         job_type: full
+        job_concept_config:
+          - concept_type: object_type
+            concept_id: some text
     Task:
       title: Root Type for Job
       description: 任务详情

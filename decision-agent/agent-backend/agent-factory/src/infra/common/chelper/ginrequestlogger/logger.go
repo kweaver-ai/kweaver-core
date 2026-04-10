@@ -1,7 +1,7 @@
 package ginrequestlogger
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/httprequesthelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httprequesthelper"
 )
 
 // NewRequestLogger 创建请求日志记录器

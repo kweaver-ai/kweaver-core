@@ -2,40 +2,26 @@
 
 ## 这个目录是做什么的
 
-`cmd/openapi-docs` 是 OpenAPI 文档工具的命令行入口目录。
+`cmd/openapi-docs` 是 Agent Factory OpenAPI 文档工具的命令入口，也是文档生成链路的“开发者工作区”。
 
-它主要负责三件事：
+这里集中放了三类内容：
 
-1. 接收命令行参数。
-2. 调用 `internal/openapidoc` 完成真正的文档构建。
-3. 把最终结果写到 `docs/api` 和 `test_out`。
+1. CLI 代码：`main.go`、`generate.go`、`compare.go`、`validate.go`
+2. 生成输入：`assets/overlay.yaml`、`assets/baseline/*`、`generated/swagger/*`
+3. 开发说明：`docs/OPENAPI_AUTOMATION_GUIDE.md`、`docs/swagger_openapi_pipeline.md`
 
-## 最重要的入口
+## 生成后会写到哪里
 
-- 先看 `main.go`
-- 生成文档看 `generate.go`
-- 做差异报告看 `compare.go`
-- 做结果校验看 `validate.go`
+`generate` 会一次写两套产物：
 
-如果只想快速建立心智模型，按下面顺序看就够了：
+- 对外目录：`docs/api/agent-factory.{json,yaml,html}` 与 `docs/api/favicon.png`
+- 运行时副本：`src/infra/server/apidocs/assets/*`
 
-1. `main.go`
-2. `generate.go`
-3. `compare.go`
-4. `validate.go`
-5. `internal/openapidoc/build.go`
-
-## 三个子命令分别做什么
+## 三个子命令
 
 ### `generate`
 
-生成最终产物：
-
-- `docs/api/agent-factory.json`
-- `docs/api/agent-factory.yaml`
-- `docs/api/agent-factory.html`
-
-常用命令：
+生成最终 OpenAPI JSON / YAML / HTML，并同步运行时副本。
 
 ```bash
 go run ./cmd/openapi-docs generate
@@ -43,9 +29,7 @@ go run ./cmd/openapi-docs generate
 
 ### `compare`
 
-只生成对比报告，不写最终文档。
-
-常用命令：
+只生成 compare report，不改最终文档。
 
 ```bash
 go run ./cmd/openapi-docs compare
@@ -53,36 +37,23 @@ go run ./cmd/openapi-docs compare
 
 ### `validate`
 
-校验生成结果是否合法，并检查路径数、接口数、HTML 标记是否正常。
-
-常用命令：
+校验最终文档是否合法，并检查公共产物与运行时副本是否一致。
 
 ```bash
 go run ./cmd/openapi-docs validate
 ```
 
-## 每个文件快速认识
+## 从哪里开始看
 
-- `main.go`
-  - 命令分发入口
-- `generate.go`
-  - 生成 JSON / YAML / HTML 的主流程
-- `compare.go`
-  - 生成 compare report
-- `validate.go`
-  - 校验产物
-- `constants.go`
-  - 默认输入输出路径和默认计数
-- `common.go`
-  - 共享的小工具函数
+建议顺序：
 
-## 你只需要记住的核心点
+1. `main.go`
+2. `generate.go`
+3. `validate.go`
+4. `internal/openapidoc/build.go`
 
-- CLI 入口在 `main.go`
-- 真正的构建核心在 `internal/openapidoc/BuildArtifactsFromFiles`
-- 平时最常用的是 `generate` 和 `validate`
+## 想看更详细的说明
 
-## 想看完整版
-
-查看 [README.md](./README.md)
-
+- 目录说明：查看 [README.md](./README.md)
+- 自动化维护说明：查看 [docs/OPENAPI_AUTOMATION_GUIDE.md](./docs/OPENAPI_AUTOMATION_GUIDE.md)
+- 生成链路梳理：查看 [docs/swagger_openapi_pipeline.md](./docs/swagger_openapi_pipeline.md)

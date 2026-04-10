@@ -725,4 +725,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if os.environ.get("CI_MODE") == "true":
+        logger.info("CI_MODE 为 true，跳过 当前升级文件")
+    else:
+        sys.exit(main())

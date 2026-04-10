@@ -14,10 +14,10 @@ import (
 type ConceptGroupService interface {
 	CheckConceptGroupExistByID(ctx context.Context, knID string, branch string, cgID string) (string, bool, error)
 	CheckConceptGroupExistByName(ctx context.Context, knID string, branch string, cgName string) (string, bool, error)
-	CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *ConceptGroup, mode string, validateDependency bool) (string, error)
+	CreateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *ConceptGroup, mode string, strictMode bool) (string, error)
 	ListConceptGroups(ctx context.Context, query ConceptGroupsQueryParams) ([]*ConceptGroup, int, error)
 	GetConceptGroupByID(ctx context.Context, knID string, branch string, cgID string, mode string) (*ConceptGroup, error)
-	UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *ConceptGroup) error
+	UpdateConceptGroup(ctx context.Context, tx *sql.Tx, conceptGroup *ConceptGroup, strictMode bool) error
 	UpdateConceptGroupDetail(ctx context.Context, knID string, branch string, cgID string, detail string) error
 	DeleteConceptGroupByID(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string) error
 
@@ -25,7 +25,11 @@ type ConceptGroupService interface {
 	GetConceptGroupIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error)
 	DeleteConceptGroupsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error
 
-	AddObjectTypesToConceptGroup(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string, otIDs []ID, importMode string) ([]string, error)
+	AddObjectTypesToConceptGroup(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string, otIDs []ID, importMode string, strictMode bool) ([]string, error)
 	ListConceptGroupRelations(ctx context.Context, query ConceptGroupRelationsQueryParams) ([]ConceptGroupRelation, error)
 	DeleteObjectTypesFromGroup(ctx context.Context, tx *sql.Tx, knID string, branch string, cgID string, otIDs []string) error
+
+	// ValidateConceptGroups 仅校验概念分组依赖存在性，不写库
+	// parentBatch 为 nil 时仅根据本次 conceptGroups 构造索引；ValidateKN 可传入整包索引。
+	ValidateConceptGroups(ctx context.Context, knID string, branch string, conceptGroups []*ConceptGroup, strictMode bool, parentBatch *BatchIDIndex, mode string) error
 }

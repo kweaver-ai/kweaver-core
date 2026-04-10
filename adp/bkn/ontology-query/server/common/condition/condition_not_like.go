@@ -22,7 +22,7 @@ type NotLikeCond struct {
 func NewNotLikeCond(ctx context.Context, cfg *CondCfg, fieldsMap map[string]*DataProperty) (Condition, error) {
 	_, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition config field name '%s' must in view original fields", cfg.Name)
+		return nil, fmt.Errorf(errFmtUnknownObjectTypeProperty, cfg.Name)
 	}
 
 	if !dtype.DataType_IsString(cfg.NameField.Type) &&

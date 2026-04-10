@@ -16,7 +16,7 @@ type RelationTypeService interface {
 	CreateRelationTypes(ctx context.Context, tx *sql.Tx, relationTypes []*RelationType, mode string, validateDependency bool) ([]string, error)
 	ListRelationTypes(ctx context.Context, query RelationTypesQueryParams) ([]*RelationType, int, error)
 	GetRelationTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*RelationType, error)
-	UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *RelationType) error
+	UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *RelationType, strictMode bool) error
 	DeleteRelationTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) error
 
 	GetRelationTypeIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error)
@@ -26,4 +26,7 @@ type RelationTypeService interface {
 
 	// 写关系类到索引中
 	InsertDatasetData(ctx context.Context, relationTypes []*RelationType) error
+
+	// ValidateRelationTypes 仅校验依赖存在性，不写库
+	ValidateRelationTypes(ctx context.Context, knID string, branch string, relationTypes []*RelationType, strictMode bool, batch *BatchIDIndex, mode string) error
 }

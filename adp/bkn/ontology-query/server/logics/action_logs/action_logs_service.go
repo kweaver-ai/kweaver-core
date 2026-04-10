@@ -123,6 +123,16 @@ func (s *actionLogsService) GetExecution(ctx context.Context, query *interfaces.
 
 	indexName := interfaces.GetActionExecutionIndex(query.KNID)
 
+	// Same as QueryExecutions: missing index must not hit SearchData (index_not_found_exception).
+	exists, err := s.osAccess.IndexExists(ctx, indexName)
+	if err != nil {
+		logger.Errorf("Failed to check action execution index: %v", err)
+		return nil, fmt.Errorf("failed to search execution: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("execution not found: %s，because the index[%s] does not exist", query.LogID, indexName)
+	}
+
 	// Build query to get by ID
 	osQuery := map[string]any{
 		"query": map[string]any{
@@ -207,6 +217,19 @@ func (s *actionLogsService) QueryExecutions(ctx context.Context, query *interfac
 	span.SetAttributes(attr.Key("kn_id").String(query.KNID))
 
 	indexName := interfaces.GetActionExecutionIndex(query.KNID)
+
+	// When no execution has ever been written for this KN, the index does not exist.
+	// OpenSearch search returns index_not_found_exception; treat as an empty list (same as Count with ignore_unavailable).
+	exists, err := s.osAccess.IndexExists(ctx, indexName)
+	if err != nil {
+		logger.Errorf("Failed to check action execution index: %v", err)
+		return nil, fmt.Errorf("failed to query executions: %w", err)
+	}
+	if !exists {
+		return &interfaces.ActionExecutionList{
+			Entries: []interfaces.ActionExecution{},
+		}, nil
+	}
 
 	// Build the must conditions
 	mustConditions := []map[string]any{}

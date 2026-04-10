@@ -8,16 +8,16 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releasereq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess/idbaccessmock"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iauthzacc/authzaccmock"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/ihttpaccess/iumacc/httpaccmock"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iv3portdriver/v3portdrivermock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/daenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releasereq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess/idbaccessmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iauthzacc/authzaccmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc/httpaccmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver/v3portdrivermock"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,6 +122,7 @@ func TestReleaseSvc_UpdatePublishInfo_SuccessAndSpaceDeleteError(t *testing.T) {
 		mockReleaseRepo.EXPECT().GetByAgentID(gomock.Any(), "a1").Return(releasePo, nil)
 		mockReleaseRepo.EXPECT().Update(gomock.Any(), tx, gomock.Any()).Return(nil)
 		mockUm.EXPECT().GetSingleUserName(gomock.Any(), "u1").Return("U1", nil)
+		mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, "r1").Return(nil)
 		mockPermRepo.EXPECT().DelByReleaseID(gomock.Any(), tx, "r1").Return(nil)
 		mockAgentRepo.EXPECT().GetIDNameMapByID(gomock.Any(), []string{"a1"}).Return(map[string]string{"a1": "agent1"}, nil)
 		mockAuthz.EXPECT().DeleteAgentPolicy(gomock.Any(), "a1").Return(nil)
@@ -327,17 +328,19 @@ func TestReleaseSvc_Publish_MoreBranches(t *testing.T) {
 		mockReleaseRepo := idbaccessmock.NewMockIReleaseRepo(ctrl)
 		mockHistory := idbaccessmock.NewMockIReleaseHistoryRepo(ctrl)
 		mockPermRepo := idbaccessmock.NewMockIReleasePermissionRepo(ctrl)
+		mockCategoryRel := idbaccessmock.NewMockIReleaseCategoryRelRepo(ctrl)
 		mockAuthz := authzaccmock.NewMockAuthZHttpAcc(ctrl)
 		mockUm := httpaccmock.NewMockUmHttpAcc(ctrl)
 
 		svc := &releaseSvc{
-			SvcBase:               &service.SvcBase{Logger: noopReleaseLogger{}},
-			agentConfigRepo:       mockAgentRepo,
-			releaseRepo:           mockReleaseRepo,
-			releaseHistoryRepo:    mockHistory,
-			releasePermissionRepo: mockPermRepo,
-			authZHttp:             mockAuthz,
-			umHttp:                mockUm,
+			SvcBase:                &service.SvcBase{Logger: noopReleaseLogger{}},
+			agentConfigRepo:        mockAgentRepo,
+			releaseRepo:            mockReleaseRepo,
+			releaseHistoryRepo:     mockHistory,
+			releaseCategoryRelRepo: mockCategoryRel,
+			releasePermissionRepo:  mockPermRepo,
+			authZHttp:              mockAuthz,
+			umHttp:                 mockUm,
 		}
 
 		mockAgentRepo.EXPECT().GetByID(gomock.Any(), "a1").Return(&dapo.DataAgentPo{
@@ -348,6 +351,7 @@ func TestReleaseSvc_Publish_MoreBranches(t *testing.T) {
 		mockReleaseRepo.EXPECT().BeginTx(gomock.Any()).Return(tx, nil)
 		mockReleaseRepo.EXPECT().Create(gomock.Any(), tx, gomock.Any()).Return("r-new", nil)
 		mockUm.EXPECT().GetSingleUserName(gomock.Any(), "u1").Return("U1", nil)
+		mockCategoryRel.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 		mockPermRepo.EXPECT().DelByReleaseID(gomock.Any(), tx, gomock.Any()).Return(nil)
 		mockAgentRepo.EXPECT().GetIDNameMapByID(gomock.Any(), []string{"a1"}).Return(map[string]string{"a1": "agent1"}, nil)
 		mockAuthz.EXPECT().DeleteAgentPolicy(gomock.Any(), "a1").Return(nil)

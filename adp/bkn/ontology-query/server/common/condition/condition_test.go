@@ -712,6 +712,55 @@ func Test_RewriteCondition(t *testing.T) {
 			result, err := RewriteCondition(ctx, cfg, fieldsMap, vectorizer)
 			So(err, ShouldNotBeNil)
 			So(result, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "不是对象类的数据属性名")
+		})
+
+		Convey("失败 - 未配置视图映射列", func() {
+			noMap := map[string]*DataProperty{
+				"p": {
+					Name:        "p",
+					Type:        dtype.DATATYPE_STRING,
+					MappedField: Field{Name: ""},
+				},
+			}
+			cfg := &CondCfg{
+				Name:      "p",
+				Operation: OperationEq,
+				ValueOptCfg: ValueOptCfg{
+					Value: "v",
+				},
+			}
+			result, err := RewriteCondition(ctx, cfg, noMap, vectorizer)
+			So(err, ShouldNotBeNil)
+			So(result, ShouldBeNil)
+			So(err.Error(), ShouldContainSubstring, "mapped_field")
+		})
+
+		Convey("成功 - multi_match fields * 重写为视图列", func() {
+			mmMap := map[string]*DataProperty{
+				"a": {
+					Name:        "a",
+					Type:        dtype.DATATYPE_TEXT,
+					MappedField: Field{Name: "col_a"},
+				},
+				"b": {
+					Name:        "b",
+					Type:        dtype.DATATYPE_INTEGER,
+					MappedField: Field{Name: "col_b"},
+				},
+			}
+			cfg := &CondCfg{
+				Operation:   OperationMultiMatch,
+				ValueOptCfg: ValueOptCfg{Value: "q"},
+				RemainCfg:   map[string]any{"fields": []any{AllField}},
+			}
+			result, err := RewriteCondition(ctx, cfg, mmMap, vectorizer)
+			So(err, ShouldBeNil)
+			So(result, ShouldNotBeNil)
+			flds, ok := result.RemainCfg["fields"].([]string)
+			So(ok, ShouldBeTrue)
+			So(flds, ShouldContain, "col_a")
+			So(len(flds), ShouldEqual, 1)
 		})
 
 		Convey("失败 - 二进制类型字段", func() {

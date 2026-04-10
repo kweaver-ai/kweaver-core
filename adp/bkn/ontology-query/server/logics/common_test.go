@@ -116,6 +116,76 @@ func Test_BuildViewSort(t *testing.T) {
 	})
 }
 
+func Test_MapSortFieldsForDataView(t *testing.T) {
+	Convey("Test MapSortFieldsForDataView", t, func() {
+		objectType := interfaces.ObjectType{
+			ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+				OTID: "ot1",
+				DataProperties: []cond.DataProperty{
+					{
+						Name: "foo",
+						MappedField: cond.Field{
+							Name: "bar",
+						},
+					},
+					{
+						Name: "id",
+						MappedField: cond.Field{
+							Name: "id_col",
+						},
+					},
+				},
+			},
+		}
+
+		Convey("maps property names to view columns and keeps _score", func() {
+			in := []*interfaces.SortParams{
+				{Field: interfaces.SORT_FIELD_SCORE, Direction: interfaces.DESC_DIRECTION},
+				{Field: "foo", Direction: interfaces.ASC_DIRECTION},
+			}
+			out, err := MapSortFieldsForDataView(in, objectType)
+			So(err, ShouldBeNil)
+			So(len(out), ShouldEqual, 2)
+			So(out[0].Field, ShouldEqual, interfaces.SORT_FIELD_SCORE)
+			So(out[1].Field, ShouldEqual, "bar")
+			So(out[1].Direction, ShouldEqual, interfaces.ASC_DIRECTION)
+		})
+
+		Convey("rejects unknown sort field", func() {
+			in := []*interfaces.SortParams{{Field: "unknown", Direction: interfaces.ASC_DIRECTION}}
+			_, err := MapSortFieldsForDataView(in, objectType)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "unknown")
+		})
+
+		Convey("rejects property with empty mapped_field", func() {
+			ot := interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					DataProperties: []cond.DataProperty{
+						{Name: "x", MappedField: cond.Field{Name: ""}},
+					},
+				},
+			}
+			in := []*interfaces.SortParams{{Field: "x", Direction: interfaces.ASC_DIRECTION}}
+			_, err := MapSortFieldsForDataView(in, ot)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "mapped_field")
+		})
+
+		Convey("empty sort returns empty", func() {
+			out, err := MapSortFieldsForDataView(nil, objectType)
+			So(err, ShouldBeNil)
+			So(out, ShouldBeNil)
+		})
+
+		Convey("rejects nil sort entry", func() {
+			in := []*interfaces.SortParams{nil}
+			_, err := MapSortFieldsForDataView(in, objectType)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
 func Test_BuildIndexSort(t *testing.T) {
 	Convey("Test BuildIndexSort", t, func() {
 		Convey("成功 - text类型字段启用keyword索引", func() {

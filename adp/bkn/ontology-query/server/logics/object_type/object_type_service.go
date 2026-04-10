@@ -325,12 +325,17 @@ func (ots *objectTypeService) getObjectsFromDataView(ctx context.Context, query 
 	objectType interfaces.ObjectType, resps *interfaces.Objects, fieldPropMap map[string]string) error {
 
 	objects := []map[string]any{}
+	viewSort, err := logics.MapSortFieldsForDataView(query.Sort, objectType)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ObjectType_InvalidParameter).
+			WithErrorDetails(err.Error())
+	}
 	// 构造视图的查询请求
 	viewQuery := interfaces.ViewQuery{
 		NeedTotal:         query.NeedTotal,
 		Limit:             query.Limit,
 		UseSearchAfter:    interfaces.USE_SEARCH_AFTER_TRUE,
-		Sort:              query.Sort,
+		Sort:              viewSort,
 		SearchAfterParams: query.SearchAfterParams,
 	}
 
@@ -346,7 +351,7 @@ func (ots *objectTypeService) getObjectsFromDataView(ctx context.Context, query 
 		if err != nil {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest,
 				oerrors.OntologyQuery_InvalidParameter_Condition).
-				WithErrorDetails(fmt.Sprintf("failed to rewrite ontology condition to view condition, %s", err.Error()))
+				WithErrorDetails(fmt.Sprintf("将过滤条件从对象类数据属性映射为数据视图列失败：%s", err.Error()))
 		}
 		viewQuery.Filters = rewriteCondition
 	}
@@ -419,7 +424,7 @@ func (ots *objectTypeService) getObjectsFromObjectIndex(ctx context.Context, que
 		if err != nil {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest,
 				oerrors.OntologyQuery_InvalidParameter_Condition).
-				WithErrorDetails(fmt.Sprintf("failed to new condition, %s", err.Error()))
+				WithErrorDetails(fmt.Sprintf("解析或校验过滤条件失败：%s", err.Error()))
 		}
 
 		// 转换到dsl
@@ -429,7 +434,7 @@ func (ots *objectTypeService) getObjectsFromObjectIndex(ctx context.Context, que
 		if err != nil {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest,
 				oerrors.OntologyQuery_InvalidParameter_Condition).
-				WithErrorDetails(fmt.Sprintf("failed to convert condition to dsl, %s", err.Error()))
+				WithErrorDetails(fmt.Sprintf("将过滤条件转换为 OpenSearch DSL 失败：%s", err.Error()))
 		}
 
 	}
@@ -561,7 +566,7 @@ func (ots *objectTypeService) handlerVector(ctx context.Context, property *cond.
 	if model == nil {
 		return nil, rest.NewHTTPError(ctx, http.StatusNotFound,
 			oerrors.OntologyQuery_ObjectType_SmallModelNotFound).
-			WithErrorDetails(fmt.Sprintf("model %s not found", property.IndexConfig.VectorConfig.ModelID))
+			WithErrorDetails(fmt.Sprintf("小模型[%s]不存在", property.IndexConfig.VectorConfig.ModelID))
 	}
 	if model.EmbeddingDim == 0 || model.BatchSize == 0 || model.MaxTokens == 0 {
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest,
