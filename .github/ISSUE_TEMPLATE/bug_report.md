@@ -7,25 +7,25 @@ assignees: ''
 
 ---
 
-## 描述问题
-<!-- 清晰、简洁地描述你遇到的 Bug -->
+## Description
+<!-- A clear and concise description of the bug -->
 
-## 复现步骤
-1. 打开页面 '...'
-2. 点击 '....'
-3. 滚动到 '....'
-4. 看到错误
+## Steps to reproduce
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
-## 预期行为
-<!-- 描述你期望的正常行为 -->
+## Expected behavior
+<!-- What you expected to happen -->
 
-## 实际行为
-<!-- 描述实际发生的错误行为 -->
+## Actual behavior
+<!-- What actually happened -->
 
-## 环境信息
-- 系统：[如 Windows 10/macOS 14/Linux Ubuntu 22.04]
-- 浏览器：[如 Chrome 120/Edge 119/Firefox 118]
-- 版本：[如 v1.0.0]
+## Environment
+- OS: [e.g. Windows 10 / macOS 14 / Ubuntu 22.04]
+- Browser: [e.g. Chrome 120 / Edge 119 / Firefox 118] (if applicable)
+- Version: [e.g. v1.0.0]
 
-## 附加信息
-<!-- 截图、日志、复现链接等补充信息 -->
+## Additional context
+<!-- Screenshots, logs, links to reproduce, etc. -->

@@ -7,14 +7,14 @@ assignees: ''
 
 ---
 
-## 功能描述
-<!-- 清晰描述你想要的功能 -->
+## Feature summary
+<!-- Describe the feature you want in a clear and concise way -->
 
-## 使用场景
-<!-- 说明这个功能解决了什么问题/适用于什么场景 -->
+## Problem / use case
+<!-- What problem does this solve? In what scenarios would you use it? -->
 
-## 实现建议（可选）
-<!-- 你认为该如何实现这个功能？ -->
+## Proposed solution (optional)
+<!-- How do you think this could be implemented? -->
 
-## 附加信息
-<!-- 相关参考、截图等 -->
+## Additional context
+<!-- References, mockups, screenshots, etc. -->
