@@ -123,6 +123,180 @@ def handler(event):
         result = await wait_for_execution_completion(execution_id, timeout=20)
         assert result["status"] in ("success", "completed"), f"Execution failed with status {result.get('status')}: {result.get('stderr', 'Unknown error')}"
 
+    async def test_execute_shell_code(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str,
+        wait_for_execution_completion
+    ):
+        """Test executing shell script through the existing execution endpoint."""
+        execution_data = {
+            "code": 'echo "shell async execution"',
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=execution_data
+        )
+
+        assert response.status_code in (201, 200), f"Execution creation failed: {response.text}"
+        data = response.json()
+        execution_id = data.get("execution_id") or data.get("id")
+
+        result = await wait_for_execution_completion(execution_id, timeout=20)
+        assert result["status"] in ("success", "completed"), f"Execution failed with status {result.get('status')}: {result.get('stderr', 'Unknown error')}"
+        assert "shell async execution" in result.get("stdout", "")
+
+    async def test_execute_shell_code_with_working_directory(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str,
+        wait_for_execution_completion
+    ):
+        """Test async shell execution with working_directory."""
+        setup_data = {
+            "code": (
+                "mkdir -p skill/mini-wiki && "
+                "printf '#!/bin/sh\\npwd\\necho async-shell-wd\\n' > skill/mini-wiki/run.sh && "
+                "chmod +x skill/mini-wiki/run.sh"
+            ),
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+        }
+
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=setup_data
+        )
+        assert setup_response.status_code in (201, 200), f"Execution creation failed: {setup_response.text}"
+        setup_execution_id = setup_response.json().get("execution_id") or setup_response.json().get("id")
+        setup_result = await wait_for_execution_completion(setup_execution_id, timeout=20)
+        assert setup_result["status"] in ("success", "completed"), f"Setup failed: {setup_result.get('stderr', 'Unknown error')}"
+
+        execution_data = {
+            "code": "bash run.sh",
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=execution_data
+        )
+
+        assert response.status_code in (201, 200), f"Execution creation failed: {response.text}"
+        data = response.json()
+        execution_id = data.get("execution_id") or data.get("id")
+
+        result = await wait_for_execution_completion(execution_id, timeout=20)
+        assert result["status"] in ("success", "completed"), f"Execution failed with status {result.get('status')}: {result.get('stderr', 'Unknown error')}"
+        assert "/workspace/skill/mini-wiki" in result.get("stdout", "")
+        assert "async-shell-wd" in result.get("stdout", "")
+
+    async def test_execute_shell_code_supports_bash_python_prefix(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str,
+        wait_for_execution_completion
+    ):
+        """Test async shell execution supports accidental `bash python ...` prefix."""
+        setup_data = {
+            "code": (
+                "mkdir -p skill/mini-wiki/scripts && "
+                "printf 'import os\\nprint(os.getcwd())\\nprint(\"async-bash-python-ok\")\\n' "
+                "> skill/mini-wiki/scripts/analyze_project.py"
+            ),
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+        }
+
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=setup_data
+        )
+        assert setup_response.status_code in (201, 200), f"Execution creation failed: {setup_response.text}"
+        setup_execution_id = setup_response.json().get("execution_id") or setup_response.json().get("id")
+        setup_result = await wait_for_execution_completion(setup_execution_id, timeout=20)
+        assert setup_result["status"] in ("success", "completed"), f"Setup failed: {setup_result.get('stderr', 'Unknown error')}"
+
+        execution_data = {
+            "code": "bash python scripts/analyze_project.py",
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=execution_data
+        )
+
+        assert response.status_code in (201, 200), f"Execution creation failed: {response.text}"
+        data = response.json()
+        execution_id = data.get("execution_id") or data.get("id")
+
+        result = await wait_for_execution_completion(execution_id, timeout=20)
+        assert result["status"] in ("success", "completed"), f"Execution failed with status {result.get('status')}: {result.get('stderr', 'Unknown error')}"
+        assert "/workspace/skill/mini-wiki" in result.get("stdout", "")
+        assert "async-bash-python-ok" in result.get("stdout", "")
+
+    async def test_execute_shell_code_supports_chained_bash_prefix_commands(
+        self,
+        http_client: AsyncClient,
+        test_session_id: str,
+        wait_for_execution_completion
+    ):
+        """Test async shell execution supports chained shell content with redundant bash prefixes."""
+        setup_data = {
+            "code": (
+                "mkdir -p skill/mini-wiki/scripts && "
+                "printf 'import os\\nprint(os.getcwd())\\nprint(\"async-chained-bash-ok\")\\n' "
+                "> skill/mini-wiki/scripts/analyze_project.py"
+            ),
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+        }
+
+        setup_response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=setup_data
+        )
+        assert setup_response.status_code in (201, 200), f"Execution creation failed: {setup_response.text}"
+        setup_execution_id = setup_response.json().get("execution_id") or setup_response.json().get("id")
+        setup_result = await wait_for_execution_completion(setup_execution_id, timeout=20)
+        assert setup_result["status"] in ("success", "completed"), f"Setup failed: {setup_result.get('stderr', 'Unknown error')}"
+
+        execution_data = {
+            "code": "bash cd scripts & bash python analyze_project.py",
+            "language": "shell",
+            "timeout": 10,
+            "event": {},
+            "working_directory": "skill/mini-wiki",
+        }
+
+        response = await http_client.post(
+            f"/executions/sessions/{test_session_id}/execute",
+            json=execution_data
+        )
+
+        assert response.status_code in (201, 200), f"Execution creation failed: {response.text}"
+        data = response.json()
+        execution_id = data.get("execution_id") or data.get("id")
+
+        result = await wait_for_execution_completion(execution_id, timeout=20)
+        assert result["status"] in ("success", "completed"), f"Execution failed with status {result.get('status')}: {result.get('stderr', 'Unknown error')}"
+        assert "/workspace/skill/mini-wiki/scripts" in result.get("stdout", "")
+        assert "async-chained-bash-ok" in result.get("stdout", "")
+
     async def test_get_execution_status(
         self,
         http_client: AsyncClient,

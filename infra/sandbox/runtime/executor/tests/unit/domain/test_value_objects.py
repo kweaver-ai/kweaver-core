@@ -48,6 +48,7 @@ class TestExecutionRequest:
         assert request.timeout == 10
         assert request.event == {"key": "value"}
         assert request.env_vars == {"ENV": "test"}
+        assert request.working_directory is None
 
     def test_create_request_with_defaults(self):
         """Test creating a request with default values."""
@@ -61,6 +62,7 @@ class TestExecutionRequest:
         assert request.session_id is None
         assert request.event == {}
         assert request.env_vars == {}
+        assert request.working_directory is None
 
     def test_request_is_immutable(self):
         """Test that ExecutionRequest is immutable (frozen)."""
@@ -117,6 +119,7 @@ class TestExecutionRequest:
             timeout=10,
             event={"input": "data"},
             env_vars={"KEY": "VALUE"},
+            working_directory="src/jobs",
         )
 
         context = request.to_context(
@@ -128,6 +131,7 @@ class TestExecutionRequest:
         assert context.session_id == "session_001"
         assert context.event == {"input": "data"}
         assert context.env_vars == {"KEY": "VALUE"}
+        assert context.working_directory == "src/jobs"
 
     def test_to_context_uses_execution_id_as_session_id(self):
         """Test that to_context uses execution_id as session_id when not provided."""
@@ -144,6 +148,29 @@ class TestExecutionRequest:
         )
 
         assert context.session_id == "exec_001"
+
+    def test_request_normalizes_working_directory(self):
+        """Test working directory normalization."""
+        request = ExecutionRequest(
+            execution_id="exec_001",
+            code="echo hello",
+            language="shell",
+            timeout=10,
+            working_directory="./skill/mini-wiki",
+        )
+
+        assert request.working_directory == "skill/mini-wiki"
+
+    def test_request_rejects_invalid_working_directory(self):
+        """Test invalid working directory is rejected."""
+        with pytest.raises(ValueError, match="working_directory must be a relative workspace path"):
+            ExecutionRequest(
+                execution_id="exec_001",
+                code="echo hello",
+                language="shell",
+                timeout=10,
+                working_directory="../etc",
+            )
 
 
 class TestExecutionContext:
@@ -178,6 +205,7 @@ class TestExecutionContext:
         assert context.execution_id == "exec_001"
         assert context.env_vars == {}
         assert context.event == {}
+        assert context.working_directory is None
 
     def test_context_is_immutable(self):
         """Test that ExecutionContext is immutable (frozen)."""
@@ -190,6 +218,37 @@ class TestExecutionContext:
 
         with pytest.raises(FrozenInstanceError):
             context.session_id = "modified"
+
+    def test_resolve_working_directory_path(self, tmp_path: Path):
+        """Test resolving a valid working directory."""
+        workspace = tmp_path / "workspace"
+        target = workspace / "skill" / "mini-wiki"
+        target.mkdir(parents=True)
+        context = ExecutionContext(
+            workspace_path=workspace,
+            session_id="session_001",
+            execution_id="exec_001",
+            control_plane_url="http://localhost:8000",
+            working_directory="skill/mini-wiki",
+        )
+
+        assert context.resolve_working_directory_path() == target.resolve()
+        assert context.container_working_directory() == "/workspace/skill/mini-wiki"
+
+    def test_resolve_working_directory_path_missing(self, tmp_path: Path):
+        """Test missing working directory raises error."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        context = ExecutionContext(
+            workspace_path=workspace,
+            session_id="session_001",
+            execution_id="exec_001",
+            control_plane_url="http://localhost:8000",
+            working_directory="missing",
+        )
+
+        with pytest.raises(ValueError, match="working_directory does not exist"):
+            context.resolve_working_directory_path()
 
 
 class TestExecutionResult:

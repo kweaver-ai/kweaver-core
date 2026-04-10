@@ -18,6 +18,7 @@ import structlog
 from executor.domain.entities import Execution
 from executor.domain.value_objects import ExecutionResult, ExecutionStatus, ExecutionMetrics
 from executor.infrastructure.config import settings
+from executor.infrastructure.isolation.code_wrapper import normalize_shell_code
 from executor.infrastructure.isolation.result_parser import remove_markers_from_output
 
 
@@ -128,7 +129,7 @@ class MacSeatbeltRunner:
             exec_env["PYTHONPATH"] = self._build_pythonpath(exec_env.get("PYTHONPATH"))
 
             # Determine working directory
-            cwd = str(self.workspace_path) if self.workspace_path.exists() else None
+            cwd = str(execution.context.resolve_working_directory_path())
 
             # Execute with asyncio subprocess (non-blocking)
             process = await asyncio.create_subprocess_exec(
@@ -321,13 +322,17 @@ console.log('===SANDBOX_RESULT===' + JSON.stringify(result) + '===SANDBOX_RESULT
 
     def _build_shell_command(self, execution: Execution, profile_path: str) -> tuple[list, dict]:
         """Build command for shell execution."""
+        normalized_code = normalize_shell_code(
+            execution.code,
+            execution.context.resolve_working_directory_path(),
+        )
         cmd = [
             "sandbox-exec",
             "-f", profile_path,
             "--",
             "bash",
             "-c",
-            execution.code,
+            normalized_code,
         ]
 
         # Build environment dict to return

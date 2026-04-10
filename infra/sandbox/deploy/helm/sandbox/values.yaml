@@ -12,14 +12,6 @@ image:
     repository: dip/sandbox-template-python-basic
     tag: "v1.0.0"
     pullPolicy: IfNotPresent
-  web:
-    repository: sandbox-web
-    tag: "latest"
-    pullPolicy: IfNotPresent
-  mariadb:
-    repository: mariadb
-    tag: "11.2"
-    pullPolicy: IfNotPresent
   minio:
     repository: sandbox/minio
     tag: "RELEASE.2025-09-07T16-13-09Z"
@@ -94,71 +86,6 @@ controlPlane:
     endpointUrl: ""  # Dynamically generated from namespace
     bucket: "sandbox-workspace"
     region: "us-east-1"
-
-# Web Console configuration
-web:
-  enabled: false
-  replicaCount: 1
-
-  service:
-    type: ClusterIP
-    port: 80
-    annotations: {}
-
-  ingress:
-    enabled: false
-    className: "nginx"
-    annotations: {}
-    paths:
-      - path: /
-        pathType: Prefix
-    tls: []
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
-
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-
-# MariaDB configuration
-mariadb:
-  enabled: false
-  replicaCount: 1
-
-  service:
-    type: ClusterIP
-    port: 3306
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-  # Persistence
-  persistence:
-    enabled: true
-    storageClass: ""
-    accessMode: ReadWriteOnce
-    size: 10Gi
-
-  auth:
-    rootPassword: "password"
-    database: "sandbox"
-    username: ""
-    password: ""
-
-  nodeSelector: {}
-  tolerations: []
-
 # MinIO configuration
 minio:
   enabled: true

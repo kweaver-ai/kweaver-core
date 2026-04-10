@@ -14,6 +14,8 @@ These tests require the control plane to be running on localhost:8000
 import pytest
 import httpx
 import asyncio
+import io
+import zipfile
 from typing import Generator
 
 
@@ -240,6 +242,31 @@ async def test_nested_directory_upload(http_client: httpx.AsyncClient, session_i
     )
     assert response.status_code == 200
     assert "x,y" in response.text
+
+
+@pytest.mark.asyncio
+async def test_zip_upload_and_extract(http_client: httpx.AsyncClient, session_id: str):
+    """Test uploading a ZIP archive and extracting it into the workspace."""
+    archive_buffer = io.BytesIO()
+    with zipfile.ZipFile(archive_buffer, "w") as archive:
+        archive.writestr("nested/hello.txt", "hello from zip")
+
+    response = await http_client.post(
+        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=archives/input&extract=true",
+        files={"file": ("input.zip", archive_buffer.getvalue(), "application/zip")}
+    )
+
+    assert response.status_code == 200, f"Failed to upload zip archive: {response.text}"
+    result = response.json()
+    assert result["mode"] == "archive_extract"
+    assert result["extract_path"] == "archives/input"
+    assert result["extracted_file_count"] == 1
+
+    response = await http_client.get(
+        f"{BASE_URL}/api/v1/sessions/{session_id}/files/archives/input/nested/hello.txt"
+    )
+    assert response.status_code == 200
+    assert "hello from zip" in response.text
 
 
 # Standalone execution for manual testing

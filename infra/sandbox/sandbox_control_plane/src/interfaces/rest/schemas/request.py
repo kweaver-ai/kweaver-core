@@ -4,6 +4,7 @@ REST API 请求模式
 定义 FastAPI 的请求 Pydantic 模型。
 """
 import re
+from pathlib import PurePosixPath
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal, Optional, Dict, List
 
@@ -129,12 +130,44 @@ class CreateSessionRequest(BaseModel):
 
 class ExecuteCodeRequest(BaseModel):
     """执行代码请求"""
-    code: str = Field(..., min_length=1, max_length=102400, description="要执行的代码（必须符合 AWS Lambda handler 格式）")
+    code: str = Field(
+        ...,
+        min_length=1,
+        max_length=102400,
+        description="要执行的代码。language=python 时需符合 AWS Lambda handler 格式；language=shell 时表示 shell 脚本内容。"
+    )
     language: Literal["python", "javascript", "shell"] = Field(
         ..., description="编程语言"
     )
     timeout: int = Field(30, ge=1, le=3600, description="执行超时（秒）")
     event: Optional[Dict] = Field(None, description="事件数据")
+    working_directory: Optional[str] = Field(
+        None,
+        description="可选执行目录，相对于 workspace 根目录；未传时默认使用 workspace 根目录。"
+    )
+
+    @field_validator("working_directory")
+    @classmethod
+    def validate_working_directory(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        stripped = value.strip()
+        if not stripped or stripped.startswith("/") or "\\" in stripped:
+            raise ValueError("working_directory must be a relative workspace path")
+        if re.match(r"^[A-Za-z]:", stripped):
+            raise ValueError("working_directory must be a relative workspace path")
+
+        normalized = PurePosixPath(stripped).as_posix()
+        parts = PurePosixPath(normalized).parts
+        if any(part == ".." for part in parts):
+            raise ValueError("working_directory must be a relative workspace path")
+
+        if normalized.startswith("./"):
+            normalized = normalized[2:]
+        if not normalized:
+            raise ValueError("working_directory must be a relative workspace path")
+        return normalized
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -150,6 +183,17 @@ class ExecuteCodeRequest(BaseModel):
                     "language": "python",
                     "timeout": 30,
                     "event": {"name": "Alice", "age": 25}
+                },
+                {
+                    "code": 'pwd && ls -la',
+                    "language": "shell",
+                    "timeout": 30
+                },
+                {
+                    "code": 'bash run.sh && python tools/build.py',
+                    "language": "shell",
+                    "timeout": 30,
+                    "working_directory": "skill/mini-wiki"
                 }
             ]
         }

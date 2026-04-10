@@ -36,13 +36,6 @@ Control Plane name
 {{- end }}
 
 {{/*
-Web Console name
-*/}}
-{{- define "sandbox.webName" -}}
-{{- printf "%s-web" (include "sandbox.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 ServiceAccount name
 */}}
 {{- define "sandbox.serviceAccountName" -}}

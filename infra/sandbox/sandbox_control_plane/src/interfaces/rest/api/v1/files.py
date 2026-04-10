@@ -10,6 +10,7 @@ from typing import Optional
 from src.application.services.file_service import FileService
 from src.interfaces.rest.schemas.response import ErrorResponse
 from src.infrastructure.dependencies import get_file_service_db
+from src.shared.errors.domain import NotFoundError, ValidationError
 
 router = APIRouter(prefix="/sessions/{session_id}/files", tags=["files"])
 
@@ -53,6 +54,8 @@ async def list_files(
 async def upload_file(
     session_id: str,
     path: str,
+    extract: bool = Query(False, description="是否将上传内容按 ZIP 压缩包自动解压到目标目录"),
+    overwrite: bool = Query(False, description="解压时是否覆盖已存在文件"),
     file: UploadFile = File(...),
     service: FileService = Depends(get_file_service_db)
 ):
@@ -71,22 +74,55 @@ async def upload_file(
                 detail="File size exceeds 100MB limit"
             )
 
+        if extract:
+            content_type = file.content_type or ""
+            filename = (file.filename or "").lower()
+            if "zip" not in content_type.lower() and not filename.endswith(".zip"):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Only ZIP archives are supported when extract=true"
+                )
+
+            result = await service.upload_and_extract_zip(
+                session_id=session_id,
+                path=path,
+                content=content,
+                overwrite=overwrite,
+            )
+            return {
+                "session_id": session_id,
+                **result,
+            }
+
         file_path = await service.upload_file(
             session_id=session_id,
             path=path,
             content=content,
-            content_type=file.content_type
+            content_type=file.content_type or "application/octet-stream"
         )
 
         return {
             "session_id": session_id,
+            "mode": "file",
             "file_path": file_path,
             "size": len(content)
         }
 
-    except Exception as e:
+    except HTTPException:
+        raise
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
 

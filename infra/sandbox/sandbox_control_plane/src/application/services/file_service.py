@@ -3,6 +3,11 @@
 
 编排文件上传下载相关的用例。
 """
+import io
+import mimetypes
+import re
+import zipfile
+from pathlib import PurePosixPath
 from typing import Dict, List, Any
 from urllib.parse import urlparse
 
@@ -49,17 +54,77 @@ class FileService:
         if not session.is_active():
             raise ValidationError(f"Session is not active: {session_id}")
 
-        if not path or path.startswith("/"):
-            raise ValidationError("Invalid file path")
+        normalized_path = self._validate_relative_path(path)
 
-        s3_path = f"{session.workspace_path}/{path}"
+        s3_path = f"{session.workspace_path}/{normalized_path}"
         await self._storage_service.upload_file(
             s3_path=s3_path,
             content=content,
             content_type=content_type
         )
 
-        return path
+        return normalized_path
+
+    async def upload_and_extract_zip(
+        self,
+        session_id: str,
+        path: str,
+        content: bytes,
+        overwrite: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        上传 ZIP 并解压到会话工作区。
+
+        返回解压统计结果。
+        """
+        session = await self._session_repo.find_by_id(session_id)
+        if not session:
+            raise NotFoundError(f"Session not found: {session_id}")
+
+        if not session.is_active():
+            raise ValidationError(f"Session is not active: {session_id}")
+
+        extract_path = self._validate_directory_path(path)
+
+        try:
+            archive = zipfile.ZipFile(io.BytesIO(content))
+        except zipfile.BadZipFile as exc:
+            raise ValidationError("Invalid ZIP archive") from exc
+
+        extracted_file_count = 0
+        skipped_file_count = 0
+
+        with archive:
+            for zip_info in archive.infolist():
+                if zip_info.is_dir():
+                    continue
+
+                entry_path = self._validate_zip_entry_path(zip_info.filename)
+                destination_path = self._join_paths(extract_path, entry_path)
+                s3_path = f"{session.workspace_path}/{destination_path}"
+
+                if not overwrite and await self._storage_service.file_exists(s3_path):
+                    skipped_file_count += 1
+                    continue
+
+                with archive.open(zip_info, "r") as member:
+                    file_content = member.read()
+
+                content_type = mimetypes.guess_type(entry_path)[0] or "application/octet-stream"
+                await self._storage_service.upload_file(
+                    s3_path=s3_path,
+                    content=file_content,
+                    content_type=content_type,
+                )
+                extracted_file_count += 1
+
+        return {
+            "mode": "archive_extract",
+            "extract_path": extract_path,
+            "extracted_file_count": extracted_file_count,
+            "skipped_file_count": skipped_file_count,
+            "size": len(content),
+        }
 
     async def download_file(self, session_id: str, path: str) -> Dict:
         """
@@ -169,3 +234,45 @@ class FileService:
             })
 
         return result
+
+    def _validate_relative_path(self, path: str) -> str:
+        if not path:
+            raise ValidationError("Invalid file path")
+
+        stripped = path.strip()
+        if not stripped or stripped.startswith("/") or "\\" in stripped:
+            raise ValidationError("Invalid file path")
+        if re.match(r"^[A-Za-z]:", stripped):
+            raise ValidationError("Invalid file path")
+
+        normalized = PurePosixPath(stripped).as_posix()
+        parts = PurePosixPath(normalized).parts
+        if any(part == ".." for part in parts):
+            raise ValidationError("Invalid file path")
+
+        if normalized.startswith("./"):
+            normalized = normalized[2:]
+        if not normalized or normalized == ".":
+            raise ValidationError("Invalid file path")
+        return normalized
+
+    def _validate_directory_path(self, path: str) -> str:
+        normalized = self._validate_relative_path(path)
+        return normalized.rstrip("/")
+
+    def _validate_zip_entry_path(self, path: str) -> str:
+        if not path:
+            raise ValidationError("Invalid ZIP entry path")
+        if path.startswith("/") or "\\" in path or re.match(r"^[A-Za-z]:", path):
+            raise ValidationError("Invalid ZIP entry path")
+
+        normalized = PurePosixPath(path).as_posix()
+        parts = PurePosixPath(normalized).parts
+        if any(part in ("", ".", "..") for part in parts):
+            raise ValidationError("Invalid ZIP entry path")
+        return normalized
+
+    def _join_paths(self, base: str, child: str) -> str:
+        if not base:
+            return child
+        return f"{base}/{child}"

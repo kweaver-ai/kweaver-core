@@ -232,6 +232,7 @@ class TestK8sSchedulerService:
             event={},
             timeout=60,
             env_vars={},
+            working_directory="src/jobs",
         )
 
         # Patch asyncio.to_thread to make it synchronous in tests
@@ -246,6 +247,7 @@ class TestK8sSchedulerService:
 
             assert result == "exec-123"
             executor_client.submit_execution.assert_called_once()
+            assert executor_client.submit_execution.call_args.kwargs["working_directory"] == "src/jobs"
 
     @pytest.mark.asyncio
     async def test_execute_pod_no_ip(
