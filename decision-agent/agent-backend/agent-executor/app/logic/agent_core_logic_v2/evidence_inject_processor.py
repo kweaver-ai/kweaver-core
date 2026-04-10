@@ -437,12 +437,23 @@ async def create_evidence_injection_stream(
                         latest_progress["_evidence"] = evidence_meta
                         StandLogger.info_log(
                             f"[EvidenceInject] ✅ Injected evidence into _progress: stage={latest_progress.get('stage')}, "
-                            f"evidence_count={len(evidence_meta)}"
+                            f"evidence_count={len(evidence_meta)}, "
+                            f"progress_answer_before={str(latest_progress.get('answer', ''))[:50] if latest_progress.get('answer') else 'N/A'}"
+                        )
+
+                        # 验证注入是否成功
+                        StandLogger.info_log(
+                            f"[EvidenceInject] Verification: "
+                            f"item['_progress'][-1] has _evidence: {'_evidence' in item['_progress'][-1]}, "
+                            f"keys={list(item['_progress'][-1].keys()) if item['_progress'] else 'N/A'}"
                         )
 
                 # 同时也将 _evidence 添加到 answer 字典中（用于其他用途）
                 if isinstance(answer, dict):
                     answer["_evidence"] = evidence_meta
+                    StandLogger.info_log(
+                        f"[EvidenceInject] ✅ Also added _evidence to answer dict"
+                    )
 
                 StandLogger.info_log(
                     f"[EvidenceInject] ✅ Evidence meta: {evidence_meta}"

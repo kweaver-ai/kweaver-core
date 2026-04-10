@@ -317,6 +317,14 @@ async def process_arun_loop(
 
         item_value = {key: get_dolphin_var_value(value) for key, value in item.items()}
 
+        # 验证 _progress 引用关系
+        if "_progress" in item_value and "_progress" in item:
+            StandLogger.info_log(
+                f"[process_arun_loop] _progress reference check: "
+                f"item_value['_progress'] is item['_progress']: {item_value['_progress'] is item['_progress']}, "
+                f"len={len(item_value.get('_progress', []))}"
+            )
+
         output = {
             "answer": item_value,
             "context": agent.executor.context.get_all_variables_values(),
