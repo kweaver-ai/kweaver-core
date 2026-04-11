@@ -325,6 +325,10 @@ class TestDockerScheduler:
         assert "s3fs" in script
         assert "test-bucket" in script
         assert "sessions/sess_123" in script
+        assert 'mount --bind "$SESSION_PATH" /workspace' in script
+        assert "Workspace bind mounted" in script
+        assert "workspace-old" not in script
+        assert "ln -s" not in script
 
     def test_build_s3_mount_entrypoint_with_dependencies(self, scheduler):
         """测试构建带依赖的 S3 挂载入口脚本"""
@@ -340,6 +344,7 @@ class TestDockerScheduler:
 
         assert "pip3 install" in script
         assert "requests==2.31.0" in script
+        assert 'mount --bind "$SESSION_PATH" /workspace' in script
 
     def test_build_dependency_install_entrypoint(self, scheduler):
         """测试构建依赖安装入口脚本"""

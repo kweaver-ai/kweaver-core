@@ -6,13 +6,14 @@
 
 | 字段 | 值 |
 | :--- | :--- |
-| 文档版本 | v1.1 |
-| 适用版本 | context-loader v5.0.4（internal 5004） |
-| 发布日期 | 2026-01-04 |
+| 文档版本 | v1.2 |
+| 适用版本 | context-loader v0.6.0 |
+| 发布日期 | 2026-04-10 |
 | 状态 | 正式发布 |
 
 | 修订日期 | 修订说明 |
 | :--- | :--- |
+| 2026-04-10 | 更新为 context-loader `0.6.0`，新增 `find_skills` 工具说明，并补充 `search/query/find/get` 四类工具语义 |
 | 2026-03-26 | 根据 `docs/apis/api_private` OpenAPI 更新 6 个工具的依赖说明与参数配置 |
 | 2026-01-04 | 首次发布 |
 
@@ -22,17 +23,19 @@
 
 context-loader 的目标不是直接回答用户问题，而是为 Agent 提供来自 BKN（业务知识网络）的高质量、最小且完备的上下文子集，让最终回答尽可能基于事实、降低幻觉。
 
-### 1.2 双模检索（Dual-Mode Retrieval）
+### 1.2 工具语义分层
 
-- 探索发现模式（Exploratory Search）：解决概念盲区，快速“点亮地图”（实例语义召回为后续规划）
-- 精确结构化查询模式（Structural Query）：按图索骥，用确定性查询获取可审计的事实
+- `search_*`：探索发现 Schema 入口，解决“有哪些对象类 / 关系类 / 行动类”的问题
+- `query_*`：对已知 Schema 做精确实例与事实查询，获取可审计结果
+- `find_*`：在指定 `kn_id` 和业务上下文边界内发现候选资源，解决“当前场景下可考虑装配什么”的问题
+- `get_*`：对已知目标做确定性获取、计算或信息物化
 
 ## 2. 能力边界
 
 | 维度 | context-loader 负责 | context-loader 不负责 |
 | :--- | :--- | :--- |
 | 意图与推理 | 提供可用的检索工具与稳定输出 | 用户意图理解、规划与复杂推理 |
-| 数据获取 | Schema 检索、实例检索、结构化查询、逻辑属性解析 | 最终自然语言答案生成 |
+| 数据获取 | Schema 检索、实例检索、候选资源发现、逻辑属性解析、行动信息物化 | 最终自然语言答案生成 |
 | 可靠性 | 提供确定性的结构化查询原子能力 | “自动把所有参数都推断出来”的完全自治 |
 
 ## 3. 快速开始
@@ -97,8 +100,9 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
   └─ Agent 规划
       ├─ 探索发现：kn_schema_search / kn_search
       ├─ 精确查询：query_object_instance / query_instance_subgraph
+      ├─ 候选资源发现：find_skills（需要发现当前场景下可挂载的 Skill 时）
       ├─ 逻辑属性：get_logic_properties_values（需要动态参数时）
-      └─ 行动召回：get_action_info（需要动态工具发现时）
+      └─ 行动信息物化：get_action_info（需要动态工具发现时）
 ```
 
 ### 4.2 工具总览
@@ -109,14 +113,20 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 | `kn_search` | 概念召回（Schema，v2） | 需要更强的概念召回控制能力（多轮/精简Schema等） |
 | `query_object_instance` | 单对象类实例过滤查询 | 已知对象类与过滤条件，要查列表时 |
 | `query_instance_subgraph` | 沿关系路径拉取子图 | 需要跨关系找关联对象/多跳事实时 |
+| `find_skills` | 在业务边界内发现 Skill 候选 | 已知 `kn_id`，想知道当前场景下可考虑装配哪些 Skill 时 |
 | `get_logic_properties_values` | 逻辑属性解析（指标/算子） | 值需要按上下文动态计算时 |
 | `get_action_info` | 动态工具发现（Function Call 定义） | 针对具体对象实例，想知道“能做什么动作”时 |
 
-### 4.3 工具依赖（双模检索如何衔接）
+### 4.3 工具依赖（四类工具如何衔接）
 
 - 精确查询依赖探索发现：
   - 结构化查询需要 `ot_id`（对象类 ID）与 Schema 信息（字段/主键/关系方向/动作绑定对象类）
   - `ot_id` 与 Schema 通常来自 `kn_schema_search` 或 `kn_search` 的返回（object_types / relation_types / action_types）
+- 候选资源发现依赖 KN 边界与可选上下文：
+  - `find_skills` 至少需要 `kn_id`
+  - 若已通过探索发现确认对象类，可继续传 `object_type_id`
+  - 若已通过精确查询获取实例，可继续传 `instance_identities`
+  - `skill_query` 用于当前业务边界内过滤和排序，不替代 `search_*`
 - 逻辑属性与行动召回依赖 Schema + 精确查询数据：
   - `get_logic_properties_values` 需要 `ot_id` + `_instance_identities`，其中数组元素应来自 `query_object_instance` 或 `query_instance_subgraph` 返回结果中的 `_instance_identity` 字段，以及逻辑属性定义（来自 Schema）
   - `get_action_info` 需要 `at_id`（来自 Schema）+ `_instance_identities`，其中数组元素应来自精确查询结果中的 `_instance_identity` 字段
@@ -128,10 +138,11 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 - Schema：对象类/关系类/动作类定义（用于让 Agent“理解世界结构”）
 - Data：对象实例与关联事实（用于让 Agent“拿到确定性证据”）
 
-### 5.2 为什么要“先探索，再结构化”
+### 5.2 为什么要“先探索，再结构化，再发现候选资源”
 
 - 探索发现用于降低盲区：先找到候选概念/入口实例
 - 结构化查询用于保证可追溯：推理链的每一步都有确定输入与确定输出
+- 候选资源发现用于补齐运行时装配：在既定业务边界内返回可考虑使用的 Skill 等资源，而不是暴露底层承载细节
 
 ## 6. 工具参考（Tool Reference）
 
@@ -292,7 +303,117 @@ Data Agent 配置（建议）：
 | `include_logic_params` | 固定值 | Query 参数（可选） | `false` |
 | `relation_type_paths` | 模型生成 | 请求体参数 | `模型生成` |
 
-### 6.5 get_logic_properties_values（逻辑属性解析）
+### 6.5 find_skills（Skill 候选发现）
+
+> 接口定义：[docs/apis/api_private/find_skills.yaml](../apis/api_private/find_skills.yaml)
+
+- API：`POST /api/agent-retrieval/in/v1/kn/find_skills`
+- 作用：在指定知识网络和业务上下文边界内发现 Skill 候选，返回最小化 Skill 元数据列表
+
+<a id="find-skills-quick-start"></a>
+
+#### 6.5.1 快速开始
+
+先确认能不能用：
+
+- `find_skills` 不是升级 Context Loader 后自动可用的能力
+- 在调用 `find_skills` 前，知识网络中必须已存在固定的 `skills` ObjectType
+- 该 ObjectType 的运行时识别键必须是 `object_type_id = "skills"`
+- `skills` ObjectType 不能由任意自定义对象类替代，它是 Skill 的固定承接面
+- `skills` ObjectType 下必须已有可见的 Skill 元数据实例
+- 业务对象与 `skills` 之间必须已配置绑定关系
+
+> 如果以上条件未满足，`find_skills` 虽然可以调用，但很可能只返回空结果。
+
+最短使用路径：
+
+- `kn_id` 必填
+- 已明确对象类时，优先传 `object_type_id`
+- 已定位到实例时，再传 `instance_identities`
+- `skill_query` 只用于当前范围内过滤，不替代上下文定位
+
+进一步阅读：
+
+- 前提和限制：见[启用前提](#find-skills-prerequisites)
+- 返回空结果时如何排查：见[空结果排查](#find-skills-empty-results)
+- 为什么必须按固定方式配置：见[背景说明](#find-skills-background)
+
+<a id="find-skills-prerequisites"></a>
+
+#### 6.5.2 启用前提
+
+`find_skills` 只负责运行时候选发现，不负责创建 Skill，也不负责维护业务绑定关系。Skill recall 是否真正可用，不只取决于 Context Loader 版本，还取决于建模侧是否已准备完成。
+
+接入前至少确认以下三件事：
+
+- 已存在固定的 `skills` ObjectType，且运行时识别键为 `object_type_id = "skills"`
+- `skills` ObjectType 下已有可见的 Skill 元数据实例，至少能返回 `skill_id`、`name`、`description`
+- 业务对象与 `skills` 之间已配置绑定关系；否则对象类级和实例级召回会天然为空
+
+<a id="find-skills-empty-results"></a>
+
+#### 6.5.3 空结果排查
+
+`find_skills` 返回空结果，不一定代表接口异常，更常见的是当前范围内没有可召回 Skill，或启用前提尚未满足。
+
+| 场景 | 常见含义 | 建议动作 |
+| :--- | :--- | :--- |
+| 仅传 `kn_id` 返回空结果 | 当前 Skill 不是全局生效，或当前知识网络下没有可见 Skill | 优先补 `object_type_id`；同时确认知识网络下是否已有可见的 Skill 元数据 |
+| 传 `object_type_id` 返回空结果 | 该对象类通常没有绑定 Skill | 确认该对象类与 `skills` 是否已配置绑定关系 |
+| 传 `object_type_id + instance_identities` 返回空结果 | 该实例通常没有命中 Skill，或不存在实例级绑定 | 可先回退到对象类级查看候选 Skill 是否存在 |
+| 传 `skill_query` 后返回空结果 | 当前过滤条件过严，或当前边界内本就没有匹配的 Skill | 放宽或去掉 `skill_query` 后重试 |
+
+#### 6.5.4 参数与调用方式
+
+请求体（关键字段）：
+
+| 字段 | 必填 | 说明 |
+| :--- | :--- | :--- |
+| `kn_id` | 是 | 业务知识网络 ID |
+| `object_type_id` | 否 | 业务对象类型 ID；传入时缩小到对象类级召回 |
+| `instance_identities` | 否 | 对象实例标识列表；传入时缩小到实例级召回，且必须同时提供 `object_type_id` |
+| `skill_query` | 否 | Skill 过滤词；仅在当前边界内做文本过滤和排序 |
+| `top_k` | 否 | 返回的最大 Skill 数量，默认 10，最大 20 |
+
+调用要点：
+
+- 仅传 `kn_id`：网络级召回，只适用于 Skill 以全局网络范围生效的场景
+- 传 `kn_id + object_type_id`：对象类级召回
+- 传 `kn_id + object_type_id + instance_identities`：实例级召回
+- `skill_query` 不替代 `kn_search`；若调用方尚未明确对象类或实例，应先使用 `search_*` / `query_*`
+
+返回要点：
+
+- `entries`：Skill 候选列表
+- 每个条目只返回 `skill_id`、`name`、`description`
+- 无匹配时返回空数组
+- `message`：空结果说明信息；仅当 `entries` 为空且接口返回成功时出现，用于解释当前为什么没有结果以及下一步建议
+
+<a id="find-skills-background"></a>
+
+#### 6.5.5 背景说明
+
+下面这些不是请求参数要求，而是 Skill recall 能否真正生效的底层约束。
+
+| 背景项 | 用户需要知道什么 | 对使用 `find_skills` 的影响 |
+| :--- | :--- | :--- |
+| 固定模板 / 固定承接面 | Skill 不是任意对象类都能被召回，系统约定通过固定的 `skills` ObjectType 承接 | 如果没有这个固定承接面，`find_skills` 无法稳定识别 Skill 数据 |
+| 共享只读视图 | Skill 元数据由上游统一管理，BKN 默认承接的是只读视图，而不是每个知识网络各自维护一份副本 | 新增或变更 Skill 后，召回是否可见取决于该视图是否已同步可用 |
+| 运行时识别键 | 当前运行时固定通过 `object_type_id = "skills"` 识别 Skill ObjectType | 不是“同名即可”，必须满足固定识别键，否则 `find_skills` 不会把它当作 Skill 承接面 |
+
+Data Agent 配置（建议）：
+
+| 配置项 | 推荐类型 | 说明 | 示例 |
+| :--- | :--- | :--- | :--- |
+| `x-account-id` | 应用变量 | Header 参数 | `header.x-account-id` |
+| `x-account-type` | 固定值/应用变量 | Header 参数 | `user` 或 `header.x-account-type` |
+| `kn_id` | 固定值/应用变量 | 请求体参数 | `"kn_legal"` 或 `self_config.data_source.knowledge_network[0].knowledge_network_id` |
+| `object_type_id` | 模型生成 | 请求体参数（可选） | `模型生成` |
+| `instance_identities` | 模型生成 | 请求体参数（可选） | `模型生成` |
+| `skill_query` | 模型生成 | 请求体参数（可选） | `模型生成` |
+| `top_k` | 固定值 | 请求体参数（可选） | `5` 或 `10` |
+
+### 6.6 get_logic_properties_values（逻辑属性解析）
 
 > 接口定义：[docs/apis/api_private/get_logic_properties_values.yaml](../apis/api_private/get_logic_properties_values.yaml)
 
@@ -348,7 +469,7 @@ Data Agent 配置（建议）：
 | `additional_context` | 模型生成 | 请求体参数（可选） | `模型生成` |
 | `options.return_debug` | 固定值/模型生成 | 请求体参数（可选） | `false` |
 
-### 6.6 get_action_info（行动信息召回 / 动态工具发现）
+### 6.7 get_action_info（行动信息召回 / 动态工具发现）
 
 > 接口定义：[docs/apis/api_private/get_action_info.yaml](../apis/api_private/get_action_info.yaml)
 
@@ -389,8 +510,9 @@ Data Agent 配置（建议）：
 
 1）探索概念：用 `kn_schema_search` / `kn_search` 确认对象类/关系类  
 2）精确定位实例：用 `query_object_instance`（单类过滤）或 `query_instance_subgraph`（跨关系/多跳）获取入口实例与事实  
-3）补充指标：用 `get_logic_properties_values` 获取逻辑属性值（必要时补 additional_context）  
-4）动态动作：用 `get_action_info` 获取与实例关联的可执行行动
+3）发现候选 Skill：用 `find_skills` 获取当前知识网络和对象上下文下可考虑挂载的 Skill  
+4）补充指标：用 `get_logic_properties_values` 获取逻辑属性值（必要时补 additional_context）  
+5）动态动作：用 `get_action_info` 获取与实例关联的可执行行动
 
 ## 8. 附录
 
@@ -400,5 +522,6 @@ Data Agent 配置（建议）：
 - `kn_search.yaml`
 - `query_object_instance.yaml`
 - `query_instance_subgraph.yaml`
+- `find_skills.yaml`
 - `get_logic_properties_values.yaml`
 - `get_action_info.yaml`

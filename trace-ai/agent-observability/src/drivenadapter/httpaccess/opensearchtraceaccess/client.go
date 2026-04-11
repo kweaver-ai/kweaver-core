@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/kweaver-ai/agent-observability/src/domain/valueobject/opensearchvo"
-	"github.com/kweaver-ai/agent-observability/src/infra/opensearch"
+	"github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability/src/domain/valueobject/opensearchvo"
+	"github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability/src/infra/opensearch"
 )
 
 type Client struct {

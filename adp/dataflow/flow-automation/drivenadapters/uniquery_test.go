@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/go-playground/assert/v2"
-	mhttp "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/mock/mock_httpclient"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_httpclient"
+	mhttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/mock/mock_httpclient"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_httpclient"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )

@@ -22,6 +22,7 @@ import (
 type MockRelationTypeService struct {
 	ctrl     *gomock.Controller
 	recorder *MockRelationTypeServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockRelationTypeServiceMockRecorder is the mock recorder for MockRelationTypeService.
@@ -52,7 +53,7 @@ func (m *MockRelationTypeService) CheckRelationTypeExistByID(ctx context.Context
 }
 
 // CheckRelationTypeExistByID indicates an expected call of CheckRelationTypeExistByID.
-func (mr *MockRelationTypeServiceMockRecorder) CheckRelationTypeExistByID(ctx, knID, branch, rtID interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) CheckRelationTypeExistByID(ctx, knID, branch, rtID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRelationTypeExistByID", reflect.TypeOf((*MockRelationTypeService)(nil).CheckRelationTypeExistByID), ctx, knID, branch, rtID)
 }
@@ -67,7 +68,7 @@ func (m *MockRelationTypeService) CreateRelationTypes(ctx context.Context, tx *s
 }
 
 // CreateRelationTypes indicates an expected call of CreateRelationTypes.
-func (mr *MockRelationTypeServiceMockRecorder) CreateRelationTypes(ctx, tx, relationTypes, mode, validateDependency interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) CreateRelationTypes(ctx, tx, relationTypes, mode, validateDependency any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRelationTypes", reflect.TypeOf((*MockRelationTypeService)(nil).CreateRelationTypes), ctx, tx, relationTypes, mode, validateDependency)
 }
@@ -81,7 +82,7 @@ func (m *MockRelationTypeService) DeleteRelationTypesByIDs(ctx context.Context, 
 }
 
 // DeleteRelationTypesByIDs indicates an expected call of DeleteRelationTypesByIDs.
-func (mr *MockRelationTypeServiceMockRecorder) DeleteRelationTypesByIDs(ctx, tx, knID, branch, rtIDs interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) DeleteRelationTypesByIDs(ctx, tx, knID, branch, rtIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRelationTypesByIDs", reflect.TypeOf((*MockRelationTypeService)(nil).DeleteRelationTypesByIDs), ctx, tx, knID, branch, rtIDs)
 }
@@ -95,7 +96,7 @@ func (m *MockRelationTypeService) DeleteRelationTypesByKnID(ctx context.Context,
 }
 
 // DeleteRelationTypesByKnID indicates an expected call of DeleteRelationTypesByKnID.
-func (mr *MockRelationTypeServiceMockRecorder) DeleteRelationTypesByKnID(ctx, tx, knID, branch interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) DeleteRelationTypesByKnID(ctx, tx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRelationTypesByKnID", reflect.TypeOf((*MockRelationTypeService)(nil).DeleteRelationTypesByKnID), ctx, tx, knID, branch)
 }
@@ -110,7 +111,7 @@ func (m *MockRelationTypeService) GetRelationTypeIDsByKnID(ctx context.Context, 
 }
 
 // GetRelationTypeIDsByKnID indicates an expected call of GetRelationTypeIDsByKnID.
-func (mr *MockRelationTypeServiceMockRecorder) GetRelationTypeIDsByKnID(ctx, knID, branch interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) GetRelationTypeIDsByKnID(ctx, knID, branch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRelationTypeIDsByKnID", reflect.TypeOf((*MockRelationTypeService)(nil).GetRelationTypeIDsByKnID), ctx, knID, branch)
 }
@@ -125,7 +126,7 @@ func (m *MockRelationTypeService) GetRelationTypesByIDs(ctx context.Context, knI
 }
 
 // GetRelationTypesByIDs indicates an expected call of GetRelationTypesByIDs.
-func (mr *MockRelationTypeServiceMockRecorder) GetRelationTypesByIDs(ctx, knID, branch, rtIDs interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) GetRelationTypesByIDs(ctx, knID, branch, rtIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRelationTypesByIDs", reflect.TypeOf((*MockRelationTypeService)(nil).GetRelationTypesByIDs), ctx, knID, branch, rtIDs)
 }
@@ -139,7 +140,7 @@ func (m *MockRelationTypeService) InsertDatasetData(ctx context.Context, relatio
 }
 
 // InsertDatasetData indicates an expected call of InsertDatasetData.
-func (mr *MockRelationTypeServiceMockRecorder) InsertDatasetData(ctx, relationTypes interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) InsertDatasetData(ctx, relationTypes any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertDatasetData", reflect.TypeOf((*MockRelationTypeService)(nil).InsertDatasetData), ctx, relationTypes)
 }
@@ -155,7 +156,7 @@ func (m *MockRelationTypeService) ListRelationTypes(ctx context.Context, query i
 }
 
 // ListRelationTypes indicates an expected call of ListRelationTypes.
-func (mr *MockRelationTypeServiceMockRecorder) ListRelationTypes(ctx, query interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) ListRelationTypes(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelationTypes", reflect.TypeOf((*MockRelationTypeService)(nil).ListRelationTypes), ctx, query)
 }
@@ -170,7 +171,7 @@ func (m *MockRelationTypeService) SearchRelationTypes(ctx context.Context, query
 }
 
 // SearchRelationTypes indicates an expected call of SearchRelationTypes.
-func (mr *MockRelationTypeServiceMockRecorder) SearchRelationTypes(ctx, query interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) SearchRelationTypes(ctx, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchRelationTypes", reflect.TypeOf((*MockRelationTypeService)(nil).SearchRelationTypes), ctx, query)
 }
@@ -184,7 +185,7 @@ func (m *MockRelationTypeService) UpdateRelationType(ctx context.Context, tx *sq
 }
 
 // UpdateRelationType indicates an expected call of UpdateRelationType.
-func (mr *MockRelationTypeServiceMockRecorder) UpdateRelationType(ctx, tx, relationType, strictMode interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) UpdateRelationType(ctx, tx, relationType, strictMode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRelationType", reflect.TypeOf((*MockRelationTypeService)(nil).UpdateRelationType), ctx, tx, relationType, strictMode)
 }
@@ -198,7 +199,7 @@ func (m *MockRelationTypeService) ValidateRelationTypes(ctx context.Context, knI
 }
 
 // ValidateRelationTypes indicates an expected call of ValidateRelationTypes.
-func (mr *MockRelationTypeServiceMockRecorder) ValidateRelationTypes(ctx, knID, branch, relationTypes, strictMode, batch, mode interface{}) *gomock.Call {
+func (mr *MockRelationTypeServiceMockRecorder) ValidateRelationTypes(ctx, knID, branch, relationTypes, strictMode, batch, mode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateRelationTypes", reflect.TypeOf((*MockRelationTypeService)(nil).ValidateRelationTypes), ctx, knID, branch, relationTypes, strictMode, batch, mode)
 }

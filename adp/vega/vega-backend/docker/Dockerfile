@@ -28,7 +28,11 @@ ARG UID=1001
 ARG GID=1001
 
 RUN groupadd -r -g $GID adp \
-    && useradd -r -u $UID -g $GID adp
+    && useradd -r -u $UID -g $GID adp \
+    && apt-get update \
+    && apt-get install -y python3 python3-pip \
+    && pip3 install sqlglot -i https://mirrors.aliyun.com/pypi/simple/ \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=$UID:$GID /go/src/bin /opt/vega-backend
 

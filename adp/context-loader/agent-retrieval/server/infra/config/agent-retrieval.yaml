@@ -63,3 +63,9 @@ rerank_llm:
   frequency_penalty: 0.5
   presence_penalty: 0.5
   max_tokens: 5000
+find_skills:
+  default_top_k: 10
+  max_top_k: 20
+  recall_timeout_ms: 5000
+  total_timeout_ms: 10000
+  skills_object_type_id: "skills"

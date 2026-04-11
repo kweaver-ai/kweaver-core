@@ -3,9 +3,9 @@ package dainject
 import (
 	"sync"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/observabilitysvc"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/httpinject"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driver/iportdriver"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/observabilitysvc"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/httpinject"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iportdriver"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
 

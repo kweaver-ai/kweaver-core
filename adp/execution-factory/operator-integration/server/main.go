@@ -15,17 +15,19 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	logicscommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/mcpinstance"
+	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/skill"
 )
 
 // Server 服务
 type Server struct {
 	// 健康检查
-	httpHealthHandler  interfaces.HTTPRouterInterface
-	restPublicHandler  interfaces.HTTPRouterInterface
-	restPrivateHandler interfaces.HTTPRouterInterface
-	MQHandler          interfaces.MQHandler
-	outboxMessageEvent interfaces.App
-	config             *config.Config
+	httpHealthHandler     interfaces.HTTPRouterInterface
+	restPublicHandler     interfaces.HTTPRouterInterface
+	restPrivateHandler    interfaces.HTTPRouterInterface
+	MQHandler             interfaces.MQHandler
+	outboxMessageEvent    interfaces.App
+	config                *config.Config
+	skillIndexSyncService interfaces.SkillIndexSyncService
 }
 
 // Start 开启服务
@@ -34,6 +36,12 @@ func (s *Server) Start() {
 	err := s.outboxMessageEvent.Start()
 	if err != nil {
 		s.config.Logger.Errorf("start outbox message event failed, error: %v", err)
+		panic(err)
+	}
+	// 初始化skill索引同步
+	err = s.skillIndexSyncService.Init(context.Background())
+	if err != nil {
+		s.config.Logger.Errorf("init skill index sync service failed, error: %v", err)
 		panic(err)
 	}
 
@@ -79,12 +87,13 @@ func main() {
 	// 设置错误码语言
 	common.SetLang(config.Project.Language)
 	s := &Server{
-		config:             config,
-		httpHealthHandler:  driveradapters.NewHTTPHealthHandler(),
-		restPublicHandler:  driveradapters.NewRestPublicHandler(),
-		restPrivateHandler: driveradapters.NewRestPrivateHandler(),
-		outboxMessageEvent: logicscommon.NewOutboxMessageEvent(),
-		MQHandler:          driveradapters.NewMQHandler(),
+		config:                config,
+		httpHealthHandler:     driveradapters.NewHTTPHealthHandler(),
+		restPublicHandler:     driveradapters.NewRestPublicHandler(),
+		restPrivateHandler:    driveradapters.NewRestPrivateHandler(),
+		outboxMessageEvent:    logicscommon.NewOutboxMessageEvent(),
+		MQHandler:             driveradapters.NewMQHandler(),
+		skillIndexSyncService: skill.NewSkillIndexSyncService(),
 	}
 	s.config.Logger.Info("start agent-operator-integration server")
 	// 检查是否开启了可观测性

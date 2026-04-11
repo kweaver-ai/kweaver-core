@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
 	"github.com/kweaver-ai/proton-rds-sdk-go/sqlx"
 
 	//_ 注册mysql驱动

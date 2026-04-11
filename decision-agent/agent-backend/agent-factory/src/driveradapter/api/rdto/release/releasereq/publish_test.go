@@ -3,8 +3,8 @@ package releasereq
 import (
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/daenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/daenum"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,6 +66,7 @@ func TestPublishReq_ReqCheck_Valid(t *testing.T) {
 		AgentID:              "agent-123",
 		UpdatePublishInfoReq: &UpdatePublishInfoReq{},
 	}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToWhere = []daenum.PublishToWhere{
 		daenum.PublishToWhereSquare,
 	}
@@ -102,6 +103,7 @@ func TestPublishReq_ReqCheck_InvalidPublishInfo(t *testing.T) {
 		AgentID:              "agent-123",
 		UpdatePublishInfoReq: &UpdatePublishInfoReq{},
 	}
+	req.CategoryIDs = []string{"cat-1"}
 	req.PublishToBes = []cdaenum.PublishToBe{
 		cdaenum.PublishToBe("invalid"),
 	}
@@ -246,9 +248,6 @@ func TestPublishReq_WithValidAgentID(t *testing.T) {
 			AgentID:              agentID,
 			UpdatePublishInfoReq: &UpdatePublishInfoReq{},
 		}
-		req.PublishToWhere = []daenum.PublishToWhere{
-			daenum.PublishToWhereSquare,
-		}
 
 		err := req.ReqCheck()
 
@@ -265,4 +264,45 @@ func TestPublishReq_EmptyUpdatePublishInfoReq(t *testing.T) {
 	err := req.ReqCheck()
 
 	assert.NoError(t, err)
+	assert.Empty(t, req.CategoryIDs)
+	assert.Empty(t, req.PublishToWhere)
+}
+
+func TestPublishReq_ReqCheck_WithNilUpdatePublishInfoReq(t *testing.T) {
+	t.Parallel()
+
+	req := &PublishReq{AgentID: "agent-123"}
+
+	assert.NotPanics(t, func() {
+		err := req.ReqCheck()
+		assert.NoError(t, err)
+		assert.Empty(t, req.CategoryIDs)
+		assert.Empty(t, req.PublishToWhere)
+	})
+}
+
+func TestPublishReq_ReqCheck_EmptyPublishToWhere(t *testing.T) {
+	t.Parallel()
+
+	req := NewPublishReq()
+	req.AgentID = "agent-123"
+
+	err := req.ReqCheck()
+
+	assert.NoError(t, err)
+	assert.Empty(t, req.PublishToWhere)
+	assert.Empty(t, req.PublishToBes)
+}
+
+func TestPublishReq_ReqCheck_CustomSpacePublishToWhereInvalid(t *testing.T) {
+	t.Parallel()
+
+	req := NewPublishReq()
+	req.AgentID = "agent-123"
+	req.PublishToWhere = []daenum.PublishToWhere{daenum.PublishToWhereCustomSpace}
+
+	err := req.ReqCheck()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "publish_to_where is invalid")
 }

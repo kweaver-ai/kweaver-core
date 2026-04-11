@@ -647,35 +647,35 @@ func Test_actionTypeService_GetTotal(t *testing.T) {
 				TotalCount: 10,
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldBeNil)
 			So(total, ShouldEqual, 10)
 		})
 
-		Convey("Failed when QueryDatasetData returns error\n", func() {
+		Convey("Failed when QueryResourceData returns error\n", func() {
 			filterCondition := map[string]any{
 				"query": map[string]any{
 					"match_all": map[string]any{},
 				},
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldNotBeNil)
 			So(total, ShouldEqual, 0)
 		})
 
-		Convey("Failed when QueryDatasetData returns nil response\n", func() {
+		Convey("Failed when QueryResourceData returns nil response\n", func() {
 			filterCondition := map[string]any{
 				"query": map[string]any{
 					"match_all": map[string]any{},
 				},
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldBeNil)
@@ -707,7 +707,7 @@ func Test_actionTypeService_GetTotalWithATIDs(t *testing.T) {
 				TotalCount: 2,
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			total, err := service.GetTotalWithATIDs(ctx, filterCondition, atIDs)
 			So(err, ShouldBeNil)
@@ -720,7 +720,7 @@ func Test_actionTypeService_GetTotalWithATIDs(t *testing.T) {
 			}
 			atIDs := []string{"at1"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 
 			total, err := service.GetTotalWithATIDs(ctx, filterCondition, atIDs)
 			So(err, ShouldNotBeNil)
@@ -752,7 +752,7 @@ func Test_actionTypeService_GetTotalWithLargeATIDs(t *testing.T) {
 				TotalCount: 1,
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).AnyTimes()
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).AnyTimes()
 
 			total, err := service.GetTotalWithLargeATIDs(ctx, filterCondition, atIDs)
 			So(err, ShouldBeNil)
@@ -776,7 +776,7 @@ func Test_actionTypeService_GetTotalWithLargeATIDs(t *testing.T) {
 			}
 			atIDs := []string{"at1", "at2"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 
 			total, err := service.GetTotalWithLargeATIDs(ctx, filterCondition, atIDs)
 			So(err, ShouldNotBeNil)
@@ -1404,7 +1404,7 @@ func Test_actionTypeService_SearchActionTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchActionTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -1441,7 +1441,7 @@ func Test_actionTypeService_SearchActionTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchActionTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -1564,10 +1564,10 @@ func Test_actionTypeService_SearchActionTypes_extraCases(t *testing.T) {
 			So(len(result.Entries), ShouldEqual, 0)
 		})
 
-		Convey("Failed when QueryDatasetData returns error\n", func() {
+		Convey("Failed when QueryResourceData returns error\n", func() {
 			query := &interfaces.ConceptsQuery{KNID: "kn1", Branch: interfaces.MAIN_BRANCH, Limit: 10}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ActionType_InternalError))
 			result, err := service.SearchActionTypes(ctx, query)
 			So(err, ShouldNotBeNil)
 			So(len(result.Entries), ShouldEqual, 0)
@@ -1596,12 +1596,12 @@ func Test_actionTypeService_SearchActionTypes_extraCases(t *testing.T) {
 				NeedTotal: true,
 			}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			// NeedTotal block: QueryDatasetData with Limit=1
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			// NeedTotal block: QueryResourceData with Limit=1
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{}, TotalCount: 3,
 			}, nil)
 			// Main loop: empty response → break
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}, nil)
 			result, err := service.SearchActionTypes(ctx, query)
@@ -1617,7 +1617,7 @@ func Test_actionTypeService_SearchActionTypes_extraCases(t *testing.T) {
 				"_score":  float64(0.9),
 			}
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(&interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry},
 			}, nil)
 			result, err := service.SearchActionTypes(ctx, query)

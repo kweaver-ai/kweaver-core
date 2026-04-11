@@ -12,7 +12,8 @@ import (
 type contextKey string // 自定义专属的key类型
 
 const (
-	ADMIN_ID string = "266c6a42-6131-4d62-8f39-853e7093701c"
+	ADMIN_ACCOUNT_ID   = "266c6a42-6131-4d62-8f39-853e7093701c"
+	ADMIN_ACCOUNT_TYPE = "user"
 
 	HTTP_HEADER_ACCOUNT_ID   = "x-account-id"
 	HTTP_HEADER_ACCOUNT_TYPE = "x-account-type"
@@ -21,6 +22,7 @@ const (
 
 	// 访问者类型
 	ACCESSOR_TYPE_USER = "user"
+	ACCESSOR_TYPE_APP  = "app"
 
 	// 创建时无资源id，用 * 表示
 	RESOURCE_ID_ALL = "*"
@@ -52,10 +54,10 @@ var (
 
 // 检查权限
 type PermissionCheck struct {
-	Accessor   Accessor `json:"accessor"`
-	Resource   Resource `json:"resource"`
-	Operations []string `json:"operation"`
-	Method     string   `json:"method"`
+	Accessor   PermissionAccessor `json:"accessor"`
+	Resource   PermissionResource `json:"resource"`
+	Operations []string           `json:"operation"`
+	Method     string             `json:"method"`
 }
 
 // 检查权限结果
@@ -64,52 +66,46 @@ type PermissionCheckResult struct {
 }
 
 // 访问者信息
-type Accessor struct {
+type PermissionAccessor struct {
 	Type string `json:"type,omitempty"` // 分 user: 实名， app: 应用账户
 	ID   string `json:"id,omitempty"`   // 用户ID
 }
 
 // 资源信息
-type Resource struct {
+type PermissionResource struct {
 	Type string `json:"type,omitempty"` // 资源类型
 	ID   string `json:"id,omitempty"`   // 资源ID
 	Name string `json:"name,omitempty"` // 资源名称
-	//IdPath string `json:"parent_id_path,omitempty"`
 }
 
 // 过滤/删除
-type ResourcesFilter struct {
-	Accessor       Accessor   `json:"accessor,omitempty"`
-	Resources      []Resource `json:"resources,omitempty"`
-	Operations     []string   `json:"operation,omitempty"`
-	AllowOperation bool       `json:"allow_operation"`
-	Method         string     `json:"method,omitempty"`
+type PermissionResourcesFilter struct {
+	Accessor       PermissionAccessor   `json:"accessor,omitempty"`
+	Resources      []PermissionResource `json:"resources,omitempty"`
+	Operations     []string             `json:"operation,omitempty"`
+	AllowOperation bool                 `json:"allow_operation"`
+	Method         string               `json:"method,omitempty"`
 }
 
 // 设置权限
 type PermissionPolicy struct {
-	Accessor   Accessor            `json:"accessor"`
-	Resource   Resource            `json:"resource"`
+	Accessor   PermissionAccessor  `json:"accessor"`
+	Resource   PermissionResource  `json:"resource"`
 	Operations PermissionPolicyOps `json:"operation"`
 	Condition  string              `json:"condition"`
 	ExpiresAt  string              `json:"expires_at,omitempty"`
 }
 
 type PermissionPolicyOps struct {
-	Allow []Operation `json:"allow"`
-	Deny  []Operation `json:"deny"`
+	Allow []PermissionOperation `json:"allow"`
+	Deny  []PermissionOperation `json:"deny"`
 }
 
-type Operation struct {
+type PermissionOperation struct {
 	Operation string `json:"id"`
 }
 
-type ResourceOps struct {
-	ResourceID string   `json:"id"`
-	Operations []string `json:"allow_operation,omitempty"`
-}
-
-type GetResourceOpsResponse struct {
+type PermissionResourceOps struct {
 	ResourceID string   `json:"id"`
 	Operations []string `json:"operation,omitempty"`
 }
@@ -117,9 +113,9 @@ type GetResourceOpsResponse struct {
 //go:generate mockgen -source ../interfaces/permission_access.go -destination ../interfaces/mock/mock_permission_access.go
 type PermissionAccess interface {
 	CheckPermission(ctx context.Context, check PermissionCheck) (bool, error)
+	FilterResources(ctx context.Context, filter PermissionResourcesFilter) (map[string]PermissionResourceOps, error)
+	GetResourcesOperations(ctx context.Context, filter PermissionResourcesFilter) (map[string]PermissionResourceOps, error)
+
 	CreateResources(ctx context.Context, policies []PermissionPolicy) error
-	DeleteResources(ctx context.Context, resources []Resource) error
-	FilterResources(ctx context.Context, filter ResourcesFilter) ([]ResourceOps, error)
-	// 获取资源操作
-	GetResourceOps(ctx context.Context, filter ResourcesFilter) ([]GetResourceOpsResponse, error)
+	DeleteResources(ctx context.Context, resources []PermissionResource) error
 }

@@ -3,7 +3,7 @@ package umarg
 import (
 	"net/http"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 )
 
 // GetOsnArgDto 获取组织架构对象的names的参数

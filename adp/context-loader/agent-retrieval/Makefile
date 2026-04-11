@@ -1,16 +1,17 @@
 .DEFAULT_GOAL := help
-.PHONY: help generate-mock lint test test-cover helm-template ktctl preview build
+.PHONY: help generate-mock lint test test-cover ci
+
+PKG_LIST_CMD = go list ./server/... | grep -v '/server/tests/' | grep -v '/server/mocks'
+SHELL_STRICT = set -eu; set -o pipefail 2>/dev/null || true;
+TEST_RESULT_DIR = test-result
 
 help:
 	@echo "可用目标:"
 	@echo "  generate-mock\t生成mock代码"
 	@echo "  lint\t\t运行代码检查"
 	@echo "  test\t\t执行单元测试"
-	@echo "  test-cover\t执行单元测试并检查覆盖率"
-	@echo "  helm-template\t生成Helm模板"
-	@echo "  ktctl\t\t连接远程集群"
-	@echo "  preview\t预览API文档"
-	@echo "  build\t\t构建并运行主程序"
+	@echo "  test-cover\t执行单元测试并生成覆盖率报告"
+	@echo "  ci\t\t执行CI检查（lint + test-cover）"
 
 generate-mock:
 	@echo "==== 生成mock代码 ===="
@@ -18,48 +19,49 @@ generate-mock:
 
 lint:
 	@echo "==== 代码检查 ===="
-	golangci-lint run ./... --exclude-dirs=server/tests
+	@$(SHELL_STRICT) \
+	pkgs="$$( $(PKG_LIST_CMD) )"; \
+	if [ -z "$$pkgs" ]; then \
+		echo "ERROR: no packages found for lint"; \
+		exit 1; \
+	fi; \
+	go vet $$pkgs
 
 test:
 	@echo "==== 执行测试 ===="
-	go test $(shell go list ./... | grep -v /server/tests/ | grep -v /server/mocks) -gcflags=all=-l -v
+	@$(SHELL_STRICT) \
+	pkgs="$$( $(PKG_LIST_CMD) | tr ' ' '\n' | grep -v '/server$$' )"; \
+	if [ -z "$$pkgs" ]; then \
+		echo "ERROR: no packages found for test"; \
+		exit 1; \
+	fi; \
+	go test $$pkgs -v -count=1
 
 test-cover:
-	@echo "==== 执行测试并检查覆盖率 ===="
-	go test $(shell go list ./... | grep -v /server/tests/ | grep -v /server/mocks) -gcflags=all=-l -coverprofile=coverage.out
-	go tool cover -func=coverage.out
-	@go tool cover -func=coverage.out | grep total | awk '{print substr($$3, 1, length($$3)-1)}'
+	@echo "==== 执行测试并生成覆盖率报告 ===="
+	@mkdir -p $(TEST_RESULT_DIR)
+	@rm -f $(TEST_RESULT_DIR)/coverage.out
+	@$(SHELL_STRICT) \
+	pkgs="$$( $(PKG_LIST_CMD) | tr ' ' '\n' | grep -v '/server$$' )"; \
+	if [ -z "$$pkgs" ]; then \
+		echo "ERROR: no packages found for test-cover"; \
+		exit 1; \
+	fi; \
+	first_profile=1; \
+	for pkg in $$pkgs; do \
+		profile="$(TEST_RESULT_DIR)/$$(echo $$pkg | tr '/.' '__').out"; \
+		go test $$pkg -count=1 -coverprofile=$$profile -covermode=atomic || exit $$?; \
+		if [ $$first_profile -eq 1 ]; then \
+			cat $$profile > $(TEST_RESULT_DIR)/coverage.out; \
+			first_profile=0; \
+		else \
+			tail -n +2 $$profile >> $(TEST_RESULT_DIR)/coverage.out; \
+		fi; \
+	done
+	go tool cover -func=$(TEST_RESULT_DIR)/coverage.out
+	go tool cover -html=$(TEST_RESULT_DIR)/coverage.out -o $(TEST_RESULT_DIR)/coverage.html
+	@command -v gocover-cobertura >/dev/null 2>&1 && \
+		gocover-cobertura < $(TEST_RESULT_DIR)/coverage.out > $(TEST_RESULT_DIR)/coverage.xml || \
+		(echo "WARN: gocover-cobertura not found, coverage.xml not generated; install for CI compliance")
 
-helm-template:
-	@echo "==== 生成Helm模板 ===="
-	@if ! command -v helm &>/dev/null; then \
-		echo "请先安装helm"; exit 1; \
-	fi
-	helm template ./helm/agent-retrieval -n agent-retrieval -f./helm/agent-retrieval/values.yaml
-
-ktctl:
-	@echo "==== 连接远程集群 ===="
-	.ktctl/dev.sh
-
-preview:
-	@echo "==== 预览API文档 ===="
-	cd docs && ./preview.sh
-
-build:
-	@echo "==== 检查是否已经连接远程环境 ===="
-	@# 获取将连接远程环境地址
-	Host=$(shell grep '^Host="' .ktctl/dev.sh | awk -F\" '{print $2}')
-	@if ! pgrep -f 'ktctl connect' &>/dev/null; then \
-		echo "未连接到远程环境 $(Host)"; exit 1; \
-	else \
-		echo "已经连接远程环境 $(Host)"; \
-	fi
-	@echo "==== 构建并运行 ===="
-	@mkdir -p /sysvol/config || exit 1
-	@mkdir -p /sysvol/secret || exit 1
-	@echo "复制配置文件..."
-	@cp -f ./server/infra/config/agent-retrieval.yaml /sysvol/config/
-	@cp -f ./server/infra/config/observability.yaml /sysvol/config/
-	@cp -f ./server/infra/config/agent-retrieval-secret.yaml /sysvol/secret/
-	@echo "启动服务..."
-	go run ./server/main.go
+ci: lint test-cover

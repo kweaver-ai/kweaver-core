@@ -263,8 +263,8 @@ import (
     "strings"
     "time"
 
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
     o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
     "github.com/pkg/errors"
 )
@@ -434,7 +434,7 @@ package isandboxplatformhttp
 
 import (
     "context"
-    sandboxdto "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
+    sandboxdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
 )
 
 // ISandboxPlatform Sandbox Platform 接口
@@ -506,11 +506,11 @@ import (
     "context"
     "fmt"
 
-    sandboxdto "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
-    "github.com/kweaver-ai/decision-agent/agent-factory/conf"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/httpclient"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+    sandboxdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/httpclient"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
     o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
     "github.com/pkg/errors"
 )
@@ -541,8 +541,8 @@ import (
     "context"
     "fmt"
 
-    sandboxdto "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/httpclient"
+    sandboxdto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/sandboxplatformhttp/sandboxplatformdto"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/httpclient"
     o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
     "github.com/pkg/errors"
 )
@@ -572,10 +572,10 @@ package sandboxplatformhttp
 import (
     "sync"
 
-    "github.com/kweaver-ai/decision-agent/agent-factory/conf"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/httpclient"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/httpclient"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 )
 
 type sandboxPlatformHttpAcc struct {
@@ -673,7 +673,7 @@ func (acc *conversationDBAcc) Delete(ctx context.Context, req conversationdto.De
 ```go
 package conf
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/cconf"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
 
 // SandboxPlatformConf Sandbox Platform 配置
 type SandboxPlatformConf struct {
@@ -1010,7 +1010,7 @@ import (
     "path"
     "strings"
 
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 )
 
 // BuildWorkspaceContextMessage 生成独立的工作区上下文消息
@@ -1740,7 +1740,7 @@ import (
     "path"
     "strings"
 
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 )
 
 // BuildWorkspaceContextMessage 生成独立的工作区上下文消息
@@ -1782,8 +1782,8 @@ Available files:
 package agentsvc
 
 import (
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/util"
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/util"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 )
 
 // buildWorkspaceContextMessage 生成独立的工作区上下文消息
@@ -1799,8 +1799,8 @@ func buildWorkspaceContextMessage(conversationID string, userID string, selected
 package conversationsvc
 
 import (
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/util"
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/util"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 )
 
 // buildWorkspaceContextMessage 生成独立的工作区上下文消息
@@ -1993,8 +1993,8 @@ package agentsvc_test
 import (
     "testing"
 
-    agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
-    "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/service/util"
+    agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/service/util"
     "github.com/stretchr/testify/assert"
 )
 

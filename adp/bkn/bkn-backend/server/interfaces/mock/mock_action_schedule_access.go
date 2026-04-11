@@ -22,6 +22,7 @@ import (
 type MockActionScheduleAccess struct {
 	ctrl     *gomock.Controller
 	recorder *MockActionScheduleAccessMockRecorder
+	isgomock struct{}
 }
 
 // MockActionScheduleAccessMockRecorder is the mock recorder for MockActionScheduleAccess.
@@ -50,7 +51,7 @@ func (m *MockActionScheduleAccess) CreateSchedule(ctx context.Context, tx *sql.T
 }
 
 // CreateSchedule indicates an expected call of CreateSchedule.
-func (mr *MockActionScheduleAccessMockRecorder) CreateSchedule(ctx, tx, schedule interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) CreateSchedule(ctx, tx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchedule", reflect.TypeOf((*MockActionScheduleAccess)(nil).CreateSchedule), ctx, tx, schedule)
 }
@@ -64,7 +65,7 @@ func (m *MockActionScheduleAccess) DeleteSchedules(ctx context.Context, tx *sql.
 }
 
 // DeleteSchedules indicates an expected call of DeleteSchedules.
-func (mr *MockActionScheduleAccessMockRecorder) DeleteSchedules(ctx, tx, scheduleIDs interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) DeleteSchedules(ctx, tx, scheduleIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSchedules", reflect.TypeOf((*MockActionScheduleAccess)(nil).DeleteSchedules), ctx, tx, scheduleIDs)
 }
@@ -79,7 +80,7 @@ func (m *MockActionScheduleAccess) GetDueSchedules(ctx context.Context, now int6
 }
 
 // GetDueSchedules indicates an expected call of GetDueSchedules.
-func (mr *MockActionScheduleAccessMockRecorder) GetDueSchedules(ctx, now interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) GetDueSchedules(ctx, now any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDueSchedules", reflect.TypeOf((*MockActionScheduleAccess)(nil).GetDueSchedules), ctx, now)
 }
@@ -94,7 +95,7 @@ func (m *MockActionScheduleAccess) GetSchedule(ctx context.Context, scheduleID s
 }
 
 // GetSchedule indicates an expected call of GetSchedule.
-func (mr *MockActionScheduleAccessMockRecorder) GetSchedule(ctx, scheduleID interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) GetSchedule(ctx, scheduleID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedule", reflect.TypeOf((*MockActionScheduleAccess)(nil).GetSchedule), ctx, scheduleID)
 }
@@ -109,7 +110,7 @@ func (m *MockActionScheduleAccess) GetSchedules(ctx context.Context, scheduleIDs
 }
 
 // GetSchedules indicates an expected call of GetSchedules.
-func (mr *MockActionScheduleAccessMockRecorder) GetSchedules(ctx, scheduleIDs interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) GetSchedules(ctx, scheduleIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedules", reflect.TypeOf((*MockActionScheduleAccess)(nil).GetSchedules), ctx, scheduleIDs)
 }
@@ -124,7 +125,7 @@ func (m *MockActionScheduleAccess) GetSchedulesTotal(ctx context.Context, queryP
 }
 
 // GetSchedulesTotal indicates an expected call of GetSchedulesTotal.
-func (mr *MockActionScheduleAccessMockRecorder) GetSchedulesTotal(ctx, queryParams interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) GetSchedulesTotal(ctx, queryParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulesTotal", reflect.TypeOf((*MockActionScheduleAccess)(nil).GetSchedulesTotal), ctx, queryParams)
 }
@@ -139,7 +140,7 @@ func (m *MockActionScheduleAccess) ListSchedules(ctx context.Context, queryParam
 }
 
 // ListSchedules indicates an expected call of ListSchedules.
-func (mr *MockActionScheduleAccessMockRecorder) ListSchedules(ctx, queryParams interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) ListSchedules(ctx, queryParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedules", reflect.TypeOf((*MockActionScheduleAccess)(nil).ListSchedules), ctx, queryParams)
 }
@@ -153,7 +154,7 @@ func (m *MockActionScheduleAccess) ReleaseLock(ctx context.Context, scheduleID, 
 }
 
 // ReleaseLock indicates an expected call of ReleaseLock.
-func (mr *MockActionScheduleAccessMockRecorder) ReleaseLock(ctx, scheduleID, podID, lastRunTime, nextRunTime interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) ReleaseLock(ctx, scheduleID, podID, lastRunTime, nextRunTime any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseLock", reflect.TypeOf((*MockActionScheduleAccess)(nil).ReleaseLock), ctx, scheduleID, podID, lastRunTime, nextRunTime)
 }
@@ -168,7 +169,7 @@ func (m *MockActionScheduleAccess) TryAcquireLock(ctx context.Context, scheduleI
 }
 
 // TryAcquireLock indicates an expected call of TryAcquireLock.
-func (mr *MockActionScheduleAccessMockRecorder) TryAcquireLock(ctx, scheduleID, podID, now, lockTimeout interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) TryAcquireLock(ctx, scheduleID, podID, now, lockTimeout any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryAcquireLock", reflect.TypeOf((*MockActionScheduleAccess)(nil).TryAcquireLock), ctx, scheduleID, podID, now, lockTimeout)
 }
@@ -182,7 +183,7 @@ func (m *MockActionScheduleAccess) UpdateNextRunTime(ctx context.Context, schedu
 }
 
 // UpdateNextRunTime indicates an expected call of UpdateNextRunTime.
-func (mr *MockActionScheduleAccessMockRecorder) UpdateNextRunTime(ctx, scheduleID, nextRunTime interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) UpdateNextRunTime(ctx, scheduleID, nextRunTime any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNextRunTime", reflect.TypeOf((*MockActionScheduleAccess)(nil).UpdateNextRunTime), ctx, scheduleID, nextRunTime)
 }
@@ -196,7 +197,7 @@ func (m *MockActionScheduleAccess) UpdateSchedule(ctx context.Context, tx *sql.T
 }
 
 // UpdateSchedule indicates an expected call of UpdateSchedule.
-func (mr *MockActionScheduleAccessMockRecorder) UpdateSchedule(ctx, tx, schedule interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) UpdateSchedule(ctx, tx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchedule", reflect.TypeOf((*MockActionScheduleAccess)(nil).UpdateSchedule), ctx, tx, schedule)
 }
@@ -210,7 +211,7 @@ func (m *MockActionScheduleAccess) UpdateScheduleStatus(ctx context.Context, sch
 }
 
 // UpdateScheduleStatus indicates an expected call of UpdateScheduleStatus.
-func (mr *MockActionScheduleAccessMockRecorder) UpdateScheduleStatus(ctx, scheduleID, status, nextRunTime interface{}) *gomock.Call {
+func (mr *MockActionScheduleAccessMockRecorder) UpdateScheduleStatus(ctx, scheduleID, status, nextRunTime any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduleStatus", reflect.TypeOf((*MockActionScheduleAccess)(nil).UpdateScheduleStatus), ctx, scheduleID, status, nextRunTime)
 }

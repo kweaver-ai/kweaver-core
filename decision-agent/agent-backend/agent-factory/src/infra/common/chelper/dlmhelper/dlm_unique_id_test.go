@@ -6,8 +6,8 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cconstant"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess/dbmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess/dbmock"
 	"github.com/stretchr/testify/assert"
 )
 

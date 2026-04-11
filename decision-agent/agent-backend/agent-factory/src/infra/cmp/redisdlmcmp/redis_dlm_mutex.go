@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
 )
 
 type redisDlmMutex struct {

@@ -28,16 +28,17 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/kweaver-ai/decision-agent/agent-factory/src/boot"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/cenvhelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/global"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/server/httpserver"
+	_ "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/boot"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/server/httpserver"
 )
 
 func main() {
 	// 初始化OpenTelemetry provider
 	ctx := context.Background()
+
 	otelProvider, err := otel.InitOTel(ctx, global.GConfig.OtelV2Config)
 	if err != nil {
 		log.Fatalf("Failed to initialize OpenTelemetry provider: %v", err)

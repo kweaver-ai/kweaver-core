@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
 )
 
 //go:generate mockgen -package mock_drivenadapters -source ../drivenadapters/token_mgnt.go -destination ../tests/mock_drivenadapters/token_mgnt_mock.go

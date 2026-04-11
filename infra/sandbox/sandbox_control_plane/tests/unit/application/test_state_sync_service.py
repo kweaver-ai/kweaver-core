@@ -9,6 +9,7 @@ from datetime import datetime
 
 from src.application.services.state_sync_service import StateSyncService
 from src.domain.entities.session import Session
+from src.domain.entities.template import Template
 from src.domain.value_objects.resource_limit import ResourceLimit
 from src.domain.value_objects.execution_status import SessionStatus
 from src.domain.repositories.session_repository import ISessionRepository
@@ -37,11 +38,33 @@ class TestStateSyncService:
         return scheduler
 
     @pytest.fixture
-    def service(self, session_repo, container_scheduler):
+    def template_repo(self):
+        """模拟模板仓储"""
+        repo = Mock()
+        repo.find_by_id = AsyncMock()
+        return repo
+
+    @pytest.fixture
+    def service(self, session_repo, container_scheduler, template_repo):
         """创建状态同步服务"""
         return StateSyncService(
             session_repo=session_repo,
-            container_scheduler=container_scheduler
+            container_scheduler=container_scheduler,
+            template_repo=template_repo,
+        )
+
+    @pytest.fixture
+    def python_template(self):
+        """创建测试模板"""
+        return Template(
+            id="python-basic",
+            name="Python Basic",
+            image="registry.example.com/custom-python:v2",
+            base_image="registry.example.com/custom-python:v2",
+            pre_installed_packages=[],
+            default_resources=ResourceLimit.default(),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
     @pytest.fixture
@@ -296,7 +319,14 @@ class TestStateSyncService:
         assert result["container_running"] is False
 
     @pytest.mark.asyncio
-    async def test_recovery_success(self, service, session_repo, container_scheduler):
+    async def test_recovery_success(
+        self,
+        service,
+        session_repo,
+        container_scheduler,
+        template_repo,
+        python_template,
+    ):
         """测试成功恢复会话"""
         session = Session(
             id="sess_123",
@@ -311,6 +341,7 @@ class TestStateSyncService:
 
         container_scheduler.is_container_running.return_value = False
         container_scheduler.create_container.return_value = "new-container"
+        template_repo.find_by_id.return_value = python_template
 
         # 不传入 scheduler 参数，恢复功能会尝试创建新容器
         result = await service._attempt_recovery(session)
@@ -318,9 +349,19 @@ class TestStateSyncService:
         assert result is True
         assert session.container_id == "new-container"
         assert session.status == SessionStatus.RUNNING
+        container_scheduler.create_container.assert_awaited_once()
+        config = container_scheduler.create_container.await_args.args[0]
+        assert config.image == python_template.image
 
     @pytest.mark.asyncio
-    async def test_recovery_failure_marks_failed(self, service, session_repo, container_scheduler):
+    async def test_recovery_failure_marks_failed(
+        self,
+        service,
+        session_repo,
+        container_scheduler,
+        template_repo,
+        python_template,
+    ):
         """测试恢复失败时标记会话为失败"""
         session = Session(
             id="sess_123",
@@ -335,11 +376,39 @@ class TestStateSyncService:
 
         container_scheduler.is_container_running.return_value = False
         container_scheduler.create_container.side_effect = Exception("Docker error")
+        template_repo.find_by_id.return_value = python_template
 
         result = await service._attempt_recovery(session)
 
         assert result is False
         assert session.status == SessionStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_recovery_fails_when_template_missing(
+        self,
+        service,
+        container_scheduler,
+        template_repo,
+    ):
+        """测试恢复时模板不存在会标记失败且不创建容器"""
+        session = Session(
+            id="sess_123",
+            template_id="python-basic",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://sandbox-workspace/sessions/sess_123",
+            runtime_type="docker",
+            container_id="old-container",
+            env_vars={"SESSION_ID": "sess_123"}
+        )
+
+        template_repo.find_by_id.return_value = None
+
+        result = await service._attempt_recovery(session)
+
+        assert result is False
+        assert session.status == SessionStatus.FAILED
+        container_scheduler.create_container.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_sync_error_handling(self, service, session_repo):

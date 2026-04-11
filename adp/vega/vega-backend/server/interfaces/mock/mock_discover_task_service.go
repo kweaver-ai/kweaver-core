@@ -57,18 +57,23 @@ func (mr *MockDiscoverTaskServiceMockRecorder) CheckExistByStatuses(ctx, catalog
 }
 
 // Create mocks base method.
-func (m *MockDiscoverTaskService) Create(ctx context.Context, catalogID string) (string, error) {
+func (m *MockDiscoverTaskService) Create(ctx context.Context, catalogID string, taskType ...string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, catalogID)
+	varargs := []any{ctx, catalogID}
+	for _, a := range taskType {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Create", varargs...)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockDiscoverTaskServiceMockRecorder) Create(ctx, catalogID any) *gomock.Call {
+func (mr *MockDiscoverTaskServiceMockRecorder) Create(ctx, catalogID any, taskType ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDiscoverTaskService)(nil).Create), ctx, catalogID)
+	varargs := append([]any{ctx, catalogID}, taskType...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDiscoverTaskService)(nil).Create), varargs...)
 }
 
 // GetByID mocks base method.
@@ -84,6 +89,21 @@ func (m *MockDiscoverTaskService) GetByID(ctx context.Context, id string) (*inte
 func (mr *MockDiscoverTaskServiceMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDiscoverTaskService)(nil).GetByID), ctx, id)
+}
+
+// GetByScheduledID mocks base method.
+func (m *MockDiscoverTaskService) GetByScheduledID(ctx context.Context, scheduledID string) ([]*interfaces.DiscoverTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByScheduledID", ctx, scheduledID)
+	ret0, _ := ret[0].([]*interfaces.DiscoverTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByScheduledID indicates an expected call of GetByScheduledID.
+func (mr *MockDiscoverTaskServiceMockRecorder) GetByScheduledID(ctx, scheduledID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByScheduledID", reflect.TypeOf((*MockDiscoverTaskService)(nil).GetByScheduledID), ctx, scheduledID)
 }
 
 // List mocks base method.

@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS t_relation_type (
   f_source_object_type_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_target_object_type_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_type VARCHAR(40 CHAR) NOT NULL DEFAULT '',
-  f_mapping_rules text DEFAULT NULL,
+  f_mapping_rules TEXT DEFAULT NULL,
   f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_creator_type VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_create_time BIGINT NOT NULL DEFAULT 0,
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS t_concept_group (
   f_updater_type VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_update_time BIGINT NOT NULL DEFAULT 0,
   CLUSTER PRIMARY KEY (f_kn_id,f_branch,f_id)
-) ;
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_concept_group_name ON t_concept_group(f_kn_id,f_branch,f_name);
 
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS t_concept_group_relation (
   f_concept_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_create_time BIGINT NOT NULL DEFAULT 0,
   CLUSTER PRIMARY KEY (f_id)
-) ;
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_concept_group_relation ON t_concept_group_relation(f_kn_id,f_branch,f_group_id,f_concept_type,f_concept_id);
 

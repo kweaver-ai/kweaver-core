@@ -79,6 +79,7 @@ class ExecutorClient:
         event: dict,
         timeout: int,
         env_vars: dict,
+        working_directory: str | None = None,
     ) -> str:
         """
         提交执行请求到执行器
@@ -92,6 +93,7 @@ class ExecutorClient:
             event: 事件数据
             timeout: 超时时间（秒）
             env_vars: 环境变量
+            working_directory: 可选执行目录，相对于 workspace 根目录
 
         Returns:
             execution_id: 执行任务 ID
@@ -113,6 +115,7 @@ class ExecutorClient:
             event=event,
             timeout=timeout,
             env_vars=env_vars,
+            working_directory=working_directory,
         )
 
         logger.info(f"Submitting execution request: executor_url={executor_url}, execution_id={execution_id}, language={language}")

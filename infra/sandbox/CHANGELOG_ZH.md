@@ -4,6 +4,25 @@
 
 ## [0.3.2]
 
+### 🚀 新功能
+
+- **压缩包上传与自动解压**
+  - 为 session workspace 新增 ZIP 压缩包上传能力
+  - 新增将压缩包自动解压到指定 workspace 相对路径的能力
+  - 上传响应中增加覆盖控制、冲突跳过统计和解压结果元数据
+  - 增加压缩包路径安全校验，拒绝非法条目与路径穿越内容
+
+- **Shell 执行与工作目录支持**
+  - 在 control plane、executor 和 Web UI 中新增 `language=shell` 支持
+  - 为 `execute` 与 `execute-sync` 请求新增可选 `working_directory`
+  - 增加对误写 `bash/sh` 前缀命令的 shell 规范化处理
+  - 补充 shell 相对路径执行与链式命令场景的端到端测试覆盖
+
+### 📚 文档
+
+- 新增 session archive upload 和 shell execution 的 PRD 与设计文档
+- 更新 sandbox OpenAPI 文档，补充压缩包上传与 shell 执行请求变更
+
 ### 🔧 改进
 
 - **Helm Chart 镜像提取兼容性**

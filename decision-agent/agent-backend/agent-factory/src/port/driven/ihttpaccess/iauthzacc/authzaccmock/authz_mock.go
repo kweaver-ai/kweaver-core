@@ -13,11 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cdaenum "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	cdapmsenum "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
-	authzhttpreq "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
-	authzhttpres "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpres"
-	cenum "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	cdaenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	cdapmsenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
+	authzhttpreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
+	authzhttpres "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpres"
+	cenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 	gomock "go.uber.org/mock/gomock"
 )
 

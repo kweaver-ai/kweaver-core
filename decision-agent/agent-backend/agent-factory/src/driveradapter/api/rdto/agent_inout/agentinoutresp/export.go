@@ -1,7 +1,7 @@
 package agentinoutresp
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
 // ExportResp 导出agent响应

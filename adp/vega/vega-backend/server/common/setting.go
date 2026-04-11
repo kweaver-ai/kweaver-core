@@ -61,6 +61,13 @@ type RedisSetting struct {
 	MasterGroupName  string
 }
 
+// KafkaConnectSetting Kafka Connect 配置项
+type KafkaConnectSetting struct {
+	Host     string
+	Port     int
+	Protocol string
+}
+
 // AppSetting app配置项
 type AppSetting struct {
 	ServerSetting        ServerSetting             `mapstructure:"server"`
@@ -69,11 +76,12 @@ type AppSetting struct {
 	CryptoSetting        CryptoSetting             `mapstructure:"crypto"`
 	DepServices          map[string]map[string]any `mapstructure:"depServices"`
 
-	DBSetting         libdb.DBSetting
-	MQSetting         libmq.MQSetting
-	OpenSearchSetting rest.OpenSearchClientConfig
-	HydraAdminSetting hydra.HydraAdminSetting
-	RedisSetting      RedisSetting
+	DBSetting           libdb.DBSetting
+	MQSetting           libmq.MQSetting
+	OpenSearchSetting   rest.OpenSearchClientConfig
+	HydraAdminSetting   hydra.HydraAdminSetting
+	RedisSetting        RedisSetting
+	KafkaConnectSetting KafkaConnectSetting
 
 	PermissionUrl string
 	UserMgmtUrl   string
@@ -84,15 +92,16 @@ const (
 	configName string = "vega-backend-config"
 	configType string = "yaml"
 
-	rdsServiceName        string = "rds"
-	mqServiceName         string = "mq"
-	opensearchServiceName string = "opensearch"
-	redisServiceName      string = "redis"
-	permissionServiceName string = "authorization-private"
-	userMgmtServiceName   string = "user-management"
-	hydraAdminServiceName string = "hydra-admin"
+	rdsServiceName          string = "rds"
+	mqServiceName           string = "mq"
+	opensearchServiceName   string = "opensearch"
+	redisServiceName        string = "redis"
+	permissionServiceName   string = "authorization-private"
+	userMgmtServiceName     string = "user-management"
+	hydraAdminServiceName   string = "hydra-admin"
+	kafkaConnectServiceName string = "kafka-connect"
 
-	DATA_BASE_NAME string = "adp"
+	DATA_BASE_NAME string = "kweaver"
 )
 
 var (
@@ -164,6 +173,8 @@ func loadSetting(vp *viper.Viper) {
 	SetOpenSearchSetting()
 
 	SetRedisSetting()
+
+	SetKafkaConnectSetting()
 
 	if GetAuthEnabled() {
 		SetHydraAdminSetting()
@@ -386,5 +397,18 @@ func SetHydraAdminSetting() {
 		HydraAdminProcotol: setting["protocol"].(string),
 		HydraAdminHost:     setting["host"].(string),
 		HydraAdminPort:     setting["port"].(int),
+	}
+}
+
+func SetKafkaConnectSetting() {
+	setting, ok := appSetting.DepServices[kafkaConnectServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", kafkaConnectServiceName)
+	}
+
+	appSetting.KafkaConnectSetting = KafkaConnectSetting{
+		Host:     setting["host"].(string),
+		Port:     setting["port"].(int),
+		Protocol: setting["protocol"].(string),
 	}
 }

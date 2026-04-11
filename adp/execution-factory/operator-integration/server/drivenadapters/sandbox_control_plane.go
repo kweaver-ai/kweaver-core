@@ -1,10 +1,14 @@
 package drivenadapters
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 	"sync"
 
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
@@ -240,4 +244,133 @@ func (c *sandBoxControlPlaneClient) InstallPythonDependencies(ctx context.Contex
 		return nil, err
 	}
 	return detail, nil
+}
+
+// UploadSkillArchive 上传 Skill 压缩包
+func (c *sandBoxControlPlaneClient) UploadSkillArchive(ctx context.Context, sessionID string, req *interfaces.UploadSkillArchiveReq) (*interfaces.UploadSkillArchiveResp, error) {
+	workDir := strings.TrimSpace(req.WorkDir)
+	fileName := strings.TrimSpace(req.FileName)
+	if fileName == "" || len(req.Content) == 0 {
+		return nil, errors.NewHTTPError(ctx, http.StatusBadRequest, errors.ErrExtSandboxControlPlaneFailed, "invalid upload request")
+	}
+	if workDir == "" {
+		trimmedName := strings.TrimSuffix(fileName, path.Ext(fileName))
+		workDir = path.Join("skills", sessionID, trimmedName)
+	}
+	normalizedDir := normalizeWorkspacePath(workDir)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", fileName)
+	if err != nil {
+		return nil, errors.NewHTTPError(ctx, http.StatusInternalServerError, errors.ErrExtSandboxControlPlaneFailed, err.Error())
+	}
+	if _, err = part.Write(req.Content); err != nil {
+		return nil, errors.NewHTTPError(ctx, http.StatusInternalServerError, errors.ErrExtSandboxControlPlaneFailed, err.Error())
+	}
+	if err = writer.Close(); err != nil {
+		return nil, errors.NewHTTPError(ctx, http.StatusInternalServerError, errors.ErrExtSandboxControlPlaneFailed, err.Error())
+	}
+
+	query := url.Values{}
+	query.Set("path", normalizedDir)
+	query.Set("extract", "true")
+	query.Set("overwrite", "false")
+	src := fmt.Sprintf("%s/sessions/%s/files/upload?%s", c.baseURL, sessionID, query.Encode())
+	headers := common.GetHeaderFromCtx(ctx)
+	if headers == nil {
+		headers = map[string]string{}
+	}
+	headers["Content-Type"] = writer.FormDataContentType()
+
+	respCode, respData, err := c.httpClient.PostNoUnmarshal(ctx, src, headers, body.Bytes())
+	if err != nil {
+		c.logger.WithContext(ctx).Errorf("UploadSkillArchive failed, err: %v", err)
+		return nil, err
+	}
+	if (respCode < http.StatusOK) || (respCode >= http.StatusMultipleChoices) {
+		c.logger.WithContext(ctx).Errorf("UploadSkillArchive failed, unexpected status code: %d, session_id: %s", respCode, sessionID)
+		return nil, errors.NewHTTPError(ctx, http.StatusInternalServerError, errors.ErrExtSandboxControlPlaneFailed, map[string]any{
+			"error":      fmt.Sprintf("unexpected status code: %d", respCode),
+			"http_code":  respCode,
+			"response":   string(respData),
+			"session_id": sessionID,
+		})
+	}
+
+	payload := struct {
+		SessionID          string `json:"session_id"`
+		Mode               string `json:"mode"`
+		FilePath           string `json:"file_path"`
+		ExtractPath        string `json:"extract_path"`
+		ExtractedFileCount int    `json:"extracted_file_count"`
+		SkippedFileCount   int    `json:"skipped_file_count"`
+		Size               int64  `json:"size"`
+	}{}
+	if err = utils.StringToObject(string(respData), &payload); err != nil {
+		c.logger.WithContext(ctx).Errorf("UploadSkillArchive failed, StringToObject failed, err: %v", err)
+		return nil, errors.NewHTTPError(ctx, http.StatusInternalServerError, errors.ErrExtSandboxControlPlaneFailed, err.Error())
+	}
+
+	workPath := payload.ExtractPath
+	if workPath == "" {
+		workPath = payload.FilePath
+	}
+	workPath = normalizeWorkspacePath(workPath)
+	if workPath == "" {
+		workPath = normalizedDir
+	}
+
+	return &interfaces.UploadSkillArchiveResp{
+		SessionID:          payload.SessionID,
+		Mode:               payload.Mode,
+		WorkDir:            workPath,
+		FileName:           fileName,
+		UploadedPath:       workPath,
+		Size:               payload.Size,
+		ExtractedFileCount: payload.ExtractedFileCount,
+		SkippedFileCount:   payload.SkippedFileCount,
+	}, nil
+}
+
+// ExecuteShell 执行 shell 命令
+func (c *sandBoxControlPlaneClient) ExecuteShell(ctx context.Context, sessionID string, req *interfaces.ExecuteShellReq) (*interfaces.ExecuteShellResp, error) {
+	workDir := normalizeWorkspacePath(req.WorkDir)
+	command := strings.TrimSpace(req.Command)
+	if workDir == "" || command == "" {
+		return nil, errors.NewHTTPError(ctx, http.StatusBadRequest, errors.ErrExtSandboxControlPlaneFailed, "invalid shell request")
+	}
+	execResp, err := c.ExecuteCodeSync(ctx, sessionID, &interfaces.ExecuteCodeReq{
+		Code:             command,
+		Language:         "shell",
+		Timeout:          req.Timeout,
+		WorkingDirectory: workDir,
+	})
+	if err != nil {
+		c.logger.WithContext(ctx).Errorf("ExecuteShell failed, err: %v", err)
+		return nil, err
+	}
+	return &interfaces.ExecuteShellResp{
+		SessionID:     execResp.SessionID,
+		WorkDir:       workDir,
+		Command:       command,
+		ExitCode:      execResp.ExitCode,
+		Stdout:        execResp.Stdout,
+		Stderr:        execResp.Stderr,
+		ExecutionTime: execResp.ExecutionTime,
+	}, nil
+}
+
+func normalizeWorkspacePath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	raw = path.Clean(strings.TrimPrefix(raw, "/"))
+	raw = strings.TrimPrefix(raw, "workspace/")
+	raw = strings.TrimPrefix(raw, "./")
+	if raw == "." {
+		return ""
+	}
+	return raw
 }

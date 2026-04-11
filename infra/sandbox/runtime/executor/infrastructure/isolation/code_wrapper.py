@@ -8,12 +8,50 @@ value between special markers for extraction.
 """
 
 import json
+import re
+from pathlib import Path
 from typing import Optional
 
 from executor.infrastructure.logging.logging_config import get_logger
 
 
 logger = get_logger()
+
+COMMON_SHELL_COMMANDS = {
+    "awk",
+    "cat",
+    "cd",
+    "chmod",
+    "cp",
+    "curl",
+    "echo",
+    "env",
+    "find",
+    "git",
+    "grep",
+    "head",
+    "java",
+    "jq",
+    "ls",
+    "mkdir",
+    "mv",
+    "node",
+    "npm",
+    "pip",
+    "pip3",
+    "pnpm",
+    "pwd",
+    "pytest",
+    "python",
+    "python3",
+    "rg",
+    "rm",
+    "sed",
+    "sh",
+    "tail",
+    "uv",
+    "yarn",
+}
 
 
 def generate_python_wrapper(user_code: str) -> str:
@@ -112,6 +150,99 @@ def generate_shell_wrapper(user_code: str) -> str:
 {user_code}
 '''
     return wrapper
+
+
+def normalize_shell_code(user_code: str, cwd: Path) -> str:
+    """
+    Normalize shell code for compatibility with accidental `bash/sh <command>` input.
+
+    The sandbox always executes shell content via `bash -c`. Some callers
+    incorrectly prepend each command with `bash` or `sh`, producing forms like
+    `bash python script.py` or `bash ls data/`. Those are not valid shell
+    script invocations, so we strip the redundant interpreter prefix only for
+    obvious command-style cases while preserving valid script-style invocations
+    such as `bash run.sh` or `bash -lc "..."`.
+    """
+    segments = []
+    current = []
+    i = 0
+    while i < len(user_code):
+        if user_code.startswith("&&", i) or user_code.startswith("||", i):
+            segments.append("".join(current))
+            segments.append(user_code[i:i + 2])
+            current = []
+            i += 2
+            continue
+        if user_code[i] in ";&|\n":
+            segments.append("".join(current))
+            segments.append(user_code[i])
+            current = []
+            i += 1
+            continue
+        current.append(user_code[i])
+        i += 1
+    segments.append("".join(current))
+
+    normalized_segments: list[str] = []
+    stripped_flags: list[bool] = []
+    separators = {"&&", "||", ";", "&", "|", "\n"}
+
+    for segment in segments:
+        if segment in separators:
+            normalized_segments.append(segment)
+            stripped_flags.append(False)
+            continue
+
+        normalized_segment, was_stripped = _normalize_shell_segment(segment, cwd)
+        normalized_segments.append(normalized_segment)
+        stripped_flags.append(was_stripped)
+
+    for i, segment in enumerate(normalized_segments):
+        if segment != "&":
+            continue
+        if i == 0 or i == len(normalized_segments) - 1:
+            continue
+        if stripped_flags[i - 1] and stripped_flags[i + 1]:
+            normalized_segments[i] = "&&"
+
+    return "".join(normalized_segments)
+
+
+def _normalize_shell_segment(segment: str, cwd: Path) -> tuple[str, bool]:
+    match = re.match(r"^(\s*)(bash|sh)(\s+)(\S+)", segment)
+    if not match:
+        return segment, False
+
+    next_token = match.group(4)
+    if not _should_strip_shell_prefix(next_token, cwd):
+        return segment, False
+
+    return match.group(1) + segment[match.start(4):], True
+
+
+def _should_strip_shell_prefix(next_token: str, cwd: Path) -> bool:
+    if next_token.startswith("-"):
+        return False
+
+    if next_token.endswith((".sh", ".bash")):
+        return False
+
+    if "/" in next_token:
+        candidate = Path(next_token)
+        if not candidate.is_absolute():
+            candidate = cwd / candidate
+        if candidate.exists() and candidate.is_file():
+            return False
+        return False
+
+    if next_token in COMMON_SHELL_COMMANDS:
+        return True
+
+    candidate = cwd / next_token
+    if candidate.exists() and candidate.is_file():
+        return False
+
+    return False
 
 
 def validate_python_handler(code: str) -> tuple[bool, Optional[str]]:

@@ -12,6 +12,8 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+//go:generate mockgen -source ../interfaces/task_handler.go -destination ../interfaces/mock/mock_task_handler.go
+
 // TaskHandler defines the interface for task handlers.
 type TaskHandler interface {
 	// HandleTask handles a task from the queue.

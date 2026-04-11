@@ -58,7 +58,7 @@ func NewDiscoverTaskService(appSetting *common.AppSetting) interfaces.DiscoverTa
 // 返回值:
 //   - string: 创建的任务ID
 //   - error: 错误信息，如果创建失败则返回错误
-func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (string, error) {
+func (dts *discoverTaskService) Create(ctx context.Context, catalogID string, scheduledTask ...string) (string, error) {
 	// 使用分布式追踪系统创建一个span，用于追踪服务调用
 	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.Create",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -70,11 +70,31 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 		accountInfo = ai
 	}
 
+	// 处理可选的taskType参数
+	// 默认根据上下文判断：如果是从定时任务服务调用，则默认为scheduled，否则为manual
+	triggerType := interfaces.DiscoverTaskTriggerManual
+	scheduledId := ""
+	strategies := []string{}
+	if len(scheduledTask) > 0 && scheduledTask[0] != "" {
+		triggerType = scheduledTask[0]
+		if len(scheduledTask) > 1 {
+			scheduledId = scheduledTask[1]
+		}
+		if len(scheduledTask) > 2 && scheduledTask[2] != "" {
+			// 反序列化 strategies 字符串为 []string
+			if err := sonic.Unmarshal([]byte(scheduledTask[2]), &strategies); err != nil {
+				logger.Warnf("Failed to unmarshal strategies: %v", err)
+				strategies = []string{}
+			}
+		}
+	}
 	now := time.Now().UnixMilli()
 	task := &interfaces.DiscoverTask{
 		ID:          xid.New().String(),
 		CatalogID:   catalogID,
-		TriggerType: interfaces.DiscoverTaskTriggerManual,
+		ScheduledId: scheduledId,
+		Strategies:  strategies,
+		TriggerType: triggerType,
 		Status:      interfaces.DiscoverTaskStatusPending,
 		Progress:    0,
 		Message:     "",
@@ -101,7 +121,7 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 	// 设置任务执行超时时间为 30 分钟
 	asynqTask := asynq.NewTask(interfaces.DiscoverTaskType, payload)
 	info, err := dts.client.Enqueue(asynqTask,
-		asynq.Queue("high"),
+		asynq.Queue(interfaces.HighQueue),
 		asynq.MaxRetry(3),
 		asynq.Timeout(30*time.Minute),
 		asynq.Deadline(time.Now().Add(12*time.Hour)),
@@ -116,6 +136,8 @@ func (dts *discoverTaskService) Create(ctx context.Context, catalogID string) (s
 	return task.ID, nil
 }
 
+// CreateScheduled method removed - scheduled tasks are now managed by ScheduledDiscoverTaskService
+
 // GetByID retrieves a DiscoverTask by ID.
 func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverTask, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.GetByID",
@@ -123,6 +145,15 @@ func (dts *discoverTaskService) GetByID(ctx context.Context, id string) (*interf
 	defer span.End()
 
 	return dts.dta.GetByID(ctx, id)
+}
+
+// GetByScheduledID retrieves DiscoverTasks by scheduled ID.
+func (dts *discoverTaskService) GetByScheduledID(ctx context.Context, scheduledID string) ([]*interfaces.DiscoverTask, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverTaskService.GetByScheduledID",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	return dts.dta.GetByScheduledID(ctx, scheduledID)
 }
 
 // List lists DiscoverTasks for a catalog.

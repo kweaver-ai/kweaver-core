@@ -11,7 +11,7 @@ One-click deployment of the KWeaver AI platform to a single-node Kubernetes clus
 ```bash
 # 1. Clone the repository
 git clone https://github.com/kweaver-ai/kweaver-core.git
-cd kweaver/deploy
+cd kweaver-core/deploy
 
 # 2. Edit the config file (optional; skip to use defaults)
 # vim conf/config.yaml

@@ -95,7 +95,7 @@ depServices:
     connTimeout: 30
     readTimeout: 30
     writeTimeout: 30
-    database: adp
+    database: kweaver
     dbCharset: utf8mb4
     system_id: ""
   hydra:
@@ -183,6 +183,10 @@ depServices:
     storageID: ""
     internalRequest: false
     expires: 3600
+  vega-backend:
+    privateHost: vega-backend-svc
+    privatePort: 13014
+    privateProtocol: http
 
 env:
   language: en_US.UTF-8

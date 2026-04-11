@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/log"
 )
 
 // StringsContain

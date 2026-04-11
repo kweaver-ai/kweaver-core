@@ -1,0 +1,16 @@
+# Copyright The kweaver.ai Authors.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file in the project root for details.
+
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/confluentinc/cp-kafka:7.9.1
+
+RUN set -ex; \
+    wget https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/3.4.2.Final/debezium-connector-mysql-3.4.2.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-mysql-3.4.2.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-mysql-3.4.2.Final-plugin.tar.gz;
+
+# Expose port
+EXPOSE 8083
+
+# 指定启动命令
+ENTRYPOINT [ "connect-distributed", "/opt/kafka-connect/kafka-connect.properties" ]

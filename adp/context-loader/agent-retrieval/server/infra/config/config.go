@@ -46,6 +46,7 @@ type Config struct {
 	// 新增配置 - 知识重排和检索相关
 	MFModelAPI PrivateBaseConfig `yaml:"mf_model_api"` // MF-Model API统一服务配置
 	RerankLLM  RerankLLMConfig   `yaml:"rerank_llm"`   // Rerank用的LLM参数配置
+	FindSkills FindSkillsConfig  `yaml:"find_skills"`   // find_skills Skill 召回配置
 }
 
 // ObservabilityConfig trace configuration
@@ -160,6 +161,15 @@ type RerankLLMConfig struct {
 	FrequencyPenalty float64 `yaml:"frequency_penalty" default:"0.5"`                 // 频率惩罚
 	PresencePenalty  float64 `yaml:"presence_penalty" default:"0.5"`                  // 存在惩罚
 	MaxTokens        int     `yaml:"max_tokens" default:"5000"`                       // 最大token数
+}
+
+// FindSkillsConfig find_skills Skill 召回配置
+type FindSkillsConfig struct {
+	DefaultTopK        int    `yaml:"default_top_k" default:"10"`
+	MaxTopK            int    `yaml:"max_top_k" default:"20"`
+	RecallTimeoutMs    int    `yaml:"recall_timeout_ms" default:"5000"`
+	TotalTimeoutMs     int    `yaml:"total_timeout_ms" default:"10000"`
+	SkillsObjectTypeID string `yaml:"skills_object_type_id" default:"skills"`
 }
 
 // SetMachineID sets machine ID

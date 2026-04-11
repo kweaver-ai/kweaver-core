@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
 )
 
 // listFiles handles GET /api/automation/v2/dataflow-doc/files

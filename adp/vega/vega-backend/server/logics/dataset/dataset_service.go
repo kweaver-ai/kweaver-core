@@ -4,6 +4,7 @@ package dataset
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -284,9 +285,9 @@ func (ds *datasetService) DeleteDocumentsByQuery(ctx context.Context, res *inter
 	return nil
 }
 
-// Build builds a resource by batch reading data from source and writing to dataset.
-func (ds *datasetService) Build(ctx context.Context, id string) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Build resource")
+// CreateBuildTask creates a new BuildTask.
+func (ds *datasetService) CreateBuildTask(ctx context.Context, id string, req *interfaces.BuildTaskRequest) (string, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Create build task")
 	defer span.End()
 
 	// Get resource
@@ -327,46 +328,20 @@ func (ds *datasetService) Build(ctx context.Context, id string) (string, error) 
 			WithErrorDetails("Catalog connector type must be mysql")
 	}
 
-	// Check if resource has build task
-	hasUncompletedTasks, err := ds.ta.CheckResourceHasUncompletedTasks(ctx, resource.ID)
+	// Check if resource already has a task
+	existingTasks, err := ds.ta.GetByResourceID(ctx, id)
 	if err != nil {
-		span.SetStatus(codes.Error, "Check resource has uncompleted tasks failed")
+		logger.Errorf("Check existing build task failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Check existing build task failed: %v", err))
+		span.SetStatus(codes.Error, "Check existing build task failed")
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
-	if hasUncompletedTasks {
-		span.SetStatus(codes.Error, "Resource has uncompleted build task")
+	if len(existingTasks) > 0 {
+		span.SetStatus(codes.Error, "Resource already has a build task")
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Exist).
-			WithErrorDetails("Resource has uncompleted build task")
+			WithErrorDetails("Resource already has a build task")
 	}
-
-	// Create build task
-	taskReq := &interfaces.BuildTaskRequest{
-		Mode: interfaces.BuildTaskModeFull,
-	}
-	taskID, err := ds.CreateBuildTask(ctx, resource.ID, taskReq)
-	if err != nil {
-		span.SetStatus(codes.Error, "Create task failed")
-		return "", err
-	}
-
-	if taskReq.Mode == interfaces.BuildTaskModeFull {
-		// Full build, need delete existing dataset
-		logger.Warnf("Full build, need delete existing dataset for resource: %s", resource.ID)
-		delerr := ds.Delete(ctx, resource)
-		if delerr != nil {
-			logger.Errorf("Delete dataset failed: %v", delerr)
-		}
-	}
-
-	span.SetStatus(codes.Ok, "")
-	return taskID, nil
-}
-
-// CreateBuildTask creates a new BuildTask.
-func (ds *datasetService) CreateBuildTask(ctx context.Context, id string, req *interfaces.BuildTaskRequest) (string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create build task")
-	defer span.End()
 
 	// Get account info from context
 	accountInfo := interfaces.AccountInfo{}
@@ -389,7 +364,7 @@ func (ds *datasetService) CreateBuildTask(ctx context.Context, id string, req *i
 		UpdateTime:      now,
 	}
 
-	err := ds.ta.Create(ctx, buildTask)
+	err = ds.ta.Create(ctx, buildTask)
 	if err != nil {
 		logger.Errorf("Create build task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Create build task failed: %v", err))
@@ -399,28 +374,6 @@ func (ds *datasetService) CreateBuildTask(ctx context.Context, id string, req *i
 	}
 
 	span.SetStatus(codes.Ok, "")
-	payload, err := sonic.Marshal(&interfaces.BuildTaskMessage{
-		TaskID: buildTask.ID,
-	})
-	if err != nil {
-		logger.Errorf("Marshal build task message failed: %v", err)
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_CreateFailed).
-			WithErrorDetails(err.Error())
-	}
-
-	asynqTask := asynq.NewTask(interfaces.BuildTaskType, payload)
-	_, err = ds.client.Enqueue(asynqTask,
-		asynq.Queue("default"),
-		asynq.MaxRetry(10),
-		asynq.Timeout(30*time.Minute),
-		asynq.Deadline(time.Now().Add(24*time.Hour)),
-	)
-	if err != nil {
-		logger.Errorf("Enqueue build task failed: %v", err)
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_CreateFailed).
-			WithErrorDetails(err.Error())
-	}
-
 	return buildTask.ID, nil
 }
 
@@ -444,9 +397,9 @@ func (ds *datasetService) GetBuildTaskByID(ctx context.Context, id string) (*int
 	return buildTask, nil
 }
 
-// GetBuildTasksByResourceID retrieves BuildTasks by resource ID.
-func (ds *datasetService) GetBuildTasksByResourceID(ctx context.Context, resourceID string) ([]*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build tasks by resource ID")
+// GetBuildTaskByResourceID retrieves BuildTask by resource ID.
+func (ds *datasetService) GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task by resource ID")
 	defer span.End()
 
 	buildTasks, err := ds.ta.GetByResourceID(ctx, resourceID)
@@ -456,6 +409,169 @@ func (ds *datasetService) GetBuildTasksByResourceID(ctx context.Context, resourc
 			WithErrorDetails(err.Error())
 	}
 
+	if len(buildTasks) > 0 {
+		span.SetStatus(codes.Ok, "")
+		return buildTasks[0], nil
+	}
+
+	// No build task found
 	span.SetStatus(codes.Ok, "")
-	return buildTasks, nil
+	return nil, nil
+}
+
+// GetBuildTasks retrieves all build tasks with pagination.
+func (ds *datasetService) GetBuildTasks(ctx context.Context, offset, limit int) ([]*interfaces.BuildTask, int64, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Get all build tasks")
+	defer span.End()
+
+	buildTasks, totalCount, err := ds.ta.GetAll(ctx, offset, limit)
+	if err != nil {
+		span.SetStatus(codes.Error, "Get build tasks failed")
+		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return buildTasks, totalCount, nil
+}
+
+// UpdateBuildTaskStatus updates a build task's status.
+func (ds *datasetService) UpdateBuildTaskStatus(ctx context.Context, taskID string, req *interfaces.UpdateBuildTaskStatusRequest) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Update build task status")
+	defer span.End()
+
+	// 检查执行类型是否有效
+	if req.ExecuteType == "" {
+		req.ExecuteType = interfaces.BuildTaskExecuteTypeIncremental
+	} else if req.ExecuteType != interfaces.BuildTaskExecuteTypeIncremental && req.ExecuteType != interfaces.BuildTaskExecuteTypeFull {
+		span.SetStatus(codes.Error, "Invalid execute type")
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidExecuteType).
+			WithErrorDetails("Invalid execute type")
+	}
+
+	// Check if task exists
+	buildTask, err := ds.ta.GetByID(ctx, taskID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Get build task failed")
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+	if buildTask == nil {
+		span.SetStatus(codes.Error, "Build task not found")
+		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
+	}
+
+	// Update status
+	updates := map[string]interface{}{}
+	// Check status transitions
+	switch req.Status {
+	case interfaces.BuildTaskStatusRunning:
+		// 运行时不允许再次运行
+		switch buildTask.Status {
+		case interfaces.BuildTaskStatusRunning:
+			span.SetStatus(codes.Error, "Task is already running")
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Running).
+				WithErrorDetails("Task is already running")
+		case interfaces.BuildTaskStatusStopping:
+			// 停止中时不允许运行
+			span.SetStatus(codes.Error, "Task is stopping")
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Running).
+				WithErrorDetails("Task is stopping")
+		}
+		updates["status"] = interfaces.BuildTaskStatusRunning
+	case interfaces.BuildTaskStatusStopped:
+		// 停止时再停止直接返回
+		if buildTask.Status == interfaces.BuildTaskStatusStopped || buildTask.Status == interfaces.BuildTaskStatusStopping {
+			span.SetStatus(codes.Ok, "Task is already stopped")
+			return nil
+		}
+		updates["status"] = interfaces.BuildTaskStatusStopping
+	default:
+		// 参数错误
+		span.SetStatus(codes.Error, "Invalid status")
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidStatus).
+			WithErrorDetails("Invalid status")
+	}
+
+	err = ds.ta.UpdateStatus(ctx, taskID, updates)
+	if err != nil {
+		logger.Errorf("Update build task status failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Update build task status failed: %v", err))
+		span.SetStatus(codes.Error, "Update build task status failed")
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_UpdateFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	if req.Status == interfaces.BuildTaskStatusRunning {
+		// 发送启动消息
+		payload, err := sonic.Marshal(&interfaces.BatchBuildTaskMessage{
+			TaskID:      taskID,
+			ExecuteType: req.ExecuteType,
+		})
+		if err != nil {
+			logger.Errorf("Marshal build task message failed: %v", err)
+			o11y.Error(ctx, fmt.Sprintf("Marshal build task message failed: %v", err))
+			// 不返回错误，继续执行
+		} else {
+			typename := interfaces.BuildTaskTypeBatch
+			if buildTask.Mode == interfaces.BuildTaskModeStreaming {
+				typename = interfaces.BuildTaskTypeStreaming
+			}
+			asynqTask := asynq.NewTask(typename, payload)
+			_, err = ds.client.Enqueue(asynqTask,
+				asynq.Queue(interfaces.DefaultQueue),
+				asynq.MaxRetry(interfaces.DATASET_BUILD_MAX_RETRY_COUNT),
+				asynq.Timeout(math.MaxInt64),                                                  // 永不超时
+				asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)), // 永不过期
+			)
+			if err != nil {
+				logger.Errorf("Enqueue build task failed: %v", err)
+				o11y.Error(ctx, fmt.Sprintf("Enqueue build task failed: %v", err))
+				// 不返回错误，继续执行
+			} else {
+				logger.Infof("Build task %s enqueued for execution", taskID)
+			}
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+// DeleteBuildTask deletes a build task by ID.
+func (ds *datasetService) DeleteBuildTask(ctx context.Context, taskID string) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build task")
+	defer span.End()
+
+	// Check if task exists
+	buildTask, err := ds.ta.GetByID(ctx, taskID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Get build task failed")
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
+	}
+	if buildTask == nil {
+		span.SetStatus(codes.Error, "Build task not found")
+		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
+	}
+
+	// Check if task is running or stopping
+	if buildTask.Status == interfaces.BuildTaskStatusRunning || buildTask.Status == interfaces.BuildTaskStatusStopping {
+		span.SetStatus(codes.Error, "Cannot delete running or stopping task")
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Running).
+			WithErrorDetails("Cannot delete running or stopping task")
+	}
+
+	// Delete task
+	err = ds.ta.Delete(ctx, taskID)
+	if err != nil {
+		logger.Errorf("Delete build task failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Delete build task failed: %v", err))
+		span.SetStatus(codes.Error, "Delete build task failed")
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_DeleteFailed).
+			WithErrorDetails(err.Error())
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
 }

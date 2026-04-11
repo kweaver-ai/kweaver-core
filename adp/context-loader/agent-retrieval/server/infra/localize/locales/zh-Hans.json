@@ -63,5 +63,13 @@
     },
     "link": {
         "None": "无"
+    },
+    "find_skills": {
+        "network_scope_too_wide": "当前知识网络中的 Skill 不是全局生效，网络级范围未返回结果。请补充 object_type_id；如已定位到实例，再补充 instance_identities 后重试。",
+        "network_no_skills": "当前知识网络下未找到可召回的 Skill。请确认 Skill 是否已创建并在当前知识网络中可见。",
+        "object_type_no_binding": "当前对象类未配置 Skill 绑定关系，无法在该范围内召回 Skill。请确认该对象类是否已绑定 Skill。",
+        "object_type_no_match": "当前对象类范围内未找到可召回的 Skill。可尝试缩小到具体实例范围，或确认该对象类下是否已绑定 Skill。",
+        "instance_no_match": "当前实例范围内未找到可召回的 Skill。可回退到 object_type_id 级别查看该类对象的候选 Skill。",
+        "skill_query_no_match": "当前范围和 skill_query 条件下未找到匹配的 Skill。可尝试放宽或去掉 skill_query 后重试。"
     }
 }

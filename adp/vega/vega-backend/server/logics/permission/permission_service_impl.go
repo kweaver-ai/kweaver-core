@@ -157,6 +157,10 @@ func (ps *PermissionServiceImpl) FilterResources(ctx context.Context, resourceTy
 			WithErrorDetails("Access denied: missing account ID or type")
 	}
 
+	if len(ids) == 0 {
+		return map[string]interfaces.PermissionResourceOps{}, nil
+	}
+
 	resources := []interfaces.PermissionResource{}
 	for _, id := range ids {
 		resources = append(resources, interfaces.PermissionResource{

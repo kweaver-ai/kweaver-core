@@ -26,9 +26,11 @@ const (
 
 // DiscoverTask represents a discover task entity.
 type DiscoverTask struct {
-	ID          string `json:"id"`
-	CatalogID   string `json:"catalog_id"`
-	TriggerType string `json:"trigger_type"` // manual/scheduled
+	ID          string   `json:"id"`
+	CatalogID   string   `json:"catalog_id"`
+	ScheduledId string   `json:"scheduled_id"`
+	Strategies  []string `json:"strategies"`   // Strategies for discover: can be one or more of ["insert", "delete", "update"], or empty for all
+	TriggerType string   `json:"trigger_type"` // manual/scheduled
 
 	Status     string          `json:"status"`   // pending/running/completed/failed
 	Progress   int             `json:"progress"` // 0-100

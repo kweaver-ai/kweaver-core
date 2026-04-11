@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	liberrors "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/errors"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/utils"
+	liberrors "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/errors"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )

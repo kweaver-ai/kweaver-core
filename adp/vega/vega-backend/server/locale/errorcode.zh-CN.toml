@@ -18,6 +18,16 @@ Description = "无效的请求体"
 Solution = "请检查参数"
 ErrorLink = "暂无"
 
+[VegaBackend.InvalidParameter.ResourceType]
+Description = "无效的resource_type参数"
+Solution = "resource_type必须是mariadb、opensearch或postgresql之一"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.StreamSize]
+Description = "无效的stream_size参数"
+Solution = "stream_size必须在100到10000之间，默认值为10000"
+ErrorLink = "暂无"
+
 [VegaBackend.InvalidParameter.Limit]
 Description = "无效的分页限制参数"
 Solution = "请检查参数"
@@ -162,6 +172,11 @@ ErrorLink = "暂无"
 [VegaBackend.Query.InvalidParameter.JoinTableNotInTables]
 Description = "JOIN 中的表别名不在 tables 中"
 Solution = "请检查 joins 配置"
+ErrorLink = "暂无"
+
+[VegaBackend.Query.InvalidParameter.QueryTimeout]
+Description = "query_timeout 参数非法"
+Solution = "query_timeout 必须在 1 到 3600 之间"
 ErrorLink = "暂无"
 
 [VegaBackend.Query.CatalogNotFound]

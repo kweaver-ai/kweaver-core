@@ -1,9 +1,9 @@
 package umcmp
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/cconf"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp"
-	// "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/config"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
+	// "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/config"
 )
 
 type Um struct {

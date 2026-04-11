@@ -862,13 +862,13 @@ func (cs *ConceptSyncer) getAllKNsFromDataset(ctx context.Context) (map[string]*
 		"value_from": "const",
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.KN{}, err
 	}
@@ -914,13 +914,13 @@ func (cs *ConceptSyncer) getAllObjectTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ObjectType{}, err
 	}
@@ -984,13 +984,13 @@ func (cs *ConceptSyncer) getAllRelationTypesFromDatasetByKnID(ctx context.Contex
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.RelationType{}, err
 	}
@@ -1036,13 +1036,13 @@ func (cs *ConceptSyncer) getAllActionTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ActionType{}, err
 	}
@@ -1114,13 +1114,13 @@ func (cs *ConceptSyncer) getAllRiskTypesFromDatasetByKnID(ctx context.Context,
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.RiskType{}, err
 	}
@@ -1166,13 +1166,13 @@ func (cs *ConceptSyncer) getAllConceptGroupsFromDatasetByKnID(ctx context.Contex
 		},
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           10000,
 		NeedTotal:       false,
 	}
-	response, err := cs.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	response, err := cs.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		return map[string]*interfaces.ConceptGroup{}, err
 	}

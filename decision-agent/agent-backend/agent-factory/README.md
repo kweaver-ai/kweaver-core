@@ -1,14 +1,26 @@
 # Agent-factory
 
-## OpenAPI 文档维护快速入口
+## OpenAPI 文档快速入口
 
-如果你当前关注的是 OpenAPI 文档生成和维护，建议先看下面两个精简版：
+### 普通用户
+
+如果你只想快速生成和查看最终文档，先看这里：
+
+- 对外文档说明：查看 [docs/api/README.md](./docs/api/README.md)
+
+常用命令：
+
+```bash
+make gen-api-docs
+make validate-api-docs
+```
+
+### 开发者
+
+如果你需要维护生成链路，再看下面这些说明：
 
 - `cmd/openapi-docs` 精简版：查看 [cmd/openapi-docs/README.simple.md](./cmd/openapi-docs/README.simple.md)
 - `internal/openapidoc` 精简版：查看 [internal/openapidoc/README.simple.md](./internal/openapidoc/README.simple.md)
-
-如果需要完整说明，再看完整版：
-
 - `cmd/openapi-docs` 完整版：查看 [cmd/openapi-docs/README.md](./cmd/openapi-docs/README.md)
 - `internal/openapidoc` 完整版：查看 [internal/openapidoc/README.md](./internal/openapidoc/README.md)
 

@@ -4,8 +4,8 @@ package policy
 import (
 	"sync"
 
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/mod"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/mod"
 )
 
 //go:generate mockgen -package mock_logics -source ../../logics/policy/policy.go -destination ../../tests/mock_logics/policy_mock.go

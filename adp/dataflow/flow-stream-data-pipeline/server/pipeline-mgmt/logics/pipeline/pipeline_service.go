@@ -67,8 +67,8 @@ func NewPipelineMgmtService(appSetting *common.AppSetting) interfaces.PipelineMg
 
 		// userId 存入 context 中
 		ctx := context.WithValue(context.Background(), interfaces.ACCOUNT_INFO_KEY, interfaces.AccountInfo{
-			ID:   interfaces.ADMIN_ID,
-			Type: interfaces.ACCESSOR_TYPE_USER,
+			ID:   interfaces.ADMIN_ACCOUNT_ID,
+			Type: interfaces.ADMIN_ACCOUNT_TYPE,
 		})
 
 		// 轮询管道的deploy状态
@@ -87,7 +87,7 @@ func (pmService *pipelineMgmtService) CreatePipeline(ctx context.Context, pipeli
 	defer span.End()
 
 	// 判断userid是否有创建管道的权限
-	err := pmService.ps.CheckPermission(ctx, interfaces.Resource{
+	err := pmService.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_PIPELINE,
 		ID:   interfaces.RESOURCE_ID_ALL,
 	}, []string{interfaces.OPERATION_TYPE_CREATE})
@@ -150,7 +150,7 @@ func (pmService *pipelineMgmtService) CreatePipeline(ctx context.Context, pipeli
 		logger.Errorf("failed to create pipeline deploy, error, %s", err.Error())
 	}
 
-	resrc := []interfaces.Resource{
+	resrc := []interfaces.PermissionResource{
 		{
 			ID:   pipelineInfo.PipelineID,
 			Type: interfaces.RESOURCE_TYPE_PIPELINE,
@@ -235,7 +235,7 @@ func (pmService *pipelineMgmtService) UpdatePipeline(ctx context.Context, pipeli
 	defer span.End()
 
 	// 校验是否有更新管道的权限
-	err := pmService.ps.CheckPermission(ctx, interfaces.Resource{
+	err := pmService.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_PIPELINE,
 		ID:   pipeline.PipelineID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -314,7 +314,7 @@ func (pmService *pipelineMgmtService) UpdatePipeline(ctx context.Context, pipeli
 	}
 
 	// 请求更新资源名称的接口，更新资源的名称
-	err = pmService.ps.UpdateResource(ctx, interfaces.Resource{
+	err = pmService.ps.UpdateResource(ctx, interfaces.PermissionResource{
 		ID:   pipeline.PipelineID,
 		Type: interfaces.RESOURCE_TYPE_PIPELINE,
 		Name: pipeline.PipelineName,
@@ -536,7 +536,7 @@ func (pmService *pipelineMgmtService) UpdatePipelineStatus(ctx context.Context, 
 	defer span.End()
 
 	// 校验是否有更新管道的权限
-	err := pmService.ps.CheckPermission(ctx, interfaces.Resource{
+	err := pmService.ps.CheckPermission(ctx, interfaces.PermissionResource{
 		Type: interfaces.RESOURCE_TYPE_PIPELINE,
 		ID:   pipelineID,
 	}, []string{interfaces.OPERATION_TYPE_MODIFY})
@@ -589,7 +589,7 @@ func (pmService *pipelineMgmtService) UpdatePipelineStatus(ctx context.Context, 
 	}
 
 	// 请求更新资源名称的接口，更新资源的名称
-	err = pmService.ps.UpdateResource(ctx, interfaces.Resource{
+	err = pmService.ps.UpdateResource(ctx, interfaces.PermissionResource{
 		ID:   pipeline.PipelineID,
 		Type: interfaces.RESOURCE_TYPE_PIPELINE,
 		Name: pipeline.PipelineName,
@@ -777,7 +777,7 @@ func GenerateErrorTopicName(tenant string, pipelineID string) string {
 	return fmt.Sprintf(interfaces.TopicErrorName, tenant, pipelineID)
 }
 
-func (pmService *pipelineMgmtService) ListPipelineResources(ctx context.Context, param *interfaces.ListPipelinesQuery) ([]*interfaces.Resource, int, error) {
+func (pmService *pipelineMgmtService) ListPipelineResources(ctx context.Context, param *interfaces.ListPipelinesQuery) ([]*interfaces.PermissionResource, int, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "list pipeline resources")
 	span.End()
 
@@ -807,10 +807,10 @@ func (pmService *pipelineMgmtService) ListPipelineResources(ctx context.Context,
 	}
 
 	// 遍历对象
-	results := make([]*interfaces.Resource, 0)
+	results := make([]*interfaces.PermissionResource, 0)
 	for _, p := range pipelines {
 		if _, exist := matchResoucesMap[p.PipelineID]; exist {
-			results = append(results, &interfaces.Resource{
+			results = append(results, &interfaces.PermissionResource{
 				ID:   p.PipelineID,
 				Type: interfaces.RESOURCE_TYPE_PIPELINE,
 				Name: p.PipelineName,

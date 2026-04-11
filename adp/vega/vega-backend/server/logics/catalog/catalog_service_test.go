@@ -303,12 +303,14 @@ func TestList_ReturnAll(t *testing.T) {
 	mockPS := mock_interfaces.NewMockPermissionService(ctrl)
 	mockUMS := mock_interfaces.NewMockUserMgmtService(ctrl)
 
+	ids := []string{"c1", "c2", "c3"}
 	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}}
-	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(3), nil)
+	mockCA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
 	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
 			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"}, "c3": {ResourceID: "c3"},
 		}, nil)
+	mockCA.EXPECT().GetByIDs(gomock.Any(), gomock.Any()).Return(catalogs, nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}
@@ -332,12 +334,14 @@ func TestList_Pagination(t *testing.T) {
 	mockPS := mock_interfaces.NewMockPermissionService(ctrl)
 	mockUMS := mock_interfaces.NewMockUserMgmtService(ctrl)
 
-	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}, {ID: "c4"}, {ID: "c5"}}
-	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(5), nil)
+	ids := []string{"c1", "c2", "c3", "c4", "c5"}
+	mockCA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
 	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
-			"c1": {}, "c2": {}, "c3": {}, "c4": {}, "c5": {},
+			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"}, "c3": {ResourceID: "c3"}, "c4": {ResourceID: "c4"}, "c5": {ResourceID: "c5"},
 		}, nil)
+	catalogs := []*interfaces.Catalog{{ID: "c2"}, {ID: "c3"}}
+	mockCA.EXPECT().GetByIDs(gomock.Any(), []string{"c2", "c3"}).Return(catalogs, nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}
@@ -363,11 +367,11 @@ func TestList_OffsetBeyondTotal(t *testing.T) {
 	mockCA := mock_interfaces.NewMockCatalogAccess(ctrl)
 	mockPS := mock_interfaces.NewMockPermissionService(ctrl)
 
-	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}}
-	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(2), nil)
+	ids := []string{"c1", "c2"}
+	mockCA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
 	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
-			"c1": {}, "c2": {},
+			"c1": {ResourceID: "c1"}, "c2": {ResourceID: "c2"},
 		}, nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS}
@@ -391,13 +395,15 @@ func TestList_PermissionFiltersOut(t *testing.T) {
 	mockPS := mock_interfaces.NewMockPermissionService(ctrl)
 	mockUMS := mock_interfaces.NewMockUserMgmtService(ctrl)
 
-	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c2"}, {ID: "c3"}}
-	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(catalogs, int64(3), nil)
+	ids := []string{"c1", "c2", "c3"}
+	catalogs := []*interfaces.Catalog{{ID: "c1"}, {ID: "c3"}}
+	mockCA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(ids, nil)
 	// 权限只返回 c1 和 c3，c2 被过滤
 	mockPS.EXPECT().FilterResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(map[string]interfaces.PermissionResourceOps{
-			"c1": {}, "c3": {},
+			"c1": {ResourceID: "c1"}, "c3": {ResourceID: "c3"},
 		}, nil)
+	mockCA.EXPECT().GetByIDs(gomock.Any(), []string{"c1", "c3"}).Return(catalogs, nil)
 	mockUMS.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 	cs := &catalogService{ca: mockCA, ps: mockPS, ums: mockUMS}
@@ -418,7 +424,7 @@ func TestList_PermissionFiltersOut(t *testing.T) {
 func TestList_DBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockCA := mock_interfaces.NewMockCatalogAccess(ctrl)
-	mockCA.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, int64(0), fmt.Errorf("db error"))
+	mockCA.EXPECT().ListIDs(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("db error"))
 
 	cs := &catalogService{ca: mockCA}
 	_, _, err := cs.List(context.Background(), interfaces.CatalogsQueryParams{})

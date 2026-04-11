@@ -185,6 +185,38 @@ func Test_ValidateRelationType(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("Success with resource backing_data_source.type\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt1",
+					RTName:             "relation1",
+					Type:               interfaces.RELATION_TYPE_DATA_VIEW,
+					SourceObjectTypeID: "ot1",
+					TargetObjectTypeID: "ot2",
+					MappingRules: map[string]any{
+						"backing_data_source": map[string]any{
+							"type": interfaces.DATA_SOURCE_TYPE_RESOURCE,
+							"id":   "res1",
+						},
+						"source_mapping_rules": []map[string]any{
+							{
+								"source_property": map[string]string{"name": "prop1"},
+								"target_property": map[string]string{"name": "bridge1"},
+							},
+						},
+						"target_mapping_rules": []map[string]any{
+							{
+								"source_property": map[string]string{"name": "bridge1"},
+								"target_property": map[string]string{"name": "prop2"},
+							},
+						},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+		})
+
 		Convey("Success with data_view mapping rules\n", func() {
 			rt := &interfaces.RelationType{
 				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
@@ -467,6 +499,58 @@ func Test_ValidateRelationType(t *testing.T) {
 			}
 			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Success with filtered_cross_join mapping rules\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt-fcj",
+					RTName:             "fcj",
+					SourceObjectTypeID: "ot1",
+					TargetObjectTypeID: "ot2",
+					Type:               interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN,
+					MappingRules: map[string]any{
+						"source_condition": map[string]any{"field": "a", "operation": "==", "value": 1},
+						"target_condition": map[string]any{"field": "b", "operation": "==", "value": 2},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+			_, ok := rt.MappingRules.(interfaces.FilteredCrossJoinMapping)
+			So(ok, ShouldBeTrue)
+		})
+
+		Convey("Success with filtered_cross_join omitting target_condition (optional)\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt-fcj2",
+					RTName:             "fcj2",
+					SourceObjectTypeID: "ot1",
+					TargetObjectTypeID: "ot2",
+					Type:               interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN,
+					MappingRules: map[string]any{
+						"source_condition": map[string]any{"field": "a", "operation": "==", "value": 1},
+					},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Success with filtered_cross_join empty mapping (both sides unconstrained)\n", func() {
+			rt := &interfaces.RelationType{
+				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
+					RTID:               "rt-fcj3",
+					RTName:             "fcj3",
+					SourceObjectTypeID: "ot1",
+					TargetObjectTypeID: "ot2",
+					Type:               interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN,
+					MappingRules:       map[string]any{},
+				},
+			}
+			err := ValidateRelationType(ctx, rt, true)
+			So(err, ShouldBeNil)
 		})
 	})
 }

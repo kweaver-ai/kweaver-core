@@ -208,6 +208,7 @@ export interface ExecuteCodeRequest {
   language: CodeLanguage;
   timeout?: number;
   event?: Record<string, unknown>;
+  working_directory?: string;
 }
 
 /** 执行代码响应 */
@@ -216,6 +217,17 @@ export interface ExecuteCodeResponse {
   session_id: string;
   status: ExecutionStatus;
   created_at?: string;
+}
+
+/** 文件上传响应 */
+export interface FileUploadResponse {
+  session_id: string;
+  mode: 'file' | 'archive_extract';
+  file_path?: string | null;
+  extract_path?: string | null;
+  extracted_file_count?: number | null;
+  skipped_file_count?: number | null;
+  size: number;
 }
 
 /** 执行列表响应 */

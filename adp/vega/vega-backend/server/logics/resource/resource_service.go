@@ -60,7 +60,7 @@ func NewResourceService(appSetting *common.AppSetting) interfaces.ResourceServic
 }
 
 // Create creates a new Resource.
-func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (string, error) {
+func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceRequest) (*interfaces.Resource, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create resource")
 	defer span.End()
 
@@ -70,7 +70,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		ID:   interfaces.RESOURCE_ID_ALL,
 	}, []string{interfaces.OPERATION_TYPE_CREATE})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Get account info from context
@@ -84,11 +84,11 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	case interfaces.ResourceCategoryLogicView:
 		logicType, err = rs.validateLogicDefinition(ctx, req)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		viewFields, err := rs.parseLogicDefinition(ctx, req.LogicDefinition)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		req.SchemaDefinition = viewFields
 	}
@@ -96,10 +96,13 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	// 检查catalog是否存在
 	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
 	if err != nil {
-		return "", err
+		span.SetStatus(codes.Error, "Check catalog exist failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError_GetFailed).
+			WithErrorDetails(err.Error())
 	}
 	if !exists {
-		return "", rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		span.SetStatus(codes.Error, "Catalog not found")
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
 	}
 
 	now := time.Now().UnixMilli()
@@ -132,7 +135,7 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		logger.Errorf("Create resource failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Create resource failed: %v", err))
 		span.SetStatus(codes.Error, "Create resource failed")
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_CreateFailed).
 			WithErrorDetails(err.Error())
 	}
 
@@ -154,13 +157,13 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	if err != nil {
 		logger.Errorf("CreateResources error: %s", err.Error())
 		span.SetStatus(codes.Error, "创建资源失败")
-		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			verrors.VegaBackend_Catalog_InternalError_CreateResourcesFailed).
 			WithErrorDetails(err.Error())
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return resource.ID, nil
+	return resource, nil
 }
 
 // Get retrieves a Resource by ID.
@@ -211,6 +214,11 @@ func (rs *resourceService) GetByID(ctx context.Context, id string) (*interfaces.
 func (rs *resourceService) GetByIDs(ctx context.Context, ids []string) ([]*interfaces.Resource, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Get resources by IDs")
 	defer span.End()
+
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Resource{}, nil
+	}
 
 	resources, err := rs.ra.GetByIDs(ctx, ids)
 	if err != nil {
@@ -291,52 +299,106 @@ func (rs *resourceService) List(ctx context.Context, params interfaces.Resources
 	ctx, span := ar_trace.Tracer.Start(ctx, "List resources")
 	defer span.End()
 
-	resourcesArr, _, err := rs.ra.List(ctx, params)
+	// 查询所有资源的ID
+	ids, err := rs.ra.ListIDs(ctx, params)
 	if err != nil {
-		span.SetStatus(codes.Error, "List resources failed")
+		span.SetStatus(codes.Error, "List resource IDs failed")
 		return []*interfaces.Resource{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
 
-	// 处理资源id
-	ids := make([]string, 0)
-	for _, m := range resourcesArr {
-		ids = append(ids, m.ID)
+	if len(ids) == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Resource{}, 0, nil
 	}
 
-	// 根据权限过滤有查看权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
-	matchResoucesMap, err := rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE, ids,
-		[]string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
-	if err != nil {
-		span.SetStatus(codes.Error, "Filter resources error")
-		return []*interfaces.Resource{}, 0, err
-	}
+	// 根据权限过滤有查看权限的ID数组
+	// 分批处理，每批1万个ids, fix权限接口报错prepared statement contains too many placeholders
+	batchSize := 10000
+	// 所有有权限的resource及其操作权限
+	matchResourceOpsMap := make(map[string]interfaces.PermissionResourceOps)
 
-	resources := make([]*interfaces.Resource, 0)
-	for _, c := range resourcesArr {
-		// 只留下有权限的模型
-		if resrc, exist := matchResoucesMap[c.ID]; exist {
-			c.Operations = resrc.Operations // 用户当前有权限的操作
-			resources = append(resources, c)
+	for i := 0; i < len(ids); i += batchSize {
+		end := i + batchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		batchIDs := ids[i:end]
+
+		var batchMatchResources map[string]interfaces.PermissionResourceOps
+		// 校验权限管理的操作权限
+		batchMatchResources, err = rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE,
+			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, true, interfaces.COMMON_OPERATIONS)
+		if err != nil {
+			span.SetStatus(codes.Error, "Filter resources error")
+			return []*interfaces.Resource{}, 0, err
+		}
+
+		// 合并结果
+		for _, resourceOps := range batchMatchResources {
+			matchResourceOpsMap[resourceOps.ResourceID] = resourceOps
 		}
 	}
-	total := int64(len(resources))
 
+	// 提取有权限的资源ID，保持与ids的顺序一致
+	authorizedIDs := make([]string, 0, len(matchResourceOpsMap))
+	for _, id := range ids {
+		if _, exist := matchResourceOpsMap[id]; exist {
+			authorizedIDs = append(authorizedIDs, id)
+		}
+	}
+	total := int64(len(authorizedIDs))
+
+	// 如果没有有权限的资源，直接返回空结果
+	if total == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.Resource{}, total, nil
+	}
+
+	// 根据有权限的ID数组查询完整资源，并应用分页
 	// limit = -1,则返回所有
 	if params.Limit != -1 {
-		// 分页
+		// 分页处理authorizedIDs
 		// 检查起始位置是否越界
-		if params.Offset < 0 || params.Offset >= len(resources) {
+		if params.Offset < 0 || params.Offset >= len(authorizedIDs) {
 			span.SetStatus(codes.Ok, "")
 			return []*interfaces.Resource{}, total, nil
 		}
 		// 计算结束位置
 		end := params.Offset + params.Limit
-		if end > len(resources) {
-			end = len(resources)
+		if end > len(authorizedIDs) {
+			end = len(authorizedIDs)
+		}
+		// 只查询当前页的资源ID
+		authorizedIDs = authorizedIDs[params.Offset:end]
+	}
+
+	// 根据有权限的ID数组查询完整资源
+	// 分批处理，每批10000个ids, 避免prepared statement contains too many placeholders错误
+	resources := make([]*interfaces.Resource, 0, len(authorizedIDs))
+	queryBatchSize := 10000
+	for i := 0; i < len(authorizedIDs); i += queryBatchSize {
+		end := i + queryBatchSize
+		if end > len(authorizedIDs) {
+			end = len(authorizedIDs)
+		}
+		batchIDs := authorizedIDs[i:end]
+
+		batchResources, err := rs.ra.GetByIDsBasic(ctx, batchIDs)
+		if err != nil {
+			span.SetStatus(codes.Error, "Get resources by IDs failed")
+			return []*interfaces.Resource{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+				WithErrorDetails(err.Error())
 		}
 
-		resources = resources[params.Offset:end]
+		resources = append(resources, batchResources...)
+	}
+
+	// 设置资源操作权限
+	for _, c := range resources {
+		if resrc, exist := matchResourceOpsMap[c.ID]; exist {
+			c.Operations = resrc.Operations // 用户当前有权限的操作
+		}
 	}
 
 	accountInfos := make([]*interfaces.AccountInfo, 0, len(resources)*2)
@@ -376,7 +438,7 @@ func (rs *resourceService) Update(ctx context.Context, id string, req *interface
 		return err
 	}
 
-	switch req.Category {
+	switch req.OriginResource.Category {
 	case interfaces.ResourceCategoryLogicView:
 		logicType, err := rs.validateLogicDefinition(ctx, req)
 		if err != nil {
@@ -492,6 +554,17 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 	for _, resource := range resources {
 		switch resource.Category {
 		case interfaces.ResourceCategoryDataset:
+			// Check if dataset has build tasks
+			buildTask, err := rs.ds.GetBuildTaskByResourceID(ctx, resource.ID)
+			if err != nil {
+				span.SetStatus(codes.Error, "Get build task failed")
+				return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+					WithErrorDetails(err.Error())
+			} else if buildTask != nil {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Exist).
+					WithErrorDetails("Cannot delete dataset, please delete build task first")
+			}
+			// Delete dataset
 			if err := rs.ds.Delete(ctx, resource); err != nil {
 				logger.Errorf("Delete dataset failed: %v", err)
 				// 数据集删除失败不影响资源删除，只记录错误
@@ -567,34 +640,27 @@ func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfac
 	ctx, span := ar_trace.Tracer.Start(ctx, "ListResourceSrcs")
 	defer span.End()
 
-	// 使用ra.ListResourceSrcs函数查询resources
-	entries, total, err := rs.ra.ListResourceSrcs(ctx, params)
+	// 先查询所有资源源的ID
+	ids, err := rs.ra.ListResourceSrcsIDs(ctx, params)
 	if err != nil {
-		span.SetStatus(codes.Error, "ListResourceSrcs failed")
+		span.SetStatus(codes.Error, "ListResourceSrcsIDs failed")
 		return []*interfaces.ListResourceEntry{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 	}
 
-	if total == 0 {
+	if len(ids) == 0 {
 		return []*interfaces.ListResourceEntry{}, 0, nil
 	}
 
-	// 根据权限过滤有显示权限的对象，过滤后的数组的总长度就是总数，无需再请求总数
-	// 处理资源id
-	ids := make([]string, 0)
-	for _, entry := range entries {
-		ids = append(ids, entry.ID)
-	}
-
-	// 分批处理，每批1万个ids, fix权限接口报错prepared statement contains too many placeholders
+	// 使用分批处理的方式过滤权限，每批处理1万个ID
 	batchSize := 10000
-	// 所有有权限的resource id
-	matchResourceIDMap := make(map[string]bool)
+	// 所有有权限的resource及其操作权限
+	matchResourceOpsMap := make(map[string]interfaces.PermissionResourceOps)
 
-	for i := 0; i < int(total); i += batchSize {
+	for i := 0; i < len(ids); i += batchSize {
 		end := i + batchSize
-		if end > int(total) {
-			end = int(total)
+		if end > len(ids) {
+			end = len(ids)
 		}
 		batchIDs := ids[i:end]
 
@@ -603,37 +669,78 @@ func (rs *resourceService) ListResourceSrcs(ctx context.Context, params interfac
 		batchMatchResources, err = rs.ps.FilterResources(ctx, interfaces.RESOURCE_TYPE_RESOURCE,
 			batchIDs, []string{interfaces.OPERATION_TYPE_VIEW_DETAIL}, false, interfaces.COMMON_OPERATIONS)
 		if err != nil {
-			return nil, 0, err
+			return []*interfaces.ListResourceEntry{}, 0, err
 		}
 
 		// 合并结果
 		for _, resourceOps := range batchMatchResources {
-			matchResourceIDMap[resourceOps.ResourceID] = true
+			matchResourceOpsMap[resourceOps.ResourceID] = resourceOps
 		}
 	}
 
-	// 遍历对象
+	// 提取有权限的资源ID，保持与ids的顺序一致
+	authorizedIDs := make([]string, 0, len(matchResourceOpsMap))
+	for _, id := range ids {
+		if _, exist := matchResourceOpsMap[id]; exist {
+			authorizedIDs = append(authorizedIDs, id)
+		}
+	}
+	total := int64(len(authorizedIDs))
+
+	// 如果没有有权限的资源，直接返回空结果
+	if total == 0 {
+		span.SetStatus(codes.Ok, "")
+		return []*interfaces.ListResourceEntry{}, total, nil
+	}
+
+	// 根据有权限的ID数组应用分页
+	if params.Limit != -1 {
+		// 分页处理authorizedIDs
+		// 检查起始位置是否越界
+		if params.Offset < 0 || params.Offset >= len(authorizedIDs) {
+			span.SetStatus(codes.Ok, "")
+			return []*interfaces.ListResourceEntry{}, total, nil
+		}
+		// 计算结束位置
+		end := params.Offset + params.Limit
+		if end > len(authorizedIDs) {
+			end = len(authorizedIDs)
+		}
+		// 只查询当前页的资源ID
+		authorizedIDs = authorizedIDs[params.Offset:end]
+	}
+
+	// 根据有权限的ID数组查询完整资源
+	// 分批处理，每批10000个ids, 避免prepared statement contains too many placeholders错误
+	entries := make([]*interfaces.ListResourceEntry, 0, len(authorizedIDs))
+	queryBatchSize := 10000
+	for i := 0; i < len(authorizedIDs); i += queryBatchSize {
+		end := i + queryBatchSize
+		if end > len(authorizedIDs) {
+			end = len(authorizedIDs)
+		}
+		batchIDs := authorizedIDs[i:end]
+
+		batchEntries, err := rs.ra.ListResourceSrcsByIDs(ctx, batchIDs)
+		if err != nil {
+			span.SetStatus(codes.Error, "ListResourceSrcsByIDs failed")
+			return []*interfaces.ListResourceEntry{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError_GetFailed).
+				WithErrorDetails(err.Error())
+		}
+
+		entries = append(entries, batchEntries...)
+	}
+
+	// 根据有权限的ID过滤结果
 	results := make([]*interfaces.ListResourceEntry, 0)
 	for _, entry := range entries {
-		if matchResourceIDMap[entry.ID] {
+		if _, exist := matchResourceOpsMap[entry.ID]; exist {
 			results = append(results, entry)
 		}
 	}
 
-	resTotal := len(results)
-	// 分页
-	// 检查起始位置是否越界
-	if params.Offset < 0 || params.Offset >= resTotal {
-		return []*interfaces.ListResourceEntry{}, 0, nil
-	}
-	// 计算结束位置
-	end := params.Offset + params.Limit
-	if end > resTotal {
-		end = resTotal
-	}
-
 	span.SetStatus(codes.Ok, "")
-	return results[params.Offset:end], int64(resTotal), nil
+	return results, total, nil
 }
 
 // CheckExistByCategories checks if Resources exists by catalog ID and categories.

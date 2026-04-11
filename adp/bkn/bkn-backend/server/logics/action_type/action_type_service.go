@@ -998,15 +998,15 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 	if query.NeedTotal {
 		if len(atIDMap) == 0 {
 			// 查询总数
-			params := &interfaces.DatasetQueryParams{
+			params := &interfaces.ResourceDataQueryParams{
 				FilterCondition: filterCondition,
 				Offset:          0,
 				Limit:           1, // 查询1条数据，获取total
 				NeedTotal:       true,
 			}
-			datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+			datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 			if err != nil {
-				logger.Errorf("QueryDatasetData error: %s", err.Error())
+				logger.Errorf("QueryResourceData error: %s", err.Error())
 				span.SetStatus(codes.Error, "业务知识网络行动类检索查询总数失败")
 				return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 					berrors.BknBackend_ActionType_InternalError).
@@ -1035,16 +1035,16 @@ func (ats *actionTypeService) SearchActionTypes(ctx context.Context, query *inte
 
 	for {
 		// 调用 dataset 查询
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Offset:          offset,
 			Limit:           limit,
 			NeedTotal:       false,
 			Sort:            query.Sort,
 		}
-		datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "业务知识网络行动类检索查询失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ActionType_InternalError).
@@ -1166,13 +1166,13 @@ func (ats *actionTypeService) GetTotal(ctx context.Context, filterCondition map[
 		}
 	}
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           1, // 查询1条数据，获取total
 		NeedTotal:       true,
 	}
-	datasetResp, err := ats.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	datasetResp, err := ats.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		span.SetStatus(codes.Error, "Search total documents count failed")
 		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_ActionType_InternalError).

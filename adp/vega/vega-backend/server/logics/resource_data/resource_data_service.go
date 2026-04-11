@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
@@ -82,6 +83,8 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return documents, total, nil
 
 	case interfaces.ResourceCategoryTable:
+		// 准备 sort参数
+		params = rds.prepareSortParams(resource, params)
 		data, total, err := rds.QueryData(ctx, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query table data failed")
@@ -100,12 +103,22 @@ func (rds *resourceDataService) Query(ctx context.Context, resource *interfaces.
 		return data, total, nil
 
 	case interfaces.ResourceCategoryLogicView:
+		// 准备 sort参数
+		params = rds.prepareSortParams(resource, params)
 		// 逻辑视图查询数据
 		data, total, err := rds.lvs.Query(ctx, resource, params)
 		if err != nil {
 			span.SetStatus(codes.Error, "Query logic view data failed")
 			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 				WithErrorDetails(err.Error())
+		}
+		return data, total, nil
+
+	case interfaces.ResourceCategoryFileset:
+		data, total, err := rds.QueryData(ctx, resource, params)
+		if err != nil {
+			span.SetStatus(codes.Error, "Query fileset data failed")
+			return nil, 0, err
 		}
 		return data, total, nil
 
@@ -168,10 +181,69 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 		}
 		return result.Rows, result.Total, nil
 
+	case interfaces.ResourceCategoryFileset:
+		fc, ok := connector.(connectors.FilesetConnector)
+		if !ok {
+			span.SetStatus(codes.Error, "Connector does not support fileset operations")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
+				WithErrorDetails(fmt.Sprintf("connector %s does not support fileset operations", catalog.ConnectorType))
+		}
+		docID := filesetDocIDFromResource(resource)
+		if docID == "" {
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError).
+				WithErrorDetails("fileset resource missing document id (source_metadata.id)")
+		}
+
+		// 使用搜索功能获取文件列表
+		files, total, err := fc.SearchFiles(ctx, docID, params.SearchKeyword, params.Limit, params.Offset)
+		if err != nil {
+			span.SetStatus(codes.Error, "Fileset search failed")
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
+				WithErrorDetails(err.Error())
+		}
+		return files, total, nil
+
 	default:
 		span.SetStatus(codes.Error, "Connector does not support table operations")
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Resource_InternalError_InvalidCategory).
 			WithErrorDetails(connector.GetCategory())
 	}
 
+}
+
+func filesetDocIDFromResource(r *interfaces.Resource) string {
+	if r.SourceMetadata != nil {
+		if id, ok := r.SourceMetadata["id"].(string); ok && id != "" {
+			return id
+		}
+	}
+	return strings.TrimSpace(r.SourceIdentifier)
+}
+
+// prepareSortParams prepares sort parameters to only include fields defined in resource SchemaDefinition
+func (rds *resourceDataService) prepareSortParams(resource *interfaces.Resource, params *interfaces.ResourceDataQueryParams) *interfaces.ResourceDataQueryParams {
+	if resource == nil || params == nil {
+		return params
+	}
+
+	// Create a field map for quick lookup
+	fieldMap := make(map[string]bool)
+	for _, prop := range resource.SchemaDefinition {
+		fieldMap[prop.Name] = true
+	}
+
+	filteredParams := params
+
+	// Filter Sort fields to only include fields defined in SchemaDefinition
+	if params.Sort != nil {
+		filteredSort := []*interfaces.SortField{}
+		for _, sortField := range params.Sort {
+			if fieldMap[sortField.Field] {
+				filteredSort = append(filteredSort, sortField)
+			}
+		}
+		filteredParams.Sort = filteredSort
+	}
+
+	return filteredParams
 }

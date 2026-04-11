@@ -18,6 +18,7 @@ import (
 	logicsKar "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knactionrecall"
 	logicsKlp "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knlogicpropertyresolver"
 	logicsKqs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knquerysubgraph"
+	logicsFs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knfindskills"
 	logicsKr "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knretrieval"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knsearch"
 )
@@ -32,6 +33,7 @@ const (
 	toolKeyQueryInstanceSubgraph    = "query_instance_subgraph"
 	toolKeyGetLogicPropertiesValues = "get_logic_properties_values"
 	toolKeyGetActionInfo            = "get_action_info"
+	toolKeyFindSkills               = "find_skills"
 )
 
 // NewMCPHandler creates an http.Handler for the MCP Streamable HTTP Server.
@@ -87,6 +89,14 @@ func NewMCPHandler() http.Handler {
 	mcpServer.AddTool(
 		newToolWithSchemas(getActionInfoName, getActionInfoDesc, gaiInput, gaiOutput),
 		handleGetActionInfo(getActionInfoService),
+	)
+
+	findSkillsService := logicsFs.NewFindSkillsService()
+	findSkillsName, findSkillsDesc := loadToolMeta(toolKeyFindSkills)
+	fsInput, fsOutput := loadToolSchemas(toolKeyFindSkills)
+	mcpServer.AddTool(
+		newToolWithSchemas(findSkillsName, findSkillsDesc, fsInput, fsOutput),
+		handleFindSkills(findSkillsService),
 	)
 
 	streamableServer := server.NewStreamableHTTPServer(mcpServer,

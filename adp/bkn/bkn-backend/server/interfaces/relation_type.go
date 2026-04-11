@@ -5,9 +5,12 @@
 
 package interfaces
 
+import cond "bkn-backend/common/condition"
+
 const (
-	RELATION_TYPE_DIRECT    = "direct"
-	RELATION_TYPE_DATA_VIEW = "data_view"
+	RELATION_TYPE_DIRECT              = "direct"
+	RELATION_TYPE_DATA_VIEW           = "data_view"
+	RELATION_TYPE_FILTERED_CROSS_JOIN = "filtered_cross_join"
 )
 
 var (
@@ -61,6 +64,12 @@ type InDirectMapping struct {
 type Mapping struct {
 	SourceProp SimpleProperty `json:"source_property" mapstructure:"source_property"`
 	TargetProp SimpleProperty `json:"target_property" mapstructure:"target_property"`
+}
+
+// FilteredCrossJoinMapping rules for relation type filtered_cross_join (per-side conditions, no key mapping).
+type FilteredCrossJoinMapping struct {
+	SourceCondition *cond.CondCfg `json:"source_condition" mapstructure:"source_condition"`
+	TargetCondition *cond.CondCfg `json:"target_condition" mapstructure:"target_condition"`
 }
 
 // 对象类的分页查询

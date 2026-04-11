@@ -119,8 +119,6 @@ ENV MEM0_DIR=/app/agent-memory
 # 从构建阶段复制已构建的二进制文件
 COPY --from=builder-factory --chown=$UID:$GID /build/agent-factory /app/agent-factory/agent-factory
 COPY --from=builder-factory --chown=$UID:$GID /build/locale /app/agent-factory/locale
-# dict 目录在源代码中不存在，移除此行避免 ARM 构建失败
-# COPY --from=builder-factory --chown=$UID:$GID /build/dict /app/agent-factory/dict
 COPY --from=builder-executor --chown=$UID:$GID /build/dist/agent-executor /app/agent-executor
 COPY --from=builder-memory --chown=$UID:$GID /build/dist/agent-memory /app/agent-memory
 

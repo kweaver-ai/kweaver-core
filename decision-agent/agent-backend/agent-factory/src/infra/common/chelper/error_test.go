@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/icmp/cmpmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp/cmpmock"
 	"go.uber.org/mock/gomock"
-	//"github.com/kweaver-ai/decision-agent/agent-factory/test/mock_log"
+	//"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/test/mock_log"
 	//"go.uber.org/mock/gomock"
 )
 

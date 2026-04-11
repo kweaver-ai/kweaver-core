@@ -3474,7 +3474,9 @@ components:
           items:
             $ref: '#/components/schemas/ObjectTypeOnPath'
         relation_types:
-          description: 路径的边集合，沿着路径顺序出现的边
+          description: |
+            路径的边集合，沿着路径顺序出现的边。边上引用的关系类类型可为 direct、data_view 或 filtered_cross_join（分侧过滤全连接，FCJ）；
+            FCJ 边在子图查询中按该关系类在知识网络中的 `mapping_rules`（`source_condition` / `target_condition`）与引擎策略展开。
           type: array
           items:
             $ref: '#/components/schemas/TypeEdge'

@@ -19,9 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/common"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/mock"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/ecron/utils"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/mock"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/ecron/utils"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -165,7 +165,7 @@ func (op *operatorHandle) getUserID(c *gin.Context, userToken string) (userID st
 	var tokenInfo *interfaces.TokenInfo
 	ctx := c.Request.Context()
 	accountAuth, ok := common.GetAccountAuthContextFromCtx(ctx)
-	if ok {
+	if ok && accountAuth.AccountID != "" {
 		userID = accountAuth.AccountID
 		return
 	}

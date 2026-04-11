@@ -363,5 +363,3 @@ CREATE TABLE IF NOT EXISTS t_discover_task (
 CREATE INDEX IF NOT EXISTS idx_t_discover_task_catalog_id ON t_discover_task (f_catalog_id);
 
 CREATE INDEX IF NOT EXISTS idx_t_discover_task_status ON t_discover_task (f_status);
-
-

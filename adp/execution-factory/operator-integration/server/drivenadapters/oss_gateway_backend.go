@@ -32,7 +32,6 @@ type ossGatewayBackendClient struct {
 	refreshOnce     sync.Once
 	stopCh          chan struct{}
 	logger          interfaces.Logger
-	isReady         bool
 }
 
 type gatewayAuthResponse struct {
@@ -84,13 +83,10 @@ func NewOSSGatewayBackendClient() interfaces.OSSGatewayBackendClient {
 			stopCh:          make(chan struct{}),
 			logger:          config.NewConfigLoader().GetLogger(),
 		}
-		if err := client.initStorageID(context.Background()); err == nil {
-			client.startStorageRefresh()
-			client.isReady = true
-		} else {
-			client.isReady = false
+		if err := client.initStorageID(context.Background()); err != nil {
 			client.logger.Errorf("init storage id failed, baseURL: %s, err: %v", client.baseURL, err)
 		}
+		client.startStorageRefresh()
 		ossClient = client
 	})
 	return ossClient
@@ -98,7 +94,7 @@ func NewOSSGatewayBackendClient() interfaces.OSSGatewayBackendClient {
 
 // IsReady 检查 OSS 网关后端客户端是否就绪
 func (c *ossGatewayBackendClient) IsReady() bool {
-	return c.isReady
+	return c.hasStorageID()
 }
 
 func (c *ossGatewayBackendClient) Close() error {
@@ -255,13 +251,23 @@ func (c *ossGatewayBackendClient) initStorageID(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.storageMu.Lock()
-	c.storageID = storageID
-	c.storageMu.Unlock()
+	c.storeStorageID(storageID)
 	return nil
 }
 
 func (c *ossGatewayBackendClient) currentStorageID(ctx context.Context) (string, error) {
+	c.storageMu.RLock()
+	storageID := c.storageID
+	c.storageMu.RUnlock()
+	if storageID != "" {
+		return storageID, nil
+	}
+	if !c.refreshDefault {
+		return "", errors.DefaultHTTPError(ctx, http.StatusInternalServerError, "oss gateway storage_id is empty")
+	}
+	if err := c.initStorageID(ctx); err != nil {
+		return "", err
+	}
 	c.storageMu.RLock()
 	defer c.storageMu.RUnlock()
 	if c.storageID == "" {
@@ -329,9 +335,7 @@ func (c *ossGatewayBackendClient) startStorageRefresh() {
 					if err != nil {
 						continue
 					}
-					c.storageMu.Lock()
-					c.storageID = storageID
-					c.storageMu.Unlock()
+					c.storeStorageID(storageID)
 					c.logger.Debugf("oss gateway storage refresh success, storage_id=%s", storageID)
 				case <-c.stopCh:
 					c.logger.Infof("stop oss gateway storage refresh")
@@ -340,6 +344,18 @@ func (c *ossGatewayBackendClient) startStorageRefresh() {
 			}
 		}()
 	})
+}
+
+func (c *ossGatewayBackendClient) hasStorageID() bool {
+	c.storageMu.RLock()
+	defer c.storageMu.RUnlock()
+	return c.storageID != ""
+}
+
+func (c *ossGatewayBackendClient) storeStorageID(storageID string) {
+	c.storageMu.Lock()
+	c.storageID = storageID
+	c.storageMu.Unlock()
 }
 
 func (c *ossGatewayBackendClient) doSignedRequest(ctx context.Context, method, reqURL string, headers map[string]string, body io.Reader) error {

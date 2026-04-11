@@ -1,0 +1,53 @@
+name: Branch Name Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  branch-name-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          echo "Checking branch name: $BRANCH_NAME"
+
+          # Skip validation for bots
+          if echo "$BRANCH_NAME" | grep -qE '^(dependabot|renovate)/'; then
+            echo "⏭️  Skipping bot branch: $BRANCH_NAME"
+            exit 0
+          fi
+
+          # Allowed branch name patterns (after <type>/, at most 2 slug segments — no third level):
+          #   <type>/<description>
+          #   <type>/<module>/<description>   (e.g. feature/agent-web/123-add-login)
+          #   release/<semver>
+          VALID_TYPES="feature|feat|fix|hotfix|docs|refactor|test|chore|ci|perf|build|style|revert"
+
+          SEGMENT='[a-z0-9][a-z0-9._-]*'
+          # Regex: type + exactly 1 or 2 segments (not 3+); plus release/x.y.z
+          PATTERN="^(${VALID_TYPES})\/${SEGMENT}(\/${SEGMENT})?$|^release\/[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9._-]+)?$"
+
+          if echo "$BRANCH_NAME" | grep -qE "$PATTERN"; then
+            echo "✅ Branch name is valid: $BRANCH_NAME"
+          else
+            echo "❌ Invalid branch name: $BRANCH_NAME"
+            echo ""
+            echo "Branch names must follow: <type>/<description> or <type>/<module>/<description>"
+            echo "(at most two segments after type — not feature/a/b/c)"
+            echo ""
+            echo "Valid types: ${VALID_TYPES//|/, }"
+            echo "Each path segment: lowercase alphanumeric with hyphens, dots, or underscores"
+            echo ""
+            echo "Examples:"
+            echo "  feature/add-oauth-support"
+            echo "  feature/agent-web/123-add-login   (module-scoped)"
+            echo "  fix/123-memory-leak-in-loader"
+            echo "  docs/update-api-reference"
+            echo "  chore/456-upgrade-dependencies"
+            echo "  refactor/simplify-auth-flow"
+            echo "  release/1.2.0"
+            exit 1
+          fi

@@ -42,6 +42,7 @@ type objectTypeService struct {
 	omAccess   interfaces.OntologyManagerAccess
 	osa        interfaces.OpenSearchAccess
 	uAccess    interfaces.UniqueryAccess
+	vba        interfaces.VegaBackendAccess
 }
 
 func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeService {
@@ -53,6 +54,7 @@ func NewObjectTypeService(appSetting *common.AppSetting) interfaces.ObjectTypeSe
 			omAccess:   logics.OMA,
 			osa:        logics.OSA,
 			uAccess:    logics.UA,
+			vba:        logics.VBA,
 		}
 	})
 	return otService
@@ -166,7 +168,14 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 		}
 	}
 
-	if !query.IgnoringStore && objectType.Status != nil && objectType.Status.IndexAvailable {
+	dataSourceType := interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+	if objectType.DataSource != nil && objectType.DataSource.Type != "" {
+		dataSourceType = objectType.DataSource.Type
+	}
+	useIndex := !query.IgnoringStore && objectType.Status != nil && objectType.Status.IndexAvailable &&
+		dataSourceType != interfaces.DATA_SOURCE_TYPE_RESOURCE
+
+	if useIndex {
 		// 2. 构造排序字段
 		if query.Sort == nil {
 			// 给默认值, 默认按 _score desc，主键 asc
@@ -186,8 +195,19 @@ func (ots *objectTypeService) GetObjectsByObjectTypeID(ctx context.Context,
 			// 给默认值, 默认按 _score desc，主键 asc
 			query.Sort = logics.BuildViewSort(objectType)
 		}
-		// 3. 请求视图获取数据，获取指定字段
-		err = ots.getObjectsFromDataView(ctx, query, objectType, &resps, viewFieldPropMap)
+		// 3. 请求视图或 vega Resource 获取数据
+		dsType := ""
+		if objectType.DataSource != nil {
+			dsType = objectType.DataSource.Type
+		}
+		if dsType == "" {
+			dsType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
+		}
+		if dsType == interfaces.DATA_SOURCE_TYPE_RESOURCE {
+			err = ots.getObjectsFromResource(ctx, query, objectType, &resps, viewFieldPropMap)
+		} else {
+			err = ots.getObjectsFromDataView(ctx, query, objectType, &resps, viewFieldPropMap)
+		}
 		if err != nil {
 			return resps, err
 		}
@@ -408,6 +428,95 @@ func (ots *objectTypeService) getObjectsFromDataView(ctx context.Context, query 
 	resps.SearchAfter = viewData.SearchAfter
 	resps.Datas = objects
 
+	return nil
+}
+
+// getObjectsFromResource queries vega-backend resource data (same row mapping as view path).
+func (ots *objectTypeService) getObjectsFromResource(ctx context.Context, query *interfaces.ObjectQueryBaseOnObjectType,
+	objectType interfaces.ObjectType, resps *interfaces.Objects, fieldPropMap map[string]string) error {
+
+	resourceSort, err := logics.MapSortFieldsForDataView(query.Sort, objectType)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ObjectType_InvalidParameter).
+			WithErrorDetails(err.Error())
+	}
+
+	viewQuery := interfaces.ViewQuery{
+		NeedTotal:         query.NeedTotal,
+		Limit:             query.Limit,
+		UseSearchAfter:    interfaces.USE_SEARCH_AFTER_TRUE,
+		Sort:              resourceSort,
+		SearchAfterParams: query.SearchAfterParams,
+	}
+	if query.ActualCondition != nil {
+		rewriteCondition, err := cond.RewriteCondition(ctx, query.ActualCondition,
+			logics.TransferPropsToPropMap(objectType.DataProperties),
+			func(ctx context.Context, property *cond.DataProperty, word string) ([]cond.VectorResp, error) {
+				return ots.handlerVector(ctx, property, word)
+			})
+		if err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest,
+				oerrors.OntologyQuery_InvalidParameter_Condition).
+				WithErrorDetails(fmt.Sprintf("failed to rewrite ontology condition for resource, %s", err.Error()))
+		}
+		viewQuery.Filters = rewriteCondition
+	}
+	if objectType.DataSource == nil || objectType.DataSource.ID == "" {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest,
+			oerrors.OntologyQuery_ObjectType_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("object type [%s] has empty data source", objectType.OTID))
+	}
+
+	outputFields := make([]string, 0, len(fieldPropMap))
+	for k := range fieldPropMap {
+		outputFields = append(outputFields, k)
+	}
+	params := &interfaces.ResourceDataQueryParams{
+		NeedTotal:       query.NeedTotal,
+		Limit:           query.Limit,
+		Sort:            resourceSort,
+		SearchAfter:     query.SearchAfter,
+		FilterCondition: logics.CondCfgToFilterMap(viewQuery.Filters),
+		OutputFields:    outputFields,
+	}
+	resp, err := ots.vba.QueryResourceData(ctx, objectType.DataSource.ID, params)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails(err.Error())
+	}
+	if resp == nil {
+		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			oerrors.OntologyQuery_ObjectType_InternalError_GetViewDataByIDFailed).WithErrorDetails("vega resource query returned nil")
+	}
+
+	objects := make([]map[string]any, 0, len(resp.Entries))
+	for _, col := range resp.Entries {
+		object := map[string]any{}
+		for k, v := range col {
+			if propName, exists := fieldPropMap[k]; exists {
+				object[propName] = v
+			}
+		}
+		instanceID, instanceIdentity := logics.GetObjectID(object, &objectType)
+		displayValue := object[objectType.DisplayKey]
+		if !logics.ShouldExcludeSystemProperty(interfaces.SYSTEM_PROPERTY_INSTANCE_ID, query.ExcludeSystemProperties) {
+			object[interfaces.SYSTEM_PROPERTY_INSTANCE_ID] = instanceID
+		}
+		if !logics.ShouldExcludeSystemProperty(interfaces.SYSTEM_PROPERTY_INSTANCE_IDENTITY, query.ExcludeSystemProperties) {
+			object[interfaces.SYSTEM_PROPERTY_INSTANCE_IDENTITY] = instanceIdentity
+		}
+		if !logics.ShouldExcludeSystemProperty(interfaces.SYSTEM_PROPERTY_DISPLAY, query.ExcludeSystemProperties) {
+			object[interfaces.SYSTEM_PROPERTY_DISPLAY] = displayValue
+		}
+		if len(object) > 0 {
+			objects = append(objects, object)
+		} else {
+			logger.Warnf("resource row could not map to object properties, fieldPropMap: %v", fieldPropMap)
+		}
+	}
+	resps.TotalCount = resp.TotalCount
+	resps.SearchAfter = resp.SearchAfter
+	resps.Datas = objects
 	return nil
 }
 

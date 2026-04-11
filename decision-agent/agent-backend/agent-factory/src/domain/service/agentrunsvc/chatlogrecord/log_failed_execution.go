@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentrespvo"
-	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
-	agentresp "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/resp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentrespvo"
+	agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
+	agentresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/resp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
 	"go.opentelemetry.io/otel/log"
 )
 
@@ -24,7 +24,9 @@ func LogFailedExecution(ctx context.Context, req *agentreq.ChatReq, execErr erro
 	}
 
 	var progressAttr log.KeyValue
+
 	var totalTimeAttr log.KeyValue
+
 	var totalTokensAttr log.KeyValue
 
 	if resp == nil {
@@ -53,10 +55,12 @@ func LogFailedExecution(ctx context.Context, req *agentreq.ChatReq, execErr erro
 			log.Int64("start_time", req.ReqStartTime),
 			log.Int64("end_time", cutil.GetCurrentMSTimestamp()),
 		)
+
 		return
 	}
 
 	var totaltime float64
+
 	var totalTokens int64
 
 	if assistantContent, ok := resp.Message.Content.(map[string]interface{}); ok {

@@ -425,25 +425,49 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 			}
 
 		case interfaces.RELATION_TYPE_DATA_VIEW:
-			// 查视图，翻译视图名称和视图字段显示名
+			// 查视图或 vega Resource，翻译名称和桥梁字段显示名
 			mappingRules := relationType.MappingRules.(interfaces.InDirectMapping)
-			dataView, err := rts.dva.GetDataViewByID(ctx, mappingRules.BackingDataSource.ID)
-			if err != nil {
-				return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-					berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
-					WithErrorDetails(err.Error())
+			backingType := mappingRules.BackingDataSource.Type
+			if backingType == "" {
+				backingType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
 			}
-			if dataView == nil {
-				o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
-				// 若都没有，不翻译，遍历下一个
-				if sourceObj == nil && targetObj == nil {
-					continue
+			var fieldsMap map[string]*interfaces.ViewField
+			switch backingType {
+			case interfaces.DATA_SOURCE_TYPE_RESOURCE:
+				res, err := rts.vba.GetResourceByID(ctx, mappingRules.BackingDataSource.ID)
+				if err != nil {
+					return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+						berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
+						WithErrorDetails(err.Error())
 				}
-			} else {
-				relationType.MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
+				if res == nil {
+					o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s backing vega Resource %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+					if sourceObj == nil && targetObj == nil {
+						continue
+					}
+				} else {
+					relationType.MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name = res.Name
+					fieldsMap = logics.VegaResourceSchemaToFieldsMap(res)
+				}
+			default:
+				dataView, err := rts.dva.GetDataViewByID(ctx, mappingRules.BackingDataSource.ID)
+				if err != nil {
+					return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+						berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
+						WithErrorDetails(err.Error())
+				}
+				if dataView == nil {
+					o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+					if sourceObj == nil && targetObj == nil {
+						continue
+					}
+				} else {
+					relationType.MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
+					fieldsMap = dataView.FieldsMap
+				}
 			}
 
-			// 起点到视图
+			// 起点到中间
 			for k, m := range relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules {
 				if sourceObj != nil {
 					relationType.SourceObjectType = interfaces.SimpleObjectType{
@@ -452,23 +476,24 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						Icon:   sourceObj.Icon,
 						Color:  sourceObj.Color,
 					}
-					// 映射里的source字段名加上显示名
 					relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules[k].
 						SourceProp.DisplayName = sourceObj.PropertyMap[m.SourceProp.Name]
 				}
-				if dataView != nil {
-					// 映射里的target字段名加上显示名
-					relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules[k].
-						TargetProp.DisplayName = dataView.FieldsMap[m.TargetProp.Name].DisplayName
+				if fieldsMap != nil {
+					if vf, ok := fieldsMap[m.TargetProp.Name]; ok && vf != nil {
+						relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules[k].
+							TargetProp.DisplayName = vf.DisplayName
+					}
 				}
 			}
 
-			// 视图到终点
+			// 中间到终点
 			for k, m := range relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules {
-				if dataView != nil {
-					// 映射里的target字段名加上显示名
-					relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules[k].
-						SourceProp.DisplayName = dataView.FieldsMap[m.SourceProp.Name].DisplayName
+				if fieldsMap != nil {
+					if vf, ok := fieldsMap[m.SourceProp.Name]; ok && vf != nil {
+						relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules[k].
+							SourceProp.DisplayName = vf.DisplayName
+					}
 				}
 				if targetObj != nil {
 					relationType.TargetObjectType = interfaces.SimpleObjectType{
@@ -477,12 +502,42 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						Icon:   targetObj.Icon,
 						Color:  targetObj.Color,
 					}
-					// 映射里的target字段名加上显示名
 					relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules[k].
 						TargetProp.DisplayName = targetObj.PropertyMap[m.TargetProp.Name]
 				}
 			}
+		// filtered_cross_join: no property mapping to translate; attach endpoint object type names when available
+		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+			if sourceObj != nil {
+				relationType.SourceObjectType = interfaces.SimpleObjectType{
+					OTID:   relationType.SourceObjectTypeID,
+					OTName: sourceObj.OTName,
+					Icon:   sourceObj.Icon,
+					Color:  sourceObj.Color,
+				}
+			}
+			if targetObj != nil {
+				relationType.TargetObjectType = interfaces.SimpleObjectType{
+					OTID:   relationType.TargetObjectTypeID,
+					OTName: targetObj.OTName,
+					Icon:   targetObj.Icon,
+					Color:  targetObj.Color,
+				}
+			}
 		}
+	}
+
+	accountInfos := make([]*interfaces.AccountInfo, 0, len(relationTypes)*2)
+	for _, relationType := range relationTypes {
+		accountInfos = append(accountInfos, &relationType.Creator, &relationType.Updater)
+	}
+
+	err = rts.ums.GetAccountNames(ctx, accountInfos)
+	if err != nil {
+		span.SetStatus(codes.Error, "GetAccountNames error")
+
+		return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+			berrors.BknBackend_RelationType_InternalError).WithErrorDetails(err.Error())
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -928,13 +983,13 @@ func (rts *relationTypeService) SearchRelationTypes(ctx context.Context,
 	if query.NeedTotal {
 		if len(rtIDMap) == 0 {
 			// 未指定分组，直接搜索.总数从dataset的结果中读取
-			params := &interfaces.DatasetQueryParams{
+			params := &interfaces.ResourceDataQueryParams{
 				FilterCondition: filterCondition,
 				Offset:          0,
 				Limit:           1, // 查询1条数据，获取total
 				NeedTotal:       true,
 			}
-			datasetResp, err := rts.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+			datasetResp, err := rts.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 			if err != nil {
 				logger.Errorf("QueryDatasetData error: %s", err.Error())
 				span.SetStatus(codes.Error, "业务知识网络关系类检索查询总数失败")
@@ -964,16 +1019,16 @@ func (rts *relationTypeService) SearchRelationTypes(ctx context.Context,
 
 	for {
 		// 调用 dataset 查询
-		params := &interfaces.DatasetQueryParams{
+		params := &interfaces.ResourceDataQueryParams{
 			FilterCondition: filterCondition,
 			Offset:          offset,
 			Limit:           limit,
 			NeedTotal:       true,
 			Sort:            query.Sort,
 		}
-		datasetResp, err := rts.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+		datasetResp, err := rts.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 		if err != nil {
-			logger.Errorf("QueryDatasetData error: %s", err.Error())
+			logger.Errorf("QueryResourceData error: %s", err.Error())
 			span.SetStatus(codes.Error, "业务知识网络关系类检索查询失败")
 			return response, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_RelationType_InternalError).
@@ -1041,13 +1096,13 @@ func (rts *relationTypeService) GetTotal(ctx context.Context, filterCondition ma
 	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search relation type total ")
 	defer span.End()
 
-	params := &interfaces.DatasetQueryParams{
+	params := &interfaces.ResourceDataQueryParams{
 		FilterCondition: filterCondition,
 		Offset:          0,
 		Limit:           1, // 查询1条数据，获取total
 		NeedTotal:       true,
 	}
-	datasetResp, err := rts.vba.QueryDatasetData(ctx, interfaces.BKN_DATASET_ID, params)
+	datasetResp, err := rts.vba.QueryResourceData(ctx, interfaces.BKN_DATASET_ID, params)
 	if err != nil {
 		span.SetStatus(codes.Error, "Search total documents count failed")
 		return total, rest.NewHTTPError(ctx, http.StatusInternalServerError, berrors.BknBackend_RelationType_InternalError).
@@ -1216,41 +1271,57 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 			}
 		case interfaces.RELATION_TYPE_DATA_VIEW:
 			inDirectMappingRules := relationType.MappingRules.(interfaces.InDirectMapping)
-			// strictMode为true时才校验数据视图存在性,不需要校验时，跳过后续的字段校验
+			// strictMode为true时才校验 backing 存在性
 			if strictMode && inDirectMappingRules.BackingDataSource != nil && inDirectMappingRules.BackingDataSource.ID != "" {
-				dataView, err := rts.dva.GetDataViewByID(ctx, inDirectMappingRules.BackingDataSource.ID)
-				if err != nil {
-					return err
+				backingType := inDirectMappingRules.BackingDataSource.Type
+				if backingType == "" {
+					backingType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
 				}
-				if strictMode && dataView == nil {
-					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-						WithErrorDetails(fmt.Sprintf("关系类中的[%s]数据视图[%s]不存在", relationType.RTID, inDirectMappingRules.BackingDataSource.ID))
+				var fieldsMap map[string]*interfaces.ViewField
+				var backingLabel string
+				switch backingType {
+				case interfaces.DATA_SOURCE_TYPE_RESOURCE:
+					res, err := rts.vba.GetResourceByID(ctx, inDirectMappingRules.BackingDataSource.ID)
+					if err != nil {
+						return err
+					}
+					if res == nil {
+						return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+							WithErrorDetails(fmt.Sprintf("关系类中的[%s] vega Resource[%s]不存在", relationType.RTID, inDirectMappingRules.BackingDataSource.ID))
+					}
+					backingLabel = res.Name
+					fieldsMap = logics.VegaResourceSchemaToFieldsMap(res)
+				default:
+					dataView, err := rts.dva.GetDataViewByID(ctx, inDirectMappingRules.BackingDataSource.ID)
+					if err != nil {
+						return err
+					}
+					if dataView == nil {
+						return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+							WithErrorDetails(fmt.Sprintf("关系类中的[%s]数据视图[%s]不存在", relationType.RTID, inDirectMappingRules.BackingDataSource.ID))
+					}
+					backingLabel = dataView.ViewName
+					fieldsMap = dataView.FieldsMap
 				}
 
-				// 校验起点属性在起点对象类中存在，校验关联字段在视图中存在
 				for _, mapping := range inDirectMappingRules.SourceMappingRules {
 					if sourceObjectType != nil {
-						// 检查起点属性是否在起点对象类的数据属性中存在
 						if _, exist := sourceObjectType.PropertyMap[mapping.SourceProp.Name]; !exist {
 							return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 								WithErrorDetails(fmt.Sprintf("起点关联属性[%s]在起点对象类[%s]中不存在", mapping.SourceProp.Name, sourceObjectType.OTName))
 						}
 					}
-
-					// 检查关联字段是否在视图中存在
-					if _, exist := dataView.FieldsMap[mapping.TargetProp.Name]; !exist {
+					if _, exist := fieldsMap[mapping.TargetProp.Name]; !exist {
 						return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-							WithErrorDetails(fmt.Sprintf("中间关联字段[%s]在视图[%s]中不存在", mapping.SourceProp.Name, dataView.ViewName))
+							WithErrorDetails(fmt.Sprintf("中间关联字段[%s]在 backing[%s]中不存在", mapping.TargetProp.Name, backingLabel))
 					}
 				}
 				for _, mapping := range inDirectMappingRules.TargetMappingRules {
 					if targetObjectType != nil {
-						// 检查中间关联字段是否在视图中存在
-						if _, exist := dataView.FieldsMap[mapping.SourceProp.Name]; !exist {
+						if _, exist := fieldsMap[mapping.SourceProp.Name]; !exist {
 							return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
-								WithErrorDetails(fmt.Sprintf("中间关联字段[%s]在视图[%s]中不存在", mapping.SourceProp.Name, dataView.ViewName))
+								WithErrorDetails(fmt.Sprintf("中间关联字段[%s]在 backing[%s]中不存在", mapping.SourceProp.Name, backingLabel))
 						}
-						// 检查终点属性是否在终点对象类的数据属性中存在
 						if _, exist := targetObjectType.PropertyMap[mapping.TargetProp.Name]; !exist {
 							return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 								WithErrorDetails(fmt.Sprintf("终点关联属性[%s]在终点对象类[%s]中不存在", mapping.TargetProp.Name, targetObjectType.OTName))
@@ -1258,7 +1329,40 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 					}
 				}
 			}
+		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+			rules := relationType.MappingRules.(interfaces.FilteredCrossJoinMapping)
+			if sourceObjectType != nil && rules.SourceCondition != nil {
+				if _, err := cond.NewCondition(ctx, rules.SourceCondition, cond.CUSTOM, objectTypeToCondFieldsMap(sourceObjectType)); err != nil {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("分侧过滤全连接起点条件无效: %s", err.Error()))
+				}
+			}
+			if targetObjectType != nil && rules.TargetCondition != nil {
+				if _, err := cond.NewCondition(ctx, rules.TargetCondition, cond.CUSTOM, objectTypeToCondFieldsMap(targetObjectType)); err != nil {
+					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
+						WithErrorDetails(fmt.Sprintf("分侧过滤全连接终点条件无效: %s", err.Error()))
+				}
+			}
 		}
 	}
 	return nil
+}
+
+func objectTypeToCondFieldsMap(ot *interfaces.ObjectType) map[string]*cond.ViewField {
+	m := make(map[string]*cond.ViewField)
+	if ot == nil {
+		return m
+	}
+	for _, dp := range ot.DataProperties {
+		if dp == nil {
+			continue
+		}
+		m[dp.Name] = &cond.ViewField{
+			Name:         dp.Name,
+			Type:         dp.Type,
+			DisplayName:  dp.DisplayName,
+			OriginalName: dp.Name,
+		}
+	}
+	return m
 }

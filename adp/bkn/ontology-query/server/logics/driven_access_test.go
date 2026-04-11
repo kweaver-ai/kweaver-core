@@ -10,8 +10,8 @@ import (
 
 	omock "ontology-query/interfaces/mock"
 
-	"go.uber.org/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_SetAgentOperatorAccess(t *testing.T) {

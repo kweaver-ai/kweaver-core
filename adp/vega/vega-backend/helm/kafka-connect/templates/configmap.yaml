@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.moduleName }}-cm
+  namespace: {{ .Values.namespace }}
+data:
+  kafka-connect-config.yaml: |
+    bootstrap.servers={{ .Values.depServices.mq.mqHost }}:{{ .Values.depServices.mq.mqPort }}
+    group.id=connect-cluster
+    key.converter=org.apache.kafka.connect.json.JsonConverter
+    value.converter=org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable=true
+    value.converter.schemas.enable=true
+    offset.storage.topic=connect-offsets
+    offset.storage.replication.factor=1
+    config.storage.topic=connect-configs
+    config.storage.replication.factor=1
+    status.storage.topic=connect-status
+    status.storage.replication.factor=1
+    offset.flush.interval.ms=10000
+    plugin.path=/usr/share/java

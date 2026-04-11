@@ -151,6 +151,30 @@ func Test_ValidateObjectType(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("Success with data source type resource\n", func() {
+			ot := &interfaces.ObjectType{
+				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+					OTID:   "ot1",
+					OTName: "object1",
+					DataProperties: []*interfaces.DataProperty{
+						{
+							Name:        "prop1",
+							Type:        "string",
+							DisplayName: "prop1",
+						},
+					},
+					PrimaryKeys: []string{"prop1"},
+					DisplayKey:  "prop1",
+					DataSource: &interfaces.ResourceInfo{
+						Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+						ID:   "res-1",
+					},
+				},
+			}
+			err := ValidateObjectType(ctx, ot, false)
+			So(err, ShouldBeNil)
+		})
+
 		Convey("Failed with primary key not in data properties\n", func() {
 			ot := &interfaces.ObjectType{
 				ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{

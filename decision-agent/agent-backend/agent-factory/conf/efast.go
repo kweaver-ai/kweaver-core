@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/cconf"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
 
 type EfastConf struct {
 	PublicSvc  cconf.SvcConf `yaml:"public_svc"`

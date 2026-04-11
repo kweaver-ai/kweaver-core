@@ -13,10 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	efastarg "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/dto/efastarg"
-	efastret "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/dto/efastret"
-	eftypes "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/efastcmp/eftypes"
-	cenum "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	efastarg "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/dto/efastarg"
+	efastret "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/dto/efastret"
+	eftypes "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/efastcmp/eftypes"
+	cenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 	gomock "go.uber.org/mock/gomock"
 )
 

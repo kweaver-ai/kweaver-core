@@ -3,11 +3,11 @@ package conversationdbacc
 import (
 	"context"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper/dbhelper2"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationreq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/dbhelper2"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/pkg/errors"
@@ -15,7 +15,7 @@ import (
 
 // List implements idbaccess.IConversationRepo.
 func (repo *ConversationRepo) List(ctx context.Context, req conversationreq.ListReq) (rt []*dapo.ConversationPO, count int64, err error) {
-	ctx, span := oteltrace.StartInternalSpan(ctx)
+	_, span := oteltrace.StartInternalSpan(ctx)
 	defer span.End()
 	span.SetAttributes(attribute.String("agentAPPKey", req.AgentAPPKey))
 	span.SetAttributes(attribute.String("userId", req.UserId))

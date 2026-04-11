@@ -3,7 +3,7 @@ package icmp
 import (
 	"context"
 	"io"
-	//"github.com/kweaver-ai/decision-agent/agent-factory/src/models"
+	//"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/models"
 )
 
 //go:generate mockgen -package cmpmock -source open_search.go -destination ./cmpmock/open_search_mock.go

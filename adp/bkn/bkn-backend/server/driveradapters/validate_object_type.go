@@ -89,11 +89,12 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, 
 		return err
 	}
 
-	// 校验 data_source.type 非空时，只支持 data_view
+	// 校验 data_source.type 非空时，只支持 data_view、resource
 	if objectType.DataSource != nil && objectType.DataSource.Type != "" {
-		if objectType.DataSource.Type != interfaces.DATA_SOURCE_TYPE_DATA_VIEW {
+		if objectType.DataSource.Type != interfaces.DATA_SOURCE_TYPE_DATA_VIEW &&
+			objectType.DataSource.Type != interfaces.DATA_SOURCE_TYPE_RESOURCE {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]数据来源类型[%s]不支持, 只支持 data_view", objectType.OTName, objectType.DataSource.Type))
+				WithErrorDetails(fmt.Sprintf("对象类[%s]数据来源类型[%s]不支持, 只支持 data_view、resource", objectType.OTName, objectType.DataSource.Type))
 		}
 	}
 

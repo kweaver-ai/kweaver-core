@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	icommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	myErr "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
@@ -180,6 +181,11 @@ func TestDebugOperator(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 		Convey("TestDebugOperator: Deubg调试成功，记录审计日志", func() {
+			ctx := icommon.SetAccountAuthContextToCtx(context.Background(), &interfaces.AccountAuthContext{
+				AccountID:   "user-1",
+				AccountType: interfaces.AccessorTypeUser,
+				TokenInfo:   &interfaces.TokenInfo{VisitorID: "user-1"},
+			})
 			operatorDB.MetadataType = "openapi"
 			operatorDB.MetadataVersion = "1.0.1"
 			req.Version = operatorDB.MetadataVersion
@@ -193,7 +199,7 @@ func TestDebugOperator(t *testing.T) {
 				Body:       []byte("mock Body"),
 			}, nil).Times(1)
 			mockAuditLog.EXPECT().Logger(gomock.Any(), gomock.Any()).Times(1)
-			_, err := operator.DebugOperator(context.TODO(), req)
+			_, err := operator.DebugOperator(ctx, req)
 			So(err, ShouldBeNil)
 			time.Sleep(100 * time.Millisecond)
 		})

@@ -243,10 +243,6 @@ spec:
                     name: agent-memory-yaml
               # ========== Memory环境变量结束 ==========
 
-              # ========== Agent Executor特有环境变量 ==========
-              - name: ENABLE_EVIDENCE_EXTRACTION
-                value: "true"
-              # ========== Agent Executor环境变量结束 ==========
 
               - name: DM_SVC_PATH
                 value: /tmp/rds_conf/

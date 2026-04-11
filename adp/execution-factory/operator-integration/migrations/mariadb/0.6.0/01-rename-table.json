@@ -1,0 +1,172 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_metadata_api",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_metadata_api",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_op_registry",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_op_registry",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_toolbox",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_toolbox",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_tool",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_tool",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_mcp_server_config",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_mcp_server_config",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_mcp_tool",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_mcp_tool",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_mcp_server_release",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_mcp_server_release",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_mcp_server_release_history",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_mcp_server_release_history",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_internal_component_config",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_internal_component_config",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_operator_release",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_operator_release",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_operator_release_history",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_operator_release_history",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_category",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_category",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_outbox_message",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_outbox_message",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_metadata_function",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_metadata_function",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_resource_deploy",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_resource_deploy",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_skill_repository",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_skill_repository",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_skill_file_index",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_skill_file_index",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

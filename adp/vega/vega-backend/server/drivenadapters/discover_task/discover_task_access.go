@@ -41,6 +41,53 @@ type discoverTaskAccess struct {
 	db         *sql.DB
 }
 
+// GetScheduledTaskStrategies retrieves strategies from t_scheduled_discover_task table by ID.
+func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, scheduledTaskID string) ([]string, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Query scheduled_discover_task by ID",
+		trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	span.SetAttributes(
+		attr.Key("db_url").String(libdb.GetDBUrl()),
+		attr.Key("db_type").String(libdb.GetDBType()))
+
+	sqlStr, vals, err := sq.Select("f_strategies").
+		From("t_scheduled_discover_task").
+		Where(sq.Eq{"f_id": scheduledTaskID}).
+		ToSql()
+	if err != nil {
+		logger.Errorf("Failed to build select scheduled_discover_task sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build select scheduled_discover_task sql: %v", err))
+		span.SetStatus(codes.Error, "Build sql failed")
+		return nil, err
+	}
+
+	var strategiesStr string
+	err = da.db.QueryRowContext(ctx, sqlStr, vals...).Scan(&strategiesStr)
+	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "")
+		return []string{}, nil
+	}
+	if err != nil {
+		logger.Errorf("Scan scheduled_discover_task failed: %v", err)
+		span.SetStatus(codes.Error, "Scan failed")
+		return nil, err
+	}
+
+	// Parse strategies string to array
+	if strategiesStr == "" {
+		return []string{}, nil
+	}
+	var strategies []string
+	if err := sonic.Unmarshal([]byte(strategiesStr), &strategies); err != nil {
+		logger.Errorf("Failed to unmarshal strategies: %v", err)
+		return []string{}, nil
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return strategies, nil
+}
+
 // NewDiscoverTaskAccess creates a new DiscoverTaskAccess.
 func NewDiscoverTaskAccess(appSetting *common.AppSetting) interfaces.DiscoverTaskAccess {
 	dtAccessOnce.Do(func() {
@@ -62,10 +109,25 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 		attr.Key("db_url").String(libdb.GetDBUrl()),
 		attr.Key("db_type").String(libdb.GetDBType()))
 
+	// Serialize strategies to JSON string
+	strategiesStr := ""
+	if len(task.Strategies) > 0 {
+		strategiesBytes, err := sonic.Marshal(task.Strategies)
+		if err != nil {
+			logger.Errorf("Failed to marshal strategies: %v", err)
+			o11y.Error(ctx, fmt.Sprintf("Failed to marshal strategies: %v", err))
+			span.SetStatus(codes.Error, "Marshal strategies failed")
+			return err
+		}
+		strategiesStr = string(strategiesBytes)
+	}
+
 	sqlStr, vals, err := sq.Insert(DISCOVER_TASK_TABLE_NAME).
 		Columns(
 			"f_id",
 			"f_catalog_id",
+			"f_scheduled_id",
+			"f_strategies",
 			"f_trigger_type",
 			"f_status",
 			"f_progress",
@@ -80,6 +142,8 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 		Values(
 			task.ID,
 			task.CatalogID,
+			task.ScheduledId,
+			strategiesStr,
 			task.TriggerType,
 			task.Status,
 			task.Progress,
@@ -123,6 +187,8 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 	sqlStr, vals, err := sq.Select(
 		"f_id",
 		"f_catalog_id",
+		"f_scheduled_id",
+		"f_strategies",
 		"f_trigger_type",
 		"f_status",
 		"f_progress",
@@ -144,11 +210,14 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 
 	task := &interfaces.DiscoverTask{}
 	var resultStr sql.NullString
+	var strategiesStr sql.NullString
 
 	row := da.db.QueryRowContext(ctx, sqlStr, vals...)
 	err = row.Scan(
 		&task.ID,
 		&task.CatalogID,
+		&task.ScheduledId,
+		&strategiesStr,
 		&task.TriggerType,
 		&task.Status,
 		&task.Progress,
@@ -170,6 +239,16 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 		return nil, err
 	}
 
+	// Parse strategies string to array
+	if strategiesStr.Valid && strategiesStr.String != "" {
+		if err := sonic.Unmarshal([]byte(strategiesStr.String), &task.Strategies); err != nil {
+			logger.Errorf("Failed to unmarshal strategies: %v", err)
+			task.Strategies = []string{} // Set to empty array on error
+		}
+	} else {
+		task.Strategies = []string{}
+	}
+
 	// Deserialize result
 	if resultStr.Valid && resultStr.String != "" {
 		task.Result = &interfaces.DiscoverResult{}
@@ -178,6 +257,97 @@ func (da *discoverTaskAccess) GetByID(ctx context.Context, id string) (*interfac
 
 	span.SetStatus(codes.Ok, "")
 	return task, nil
+}
+
+// GetByScheduledID retrieves DiscoverTasks by scheduled ID.
+func (da *discoverTaskAccess) GetByScheduledID(ctx context.Context, scheduledID string) ([]*interfaces.DiscoverTask, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_task by scheduled ID",
+		trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	span.SetAttributes(attr.Key("scheduled_id").String(scheduledID))
+
+	sqlStr, vals, err := sq.Select(
+		"f_id",
+		"f_catalog_id",
+		"f_scheduled_id",
+		"f_strategies",
+		"f_trigger_type",
+		"f_status",
+		"f_progress",
+		"f_message",
+		"f_start_time",
+		"f_finish_time",
+		"f_result",
+		"f_creator",
+		"f_creator_type",
+		"f_create_time",
+	).From(DISCOVER_TASK_TABLE_NAME).
+		Where(sq.Eq{"f_scheduled_id": scheduledID}).
+		ToSql()
+	if err != nil {
+		logger.Errorf("Failed to build select discover_task by scheduled_id sql: %v", err)
+		span.SetStatus(codes.Error, "Build sql failed")
+		return nil, err
+	}
+
+	rows, err := da.db.QueryContext(ctx, sqlStr, vals...)
+	if err != nil {
+		logger.Errorf("Query discover_task by scheduled_id failed: %v", err)
+		span.SetStatus(codes.Error, "Query failed")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*interfaces.DiscoverTask
+	for rows.Next() {
+		task := &interfaces.DiscoverTask{}
+		var resultStr sql.NullString
+		var strategiesStr sql.NullString
+
+		err = rows.Scan(
+			&task.ID,
+			&task.CatalogID,
+			&task.ScheduledId,
+			&strategiesStr,
+			&task.TriggerType,
+			&task.Status,
+			&task.Progress,
+			&task.Message,
+			&task.StartTime,
+			&task.FinishTime,
+			&resultStr,
+			&task.Creator.ID,
+			&task.Creator.Type,
+			&task.CreateTime,
+		)
+		if err != nil {
+			logger.Errorf("Scan discover_task failed: %v", err)
+			span.SetStatus(codes.Error, "Scan failed")
+			return nil, err
+		}
+
+		// Parse strategies string to array
+		if strategiesStr.Valid && strategiesStr.String != "" {
+			if err := sonic.Unmarshal([]byte(strategiesStr.String), &task.Strategies); err != nil {
+				logger.Errorf("Failed to unmarshal strategies: %v", err)
+				task.Strategies = []string{} // Set to empty array on error
+			}
+		} else {
+			task.Strategies = []string{}
+		}
+
+		// Deserialize result
+		if resultStr.Valid && resultStr.String != "" {
+			task.Result = &interfaces.DiscoverResult{}
+			_ = sonic.UnmarshalString(resultStr.String, task.Result)
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return tasks, nil
 }
 
 // List lists DiscoverTasks with filters.
@@ -189,6 +359,8 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 	builder := sq.Select(
 		"f_id",
 		"f_catalog_id",
+		"f_scheduled_id",
+		"f_strategies",
 		"f_trigger_type",
 		"f_status",
 		"f_progress",
@@ -248,10 +420,13 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 	for rows.Next() {
 		task := &interfaces.DiscoverTask{}
 		var resultStr sql.NullString
+		var strategiesStr sql.NullString
 
 		err := rows.Scan(
 			&task.ID,
 			&task.CatalogID,
+			&task.ScheduledId,
+			&strategiesStr,
 			&task.TriggerType,
 			&task.Status,
 			&task.Progress,
@@ -268,6 +443,17 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 			return nil, 0, err
 		}
 
+		// Parse strategies string to array
+		if strategiesStr.Valid && strategiesStr.String != "" {
+			if err := sonic.Unmarshal([]byte(strategiesStr.String), &task.Strategies); err != nil {
+				logger.Errorf("Failed to unmarshal strategies: %v", err)
+				task.Strategies = []string{} // Set to empty array on error
+			}
+		} else {
+			task.Strategies = []string{}
+		}
+
+		// Deserialize result
 		if resultStr.Valid && resultStr.String != "" {
 			task.Result = &interfaces.DiscoverResult{}
 			_ = sonic.UnmarshalString(resultStr.String, task.Result)

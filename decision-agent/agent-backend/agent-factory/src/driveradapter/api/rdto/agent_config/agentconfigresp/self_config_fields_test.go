@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewSelfConfigField(t *testing.T) {
@@ -161,6 +162,25 @@ func TestSelfConfigField_LoadFromJSONStr(t *testing.T) {
 	}
 }
 
+func TestSelfConfigField_LoadFromJSONStr_ContainsSkillSkillField(t *testing.T) {
+	t.Parallel()
+
+	field := NewSelfConfigField()
+
+	err := field.LoadFromJSONStr()
+	require.NoError(t, err)
+
+	skillsField := findFieldInfo(field.Children, "skills")
+	require.NotNil(t, skillsField)
+
+	skillItemsField := findFieldInfo(skillsField.Children, "skills")
+	require.NotNil(t, skillItemsField)
+
+	skillIDField := findFieldInfo(skillItemsField.Children, "skill_id")
+	require.NotNil(t, skillIDField)
+	assert.Equal(t, "string", skillIDField.Type)
+}
+
 func TestFieldInfo_DifferentTypes(t *testing.T) {
 	t.Parallel()
 
@@ -208,4 +228,14 @@ func TestFieldInfo_EmptyChildren(t *testing.T) {
 
 	assert.Empty(t, field.Children)
 	assert.Len(t, field.Children, 0)
+}
+
+func findFieldInfo(fields []*FieldInfo, name string) *FieldInfo {
+	for _, field := range fields {
+		if field.Name == name {
+			return field
+		}
+	}
+
+	return nil
 }

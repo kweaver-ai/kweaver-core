@@ -20,12 +20,15 @@ var (
 
 // 基于起点、方向和路径长度获取对象子图的请求体
 type SubGraphQueryBaseOnSource struct {
-	ConceptGroups         []string       `json:"concept_groups,omitempty"`
-	SourceObjecTypeId     string         `json:"source_object_type_id"`
-	Condition             map[string]any `json:"condition,omitempty"`
-	Direction             string         `json:"direction"`
-	PathLength            int            `json:"path_length"`
-	IncludeIncompletePath bool           `json:"include_incomplete_path,omitempty"` // 当路径探索无下一个节点时，是否拼接当前路径（true：拼接，false：跳过）
+	ConceptGroups     []string       `json:"concept_groups,omitempty"`
+	SourceObjecTypeId string         `json:"source_object_type_id"`
+	Condition         map[string]any `json:"condition,omitempty"`
+	Direction         string         `json:"direction"`
+	PathLength        int            `json:"path_length"`
+	// IncludeIncompletePath: when true, include relation paths that already have at least one traversed edge
+	// but the conceptual type path is not fully completed (e.g. exploration stops with no next hop).
+	// When false, those incomplete paths are omitted. Paths with zero edges are never returned.
+	IncludeIncompletePath bool `json:"include_incomplete_path,omitempty"`
 	PageQuery
 
 	ActualCondition *cond.CondCfg `json:"-"`

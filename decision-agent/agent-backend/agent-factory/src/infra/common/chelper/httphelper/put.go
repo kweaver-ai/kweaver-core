@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/net/gclient"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 )
 
 func (c *httpClient) Put(ctx context.Context, url string, data interface{}) (resp *gclient.Response, err error) {

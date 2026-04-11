@@ -25,7 +25,7 @@ class TestBaseConfig:
         """测试RDS默认配置"""
         config = BaseConfig()
         assert config.RDSPORTDEFAULT == 3330
-        assert config.RDSDBNAMEDEFAULT == 'adp'
+        assert config.RDSDBNAMEDEFAULT == 'kweaver'
         assert config.RDSUSERDEFAULT == 'root'
 
     def test_oauth_defaults(self):

@@ -12,12 +12,12 @@ import (
 	. "github.com/agiledragon/gomonkey/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/assert/v2"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/driveradapters/middleware"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/auth"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/tests/mock_logics"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/driveradapters/middleware"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/auth"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/tests/mock_logics"
 	"go.uber.org/mock/gomock"
 )
 

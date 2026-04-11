@@ -284,6 +284,17 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 				}
 				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = inDirectMapping
+			case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+				var fcj interfaces.FilteredCrossJoinMapping
+				jsonData, err := json.Marshal(response.TypePaths[i].TypeEdges[j].RelationType.MappingRules)
+				if err != nil {
+					return nil, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+				}
+				err = json.Unmarshal(jsonData, &fcj)
+				if err != nil {
+					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+				}
+				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = fcj
 			}
 		}
 	}
@@ -426,6 +437,17 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 		}
 		response.RelationTypes[0].MappingRules = inDirectMapping
+	case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+		var fcj interfaces.FilteredCrossJoinMapping
+		jsonData, err := json.Marshal(response.RelationTypes[0].MappingRules)
+		if err != nil {
+			return emptyRelationType, false, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+		}
+		err = json.Unmarshal(jsonData, &fcj)
+		if err != nil {
+			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+		}
+		response.RelationTypes[0].MappingRules = fcj
 	}
 
 	// 添加成功时的 trace 属性
@@ -550,6 +572,17 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 			}
 			response.RelationTypes[i].MappingRules = inDirectMapping
+		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
+			var fcj interfaces.FilteredCrossJoinMapping
+			jsonData, err := json.Marshal(response.RelationTypes[i].MappingRules)
+			if err != nil {
+				return nil, fmt.Errorf("derived Config Marshal error: %s", err.Error())
+			}
+			err = json.Unmarshal(jsonData, &fcj)
+			if err != nil {
+				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
+			}
+			response.RelationTypes[i].MappingRules = fcj
 		}
 	}
 

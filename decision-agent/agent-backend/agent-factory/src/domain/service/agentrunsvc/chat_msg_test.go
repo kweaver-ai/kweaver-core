@@ -3,7 +3,7 @@ package agentsvc
 import (
 	"testing"
 
-	agentreq "github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/agent/req"
+	agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -14,6 +14,8 @@ import (
 	"strings"
 	"vega-backend/common"
 
+	"github.com/robfig/cron/v3"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
@@ -27,6 +29,21 @@ import (
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
 )
+
+// Helper function to validate strategies array
+func validateStrategies(strategies []string) error {
+	validStrategies := map[string]bool{
+		"insert": true,
+		"delete": true,
+		"update": true,
+	}
+	for _, strategy := range strategies {
+		if !validStrategies[strategy] {
+			return fmt.Errorf("invalid strategy: %s, must be one of: insert, delete, update", strategy)
+		}
+	}
+	return nil
+}
 
 // ========== ListCatalogs ==========
 
@@ -367,9 +384,9 @@ func (r *restHandler) updateCatalog(c *gin.Context, ctx context.Context, span tr
 		return
 	}
 
-	// connector_config immutable fields: host, port, database, databases, schemas
+	// connector_config immutable fields: host, port, database, databases, schemas, paths, protocol
 	// These fields cannot be modified or removed if they exist in the original catalog
-	immutableFields := []string{"host", "port", "database", "databases", "schemas"}
+	immutableFields := []string{"host", "port", "database", "databases", "schemas", "paths", "protocol"}
 	for _, field := range immutableFields {
 		if _, existsInCatalog := catalog.ConnectorCfg[field]; existsInCatalog {
 			if _, existsInReq := req.ConnectorCfg[field]; existsInReq {
@@ -910,6 +927,604 @@ func (r *restHandler) listCatalogSrcs(c *gin.Context, ctx context.Context, span 
 	}
 
 	logger.Debug("Handler ListCatalogSrcs Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, result)
+}
+
+// ========== ListScheduledDiscoverTasks ==========
+
+// ListScheduledDiscoverTasksByEx handles GET /api/vega-backend/v1/catalogs/:id/scheduled-discover (External)
+func (r *restHandler) ListScheduledDiscoverTasksByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ListScheduledDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.listScheduledDiscoverTasks(c, ctx, span, visitor)
+}
+
+// ListScheduledDiscoverTasksByIn handles GET /api/vega-backend/in/v1/catalogs/:id/scheduled-discover (Internal)
+func (r *restHandler) ListScheduledDiscoverTasksByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ListScheduledDiscoverTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.listScheduledDiscoverTasks(c, ctx, span, visitor)
+}
+
+// listScheduledDiscoverTasks is the shared implementation
+func (r *restHandler) listScheduledDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	catalogID := c.Query("id")
+
+	// Verify catalog exists if catalogID is provided
+	if catalogID != "" {
+		catalog, err := r.cs.GetByID(ctx, catalogID, false)
+		if err != nil {
+			httpErr := err.(*rest.HTTPError)
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+		if catalog == nil {
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+
+	// Get query parameters
+	enabledStr := c.Query("enabled")
+	var enabled *bool
+	if enabledStr != "" {
+		enabledValue := enabledStr == "true"
+		enabled = &enabledValue
+	}
+
+	offset := common.GetQueryOrDefault(c, "offset", interfaces.DEFAULT_OFFSET)
+	limit := common.GetQueryOrDefault(c, "limit", interfaces.DEFAULT_LIMIT)
+	sort := common.GetQueryOrDefault(c, "sort", "create_time")
+	direction := common.GetQueryOrDefault(c, "direction", interfaces.DESC_DIRECTION)
+
+	// Validate pagination parameters
+	pageParam, err := validatePaginationQueryParams(ctx,
+		offset, limit, sort, direction, interfaces.CATALOG_SORT)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	params := interfaces.ScheduledDiscoverTaskQueryParams{
+		PaginationQueryParams: pageParam,
+		Enabled:               enabled,
+	}
+	// 如果catalogID不为空，则添加过滤条件
+	if catalogID != "" {
+		params.CatalogID = catalogID
+	}
+
+	tasks, total, err := r.sdtService.List(ctx, params)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	result := map[string]any{
+		"entries":     tasks,
+		"total_count": total,
+	}
+
+	logger.Debug("Handler ListScheduledDiscoverTasks Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, result)
+}
+
+// ========== ScheduledDiscoverCatalogResources ==========
+
+// ScheduledDiscoverCatalogResourcesByEx handles POST /api/vega-backend/v1/catalogs/:id/scheduled-discover (External)
+func (r *restHandler) ScheduledDiscoverCatalogResourcesByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ScheduledDiscoverCatalogResourcesByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.scheduledDiscoverCatalogResources(c, ctx, span, visitor)
+}
+
+// ScheduledDiscoverCatalogResourcesByIn handles POST /api/vega-backend/in/v1/catalogs/:id/scheduled-discover (Internal)
+func (r *restHandler) ScheduledDiscoverCatalogResourcesByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ScheduledDiscoverCatalogResourcesByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.scheduledDiscoverCatalogResources(c, ctx, span, visitor)
+}
+
+// scheduledDiscoverCatalogResources is the shared implementation
+func (r *restHandler) scheduledDiscoverCatalogResources(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	id := c.Param("id")
+
+	// Get catalog to verify it exists
+	catalog, err := r.cs.GetByID(ctx, id, false)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if catalog == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	var req interfaces.ScheduledDiscoverRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Validate cron expression
+	if req.CronExpr == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("cron_expr is required")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	// 校验cron表达式是否合法
+	if _, err := cron.ParseStandard(req.CronExpr); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(fmt.Sprintf("invalid cron expression: %v", err))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	// Validate strategies if provided
+	if len(req.Strategies) > 0 {
+		if err := validateStrategies(req.Strategies); err != nil {
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+				WithErrorDetails(err.Error())
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+	// Create scheduled discover task
+	task := &interfaces.ScheduledDiscoverTask{
+		CatalogID:  catalog.ID,
+		CronExpr:   req.CronExpr,
+		StartTime:  req.StartTime,
+		EndTime:    req.EndTime,
+		Strategies: req.Strategies,
+		Enabled:    true,
+	}
+	// Create scheduled discover task
+	scheduleID, err := r.sdtService.Create(ctx, task)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Schedule the task in the scheduler
+	if err := r.scheduler.ScheduleTask(scheduleID); err != nil {
+		logger.Errorf("Failed to schedule task %s: %v", scheduleID, err)
+		// Note: We don't return error here because the task is already created in database
+		// The scheduler will pick it up on next reload
+	}
+
+	result := map[string]any{
+		"schedule_id": scheduleID,
+		"message":     "Scheduled discover task created successfully",
+	}
+
+	logger.Debug("Handler ScheduledDiscoverCatalogResources Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, result)
+}
+
+// StopScheduledDiscoverTaskByEx handles POST /api/vega-backend/v1/catalogs/:id/scheduled-discover/:task_id/stop (External)
+func (r *restHandler) StopScheduledDiscoverTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"StopScheduledDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.stopScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// StopScheduledDiscoverTaskByIn handles POST /api/vega-backend/in/v1/catalogs/:id/scheduled-discover/:task_id/stop (Internal)
+func (r *restHandler) StopScheduledDiscoverTaskByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"StopScheduledDiscoverTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.stopScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// StartScheduledDiscoverTaskByEx handles POST /api/vega-backend/v1/catalogs/:id/scheduled-discover/:task_id/start (External)
+func (r *restHandler) StartScheduledDiscoverTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"StartScheduledDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.startScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// StartScheduledDiscoverTaskByIn handles POST /api/vega-backend/in/v1/catalogs/:id/scheduled-discover/:task_id/start (Internal)
+func (r *restHandler) StartScheduledDiscoverTaskByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"StartScheduledDiscoverTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.startScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// stopScheduledDiscoverTask is the shared implementation
+func (r *restHandler) stopScheduledDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	catalogID := c.Param("id")
+	taskID := c.Param("task_id")
+
+	// Verify catalog exists
+	catalog, err := r.cs.GetByID(ctx, catalogID, false)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if catalog == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Verify task exists and belongs to the catalog
+	task, err := r.sdtService.GetByID(ctx, taskID)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound).
+			WithErrorDetails("Scheduled discover task not found")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task.CatalogID != catalogID {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("Task does not belong to the specified catalog")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Disable the task
+	if err := r.sdtService.Disable(ctx, taskID); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Unschedule the task from scheduler
+	if err := r.scheduler.UnscheduleTask(taskID); err != nil {
+		logger.Errorf("Failed to unschedule task %s: %v", taskID, err)
+		// Note: We don't return error here because the task is already disabled in database
+	}
+
+	result := map[string]any{
+		"schedule_id": taskID,
+		"message":     "Scheduled discover task stopped successfully",
+	}
+
+	logger.Debug("Handler StopScheduledDiscoverTask Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, result)
+}
+
+// startScheduledDiscoverTask is the shared implementation
+func (r *restHandler) startScheduledDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	catalogID := c.Param("id")
+	taskID := c.Param("task_id")
+
+	// Verify catalog exists
+	catalog, err := r.cs.GetByID(ctx, catalogID, false)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if catalog == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Verify task exists and belongs to the catalog
+	task, err := r.sdtService.GetByID(ctx, taskID)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound).
+			WithErrorDetails("Scheduled discover task not found")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task.CatalogID != catalogID {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("Task does not belong to the specified catalog")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Check if task is already enabled
+	if task.Enabled {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("Task is already enabled")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Enable the task
+	if err := r.sdtService.Enable(ctx, taskID); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Schedule the task in the scheduler
+	if err := r.scheduler.ScheduleTask(taskID); err != nil {
+		logger.Errorf("Failed to schedule task %s: %v", taskID, err)
+		// Note: We don't return error here because the task is already enabled in database
+		// The scheduler will pick it up on next reload
+	}
+
+	result := map[string]any{
+		"schedule_id": taskID,
+		"message":     "Scheduled discover task started successfully",
+	}
+
+	logger.Debug("Handler StartScheduledDiscoverTask Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, result)
+}
+
+// UpdateScheduledDiscoverTaskByEx handles PUT /api/vega-backend/v1/catalogs/:id/scheduled-discover/:task_id (External)
+func (r *restHandler) UpdateScheduledDiscoverTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"UpdateScheduledDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.updateScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// UpdateScheduledDiscoverTaskByIn handles PUT /api/vega-backend/in/v1/catalogs/:id/scheduled-discover/:task_id (Internal)
+func (r *restHandler) UpdateScheduledDiscoverTaskByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"UpdateScheduledDiscoverTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.updateScheduledDiscoverTask(c, ctx, span, visitor)
+}
+
+// updateScheduledDiscoverTask is the shared implementation
+func (r *restHandler) updateScheduledDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	catalogID := c.Param("id")
+	taskID := c.Param("task_id")
+
+	// Verify catalog exists
+	catalog, err := r.cs.GetByID(ctx, catalogID, false)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if catalog == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Verify task exists and belongs to the catalog
+	task, err := r.sdtService.GetByID(ctx, taskID)
+	if err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task == nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound).
+			WithErrorDetails("Scheduled discover task not found")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if task.CatalogID != catalogID {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("Task does not belong to the specified catalog")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Parse request body
+	var req interfaces.ScheduledDiscoverRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Validate cron expression if provided
+	if req.CronExpr != "" {
+		if _, err := cron.ParseStandard(req.CronExpr); err != nil {
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+				WithErrorDetails(fmt.Sprintf("invalid cron expression: %v", err))
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+
+	// Validate strategies if provided
+	if len(req.Strategies) > 0 {
+		if err := validateStrategies(req.Strategies); err != nil {
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+				WithErrorDetails(err.Error())
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+
+	// Build update request
+	updateTask := &interfaces.ScheduledDiscoverTask{
+		ID:         taskID,
+		CatalogID:  catalogID,
+		CronExpr:   req.CronExpr,
+		StartTime:  req.StartTime,
+		EndTime:    req.EndTime,
+		Strategies: req.Strategies,
+	}
+
+	// Update task in database
+	if err := r.sdtService.Update(ctx, taskID, updateTask); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// If task is enabled, reschedule it with new cron expression
+	if task.Enabled {
+		// Unschedule old task
+		if err := r.scheduler.UnscheduleTask(taskID); err != nil {
+			logger.Errorf("Failed to unschedule task %s: %v", taskID, err)
+		}
+		// Schedule with new configuration
+		if err := r.scheduler.ScheduleTask(taskID); err != nil {
+			logger.Errorf("Failed to reschedule task %s: %v", taskID, err)
+		}
+	}
+
+	result := map[string]any{
+		"task_id": taskID,
+		"message": "Scheduled discover task updated successfully",
+	}
+
+	logger.Debug("Handler UpdateScheduledDiscoverTask Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }

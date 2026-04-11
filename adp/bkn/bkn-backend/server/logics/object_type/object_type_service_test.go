@@ -202,6 +202,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 		cga := bmock.NewMockConceptGroupAccess(mockCtrl)
 		dva := bmock.NewMockDataViewAccess(mockCtrl)
 		dda := bmock.NewMockDataModelAccess(mockCtrl)
+		ums := bmock.NewMockUserMgmtService(mockCtrl)
 		db, smock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 
 		service := &objectTypeService{
@@ -212,6 +213,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			cga:        cga,
 			dva:        dva,
 			dda:        dda,
+			ums:        ums,
 		}
 
 		Convey("Success getting object types by IDs\n", func() {
@@ -236,6 +238,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			ota.EXPECT().GetObjectTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(otArr, nil)
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string][]*interfaces.ConceptGroup{}, nil)
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 			result, err := service.GetObjectTypesByIDs(ctx, nil, knID, branch, otIDs)
 			So(err, ShouldBeNil)
@@ -357,6 +360,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			ota.EXPECT().GetObjectTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(otArr, nil)
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string][]*interfaces.ConceptGroup{}, nil)
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 
 			result, err := service.GetObjectTypesByIDs(ctx, tx, knID, branch, otIDs)
 			So(err, ShouldBeNil)
@@ -382,7 +386,8 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			ota.EXPECT().GetObjectTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(otArr, nil)
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string][]*interfaces.ConceptGroup{}, nil)
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
-			smock.ExpectRollback()
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
+			smock.ExpectCommit()
 
 			result, err := service.GetObjectTypesByIDs(ctx, nil, knID, branch, otIDs)
 			So(err, ShouldBeNil)
@@ -418,7 +423,8 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string][]*interfaces.ConceptGroup{}, nil)
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).Return(&interfaces.DataView{}, nil)
 			dda.EXPECT().GetMetricModelByID(gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
-			smock.ExpectRollback()
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
+			smock.ExpectCommit()
 
 			result, err := service.GetObjectTypesByIDs(ctx, nil, knID, branch, otIDs)
 			So(err, ShouldBeNil)
@@ -461,6 +467,7 @@ func Test_objectTypeService_GetObjectTypesByIDs(t *testing.T) {
 			ota.EXPECT().GetObjectTypesByIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(otArr, nil)
 			cga.EXPECT().GetConceptGroupsByOTIDs(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[string][]*interfaces.ConceptGroup{}, nil)
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).Return(dataView, nil)
+			ums.EXPECT().GetAccountNames(gomock.Any(), gomock.Any()).Return(nil)
 			smock.ExpectCommit()
 
 			result, err := service.GetObjectTypesByIDs(ctx, nil, knID, branch, otIDs)
@@ -840,6 +847,7 @@ func Test_objectTypeService_ValidateObjectTypes(t *testing.T) {
 		ps := bmock.NewMockPermissionService(mockCtrl)
 		ota := bmock.NewMockObjectTypeAccess(mockCtrl)
 		dva := bmock.NewMockDataViewAccess(mockCtrl)
+		vba := bmock.NewMockVegaBackendAccess(mockCtrl)
 		mfa := bmock.NewMockModelFactoryAccess(mockCtrl)
 		dda := bmock.NewMockDataModelAccess(mockCtrl)
 		aoa := bmock.NewMockAgentOperatorAccess(mockCtrl)
@@ -851,6 +859,7 @@ func Test_objectTypeService_ValidateObjectTypes(t *testing.T) {
 			ps:  ps,
 			ota: ota,
 			dva: dva,
+			vba: vba,
 			mfa: mfa,
 			dda: dda,
 			aoa: aoa,
@@ -870,6 +879,46 @@ func Test_objectTypeService_ValidateObjectTypes(t *testing.T) {
 			expectImportModeOK()
 			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
 			So(err, ShouldBeNil)
+		})
+
+		Convey("Strict mode validates resource data source via GetResourceByID not data view\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						DataSource: &interfaces.ResourceInfo{
+							Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+							ID:   "res1",
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			vba.EXPECT().GetResourceByID(gomock.Any(), "res1").Return(&interfaces.VegaResource{Name: "r1"}, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Strict mode fails when resource data source does not exist\n", func() {
+			objectTypes := []*interfaces.ObjectType{
+				{
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTName: "ot1",
+						DataSource: &interfaces.ResourceInfo{
+							Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+							ID:   "res_missing",
+						},
+					},
+					KNID: "kn1",
+				},
+			}
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expectImportModeOK()
+			vba.EXPECT().GetResourceByID(gomock.Any(), "res_missing").Return(nil, nil)
+			err := service.ValidateObjectTypes(ctx, "kn1", interfaces.MAIN_BRANCH, objectTypes, true, nil, interfaces.ImportMode_Normal)
+			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Strict mode skips logic property checks when strictMode is false\n", func() {
@@ -1967,27 +2016,27 @@ func Test_objectTypeService_GetTotal(t *testing.T) {
 				TotalCount: 10,
 			}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldBeNil)
 			So(total, ShouldEqual, 10)
 		})
 
-		Convey("Failed when QueryDatasetData fails\n", func() {
+		Convey("Failed when QueryResourceData fails\n", func() {
 			filterCondition := map[string]any{}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldNotBeNil)
 			So(total, ShouldEqual, 0)
 		})
 
-		Convey("Failed when QueryDatasetData returns nil response\n", func() {
+		Convey("Failed when QueryResourceData returns nil response\n", func() {
 			filterCondition := map[string]any{}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
 
 			total, err := service.GetTotal(ctx, filterCondition)
 			So(err, ShouldBeNil)
@@ -2022,7 +2071,7 @@ func Test_objectTypeService_GetTotalWithLargeOTIDs(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				TotalCount: 5,
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
 
 			total, err := service.GetTotalWithLargeOTIDs(ctx, filterCondition, otIDs)
 			So(err, ShouldBeNil)
@@ -2050,7 +2099,7 @@ func Test_objectTypeService_GetTotalWithLargeOTIDs(t *testing.T) {
 			}
 			otIDs := []string{"ot1"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			total, err := service.GetTotalWithLargeOTIDs(ctx, filterCondition, otIDs)
 			So(err, ShouldNotBeNil)
@@ -2084,7 +2133,7 @@ func Test_objectTypeService_GetTotalWithOTIDs(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				TotalCount: 2,
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			total, err := service.GetTotalWithOTIDs(ctx, filterCondition, otIDs)
 			So(err, ShouldBeNil)
@@ -2099,7 +2148,7 @@ func Test_objectTypeService_GetTotalWithOTIDs(t *testing.T) {
 			}
 			otIDs := []string{"ot1"}
 
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			total, err := service.GetTotalWithOTIDs(ctx, filterCondition, otIDs)
 			So(err, ShouldNotBeNil)
@@ -2147,7 +2196,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -2182,7 +2231,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -2250,7 +2299,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -2326,8 +2375,8 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(totalResp, nil).Times(1)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(totalResp, nil).Times(1)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -2353,8 +2402,8 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(totalResp, nil).Times(1)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(totalResp, nil).Times(1)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil).Times(1)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldBeNil)
@@ -2371,7 +2420,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldNotBeNil)
@@ -2390,7 +2439,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			cga.EXPECT().GetConceptGroupsTotal(gomock.Any(), gomock.Any()).Return(1, nil)
 			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"ot1"}, nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldNotBeNil)
@@ -2443,7 +2492,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldNotBeNil)
@@ -2465,7 +2514,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			So(err, ShouldNotBeNil)
@@ -2487,7 +2536,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 
 			result, err := service.SearchObjectTypes(ctx, query)
 			// Marshal will fail first, so error should occur
@@ -2525,7 +2574,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).Return(&interfaces.DataView{}, nil)
 			dda.EXPECT().GetMetricModelByID(gomock.Any(), gomock.Any()).Return(nil, rest.NewHTTPError(ctx, 500, berrors.BknBackend_ObjectType_InternalError))
 
@@ -2562,7 +2611,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			datasetResp := &interfaces.DatasetQueryResponse{
 				Entries: []map[string]any{entry1, entry2},
 			}
-			vba.EXPECT().QueryDatasetData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
 			// processObjectTypeDetails may be called for each object type
 			dva.EXPECT().GetDataViewByID(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 

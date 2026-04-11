@@ -62,11 +62,6 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 				return "", err
 			}
 		case interfaces.LogicDefinitionNodeType_Sql:
-			if view.Category != interfaces.ResourceCategoryTable {
-				return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
-					WithErrorDetails("The sql node is only supported in sql query type")
-			}
-
 			err := validateSqlNode(ctx, node, nodeMap)
 			if err != nil {
 				return "", err
@@ -91,11 +86,13 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 		logicType = interfaces.LogicType_Derived
 	}
 
+	var refResourceCategory string
 	dataScopeViewCategory := make(map[string]struct{})
 	dataScopeViewDataSourceID := make(map[string]struct{})
 	for _, dsView := range dataScopeViewMap {
 		dataScopeViewDataSourceID[dsView.CatalogID] = struct{}{}
 		dataScopeViewCategory[dsView.Category] = struct{}{}
+		refResourceCategory = dsView.Category
 	}
 
 	if len(dataScopeViewCategory) != 1 {
@@ -104,7 +101,7 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 	}
 
 	// 如果数据源类型是opensearch，则不能跨opensearch数据源选择
-	if view.Category == interfaces.ResourceCategoryIndex && len(dataScopeViewDataSourceID) > 1 {
+	if refResourceCategory == interfaces.ResourceCategoryIndex && len(dataScopeViewDataSourceID) > 1 {
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails("The source view of query type DSL must have the same data source when create custom view")
 	}
@@ -285,7 +282,7 @@ func validateUnionNode(ctx context.Context, category string, node *interfaces.Lo
 			WithErrorDetails("The logic definition union config is invalid, union_type must be all, distinct")
 	}
 
-	// 如果查询类型是DSL或索引基类，只允许union all
+	// TODO 如果查询类型是DSL或索引基类，只允许union all
 	if category == interfaces.ResourceCategoryIndex {
 		if cfg.UnionType != interfaces.UnionType_All {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -293,7 +290,7 @@ func validateUnionNode(ctx context.Context, category string, node *interfaces.Lo
 		}
 	}
 
-	// 校验 output_fields 中每个字段的 FromList 长度是否与 inputs 长度一致
+	// TODO 校验 output_fields 中每个字段的 FromList 长度是否与 inputs 长度一致
 	if category == interfaces.ResourceCategoryTable {
 		for _, field := range node.OutputFields {
 			if len(field.FromList) != len(node.Inputs) {

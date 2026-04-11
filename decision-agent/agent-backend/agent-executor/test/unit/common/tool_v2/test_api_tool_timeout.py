@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """单元测试 - app/common/tool_v2/api_tool.py 超时策略"""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -35,7 +36,7 @@ def _build_tool(tool_timeout):
     return tool
 
 
-async def _run_arun_stream(tool):
+async def _run_arun_stream(tool, evidence_enabled=False):
     captured = {}
 
     class FakeClientSession:
@@ -65,7 +66,18 @@ async def _run_arun_stream(tool):
     with (
         patch("app.common.tool_v2.api_tool.StandLogger"),
         patch("app.common.tool_v2.api_tool.aiohttp.ClientSession", FakeClientSession),
-        patch("app.common.tool_v2.api_tool.is_aaron_local_dev", return_value=False),
+        patch(
+            "app.common.tool_v2.api_tool.Config",
+            new=SimpleNamespace(
+                features=SimpleNamespace(enable_traceai_evidence=evidence_enabled)
+            ),
+            create=True,
+        ),
+        patch(
+            "app.common.tool_v2.api_tool.is_aaron_local_dev",
+            return_value=False,
+            create=True,
+        ),
     ):
         result = [
             item
@@ -102,3 +114,23 @@ class TestAPIToolTimeout:
         assert captured["client_timeout"].total == 330
         assert captured["client_timeout"].sock_read == 330
         assert captured["handle_response_timeout"] == 330
+
+    @pytest.mark.asyncio
+    async def test_arun_stream_injects_traceai_evidence_header_when_enabled(self):
+        tool = _build_tool(120)
+
+        captured, result = await _run_arun_stream(tool, evidence_enabled=True)
+
+        assert result == [{"answer": "ok", "block_answer": ""}]
+        assert captured["headers"]["X-TraceAi-Enable-Evidence"] == "true"
+        assert captured["json"]["header"]["X-TraceAi-Enable-Evidence"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_arun_stream_injects_traceai_evidence_header_when_disabled(self):
+        tool = _build_tool(120)
+
+        captured, result = await _run_arun_stream(tool, evidence_enabled=False)
+
+        assert result == [{"answer": "ok", "block_answer": ""}]
+        assert captured["headers"]["X-TraceAi-Enable-Evidence"] == "false"
+        assert captured["json"]["header"]["X-TraceAi-Enable-Evidence"] == "false"

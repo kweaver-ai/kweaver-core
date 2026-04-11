@@ -529,6 +529,21 @@ func (mr *MockSandBoxControlPlaneMockRecorder) ExecuteCodeSync(ctx, sessionID, r
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteCodeSync", reflect.TypeOf((*MockSandBoxControlPlane)(nil).ExecuteCodeSync), ctx, sessionID, req)
 }
 
+// ExecuteShell mocks base method.
+func (m *MockSandBoxControlPlane) ExecuteShell(ctx context.Context, sessionID string, req *interfaces.ExecuteShellReq) (*interfaces.ExecuteShellResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecuteShell", ctx, sessionID, req)
+	ret0, _ := ret[0].(*interfaces.ExecuteShellResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecuteShell indicates an expected call of ExecuteShell.
+func (mr *MockSandBoxControlPlaneMockRecorder) ExecuteShell(ctx, sessionID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteShell", reflect.TypeOf((*MockSandBoxControlPlane)(nil).ExecuteShell), ctx, sessionID, req)
+}
+
 // GetTemplateDetail mocks base method.
 func (m *MockSandBoxControlPlane) GetTemplateDetail(ctx context.Context, tempID string) (any, error) {
 	m.ctrl.T.Helper()
@@ -590,6 +605,21 @@ func (mr *MockSandBoxControlPlaneMockRecorder) QuerySession(ctx, sessionID any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuerySession", reflect.TypeOf((*MockSandBoxControlPlane)(nil).QuerySession), ctx, sessionID)
 }
 
+// UploadSkillArchive mocks base method.
+func (m *MockSandBoxControlPlane) UploadSkillArchive(ctx context.Context, sessionID string, req *interfaces.UploadSkillArchiveReq) (*interfaces.UploadSkillArchiveResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadSkillArchive", ctx, sessionID, req)
+	ret0, _ := ret[0].(*interfaces.UploadSkillArchiveResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UploadSkillArchive indicates an expected call of UploadSkillArchive.
+func (mr *MockSandBoxControlPlaneMockRecorder) UploadSkillArchive(ctx, sessionID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadSkillArchive", reflect.TypeOf((*MockSandBoxControlPlane)(nil).UploadSkillArchive), ctx, sessionID, req)
+}
+
 // MockMFModelAPIClient is a mock of MFModelAPIClient interface.
 type MockMFModelAPIClient struct {
 	ctrl     *gomock.Controller
@@ -627,6 +657,21 @@ func (m *MockMFModelAPIClient) ChatCompletion(ctx context.Context, req *interfac
 func (mr *MockMFModelAPIClientMockRecorder) ChatCompletion(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChatCompletion", reflect.TypeOf((*MockMFModelAPIClient)(nil).ChatCompletion), ctx, req)
+}
+
+// Embeddings mocks base method.
+func (m *MockMFModelAPIClient) Embeddings(ctx context.Context, req *interfaces.EmbeddingReq) (*interfaces.EmbeddingResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Embeddings", ctx, req)
+	ret0, _ := ret[0].(*interfaces.EmbeddingResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Embeddings indicates an expected call of Embeddings.
+func (mr *MockMFModelAPIClientMockRecorder) Embeddings(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Embeddings", reflect.TypeOf((*MockMFModelAPIClient)(nil).Embeddings), ctx, req)
 }
 
 // StreamChatCompletion mocks base method.
@@ -669,6 +714,21 @@ func (m *MockMFModelManager) EXPECT() *MockMFModelManagerMockRecorder {
 	return m.recorder
 }
 
+// GetEmbeddingModel mocks base method.
+func (m *MockMFModelManager) GetEmbeddingModel(ctx context.Context, modelName, modelType string) (*interfaces.EmbeddingModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEmbeddingModel", ctx, modelName, modelType)
+	ret0, _ := ret[0].(*interfaces.EmbeddingModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEmbeddingModel indicates an expected call of GetEmbeddingModel.
+func (mr *MockMFModelManagerMockRecorder) GetEmbeddingModel(ctx, modelName, modelType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEmbeddingModel", reflect.TypeOf((*MockMFModelManager)(nil).GetEmbeddingModel), ctx, modelName, modelType)
+}
+
 // GetPromptByPromptID mocks base method.
 func (m *MockMFModelManager) GetPromptByPromptID(ctx context.Context, promptID string) (*interfaces.GetPromptResp, error) {
 	m.ctrl.T.Helper()
@@ -682,6 +742,118 @@ func (m *MockMFModelManager) GetPromptByPromptID(ctx context.Context, promptID s
 func (mr *MockMFModelManagerMockRecorder) GetPromptByPromptID(ctx, promptID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPromptByPromptID", reflect.TypeOf((*MockMFModelManager)(nil).GetPromptByPromptID), ctx, promptID)
+}
+
+// MockVegaBackendClient is a mock of VegaBackendClient interface.
+type MockVegaBackendClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVegaBackendClientMockRecorder
+	isgomock struct{}
+}
+
+// MockVegaBackendClientMockRecorder is the mock recorder for MockVegaBackendClient.
+type MockVegaBackendClientMockRecorder struct {
+	mock *MockVegaBackendClient
+}
+
+// NewMockVegaBackendClient creates a new mock instance.
+func NewMockVegaBackendClient(ctrl *gomock.Controller) *MockVegaBackendClient {
+	mock := &MockVegaBackendClient{ctrl: ctrl}
+	mock.recorder = &MockVegaBackendClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVegaBackendClient) EXPECT() *MockVegaBackendClientMockRecorder {
+	return m.recorder
+}
+
+// CreateCatalog mocks base method.
+func (m *MockVegaBackendClient) CreateCatalog(ctx context.Context, req *interfaces.VegaCatalogRequest) (*interfaces.VegaCatalog, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCatalog", ctx, req)
+	ret0, _ := ret[0].(*interfaces.VegaCatalog)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCatalog indicates an expected call of CreateCatalog.
+func (mr *MockVegaBackendClientMockRecorder) CreateCatalog(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCatalog", reflect.TypeOf((*MockVegaBackendClient)(nil).CreateCatalog), ctx, req)
+}
+
+// CreateResource mocks base method.
+func (m *MockVegaBackendClient) CreateResource(ctx context.Context, req *interfaces.VegaResourceRequest) (*interfaces.VegaResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateResource", ctx, req)
+	ret0, _ := ret[0].(*interfaces.VegaResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateResource indicates an expected call of CreateResource.
+func (mr *MockVegaBackendClientMockRecorder) CreateResource(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResource", reflect.TypeOf((*MockVegaBackendClient)(nil).CreateResource), ctx, req)
+}
+
+// DeleteDatasetDocumentByID mocks base method.
+func (m *MockVegaBackendClient) DeleteDatasetDocumentByID(ctx context.Context, datasetID, docID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDatasetDocumentByID", ctx, datasetID, docID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDatasetDocumentByID indicates an expected call of DeleteDatasetDocumentByID.
+func (mr *MockVegaBackendClientMockRecorder) DeleteDatasetDocumentByID(ctx, datasetID, docID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDatasetDocumentByID", reflect.TypeOf((*MockVegaBackendClient)(nil).DeleteDatasetDocumentByID), ctx, datasetID, docID)
+}
+
+// GetCatalogByID mocks base method.
+func (m *MockVegaBackendClient) GetCatalogByID(ctx context.Context, id string) (*interfaces.VegaCatalog, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCatalogByID", ctx, id)
+	ret0, _ := ret[0].(*interfaces.VegaCatalog)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCatalogByID indicates an expected call of GetCatalogByID.
+func (mr *MockVegaBackendClientMockRecorder) GetCatalogByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCatalogByID", reflect.TypeOf((*MockVegaBackendClient)(nil).GetCatalogByID), ctx, id)
+}
+
+// GetResourceByID mocks base method.
+func (m *MockVegaBackendClient) GetResourceByID(ctx context.Context, id string) (*interfaces.VegaResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceByID", ctx, id)
+	ret0, _ := ret[0].(*interfaces.VegaResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourceByID indicates an expected call of GetResourceByID.
+func (mr *MockVegaBackendClientMockRecorder) GetResourceByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceByID", reflect.TypeOf((*MockVegaBackendClient)(nil).GetResourceByID), ctx, id)
+}
+
+// WriteDatasetDocuments mocks base method.
+func (m *MockVegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteDatasetDocuments", ctx, datasetID, documents)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteDatasetDocuments indicates an expected call of WriteDatasetDocuments.
+func (mr *MockVegaBackendClientMockRecorder) WriteDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).WriteDatasetDocuments), ctx, datasetID, documents)
 }
 
 // MockOSSGatewayBackendClient is a mock of OSSGatewayBackendClient interface.

@@ -1,0 +1,66 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "response_format": {
+        "type": "string",
+        "enum": ["json", "toon"],
+        "default": "toon",
+        "description": "文本格式：json 或 toon，默认 toon"
+      },
+      "object_type_id": {
+        "type": "string",
+        "description": "对象类型 ID（可选）。提供时缩小技能召回范围至该对象类型"
+      },
+      "instance_identities": {
+        "type": "array",
+        "description": "实例标识列表（可选）。提供时进一步缩小至具体实例关联的技能",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "skill_query": {
+        "type": "string",
+        "description": "技能查询关键词（可选）。用于语义匹配过滤技能"
+      },
+      "top_k": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20,
+        "default": 10,
+        "description": "返回的最大技能数量，默认 10"
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "description": "匹配的技能列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "description": "技能 ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "技能名称"
+            },
+            "description": {
+              "type": "string",
+              "description": "技能描述"
+            }
+          }
+        }
+      },
+      "message": {
+        "type": "string",
+        "description": "空结果说明信息，仅当 entries 为空时出现，说明原因和下一步建议"
+      }
+    }
+  }
+}

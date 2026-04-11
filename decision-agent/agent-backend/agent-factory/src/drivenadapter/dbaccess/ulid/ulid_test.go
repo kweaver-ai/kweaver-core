@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cconstant"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/port/driven/idbaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 
 	"github.com/DATA-DOG/go-sqlmock"

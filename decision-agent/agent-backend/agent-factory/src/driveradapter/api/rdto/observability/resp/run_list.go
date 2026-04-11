@@ -1,6 +1,6 @@
 package observabilityresp
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/agentrespvo"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentrespvo"
 
 type RunDetail struct {
 	RunID string `json:"run_id"`

@@ -216,7 +216,7 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 		}
 	}
 
-	id, err := r.rs.Create(ctx, &req)
+	resource, err := r.rs.Create(ctx, &req)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -226,9 +226,9 @@ func (r *restHandler) createResource(c *gin.Context, ctx context.Context, span t
 
 	// 成功创建记录审计日志
 	audit.NewInfoLog(audit.OPERATION, audit.CREATE, audit.TransforOperator(visitor),
-		interfaces.GenerateResourceAuditObject(id, req.Name), "")
+		interfaces.GenerateResourceAuditObject(resource.ID, req.Name), "")
 
-	result := map[string]any{"id": id}
+	result := map[string]any{"id": resource.ID}
 
 	logger.Debug("Handler CreateResource Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
@@ -555,19 +555,22 @@ func (r *restHandler) listResourceSrcs(c *gin.Context, ctx context.Context, span
 func (r *restHandler) ListResources(c *gin.Context) {
 	logger.Debug("ListResources Start")
 
-	// 获取分页参数
-	resourceType := c.Query("resource_type")
+	ctx := rest.GetLanguageCtx(c)
+	resourceType := strings.TrimSpace(c.Query("resource_type"))
 	switch resourceType {
 	case interfaces.RESOURCE_TYPE_CATALOG:
 		r.ListCatalogSrcsByEx(c)
 	case interfaces.RESOURCE_TYPE_RESOURCE:
-		// 目标模型的资源实例列表
 		r.ListResourceSrcsByEx(c)
+	case "":
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
+			verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("resource_type is required; valid values: catalog, resource")
+		rest.ReplyError(c, httpErr)
 	default:
-		httpErr := rest.NewHTTPError(rest.GetLanguageCtx(c), http.StatusNotFound,
-			verrors.VegaBackend_Resource_NotFound)
-
-		// 设置 trace 的错误信息的 attributes
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest,
+			verrors.VegaBackend_Resource_InvalidParameter).
+			WithErrorDetails("resource_type is invalid; valid values: catalog, resource")
 		rest.ReplyError(c, httpErr)
 	}
 

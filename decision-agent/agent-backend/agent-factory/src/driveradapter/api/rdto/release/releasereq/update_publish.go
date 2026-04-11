@@ -1,7 +1,10 @@
 package releasereq
 
 import (
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/publishvo"
+	"strings"
+
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/daenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/publishvo"
 	"github.com/pkg/errors"
 )
 
@@ -17,13 +20,36 @@ func (req *UpdatePublishInfoReq) GetErrMsgMap() map[string]string {
 
 // CustomCheck 自定义参数校验
 func (req *UpdatePublishInfoReq) CustomCheck() (err error) {
+	if req == nil {
+		return errors.New("[UpdatePublishInfoReq]: request is required")
+	}
+
+	categoryIDs := make([]string, 0, len(req.CategoryIDs))
+
+	for _, categoryID := range req.CategoryIDs {
+		categoryID = strings.TrimSpace(categoryID)
+		if categoryID == "" {
+			continue
+		}
+
+		categoryIDs = append(categoryIDs, categoryID)
+	}
+
+	req.CategoryIDs = categoryIDs
+
+	publishToWhere := make([]daenum.PublishToWhere, 0, len(req.PublishToWhere))
+
 	// 校验发布目标
 	for _, target := range req.PublishToWhere {
-		if err = target.EnumCheck(); err != nil {
+		if err = target.WriteEnumCheck(); err != nil {
 			err = errors.Wrap(err, "[UpdatePublishInfoReq]: publish_to_where is invalid")
 			return
 		}
+
+		publishToWhere = append(publishToWhere, target)
 	}
+
+	req.PublishToWhere = publishToWhere
 
 	// 校验发布为标识
 	for _, target := range req.PublishToBes {
@@ -32,14 +58,6 @@ func (req *UpdatePublishInfoReq) CustomCheck() (err error) {
 			return
 		}
 	}
-
-	// 如果发布目标包含custom_space，则必须提供custom_space_ids
-	// for _, target := range req.PublishToWhere {
-	//	if target == daenum.PublishToWhereCustomSpace && len(req.CustomSpaceIDs) == 0 {
-	//		err = errors.New("[UpdatePublishInfoReq]: custom_space_ids is required when publish_to_where contains custom_space")
-	//		return
-	//	}
-	//}
 
 	return
 }

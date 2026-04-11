@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kweaver-ai/agent-observability/src/domain/service/tracesvc"
-	"github.com/kweaver-ai/agent-observability/src/driveradapter/api/rdto"
+	"github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability/src/domain/service/tracesvc"
+	"github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability/src/driveradapter/api/rdto"
 )
 
 type TraceHandler struct {

@@ -361,11 +361,13 @@ Use a **category prefix** to group related workflows, so they sort together in t
 
 | Prefix | Purpose | Example |
 | --- | --- | --- |
-| `lint-` | Code / commit / branch linting | `lint-branch-name.yml`, `lint-commit.yml` |
+| `lint-` | Code / commit / branch linting | `lint-branch-name.yml`, `lint-commit.yml`, `lint-workflow-files.yml` |
+| `ci-` | Build, test, typecheck, integration on PR or push | `ci-backend.yml`, `ci-website.yml` |
 | `release-` | Build & publish releases | `release-agent-observability.yml` |
 | `deploy-` | Deployment tasks | `deploy-pages.yml` |
-| `test-` | CI test pipelines | `test-unit.yml`, `test-integration.yml` |
-| `build-` | Build verification | `build-docker.yml` |
+| `security-` | Supply chain / application security scanning | `security-codeql.yml`, `security-dependency-review.yml` |
+| `automation-` | Repo bots and scheduled housekeeping | `automation-stale.yml`, `automation-labeler.yml` |
+| `reusable-` | Callable-only workflows (`on.workflow_call`) | `reusable-ci-go.yml` |
 
 Rules:
 - File names must be lowercase kebab-case with a `.yml` extension

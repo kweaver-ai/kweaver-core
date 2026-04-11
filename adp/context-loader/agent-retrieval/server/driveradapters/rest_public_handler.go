@@ -12,6 +12,7 @@ import (
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/drivenadapters"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters/knactionrecall"
+	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters/knfindskills"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters/knlogicpropertyresolver"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters/knqueryobjectinstance"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/driveradapters/knquerysubgraph"
@@ -30,6 +31,7 @@ type restPublicHandler struct {
 	KnQueryObjectInstanceHandler   knqueryobjectinstance.KnQueryObjectInstanceHandler
 	KnQuerySubgraphHandler         knquerysubgraph.KnQuerySubgraphHandler
 	KnSearchHandler                knsearch.KnSearchHandler
+	KnFindSkillsHandler            knfindskills.KnFindSkillsHandler
 	Logger                         interfaces.Logger
 }
 
@@ -44,6 +46,7 @@ func NewRestPublicHandler(logger interfaces.Logger) interfaces.HTTPRouterInterfa
 		KnQueryObjectInstanceHandler:   knqueryobjectinstance.NewKnQueryObjectInstanceHandler(),
 		KnQuerySubgraphHandler:         knquerysubgraph.NewKnQuerySubgraphHandler(),
 		KnSearchHandler:                knsearch.NewKnSearchHandler(),
+		KnFindSkillsHandler:            knfindskills.NewKnFindSkillsHandler(),
 		Logger:                         logger,
 	}
 }
@@ -60,6 +63,7 @@ func (r *restPublicHandler) RegisterRouter(engine *gin.RouterGroup) {
 	engine.POST("/kn/query_object_instance", r.KnQueryObjectInstanceHandler.QueryObjectInstance)
 	engine.POST("/kn/query_instance_subgraph", r.KnQuerySubgraphHandler.QueryInstanceSubgraph)
 	engine.POST("/kn/kn_search", r.KnSearchHandler.KnSearch)
+	engine.POST("/kn/find_skills", r.KnFindSkillsHandler.FindSkills)
 
 	// MCP Server (Bearer token auth, supports Cursor/Claude Desktop)
 	engine.Any("/mcp/*path", gin.WrapH(r.MCPHandler))

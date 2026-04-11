@@ -47,8 +47,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/entity"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/dbaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess"
 )
 ```
 

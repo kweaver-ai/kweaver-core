@@ -1,6 +1,6 @@
 package conversationreq
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 
 // UpdateReq 表示更新agent的请求
 type InitReq struct {

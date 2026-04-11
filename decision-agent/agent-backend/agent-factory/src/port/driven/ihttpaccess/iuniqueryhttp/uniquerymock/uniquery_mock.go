@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	uniquerydto "github.com/kweaver-ai/decision-agent/agent-factory/src/drivenadapter/httpaccess/uniqueryaccess/uniquerydto"
+	uniquerydto "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/uniqueryaccess/uniquerydto"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -4,9 +4,9 @@ info:
   description: 查询Agent/Session/Run的可观测数据和配置信息
   version: 1.0.0
 servers:
-  - url: http://agent-app:30777/api
+  - url: http://agent-factory:30777/api
 paths:
-  /agent-app/internal/v1/observability/analytics/query:
+  /agent-factory/internal/v1/observability/analytics/query:
     post:
       summary: 查询可观测数据
       description: 根据分析类型和时间范围查询相应的metrics和配置数据

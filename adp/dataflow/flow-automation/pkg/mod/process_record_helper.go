@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	traceLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/telemetry/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/entity"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/rds"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/store"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/entity"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/rds"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/store"
 )
 
 // ExtractObjectKey 从DagInstance中提取处理对象标识

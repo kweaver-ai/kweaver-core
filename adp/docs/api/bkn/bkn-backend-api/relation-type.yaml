@@ -1030,6 +1030,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Mapping"
+    FilteredCrossJoinMappingRule:
+      description: |
+        关系类型为 `filtered_cross_join`（分侧过滤全连接，FCJ）时的匹配规则。
+        不绑定数据视图，无数组形式的键映射；`source_condition` 与 `target_condition` 分别约束起点侧、终点侧对象实例是否参与该关系
+        （结构与对象实例查询的 Condition 相同）。
+        两侧条件均可省略：可只填一侧、或两侧皆不传/`{}`（表示该侧或两侧无额外过滤，与引擎中「无条件即全量」语义一致）。
+      type: object
+      properties:
+        source_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 起点对象类实例需满足的条件；可省略或为空表示该侧无额外约束
+        target_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 终点对象类实例需满足的条件；可省略或为空表示该侧无额外约束
     ID:
       description: id
       required:
@@ -1445,12 +1459,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: 映射规则，直接映射时，是Mapping的数组
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 映射规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join`（FCJ）时为 FilteredCrossJoinMappingRule（分侧条件，无键映射）。
     UpdateRelationType:
       description: 关系类更新信息
       required:
@@ -1492,12 +1508,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: 关联的匹配规则。直接映射时，是Mapping的数组；间接关联时参考DataViewMappingRule
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
     RelationTypeDetail:
       description: 关系类
       required:
@@ -1567,12 +1585,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: 关联的匹配规则。直接映射时，是Mapping的数组；间接关联时参考DataViewMappingRule
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
         creator:
           description: 创建人ID
           type: string
@@ -1659,12 +1679,14 @@ components:
           enum:
             - direct
             - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
-          description: 关联的匹配规则。直接映射时，是Mapping的数组；间接关联时参考DataViewMappingRule
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
         creator:
           description: 创建人ID
           type: string
@@ -1787,12 +1809,17 @@ components:
           description: 终点对象类id
           type: string
         type:
-          description: 关联类型
+          description: 关联类型。`direct` 直接键映射；`data_view` 经数据视图关联；`filtered_cross_join` 分侧过滤全连接（FCJ），无数组形式键映射
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
           type: string
         mapping_rules:
           oneOf:
             - $ref: "#/components/schemas/DirectMappingRules"
             - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
     TypeEdge:
       description: 路径的边
       required:

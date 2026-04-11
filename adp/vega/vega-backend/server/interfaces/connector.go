@@ -61,9 +61,9 @@ type ColumnMeta struct {
 
 // QueryResult represents query execution result.
 type QueryResult struct {
-	Columns []string         `json:"columns"`
-	Rows    []map[string]any `json:"rows"`
-	Total   int64            `json:"total"`
+	Columns     []string         `json:"columns"`
+	Rows        []map[string]any `json:"rows"`
+	Total       int64            `json:"total"`
 }
 
 // FileMeta represents file metadata.
@@ -73,6 +73,14 @@ type FileMeta struct {
 	Size         int64  `json:"size"`
 	LastModified int64  `json:"last_modified"`
 	ContentType  string `json:"content_type"`
+}
+
+// FilesetMeta represents a file or folder object from a fileset-capable source (e.g. AnyShare).
+type FilesetMeta struct {
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	DisplayPath    string         `json:"display_path"` // human-readable path hint for UI / source_identifier option
+	SourceMetadata map[string]any `json:"-"`            // flattened into Resource.SourceMetadata on discover
 }
 
 // TopicMeta represents message topic metadata.

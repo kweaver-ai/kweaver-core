@@ -133,11 +133,17 @@ func (c *MariaDBConnector) New(cfg interfaces.ConnectorConfig) (connectors.Conne
 		return nil, fmt.Errorf("port %d is out of valid range (%d-%d)", mCfg.Port, PORT_MIN, PORT_MAX)
 	}
 
-	// 验证 databases 名称长度（MariaDB 数据库名最大 64 字符）
+	seen := make(map[string]bool)
 	for _, db := range mCfg.Databases {
+		// 验证 databases 名称长度（MariaDB 数据库名最大 64 字符）
 		if len(db) > DATABASE_NAME_MAX_LENGTH {
 			return nil, fmt.Errorf("database name '%s' exceeds maximum length of %d characters", db, DATABASE_NAME_MAX_LENGTH)
 		}
+		// 检查数组中是否存在重复元素
+		if seen[db] {
+			return nil, fmt.Errorf("duplicate element found in 'databases': %s", db)
+		}
+		seen[db] = true
 	}
 
 	return &MariaDBConnector{
@@ -249,4 +255,66 @@ func (c *MariaDBConnector) validateDatabases(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// ExecuteRawSQL 执行原始SQL查询
+func (c *MariaDBConnector) ExecuteRawSQL(ctx context.Context, sql string) (*interfaces.SQLQueryResponse, error) {
+	if err := c.Connect(ctx); err != nil {
+		return nil, fmt.Errorf("connect failed: %w", err)
+	}
+
+	rows, err := c.db.QueryContext(ctx, sql)
+	if err != nil {
+		return nil, fmt.Errorf("execute query failed: %w", err)
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, fmt.Errorf("get columns failed: %w", err)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, fmt.Errorf("get column types failed: %w", err)
+	}
+
+	response := &interfaces.SQLQueryResponse{
+		Columns: make([]interfaces.ColumnInfo, len(columns)),
+		Entries: make([]map[string]any, 0),
+		Stats: interfaces.QueryStats{
+			IsTimeout: false,
+		},
+	}
+
+	// 填充列信息
+	for i, col := range columns {
+		response.Columns[i] = interfaces.ColumnInfo{
+			Name: col,
+			Type: MapType(columnTypes[i].DatabaseTypeName()),
+		}
+	}
+
+	// 读取结果行
+	for rows.Next() {
+		values := make([]any, len(columns))
+		valuePtrs := make([]any, len(columns))
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, fmt.Errorf("scan row failed: %w", err)
+		}
+
+		row := make(map[string]any)
+		for i, col := range columns {
+			row[col] = convertValue(values[i])
+		}
+		response.Entries = append(response.Entries, row)
+	}
+
+	response.TotalCount = int64(len(response.Entries))
+
+	return response, nil
 }

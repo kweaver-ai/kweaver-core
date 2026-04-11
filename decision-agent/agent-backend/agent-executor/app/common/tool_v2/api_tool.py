@@ -5,6 +5,7 @@ import asyncio
 import aiohttp
 
 from dolphin.core.context.context import Context
+from app.common.config import Config
 from app.common.stand_log import StandLogger
 
 # Import from common module using relative import
@@ -22,6 +23,8 @@ from .api_tool_pkg.evidence_extractor import (
 
 
 class APITool(APIToolInputHandler):
+    TRACEAI_EVIDENCE_HEADER = "X-TraceAi-Enable-Evidence"
+
     def __init__(self, tool_info, tool_config):
         tool_name = tool_info.get("name", tool_info.get("tool_id", ""))
 
@@ -106,6 +109,12 @@ class APITool(APIToolInputHandler):
             description += "\n## Use Rule:\n" + use_rule
 
         return description
+
+    def _apply_global_feature_headers(self, header_params: Dict[str, Any]) -> None:
+        """将全局特性开关注入到 proxy 请求头中。"""
+        header_params[self.TRACEAI_EVIDENCE_HEADER] = str(
+            Config.features.enable_traceai_evidence
+        ).lower()
 
     def _filter_exposed_inputs(
         self, inputs: Dict[str, Any], tool_map_list: List["ToolMapInfo"] = None
@@ -216,6 +225,7 @@ class APITool(APIToolInputHandler):
             self.tool_info.get("metadata", {}).get("api_spec", {}),
             gvp,
         )
+        self._apply_global_feature_headers(header_params)
 
         # 4. 构建请求URL
         # 工具超时时间 （读取完整数据的超时时间）

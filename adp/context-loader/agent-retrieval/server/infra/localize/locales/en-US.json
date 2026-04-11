@@ -55,5 +55,13 @@
     },
     "link": {
         "None": "None"
+    },
+    "find_skills": {
+        "network_scope_too_wide": "Skills in this knowledge network are not globally effective, and no results were found at the network level. Please provide object_type_id; if you can identify the instance, also provide instance_identities and retry.",
+        "network_no_skills": "No recallable skills found in the current knowledge network. Please confirm that skills have been created and are visible in this knowledge network.",
+        "object_type_no_binding": "No skill binding configured for this object type, unable to recall skills in this scope. Please confirm that skills are bound to this object type.",
+        "object_type_no_match": "No recallable skills found within this object type scope. Try narrowing to specific instances, or confirm that skills are bound to this object type.",
+        "instance_no_match": "No recallable skills found within this instance scope. Try falling back to object_type_id level to see candidate skills for this object type.",
+        "skill_query_no_match": "No matching skills found with the current scope and skill_query conditions. Try relaxing or removing skill_query and retry."
     }
 }

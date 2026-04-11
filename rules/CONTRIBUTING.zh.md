@@ -360,11 +360,13 @@ git push origin feature/my-feature
 
 | 前缀 | 用途 | 示例 |
 | --- | --- | --- |
-| `lint-` | 代码 / Commit / 分支校验 | `lint-branch-name.yml`、`lint-commit.yml` |
+| `lint-` | 代码 / Commit / 分支校验 | `lint-branch-name.yml`、`lint-commit.yml`、`lint-workflow-files.yml` |
+| `ci-` | PR / push 上的构建、测试、类型检查、集成 | `ci-backend.yml`、`ci-website.yml` |
 | `release-` | 构建与发布 | `release-agent-observability.yml` |
 | `deploy-` | 部署任务 | `deploy-pages.yml` |
-| `test-` | CI 测试流水线 | `test-unit.yml`、`test-integration.yml` |
-| `build-` | 构建验证 | `build-docker.yml` |
+| `security-` | 供应链 / 应用安全扫描 | `security-codeql.yml`、`security-dependency-review.yml` |
+| `automation-` | 仓库机器人、定时家务流 | `automation-stale.yml`、`automation-labeler.yml` |
+| `reusable-` | 仅被其它 workflow 调用的入口（`on.workflow_call`） | `reusable-ci-go.yml` |
 
 规则：
 - 文件名必须使用小写 kebab-case，扩展名统一为 `.yml`

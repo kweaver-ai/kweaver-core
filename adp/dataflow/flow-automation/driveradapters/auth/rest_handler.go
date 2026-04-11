@@ -7,11 +7,11 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/drivenadapters"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/driveradapters/middleware"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/errors"
-	commonLog "github.com/kweaver-ai/adp/autoflow/flow-automation/libs/go/log"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/logics/auth"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/drivenadapters"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/driveradapters/middleware"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/errors"
+	commonLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/log"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/logics/auth"
 )
 
 // RESTHandler 公共RESTful api Handler接口

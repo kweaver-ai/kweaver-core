@@ -3,6 +3,8 @@
 
 测试 FileService 的用例编排逻辑。
 """
+import io
+import zipfile
 import pytest
 from unittest.mock import Mock, AsyncMock
 
@@ -126,6 +128,13 @@ class TestFileService:
                 content=b"hello"
             )
 
+        with pytest.raises(ValidationError, match="Invalid file path"):
+            await service.upload_file(
+                session_id="sess_123",
+                path="../escape.txt",
+                content=b"hello"
+            )
+
     @pytest.mark.asyncio
     async def test_upload_file_with_default_content_type(self, service, session_repo, storage_service, active_session):
         """测试使用默认内容类型上传文件"""
@@ -176,6 +185,82 @@ class TestFileService:
             s3_path = call_args[1]["s3_path"]
         assert s3_path.startswith(active_session.workspace_path)
         assert "data/test.csv" in s3_path
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_success(self, service, session_repo, storage_service, active_session):
+        """测试成功解压 ZIP 并上传多个文件"""
+        session_repo.find_by_id.return_value = active_session
+        storage_service.file_exists.return_value = False
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("nested/a.txt", "hello")
+            archive.writestr("nested/b.csv", "1,2,3")
+
+        result = await service.upload_and_extract_zip(
+            session_id="sess_123",
+            path="input",
+            content=archive_buffer.getvalue(),
+            overwrite=False,
+        )
+
+        assert result["mode"] == "archive_extract"
+        assert result["extract_path"] == "input"
+        assert result["extracted_file_count"] == 2
+        assert result["skipped_file_count"] == 0
+        assert storage_service.upload_file.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_skips_conflicts(self, service, session_repo, storage_service, active_session):
+        """测试 ZIP 解压时跳过已存在文件"""
+        session_repo.find_by_id.return_value = active_session
+        storage_service.file_exists.side_effect = [True, False]
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("a.txt", "hello")
+            archive.writestr("b.txt", "world")
+
+        result = await service.upload_and_extract_zip(
+            session_id="sess_123",
+            path="input",
+            content=archive_buffer.getvalue(),
+            overwrite=False,
+        )
+
+        assert result["extracted_file_count"] == 1
+        assert result["skipped_file_count"] == 1
+        assert storage_service.upload_file.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_invalid_entry_path(self, service, session_repo, active_session):
+        """测试 ZIP 含非法路径时拒绝解压"""
+        session_repo.find_by_id.return_value = active_session
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("../escape.txt", "bad")
+
+        with pytest.raises(ValidationError, match="Invalid ZIP entry path"):
+            await service.upload_and_extract_zip(
+                session_id="sess_123",
+                path="input",
+                content=archive_buffer.getvalue(),
+                overwrite=False,
+            )
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_invalid_archive(self, service, session_repo, active_session):
+        """测试非法 ZIP 内容"""
+        session_repo.find_by_id.return_value = active_session
+
+        with pytest.raises(ValidationError, match="Invalid ZIP archive"):
+            await service.upload_and_extract_zip(
+                session_id="sess_123",
+                path="input",
+                content=b"not-a-zip",
+                overwrite=False,
+            )
 
     @pytest.mark.asyncio
     async def test_download_file_small_file(self, service, session_repo, storage_service, active_session):

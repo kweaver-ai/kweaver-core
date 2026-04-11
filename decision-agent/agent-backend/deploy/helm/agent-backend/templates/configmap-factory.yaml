@@ -41,7 +41,7 @@ data:
     # ========================================
 
     # ========== Swagger 文档配置 ==========
-    enable_swagger: {{ .Values.service.enableSwagger | default false }}
+    enable_swagger: {{ .Values.service.enableSwagger }}
     swagger_token: {{ .Values.service.swaggerToken | quote | default "" }}
     # ========================================
 

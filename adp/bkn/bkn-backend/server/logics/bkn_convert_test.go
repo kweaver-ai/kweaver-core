@@ -215,7 +215,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("No MappingRules\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1", Name: "RT1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2", Type: "direct"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2", Type: "direct"},
 			}
 			adp := ToADPRelationType("kn1", "main", bknRel)
 			So(adp.RTID, ShouldEqual, "rt1")
@@ -226,7 +226,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("DirectMappingRule\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
 				MappingRules: bknsdk.DirectMappingRule{
 					{SourceProperty: "src_p", TargetProperty: "tgt_p"},
 				},
@@ -242,7 +242,7 @@ func Test_ToADPRelationType(t *testing.T) {
 		Convey("InDirectMappingRule\n", func() {
 			bknRel := &bknsdk.BknRelationType{
 				BknRelationTypeFrontmatter: bknsdk.BknRelationTypeFrontmatter{ID: "rt1"},
-				Endpoint:                  bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
+				Endpoint:                   bknsdk.Endpoint{Source: "ot1", Target: "ot2"},
 				MappingRules: &bknsdk.InDirectMappingRule{
 					BackingDataSource:  &bknsdk.ResourceInfo{ID: "ds1", Type: "mysql"},
 					SourceMappingRules: []bknsdk.MappingRule{{SourceProperty: "sp", TargetProperty: "tp"}},

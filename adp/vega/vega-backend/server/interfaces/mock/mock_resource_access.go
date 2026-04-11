@@ -143,6 +143,21 @@ func (mr *MockResourceAccessMockRecorder) GetByIDs(ctx, ids any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDs", reflect.TypeOf((*MockResourceAccess)(nil).GetByIDs), ctx, ids)
 }
 
+// GetByIDsBasic mocks base method.
+func (m *MockResourceAccess) GetByIDsBasic(ctx context.Context, ids []string) ([]*interfaces.Resource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIDsBasic", ctx, ids)
+	ret0, _ := ret[0].([]*interfaces.Resource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByIDsBasic indicates an expected call of GetByIDsBasic.
+func (mr *MockResourceAccessMockRecorder) GetByIDsBasic(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDsBasic", reflect.TypeOf((*MockResourceAccess)(nil).GetByIDsBasic), ctx, ids)
+}
+
 // GetByName mocks base method.
 func (m *MockResourceAccess) GetByName(ctx context.Context, catalogID, name string) (*interfaces.Resource, error) {
 	m.ctrl.T.Helper()
@@ -174,6 +189,21 @@ func (mr *MockResourceAccessMockRecorder) List(ctx, params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockResourceAccess)(nil).List), ctx, params)
 }
 
+// ListIDs mocks base method.
+func (m *MockResourceAccess) ListIDs(ctx context.Context, params interfaces.ResourcesQueryParams) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIDs", ctx, params)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIDs indicates an expected call of ListIDs.
+func (mr *MockResourceAccessMockRecorder) ListIDs(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIDs", reflect.TypeOf((*MockResourceAccess)(nil).ListIDs), ctx, params)
+}
+
 // ListResourceSrcs mocks base method.
 func (m *MockResourceAccess) ListResourceSrcs(ctx context.Context, params interfaces.ListResourcesQueryParams) ([]*interfaces.ListResourceEntry, int64, error) {
 	m.ctrl.T.Helper()
@@ -188,6 +218,36 @@ func (m *MockResourceAccess) ListResourceSrcs(ctx context.Context, params interf
 func (mr *MockResourceAccessMockRecorder) ListResourceSrcs(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourceSrcs", reflect.TypeOf((*MockResourceAccess)(nil).ListResourceSrcs), ctx, params)
+}
+
+// ListResourceSrcsByIDs mocks base method.
+func (m *MockResourceAccess) ListResourceSrcsByIDs(ctx context.Context, ids []string) ([]*interfaces.ListResourceEntry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListResourceSrcsByIDs", ctx, ids)
+	ret0, _ := ret[0].([]*interfaces.ListResourceEntry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListResourceSrcsByIDs indicates an expected call of ListResourceSrcsByIDs.
+func (mr *MockResourceAccessMockRecorder) ListResourceSrcsByIDs(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourceSrcsByIDs", reflect.TypeOf((*MockResourceAccess)(nil).ListResourceSrcsByIDs), ctx, ids)
+}
+
+// ListResourceSrcsIDs mocks base method.
+func (m *MockResourceAccess) ListResourceSrcsIDs(ctx context.Context, params interfaces.ListResourcesQueryParams) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListResourceSrcsIDs", ctx, params)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListResourceSrcsIDs indicates an expected call of ListResourceSrcsIDs.
+func (mr *MockResourceAccessMockRecorder) ListResourceSrcsIDs(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourceSrcsIDs", reflect.TypeOf((*MockResourceAccess)(nil).ListResourceSrcsIDs), ctx, params)
 }
 
 // Update mocks base method.

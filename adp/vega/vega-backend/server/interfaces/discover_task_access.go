@@ -16,6 +16,8 @@ type DiscoverTaskAccess interface {
 	Create(ctx context.Context, task *DiscoverTask) error
 	// GetByID retrieves a DiscoverTask by ID.
 	GetByID(ctx context.Context, id string) (*DiscoverTask, error)
+	// GetByScheduledID retrieves DiscoverTasks by scheduled ID.
+	GetByScheduledID(ctx context.Context, scheduledID string) ([]*DiscoverTask, error)
 	// List lists DiscoverTasks with filters.
 	List(ctx context.Context, params DiscoverTaskQueryParams) ([]*DiscoverTask, int64, error)
 	// UpdateStatus updates a DiscoverTask's status and message.

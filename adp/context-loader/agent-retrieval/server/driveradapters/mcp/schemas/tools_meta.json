@@ -22,5 +22,9 @@
   "get_action_info": {
     "name": "get_action_info",
     "description": "行动信息召回。针对对象实例返回可执行行动的工具定义。"
+  },
+  "find_skills": {
+    "name": "find_skills",
+    "description": "技能召回。根据知识网络、对象类型、实例上下文等召回匹配的可用技能列表。"
   }
 }

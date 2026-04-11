@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kweaver-ai/agent-observability/src/boot"
+	"github.com/kweaver-ai/kweaver-core/trace-ai/agent-observability/src/boot"
 )
 
 // @title Agent Observability API

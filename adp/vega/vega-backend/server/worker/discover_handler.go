@@ -36,6 +36,12 @@ type tableDiscoverItem struct {
 	tableMeta *interfaces.TableMeta
 }
 
+// filesetDiscoverItem represents a fileset discover item.
+type filesetDiscoverItem struct {
+	resource *interfaces.Resource
+	meta     *interfaces.FilesetMeta
+}
+
 // discoverHandler handles discover tasks.
 type discoverHandler struct {
 	appSetting *common.AppSetting
@@ -71,6 +77,8 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 		return err
 	}
 
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, taskInfo.Creator)
+
 	catalogInfo, err := dh.cs.GetByID(ctx, taskInfo.CatalogID, true)
 	if err != nil {
 		logger.Errorf("Failed to get catalog for task %s: %v", taskID, err)
@@ -81,14 +89,16 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now := time.Now().UnixMilli()
 	if err := dh.dts.UpdateStatus(ctx, taskID, interfaces.DiscoverTaskStatusRunning, "", now); err != nil {
 		logger.Errorf("Failed to set start time for task %s: %v", taskID, err)
+		return err
 	}
+
 	// Execute discover : 元数据采集主要逻辑
 	//首先根据 catalog ID 获取 catalog 信息，
 	//然后根据 catalog 信息获取 connector 信息，
 	//然后根据 connector 信息获取 connector 实例，
 	//然后根据 connector 实例获取 catalog 的元数据，
 	//然后根据 catalog 的元数据获取 catalog 的资源信息：元数据
-	result, err := dh.discoverCatalog(ctx, catalogInfo)
+	result, err := dh.discoverCatalog(ctx, catalogInfo, taskID)
 	if err != nil {
 		// Update task status to failed
 		now = time.Now().UnixMilli()
@@ -100,6 +110,7 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 	now = time.Now().UnixMilli()
 	if err := dh.dts.UpdateResult(ctx, taskID, result, now); err != nil {
 		logger.Errorf("Failed to update result for task %s: %v", taskID, err)
+		return err
 	}
 
 	logger.Infof("Discover completed for task: %s, catalog: %s", taskID, catalogInfo.ID)
@@ -116,7 +127,7 @@ func (dh *discoverHandler) HandleTask(ctx context.Context, task *asynq.Task) err
 // 返回值:
 //   - *interfaces.DiscoverResult: 发现结果，包含发现的资源信息
 //   - error: 错误信息，如果发现过程中出现错误
-func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfaces.Catalog) (*interfaces.DiscoverResult, error) {
+func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfaces.Catalog, taskID string) (*interfaces.DiscoverResult, error) {
 
 	logger.Infof("Starting discover for catalog: %s", catalog.ID)
 
@@ -145,7 +156,7 @@ func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfa
 	switch category {
 	// table类型的会到这里，例如mysql
 	case interfaces.ConnectorCategoryTable:
-		return dh.discoverTableResources(ctx, catalog, connector)
+		return dh.discoverTableResources(ctx, catalog, connector, taskID)
 	// index类型的会到这里，例如open search
 	case interfaces.ConnectorCategoryIndex:
 		return dh.discoverIndexResources(ctx, catalog, connector)
@@ -158,8 +169,151 @@ func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfa
 
 // discoverFileResources discovers file resources from a file connector.
 func (dh *discoverHandler) discoverFileResources(ctx context.Context, catalog *interfaces.Catalog, connector connectors.Connector) (*interfaces.DiscoverResult, error) {
-	// TODO: 实现文件资源发现逻辑
-	return nil, fmt.Errorf("file resource discover not implemented yet")
+	filesetConnector, ok := connector.(connectors.FilesetConnector)
+	if !ok {
+		return nil, fmt.Errorf("connector does not support fileset discover")
+	}
+
+	sourceFilesets, err := filesetConnector.ListFilesets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list filesets: %w", err)
+	}
+	logger.Infof("Discovered %d fileset objects from source", len(sourceFilesets))
+
+	existingResources, err := dh.rs.GetByCatalogID(ctx, catalog.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing resources: %w", err)
+	}
+
+	result, items, err := dh.reconcileFilesetResources(ctx, catalog, sourceFilesets, existingResources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconcile fileset resources: %w", err)
+	}
+
+	if err := dh.enrichFilesetMetadata(ctx, items); err != nil {
+		return nil, fmt.Errorf("failed to enrich fileset metadata: %w", err)
+	}
+
+	logger.Infof("Discover completed for catalog %s: new=%d, stale=%d, unchanged=%d", catalog.ID, result.NewCount, result.StaleCount, result.UnchangedCount)
+
+	return result, nil
+}
+
+func (dh *discoverHandler) reconcileFilesetResources(ctx context.Context, catalog *interfaces.Catalog, source []*interfaces.FilesetMeta, existingResources []*interfaces.Resource) (*interfaces.DiscoverResult, []filesetDiscoverItem, error) {
+	result := &interfaces.DiscoverResult{
+		CatalogID: catalog.ID,
+	}
+	var items []filesetDiscoverItem
+
+	existingMap := make(map[string]*interfaces.Resource)
+	for _, r := range existingResources {
+		if r.Category != interfaces.ResourceCategoryFileset {
+			continue
+		}
+		existingMap[r.SourceIdentifier] = r
+	}
+
+	sourceMap := make(map[string]*interfaces.FilesetMeta)
+	for _, fs := range source {
+		sid := filesetSourceIdentifier(fs)
+		sourceMap[sid] = fs
+	}
+
+	for _, fs := range source {
+		sourceIdentifier := filesetSourceIdentifier(fs)
+		if resource, ok := existingMap[sourceIdentifier]; ok {
+			if resource.Status == interfaces.ResourceStatusStale {
+				if err := dh.rs.UpdateStatus(ctx, resource.ID, interfaces.ResourceStatusActive, ""); err != nil {
+					logger.Errorf("Failed to reactivate resource %s: %v", resource.ID, err)
+				}
+			}
+			result.UnchangedCount++
+			items = append(items, filesetDiscoverItem{resource: resource, meta: fs})
+		} else {
+			resource, err := dh.createFilesetResource(ctx, catalog, fs, sourceIdentifier)
+			if err != nil {
+				logger.Errorf("Failed to create fileset resource %s: %v", sourceIdentifier, err)
+			} else {
+				result.NewCount++
+				items = append(items, filesetDiscoverItem{resource: resource, meta: fs})
+			}
+		}
+	}
+
+	for sourceIdentifier, existing := range existingMap {
+		if _, ok := sourceMap[sourceIdentifier]; !ok {
+			if existing.Status != interfaces.ResourceStatusStale {
+				if err := dh.rs.UpdateStatus(ctx, existing.ID, interfaces.ResourceStatusStale, ""); err != nil {
+					logger.Errorf("Failed to mark resource %s as stale: %v", existing.ID, err)
+				} else {
+					result.StaleCount++
+				}
+			}
+		}
+	}
+
+	result.Message = fmt.Sprintf("Discover completed: %d new, %d stale, %d unchanged", result.NewCount, result.StaleCount, result.UnchangedCount)
+	return result, items, nil
+}
+
+func filesetSourceIdentifier(fs *interfaces.FilesetMeta) string {
+	if fs.DisplayPath != "" {
+		return fs.DisplayPath
+	}
+	return fs.ID
+}
+
+func (dh *discoverHandler) createFilesetResource(ctx context.Context, catalog *interfaces.Catalog, fs *interfaces.FilesetMeta, sourceIdentifier string) (*interfaces.Resource, error) {
+	meta := cloneMetadata(fs.SourceMetadata)
+	req := &interfaces.ResourceRequest{
+		CatalogID:        catalog.ID,
+		Name:             fs.Name,
+		Category:         interfaces.ResourceCategoryFileset,
+		Status:           interfaces.ResourceStatusActive,
+		Database:         "",
+		SourceIdentifier: sourceIdentifier,
+		SourceMetadata:   meta,
+	}
+	resource, err := dh.rs.Create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resource, nil
+}
+
+func cloneMetadata(m map[string]any) map[string]any {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+func (dh *discoverHandler) enrichFilesetMetadata(ctx context.Context, items []filesetDiscoverItem) error {
+	for _, item := range items {
+		fs := item.meta
+		resource := item.resource
+		sourceMetadata := cloneMetadata(resource.SourceMetadata)
+		if sourceMetadata == nil {
+			sourceMetadata = make(map[string]any)
+		}
+		if fs.SourceMetadata != nil {
+			for k, v := range fs.SourceMetadata {
+				sourceMetadata[k] = v
+			}
+		}
+		resource.SourceMetadata = sourceMetadata
+		resource.SchemaDefinition = nil
+		if err := dh.rs.UpdateResource(ctx, resource); err != nil {
+			logger.Errorf("Failed to update fileset resource %s: %v", resource.ID, err)
+			return err
+		}
+		logger.Infof("Enriched fileset resource %s (%s)", resource.Name, fs.ID)
+	}
+	return nil
 }
 
 // createAndConnectConnector creates and connects a connector for the catalog.
@@ -181,7 +335,7 @@ func (dh *discoverHandler) createAndConnectConnector(ctx context.Context, catalo
 
 // discoverTableResources discovers table resources from a table connector.
 // 分步执行：1. 获取表名列表 2. 创建/更新 Resource 3. 逐个补齐详细元数据
-func (dh *discoverHandler) discoverTableResources(ctx context.Context, catalog *interfaces.Catalog, connector connectors.Connector) (*interfaces.DiscoverResult, error) {
+func (dh *discoverHandler) discoverTableResources(ctx context.Context, catalog *interfaces.Catalog, connector connectors.Connector, taskID string) (*interfaces.DiscoverResult, error) {
 
 	tableConnector, ok := connector.(connectors.TableConnector)
 	if !ok {
@@ -202,7 +356,7 @@ func (dh *discoverHandler) discoverTableResources(ctx context.Context, catalog *
 	}
 
 	// Step 3: 对比并创建/更新 Resource（基础信息）
-	result, items, err := dh.reconcileTableResources(ctx, catalog, sourceTables, existingResources)
+	result, items, err := dh.reconcileTableResources(ctx, catalog, sourceTables, existingResources, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reconcile resources: %w", err)
 	}
@@ -280,13 +434,13 @@ func (dh *discoverHandler) enrichTableMetadata(ctx context.Context, tableConnect
 			return err
 		}
 
-		logger.Infof("Enriched table %s: properties=%v, columns=%d, indices=%d, foreign_keys=%d", table.Name, table.Properties, len(table.Columns), len(table.Indices), len(table.ForeignKeys))
+		logger.Debugf("Enriched table %s: properties=%v, columns=%d, indices=%d, foreign_keys=%d", table.Name, table.Properties, len(table.Columns), len(table.Indices), len(table.ForeignKeys))
 	}
 	return nil
 }
 
 // reconcileTableResources reconciles source tables with existing resources.
-func (dh *discoverHandler) reconcileTableResources(ctx context.Context, catalog *interfaces.Catalog, sourceTables []*interfaces.TableMeta, existingResources []*interfaces.Resource) (*interfaces.DiscoverResult, []tableDiscoverItem, error) {
+func (dh *discoverHandler) reconcileTableResources(ctx context.Context, catalog *interfaces.Catalog, sourceTables []*interfaces.TableMeta, existingResources []*interfaces.Resource, taskID string) (*interfaces.DiscoverResult, []tableDiscoverItem, error) {
 
 	result := &interfaces.DiscoverResult{
 		CatalogID: catalog.ID,
@@ -300,60 +454,74 @@ func (dh *discoverHandler) reconcileTableResources(ctx context.Context, catalog 
 	for _, r := range existingResources {
 		existingMap[r.SourceIdentifier] = r
 	}
-
+	// 查出来执行的task
+	task, err := dh.dts.GetByID(ctx, taskID)
+	if err != nil {
+		logger.Errorf("Failed to get task %s: %v", taskID, err)
+		return nil, nil, err
+	}
 	// 构建源端表的 map
 	sourceMap := make(map[string]*interfaces.TableMeta)
 	for _, t := range sourceTables {
 		sourceIdentifier := dh.buildSourceIdentifier(t)
 		sourceMap[sourceIdentifier] = t
 	}
-
+	// 将策略转换为 map 以便快速查找
+	strategyMap := make(map[string]bool)
+	for _, strategy := range task.Strategies {
+		strategyMap[strategy] = true
+	}
 	// 处理新增和保持的资源
 	for _, table := range sourceTables {
 		sourceIdentifier := dh.buildSourceIdentifier(table)
 
 		if resource, ok := existingMap[sourceIdentifier]; ok {
 			// 已存在，检查状态
-			if resource.Status == interfaces.ResourceStatusStale {
-				// 之前标记为 stale，现在重新激活
-				if err := dh.rs.UpdateStatus(ctx, resource.ID, interfaces.ResourceStatusActive, ""); err != nil {
-					logger.Errorf("Failed to reactivate resource %s: %v", resource.ID, err)
+			if len(task.Strategies) == 0 || strategyMap["update"] {
+				if resource.Status == interfaces.ResourceStatusStale {
+					// 之前标记为 stale，现在重新激活
+					if err := dh.rs.UpdateStatus(ctx, resource.ID, interfaces.ResourceStatusActive, ""); err != nil {
+						logger.Errorf("Failed to reactivate resource %s: %v", resource.ID, err)
+					}
 				}
-			}
-			result.UnchangedCount++
-			items = append(items, tableDiscoverItem{
-				resource:  resource,
-				tableMeta: table,
-			})
-		} else {
-			// 新增资源
-			resource, err := dh.createResource(ctx, catalog, table, sourceIdentifier)
-			if err != nil {
-				logger.Errorf("Failed to create resource %s: %v", sourceIdentifier, err)
-			} else {
-				result.NewCount++
+				result.UnchangedCount++
 				items = append(items, tableDiscoverItem{
 					resource:  resource,
 					tableMeta: table,
 				})
 			}
-		}
-	}
-
-	// 处理已删除的资源（标记为 stale）
-	for sourceIdentifier, existing := range existingMap {
-		if _, ok := sourceMap[sourceIdentifier]; !ok {
-			// 源端不存在，标记为 stale
-			if existing.Status != interfaces.ResourceStatusStale {
-				if err := dh.rs.UpdateStatus(ctx, existing.ID, interfaces.ResourceStatusStale, ""); err != nil {
-					logger.Errorf("Failed to mark resource %s as stale: %v", existing.ID, err)
+		} else {
+			// 新增资源 - 只在策略包含 "insert" 或没有策略时处理
+			if len(task.Strategies) == 0 || strategyMap["insert"] {
+				resource, err := dh.createResource(ctx, catalog, table, sourceIdentifier)
+				if err != nil {
+					logger.Errorf("Failed to create resource %s: %v", sourceIdentifier, err)
 				} else {
-					result.StaleCount++
+					result.NewCount++
+					items = append(items, tableDiscoverItem{
+						resource:  resource,
+						tableMeta: table,
+					})
 				}
 			}
 		}
 	}
 
+	// 处理已删除的资源（标记为 stale） - 只在策略包含 "delete" 或没有策略时处理
+	if len(task.Strategies) == 0 || strategyMap["delete"] {
+		for sourceIdentifier, existing := range existingMap {
+			if _, ok := sourceMap[sourceIdentifier]; !ok {
+				// 源端不存在，标记为 stale
+				if existing.Status != interfaces.ResourceStatusStale {
+					if err := dh.rs.UpdateStatus(ctx, existing.ID, interfaces.ResourceStatusStale, ""); err != nil {
+						logger.Errorf("Failed to mark resource %s as stale: %v", existing.ID, err)
+					} else {
+						result.StaleCount++
+					}
+				}
+			}
+		}
+	}
 	result.Message = fmt.Sprintf("Discover completed: %d new, %d stale, %d unchanged", result.NewCount, result.StaleCount, result.UnchangedCount)
 
 	return result, items, nil
@@ -361,10 +529,14 @@ func (dh *discoverHandler) reconcileTableResources(ctx context.Context, catalog 
 
 // buildSourceIdentifier builds the source identifier for a table.
 func (dh *discoverHandler) buildSourceIdentifier(table *interfaces.TableMeta) string {
-	if table.Database != "" {
-		return fmt.Sprintf("%s.%s", table.Database, table.Name)
+	identifier := table.Name
+	if table.Schema != "" {
+		identifier = fmt.Sprintf("%s.%s", table.Schema, identifier)
 	}
-	return table.Name
+	if table.Database != "" {
+		return fmt.Sprintf("%s.%s", table.Database, identifier)
+	}
+	return identifier
 }
 
 // createResource creates a new resource.
@@ -379,16 +551,11 @@ func (dh *discoverHandler) createResource(ctx context.Context, catalog *interfac
 		Database:         table.Database,
 		SourceIdentifier: sourceIdentifier,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取刚创建的resource
-	resource, err := dh.rs.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
 	return resource, nil
 }
 
@@ -530,12 +697,12 @@ func (dh *discoverHandler) createIndexResource(ctx context.Context, catalog *int
 		Status:           interfaces.ResourceStatusActive,
 		SourceIdentifier: index.Name,
 	}
-	id, err := dh.rs.Create(ctx, req)
+	resource, err := dh.rs.Create(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return dh.rs.GetByID(ctx, id)
+	return resource, nil
 }
 
 // enrichIndexMetadata enriches index resources with detailed metadata.

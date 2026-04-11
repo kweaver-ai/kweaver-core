@@ -1,0 +1,42 @@
+[
+    {
+        "db_name": "adp",
+        "table_name": "t_sandbox_template",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_sandbox_template",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_sandbox_runtime_node",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_sandbox_runtime_node",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_sandbox_session",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_sandbox_session",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    },
+    {
+        "db_name": "adp",
+        "table_name": "t_sandbox_execution",
+        "object_type": "TABLE",
+        "operation_type": "RENAME",
+        "new_name": "kweaver.t_sandbox_execution",
+        "object_name": "",
+        "object_property": "",
+        "object_comment": ""
+    }
+]

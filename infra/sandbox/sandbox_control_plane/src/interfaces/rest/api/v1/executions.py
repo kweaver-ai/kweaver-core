@@ -48,13 +48,15 @@ async def submit_execution(
     - **language**: 编程语言 (python, javascript, shell)
     - **timeout**: 超时时间（秒），默认 30
     - **event**: 事件数据
+    - **working_directory**: 可选执行目录，相对于 workspace 根目录
     """
     command = ExecuteCodeCommand(
         session_id=session_id,
         code=request.code,
         language=request.language,
         timeout=request.timeout,
-        event_data=request.event
+        event_data=request.event,
+        working_directory=request.working_directory,
     )
 
     execution_dto = await service.execute_code(command)
@@ -88,6 +90,7 @@ async def execute_code_sync(
     - **language**: Programming language (python, javascript, shell)
     - **timeout**: Execution timeout in seconds
     - **event**: Event data
+    - **working_directory**: Optional execution directory relative to workspace root
     """
     # 1. Submit execution
     command = ExecuteCodeCommand(
@@ -95,7 +98,8 @@ async def execute_code_sync(
         code=request.code,
         language=request.language,
         timeout=request.timeout,
-        event_data=request.event
+        event_data=request.event,
+        working_directory=request.working_directory,
     )
     execution_dto = await service.execute_code(command)
     execution_id = execution_dto.id

@@ -1,7 +1,7 @@
 package rds
 
 import (
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/pkg/rds"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/pkg/rds"
 )
 
 func InitSingleton() {

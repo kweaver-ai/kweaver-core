@@ -86,7 +86,7 @@ func (r *restHandler) queryResourceData(c *gin.Context, ctx context.Context, spa
 		return
 	}
 
-	// 视图查询的参数校验
+	// 资源查询的参数校验
 	err := ValidateResourceDataQueryParams(ctx, &params)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)

@@ -96,5 +96,5 @@ type PipelineMgmtService interface {
 	CheckPipelineExistByName(ctx context.Context, name string) (string, bool, error)
 	CheckPipelineExistByID(ctx context.Context, ID string) (string, bool, error)
 
-	ListPipelineResources(ctx context.Context, param *ListPipelinesQuery) ([]*Resource, int, error)
+	ListPipelineResources(ctx context.Context, param *ListPipelinesQuery) ([]*PermissionResource, int, error)
 }

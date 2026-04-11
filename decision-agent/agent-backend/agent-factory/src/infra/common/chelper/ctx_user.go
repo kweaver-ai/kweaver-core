@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
-	//"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/types"
+	//"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/types"
 )
 
 var CtxVistorInfoNotFound = errors.New("ctx_vistor_info not found")

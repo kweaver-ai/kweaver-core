@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-playground/assert/v2"
-	"github.com/kweaver-ai/adp/autoflow/flow-automation/common"
+	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )

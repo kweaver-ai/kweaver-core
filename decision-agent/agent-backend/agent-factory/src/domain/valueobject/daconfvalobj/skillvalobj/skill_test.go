@@ -23,6 +23,7 @@ func TestSkill_ValObjCheck(t *testing.T) {
 				Tools:  nil,
 				Agents: nil,
 				MCPs:   nil,
+				Skills: nil,
 			},
 			wantErr: false,
 		},
@@ -32,6 +33,7 @@ func TestSkill_ValObjCheck(t *testing.T) {
 				Tools:  []*SkillTool{},
 				Agents: []*SkillAgent{},
 				MCPs:   []*SkillMCP{},
+				Skills: []*SkillSkill{},
 			},
 			wantErr: false,
 		},
@@ -64,6 +66,17 @@ func TestSkill_ValObjCheck(t *testing.T) {
 				MCPs: []*SkillMCP{
 					{
 						MCPServerID: "mcp-1",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid skill with skills",
+			skill: &Skill{
+				Skills: []*SkillSkill{
+					{
+						SkillID: "skill-1",
 					},
 				},
 			},
@@ -112,6 +125,21 @@ func TestSkill_ValObjCheck(t *testing.T) {
 			checkErr: func(t *testing.T, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "mcp is invalid")
+			},
+		},
+		{
+			name: "invalid skill in skills",
+			skill: &Skill{
+				Skills: []*SkillSkill{
+					{
+						SkillID: "",
+					},
+				},
+			},
+			wantErr: true,
+			checkErr: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "skills is invalid")
 			},
 		},
 		{

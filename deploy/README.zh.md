@@ -11,7 +11,7 @@
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/kweaver-ai/kweaver-core.git
-cd kweaver/deploy
+cd kweaver-core/deploy
 
 # 2. 编辑配置文件（可选，使用默认配置可跳过）
 # vim conf/config.yaml

@@ -13,9 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	umcmp "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/umcmp"
-	umarg "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/umcmp/dto/umarg"
-	umtypes "github.com/kweaver-ai/decision-agent/agent-factory/src/infra/cmp/umcmp/umtypes"
+	umcmp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp"
+	umarg "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/dto/umarg"
+	umtypes "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/umcmp/umtypes"
 	gomock "go.uber.org/mock/gomock"
 )
 

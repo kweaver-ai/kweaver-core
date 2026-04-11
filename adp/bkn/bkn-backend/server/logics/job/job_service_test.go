@@ -263,6 +263,87 @@ func Test_jobService_CreateJob(t *testing.T) {
 			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_Job_NoneConceptType)
 		})
 
+		Convey("Failed when only resource-backed object types exist\n", func() {
+			jobInfo := &interfaces.JobInfo{
+				ID:     "job1",
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			objectTypes := map[string]*interfaces.ObjectType{
+				"ot1": {
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTID:        "ot1",
+						OTName:      "object_type1",
+						PrimaryKeys: []string{"pk1"},
+						DataSource: &interfaces.ResourceInfo{
+							Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+							ID:   "res1",
+						},
+					},
+				},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ja.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return([]*interfaces.JobInfo{}, nil)
+			ots.EXPECT().GetAllObjectTypesByKnID(gomock.Any(), gomock.Any(), gomock.Any()).Return(objectTypes, nil)
+
+			jobID, err := service.CreateJob(ctx, jobInfo)
+			So(err, ShouldNotBeNil)
+			So(jobID, ShouldEqual, "")
+			httpErr := err.(*rest.HTTPError)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_Job_NoneConceptType)
+		})
+
+		Convey("Success creating job skips resource object types and keeps data_view tasks\n", func() {
+			jobInfo := &interfaces.JobInfo{
+				ID:     "job1",
+				KNID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+			}
+			objectTypes := map[string]*interfaces.ObjectType{
+				"ot1": {
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTID:        "ot1",
+						OTName:      "dv_ot",
+						PrimaryKeys: []string{"pk1"},
+						DataSource: &interfaces.ResourceInfo{
+							Type: interfaces.DATA_SOURCE_TYPE_DATA_VIEW,
+							ID:   "dv1",
+						},
+					},
+				},
+				"ot2": {
+					ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{
+						OTID:        "ot2",
+						OTName:      "res_ot",
+						PrimaryKeys: []string{"pk1"},
+						DataSource: &interfaces.ResourceInfo{
+							Type: interfaces.DATA_SOURCE_TYPE_RESOURCE,
+							ID:   "res1",
+						},
+					},
+				},
+			}
+
+			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ja.EXPECT().ListJobs(gomock.Any(), gomock.Any()).Return([]*interfaces.JobInfo{}, nil)
+			ots.EXPECT().GetAllObjectTypesByKnID(gomock.Any(), gomock.Any(), gomock.Any()).Return(objectTypes, nil)
+			smock.ExpectBegin()
+			ja.EXPECT().CreateJob(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			ja.EXPECT().CreateTasks(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(ctx context.Context, tx *sql.Tx, tasks map[string]*interfaces.TaskInfo) {
+				So(len(tasks), ShouldEqual, 1)
+				for _, ti := range tasks {
+					So(ti.ConceptID, ShouldEqual, "ot1")
+				}
+			}).Return(nil)
+			smock.ExpectCommit()
+			je.EXPECT().AddJob(gomock.Any(), gomock.Any()).Return(nil)
+
+			jobID, err := service.CreateJob(ctx, jobInfo)
+			So(err, ShouldBeNil)
+			So(jobID, ShouldEqual, "job1")
+		})
+
 		Convey("Failed when begin transaction fails\n", func() {
 			jobInfo := &interfaces.JobInfo{
 				ID:     "job1",

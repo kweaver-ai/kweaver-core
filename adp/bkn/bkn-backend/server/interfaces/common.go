@@ -62,6 +62,7 @@ const (
 
 	// 数据来源类型
 	DATA_SOURCE_TYPE_DATA_VIEW = "data_view"
+	DATA_SOURCE_TYPE_RESOURCE  = "resource"
 
 	// 对象id的校验
 	RegexPattern_Builtin_ID    = "^[a-z0-9_][a-z0-9_-]{0,39}$"

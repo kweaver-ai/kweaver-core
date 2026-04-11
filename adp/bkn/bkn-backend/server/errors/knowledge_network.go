@@ -43,7 +43,7 @@ const (
 	BknBackend_KnowledgeNetwork_InternalError_GetActionTypesTotalFailed   = "BknBackend.KnowledgeNetwork.InternalError.GetActionTypesTotalFailed"
 	BknBackend_KnowledgeNetwork_InternalError_GetObjectTypesTotalFailed   = "BknBackend.KnowledgeNetwork.InternalError.GetObjectTypesTotalFailed"
 	BknBackend_KnowledgeNetwork_InternalError_GetRelationTypesTotalFailed = "BknBackend.KnowledgeNetwork.InternalError.GetRelationTypesTotalFailed"
-	BknBackend_KnowledgeNetwork_InternalError_GetRiskTypesTotalFailed    = "BknBackend.KnowledgeNetwork.InternalError.GetRiskTypesTotalFailed"
+	BknBackend_KnowledgeNetwork_InternalError_GetRiskTypesTotalFailed     = "BknBackend.KnowledgeNetwork.InternalError.GetRiskTypesTotalFailed"
 	BknBackend_KnowledgeNetwork_InternalError_GetVectorFailed             = "BknBackend.KnowledgeNetwork.InternalError.GetVectorFailed"
 	BknBackend_KnowledgeNetwork_InternalError_InsertOpenSearchDataFailed  = "BknBackend.KnowledgeNetwork.InternalError.InsertOpenSearchDataFailed"
 	BknBackend_KnowledgeNetwork_InternalError_CreateObjectTypesFailed     = "BknBackend.KnowledgeNetwork.InternalError.CreateObjectTypesFailed"

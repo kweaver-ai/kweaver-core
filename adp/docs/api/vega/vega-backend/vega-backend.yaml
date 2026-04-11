@@ -137,6 +137,17 @@ definitions:
       - username (string, optional): 认证用户名
       - password (string, optional): 认证密码
       - index_pattern (string, optional): 索引匹配模式，如log-*
+
+      **AnyShare:**
+      - protocol (string, required): 连接协议，http 或 https
+      - host (string, required): AnyShare服务主机地址
+      - port (integer, required): 服务端口，范围1-65535
+      - auth_type (integer, required): 认证方式，1=访问令牌(Token)，2=AppID/AppSecret
+      - token (string, optional): 访问令牌，auth_type=1时必填，加密存储
+      - app_id (string, optional): 应用账户ID，auth_type=2时必填
+      - app_secret (string, optional): 应用密钥，auth_type=2时必填，加密存储
+      - doc_lib_type (integer, required): 文档库类型，1=知识库
+      - paths (array, optional): 路径列表，按文档库名称路径解析起点，空则按文档库类型枚举
   interfaces.DiscoverResult:
     properties:
       catalog_id:
@@ -170,12 +181,20 @@ definitions:
         type: integer
       result:
         $ref: '#/definitions/interfaces.DiscoverResult'
+      scheduled_id:
+        description: 调度ID
+        type: string
       start_time:
         description: 开始执行时间
         type: integer
       status:
         description: pending/running/completed/failed
         type: string
+      strategies:
+        description: 发现策略，可选值：["insert", "delete", "update"] 或空数组表示全部
+        items:
+          type: string
+        type: array
       trigger_type:
         description: manual/scheduled
         type: string
@@ -201,8 +220,10 @@ definitions:
     properties:
       filter_condition: {}
       limit:
+        description: 返回结果的最大数量。对于AnyShare知识库类资源，limit不能大于100
         type: integer
       need_total:
+        description: 是否返回总数。对于AnyShare知识库类资源，只有第一页(offset=0)会返回
         type: boolean
       offset:
         type: integer
@@ -338,6 +359,64 @@ definitions:
           $ref: '#/definitions/interfaces.LogicDefinitionNode'
         type: array
     type: object
+  interfaces.ResourceListItem:
+    properties:
+      id:
+        description: resource唯一标识，最大40字符
+        type: string
+      catalog_id:
+        description: 所属catalog ID，最大40字符
+        type: string
+      name:
+        description: 数据资源名称，catalog下唯一，最大255字符
+        type: string
+      tags:
+        description: 标签，JSON数组格式，用于分类和检索，最大255字符
+        items:
+          type: string
+        type: array
+      description:
+        description: 数据资源描述，最大1000字符
+        type: string
+      category:
+        description: 数据资源类型，table表示表，file表示文件，fileset表示文件集，api表示API服务，metric表示时序数据，topic表示消息队列主题，index表示索引，logicview表示逻辑视图，dataset表示数据集
+        enum: [table, file, fileset, api, metric, topic, index, logicview, dataset]
+        type: string
+      status:
+        description: 数据资源状态，active表示活跃，disabled表示已禁用，deprecated表示已废弃，stale表示已过期
+        enum: [active, disabled, deprecated, stale]
+        type: string
+      status_message:
+        description: 状态说明，最大500字符
+        type: string
+      database:
+        description: 所属数据库名称（实例级连接时使用），最大128字符
+        type: string
+      source_identifier:
+        description: 源端标识（表名/文件路径/索引名等），最大500字符
+        type: string
+      creator:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 创建者信息，包含id、type、name
+      create_time:
+        description: 创建时间，Unix时间戳（毫秒）
+        type: integer
+      updater:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 更新者信息，包含id、type、name
+      update_time:
+        description: 最后更新时间，Unix时间戳（毫秒）
+        type: integer
+      operations:
+        description: 可执行的操作列表，如["read", "write", "delete"]
+        items:
+          type: string
+        type: array
+      logic_type:
+        description: 逻辑类型，derived表示衍生，composite表示复合
+        enum: [derived, composite]
+        type: string
+    type: object
   interfaces.ConnectorTypeReq:
     properties:
       type:
@@ -380,71 +459,57 @@ definitions:
       - category
       - mode
     type: object
-  interfaces.QueryExecuteRequest:
+  interfaces.SQLQueryRequest:
     properties:
-      query_id:
-        description: 必填，同一轮查询一致
+      query:
+        description: 查询语句，与query_id不能同时存在，sql类查询为string，opensearch查询为object
+        minLength: 1
+        type: any
+      resource_type:
+        description: 必填，数据源类型
+        enum: [mariadb, mysql, opensearch, postgresql]
         minLength: 1
         type: string
-      tables:
-        description: 表列表
-        items:
-          $ref: '#/definitions/interfaces.TableInQuery'
-        minItems: 1
-        type: array
-      joins:
-        description: JOIN 定义；单表时为空
-        items:
-          $ref: '#/definitions/interfaces.JoinSpec'
-        type: array
-      output_fields:
-        description: 输出列，可带表别名
-        items:
-          type: string
-        type: array
-      filter_condition:
-        description: 过滤条件
-        type: object
-      sort:
-        description: 排序
-        items:
-          $ref: '#/definitions/interfaces.SortField'
-        type: array
-      offset:
-        description: 分页偏移
-        minimum: 0
-        type: integer
-      limit:
-        description: 每页条数，最大 10000
-        maximum: 10000
+      resource_id:
+        description: 查询opensearch数据源必填参数，其他数据源不填
+        minLength: 1
+        type: string
+      query_type:
+        description: 非必填，查询类型，不填则默认为标准查询
+        enum: [standard, stream]
+        minLength: 1
+        type: string
+      query_id:
+        description: SQL类流式查询必填参数，首次请求不需要，从第二次请求开始往后每次请求都必须填写
+        minLength: 1
+        type: string
+      query_timeout:
+        description: 单位：秒。超时后可以选择是否继续等待，如果继续等待，根据响应中的query_id发起下一次请求
+        maximum: 3600
         minimum: 1
         type: integer
-      need_total:
-        description: 是否返回总条数
-        type: boolean
+      stream_size:
+        description: 流式查询指定每批次返回的记录数，默认值10000
+        maximum: 10000
+        minimum: 100
+        type: integer
     required:
-      - query_id
-      - tables
+      - resource_type
     type: object
-  interfaces.QueryExecuteResponse:
-    properties:
-      query_id:
-        description: 后端生成或回传，用于后续分页
-        type: string
+  interfaces.SQLQueryResponse:
+        items:
+        type: array
       entries:
         description: 查询结果数据
         items:
           type: object
         type: array
       total_count:
-        description: 总条数（仅在need_total为true时返回）
+        description: 总条数
         type: integer
-      next_offset:
-        description: 下一页偏移量
-        type: integer
-      has_more:
-        description: 是否还有更多数据
-        type: boolean
+      stats:
+        description: 查询状态信息
+        type: object
     type: object
   interfaces.TableInQuery:
     properties:
@@ -632,6 +697,74 @@ definitions:
         type: object
       real_value:
         type: object
+  interfaces.ScheduledDiscoverRequest:
+    properties:
+      cron_expr:
+        description: Cron表达式（五位），用于定义任务执行的时间计划
+        type: string
+      start_time:
+        description: 定时任务的开始时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      end_time:
+        description: 定时任务的结束时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      strategies:
+        description: 发现策略，可以是["insert", "delete", "update"]中的一个或多个，或为空表示全部
+        items:
+          type: string
+        type: array
+    required:
+      - cron_expr
+    type: object
+  interfaces.ScheduledDiscoverTask:
+    properties:
+      id:
+        description: 定时发现任务ID
+        type: string
+      catalog_id:
+        description: 目录ID
+        type: string
+      cron_expr:
+        description: Cron表达式（五位），用于定义任务执行的时间计划
+        type: string
+      start_time:
+        description: 定时任务的开始时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      end_time:
+        description: 定时任务的结束时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      enabled:
+        description: 任务是否启用
+        type: boolean
+      strategies:
+        description: 发现策略，可以是["insert", "delete", "update"]中的一个或多个，或为空表示全部
+        items:
+          type: string
+        type: array
+      last_run:
+        description: 上次执行时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      next_run:
+        description: 下次执行时间（Unix时间戳，毫秒）
+        format: int64
+        type: integer
+      creator:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 创建者信息，包含id、type、name
+      create_time:
+        description: 创建时间，Unix时间戳（毫秒）
+        type: integer
+      updater:
+        $ref: '#/definitions/interfaces.AccountInfo'
+        description: 更新者信息，包含id、type、name
+      update_time:
+        description: 最后更新时间，Unix时间戳（毫秒）
+        type: integer
     type: object
 info:
   contact:
@@ -859,6 +992,265 @@ paths:
       tags:
         - catalogs
 
+  /catalogs/scheduled-discover:
+    get:
+      consumes:
+        - application/json
+      description: 查询定时发现任务列表，支持按目录ID和任务状态过滤
+      parameters:
+        - description: 目录ID，如果为空则查询所有目录的定时发现任务
+          in: query
+          name: id
+          required: false
+          type: string
+        - description: 任务状态过滤，"true"表示只返回已启用的任务，"false"表示只返回已禁用的任务
+          in: query
+          name: enabled
+          required: false
+          type: string
+        - description: 分页偏移量，默认值由系统定义
+          in: query
+          name: offset
+          required: false
+          type: integer
+        - description: 每页返回数量，默认值由系统定义
+          in: query
+          name: limit
+          required: false
+          type: integer
+        - description: 排序字段，默认为"create_time"
+          in: query
+          name: sort
+          required: false
+          type: string
+        - description: 排序方向，默认为"desc"
+          in: query
+          name: direction
+          required: false
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              entries:
+                description: 定时发现任务列表
+                items:
+                  $ref: '#/definitions/interfaces.ScheduledDiscoverTask'
+                type: array
+              total_count:
+                description: 总数
+                type: integer
+            type: object
+        "400":
+          description: Bad Request - 请求参数无效
+          schema:
+            type: object
+        "404":
+          description: Not Found - 目录不存在（当提供目录ID时）
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: 查询定时发现任务列表
+      tags:
+        - catalogs
+
+  /catalogs/{id}/scheduled-discover:
+    post:
+      consumes:
+        - application/json
+      description: 创建一个新的定时发现任务，用于定期发现指定目录中的资源
+      parameters:
+        - description: 目录ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: 定时发现任务配置
+          in: body
+          name: scheduled_discover
+          required: true
+          schema:
+            $ref: '#/definitions/interfaces.ScheduledDiscoverRequest'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              task_id:
+                description: 定时发现任务ID
+                type: string
+              message:
+                description: 响应消息
+                type: string
+            type: object
+        "400":
+          description: Bad Request - 请求参数无效，如cron表达式格式错误
+          schema:
+            type: object
+        "404":
+          description: Not Found - 目录不存在
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: 创建定时发现任务
+      tags:
+        - catalogs
+
+  /catalogs/{id}/scheduled-discover/{task_id}:
+    put:
+      consumes:
+        - application/json
+      description: 更新一个已存在的定时发现任务的配置
+      parameters:
+        - description: 目录ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: 定时发现任务ID
+          in: path
+          name: task_id
+          required: true
+          type: string
+        - description: 定时发现任务配置
+          in: body
+          name: scheduled_discover
+          required: true
+          schema:
+            $ref: '#/definitions/interfaces.ScheduledDiscoverRequest'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              task_id:
+                description: 定时发现任务ID
+                type: string
+              message:
+                description: 响应消息
+                type: string
+            type: object
+        "400":
+          description: Bad Request - 请求参数无效，如cron表达式格式错误或任务不属于指定目录
+          schema:
+            type: object
+        "404":
+          description: Not Found - 目录或任务不存在
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: 更新定时发现任务
+      tags:
+        - catalogs
+
+  /catalogs/{id}/scheduled-discover/{task_id}/start:
+    post:
+      consumes:
+        - application/json
+      description: 启动一个已存在的定时发现任务
+      parameters:
+        - description: 目录ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: 定时发现任务ID
+          in: path
+          name: task_id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              task_id:
+                description: 定时发现任务ID
+                type: string
+              message:
+                description: 响应消息
+                type: string
+            type: object
+        "400":
+          description: Bad Request - 请求参数无效，如任务已启用或任务不属于指定目录
+          schema:
+            type: object
+        "404":
+          description: Not Found - 目录或任务不存在
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: 启动定时发现任务
+      tags:
+        - catalogs
+
+  /catalogs/{id}/scheduled-discover/{task_id}/stop:
+    post:
+      consumes:
+        - application/json
+      description: 停止一个正在运行的定时发现任务
+      parameters:
+        - description: 目录ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: 定时发现任务ID
+          in: path
+          name: task_id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              task_id:
+                description: 定时发现任务ID
+                type: string
+              message:
+                description: 响应消息
+                type: string
+            type: object
+        "400":
+          description: Bad Request - 请求参数无效，如任务不属于指定目录
+          schema:
+            type: object
+        "404":
+          description: Not Found - 目录或任务不存在
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: 停止定时发现任务
+      tags:
+        - catalogs
+
   /catalogs/{id}/test-connection:
     post:
       consumes:
@@ -1035,7 +1427,8 @@ paths:
     get:
       consumes:
         - application/json
-      description: Get a list of resources in a catalog
+      description: |-
+        Get a list of resources in a catalog. Note: The response does not include sourceMetadata, schemaDefinition, and logicDefinition fields.
       parameters:
         - description: Catalog ID
           in: path
@@ -1088,7 +1481,7 @@ paths:
               entries:
                 description: List of resources
                 items:
-                  $ref: '#/definitions/interfaces.Resource'
+                  $ref: '#/definitions/interfaces.ResourceListItem'
                 type: array
               total_count:
                 description: Total number of resources
@@ -1117,7 +1510,8 @@ paths:
     get:
       consumes:
         - application/json
-      description: Get a list of resources with pagination and filters
+      description: |-
+        Get a list of resources with pagination and filters. Note: The response does not include sourceMetadata, schemaDefinition, and logicDefinition fields.
       parameters:
         - description: Catalog ID filter
           in: query
@@ -1169,7 +1563,7 @@ paths:
               entries:
                 description: List of resources
                 items:
-                  $ref: '#/definitions/interfaces.Resource'
+                  $ref: '#/definitions/interfaces.ResourceListItem'
                 type: array
               total_count:
                 description: Total number of resources
@@ -1981,25 +2375,25 @@ paths:
       summary: Set connector type enabled
       tags:
         - connector-types
-  /query/execute:
+  /resources/query:
     post:
       consumes:
         - application/json
-      description: Execute a query with join support
+      description: Execute a query with any resource
       parameters:
         - description: Query parameters
           in: body
           name: query
           required: true
           schema:
-            $ref: '#/definitions/interfaces.QueryExecuteRequest'
+            $ref: '#/definitions/interfaces.SQLQueryRequest'
       produces:
         - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/interfaces.QueryExecuteResponse'
+            $ref: '#/definitions/interfaces.SQLQueryResponse'
         "400":
           description: Bad Request
           schema:
@@ -2019,41 +2413,41 @@ paths:
     get:
       consumes:
         - application/json
-      description: Get a list of discover tasks with pagination and filters
+      description: 获取发现任务列表，支持按目录ID、状态和触发类型过滤，支持分页
       parameters:
-        - description: Catalog ID filter
+        - description: 目录ID，用于过滤特定目录的任务
           in: query
           name: catalog_id
           type: string
-        - description: Status filter
+        - description: 任务状态，可选值：pending/running/completed/failed
           enum: [pending, running, completed, failed]
           in: query
           name: status
           type: string
-        - description: Trigger type filter
+        - description: 触发类型，可选值：manual/scheduled
           enum: [manual, scheduled]
           in: query
           name: trigger_type
           type: string
-        - description: Offset for pagination
+        - description: 偏移量，用于分页
           in: query
           minimum: 0
           name: offset
           type: integer
           default: 0
-        - description: Limit for pagination
+        - description: 每页数量，默认10
           in: query
           maximum: 1000
           minimum: 1
           name: limit
           type: integer
           default: 10
-        - description: Sort field
+        - description: 排序字段
           enum: [create_time, start_time, finish_time]
           in: query
           name: sort
           type: string
-        - description: Sort direction
+        - description: 排序方向
           enum: [asc, desc]
           in: query
           name: direction
@@ -2065,30 +2459,36 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            properties:
+              items:
+                items:
+                  $ref: '#/definitions/interfaces.DiscoverTask'
+                type: array
+              total:
+                type: integer
             type: object
         "401":
           description: Unauthorized
           schema:
             type: object
         "404":
-          description: Not Found
+          description: Catalog Not Found
           schema:
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal Error
           schema:
             type: object
-      summary: List discover tasks
+      summary: 获取发现任务列表
       tags:
         - discover-tasks
-  /discover-tasks/{id}:
+  /discover-tasks/by-id/{id}:
     get:
       consumes:
         - application/json
-      description: Get a discover task by ID
+      description: 根据任务ID获取单个发现任务的详细信息
       parameters:
-        - description: Task ID
+        - description: 任务ID
           in: path
           name: id
           required: true
@@ -2105,14 +2505,54 @@ paths:
           schema:
             type: object
         "404":
-          description: Not Found
+          description: Task Not Found
           schema:
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal Error
           schema:
             type: object
-      summary: Get discover task
+      summary: 通过ID获取发现任务
+      tags:
+        - discover-tasks
+  /discover-tasks/by-schedule/{scheduleId}:
+    get:
+      consumes:
+        - application/json
+      description: 根据调度ID获取与该调度关联的所有发现任务列表
+      parameters:
+        - description: 调度ID
+          in: path
+          name: scheduleId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              entries:
+                items:
+                  $ref: '#/definitions/interfaces.DiscoverTask'
+                type: array
+              total_count:
+                type: integer
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+        "404":
+          description: Task Not Found
+          schema:
+            type: object
+        "500":
+          description: Internal Error
+          schema:
+            type: object
+      summary: 通过调度ID获取发现任务列表
       tags:
         - discover-tasks
 schemes:

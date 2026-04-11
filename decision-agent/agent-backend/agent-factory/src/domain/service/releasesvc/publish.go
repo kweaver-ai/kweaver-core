@@ -7,22 +7,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/e2p/releasee2p"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/entity/releaseeo"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdaenum"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/valueobject/daconfvalobj"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/apierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/e2p/releasee2p"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/releaseeo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/daconfvalobj"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/apierr"
 	"github.com/pkg/errors"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/constant/daconstant"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/daconstant"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/auditlogdto"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releasereq"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/cutil"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/persistence/dapo"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/auditlogdto"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releasereq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/release/releaseresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
 // Publish implements iv3portdriver.IReleaseSvc.
@@ -174,13 +174,6 @@ func (svc *releaseSvc) Publish(ctx context.Context, req *releasereq.PublishReq) 
 		err = svc.releaseRepo.Update(ctx, tx, po)
 		if err != nil {
 			err = errors.Wrapf(err, "update release failed")
-			return
-		}
-
-		// 10. 清除分类绑定关系，重新关联
-		err = svc.releaseCategoryRelRepo.DelByReleaseID(ctx, tx, po.ID)
-		if err != nil {
-			err = errors.Wrapf(err, "delete release category rel by release id failed")
 			return
 		}
 	} else {

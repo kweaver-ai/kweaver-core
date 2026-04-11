@@ -36,9 +36,14 @@ type ResourceDataQueryParams struct {
 	Timeout     time.Duration `json:"-"`                      // 超时时间，查询参数
 	SearchAfter []any         `json:"search_after,omitempty"` // OpenSearch search after参数
 
+	QueryType string `json:"query_type"`
+
 	FilterCondCfg    *FilterCondCfg  `json:"-"`
 	ActualFilterCond FilterCondition `json:"-"`
 
 	// CursorEncoded keyset 游标值，由 query session 注入；非空时用 WHERE (sort_cols) > cursor 替代 OFFSET
 	CursorEncoded string `json:"-"`
+
+	// SearchKeyword 搜索关键字，用于文件集资源的模糊搜索
+	SearchKeyword string `json:"search_keyword,omitempty"`
 }

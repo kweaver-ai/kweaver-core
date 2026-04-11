@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/domain/p2e/conversationp2e"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/otellog"
-	"github.com/kweaver-ai/decision-agent/agent-factory/src/infra/otel/oteltrace"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/p2e/conversationp2e"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/conversation/conversationresp"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -19,6 +19,7 @@ func (svc *conversationSvc) Detail(ctx context.Context, id string) (res conversa
 	oteltrace.SetAttributes(ctx, attribute.String("conversation_id", id))
 
 	conversationDetailEmpty := *conversationresp.NewConversationDetail()
+
 	po, err := svc.conversationRepo.GetByID(ctx, id)
 	if err != nil {
 		if chelper.IsSqlNotFound(err) {
@@ -50,6 +51,7 @@ func (svc *conversationSvc) DetailWithLimit(ctx context.Context, id string, limi
 	oteltrace.SetAttributes(ctx, attribute.String("conversation_id", id), attribute.Int("limit", limit))
 
 	conversationDetailEmpty := *conversationresp.NewConversationDetail()
+
 	po, err := svc.conversationRepo.GetByID(ctx, id)
 	if err != nil {
 		if chelper.IsSqlNotFound(err) {

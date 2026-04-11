@@ -94,22 +94,16 @@ exporters:
 
 ## 4. Pipeline 设计
 
-### CI（`.github/workflows/chart-ci.yaml`）
+### CI
 
-触发：PR、push 到 `main`。
+> **TODO**: 尚未创建独立的 CI workflow（如 `ci-otelcol-chart.yml`）来在 PR 阶段执行 `helm lint` 和 `helm template` 校验。目前仅有发布流程。
 
-步骤：
-
-1. 安装 Helm
-2. `helm lint charts/otelcol-contrib`
-3. `helm template` 渲染校验
-
-### 发布（`.github/workflows/chart-release.yaml`）
+### 发布（`.github/workflows/release-otelcol-chart.yaml`）
 
 触发：
 
 - 手动触发（`workflow_dispatch`）
-- 推送 tag：`chart-v*`
+- push（`trace-ai/otelcol-contribute-chart/**`、`trace-ai/VERSION`）
 
 步骤：
 

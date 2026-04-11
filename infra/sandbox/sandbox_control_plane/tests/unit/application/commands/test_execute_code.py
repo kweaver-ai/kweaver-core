@@ -36,7 +36,8 @@ class TestExecuteCodeCommand:
             async_mode=True,
             stdin="test input",
             timeout=60,
-            event_data={"name": "World"}
+            event_data={"name": "World"},
+            working_directory="src/jobs",
         )
 
         assert command.session_id == "sess-123"
@@ -46,6 +47,7 @@ class TestExecuteCodeCommand:
         assert command.stdin == "test input"
         assert command.timeout == 60
         assert command.event_data == {"name": "World"}
+        assert command.working_directory == "src/jobs"
 
     def test_language_python(self):
         """测试 Python 语言"""
@@ -158,6 +160,27 @@ class TestExecuteCodeCommand:
         )
 
         assert command.event_data == {"name": "World", "count": 42}
+
+    def test_with_working_directory_normalized(self):
+        """测试工作目录归一化"""
+        command = ExecuteCodeCommand(
+            session_id="sess-123",
+            code="echo hello",
+            language="shell",
+            working_directory="./skill/mini-wiki",
+        )
+
+        assert command.working_directory == "skill/mini-wiki"
+
+    def test_invalid_working_directory_raises_error(self):
+        """测试非法工作目录抛出错误"""
+        with pytest.raises(ValueError, match="working_directory must be a relative workspace path"):
+            ExecuteCodeCommand(
+                session_id="sess-123",
+                code="echo hello",
+                language="shell",
+                working_directory="../etc",
+            )
 
     def test_timeout_boundary_minimum(self):
         """测试超时边界值（最小有效值）"""

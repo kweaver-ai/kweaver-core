@@ -17,6 +17,7 @@ from typing import List, Tuple
 from executor.domain.entities import Execution
 from executor.domain.value_objects import ExecutionResult, ExecutionStatus, ExecutionMetrics
 from executor.infrastructure.config import settings
+from executor.infrastructure.isolation.code_wrapper import normalize_shell_code
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +68,12 @@ class SubprocessRunner:
         try:
             # Build language-specific command and environment
             cmd, env_args = self._build_command(execution)
+            cwd_path = execution.context.resolve_working_directory_path()
 
             # Execute using asyncio subprocess
             process = await asyncio.create_subprocess_exec(
                 *cmd,
-                cwd=str(self.workspace_path),
+                cwd=str(cwd_path),
                 env=env_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -228,6 +230,7 @@ console.log(JSON.stringify(result));
 '''
             cmd = ["node", "-e", wrapped_code]
         elif language == "shell":
+            code = normalize_shell_code(code, execution.context.resolve_working_directory_path())
             cmd = ["sh", "-c", code]
         else:
             raise ValueError(f"Unsupported language: {language}")

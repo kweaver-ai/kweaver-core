@@ -1,6 +1,6 @@
 package authzhttpres
 
-import "github.com/kweaver-ai/decision-agent/agent-factory/src/domain/enum/cdapmsenum"
+import "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdapmsenum"
 
 // SingleCheckResult 单个决策结果
 type SingleCheckResult struct {
