@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from app.commons.errors.codes import ParamValidationErrors
 from app.commons.i18n import get_error_message
 from app.commons.snow_id import worker
+from app.core.config import base_config
 from app.dao.small_model_dao import small_model_dao
 from app.interfaces import dbaccess, logics
 from app.logs.stand_log import StandLogger
@@ -191,42 +192,49 @@ async def edit_model(request: logics.EditExternalSmallModel, userId, language, r
 
 async def get_info_list(order, rule, page, size, model_name, model_type, model_series, user_id, role):
     try:
-        permission_ids = await permission_manager.get_permission_ids(user_id=user_id,
-                                                                     operation="display",
-                                                                     resource_type="small_model",
-                                                                     resource_name="小模型",
-                                                                     role=role)
+        if base_config.AUTH_ENABLED:
+            permission_ids = await permission_manager.get_permission_ids(user_id=user_id,
+                                                                         operation="display",
+                                                                         resource_type="small_model",
+                                                                         resource_name="小模型",
+                                                                         role=role)
+        else:
+            permission_ids = None
+
         total = 0
         res_list = []
-        if permission_ids:
-            try:
-                original_res = small_model_dao.get_model_info_list(page, size, order, rule, model_name, model_type,
-                                                                   model_series, permission_ids)
-                total = len(small_model_dao.get_model_info_total(model_name, model_type, model_series, permission_ids))
-            except Exception as e:
-                StandLogger.error(e.args)
-                return JSONResponse(status_code=500, content=ModelFactory_MyPymysqlPool_Connection_ConnectError_Error)
-            user_ids = await get_userid_by_search(original_res)
-            user_infos = await get_username_by_ids(user_ids)
-            res_list = []
-            for item in original_res:
-                res_list.append({
-                    "model_id": item["f_model_id"],
-                    "model_name": item["f_model_name"],
-                    "model_type": item["f_model_type"],
-                    "model_config": json.loads(
-                        re.sub(r'"api_key":\s*"[^"]*"', '"api_key": "******************************"',
-                               item["f_model_config"])),
-                    "create_time": item["f_create_time"].strftime("%Y-%m-%d %H:%M:%S"),
-                    "update_time": item["f_update_time"].strftime("%Y-%m-%d %H:%M:%S"),
-                    "create_by": user_infos.get(item["f_create_by"], ""),
-                    "update_by": user_infos.get(item["f_update_by"], ""),
-                    "adapter": True if item["f_adapter"] else False,
-                    "adapter_code": item["f_adapter_code"],
-                    "batch_size": item["f_batch_size"],
-                    "max_tokens": item["f_max_tokens"],
-                    "embedding_dim": item["f_embedding_dim"]
-                })
+        # 权限开启时仅查有权限的数据；权限关闭时 permission_ids=None 不做过滤，查全量
+        if base_config.AUTH_ENABLED and not permission_ids:
+            content = {"count": total, "data": res_list}
+            return JSONResponse(status_code=200, content=content)
+        try:
+            original_res = small_model_dao.get_model_info_list(page, size, order, rule, model_name, model_type,
+                                                               model_series, permission_ids)
+            total = len(small_model_dao.get_model_info_total(model_name, model_type, model_series, permission_ids))
+        except Exception as e:
+            StandLogger.error(e.args)
+            return JSONResponse(status_code=500, content=ModelFactory_MyPymysqlPool_Connection_ConnectError_Error)
+        user_ids = await get_userid_by_search(original_res)
+        user_infos = await get_username_by_ids(user_ids)
+        res_list = []
+        for item in original_res:
+            res_list.append({
+                "model_id": item["f_model_id"],
+                "model_name": item["f_model_name"],
+                "model_type": item["f_model_type"],
+                "model_config": json.loads(
+                    re.sub(r'"api_key":\s*"[^"]*"', '"api_key": "******************************"',
+                           item["f_model_config"])),
+                "create_time": item["f_create_time"].strftime("%Y-%m-%d %H:%M:%S"),
+                "update_time": item["f_update_time"].strftime("%Y-%m-%d %H:%M:%S"),
+                "create_by": user_infos.get(item["f_create_by"], ""),
+                "update_by": user_infos.get(item["f_update_by"], ""),
+                "adapter": True if item["f_adapter"] else False,
+                "adapter_code": item["f_adapter_code"],
+                "batch_size": item["f_batch_size"],
+                "max_tokens": item["f_max_tokens"],
+                "embedding_dim": item["f_embedding_dim"]
+            })
         content = {"count": total, "data": res_list}
         return JSONResponse(status_code=200, content=content)
     except Exception as e:

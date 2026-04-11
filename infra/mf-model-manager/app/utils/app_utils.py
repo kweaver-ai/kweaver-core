@@ -63,12 +63,11 @@ async def auth_middleware(request: Request, call_next):
         pass
     elif path.startswith("/api/private"):
         pass
-        # user_id = request.headers.get("x-account-id")
-        # if not user_id:
-        #     return JSONResponse(
-        #         status_code=401,
-        #         content=UnauthorizedError
-        #     )
+    elif not base_config.AUTH_ENABLED:
+        # 权限控制关闭：跳过 token 校验，注入匿名用户 ID 保证审计日志有值
+        user_id = request.headers.get("x-account-id", base_config.ANONYMOUS_USER_ID)
+        request.scope['headers'].append((b"x-account-id", user_id.encode()))
+        request.scope['headers'].append((b"x-account-type", b"user"))
     else:
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):

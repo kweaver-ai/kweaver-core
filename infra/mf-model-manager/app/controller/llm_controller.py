@@ -8,6 +8,7 @@ from app.commons.errors.codes import ParamValidationErrors
 from app.commons.i18n import get_error_message
 from app.commons.snow_id import worker
 from app.controller import model_quota_controller
+from app.core.config import base_config
 from app.dao.model_quota_dao import model_quota_dao
 from app.logs.stand_log import StandLogger
 from app.mydb.ConnectUtil import redis_util, get_redis_util
@@ -276,8 +277,8 @@ async def source_model(userId, language, page, size, name, order, series, rule, 
         return JSONResponse(status_code=400, content=error)
     else:
         try:
-            ## admin无需返回额度使用情况
-            if userId == "266c6a42-6131-4d62-8f39-853e7093701c":
+            # 权限关闭或 admin 用户：直接查全量，不按用户过滤
+            if not base_config.AUTH_ENABLED or userId == "266c6a42-6131-4d62-8f39-853e7093701c":
                 result = llm_model_dao.get_data_from_model_list_by_name_fuzzy(name, page, size, order, rule, api_model,
                                                                               model_type)
                 total = len(

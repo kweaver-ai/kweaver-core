@@ -54,6 +54,8 @@ data:
   # authorization服务
   AUTHORIZATIONPRIVATEHOST: {{ .Values.depServices.authorization.privateHost | quote }}
   AUTHORIZATIONPRIVATEPORT: {{ .Values.depServices.authorization.privatePort | quote }}
+  # 权限控制开关
+  AUTH_ENABLED: {{ .Values.auth.enabled | quote }}
   dm_svc.conf: |
     TIME_ZON=(480)
     LANGUAGE=(cn)
