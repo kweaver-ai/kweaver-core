@@ -2,6 +2,7 @@ package daresvo
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bytedance/sonic"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/agentconfigvo"
@@ -63,6 +64,16 @@ func NewDataAgentRes(_ context.Context, data []byte, outputVariablesS *agentconf
 
 func (r *DataAgentRes) loadFromMessage(msg []byte) (err error) {
 	err = sonic.Unmarshal(msg, r)
+
+	// DEBUG: 检查 _evidence 字段是否被正确解析
+	if r.Answer != nil && r.Answer.Progress != nil {
+		for idx, pg := range r.Answer.Progress {
+			if pg.Evidence != nil && len(pg.Evidence) > 0 {
+				fmt.Printf("[loadFromMessage] Progress[%d] has _evidence: stage=%s, count=%d\n", idx, pg.Stage, len(pg.Evidence))
+			}
+		}
+	}
+
 	return
 }
 

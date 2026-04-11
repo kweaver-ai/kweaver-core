@@ -19,6 +19,7 @@ from .models import (
     LocalDevConfig,
     OuterLLMConfig,
     FeaturesConfig,
+    EvidenceConfig,
     O11yConfig,
     DialogLoggingConfig,
 )
@@ -38,6 +39,7 @@ class ConfigState:
         self.local_dev: Optional[LocalDevConfig] = None
         self.outer_llm: Optional[OuterLLMConfig] = None
         self.features: Optional[FeaturesConfig] = None
+        self.evidence: Optional[EvidenceConfig] = None
         self.o11y: Optional[O11yConfig] = None
         self.dialog_logging: Optional[DialogLoggingConfig] = None
 
@@ -60,6 +62,7 @@ class ConfigInitializer:
         state.local_dev = LocalDevConfig.from_dict(config.get("local_dev", {}))
         state.outer_llm = OuterLLMConfig.from_dict(config.get("outer_llm", {}))
         state.features = FeaturesConfig.from_dict(config.get("features", {}))
+        state.evidence = EvidenceConfig.from_dict(config.get("evidence", {}))
         state.o11y = O11yConfig.from_dict(config.get("o11y", {}))
         state.dialog_logging = DialogLoggingConfig.from_dict(
             config.get("dialog_logging", {})

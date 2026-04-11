@@ -68,9 +68,6 @@ class ModelApiService(object):
 
         url = self._basic_url + "/api/private/mf-model-api/v1/chat/completions"
 
-        StandLogger.info("call llm body = {}".format(req))
-        StandLogger.info("call llm header = {}".format(headers))
-
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=req, headers=headers) as response:
                 if response.status != 200:
@@ -172,8 +169,6 @@ class ModelApiService(object):
             req["max_tokens"] = max_tokens
 
         url = self._basic_url + "/api/private/mf-model-api/v1/chat/completions"
-        StandLogger.info("call llm body = {}".format(req))
-        StandLogger.info("call llm header = {}".format(headers))
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=req, headers=headers) as response:
                 if response.status != 200:

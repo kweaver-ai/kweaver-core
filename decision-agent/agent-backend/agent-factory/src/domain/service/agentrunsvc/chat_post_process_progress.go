@@ -114,12 +114,69 @@ func (agentSvc *agentSvc) handleProgress(ctx context.Context, req *agentreq.Chat
 
 	pgs := append(prePgs, progresses...)
 
+	// 创建一个 ID -> progress 的映射，优先使用包含 _evidence 的版本
+	progressMapByID := make(map[string]*agentrespvo.Progress)
+	for _, pg := range pgs {
+		existing, hasExisting := progressMapByID[pg.ID]
+		// 优先保留包含 _evidence 的 progress
+		if hasExisting {
+			hasEvidence := pg.Evidence != nil && len(pg.Evidence) > 0
+			existingHasEvidence := existing.Evidence != nil && len(existing.Evidence) > 0
+			if hasEvidence && !existingHasEvidence {
+				// 新的 progress 有 _evidence，旧的没有，替换
+				progressMapByID[pg.ID] = pg
+				agentSvc.logger.Infof("[handleProgress] Replacing progress (with _evidence): id=%s, stage=%s", pg.ID, pg.Stage)
+			} else if !hasEvidence && existingHasEvidence {
+				// 旧的 progress 有 _evidence，新的没有，保留旧的
+				agentSvc.logger.Infof("[handleProgress] Keeping existing progress (with _evidence): id=%s, stage=%s", pg.ID, existing.Stage)
+			} else {
+				// 两者都有或都没有，保留第一个（prePgs 中的）
+			}
+		} else {
+			// 不存在，直接添加
+			progressMapByID[pg.ID] = pg
+		}
+	}
+
 	var currentProgress *agentrespvo.Progress
 
-	// 3. 遍历 progresses
-	for _, pg := range pgs {
-		// fmt.Printf("pid: %s,status: %s\n", pg.ID, pg.Status)
+	// 3. 遍历 progresses，填充 progressMap 和 set
+	for _, pg := range progressMapByID {
+		// DEBUG: 记录 _evidence 字段状态
+		if pg.Evidence != nil && len(pg.Evidence) > 0 {
+			agentSvc.logger.Infof("[handleProgress] Processing progress with _evidence: id=%s, stage=%s, count=%d", pg.ID, pg.Stage, len(pg.Evidence))
+		}
+
+		// 检查是否已处理过此 progress ID
+		shouldSkip := false
 		if _, exist := set[pg.ID]; exist {
+			// 如果已存在，检查是否需要用带 _evidence 的版本替换
+			if v, ok := progressMap.Load(aMsgID); ok {
+				existingList := v.([]*agentrespvo.Progress)
+				// 查找已存在的 progress
+				for i, existing := range existingList {
+					if existing.ID == pg.ID {
+						// 如果新版本有 _evidence 而旧版本没有，替换
+						if (pg.Evidence != nil && len(pg.Evidence) > 0) &&
+							(existing.Evidence == nil || len(existing.Evidence) == 0) {
+							// 替换已存在的 progress
+							existingList[i] = pg
+							progressMap.Store(aMsgID, existingList)
+							agentSvc.logger.Infof("[handleProgress] Replaced progress with _evidence version: id=%s", pg.ID)
+							shouldSkip = true
+						} else {
+							// 保持原样，跳过
+							shouldSkip = true
+						}
+						break
+					}
+				}
+			} else {
+				shouldSkip = true
+			}
+		}
+
+		if shouldSkip {
 			continue
 		}
 
@@ -144,6 +201,20 @@ func (agentSvc *agentSvc) handleProgress(ctx context.Context, req *agentreq.Chat
 	// 5. append currentProgress
 	if currentProgress != nil {
 		newPgs = append(newPgs, currentProgress)
+	}
+
+	// DEBUG: 检查输出中的 _evidence 字段
+	evidenceCount := 0
+	for _, pg := range newPgs {
+		if pg.Evidence != nil && len(pg.Evidence) > 0 {
+			evidenceCount++
+			agentSvc.logger.Infof("[handleProgress] Output progress has _evidence: id=%s, stage=%s, count=%d", pg.ID, pg.Stage, len(pg.Evidence))
+		}
+	}
+	if evidenceCount > 0 {
+		agentSvc.logger.Infof("[handleProgress] ✅ Output contains %d progress(es) with _evidence", evidenceCount)
+	} else {
+		agentSvc.logger.Infof("[handleProgress] ℹ️ Output contains NO progress with _evidence (total=%d)", len(newPgs))
 	}
 
 	return

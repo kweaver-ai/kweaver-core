@@ -16,6 +16,7 @@ from .models import (
     LocalDevConfig,
     OuterLLMConfig,
     FeaturesConfig,
+    EvidenceConfig,
     O11yConfig,
     DialogLoggingConfig,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "LocalDevConfig",
     "OuterLLMConfig",
     "FeaturesConfig",
+    "EvidenceConfig",
     "O11yConfig",
     "DialogLoggingConfig",
 ]

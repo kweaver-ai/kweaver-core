@@ -21,6 +21,17 @@ type Progress struct {
 	EstimatedOutputTokens int64       `json:"estimated_output_tokens"`
 	EstimatedRatioTokens  float64     `json:"estimated_ratio_tokens"`
 	TokenUsage            TokenUsage  `json:"token_usage"`
+	// 证据注入元数据，标注文本中引用工具结果的位置
+	Evidence              map[string]Evidence `json:"_evidence,omitempty"`
+}
+
+// Evidence 证据元数据，标注文本中引用工具结果的位置
+type Evidence struct {
+	ObjectTypeName string      `json:"object_type_name"`
+	Positions      [][]int     `json:"positions"`
+	ToolName       string      `json:"tool_name,omitempty"`
+	Result         interface{} `json:"result,omitempty"`
+	ResultType     string      `json:"result_type,omitempty"`
 }
 
 type TokenUsage struct {

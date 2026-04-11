@@ -70,12 +70,28 @@ features:
   is_skill_agent_need_progress: false
   enable_traceai_evidence: false
 
-# 7. o11y 相关
+# 7. 证据注入相关配置
+evidence:
+  # 证据注入功能总开关
+  enable: false
+  # LLM 标注配置（文本→证据位置）
+  llm_annotation_timeout: 120
+  llm_annotation_model: "deepseek-v3.2"
+  # 仅标注最终答案（避免流式输出卡顿）
+  annotate_only_final_answer: true
+  # 证据存储配置
+  store_max_size: 1000
+  store_ttl_seconds: 3600
+  # 规则匹配配置
+  enable_alias_match: true
+  min_sentence_length: 10
+
+# 8. o11y 相关
 o11y:
   log_enabled: false
   trace_enabled: false
 
-# 8. 对话日志相关配置
+# 9. 对话日志相关配置
 dialog_logging:
   enable_dialog_logging: false
   use_single_log_file: false

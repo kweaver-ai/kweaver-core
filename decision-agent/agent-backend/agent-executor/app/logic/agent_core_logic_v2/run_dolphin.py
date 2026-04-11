@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any, AsyncGenerator, Dict, Optional, TYPE_CHECKING
 from dolphin.sdk.agent.dolphin_agent import DolphinAgent
 from dolphin.core.config.global_config import GlobalConfig
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from .agent_core_v2 import AgentCoreV2
 
 from .agent_instance_manager import agent_instance_manager
+
+logger = logging.getLogger(__name__)
 
 
 @internal_span()
@@ -230,10 +233,31 @@ async def run_dolphin(
     output = {}
 
     # 使用公共的 arun 循环处理方法
+    # 证据准备在 arun 循环内部进行（在工具完成后触发）
     from .interrupt_utils import process_arun_loop
+    from .evidence_inject_processor import create_evidence_injection_stream
 
-    async for output in process_arun_loop(agent, is_debug):
-        yield output
+    is_evidence_injection_enabled = getattr(
+        Config.evidence, "enable", True
+    )
+
+    if is_evidence_injection_enabled:
+        logger.info("[run_dolphin] Evidence injection enabled, using injection stream")
+
+        original_stream = process_arun_loop(
+            agent, is_debug, evidence_store_key=None
+        )
+
+        async for output in create_evidence_injection_stream(
+            original_stream=original_stream,
+            evidence_store_key=None,
+            is_debug=is_debug,
+        ):
+            yield output
+    else:
+        logger.info("[run_dolphin] Evidence injection disabled, using normal stream")
+        async for output in process_arun_loop(agent, is_debug):
+            yield output
 
     yield output
     # StandLogger.debug_log(

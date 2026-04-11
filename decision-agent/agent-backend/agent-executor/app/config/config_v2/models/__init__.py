@@ -10,6 +10,7 @@ from .memory_config import MemoryConfig
 from .local_dev_config import LocalDevConfig
 from .outer_llm_config import OuterLLMConfig
 from .feature_config import FeaturesConfig
+from .evidence_config import EvidenceConfig
 from .observability_config import O11yConfig, DialogLoggingConfig
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "LocalDevConfig",
     "OuterLLMConfig",
     "FeaturesConfig",
+    "EvidenceConfig",
     "O11yConfig",
     "DialogLoggingConfig",
 ]

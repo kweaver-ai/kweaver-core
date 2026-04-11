@@ -57,7 +57,12 @@ func NewAnswerS() *AnswerS {
 func (p *AnswerS) MarshalJSON() ([]byte, error) {
 	baseMap := map[string]interface{}{}
 
+	// 先添加动态字段
 	p.AddDynamicFieldsToMap(baseMap)
+
+	// 添加结构体的直接字段
+	baseMap["interventions"] = p.Interventions
+	baseMap["_progress"] = p.Progress
 
 	return sonic.Marshal(baseMap)
 }
