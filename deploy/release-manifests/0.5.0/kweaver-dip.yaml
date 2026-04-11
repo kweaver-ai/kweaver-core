@@ -15,7 +15,7 @@ dependencies:
 releases:
   dip-data-migrator:
     chart: dip-data-migrator
-    version: 0.4.0-main.20260410.4.9fd9eb7
+    version: 0.4.0-main.20260411.1.9fd9eb7
     stage: pre
   deploy-web:
     chart: deploy-web
