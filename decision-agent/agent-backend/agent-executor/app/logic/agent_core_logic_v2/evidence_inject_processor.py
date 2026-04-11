@@ -619,32 +619,44 @@ async def _process_single_item(
             evidences = annotation_result.get("evidences", [])
             evidence_meta = {}
 
-            # 构建工具结果索引，按 result_type 分组
-            tool_results_by_type = {}
-            for tr in current_tool_results:
-                result_type = tr.get("result_type", "unknown")
-                if result_type not in tool_results_by_type:
-                    tool_results_by_type[result_type] = []
-                tool_results_by_type[result_type].append(tr)
+            StandLogger.info_log(
+                f"[_process_single_item] Building evidence_meta: "
+                f"evidences_count={len(evidences)}, "
+                f"tool_results_count={len(current_tool_results)}"
+            )
+
+            # 获取第一个（或唯一的）工具结果
+            # TODO: 如果有多个工具结果，需要更智能的匹配逻辑
+            tool_data = current_tool_results[0] if current_tool_results else None
+
+            if tool_data:
+                StandLogger.info_log(
+                    f"[_process_single_item] Using tool_data: "
+                    f"tool_name={tool_data.get('tool_name', '')}, "
+                    f"result_type={tool_data.get('result_type', '')}"
+                )
 
             for idx, ev in enumerate(evidences):
                 local_id = f"e{idx + 1}"
                 object_type = ev.get("object_type_name", "")
-
-                # 查找匹配的工具结果
-                matched_tools = tool_results_by_type.get(object_type, [])
-                tool_data = matched_tools[0] if matched_tools else None
 
                 evidence_item = {
                     "object_type_name": object_type,
                     "positions": ev.get("positions", []),
                 }
 
-                # 如果找到匹配的工具结果，添加工具数据
+                # 添加工具结果数据（如果有）
                 if tool_data:
                     evidence_item["tool_name"] = tool_data.get("tool_name", "")
                     evidence_item["result"] = tool_data.get("result", {})
                     evidence_item["result_type"] = tool_data.get("result_type", "")
+
+                    StandLogger.info_log(
+                        f"[_process_single_item] Evidence {local_id}: "
+                        f"object_type_name={object_type}, "
+                        f"tool_name={evidence_item.get('tool_name', '')}, "
+                        f"has_result={bool(evidence_item.get('result'))}"
+                    )
 
                 evidence_meta[local_id] = evidence_item
 
