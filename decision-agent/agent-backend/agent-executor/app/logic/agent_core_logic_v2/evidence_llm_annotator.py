@@ -14,7 +14,7 @@ from app.common.config import Config
 logger = logging.getLogger(__name__)
 
 
-_LLM_ANNOTATE_PROMPT = """你是一个精确的证据标注专家。你的任务是找出文本中引用工具结果的位置，并返回精确的字符索引。
+_LLM_ANNOTATE_PROMPT = """你是一个精确的证据标注专家。你的任务是分析文本和工具调用结果，找出文本中实际引用了哪些工具提供的信息。
 
 ## 工具调用结果：
 {tool_results}
@@ -27,65 +27,96 @@ _LLM_ANNOTATE_PROMPT = """你是一个精确的证据标注专家。你的任务
 ## 字符位置索引参考（每10个字符标记一次索引）：
 {text_with_index}
 
-## 标注方法：
+## 核心原则：
+**只有当文本明确引用或展示了工具结果的特定内容时，才进行标注。**
+- 如果工具提供了日期信息，文本中提到了该日期 → 标注
+- 如果工具提供了搜索结果，文本中总结了这些结果 → 标注
+- 如果工具结果与文本内容无关 → 不标注
+- 如果只是隐含关系（没有明确引用）→ 不标注
 
-### 步骤1：使用上面的索引参考快速定位
-上面的索引参考每10个字符标记一次位置，帮助你快速找到实体在文本中的准确位置。
+## 标注步骤：
 
-### 步骤2：精确验证
+### 步骤1：理解工具提供了什么信息
+仔细阅读每个工具的结果，理解它返回了什么数据或信息。
+
+### 步骤2：检查文本是否引用了这些信息
+在文本中查找：
+- 直接引用：如 "根据搜索结果..."
+- 数据展示：如 "当前日期是2026-04-11"
+- 内容总结：如 "常州有以下景点..."
+
+### 步骤3：精确标注位置
 使用 `text[start:end]` 验证你的位置是否正确：
-- text[start:end] 必须完全等于实体名称
+- text[start:end] 必须是文本中实际引用的部分
 - 每个字符（包括空格、换行符、标点）都算一个位置
 
-### 步骤3：返回结果
-只返回文本中实际存在且逐字匹配的实体位置。
+## object_type_name 字段说明：
+这个字段应该描述**工具提供了什么类型的信息**，而不是工具名称：
+- 如果工具返回日期 → object_type_name: "日期"
+- 如果工具返回景点列表 → object_type_name: "景点列表"
+- 如果工具返回天气信息 → object_type_name: "天气信息"
+- 如果工具返回任务规划 → object_type_name: "任务规划"
 
-## 关键规则（必须遵守）：
+## 关键规则：
 
-1. **换行符和空格**：
-   - `\n` 是一个字符，占用1个位置
-   - 空格也是1个字符
-   - 必须把所有字符都计入位置
-
-2. **精确验证**：
-   - text[start:end] 必须等于实体名称
-   - 如果 text[60:67] ≠ "简单对话助手"，说明位置错误
-
-3. **边界检查**：
-   - start >= 0
-   - end <= {text_len}
-   - end > start
+1. **只标注明确引用**：必须有明确的语义关联，不能凭猜测标注
+2. **精确位置**：标注的位置必须在文本中真实存在
+3. **边界检查**：start >= 0, end <= {text_len}, end > start
 
 ## 示例：
 
+工具结果：
+```
+工具1: get_date
+结果: "2026-04-11"
+```
+
 文本：
 ```
-第1行内容\n第2行内容
+今天是2026年4月11日，我们开始规划行程。
 ```
 
-字符位置：
-```
-01234567890123
-第1行内容
-第2行内容
+正确标注：
+```json
+{{
+  "evidences": [
+    {{
+      "object_type_name": "日期",
+      "positions": [[2, 14]]
+    }}
+  ]
+}}
 ```
 
-"第1行" 的位置是 [0, 3]，因为 text[0:3] = "第1行"
-"第2行" 的位置是 [8, 11]，因为 text[8:11] = "第2行"（注意 \n 占用位置7）
+说明：位置[2,14]是"2026年4月11日"，这是文本中对日期工具结果的明确引用。
+
+错误标注：
+```json
+{{
+  "evidences": [
+    {{
+      "object_type_name": "_date",
+      "positions": [[0, 2]]
+    }}
+  ]
+}}
+```
+
+说明：位置[0,2]是"今天"，这不是工具提供的具体日期，应该是完整的日期位置。
 
 ## 输出格式：
 ```json
 {{
   "evidences": [
     {{
-      "object_type_name": "实体名称",
+      "object_type_name": "信息类型描述",
       "positions": [[start1, end1], [start2, end2]]
     }}
   ]
 }}
 ```
 
-如果没有找到引用，返回：`{{"evidences": []}}`
+如果没有找到明确引用，返回：`{{"evidences": []}}`
 """
 
 
@@ -136,6 +167,11 @@ async def llm_annotate_evidence(
         from app.driven.dip.model_api_service import model_api_service
         import asyncio
 
+        logger.info(
+            f"[llm_annotate_evidence] 开始标注: text_len={len(text)}, "
+            f"tool_results_count={len(tool_results)}, model={model}"
+        )
+
         messages = [{"role": "user", "content": prompt}]
 
         llm_result = await asyncio.wait_for(
@@ -149,7 +185,16 @@ async def llm_annotate_evidence(
 
         result_text = str(llm_result) if llm_result else ""
 
+        logger.info(
+            f"[llm_annotate_evidence] LLM返回: {len(result_text)} 字符, "
+            f"预览: {result_text[:200]}..."
+        )
+
         parsed = _parse_llm_annotation(result_text, text)
+
+        logger.info(
+            f"[llm_annotate_evidence] 最终结果: {len(parsed.get('evidences', []))} 个证据"
+        )
 
         return parsed
 
@@ -240,9 +285,11 @@ def _parse_llm_annotation(result: str, original_text: str) -> Dict[str, Any]:
             positions = ev.get("positions", [])
 
             if not name:
+                logger.warning("[_parse_llm_annotation] 跳过没有 object_type_name 的证据")
                 continue
 
             if not isinstance(positions, list):
+                logger.warning("[_parse_llm_annotation] positions 不是数组")
                 continue
 
             # 验证位置是否有效
@@ -252,18 +299,35 @@ def _parse_llm_annotation(result: str, original_text: str) -> Dict[str, Any]:
                     start, end = pos
                     if isinstance(start, int) and isinstance(end, int):
                         if 0 <= start < end <= len(original_text):
-                            valid_positions.append([start, end])
+                            # 提取标注的文本，用于验证
+                            extracted = original_text[start:end]
+                            # 检查提取的内容是否太短或只包含空白字符
+                            if len(extracted.strip()) >= 2:
+                                valid_positions.append([start, end])
+                                logger.info(
+                                    f"[_parse_llm_annotation] 标注位置 [{start}, {end}]: "
+                                    f"'{extracted[:50]}...' (type={name})"
+                                )
+                            else:
+                                logger.warning(
+                                    f"[_parse_llm_annotation] 跳过空白或过短的标注: "
+                                    f"[{start}, {end}] = '{extracted}'"
+                                )
                         else:
                             logger.warning(
                                 f"[_parse_llm_annotation] Invalid position: "
                                 f"[{start}, {end}], text_len={len(original_text)}"
-                            )
+                    )
 
             if valid_positions:
                 cleaned_evidences.append({
                     "object_type_name": name,
                     "positions": valid_positions,
                 })
+            else:
+                logger.warning(
+                    f"[_parse_llm_annotation] 证据 '{name}' 没有有效的位置，已跳过"
+                )
 
         return {"evidences": cleaned_evidences}
 
