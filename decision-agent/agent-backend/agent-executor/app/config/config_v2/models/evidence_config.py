@@ -16,10 +16,6 @@ class EvidenceConfig:
     store_max_size: int = 1000
     store_ttl_seconds: int = 3600
 
-    # LLM 提取配置（工具结果→证据）
-    llm_extraction_timeout: int = 30
-    llm_extraction_model: str = ""
-
     # 规则匹配配置
     enable_alias_match: bool = True
     min_sentence_length: int = 10
@@ -40,8 +36,6 @@ class EvidenceConfig:
             enable=data.get("enable", False),
             store_max_size=int(data.get("store_max_size", 1000)),
             store_ttl_seconds=int(data.get("store_ttl_seconds", 3600)),
-            llm_extraction_timeout=int(data.get("llm_extraction_timeout", 30)),
-            llm_extraction_model=data.get("llm_extraction_model", ""),
             enable_alias_match=data.get("enable_alias_match", True),
             min_sentence_length=int(data.get("min_sentence_length", 10)),
             llm_annotation_timeout=int(data.get("llm_annotation_timeout", 30)),
