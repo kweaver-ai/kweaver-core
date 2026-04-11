@@ -330,7 +330,7 @@ opentelemetry:
 
 # 新版 OTel Collector 配置
 otel:
-  service_name: "agent-factory"
+  service_name: "agent-executor"
   service_version: "1.0.0"
   environment: "production"
   otlp_endpoint: "otelcol-contrib:4318"

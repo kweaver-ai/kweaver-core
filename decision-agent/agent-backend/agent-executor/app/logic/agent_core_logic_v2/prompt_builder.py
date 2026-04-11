@@ -12,6 +12,32 @@ from app.domain.vo.agentvo import AgentConfigVo
 
 from .trace import span_set_attrs
 
+# Skill usage rules injected into every explore prompt so that the model
+# knows how to use the three built-in skill contract tools.
+# 注意：这些规则需要作为 Dolphin 注释格式（以 # 开头）或在块内部
+_SKILL_USAGE_RULES = """
+# == Built-in Skill Capabilities ==
+# You have access to three built-in tools for working with skills:
+#
+# 1. builtin_skill_load(skill_id) — Always call this first when you have a skill_id.
+#    Returns the full SKILL.md content plus lists of available scripts and reference files.
+#
+# 2. builtin_skill_read_file(skill_id, file_path) — Optional. Read a specific file
+#    inside the skill package. Only call after you have obtained a file path from
+#    builtin_skill_load or from SKILL.md. One file per call; cannot batch.
+#
+# 3. builtin_skill_execute_script(skill_id, script_path) — Optional. Execute a script
+#    from the skill package. Only call after reading SKILL.md and deciding that script
+#    execution is needed. Not all skills require script execution.
+#
+# Usage rules:
+# - If you have a skill_id, always start with builtin_skill_load(skill_id).
+# - After reading SKILL.md, decide independently whether to call read_file, execute_script,
+#   both, or neither.
+# - builtin_skill_read_file and builtin_skill_execute_script are both optional steps.
+# ==========================================
+"""
+
 
 class PromptBuilder:
     def __init__(self, agent_config: AgentConfigVo, temp_files: dict[str, list]):
@@ -27,12 +53,18 @@ class PromptBuilder:
         )
 
         if self.agent_config.is_dolphin_mode:
-            dolphin_prompt = ""
+            # Skill usage rules are placed first so that every /explore/ or
+            # /explore_v2/ block — whether it appears in pre_dolphin, dolphin,
+            # or post_dolphin — can always see them.  Moving this after
+            # pre_dolphin would hide the rules from any explore block that the
+            # author placed inside a pre_dolphin section.
+            dolphin_prompt = _SKILL_USAGE_RULES + "\n"
 
             for pre_dolphin in self.agent_config.pre_dolphin:
                 if not pre_dolphin.get("enabled", False):
                     continue
 
+                # Skip temp-file processing block when the user has no uploaded files
                 # 如果开启了临时区，但是用户没有上次临时区文件，则不构造临时区文件处理 dophin
                 if pre_dolphin.get("key") == "temp_file_process" and not has_temp_files(
                     self.temp_files
@@ -54,6 +86,7 @@ class PromptBuilder:
             context_prompt = self.get_context_prompt()
             related_questions_prompt = self.get_related_questions_prompt()
 
+            # Append skill usage rules to the auto-generated explore system prompt
             explore_system_prompt = ""
             if self.agent_config.is_plan_mode():
                 explore_system_prompt = plan_mode_logic.get_system_prompt_with_plan(
@@ -63,8 +96,8 @@ class PromptBuilder:
             else:
                 explore_system_prompt = self.agent_config.system_prompt
 
-            # tool_names = await self.get_tool_names()
-            # explore_prompt = f"""/explore/(tools={repr(tool_names)}, system_prompt={repr(explore_system_prompt)}, history=True)$query -> answer\n"""
+            explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
+
             explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history=True)$query -> answer\n"""
 
             dolphin_prompt = (

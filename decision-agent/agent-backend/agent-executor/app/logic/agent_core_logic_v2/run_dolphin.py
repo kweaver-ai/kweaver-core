@@ -88,7 +88,7 @@ async def run_dolphin(
     if ac.is_warmup:
         return
 
-    tool_dict = await build_tools(ac, skills)
+    tool_dict = await build_tools(ac, skills, request_headers=headers)
 
     # 3.2 构造toolkit
     toolkit = TriditionalToolkit.buildFromTooldict(tool_dict)
