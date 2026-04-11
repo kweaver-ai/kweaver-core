@@ -91,6 +91,10 @@ depServices:
     host: hydra-admin
     port: 4445
     protocol: http
+  kafka-connect:
+    host: kafka-connect
+    port: 8083
+    protocol: http
 
 config:
   server:

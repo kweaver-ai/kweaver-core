@@ -27,8 +27,8 @@ FROM ${BASE_IMAGE} AS prod
 ARG UID=1001
 ARG GID=1001
 
-RUN groupadd -r -g $GID adp \
-    && useradd -r -u $UID -g $GID adp \
+RUN groupadd -r -g $GID kweaver \
+    && useradd -r -u $UID -g $GID kweaver \
     && apt-get update \
     && apt-get install -y python3 python3-pip \
     && pip3 install sqlglot -i https://mirrors.aliyun.com/pypi/simple/ \
