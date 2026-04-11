@@ -91,6 +91,13 @@ install_ingress_nginx() {
             --set controller.hostNetwork=true
             --set controller.dnsPolicy=ClusterFirstWithHostNet
             --set controller.service.type=ClusterIP
+            --set controller.containerPort.http="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.containerPort.https="${INGRESS_NGINX_HTTPS_PORT:-443}"
+            --set controller.hostPort.enabled=true
+            --set controller.hostPort.ports.http="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.hostPort.ports.https="${INGRESS_NGINX_HTTPS_PORT:-443}"
+            --set controller.extraArgs."http-port"="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.extraArgs."https-port"="${INGRESS_NGINX_HTTPS_PORT:-443}"
         )
     else
         helm_args+=(
@@ -137,11 +144,11 @@ install_ingress_nginx() {
     log_info "  Namespace: ingress-nginx"
     log_info "  IngressClass: ${INGRESS_NGINX_CLASS}"
     if [[ "${INGRESS_NGINX_HOSTNETWORK}" == "true" ]]; then
-        log_info "  Mode: hostNetwork (ports 80/443 on node)"
+        log_info "  Mode: hostNetwork (ports ${INGRESS_NGINX_HTTP_PORT:-80}/${INGRESS_NGINX_HTTPS_PORT:-443} on node)"
         log_info ""
         log_info "To access the ingress controller:"
-        log_info "  http://<node-ip>:80"
-        log_info "  https://<node-ip>:443"
+        log_info "  http://<node-ip>:${INGRESS_NGINX_HTTP_PORT:-80}"
+        log_info "  https://<node-ip>:${INGRESS_NGINX_HTTPS_PORT:-443}"
     else
         log_info "  Service type: NodePort"
         log_info "  HTTP NodePort: ${INGRESS_NGINX_HTTP_PORT}"
