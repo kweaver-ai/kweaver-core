@@ -701,7 +701,13 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if params != nil && len(params.Sort) > 0 {
 		sort := make([]map[string]any, 0, len(params.Sort))
 		for _, s := range params.Sort {
-			fieldName, _ := c.getKeywordSuffix(s.Field, resource.SchemaDefinition)
+			fieldName := s.Field
+			if s.Field != "_score" && s.Field != "_id" {
+				fieldName, _ = c.getKeywordSuffix(s.Field, resource.SchemaDefinition)
+			}
+			if fieldName == "" {
+				continue
+			}
 			sort = append(sort, map[string]any{
 				fieldName: map[string]any{
 					"order": s.Direction,

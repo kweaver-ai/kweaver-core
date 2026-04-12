@@ -1128,13 +1128,18 @@ func (c *OpenSearchConnector) replaceLikeWildcards(input string) string {
 // getKeywordSuffix text 类型在部分查询场景（如 eq/in）下，需使用 keyword 类型的子字段，返回关键字后缀，否则返回空字符串
 func (c *OpenSearchConnector) getKeywordSuffix(fieldName string, schemaDefinition []*interfaces.Property) (string, error) {
 	for _, prop := range schemaDefinition {
-		if prop.OriginalName == fieldName && prop.Type == "text" {
-			for _, feature := range prop.Features {
-				if feature.FeatureType == "keyword" {
-					return "." + feature.FeatureName, nil
+		if prop.OriginalName == fieldName {
+			switch prop.Type {
+			case interfaces.DataType_Text:
+				for _, feature := range prop.Features {
+					if feature.FeatureType == interfaces.PropertyFeatureType_Keyword {
+						return "." + feature.FeatureName, nil
+					}
 				}
+				return "", fmt.Errorf("text field %s has no keyword feature, cannot be used for comparison", fieldName)
+			case interfaces.DataType_String:
+				return fieldName, nil
 			}
-			return "", fmt.Errorf("text field %s has no keyword feature, cannot be used for comparison", fieldName)
 		}
 	}
 	return "", nil

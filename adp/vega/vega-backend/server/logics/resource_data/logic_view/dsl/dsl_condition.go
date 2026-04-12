@@ -1134,9 +1134,9 @@ func (c *logicViewDSLGenerator) replaceLikeWildcards(input string) string {
 // getKeywordSuffix text 类型在部分查询场景（如 eq/in）下，需使用 keyword 类型的子字段，返回关键字后缀，否则返回空字符串
 func (c *logicViewDSLGenerator) getKeywordSuffix(fieldName string, fieldsMap map[string]*interfaces.Property) (string, error) {
 	for _, prop := range fieldsMap {
-		if prop.OriginalName == fieldName && prop.Type == "text" {
+		if prop.OriginalName == fieldName && prop.Type == interfaces.DataType_Text {
 			for _, feature := range prop.Features {
-				if feature.FeatureType == "keyword" {
+				if feature.FeatureType == interfaces.PropertyFeatureType_Keyword {
 					return "." + feature.FeatureName, nil
 				}
 			}
