@@ -74,9 +74,16 @@ func (c *MariaDBConnector) ExecuteQuery(ctx context.Context, resource *interface
 		result.Total = total
 	}
 
-	fields := []string{"*"}
+	fields := []string{}
 	if len(params.OutputFields) > 0 {
-		fields = params.OutputFields
+		for _, outName := range params.OutputFields {
+			if field, ok := fieldMap[outName]; ok {
+				fields = append(fields, field.OriginalName)
+			}
+		}
+	}
+	if len(fields) == 0 {
+		fields = append(fields, "*")
 	}
 
 	builder := sq.Select(fields...).

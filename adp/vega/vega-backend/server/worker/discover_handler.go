@@ -160,6 +160,7 @@ func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfa
 	// index类型的会到这里，例如open search
 	case interfaces.ConnectorCategoryIndex:
 		return dh.discoverIndexResources(ctx, catalog, connector)
+	// fileset类型的会到这里，例如anyshare
 	case interfaces.ConnectorCategoryFileset:
 		return dh.discoverFilesetResources(ctx, catalog, connector)
 	default:
