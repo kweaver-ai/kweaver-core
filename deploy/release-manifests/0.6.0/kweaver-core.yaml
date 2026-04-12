@@ -72,7 +72,7 @@ releases:
     version: 0.5.0
   otelcol-contrib:
     chart: otelcol-contrib
-    version: 0.2.1-refactor-monorepo.sha2962656
+    version: 0.2.3
   agent-observability:
     chart: agent-observability
-    version: 0.2.1-refactor-monorepo.sha2962656
+    version: 0.2.3

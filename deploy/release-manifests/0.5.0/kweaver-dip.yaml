@@ -26,24 +26,36 @@ releases:
   business-system-frontend:
     chart: business-system-frontend
     version: 0.3.0
+    dependsOn:
+    - studio-web
   business-system-service:
     chart: business-system-service
     version: 0.3.0-1d43acc
   mf-model-manager-nginx:
     chart: mf-model-manager-nginx
-    version: 0.3.0
+    version: 0.3.1
+    dependsOn:
+    - studio-web
   vega-web:
     chart: vega-web
-    version: 0.5.0
+    version: 0.5.1
+    dependsOn:
+    - studio-web
   operator-web:
     chart: operator-web
-    version: 0.4.0
+    version: 0.4.1
+    dependsOn:
+    - studio-web
   agent-web:
     chart: agent-web
-    version: 0.5.0
+    version: 0.5.1
+    dependsOn:
+    - studio-web
   flow-web:
     chart: flow-web
-    version: 0.5.0
+    version: 0.5.1
+    dependsOn:
+    - studio-web
   anyfabric-frontend:
     chart: anyfabric-frontend
     version: 0.4.0-main.20260403.2
@@ -91,7 +103,7 @@ releases:
     version: 0.4.0-main.20260331.7
   session:
     chart: session
-    version: 0.4.0-main.20260403.1
+    version: 0.4.0-main.20260403.2
   standardization:
     chart: standardization
     version: 0.4.0-main.20260402.13
