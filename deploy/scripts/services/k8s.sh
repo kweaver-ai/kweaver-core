@@ -113,9 +113,22 @@ init_k8s_master() {
     disable_selinux
     configure_system
     
-    # Get the default network interface IP if not specified
+    # Resolve API server advertise address
     if [[ -z "${API_SERVER_ADVERTISE_ADDRESS}" ]]; then
-        API_SERVER_ADVERTISE_ADDRESS=$(hostname -I | awk '{print $1}')
+        local detected_ip
+        detected_ip=$(hostname -I | awk '{print $1}')
+        if [[ -t 0 ]]; then
+            echo ""
+            log_info "Detected host IP: ${detected_ip}"
+            read -r -p "[INPUT] Enter API server advertise address (press Enter to use ${detected_ip}): " user_ip
+            if [[ -n "${user_ip}" ]]; then
+                API_SERVER_ADVERTISE_ADDRESS="${user_ip}"
+            else
+                API_SERVER_ADVERTISE_ADDRESS="${detected_ip}"
+            fi
+        else
+            API_SERVER_ADVERTISE_ADDRESS="${detected_ip}"
+        fi
     fi
     
     log_info "API Server advertise address: ${API_SERVER_ADVERTISE_ADDRESS}"
