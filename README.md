@@ -80,7 +80,7 @@ kweaver bkn list
 | Sub-project | Description | Repository |
 | --- | --- | --- |
 | **KWeaver SDK** | CLI and SDK (TypeScript/Python) for AI agents and developers to access KWeaver knowledge networks and Decision Agents programmatically | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
-| **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
+| **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI | [kweaver-core](https://github.com/kweaver-ai/kweaver-core) (this repo) |
 
 ## KWeaver SDK
 

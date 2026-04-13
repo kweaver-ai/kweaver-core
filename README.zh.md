@@ -81,7 +81,7 @@ kweaver bkn list
 | 子项目 | 描述 | 仓库地址 |
 | --- | --- | --- |
 | **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
-| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
+| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI | [kweaver-core](https://github.com/kweaver-ai/kweaver-core)（本仓库） |
 
 ## KWeaver SDK
 
