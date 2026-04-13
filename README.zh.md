@@ -12,9 +12,11 @@
 
 KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基础平台。它将分散的数据、知识、工具和策略转化为受治理的上下文、安全的执行和可验证的反馈闭环。通过语义建模、实时访问、运行时管控和 TraceAI，帮助 AI 系统在复杂企业环境中可靠地推理、适应和行动。
 
+> **注意：** KWeaver Core 是**纯后台框架**，不提供 Web 界面。所有交互通过 CLI、SDK 或 API 完成。如需界面访问，请安装 [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver)。
+
 ## 📚 快速链接
 
-- 🌐 [在线体验](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - 在线试用 KWeaver（用户名：`kweaver`，密码：`111111`）
+- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver Web 界面（用户名：`kweaver`，密码：`111111`）
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
 - 📘 [产品文档](help/) - 产品文档与使用指南
@@ -65,11 +67,14 @@ kubectl get pods -A
 ./deploy.sh kweaver status
 ```
 
-5. 部署完成后，可按以下地址访问：
-   - 部署工作台：`https://<节点IP>/deploy`，账号 `admin`，初始密码 `eisoo.com`
-   - KWeaver 页面：`https://<节点IP>/studio`
+5. 验证 API 访问：
 
-> **尚未部署？** 可先使用[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)快速体验（用户名：`kweaver`，密码：`111111`）。
+```bash
+kweaver auth login https://<节点IP> -k
+kweaver bkn list
+```
+
+> **尚未部署？** 可访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) Web 界面在线体验（用户名：`kweaver`，密码：`111111`），或将 CLI/SDK 直接连接到 Demo 环境（见下方说明）。
 
 ### 核心子系统
 
@@ -119,7 +124,7 @@ kweaver auth login https://your-kweaver-instance.com
 
 ### 使用 Demo 环境快速体验
 
-无需部署 — 将 AI Agent 连接到[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)即可立即上手：
+无需部署 — 将 AI Agent 直接连接到 Demo 环境即可立即上手（如需 Web 界面，请访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)）：
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \

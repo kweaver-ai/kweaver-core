@@ -12,9 +12,11 @@
 
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliable in complex enterprises.
 
+> **Note:** KWeaver Core is a **backend-only framework** — it does not include a web UI. All interactions are through the CLI, SDK, or API. If you need a graphical interface, please install [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver).
+
 ## 📚 Quick Links
 
-- 🌐 [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Try KWeaver online (username: `kweaver`, password: `111111`)
+- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Web UI for KWeaver (username: `kweaver`, password: `111111`)
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
 - 📘 [Documentation](help/) - Product documentation and usage guides
@@ -64,11 +66,14 @@ kubectl get pods -A
 ./deploy.sh kweaver status
 ```
 
-5. **Access the system**:
-   - Deployment console: `https://<node-ip>/deploy`, account `admin`, initial password `eisoo.com`
-   - KWeaver Studio: `https://<node-ip>/studio`
+5. **Verify API access**:
 
-> **No deployment yet?** Try the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) first (username: `kweaver`, password: `111111`).
+```bash
+kweaver auth login https://<node-ip> -k
+kweaver bkn list
+```
+
+> **No deployment yet?** Use the [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) web UI to try KWeaver online (username: `kweaver`, password: `111111`), or connect your CLI/SDK directly to the demo environment (see below).
 
 ### Core Subsystems
 
@@ -118,7 +123,7 @@ kweaver auth login https://your-kweaver-instance.com
 
 ### Try with Demo Environment
 
-No deployment needed — connect your AI agent to the [Live Demo](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) and start exploring immediately:
+No deployment needed — connect your AI agent to the demo environment and start exploring immediately (for the web UI, visit [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)):
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \
