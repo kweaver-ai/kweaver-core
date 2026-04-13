@@ -16,6 +16,10 @@ import (
 // NormalizeAndDetectMode validates the request and determines the recall mode.
 // Returns an error (400) if instance_identities is present but object_type_id is missing.
 func NormalizeAndDetectMode(req *interfaces.FindSkillsReq, cfg *config.FindSkillsConfig) (interfaces.RecallMode, error) {
+	if req.ObjectTypeID == "" {
+		return 0, fmt.Errorf("%d:object_type_id is required", http.StatusBadRequest)
+	}
+
 	if len(req.InstanceIdentities) > 0 && req.ObjectTypeID == "" {
 		return 0, fmt.Errorf("%d:instance_identities requires object_type_id", http.StatusBadRequest)
 	}

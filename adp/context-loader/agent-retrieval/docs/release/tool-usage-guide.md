@@ -320,15 +320,16 @@ Data Agent 配置（建议）：
 - 在调用 `find_skills` 前，知识网络中必须已存在固定的 `skills` ObjectType
 - 该 ObjectType 的运行时识别键必须是 `object_type_id = "skills"`
 - `skills` ObjectType 不能由任意自定义对象类替代，它是 Skill 的固定承接面
+- `skills` ObjectType 必须至少定义 `skill_id`、`name` 两个数据属性；`description` 可选
 - `skills` ObjectType 下必须已有可见的 Skill 元数据实例
 - 业务对象与 `skills` 之间必须已配置绑定关系
 
-> 如果以上条件未满足，`find_skills` 虽然可以调用，但很可能只返回空结果。
+> 如果以上条件未满足，`find_skills` 在入口会直接返回错误，而不是继续执行召回。
 
 最短使用路径：
 
 - `kn_id` 必填
-- 已明确对象类时，优先传 `object_type_id`
+- `object_type_id` 必填，且必须存在于当前知识网络中
 - 已定位到实例时，再传 `instance_identities`
 - `skill_query` 只用于当前范围内过滤，不替代上下文定位
 
@@ -347,7 +348,8 @@ Data Agent 配置（建议）：
 接入前至少确认以下三件事：
 
 - 已存在固定的 `skills` ObjectType，且运行时识别键为 `object_type_id = "skills"`
-- `skills` ObjectType 下已有可见的 Skill 元数据实例，至少能返回 `skill_id`、`name`、`description`
+- `skills` ObjectType 的数据属性定义至少包含 `skill_id`、`name`；`description` 可选
+- `skills` ObjectType 下已有可见的 Skill 元数据实例，至少能返回 `skill_id`、`name`
 - 业务对象与 `skills` 之间已配置绑定关系；否则对象类级和实例级召回会天然为空
 
 <a id="find-skills-empty-results"></a>
@@ -358,10 +360,11 @@ Data Agent 配置（建议）：
 
 | 场景 | 常见含义 | 建议动作 |
 | :--- | :--- | :--- |
-| 仅传 `kn_id` 返回空结果 | 当前 Skill 不是全局生效，或当前知识网络下没有可见 Skill | 优先补 `object_type_id`；同时确认知识网络下是否已有可见的 Skill 元数据 |
 | 传 `object_type_id` 返回空结果 | 该对象类通常没有绑定 Skill | 确认该对象类与 `skills` 是否已配置绑定关系 |
 | 传 `object_type_id + instance_identities` 返回空结果 | 该实例通常没有命中 Skill，或不存在实例级绑定 | 可先回退到对象类级查看候选 Skill 是否存在 |
 | 传 `skill_query` 后返回空结果 | 当前过滤条件过严，或当前边界内本就没有匹配的 Skill | 放宽或去掉 `skill_query` 后重试 |
+| 传了不存在的 `object_type_id` | 当前知识网络中不存在该对象类 | 先通过 `kn_search` / `kn_schema_search` 确认合法对象类，再重试 |
+| 当前知识网络中缺少 `skills` ObjectType，或缺少 `skill_id` / `name` 属性 | `find_skills` 的基础契约未满足 | 先补齐固定的 `skills` ObjectType 及必要数据属性后，再调用 `find_skills` |
 
 #### 6.5.4 参数与调用方式
 
@@ -370,14 +373,14 @@ Data Agent 配置（建议）：
 | 字段 | 必填 | 说明 |
 | :--- | :--- | :--- |
 | `kn_id` | 是 | 业务知识网络 ID |
-| `object_type_id` | 否 | 业务对象类型 ID；传入时缩小到对象类级召回 |
+| `object_type_id` | 是 | 业务对象类型 ID；当前版本必须提供，且必须存在于当前知识网络中 |
 | `instance_identities` | 否 | 对象实例标识列表；传入时缩小到实例级召回，且必须同时提供 `object_type_id` |
 | `skill_query` | 否 | Skill 过滤词；仅在当前边界内做文本过滤和排序 |
 | `top_k` | 否 | 返回的最大 Skill 数量，默认 10，最大 20 |
 
 调用要点：
 
-- 仅传 `kn_id`：网络级召回，只适用于 Skill 以全局网络范围生效的场景
+- 当前版本暂不开放网络级召回
 - 传 `kn_id + object_type_id`：对象类级召回
 - 传 `kn_id + object_type_id + instance_identities`：实例级召回
 - `skill_query` 不替代 `kn_search`；若调用方尚未明确对象类或实例，应先使用 `search_*` / `query_*`
@@ -398,6 +401,7 @@ Data Agent 配置（建议）：
 | 背景项 | 用户需要知道什么 | 对使用 `find_skills` 的影响 |
 | :--- | :--- | :--- |
 | 固定模板 / 固定承接面 | Skill 不是任意对象类都能被召回，系统约定通过固定的 `skills` ObjectType 承接 | 如果没有这个固定承接面，`find_skills` 无法稳定识别 Skill 数据 |
+| 基础契约字段 | `find_skills` 运行时依赖 `skills` ObjectType 至少定义 `skill_id`、`name` 两个数据属性；`description` 只是可选补充信息 | 如果缺少 `skill_id` 或 `name`，`find_skills` 会在入口直接报错，而不是继续召回 |
 | 共享只读视图 | Skill 元数据由上游统一管理，BKN 默认承接的是只读视图，而不是每个知识网络各自维护一份副本 | 新增或变更 Skill 后，召回是否可见取决于该视图是否已同步可用 |
 | 运行时识别键 | 当前运行时固定通过 `object_type_id = "skills"` 识别 Skill ObjectType | 不是“同名即可”，必须满足固定识别键，否则 `find_skills` 不会把它当作 Skill 承接面 |
 
@@ -408,7 +412,7 @@ Data Agent 配置（建议）：
 | `x-account-id` | 应用变量 | Header 参数 | `header.x-account-id` |
 | `x-account-type` | 固定值/应用变量 | Header 参数 | `user` 或 `header.x-account-type` |
 | `kn_id` | 固定值/应用变量 | 请求体参数 | `"kn_legal"` 或 `self_config.data_source.knowledge_network[0].knowledge_network_id` |
-| `object_type_id` | 模型生成 | 请求体参数（可选） | `模型生成` |
+| `object_type_id` | 模型生成 | 请求体参数（必填） | `模型生成` |
 | `instance_identities` | 模型生成 | 请求体参数（可选） | `模型生成` |
 | `skill_query` | 模型生成 | 请求体参数（可选） | `模型生成` |
 | `top_k` | 固定值 | 请求体参数（可选） | `5` 或 `10` |
