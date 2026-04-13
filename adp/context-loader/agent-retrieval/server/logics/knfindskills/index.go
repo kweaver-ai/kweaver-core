@@ -24,6 +24,8 @@ import (
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
 
+var requiredSkillsDataProperties = []string{"skill_id", "name"}
+
 type findSkillsServiceImpl struct {
 	logger        interfaces.Logger
 	config        *config.Config
@@ -94,22 +96,24 @@ func (s *findSkillsServiceImpl) FindSkills(ctx context.Context, req *interfaces.
 		return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadRequest, err.Error())
 	}
 
+	skillsObjType, err := s.loadAndValidateSkillsContract(ctx, req.KnID, fsCfg.SkillsObjectTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.ObjectTypeID != fsCfg.SkillsObjectTypeID {
+		if err = s.validateObjectTypeExists(ctx, req.KnID, req.ObjectTypeID); err != nil {
+			return nil, err
+		}
+	}
+
 	s.logger.WithContext(ctx).Infof("[FindSkills] kn_id=%s, mode=%d, object_type_id=%s, instance_count=%d, has_skill_query=%v",
 		req.KnID, mode, req.ObjectTypeID, len(req.InstanceIdentities), req.SkillQuery != "")
 
-	// 2. Build skill_query condition (needs skills ObjectType metadata)
+	// 2. Build skill_query condition (reuse validated skills ObjectType metadata)
 	var skillQueryCond *interfaces.KnCondition
 	if req.SkillQuery != "" {
-		skillsObjTypes, getErr := s.bknBackend.GetObjectTypeDetail(ctx, req.KnID, []string{fsCfg.SkillsObjectTypeID}, true)
-		if getErr != nil {
-			err = fmt.Errorf("skill_query requires skills ObjectType metadata but GetObjectTypeDetail failed: %w", getErr)
-			return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
-		}
-		if len(skillsObjTypes) == 0 {
-			err = fmt.Errorf("skill_query requires skills ObjectType (id=%s) but none found in kn_id=%s", fsCfg.SkillsObjectTypeID, req.KnID)
-			return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
-		}
-		skillQueryCond = BuildSkillQueryCondition(req.SkillQuery, skillsObjTypes[0], req.TopK)
+		skillQueryCond = BuildSkillQueryCondition(req.SkillQuery, skillsObjType, req.TopK)
 	}
 
 	// 3. Apply total timeout
@@ -150,6 +154,66 @@ func (s *findSkillsServiceImpl) FindSkills(ctx context.Context, req *interfaces.
 
 	s.logger.WithContext(ctx).Infof("[FindSkills] returning %d skills for kn_id=%s", len(resp.Entries), req.KnID)
 	return resp, nil
+}
+
+func (s *findSkillsServiceImpl) loadAndValidateSkillsContract(ctx context.Context, knID, skillsObjectTypeID string) (*interfaces.ObjectType, error) {
+	objectTypes, err := s.bknBackend.GetObjectTypeDetail(ctx, knID, []string{skillsObjectTypeID}, true)
+	if err != nil {
+		return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
+	}
+	if len(objectTypes) == 0 {
+		return nil, infraErr.DefaultHTTPError(ctx, http.StatusNotFound, map[string]interface{}{
+			"kn_id":                 knID,
+			"skills_object_type_id": skillsObjectTypeID,
+			"reason":                "skills object type not found in current knowledge network",
+		})
+	}
+
+	skillsObjType := objectTypes[0]
+	existingProps := make(map[string]struct{}, len(skillsObjType.DataProperties))
+	for _, prop := range skillsObjType.DataProperties {
+		if prop == nil {
+			continue
+		}
+		name := strings.TrimSpace(prop.Name)
+		if name == "" {
+			continue
+		}
+		existingProps[name] = struct{}{}
+	}
+
+	var missingProps []string
+	for _, name := range requiredSkillsDataProperties {
+		if _, ok := existingProps[name]; !ok {
+			missingProps = append(missingProps, name)
+		}
+	}
+	if len(missingProps) > 0 {
+		return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadRequest, map[string]interface{}{
+			"kn_id":                   knID,
+			"skills_object_type_id":   skillsObjectTypeID,
+			"missing_data_properties": missingProps,
+			"reason":                  "skills object type contract is incomplete",
+		})
+	}
+
+	return skillsObjType, nil
+}
+
+func (s *findSkillsServiceImpl) validateObjectTypeExists(ctx context.Context, knID, objectTypeID string) error {
+	objectTypes, err := s.bknBackend.GetObjectTypeDetail(ctx, knID, []string{objectTypeID}, false)
+	if err != nil {
+		return infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
+	}
+	if len(objectTypes) > 0 {
+		return nil
+	}
+
+	return infraErr.DefaultHTTPError(ctx, http.StatusNotFound, map[string]interface{}{
+		"kn_id":          knID,
+		"object_type_id": objectTypeID,
+		"reason":         "object_type_id not found in current knowledge network",
+	})
 }
 
 func resolveEmptyResultMessageKey(hint interfaces.EmptyResultHint, mode interfaces.RecallMode, hasSkillQuery bool) string {

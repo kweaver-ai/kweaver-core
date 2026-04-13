@@ -3146,7 +3146,8 @@
                     "FindSkillsRequest": {
                       "type": "object",
                       "required": [
-                        "kn_id"
+                        "kn_id",
+                        "object_type_id"
                       ],
                       "properties": {
                         "top_k": {
