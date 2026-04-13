@@ -104,6 +104,14 @@ parse_core_args() {
                 API_SERVER_ADVERTISE_ADDRESS="$2"
                 shift 2
                 ;;
+            --access_address=*)
+                KWEAVER_ACCESS_ADDRESS="${1#*=}"
+                shift
+                ;;
+            --access_address)
+                KWEAVER_ACCESS_ADDRESS="$2"
+                shift 2
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

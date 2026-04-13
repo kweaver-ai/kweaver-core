@@ -111,6 +111,8 @@ usage() {
     echo "  --confirm-missing-openclaw-paths"
     echo "                                Continue DIP install when dipStudio OpenClaw host paths are configured"
     echo "                                but missing on disk. Only applies to the dip-studio chart."
+    echo "  --access_address=<addr>       KWeaver access address: host, host:port, or scheme://host:port/path"
+    echo "                                Example: --access_address=10.0.0.5 or --access_address=https://kweaver.example.com:443"
     echo "  --api_server_address=<ip>     Kubernetes API server advertise address (must be a local interface IP)"
     echo "                                Defaults to auto-detect from hostname -I"
     echo "  --set <key>=<value>           Pass custom values to helm charts (can be used multiple times)"
@@ -225,15 +227,45 @@ confirm_access_address_before_install() {
     raw_scheme="$(_read_access_address_field "scheme")"
 
     local host port path scheme
-    host="${raw_host:-$(_detect_node_ip)}"
-    port="${raw_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}"
-    path="${raw_path:-/}"
-    scheme="${raw_scheme:-https}"
+
+    # --access_address supports: "host", "host:port", or "scheme://host:port/path"
+    if [[ -n "${KWEAVER_ACCESS_ADDRESS:-}" ]]; then
+        local addr="${KWEAVER_ACCESS_ADDRESS}"
+        if [[ "${addr}" == *"://"* ]]; then
+            scheme="${addr%%://*}"
+            local remainder="${addr#*://}"
+            if [[ "${remainder}" == *":"* ]]; then
+                host="${remainder%%:*}"
+                remainder="${remainder#*:}"
+                port="${remainder%%/*}"
+                local after_port="${remainder#*/}"
+                if [[ "${after_port}" != "${remainder}" ]]; then
+                    path="/${after_port}"
+                fi
+            else
+                host="${remainder%%/*}"
+            fi
+        elif [[ "${addr}" == *":"* ]]; then
+            host="${addr%%:*}"
+            port="${addr#*:}"
+        else
+            host="${addr}"
+        fi
+        port="${port:-${raw_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}}"
+        path="${path:-${raw_path:-/}}"
+        scheme="${scheme:-${raw_scheme:-https}}"
+    else
+        host="${raw_host:-$(_detect_node_ip)}"
+        port="${raw_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}"
+        path="${raw_path:-/}"
+        scheme="${raw_scheme:-https}"
+    fi
 
     local url="${scheme}://${host}:${port}${path}"
 
-    if [[ ! -t 0 ]]; then
-        log_info "Non-interactive mode detected, use accessAddress: ${url}"
+    # If provided via CLI arg, skip interactive confirmation
+    if [[ -n "${KWEAVER_ACCESS_ADDRESS:-}" ]]; then
+        log_info "Using accessAddress from --access_address: ${url}"
         # For first-time initialization, generate full config first.
         if [[ "${config_missing_before}" == "true" ]]; then
             log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
@@ -322,6 +354,8 @@ main() {
             case "$1" in
                 --api_server_address=*) API_SERVER_ADVERTISE_ADDRESS="${1#*=}"; shift ;;
                 --api_server_address)   API_SERVER_ADVERTISE_ADDRESS="$2"; shift 2 ;;
+                --access_address=*)     KWEAVER_ACCESS_ADDRESS="${1#*=}"; shift ;;
+                --access_address)       KWEAVER_ACCESS_ADDRESS="$2"; shift 2 ;;
                 *) shift ;;
             esac
         done
