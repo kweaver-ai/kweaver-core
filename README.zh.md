@@ -80,33 +80,33 @@ kweaver bkn list
 
 | 子项目 | 描述 | 仓库地址 |
 | --- | --- | --- |
-| **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-core-sdk) |
+| **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
 | **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
 
 ## KWeaver SDK
 
-[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-core-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
+[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
 
 ### AI Agent Skills
 
-从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-core-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。
+从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。
 
 **一次安装两个 skill**（推荐）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
   --skill kweaver-core --skill create-bkn
 ```
 
-- **`kweaver-core`** — 让 AI 编程助手掌握 KWeaver 的 API 与 CLI，可代替用户操作 KWeaver 平台。详见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/skills/kweaver-core/SKILL.md)。
-- **`create-bkn`** — 在 AI 编程助手中创建与管理**业务知识网络（BKN）**的流程与工具。详见 [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/skills/create-bkn/SKILL.md)。
+- **`kweaver-core`** — 让 AI 编程助手掌握 KWeaver 的 API 与 CLI，可代替用户操作 KWeaver 平台。详见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md)。
+- **`create-bkn`** — 在 AI 编程助手中创建与管理**业务知识网络（BKN）**的流程与工具。详见 [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md)。
 
 **仅安装其中一个**（可选）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk --skill kweaver-core
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 # 或
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk --skill create-bkn
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill create-bkn
 ```
 
 **使用任意 skill 前**，需先完成 KWeaver 实例认证：
@@ -127,7 +127,7 @@ kweaver auth login https://your-kweaver-instance.com
 无需部署 — 将 AI Agent 直接连接到 Demo 环境即可立即上手（如需 Web 界面，请访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
   --skill kweaver-core --skill create-bkn
 
 npm install -g @kweaver-ai/kweaver-sdk
@@ -167,7 +167,7 @@ kweaver auth login https://dip-poc.aishu.cn
 
 若已持有上述参数，也可在无头机器上直接执行：`kweaver auth login <url> --client-id … --client-secret … --refresh-token …`。
 
-完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-core-sdk#authentication)）。
+完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication)）。
 
 ### CLI
 
