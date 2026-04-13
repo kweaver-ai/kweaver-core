@@ -45,19 +45,24 @@ async def add_model(request: logics.AddExternalSmallModel, userId, language, rol
             StandLogger.error(ModelFactory_ExternalSmallModel_AddModel_RepeatedNames_Error["description"])
             return JSONResponse(status_code=400,
                                 content=ModelFactory_ExternalSmallModel_AddModel_RepeatedNames_Error)
-        user_infos = await get_username_by_ids([userId])
         permission = await permission_manager.check_single_permission(user_id=userId, resource_id="*",
                                                                       operations="create",
                                                                       resource_type="small_model",
                                                                       role=role)
         if not permission:
             return JSONResponse(status_code=403, content=NotPermissionError)
+        # 权限关闭时 add_permission 直接返回 True，无需查用户名；开启时才调用用户管理服务
+        if base_config.AUTH_ENABLED:
+            user_infos = await get_username_by_ids([userId])
+            user_name = user_infos.get(userId, "")
+        else:
+            user_name = ""
         status = await permission_manager.add_permission(
             user_id=userId,
             resource_id=model_id,
             resource_name="小模型",
             resource_type="small_model",
-            user_name=user_infos[userId],
+            user_name=user_name,
             role=role
         )
         if not status:
