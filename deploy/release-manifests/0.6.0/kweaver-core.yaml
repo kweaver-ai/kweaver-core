@@ -56,9 +56,6 @@ releases:
   agent-retrieval:
     chart: agent-retrieval
     version: 0.6.0
-  data-retrieval:
-    chart: data-retrieval
-    version: 0.3.2
   agent-backend:
     chart: agent-backend
     version: 0.6.0
