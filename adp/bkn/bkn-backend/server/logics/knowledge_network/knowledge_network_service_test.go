@@ -773,12 +773,14 @@ func Test_knowledgeNetworkService_InsertDatasetData(t *testing.T) {
 			}
 
 			kn := &interfaces.KN{
-				KNID:          "kn1",
-				KNName:        "kn1",
-				Tags:          []string{"tag1"},
-				Comment:       "comment",
-				BKNRawContent: "detail",
-				Branch:        interfaces.MAIN_BRANCH,
+				KNID:   "kn1",
+				KNName: "kn1",
+				CommonInfo: interfaces.CommonInfo{
+					Tags:          []string{"tag1"},
+					Comment:       "comment",
+					BKNRawContent: "detail",
+				},
+				Branch: interfaces.MAIN_BRANCH,
 			}
 			vectors := []*cond.VectorResp{
 				{

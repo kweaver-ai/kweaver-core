@@ -80,12 +80,6 @@ func ValidateRelationType(ctx context.Context, relationType *interfaces.Relation
 	// 去掉tag前后空格以及数组去重
 	relationType.Tags = libCommon.TagSliceTransform(relationType.Tags)
 
-	// 校验comment合法性
-	err = validateObjectComment(ctx, relationType.Comment)
-	if err != nil {
-		return err
-	}
-
 	// 校验type字段
 	if relationType.Type != "" {
 		if relationType.Type != interfaces.RELATION_TYPE_DIRECT && relationType.Type != interfaces.RELATION_TYPE_DATA_VIEW &&

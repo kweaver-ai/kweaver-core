@@ -83,12 +83,6 @@ func ValidateActionType(ctx context.Context, actionType *interfaces.ActionType, 
 	// 去掉tag前后空格以及数组去重
 	actionType.Tags = libCommon.TagSliceTransform(actionType.Tags)
 
-	// 校验comment合法性
-	err = validateObjectComment(ctx, actionType.Comment)
-	if err != nil {
-		return err
-	}
-
 	// 校验行动类型为有效类型
 	if !interfaces.ActionTypeMap[actionType.ActionType] {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).

@@ -29,7 +29,6 @@ const (
 	BknBackend_InvalidParameter_RequestBody    = "BknBackend.InvalidParameter.RequestBody"
 	BknBackend_InvalidParameter_Sort           = "BknBackend.InvalidParameter.Sort"
 	BknBackend_InvalidParameter_ConditionValue = "BknBackend.InvalidParameter.ConditionValue"
-	BknBackend_LengthExceeded_Comment          = "BknBackend.LengthExceeded.Comment"
 
 	BknBackend_NullParameter_ConditionName      = "BknBackend.NullParameter.ConditionName"
 	BknBackend_NullParameter_ConditionOperation = "BknBackend.NullParameter.ConditionOperation"
@@ -69,7 +68,6 @@ var (
 		BknBackend_InvalidParameter_OverrideMethod,
 		BknBackend_InvalidParameter_RequestBody,
 		BknBackend_InvalidParameter_Sort,
-		BknBackend_LengthExceeded_Comment,
 
 		BknBackend_NullParameter_ConditionName,
 		BknBackend_NullParameter_ConditionOperation,

@@ -65,6 +65,9 @@ func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch strin
 	for _, act := range kn.ActionTypes {
 		bknNetwork.ActionTypes = append(bknNetwork.ActionTypes, logics.ToBKNActionType(act))
 	}
+	for _, risk := range kn.RiskTypes {
+		bknNetwork.RiskTypes = append(bknNetwork.RiskTypes, logics.ToBKNRiskType(risk))
+	}
 	for _, cg := range kn.ConceptGroups {
 		bknNetwork.ConceptGroups = append(bknNetwork.ConceptGroups, logics.ToBKNConceptGroup(cg))
 	}

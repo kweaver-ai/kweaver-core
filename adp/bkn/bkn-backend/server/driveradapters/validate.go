@@ -128,15 +128,6 @@ func validateDataTagName(ctx context.Context, dataTagName string) error {
 	return nil
 }
 
-// 备注合法性校验
-func validateObjectComment(ctx context.Context, comment string) error {
-	if utf8.RuneCountInString(comment) > interfaces.COMMENT_MAX_LENGTH {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_LengthExceeded_Comment).
-			WithErrorDetails(fmt.Sprintf("The length of the comment exceeds %v", interfaces.COMMENT_MAX_LENGTH))
-	}
-	return nil
-}
-
 // 分页参数合法性校验
 func validatePaginationQueryParameters(ctx context.Context, offset, limit, sort, direction string,
 	supportedSortTypes map[string]string) (interfaces.PaginationQueryParameters, error) {

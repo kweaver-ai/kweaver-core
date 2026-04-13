@@ -473,6 +473,19 @@ func (cgs *conceptGroupService) ListConceptGroups(ctx context.Context,
 			return []*interfaces.ConceptGroup{}, 0, err
 		}
 		conceptGroup.Statistics = stats
+
+		otIDs, err := cgs.cga.GetConceptIDsByConceptGroupIDs(ctx, conceptGroup.KNID,
+			conceptGroup.Branch, []string{conceptGroup.CGID}, interfaces.MODULE_TYPE_OBJECT_TYPE)
+		if err != nil {
+			errStr := fmt.Sprintf("GetConceptIDsByConceptGroupIDs failed, kn_id:[%s],branch:[%s],cg_ids:[%s], error: %v",
+				conceptGroup.KNID, conceptGroup.Branch, conceptGroup.CGID, err)
+			logger.Errorf(errStr)
+			span.SetStatus(codes.Error, errStr)
+
+			return []*interfaces.ConceptGroup{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ConceptGroup_InternalError).WithErrorDetails(err.Error())
+		}
+		conceptGroup.ObjectTypeIDs = otIDs
 	}
 
 	span.SetStatus(codes.Ok, "")

@@ -152,35 +152,6 @@ func Test_validateDataTagName(t *testing.T) {
 	})
 }
 
-func Test_validateObjectComment(t *testing.T) {
-	Convey("Test validateObjectComment\n", t, func() {
-		ctx := context.Background()
-
-		Convey("Success with valid comment\n", func() {
-			comment := "This is a valid comment"
-			err := validateObjectComment(ctx, comment)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Success with empty comment\n", func() {
-			err := validateObjectComment(ctx, "")
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Failed with comment too long\n", func() {
-			longComment := ""
-			for i := 0; i < interfaces.COMMENT_MAX_LENGTH+1; i++ {
-				longComment += "a"
-			}
-			err := validateObjectComment(ctx, longComment)
-			So(err, ShouldNotBeNil)
-			httpErr := err.(*rest.HTTPError)
-			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
-			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_LengthExceeded_Comment)
-		})
-	})
-}
-
 func Test_validatePaginationQueryParameters(t *testing.T) {
 	Convey("Test validatePaginationQueryParameters\n", t, func() {
 		ctx := context.Background()

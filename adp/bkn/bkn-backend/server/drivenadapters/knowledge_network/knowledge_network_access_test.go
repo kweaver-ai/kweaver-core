@@ -28,13 +28,15 @@ var (
 	testCtx = context.WithValue(context.Background(), rest.XLangKey, rest.DefaultLanguage)
 
 	testKN = &interfaces.KN{
-		KNID:           "kn1",
-		KNName:         "Knowledge Network 1",
-		Tags:           testTags,
-		Comment:        "test comment",
-		Icon:           "icon1",
-		Color:          "color1",
-		BKNRawContent:  "detail1",
+		KNID:   "kn1",
+		KNName: "Knowledge Network 1",
+		CommonInfo: interfaces.CommonInfo{
+			Tags:          testTags,
+			Comment:       "test comment",
+			Icon:          "icon1",
+			Color:         "color1",
+			BKNRawContent: "detail1",
+		},
 		Branch:         interfaces.MAIN_BRANCH,
 		BusinessDomain: "domain1",
 		Creator: interfaces.AccountInfo{
@@ -171,9 +173,9 @@ func Test_knowledgeNetworkAccess_CreateKN(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		kna, smock := MockNewKNAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id,f_name,f_tags,f_comment,f_icon,f_color,f_bkn_raw_content,"+
+		sqlStr := fmt.Sprintf("INSERT INTO %s (f_id,f_name,f_tags,f_comment,f_icon,f_color,f_bkn_raw_content,f_skill_content,"+
 			"f_branch,f_business_domain,f_creator,f_creator_type,f_create_time,f_updater,f_updater_type,f_update_time) "+
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", KN_TABLE_NAME)
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", KN_TABLE_NAME)
 
 		Convey("CreateKN Success \n", func() {
 			smock.ExpectBegin()
@@ -234,16 +236,16 @@ func Test_knowledgeNetworkAccess_ListKNs(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		kna, smock := MockNewKNAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
+		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, f_skill_content, "+
 			"f_branch, f_business_domain, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s", KN_TABLE_NAME)
 
 		rows := sqlmock.NewRows([]string{
-			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 			"f_branch", "f_business_domain", "f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
-			"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail",
+			"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail", "skill",
 			"main", "domain1", "admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		)
@@ -290,11 +292,11 @@ func Test_knowledgeNetworkAccess_ListKNs(t *testing.T) {
 
 		Convey("ListKNs Scan error \n", func() {
 			rows := sqlmock.NewRows([]string{
-				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 				"f_branch", "f_business_domain", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time", "f_update_time",
 			}).AddRow(
-				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail",
+				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail", "detail",
 				"main", "domain1", "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime, "testUpdateTime",
 			)
@@ -322,13 +324,13 @@ func Test_knowledgeNetworkAccess_ListKNs(t *testing.T) {
 					Direction: "ASC",
 				},
 			}
-			sqlStrWithAll := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
+			sqlStrWithAll := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, f_skill_content, "+
 				"f_branch, f_business_domain, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 				"FROM %s WHERE (instr(f_name, ?) > 0 OR instr(f_id, ?) > 0) AND instr(f_tags, ?) > 0 AND f_business_domain = ? ORDER BY f_name ASC",
 				KN_TABLE_NAME)
 
 			rows := sqlmock.NewRows([]string{
-				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 				"f_branch", "f_business_domain", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			})
@@ -409,7 +411,7 @@ func Test_knowledgeNetworkAccess_GetKNByID(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		kna, smock := MockNewKNAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
+		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, f_skill_content, "+
 			"f_branch, f_business_domain, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s WHERE f_id = ? AND f_branch = ?", KN_TABLE_NAME)
 
@@ -418,11 +420,11 @@ func Test_knowledgeNetworkAccess_GetKNByID(t *testing.T) {
 
 		Convey("GetKNByID Success \n", func() {
 			rows := sqlmock.NewRows([]string{
-				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 				"f_branch", "f_business_domain", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time",
 			}).AddRow(
-				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail",
+				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail", "detail",
 				"main", "domain1", "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime,
 			)
@@ -472,15 +474,17 @@ func Test_knowledgeNetworkAccess_UpdateKN(t *testing.T) {
 		kna, smock := MockNewKNAccess(appSetting)
 
 		sqlStr := fmt.Sprintf("UPDATE %s SET f_bkn_raw_content = ?, f_color = ?, f_comment = ?, f_icon = ?, f_name = ?, "+
-			"f_tags = ?, f_update_time = ?, f_updater = ?, f_updater_type = ? WHERE f_id = ?", KN_TABLE_NAME)
+			"f_skill_content = ?, f_tags = ?, f_update_time = ?, f_updater = ?, f_updater_type = ? WHERE f_id = ?", KN_TABLE_NAME)
 
 		kn := &interfaces.KN{
-			KNID:    "kn1",
-			KNName:  "Updated Knowledge Network",
-			Tags:    testTags,
-			Comment: "updated comment",
-			Icon:    "icon1",
-			Color:   "color1",
+			KNID:   "kn1",
+			KNName: "Updated Knowledge Network",
+			CommonInfo: interfaces.CommonInfo{
+				Tags:    testTags,
+				Comment: "updated comment",
+				Icon:    "icon1",
+				Color:   "color1",
+			},
 			Updater: interfaces.AccountInfo{
 				ID:   "admin",
 				Type: "admin",
@@ -676,20 +680,20 @@ func Test_knowledgeNetworkAccess_GetAllKNs(t *testing.T) {
 		appSetting := &common.AppSetting{}
 		kna, smock := MockNewKNAccess(appSetting)
 
-		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, "+
+		sqlStr := fmt.Sprintf("SELECT f_id, f_name, f_tags, f_comment, f_icon, f_color, f_bkn_raw_content, f_skill_content, "+
 			"f_branch, f_creator, f_creator_type, f_create_time, f_updater, f_updater_type, f_update_time "+
 			"FROM %s", KN_TABLE_NAME)
 
 		rows := sqlmock.NewRows([]string{
-			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+			"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 			"f_branch", "f_creator", "f_creator_type", "f_create_time",
 			"f_updater", "f_updater_type", "f_update_time",
 		}).AddRow(
-			"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail",
+			"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail", "skill",
 			"main", "admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		).AddRow(
-			"kn2", "Knowledge Network 2", `"tag2"`, "comment2", "icon2", "color2", "detail2",
+			"kn2", "Knowledge Network 2", `"tag2"`, "comment2", "icon2", "color2", "detail2", "skill2",
 			"main", "admin", "admin", testUpdateTime,
 			"admin", "admin", testUpdateTime,
 		)
@@ -723,11 +727,11 @@ func Test_knowledgeNetworkAccess_GetAllKNs(t *testing.T) {
 
 		Convey("GetAllKNs Scan error \n", func() {
 			rows := sqlmock.NewRows([]string{
-				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
+				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content", "f_skill_content",
 				"f_branch", "f_creator", "f_creator_type", "f_create_time",
 				"f_updater", "f_updater_type", "f_update_time", "f_update_time",
 			}).AddRow(
-				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail",
+				"kn1", "Knowledge Network 1", `"tag1"`, "comment", "icon", "color", "detail", "skill",
 				"main", "admin", "admin", testUpdateTime,
 				"admin", "admin", testUpdateTime, "testUpdateTime",
 			)

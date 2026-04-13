@@ -69,11 +69,6 @@ Description = "指定的过滤值无效"
 Solution = "请检查参数是否正确。"
 ErrorLink = "暂无"
 
-[BknBackend.LengthExceeded.Comment]
-Description = "备注长度超出限制"
-Solution = "请检查参数是否正确。"
-ErrorLink = "暂无"
-
 [BknBackend.NullParameter.ConditionName]
 Description = "过滤器字段名为空"
 Solution = "请检查参数是否正确。"

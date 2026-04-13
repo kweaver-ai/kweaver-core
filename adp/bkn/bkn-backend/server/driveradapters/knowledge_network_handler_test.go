@@ -59,9 +59,11 @@ func Test_KnowledgeNetworkRestHandler_CreateKN(t *testing.T) {
 		url := "/api/bkn-backend/v1/knowledge-networks"
 
 		kn := interfaces.KN{
-			KNName:  "kn1",
-			Comment: "test comment",
-			Branch:  "main",
+			KNName: "kn1",
+			CommonInfo: interfaces.CommonInfo{
+				Comment: "test comment",
+			},
+			Branch: "main",
 		}
 
 		Convey("Success CreateKN \n", func() {
@@ -444,7 +446,13 @@ func Test_KnowledgeNetworkRestHandler_CreateKNByIn(t *testing.T) {
 		Convey("Success\n", func() {
 			kns.EXPECT().CreateKN(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("kn1", nil)
 
-			kn := interfaces.KN{KNName: "kn1", Comment: "test comment", Branch: "main"}
+			kn := interfaces.KN{
+				KNName: "kn1",
+				CommonInfo: interfaces.CommonInfo{
+					Comment: "test comment",
+				},
+				Branch: "main",
+			}
 			reqParamByte, _ := sonic.Marshal(kn)
 			req := httptest.NewRequest(http.MethodPost, "/api/bkn-backend/in/v1/knowledge-networks", bytes.NewReader(reqParamByte))
 			req.Header.Set(interfaces.CONTENT_TYPE_NAME, interfaces.CONTENT_TYPE_JSON)

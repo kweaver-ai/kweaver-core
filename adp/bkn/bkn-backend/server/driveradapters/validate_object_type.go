@@ -83,12 +83,6 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, 
 	// 去掉tag前后空格以及数组去重
 	objectType.Tags = libCommon.TagSliceTransform(objectType.Tags)
 
-	// 校验comment合法性
-	err = validateObjectComment(ctx, objectType.Comment)
-	if err != nil {
-		return err
-	}
-
 	// 校验 data_source.type 非空时，只支持 data_view、resource
 	if objectType.DataSource != nil && objectType.DataSource.Type != "" {
 		if objectType.DataSource.Type != interfaces.DATA_SOURCE_TYPE_DATA_VIEW &&
@@ -187,12 +181,6 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, 
 
 		// 校验displayName
 		err = validateObjectName(ctx, prop.DisplayName, interfaces.MODULE_TYPE_OBJECT_TYPE)
-		if err != nil {
-			return err
-		}
-
-		// 校验comment
-		err = validateObjectComment(ctx, prop.Comment)
 		if err != nil {
 			return err
 		}
@@ -348,11 +336,6 @@ func ValidateDataProperty(ctx context.Context, dataProperty *interfaces.DataProp
 
 	err = validateObjectName(ctx, dataProperty.DisplayName,
 		interfaces.MODULE_TYPE_OBJECT_TYPE)
-	if err != nil {
-		return err
-	}
-
-	err = validateObjectComment(ctx, dataProperty.Comment)
 	if err != nil {
 		return err
 	}

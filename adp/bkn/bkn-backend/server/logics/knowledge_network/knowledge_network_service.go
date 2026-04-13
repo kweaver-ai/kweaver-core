@@ -1150,13 +1150,15 @@ func (kns *knowledgeNetworkService) InsertDatasetData(ctx context.Context, origK
 	defer span.End()
 
 	kn := &interfaces.KN{
-		KNID:           origKN.KNID,
-		KNName:         origKN.KNName,
-		Tags:           origKN.Tags,
-		Comment:        origKN.Comment,
-		Icon:           origKN.Icon,
-		Color:          origKN.Color,
-		BKNRawContent:  origKN.BKNRawContent,
+		KNID:   origKN.KNID,
+		KNName: origKN.KNName,
+		CommonInfo: interfaces.CommonInfo{
+			Tags:          origKN.Tags,
+			Comment:       origKN.Comment,
+			Icon:          origKN.Icon,
+			Color:         origKN.Color,
+			BKNRawContent: origKN.BKNRawContent,
+		},
 		Branch:         origKN.Branch,
 		BusinessDomain: origKN.BusinessDomain,
 		Creator:        origKN.Creator,

@@ -45,11 +45,13 @@ func Test_ToADPNetWork(t *testing.T) {
 func Test_ToBKNNetWork(t *testing.T) {
 	Convey("Test ToBKNNetWork\n", t, func() {
 		kn := &interfaces.KN{
-			KNID:           "kn1",
-			KNName:         "Test KN",
-			Tags:           []string{"tag1"},
-			Comment:        "desc",
-			BKNRawContent:  "raw",
+			KNID:   "kn1",
+			KNName: "Test KN",
+			CommonInfo: interfaces.CommonInfo{
+				Tags:          []string{"tag1"},
+				Comment:       "desc",
+				BKNRawContent: "raw",
+			},
 			Branch:         "main",
 			BusinessDomain: "domain1",
 		}
@@ -445,7 +447,8 @@ func Test_ToBKNConceptGroup(t *testing.T) {
 
 		Convey("With ObjectTypes (including nil element)\n", func() {
 			adpCG := &interfaces.ConceptGroup{
-				CGID: "cg1",
+				CGID:          "cg1",
+				ObjectTypeIDs: []string{"ot1", "ot2"},
 				ObjectTypes: []*interfaces.ObjectType{
 					{ObjectTypeWithKeyField: interfaces.ObjectTypeWithKeyField{OTID: "ot1"}},
 					nil,

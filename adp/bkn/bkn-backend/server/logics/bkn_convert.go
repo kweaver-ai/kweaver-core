@@ -14,11 +14,15 @@ import (
 
 func ToADPNetWork(bknNetwork *bknsdk.BknNetwork) *interfaces.KN {
 	return &interfaces.KN{
-		KNID:          bknNetwork.ID,
-		KNName:        bknNetwork.Name,
-		Tags:          bknNetwork.Tags,
-		Comment:       bknNetwork.Description,
-		BKNRawContent: bknNetwork.RawContent,
+		KNID:   bknNetwork.ID,
+		KNName: bknNetwork.Name,
+		CommonInfo: interfaces.CommonInfo{
+			Tags:          bknNetwork.Tags,
+			Comment:       bknNetwork.Description,
+			BKNRawContent: bknNetwork.RawContent,
+		},
+
+		SkillContent: bknNetwork.SkillContent,
 
 		Branch:         bknNetwork.Branch,
 		BusinessDomain: bknNetwork.BusinessDomain,
@@ -32,12 +36,14 @@ func ToBKNNetWork(kn *interfaces.KN) *bknsdk.BknNetwork {
 			ID:          kn.KNID,
 			Name:        kn.KNName,
 			Tags:        kn.Tags,
+			Summary:     bknsdk.ExtractSummary(kn.Comment),
 			Description: kn.Comment,
 
 			Branch:         kn.Branch,
 			BusinessDomain: kn.BusinessDomain,
 		},
-		RawContent: kn.BKNRawContent,
+		RawContent:   kn.BKNRawContent,
+		SkillContent: kn.SkillContent,
 	}
 }
 
@@ -138,6 +144,7 @@ func ToBKNObjectType(adpObj *interfaces.ObjectType) *bknsdk.BknObjectType {
 			ID:          adpObj.OTID,
 			Name:        adpObj.OTName,
 			Tags:        adpObj.Tags,
+			Summary:     bknsdk.ExtractSummary(adpObj.Comment),
 			Description: adpObj.Comment,
 		},
 		PrimaryKeys:    adpObj.PrimaryKeys,
@@ -295,6 +302,7 @@ func ToBKNRelationType(adpRel *interfaces.RelationType) *bknsdk.BknRelationType 
 			ID:          adpRel.RTID,
 			Name:        adpRel.RTName,
 			Tags:        adpRel.Tags,
+			Summary:     bknsdk.ExtractSummary(adpRel.Comment),
 			Description: adpRel.Comment,
 		},
 		Endpoint: bknsdk.Endpoint{
@@ -421,6 +429,7 @@ func ToBKNActionType(adpAction *interfaces.ActionType) *bknsdk.BknActionType {
 			ID:          adpAction.ATID,
 			Name:        adpAction.ATName,
 			Tags:        adpAction.Tags,
+			Summary:     bknsdk.ExtractSummary(adpAction.Comment),
 			Description: adpAction.Comment,
 			ActionType:  adpAction.ActionType,
 		},
@@ -479,6 +488,39 @@ func ToBKNActionType(adpAction *interfaces.ActionType) *bknsdk.BknActionType {
 	return bknAction
 }
 
+// ToADPRiskType 将 BKN RiskType 转换为 ADP RiskType
+func ToADPRiskType(knID string, branch string, bknRisk *bknsdk.BknRiskType) *interfaces.RiskType {
+	adpRisk := &interfaces.RiskType{
+		RTID:   bknRisk.ID,
+		RTName: bknRisk.Name,
+		CommonInfo: interfaces.CommonInfo{
+			Tags:          bknRisk.Tags,
+			Comment:       bknRisk.Description,
+			BKNRawContent: bknRisk.RawContent,
+		},
+		KNID:   knID,
+		Branch: branch,
+	}
+
+	return adpRisk
+}
+
+// ToBKNRiskType 将 ADP RiskType 转换为 BKN RiskType
+func ToBKNRiskType(adpRisk *interfaces.RiskType) *bknsdk.BknRiskType {
+	bknRisk := &bknsdk.BknRiskType{
+		BknRiskTypeFrontmatter: bknsdk.BknRiskTypeFrontmatter{
+			Type:        interfaces.MODULE_TYPE_RISK_TYPE,
+			ID:          adpRisk.RTID,
+			Name:        adpRisk.RTName,
+			Tags:        adpRisk.Tags,
+			Summary:     bknsdk.ExtractSummary(adpRisk.Comment),
+			Description: adpRisk.Comment,
+		},
+	}
+
+	return bknRisk
+}
+
 // ToADPConceptGroup 将 BKN ConceptGroup 转换为 ADP ConceptGroup
 func ToADPConceptGroup(knID string, branch string, bknCG *bknsdk.BknConceptGroup) *interfaces.ConceptGroup {
 	adpCG := &interfaces.ConceptGroup{
@@ -488,8 +530,9 @@ func ToADPConceptGroup(knID string, branch string, bknCG *bknsdk.BknConceptGroup
 			Tags:    bknCG.Tags,
 			Comment: bknCG.Description,
 		},
-		KNID:   knID,
-		Branch: branch,
+		KNID:          knID,
+		Branch:        branch,
+		ObjectTypeIDs: bknCG.ObjectTypes,
 	}
 
 	return adpCG
@@ -503,15 +546,10 @@ func ToBKNConceptGroup(adpCG *interfaces.ConceptGroup) *bknsdk.BknConceptGroup {
 			ID:          adpCG.CGID,
 			Name:        adpCG.CGName,
 			Tags:        adpCG.Tags,
+			Summary:     bknsdk.ExtractSummary(adpCG.Comment),
 			Description: adpCG.Comment,
 		},
-	}
-
-	// 转换 ObjectTypes 引用
-	for _, ot := range adpCG.ObjectTypes {
-		if ot != nil {
-			bknCG.ObjectTypes = append(bknCG.ObjectTypes, ot.OTID)
-		}
+		ObjectTypes: adpCG.ObjectTypeIDs,
 	}
 
 	return bknCG

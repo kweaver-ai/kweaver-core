@@ -560,12 +560,14 @@ func TestConceptSyncer_insertDatasetDataForKN_WithVector(t *testing.T) {
 		}
 
 		kn := &interfaces.KN{
-			KNID:          "kn1",
-			KNName:        "test_kn",
-			Branch:        "main",
-			Tags:          []string{"tag1"},
-			Comment:       "comment",
-			BKNRawContent: "detail",
+			KNID:   "kn1",
+			KNName: "test_kn",
+			Branch: "main",
+			CommonInfo: interfaces.CommonInfo{
+				Tags:          []string{"tag1"},
+				Comment:       "comment",
+				BKNRawContent: "detail",
+			},
 		}
 		vectors := []*cond.VectorResp{
 			{

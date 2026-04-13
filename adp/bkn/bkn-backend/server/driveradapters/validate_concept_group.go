@@ -39,11 +39,5 @@ func ValidateConceptGroup(ctx context.Context, cg *interfaces.ConceptGroup) erro
 	// 去掉tag前后空格以及数组去重
 	cg.Tags = libCommon.TagSliceTransform(cg.Tags)
 
-	// 校验comment合法性
-	err = validateObjectComment(ctx, cg.Comment)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
