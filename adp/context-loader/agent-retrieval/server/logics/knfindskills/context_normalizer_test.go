@@ -8,6 +8,7 @@ package knfindskills
 import (
 	"testing"
 
+	validator "github.com/go-playground/validator/v10"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/config"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
@@ -20,17 +21,19 @@ func defaultFSConfig() *config.FindSkillsConfig {
 	}
 }
 
-func TestNormalizeAndDetectMode_NetworkMode(t *testing.T) {
+func TestNormalizeAndDetectMode_ObjectTypeRequired(t *testing.T) {
 	req := &interfaces.FindSkillsReq{KnID: "kn1"}
-	mode, err := NormalizeAndDetectMode(req, defaultFSConfig())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	_, err := NormalizeAndDetectMode(req, defaultFSConfig())
+	if err == nil {
+		t.Fatal("expected error when object_type_id is missing")
 	}
-	if mode != interfaces.RecallModeNetwork {
-		t.Errorf("expected RecallModeNetwork(1), got %d", mode)
-	}
-	if req.TopK != 10 {
-		t.Errorf("expected default TopK=10, got %d", req.TopK)
+}
+
+func TestFindSkillsReq_ObjectTypeRequiredByValidator(t *testing.T) {
+	req := &interfaces.FindSkillsReq{KnID: "kn1", TopK: 10}
+	err := validator.New().Struct(req)
+	if err == nil {
+		t.Fatal("expected validator error when object_type_id is missing")
 	}
 }
 
@@ -75,14 +78,14 @@ func TestNormalizeAndDetectMode_TopKClamping(t *testing.T) {
 	cfg := defaultFSConfig()
 
 	// TopK=0 -> default
-	req := &interfaces.FindSkillsReq{KnID: "kn1", TopK: 0}
+	req := &interfaces.FindSkillsReq{KnID: "kn1", ObjectTypeID: "contract", TopK: 0}
 	_, _ = NormalizeAndDetectMode(req, cfg)
 	if req.TopK != 10 {
 		t.Errorf("expected TopK=10, got %d", req.TopK)
 	}
 
 	// TopK > MaxTopK -> clamped
-	req = &interfaces.FindSkillsReq{KnID: "kn1", TopK: 50}
+	req = &interfaces.FindSkillsReq{KnID: "kn1", ObjectTypeID: "contract", TopK: 50}
 	_, _ = NormalizeAndDetectMode(req, cfg)
 	if req.TopK != 20 {
 		t.Errorf("expected TopK=20, got %d", req.TopK)

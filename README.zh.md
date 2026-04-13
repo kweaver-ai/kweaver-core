@@ -12,9 +12,11 @@
 
 KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基础平台。它将分散的数据、知识、工具和策略转化为受治理的上下文、安全的执行和可验证的反馈闭环。通过语义建模、实时访问、运行时管控和 TraceAI，帮助 AI 系统在复杂企业环境中可靠地推理、适应和行动。
 
+> **注意：** KWeaver Core 是**纯后台框架**，不提供 Web 界面。所有交互通过 CLI、SDK 或 API 完成。如需界面访问，请安装 [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver)。
+
 ## 📚 快速链接
 
-- 🌐 [在线体验](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - 在线试用 KWeaver（用户名：`kweaver`，密码：`111111`）
+- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver Web 界面（用户名：`kweaver`，密码：`111111`）
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
 - 📘 [产品文档](help/) - 产品文档与使用指南
@@ -65,43 +67,46 @@ kubectl get pods -A
 ./deploy.sh kweaver status
 ```
 
-5. 部署完成后，可按以下地址访问：
-   - 部署工作台：`https://<节点IP>/deploy`，账号 `admin`，初始密码 `eisoo.com`
-   - KWeaver 页面：`https://<节点IP>/studio`
+5. 验证 API 访问：
 
-> **尚未部署？** 可先使用[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)快速体验（用户名：`kweaver`，密码：`111111`）。
+```bash
+kweaver auth login https://<节点IP> -k
+kweaver bkn list
+```
+
+> **尚未部署？** 可访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) Web 界面在线体验（用户名：`kweaver`，密码：`111111`），或将 CLI/SDK 直接连接到 Demo 环境（见下方说明）。
 
 ### 核心子系统
 
 | 子项目 | 描述 | 仓库地址 |
 | --- | --- | --- |
-| **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-core-sdk) |
-| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI |[ADP](https://github.com/kweaver-ai/adp) <br>[Decision Agent](https://github.com/kweaver-ai/decision-agent) <br>[ISF](https://github.com/kweaver-ai/isf) <br>[Trace AI](https://github.com/kweaver-ai/trace-ai) |
+| **KWeaver SDK** | 面向 AI Agent 和开发者的 CLI 及 SDK（TypeScript/Python），用于以编程方式访问 KWeaver 知识网络与 Decision Agent | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
+| **KWeaver Core** | AI 原生平台底座 — Decision Agent、AI Data Platform（BKN Engine、VEGA Engine、Context Loader、Execution Factory）、Info Security Fabric、Trace AI | [kweaver-core](https://github.com/kweaver-ai/kweaver-core)（本仓库） |
 
 ## KWeaver SDK
 
-[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-core-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
+[**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
 
 ### AI Agent Skills
 
-从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-core-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。
+从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。
 
 **一次安装两个 skill**（推荐）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
   --skill kweaver-core --skill create-bkn
 ```
 
-- **`kweaver-core`** — 让 AI 编程助手掌握 KWeaver 的 API 与 CLI，可代替用户操作 KWeaver 平台。详见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/skills/kweaver-core/SKILL.md)。
-- **`create-bkn`** — 在 AI 编程助手中创建与管理**业务知识网络（BKN）**的流程与工具。详见 [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/skills/create-bkn/SKILL.md)。
+- **`kweaver-core`** — 让 AI 编程助手掌握 KWeaver 的 API 与 CLI，可代替用户操作 KWeaver 平台。详见 [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md)。
+- **`create-bkn`** — 在 AI 编程助手中创建与管理**业务知识网络（BKN）**的流程与工具。详见 [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md)。
 
 **仅安装其中一个**（可选）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk --skill kweaver-core
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
 # 或
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk --skill create-bkn
+npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill create-bkn
 ```
 
 **使用任意 skill 前**，需先完成 KWeaver 实例认证：
@@ -119,10 +124,10 @@ kweaver auth login https://your-kweaver-instance.com
 
 ### 使用 Demo 环境快速体验
 
-无需部署 — 将 AI Agent 连接到[在线体验环境](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)即可立即上手：
+无需部署 — 将 AI Agent 直接连接到 Demo 环境即可立即上手（如需 Web 界面，请访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)）：
 
 ```bash
-npx skills add https://github.com/kweaver-ai/kweaver-core-sdk \
+npx skills add https://github.com/kweaver-ai/kweaver-sdk \
   --skill kweaver-core --skill create-bkn
 
 npm install -g @kweaver-ai/kweaver-sdk
@@ -162,7 +167,7 @@ kweaver auth login https://dip-poc.aishu.cn
 
 若已持有上述参数，也可在无头机器上直接执行：`kweaver auth login <url> --client-id … --client-secret … --refresh-token …`。
 
-完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-core-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-core-sdk#authentication)）。
+完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication)）。
 
 ### CLI
 

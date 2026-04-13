@@ -18,7 +18,7 @@ type FindSkillsReq struct {
 
 	// Body Parameters
 	KnID               string                   `json:"kn_id" validate:"required"`
-	ObjectTypeID       string                   `json:"object_type_id"`
+	ObjectTypeID       string                   `json:"object_type_id" validate:"required"`
 	InstanceIdentities []map[string]interface{} `json:"instance_identities"`
 	SkillQuery         string                   `json:"skill_query"`
 	TopK               int                      `json:"top_k" default:"10" validate:"min=1,max=20"`

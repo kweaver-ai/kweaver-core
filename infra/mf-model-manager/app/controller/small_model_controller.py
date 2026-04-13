@@ -45,19 +45,24 @@ async def add_model(request: logics.AddExternalSmallModel, userId, language, rol
             StandLogger.error(ModelFactory_ExternalSmallModel_AddModel_RepeatedNames_Error["description"])
             return JSONResponse(status_code=400,
                                 content=ModelFactory_ExternalSmallModel_AddModel_RepeatedNames_Error)
-        user_infos = await get_username_by_ids([userId])
         permission = await permission_manager.check_single_permission(user_id=userId, resource_id="*",
                                                                       operations="create",
                                                                       resource_type="small_model",
                                                                       role=role)
         if not permission:
             return JSONResponse(status_code=403, content=NotPermissionError)
+        # 权限关闭时 add_permission 直接返回 True，无需查用户名；开启时才调用用户管理服务
+        if base_config.AUTH_ENABLED:
+            user_infos = await get_username_by_ids([userId])
+            user_name = user_infos.get(userId, "")
+        else:
+            user_name = ""
         status = await permission_manager.add_permission(
             user_id=userId,
             resource_id=model_id,
             resource_name="小模型",
             resource_type="small_model",
-            user_name=user_infos[userId],
+            user_name=user_name,
             role=role
         )
         if not status:
@@ -214,8 +219,11 @@ async def get_info_list(order, rule, page, size, model_name, model_type, model_s
         except Exception as e:
             StandLogger.error(e.args)
             return JSONResponse(status_code=500, content=ModelFactory_MyPymysqlPool_Connection_ConnectError_Error)
-        user_ids = await get_userid_by_search(original_res)
-        user_infos = await get_username_by_ids(user_ids)
+        if base_config.AUTH_ENABLED:
+            user_ids = await get_userid_by_search(original_res)
+            user_infos = await get_username_by_ids(user_ids)
+        else:
+            user_infos = {}
         res_list = []
         for item in original_res:
             res_list.append({
