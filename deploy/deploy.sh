@@ -111,6 +111,8 @@ usage() {
     echo "  --confirm-missing-openclaw-paths"
     echo "                                Continue DIP install when dipStudio OpenClaw host paths are configured"
     echo "                                but missing on disk. Only applies to the dip-studio chart."
+    echo "  --api_server_address=<ip>     Kubernetes API server advertise address (must be a local interface IP)"
+    echo "                                Defaults to auto-detect from hostname -I"
     echo "  --set <key>=<value>           Pass custom values to helm charts (can be used multiple times)"
     echo "                                Example: --set auth.enabled=false --set image.tag=latest"
     echo ""
@@ -316,6 +318,13 @@ main() {
     
     # Handle k8s module
     if [[ "${module}" == "k8s" ]]; then
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --api_server_address=*) API_SERVER_ADVERTISE_ADDRESS="${1#*=}"; shift ;;
+                --api_server_address)   API_SERVER_ADVERTISE_ADDRESS="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
         case "${action}" in
             install|init)
                 check_root

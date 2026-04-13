@@ -96,6 +96,14 @@ parse_core_args() {
                 CORE_SET_VALUES+=("$2")
                 shift 2
                 ;;
+            --api_server_address=*)
+                API_SERVER_ADVERTISE_ADDRESS="${1#*=}"
+                shift
+                ;;
+            --api_server_address)
+                API_SERVER_ADVERTISE_ADDRESS="$2"
+                shift 2
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1
