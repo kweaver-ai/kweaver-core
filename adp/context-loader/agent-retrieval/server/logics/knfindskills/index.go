@@ -159,7 +159,7 @@ func (s *findSkillsServiceImpl) FindSkills(ctx context.Context, req *interfaces.
 func (s *findSkillsServiceImpl) loadAndValidateSkillsContract(ctx context.Context, knID, skillsObjectTypeID string) (*interfaces.ObjectType, error) {
 	objectTypes, err := s.bknBackend.GetObjectTypeDetail(ctx, knID, []string{skillsObjectTypeID}, true)
 	if err != nil {
-		return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
+		return nil, err
 	}
 	if len(objectTypes) == 0 {
 		return nil, infraErr.DefaultHTTPError(ctx, http.StatusNotFound, map[string]interface{}{
@@ -203,7 +203,7 @@ func (s *findSkillsServiceImpl) loadAndValidateSkillsContract(ctx context.Contex
 func (s *findSkillsServiceImpl) validateObjectTypeExists(ctx context.Context, knID, objectTypeID string) error {
 	objectTypes, err := s.bknBackend.GetObjectTypeDetail(ctx, knID, []string{objectTypeID}, false)
 	if err != nil {
-		return infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, err.Error())
+		return err
 	}
 	if len(objectTypes) > 0 {
 		return nil
