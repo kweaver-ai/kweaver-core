@@ -8,6 +8,8 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/square/squarereq"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/otellog"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel/oteltrace"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/static"
@@ -48,6 +50,7 @@ func (agentSvc *agentSvc) GetAPIDoc(ctx context.Context, req *agentreq.GetAPIDoc
 	// 3. 取这个接口的配置
 	pathItem := apiDoc.Paths.Value("/api/agent-factory/v1/api/chat/completion")
 	pathItem.Post.Summary = agentInfo.DataAgent.Name
+	ensureBizDomainHeaderParameter(pathItem.Post)
 
 	profile := agentInfo.DataAgent.GetProfileStr()
 	if profile != "" {
@@ -120,4 +123,46 @@ func (agentSvc *agentSvc) GetAPIDoc(ctx context.Context, req *agentreq.GetAPIDoc
 
 	// 6. 返回
 	return apiDoc, nil
+}
+
+func ensureBizDomainHeaderParameter(operation *openapi3.Operation) {
+	if operation == nil {
+		return
+	}
+
+	headerName := cenum.HeaderXBizDomainID.String()
+	required := !global.GConfig.IsBizDomainDisabled()
+
+	for _, parameter := range operation.Parameters {
+		if parameter == nil || parameter.Value == nil || parameter.Value.Name != headerName {
+			continue
+		}
+
+		parameter.Value.In = "header"
+		parameter.Value.Required = required
+		parameter.Value.Description = "业务域标识Header，用于区分不同业务场景的请求"
+		parameter.Value.Example = "bd_public"
+		parameter.Value.Schema = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type: &openapi3.Types{openapi3.TypeString},
+			},
+		}
+
+		return
+	}
+
+	operation.Parameters = append(operation.Parameters, &openapi3.ParameterRef{
+		Value: &openapi3.Parameter{
+			In:          "header",
+			Name:        headerName,
+			Required:    required,
+			Description: "业务域标识Header，用于区分不同业务场景的请求",
+			Example:     "bd_public",
+			Schema: &openapi3.SchemaRef{
+				Value: &openapi3.Schema{
+					Type: &openapi3.Types{openapi3.TypeString},
+				},
+			},
+		},
+	})
 }

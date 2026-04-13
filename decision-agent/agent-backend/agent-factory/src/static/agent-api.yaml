@@ -17,6 +17,13 @@ paths:
           required: true
           description: 用户/应用账号的授权 Bearer <token>
           example: Bearer <token>
+        - in: header
+          name: x-business-domain
+          schema:
+            type: string
+          required: false
+          description: 业务域标识Header，用于区分不同业务场景的请求
+          example: bd_public
       requestBody:
         required: true
         content:

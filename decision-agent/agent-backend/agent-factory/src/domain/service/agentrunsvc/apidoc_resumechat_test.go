@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/cconf"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +19,8 @@ import (
 	agentreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/req"
 	agentresp "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent/resp"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp/cmpmock"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driver/iv3portdriver/v3portdrivermock"
 )
 
@@ -195,6 +199,85 @@ func TestAgentSvc_GetAPIDoc_RemoveEmptyCustomQuerys(t *testing.T) {
 	assert.Equal(t, false, example["stream"])
 	assert.Equal(t, "v2", example["agent_version"])
 	assert.Equal(t, "agent-key-002", example["agent_key"])
+}
+
+func TestAgentSvc_GetAPIDoc_BizDomainHeaderRequiredDependsOnConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSquare := v3portdrivermock.NewMockISquareSvc(ctrl)
+	mockLogger := cmpmock.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
+
+	svc := &agentSvc{
+		SvcBase:   service.NewSvcBase(),
+		squareSvc: mockSquare,
+		logger:    mockLogger,
+	}
+
+	agentInfoResp := newTestAgent()
+	mockSquare.EXPECT().GetAgentInfoByIDOrKey(gomock.Any(), gomock.Any()).Return(agentInfoResp, nil).Times(2)
+
+	oldCfg := global.GConfig
+	t.Cleanup(func() {
+		global.GConfig = oldCfg
+	})
+
+	testCases := []struct {
+		name         string
+		disableBiz   bool
+		wantRequired bool
+	}{
+		{
+			name:         "biz domain enabled makes header required",
+			disableBiz:   false,
+			wantRequired: true,
+		},
+		{
+			name:         "biz domain disabled makes header optional",
+			disableBiz:   true,
+			wantRequired: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			global.GConfig = &conf.Config{
+				Config:       cconf.BaseDefConfig(),
+				SwitchFields: conf.NewSwitchFields(),
+			}
+			global.GConfig.SwitchFields.DisableBizDomain = tc.disableBiz
+
+			result, err := svc.GetAPIDoc(context.Background(), &agentreq.GetAPIDocReq{
+				AgentID:      "a1",
+				AgentVersion: "v1",
+			})
+			require.NoError(t, err)
+
+			apiDoc, ok := result.(*openapi3.T)
+			require.True(t, ok)
+
+			pathItem := apiDoc.Paths.Value("/api/agent-factory/v1/api/chat/completion")
+			require.NotNil(t, pathItem)
+			require.NotNil(t, pathItem.Post)
+
+			bizDomainParam := findParameterByName(pathItem.Post.Parameters, cenum.HeaderXBizDomainID.String())
+			require.NotNil(t, bizDomainParam)
+			assert.Equal(t, "header", bizDomainParam.Value.In)
+			assert.Equal(t, tc.wantRequired, bizDomainParam.Value.Required)
+			assert.Equal(t, "bd_public", bizDomainParam.Value.Example)
+		})
+	}
+}
+
+func findParameterByName(parameters openapi3.Parameters, name string) *openapi3.ParameterRef {
+	for _, parameter := range parameters {
+		if parameter != nil && parameter.Value != nil && parameter.Value.Name == name {
+			return parameter
+		}
+	}
+
+	return nil
 }
 
 // ---------- ResumeChat tests ----------
