@@ -6,6 +6,9 @@ CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
 CORE_LOCAL_CHARTS_DIR="${CORE_LOCAL_CHARTS_DIR:-}"
 CORE_VERSION_MANIFEST_FILE="${CORE_VERSION_MANIFEST_FILE:-}"
 
+# Global --set values array
+declare -a CORE_SET_VALUES=()
+
 # Core SQL module directories to initialize before installing Core releases.
 declare -a CORE_SQL_MODULES=(
     "studio"
@@ -83,6 +86,14 @@ parse_core_args() {
                 ;;
             --config)
                 CONFIG_YAML_PATH="$2"
+                shift 2
+                ;;
+            --set=*)
+                CORE_SET_VALUES+=("${1#*=}")
+                shift
+                ;;
+            --set)
+                CORE_SET_VALUES+=("$2")
                 shift 2
                 ;;
             *)
@@ -299,10 +310,20 @@ _install_core_release_local() {
 
     log_info "Installing ${release_name} from local chart: $(basename "${chart_tgz}")..."
 
-    if helm upgrade --install "${release_name}" "${chart_tgz}" \
-            --namespace "${namespace}" \
-            -f "${CONFIG_YAML_PATH}" \
-            --wait --timeout=600s; then
+    local -a helm_args=(
+        "upgrade" "--install" "${release_name}" "${chart_tgz}"
+        "--namespace" "${namespace}"
+        "-f" "${CONFIG_YAML_PATH}"
+        "--wait" "--timeout=600s"
+    )
+
+    # Add all --set values
+    local set_value
+    for set_value in "${CORE_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
+
+    if helm "${helm_args[@]}"; then
         log_info "✓ ${release_name} installed successfully"
     else
         log_error "✗ Failed to install ${release_name}"
@@ -353,6 +374,12 @@ _install_core_release_repo() {
 
     helm_args+=("--devel")
 
+    # Add all --set values
+    local set_value
+    for set_value in "${CORE_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
+
     if helm "${helm_args[@]}"; then
         log_info "✓ ${release_name} installed successfully"
     else
@@ -398,16 +425,28 @@ install_core() {
 
     log_info "Target namespace: ${namespace}"
 
-    # Check if ISF dependency is declared in manifest
+    # Check if ISF dependency is declared in manifest and should be enabled
     local isf_dep_version=""
     local isf_dep_manifest=""
+    local should_install_isf=false
+    
     if [[ -n "${CORE_VERSION_MANIFEST_FILE:-}" ]]; then
         isf_dep_version="$(_core_resolve_isf_dependency_version)"
         isf_dep_manifest="$(_core_resolve_isf_dependency_manifest)"
+        
+        if [[ -n "${isf_dep_version}" ]]; then
+            # Check if dependency should be enabled based on --set values
+            if is_dependency_enabled "${CORE_VERSION_MANIFEST_FILE}" "isf" "${CORE_SET_VALUES[@]}"; then
+                should_install_isf=true
+                log_info "ISF dependency enabled (version: ${isf_dep_version})"
+            else
+                log_info "ISF dependency disabled by --set values"
+            fi
+        fi
     fi
 
-    if [[ -n "${isf_dep_version}" ]]; then
-        log_info "ISF dependency found in manifest (version: ${isf_dep_version}), installing ISF"
+    if [[ "${should_install_isf}" == "true" ]]; then
+        log_info "Installing ISF services..."
         local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
         local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
         local original_chart_version="${HELM_CHART_VERSION:-}"
@@ -427,8 +466,6 @@ install_core() {
         ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
         ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
         HELM_CHART_VERSION="${original_chart_version}"
-    else
-        log_info "No ISF dependency declared in manifest, skipping ISF installation"
     fi
 
     if ! init_core_databases; then

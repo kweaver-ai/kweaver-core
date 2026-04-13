@@ -414,6 +414,73 @@ _manifest_read_dependency_field() {
     ' "${manifest_file}" | sed 's/[[:space:]]*$//'
 }
 
+# Get the value of a key from an array of key=value strings.
+# Args: <key> <array_of_set_values...>
+# Returns: value if found, empty string otherwise
+# Example: get_set_value "auth.enabled" "${CORE_SET_VALUES[@]}"
+get_set_value() {
+    local key="$1"
+    shift
+    local -a set_values=("$@")
+    
+    local item
+    for item in "${set_values[@]}"; do
+        if [[ "${item}" == "${key}="* ]]; then
+            echo "${item#*=}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check if a dependency should be enabled based on its enabledIf condition.
+# Args: <manifest_file> <dependency_product> <array_of_set_values...>
+# Returns: 0 if enabled, 1 if disabled
+is_dependency_enabled() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    shift 2
+    local -a set_values=("$@")
+    
+    # Read enabledIf field from manifest
+    local enabled_if
+    enabled_if="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "enabledIf")")"
+    
+    # If no enabledIf condition, check defaultEnabled
+    if [[ -z "${enabled_if}" ]]; then
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        # Default to true if defaultEnabled is not specified or is true
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    
+    # Check if the enabledIf key is set in --set values
+    local value
+    if value="$(get_set_value "${enabled_if}" "${set_values[@]}" 2>/dev/null)"; then
+        # Value was explicitly set, check if it's true
+        if [[ "${value}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        # Value not set, use defaultEnabled
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
+
 # Resolve the embedded release manifest path for one aggregate product version.
 # Args: <product> <version>
 resolve_embedded_release_manifest() {

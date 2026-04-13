@@ -5,6 +5,13 @@ version: 0.6.0
 source:
   helmRepoName: kweaver
   helmRepoUrl: https://kweaver-ai.github.io/helm-repo/
+dependencies:
+- product: isf
+  version: 0.6.0
+  manifest: ./isf.yaml
+  optional: true
+  defaultEnabled: true
+  enabledIf: auth.enabled
 releases:
   kweaver-core-data-migrator:
     chart: kweaver-core-data-migrator
