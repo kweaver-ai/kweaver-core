@@ -497,7 +497,11 @@ definitions:
       - resource_type
     type: object
   interfaces.SQLQueryResponse:
+    properties:
+      columns:
+        description: 查询结果元数据
         items:
+          type: object
         type: array
       entries:
         description: 查询结果数据
