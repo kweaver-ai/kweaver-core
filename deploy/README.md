@@ -36,8 +36,15 @@ git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver-core/deploy
 
 # 2. Install KWeaver Core
-# The script will interactively prompt for the access address and auto-detect the API server address.
+# Minimum installation — recommended for first-time experience
+bash ./deploy.sh kweaver-core install --minimum
+# Equivalent to:
+# bash ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# Full installation (includes auth & business-domain modules)
 bash ./deploy.sh kweaver-core install
+
+# The script will interactively prompt for the access address and auto-detect the API server address.
 
 # Or specify addresses explicitly (skips interactive prompts):
 #   --access_address       Address for clients to reach KWeaver services (can be IP or domain)

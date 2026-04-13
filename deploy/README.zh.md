@@ -36,8 +36,15 @@ git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver-core/deploy
 
 # 2. 安装 KWeaver Core
-# 脚本会交互式提示输入访问地址，并自动检测 API Server 地址。
+# 最小化安装 — 首次体验推荐
+bash ./deploy.sh kweaver-core install --minimum
+# 等价于:
+# bash ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# 完整安装（包含 auth 和 business-domain 模块）
 bash ./deploy.sh kweaver-core install
+
+# 脚本会交互式提示输入访问地址，并自动检测 API Server 地址。
 
 # 或显式指定地址（跳过交互提示）：
 #   --access_address       客户端访问 KWeaver 服务的地址（可以是 IP 或域名）

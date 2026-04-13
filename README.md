@@ -49,7 +49,12 @@ git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver-core/deploy
 chmod +x deploy.sh
 
-# Full one-click deployment (recommended)
+# Minimum installation — recommended for first-time experience
+./deploy.sh kweaver-core install --minimum
+# Equivalent to:
+# ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# Full installation (includes auth & business-domain modules)
 ./deploy.sh kweaver-core install
 
 # Or specify addresses explicitly (skips interactive prompts):

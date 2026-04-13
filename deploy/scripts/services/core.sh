@@ -112,6 +112,11 @@ parse_core_args() {
                 KWEAVER_ACCESS_ADDRESS="$2"
                 shift 2
                 ;;
+            --minimum|--min)
+                CORE_SET_VALUES+=("auth.enabled=false")
+                CORE_SET_VALUES+=("businessDomain.enabled=false")
+                shift
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

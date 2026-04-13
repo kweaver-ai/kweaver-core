@@ -49,7 +49,12 @@ git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver-core/deploy
 chmod +x deploy.sh
 
-# 完整一键部署（推荐）
+# 最小化安装 — 首次体验推荐
+./deploy.sh kweaver-core install --minimum
+# 等价于:
+# ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# 完整安装（包含 auth 和 business-domain 模块）
 ./deploy.sh kweaver-core install
 
 # 或显式指定地址（跳过交互提示）：

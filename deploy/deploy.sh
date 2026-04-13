@@ -48,10 +48,10 @@ usage() {
     echo "  ingress-nginx install         Install ingress-nginx-controller"
     echo "  ingress-nginx uninstall       Uninstall ingress-nginx-controller"
     echo "  kweaver-core install          Install KWeaver Core services; auto-installs K8s/data services if missing"
+    echo "  kweaver-core install --minimum  Minimum install (skip auth & business-domain modules)"
     echo "  kweaver-core download         Download/update KWeaver Core charts into deploy/.tmp/charts"
     echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
     echo "  kweaver-core status           Show KWeaver Core services status"
-    echo "                                Use --set auth.enabled=false to skip ISF installation"
     echo "                                Use --set to pass custom values to all charts"
     echo "  isf install                   Install ISF services; auto-installs K8s/data services if missing"
     echo "  isf download                  Download/update ISF charts into deploy/.tmp/charts"
@@ -115,11 +115,14 @@ usage() {
     echo "                                Example: --access_address=10.0.0.5 or --access_address=https://kweaver.example.com:443"
     echo "  --api_server_address=<ip>     Kubernetes API server advertise address (must be a local interface IP)"
     echo "                                Defaults to auto-detect from hostname -I"
+    echo "  --minimum, --min              Minimum install: skip auth & business-domain modules"
+    echo "                                Equivalent to: --set auth.enabled=false --set businessDomain.enabled=false"
     echo "  --set <key>=<value>           Pass custom values to helm charts (can be used multiple times)"
     echo "                                Example: --set auth.enabled=false --set image.tag=latest"
     echo ""
+    echo "  $0 kweaver-core install --minimum                 # Minimum install (skip auth & business-domain)"
     echo "  $0 kweaver-core install --set auth.enabled=false  # Install KWeaver Core without ISF"
-    echo "  $0 kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false  # Disable multiple features"
+    echo "  $0 kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false  # Same as --minimum"
     echo "  $0 kweaver-core install --set image.registry=my-registry.com --set image.tag=v1.0.0  # Custom image settings"
     echo "  $0 kweaver-core download --charts_dir=/path/to/charts # Download Core charts into a specific local directory"
     echo "  $0 kweaver-core install --charts_dir=/path/to/charts  # Install Core from a local charts directory"
@@ -277,20 +280,33 @@ confirm_access_address_before_install() {
     fi
 
     echo ""
-    log_info "Will use accessAddress: ${url}"
-    read -r -p "Confirm this address? [Y/n]: " confirm_answer
-    confirm_answer="${confirm_answer:-Y}"
+    echo "============================================"
+    echo "  KWeaver Access Address Configuration"
+    echo "============================================"
+    echo "  Current detected values:"
+    echo "    Host     : ${host}"
+    echo "    Port     : ${port}"
+    echo "    Path     : ${path}"
+    echo "    Protocol : ${scheme}  (http or https)"
+    echo "    URL      : ${url}"
+    echo "============================================"
+    echo ""
+    echo "Press Enter to keep the default, or type a new value."
+    echo ""
 
-    if [[ ! "${confirm_answer}" =~ ^[Yy]$ ]]; then
-        read -r -p "Enter host [${host}]: " input_host
-        read -r -p "Enter port [${port}]: " input_port
-        read -r -p "Enter path [${path}]: " input_path
-        read -r -p "Enter scheme [${scheme}]: " input_scheme
+    if [[ -t 0 ]]; then
+        local input_host input_port input_path input_scheme
+        read -r -p "  Host     [${host}]: " input_host
+        read -r -p "  Port     [${port}]: " input_port
+        read -r -p "  Path     [${path}]: " input_path
+        read -r -p "  Protocol [${scheme}]: " input_scheme
 
         host="${input_host:-${host}}"
         port="${input_port:-${port}}"
         path="${input_path:-${path}}"
         scheme="${input_scheme:-${scheme}}"
+    else
+        log_info "Non-interactive mode detected, using defaults."
     fi
 
     # For first-time initialization, generate full config first.
