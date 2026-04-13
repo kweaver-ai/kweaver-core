@@ -176,8 +176,11 @@ async def get_info_list(order, rule, page, size, model_name, model_type, model_s
             except Exception as e:
                 StandLogger.error(e.args)
                 return JSONResponse(status_code=500, content=ModelFactory_MyPymysqlPool_Connection_ConnectError_Error)
-            user_ids = await get_userid_by_search(original_res)
-            user_infos = await get_username_by_ids(user_ids)
+            if base_config.AUTH_ENABLED:
+                user_ids = await get_userid_by_search(original_res)
+                user_infos = await get_username_by_ids(user_ids)
+            else:
+                user_infos = {}
             res_list = []
             for item in original_res:
                 res_list.append({

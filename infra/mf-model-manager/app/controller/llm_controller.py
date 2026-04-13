@@ -916,7 +916,7 @@ async def get_monitor_data(userId, language, model_id):
 
 
 async def edit_default_model(model_para, userId, language):
-    if userId != "266c6a42-6131-4d62-8f39-853e7093701c":
+    if base_config.AUTH_ENABLED and userId != "266c6a42-6131-4d62-8f39-853e7093701c":
         error_dict = ModelFactory_Router_ParamError_TypeError_Error.copy()
         error_dict['description'] = "无操作权限"
         error_dict['detail'] = "仅管理员具备编辑权限"

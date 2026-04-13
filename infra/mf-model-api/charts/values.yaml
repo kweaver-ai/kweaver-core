@@ -111,7 +111,7 @@ resources:
     memory: 8Gi
 auth:
   # 是否开启权限控制。false=关闭（所有接口放行，不过滤数据）；true=开启（走完整鉴权与资源权限逻辑）
-  enabled: "false"
+  enabled: "true"
 
 observability:
     logEnabled: "false"
