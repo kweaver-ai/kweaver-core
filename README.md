@@ -52,7 +52,9 @@ chmod +x deploy.sh
 # Full one-click deployment (recommended)
 ./deploy.sh kweaver-core install
 
-# Or specify the access address and API server address explicitly
+# Or specify addresses explicitly (skips interactive prompts):
+#   --access_address       Address for clients to reach KWeaver services (can be IP or domain)
+#   --api_server_address   IP bound to a local network interface for K8s API server (must be a real NIC IP)
 ./deploy.sh kweaver-core install \
   --access_address=<your-ip> \
   --api_server_address=<your-ip>

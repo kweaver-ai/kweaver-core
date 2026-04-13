@@ -40,6 +40,8 @@ cd kweaver-core/deploy
 bash ./deploy.sh kweaver-core install
 
 # 或显式指定地址（跳过交互提示）：
+#   --access_address       客户端访问 KWeaver 服务的地址（可以是 IP 或域名）
+#   --api_server_address   K8s API Server 绑定的本机网卡 IP（必须是真实的网卡地址）
 bash ./deploy.sh kweaver-core install \
   --access_address=<你的IP> \
   --api_server_address=<你的IP>
