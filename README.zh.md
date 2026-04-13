@@ -50,7 +50,12 @@ cd kweaver-core/deploy
 chmod +x deploy.sh
 
 # 完整一键部署（推荐）
-./deploy.sh kweaver-core install     # 基础设施 + KWeaver 应用服务
+./deploy.sh kweaver-core install
+
+# 或显式指定访问地址和 API Server 地址
+./deploy.sh kweaver-core install \
+  --access_address=<你的IP> \
+  --api_server_address=<你的IP>
 
 # 查看帮助
 ./deploy.sh --help

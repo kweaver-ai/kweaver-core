@@ -35,13 +35,18 @@ dnf install containerd.io
 git clone https://github.com/kweaver-ai/kweaver-core.git
 cd kweaver-core/deploy
 
-# 2. (Optional) Customize access ports
-# By default, ingress-nginx uses ports 80/443. To use custom ports (e.g., 8080/8443):
+# 2. Install KWeaver Core
+# The script will interactively prompt for the access address and auto-detect the API server address.
+bash ./deploy.sh kweaver-core install
+
+# Or specify addresses explicitly (skips interactive prompts):
+bash ./deploy.sh kweaver-core install \
+  --access_address=<your-ip> \
+  --api_server_address=<your-ip>
+
+# (Optional) Customize ingress ports (default 80/443):
 export INGRESS_NGINX_HTTP_PORT=8080
 export INGRESS_NGINX_HTTPS_PORT=8443
-
-# 3. Install KWeaver Core
-bash ./deploy.sh kweaver-core install
 ```
 
 ## 📋 Prerequisites

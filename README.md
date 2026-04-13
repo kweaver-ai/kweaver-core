@@ -50,7 +50,12 @@ cd kweaver-core/deploy
 chmod +x deploy.sh
 
 # Full one-click deployment (recommended)
-./deploy.sh kweaver-core install     # Infrastructure + KWeaver application services
+./deploy.sh kweaver-core install
+
+# Or specify the access address and API server address explicitly
+./deploy.sh kweaver-core install \
+  --access_address=<your-ip> \
+  --api_server_address=<your-ip>
 
 ./deploy.sh --help
 ```
