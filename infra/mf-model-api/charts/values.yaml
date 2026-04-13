@@ -25,7 +25,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: "500M"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
   paths:
-    - /api/model-api
+    - /api/mf-model-api
 
 env:
   devicecode: ""
