@@ -40,7 +40,7 @@ func (kns *knowledgeNetworkService) expandFilteredCrossJoin(ctx context.Context,
 	edge *interfaces.TypeEdge,
 	nextTypeMeta interfaces.ObjectTypeWithKeyField,
 	isForward bool,
-	rules interfaces.FilteredCrossJoinMapping,
+	rules *interfaces.FilteredCrossJoinMapping,
 ) (map[string]interfaces.Objects, error) {
 
 	maxQ := kns.filteredCrossJoinMaxExpand()
@@ -157,7 +157,7 @@ func (kns *knowledgeNetworkService) matchFilteredCrossJoinRelations(ctx context.
 	edge *interfaces.TypeEdge,
 ) ([]interfaces.Relation, error) {
 
-	rules, ok := edge.RelationType.MappingRules.(interfaces.FilteredCrossJoinMapping)
+	rules, ok := edge.RelationType.MappingRules.(*interfaces.FilteredCrossJoinMapping)
 	if !ok {
 		return nil, nil
 	}

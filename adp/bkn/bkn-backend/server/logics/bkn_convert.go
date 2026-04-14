@@ -265,7 +265,7 @@ func ToADPRelationType(knID string, branch string, bknRel *bknsdk.BknRelationTyp
 			relType.MappingRules = mappings
 
 		case *bknsdk.InDirectMappingRule:
-			indirect := interfaces.InDirectMapping{
+			indirect := &interfaces.InDirectMapping{
 				BackingDataSource: &interfaces.ResourceInfo{
 					Type: rules.BackingDataSource.Type,
 					ID:   rules.BackingDataSource.ID,
@@ -325,7 +325,7 @@ func ToBKNRelationType(adpRel *interfaces.RelationType) *bknsdk.BknRelationType 
 			}
 			bknRel.MappingRules = mappingRules
 
-		case interfaces.InDirectMapping:
+		case *interfaces.InDirectMapping:
 			indirectRules := &bknsdk.InDirectMappingRule{
 				BackingDataSource: &bknsdk.ResourceInfo{
 					Type: rules.BackingDataSource.Type,

@@ -517,7 +517,7 @@ func Test_ValidateRelationType(t *testing.T) {
 			}
 			err := ValidateRelationType(ctx, rt, true)
 			So(err, ShouldBeNil)
-			_, ok := rt.MappingRules.(interfaces.FilteredCrossJoinMapping)
+			_, ok := rt.MappingRules.(*interfaces.FilteredCrossJoinMapping)
 			So(ok, ShouldBeTrue)
 		})
 

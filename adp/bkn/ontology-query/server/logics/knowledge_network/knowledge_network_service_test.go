@@ -709,7 +709,7 @@ func Test_knowledgeNetworkService_isObjectRelated(t *testing.T) {
 			}
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						SourceMappingRules: []interfaces.Mapping{
 							{
 								SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1561,7 +1561,7 @@ func Test_knowledgeNetworkService_buildBatchConditions(t *testing.T) {
 
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -1672,7 +1672,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "",
 						},
@@ -1706,7 +1706,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -1761,7 +1761,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -1806,7 +1806,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -1868,7 +1868,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -1923,7 +1923,7 @@ func Test_knowledgeNetworkService_buildIndirectBatchConditions(t *testing.T) {
 			edge := &interfaces.TypeEdge{
 				RelationType: interfaces.RelationType{
 					RTName: "relation1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "view1",
 						},
@@ -2000,7 +2000,7 @@ func Test_knowledgeNetworkService_batchGetViewData(t *testing.T) {
 				},
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				BackingDataSource: &interfaces.ResourceInfo{
 					ID: "view1",
 				},
@@ -2055,7 +2055,7 @@ func Test_knowledgeNetworkService_batchGetViewData(t *testing.T) {
 				},
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				BackingDataSource: &interfaces.ResourceInfo{
 					ID: "view1",
 				},
@@ -2096,7 +2096,7 @@ func Test_knowledgeNetworkService_batchGetViewData(t *testing.T) {
 				},
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				BackingDataSource: &interfaces.ResourceInfo{
 					ID: "view1",
 				},
@@ -2154,7 +2154,7 @@ func Test_knowledgeNetworkService_batchGetViewData(t *testing.T) {
 				},
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				BackingDataSource: &interfaces.ResourceInfo{
 					ID: "view1",
 				},
@@ -2212,7 +2212,7 @@ func Test_knowledgeNetworkService_mapViewDataToObjects(t *testing.T) {
 				0: "obj1",
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -2232,7 +2232,7 @@ func Test_knowledgeNetworkService_mapViewDataToObjects(t *testing.T) {
 
 			batchConditions := []*cond.CondCfg{}
 			objectMapping := map[int]string{}
-			mappingRules := interfaces.InDirectMapping{}
+			mappingRules := &interfaces.InDirectMapping{}
 
 			result := make(map[string][]map[string]any)
 
@@ -2263,7 +2263,7 @@ func Test_knowledgeNetworkService_mapViewDataToObjects(t *testing.T) {
 				5: "obj2", // 索引5超出batchConditions长度
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -2301,7 +2301,7 @@ func Test_knowledgeNetworkService_mapViewDataToObjects(t *testing.T) {
 				0: "obj1",
 			}
 
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				TargetMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"}, // 反向映射时使用 SourceProp.Name

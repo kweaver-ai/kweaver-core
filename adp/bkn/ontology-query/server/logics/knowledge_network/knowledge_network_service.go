@@ -757,7 +757,7 @@ func (kns *knowledgeNetworkService) getNextObjectsBatchByRelation(ctx context.Co
 	result := make(map[string]interfaces.Objects)
 
 	if edge.RelationType.Type == interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN {
-		rules, ok := edge.RelationType.MappingRules.(interfaces.FilteredCrossJoinMapping)
+		rules, ok := edge.RelationType.MappingRules.(*interfaces.FilteredCrossJoinMapping)
 		if !ok {
 			return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ObjectType_InvalidParameter).
 				WithErrorDetails("relation type filtered_cross_join requires FilteredCrossJoinMapping rules")
@@ -859,7 +859,7 @@ func (kns *knowledgeNetworkService) mapResultsToObjects(currentLevelObjects []in
 		for _, nextObj := range nextObjects.Datas {
 			// 获取该对象的视图数据（如果是间接映射）
 			var objectViewData []map[string]any
-			if _, isIndirect := edge.RelationType.MappingRules.(interfaces.InDirectMapping); isIndirect {
+			if _, isIndirect := edge.RelationType.MappingRules.(*interfaces.InDirectMapping); isIndirect {
 				objectViewData = viewDataMap[levelObj.ObjectID]
 			}
 
@@ -885,12 +885,12 @@ func (kns *knowledgeNetworkService) isObjectRelated(currentObjectData map[string
 		// 检查直接映射条件是否满足
 		return logics.CheckDirectMappingConditions(currentObjectData, nextObject, mappingRules, isForward)
 
-	case interfaces.InDirectMapping:
+	case *interfaces.InDirectMapping:
 		// 间接映射的检查逻辑
 		// 需要根据具体业务实现
 		return logics.CheckIndirectMappingConditionsWithViewData(currentObjectData, nextObject, mappingRules, isForward, viewData)
 
-	case interfaces.FilteredCrossJoinMapping:
+	case *interfaces.FilteredCrossJoinMapping:
 		// Pairing is done in expandFilteredCrossJoin; this path is not used for that type.
 		return false
 	}
@@ -916,7 +916,7 @@ func (kns *knowledgeNetworkService) buildBatchConditions(ctx context.Context,
 		switch edge.RelationType.MappingRules.(type) {
 		case []interfaces.Mapping:
 			directObjects = append(directObjects, levelObj)
-		case interfaces.InDirectMapping:
+		case *interfaces.InDirectMapping:
 			indirectObjects = append(indirectObjects, levelObj)
 		}
 	}
@@ -955,7 +955,7 @@ func (kns *knowledgeNetworkService) buildIndirectBatchConditions(ctx context.Con
 
 	var conditions []*cond.CondCfg
 	viewDataMap := make(map[string][]map[string]any)
-	mappingRules := edge.RelationType.MappingRules.(interfaces.InDirectMapping)
+	mappingRules := edge.RelationType.MappingRules.(*interfaces.InDirectMapping)
 
 	if mappingRules.BackingDataSource.ID == "" {
 		// 视图为空，返回异常，不请求
@@ -1029,7 +1029,7 @@ func (kns *knowledgeNetworkService) batchGetViewData(ctx context.Context,
 	query *interfaces.SubGraphQueryBaseOnSource,
 	edge *interfaces.TypeEdge,
 	currentLevelObjects []interfaces.LevelObject,
-	mappingRules interfaces.InDirectMapping, isForward bool) (map[string][]map[string]any, error) {
+	mappingRules *interfaces.InDirectMapping, isForward bool) (map[string][]map[string]any, error) {
 
 	result := make(map[string][]map[string]any)
 	batchSize := 50 // 视图查询的批次大小
@@ -1161,7 +1161,7 @@ func (kns *knowledgeNetworkService) batchGetViewData(ctx context.Context,
 func (kns *knowledgeNetworkService) mapViewDataToObjects(viewData []map[string]any,
 	batchConditions []*cond.CondCfg,
 	objectMapping map[int]string,
-	mappingRules interfaces.InDirectMapping,
+	mappingRules *interfaces.InDirectMapping,
 	isForward bool,
 	result map[string][]map[string]any) {
 
@@ -1465,11 +1465,11 @@ func (kns *knowledgeNetworkService) matchRelationsForPair(ctx context.Context,
 		// 直接关联：直接使用已有的 targetObjects 进行匹配，避免数据库查询
 		return kns.matchDirectRelations(sourceObjects, targetObjects, edge)
 
-	case interfaces.InDirectMapping:
+	case *interfaces.InDirectMapping:
 		// 间接关联：需要查询视图数据，但只匹配输入的目标对象
 		return kns.matchIndirectRelations(ctx, query, sourceObjects, targetObjects, edge)
 
-	case interfaces.FilteredCrossJoinMapping:
+	case *interfaces.FilteredCrossJoinMapping:
 		return kns.matchFilteredCrossJoinRelations(ctx, sourceObjects, targetObjects, edge)
 	}
 
@@ -1522,7 +1522,7 @@ func (kns *knowledgeNetworkService) matchIndirectRelations(ctx context.Context,
 		objectViewData := viewDataMap[sourceObj.ObjectID]
 
 		for _, targetObj := range targetObjects {
-			mappingRules := edge.RelationType.MappingRules.(interfaces.InDirectMapping)
+			mappingRules := edge.RelationType.MappingRules.(*interfaces.InDirectMapping)
 			if logics.CheckIndirectMappingConditionsWithViewData(
 				sourceObj.ObjectData,
 				targetObj.ObjectData,
@@ -1560,7 +1560,7 @@ func (kns *knowledgeNetworkService) buildBatchConditionsForObjects(ctx context.C
 		switch edge.RelationType.MappingRules.(type) {
 		case []interfaces.Mapping:
 			directObjects = append(directObjects, levelObj)
-		case interfaces.InDirectMapping:
+		case *interfaces.InDirectMapping:
 			indirectObjects = append(indirectObjects, levelObj)
 		}
 	}

@@ -517,7 +517,7 @@ func Test_relationTypeAccess_GetRelationTypeByID(t *testing.T) {
 		})
 
 		Convey("GetRelationTypeByID Success DATA_VIEW type \n", func() {
-			dataViewMapping := interfaces.InDirectMapping{}
+			dataViewMapping := &interfaces.InDirectMapping{}
 			dataViewMappingBytes, _ := sonic.Marshal(dataViewMapping)
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",
@@ -654,7 +654,7 @@ func Test_relationTypeAccess_GetRelationTypesByIDs(t *testing.T) {
 		})
 
 		Convey("GetRelationTypesByIDs Success DATA_VIEW type \n", func() {
-			dataViewMapping := interfaces.InDirectMapping{}
+			dataViewMapping := &interfaces.InDirectMapping{}
 			dataViewMappingBytes, _ := sonic.Marshal(dataViewMapping)
 			rows := sqlmock.NewRows([]string{
 				"f_id", "f_name", "f_tags", "f_comment", "f_icon", "f_color", "f_bkn_raw_content",

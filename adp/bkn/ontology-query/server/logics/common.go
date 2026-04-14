@@ -455,7 +455,7 @@ func CheckViewDataMatchesCondition(viewData map[string]any,
 
 // 使用视图数据检查间接映射条件
 func CheckIndirectMappingConditionsWithViewData(currentObjectData map[string]any,
-	nextObject map[string]any, mappingRules interfaces.InDirectMapping, isForward bool,
+	nextObject map[string]any, mappingRules *interfaces.InDirectMapping, isForward bool,
 	viewData []map[string]any) bool {
 
 	// 检查是否存在一个视图记录能够连接当前对象和下一层对象

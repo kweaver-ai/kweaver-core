@@ -1132,7 +1132,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1164,7 +1164,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1196,7 +1196,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"target_id": "456",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1223,7 +1223,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"id": "123",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1255,7 +1255,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				"id": "123",
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},
@@ -1287,7 +1287,7 @@ func Test_CheckIndirectMappingConditionsWithViewData(t *testing.T) {
 			nextObject := map[string]any{
 				// id缺失
 			}
-			mappingRules := interfaces.InDirectMapping{
+			mappingRules := &interfaces.InDirectMapping{
 				SourceMappingRules: []interfaces.Mapping{
 					{
 						SourceProp: interfaces.SimpleProperty{Name: "id"},

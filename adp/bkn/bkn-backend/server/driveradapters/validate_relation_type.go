@@ -141,7 +141,7 @@ func validateMappingRules(ctx context.Context, relationType string, mappingRules
 }
 
 // 校验直接关联的mapping_rules
-func validateDirectMappingRules(ctx context.Context, mappingRules any) (any, error) {
+func validateDirectMappingRules(ctx context.Context, mappingRules any) ([]interfaces.Mapping, error) {
 	// mappingRules 先转成 []any 再解码成 []interfaces.Mapping
 	var mappings []interfaces.Mapping
 	if err := mapstructure.Decode(mappingRules, &mappings); err != nil {
@@ -182,7 +182,7 @@ func validateDirectMappingRules(ctx context.Context, mappingRules any) (any, err
 }
 
 // 校验间接关联的mapping_rules
-func validateInDirectMappingRules(ctx context.Context, mappingRules any) (any, error) {
+func validateInDirectMappingRules(ctx context.Context, mappingRules any) (*interfaces.InDirectMapping, error) {
 	// 尝试类型断言
 	var mapping interfaces.InDirectMapping
 	if err := mapstructure.Decode(mappingRules, &mapping); err != nil {
@@ -266,15 +266,15 @@ func validateInDirectMappingRules(ctx context.Context, mappingRules any) (any, e
 		targetMappingsRuleMap[item.SourceProp.Name+":"+item.TargetProp.Name] = true
 	}
 
-	return mapping, nil
+	return &mapping, nil
 }
 
-func validateFilteredCrossJoinMappingRules(ctx context.Context, mappingRules any) (any, error) {
+func validateFilteredCrossJoinMappingRules(ctx context.Context, mappingRules any) (*interfaces.FilteredCrossJoinMapping, error) {
 	var mapping interfaces.FilteredCrossJoinMapping
 	if err := mapstructure.Decode(mappingRules, &mapping); err != nil {
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).
 			WithErrorDetails("分侧过滤全连接 mapping_rules 解码失败: " + err.Error())
 	}
 	// source_condition / target_condition 均可省略：nil 表示该侧无额外过滤（与查询引擎语义一致）。
-	return mapping, nil
+	return &mapping, nil
 }

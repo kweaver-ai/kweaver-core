@@ -325,7 +325,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 						Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 						SourceObjectTypeID: "ot1",
 						TargetObjectTypeID: "ot2",
-						MappingRules: interfaces.InDirectMapping{
+						MappingRules: &interfaces.InDirectMapping{
 							BackingDataSource: &interfaces.ResourceInfo{
 								ID: "dv1",
 							},
@@ -404,7 +404,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 			result, err := service.GetRelationTypesByIDs(ctx, knID, branch, rtIDs)
 			So(err, ShouldBeNil)
 			So(len(result), ShouldEqual, 1)
-			So(result[0].MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name, ShouldEqual, "data_view1")
+			So(result[0].MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name, ShouldEqual, "data_view1")
 		})
 
 		Convey("Failed when GetDataViewByID returns error for DATA_VIEW type\n", func() {
@@ -419,7 +419,7 @@ func Test_relationTypeService_GetRelationTypesByIDs(t *testing.T) {
 						Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 						SourceObjectTypeID: "ot1",
 						TargetObjectTypeID: "ot2",
-						MappingRules: interfaces.InDirectMapping{
+						MappingRules: &interfaces.InDirectMapping{
 							BackingDataSource: &interfaces.ResourceInfo{
 								ID: "dv1",
 							},
@@ -1927,7 +1927,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTID:   "rt1",
 					RTName: "rt1",
 					Type:   interfaces.RELATION_TYPE_DATA_VIEW,
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},
@@ -1951,7 +1951,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTID:   "rt1",
 					RTName: "rt1",
 					Type:   interfaces.RELATION_TYPE_DATA_VIEW,
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},
@@ -1974,7 +1974,7 @@ func Test_relationTypeService_validateDependency(t *testing.T) {
 					RTName:             "rt1",
 					Type:               interfaces.RELATION_TYPE_DATA_VIEW,
 					SourceObjectTypeID: "ot1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{
 							ID: "dv1",
 						},

@@ -283,7 +283,7 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 				if err != nil {
 					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 				}
-				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = inDirectMapping
+				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = &inDirectMapping
 			case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
 				var fcj interfaces.FilteredCrossJoinMapping
 				jsonData, err := json.Marshal(response.TypePaths[i].TypeEdges[j].RelationType.MappingRules)
@@ -294,7 +294,7 @@ func (oma *ontologyManagerAccess) GetRelationTypePathsBaseOnSource(ctx context.C
 				if err != nil {
 					return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 				}
-				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = fcj
+				response.TypePaths[i].TypeEdges[j].RelationType.MappingRules = &fcj
 			}
 		}
 	}
@@ -436,7 +436,7 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 		if err != nil {
 			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 		}
-		response.RelationTypes[0].MappingRules = inDirectMapping
+		response.RelationTypes[0].MappingRules = &inDirectMapping
 	case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
 		var fcj interfaces.FilteredCrossJoinMapping
 		jsonData, err := json.Marshal(response.RelationTypes[0].MappingRules)
@@ -447,7 +447,7 @@ func (oma *ontologyManagerAccess) GetRelationType(ctx context.Context, knID stri
 		if err != nil {
 			return emptyRelationType, false, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 		}
-		response.RelationTypes[0].MappingRules = fcj
+		response.RelationTypes[0].MappingRules = &fcj
 	}
 
 	// 添加成功时的 trace 属性
@@ -571,7 +571,7 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 			if err != nil {
 				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 			}
-			response.RelationTypes[i].MappingRules = inDirectMapping
+			response.RelationTypes[i].MappingRules = &inDirectMapping
 		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
 			var fcj interfaces.FilteredCrossJoinMapping
 			jsonData, err := json.Marshal(response.RelationTypes[i].MappingRules)
@@ -582,7 +582,7 @@ func (oma *ontologyManagerAccess) ListRelationTypes(ctx context.Context, knID st
 			if err != nil {
 				return nil, fmt.Errorf("derived Config Unmarshal error: %s", err.Error())
 			}
-			response.RelationTypes[i].MappingRules = fcj
+			response.RelationTypes[i].MappingRules = &fcj
 		}
 	}
 

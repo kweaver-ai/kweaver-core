@@ -426,7 +426,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 
 		case interfaces.RELATION_TYPE_DATA_VIEW:
 			// 查视图或 vega Resource，翻译名称和桥梁字段显示名
-			mappingRules := relationType.MappingRules.(interfaces.InDirectMapping)
+			mappingRules := relationType.MappingRules.(*interfaces.InDirectMapping)
 			backingType := mappingRules.BackingDataSource.Type
 			if backingType == "" {
 				backingType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
@@ -446,7 +446,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						continue
 					}
 				} else {
-					relationType.MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name = res.Name
+					relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = res.Name
 					fieldsMap = logics.VegaResourceSchemaToFieldsMap(res)
 				}
 			default:
@@ -462,13 +462,13 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						continue
 					}
 				} else {
-					relationType.MappingRules.(interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
+					relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
 					fieldsMap = dataView.FieldsMap
 				}
 			}
 
 			// 起点到中间
-			for k, m := range relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules {
+			for k, m := range relationType.MappingRules.(*interfaces.InDirectMapping).SourceMappingRules {
 				if sourceObj != nil {
 					relationType.SourceObjectType = interfaces.SimpleObjectType{
 						OTID:   relationType.SourceObjectTypeID,
@@ -476,22 +476,22 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						Icon:   sourceObj.Icon,
 						Color:  sourceObj.Color,
 					}
-					relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules[k].
+					relationType.MappingRules.(*interfaces.InDirectMapping).SourceMappingRules[k].
 						SourceProp.DisplayName = sourceObj.PropertyMap[m.SourceProp.Name]
 				}
 				if fieldsMap != nil {
 					if vf, ok := fieldsMap[m.TargetProp.Name]; ok && vf != nil {
-						relationType.MappingRules.(interfaces.InDirectMapping).SourceMappingRules[k].
+						relationType.MappingRules.(*interfaces.InDirectMapping).SourceMappingRules[k].
 							TargetProp.DisplayName = vf.DisplayName
 					}
 				}
 			}
 
 			// 中间到终点
-			for k, m := range relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules {
+			for k, m := range relationType.MappingRules.(*interfaces.InDirectMapping).TargetMappingRules {
 				if fieldsMap != nil {
 					if vf, ok := fieldsMap[m.SourceProp.Name]; ok && vf != nil {
-						relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules[k].
+						relationType.MappingRules.(*interfaces.InDirectMapping).TargetMappingRules[k].
 							SourceProp.DisplayName = vf.DisplayName
 					}
 				}
@@ -502,7 +502,7 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 						Icon:   targetObj.Icon,
 						Color:  targetObj.Color,
 					}
-					relationType.MappingRules.(interfaces.InDirectMapping).TargetMappingRules[k].
+					relationType.MappingRules.(*interfaces.InDirectMapping).TargetMappingRules[k].
 						TargetProp.DisplayName = targetObj.PropertyMap[m.TargetProp.Name]
 				}
 			}
@@ -1270,7 +1270,7 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 				}
 			}
 		case interfaces.RELATION_TYPE_DATA_VIEW:
-			inDirectMappingRules := relationType.MappingRules.(interfaces.InDirectMapping)
+			inDirectMappingRules := relationType.MappingRules.(*interfaces.InDirectMapping)
 			// strictMode为true时才校验 backing 存在性
 			if strictMode && inDirectMappingRules.BackingDataSource != nil && inDirectMappingRules.BackingDataSource.ID != "" {
 				backingType := inDirectMappingRules.BackingDataSource.Type
@@ -1330,7 +1330,7 @@ func (rts *relationTypeService) validateDependency(ctx context.Context, tx *sql.
 				}
 			}
 		case interfaces.RELATION_TYPE_FILTERED_CROSS_JOIN:
-			rules := relationType.MappingRules.(interfaces.FilteredCrossJoinMapping)
+			rules := relationType.MappingRules.(*interfaces.FilteredCrossJoinMapping)
 			if sourceObjectType != nil && rules.SourceCondition != nil {
 				if _, err := cond.NewCondition(ctx, rules.SourceCondition, cond.CUSTOM, objectTypeToCondFieldsMap(sourceObjectType)); err != nil {
 					return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_RelationType_InvalidParameter).

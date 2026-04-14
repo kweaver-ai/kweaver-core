@@ -346,8 +346,8 @@ func validateID(ctx context.Context, id string) error {
 		re := regexp2.MustCompile(interfaces.RegexPattern_NonBuiltin_ID, regexp2.RE2)
 		match, err := re.MatchString(id)
 		if err != nil || !match {
-			errDetails := `The id can contain only lowercase letters, digits and underscores(_),
-			it cannot start with underscores and cannot exceed 40 characters`
+			errDetails := fmt.Sprintf(`The id can contain only lowercase letters, digits and underscores(_),
+			it cannot start with underscores and cannot exceed 40 characters, but got %s`, id)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_ID).
 				WithErrorDetails(errDetails)
 		}

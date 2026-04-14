@@ -252,7 +252,7 @@ func Test_ToADPRelationType(t *testing.T) {
 				},
 			}
 			adp := ToADPRelationType("kn1", "main", bknRel)
-			indirect, ok := adp.MappingRules.(interfaces.InDirectMapping)
+			indirect, ok := adp.MappingRules.(*interfaces.InDirectMapping)
 			So(ok, ShouldBeTrue)
 			So(indirect.BackingDataSource.ID, ShouldEqual, "ds1")
 			So(len(indirect.SourceMappingRules), ShouldEqual, 1)
@@ -293,7 +293,7 @@ func Test_ToBKNRelationType(t *testing.T) {
 			adpRel := &interfaces.RelationType{
 				RelationTypeWithKeyField: interfaces.RelationTypeWithKeyField{
 					RTID: "rt1",
-					MappingRules: interfaces.InDirectMapping{
+					MappingRules: &interfaces.InDirectMapping{
 						BackingDataSource: &interfaces.ResourceInfo{ID: "ds1", Type: "mysql"},
 						SourceMappingRules: []interfaces.Mapping{
 							{SourceProp: interfaces.SimpleProperty{Name: "sp"}, TargetProp: interfaces.SimpleProperty{Name: "tp"}},
