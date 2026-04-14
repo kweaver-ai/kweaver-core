@@ -48,6 +48,9 @@ type MockSwitchFields struct {
 	// 是否使用Mock BizDomain（本地开发时建议设置为true）
 	MockBizDomain bool `yaml:"mock_biz_domain"`
 
+	// 是否使用 Mock UserManagerModule（本地开发时建议设置为true）
+	MockUserManagerModule bool `yaml:"mock_user_manager_module"`
+
 	// Mock Hydra 返回的用户 ID
 	MockUserID string `yaml:"mock_user_id"`
 }

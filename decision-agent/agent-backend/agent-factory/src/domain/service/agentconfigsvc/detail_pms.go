@@ -6,6 +6,7 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/entity/daconfeo"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/daconfvalobj/skillvalobj"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/pubedagentdbacc/padbarg"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 )
 
@@ -25,6 +26,12 @@ func (s *dataAgentConfigSvc) detailPmsCheck(ctx context.Context, po *dapo.DataAg
 }
 
 func (s *dataAgentConfigSvc) markSkillAgentPmsForDetail(ctx context.Context, eo *daconfeo.DataAgent, uid string) (err error) {
+	if global.GConfig != nil &&
+		global.GConfig.SwitchFields != nil &&
+		global.GConfig.SwitchFields.DisablePmsCheck {
+		return nil
+	}
+
 	skillAgents := make([]*skillvalobj.SkillAgent, 0)
 
 	// 1. 获取技能配置中的Agent

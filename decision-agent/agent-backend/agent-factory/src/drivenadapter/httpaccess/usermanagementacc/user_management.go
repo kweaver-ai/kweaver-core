@@ -5,13 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"slices"
 	"strings"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/icmp"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/httphelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
@@ -36,22 +32,11 @@ func NewClient(conf ...httphelper.Option) iusermanagementacc.UserMgnt {
 }
 
 var (
-	usersInfoURI       = "/api/user-management/v1/users/%s/%s"
-	userIDByAccountURI = "/api/user-management/v1/account-match"
+	usersInfoURI = "/api/user-management/v1/users/%s/%s"
 )
 
 // GetUserInfoByUserID 通过用户id获取用户信息
 func (cli *client) GetUserInfoByUserID(ctx context.Context, userIDs []string, fields []string) (usersInfo map[string]*iusermanagementacc.UserInfo, err error) {
-	if cenvhelper.IsLocalDev() {
-		return map[string]*iusermanagementacc.UserInfo{
-			"1": {
-				Name:  "admin",
-				ID:    "1",
-				Roles: []string{"super_admin"},
-			},
-		}, nil
-	}
-
 	uri := cli.address + fmt.Sprintf(usersInfoURI, strings.Join(userIDs, ","), strings.Join(fields, ","))
 	data, err := cli.httpClient.GetExpect2xxByte(ctx, uri, nil)
 	if err != nil {
@@ -75,82 +60,6 @@ func (cli *client) GetUserInfoByUserID(ctx context.Context, userIDs []string, fi
 	for _, info := range rsp {
 		usersInfo[info.ID] = info
 	}
-
-	return
-}
-
-type user struct {
-	ID            string `json:"id"`
-	Account       string `json:"account"`
-	DisableStatus bool   `json:"disable_status"`
-}
-
-type getUserIDByAccountRsp struct {
-	Result bool `json:"result"`
-	User   user `json:"user"`
-}
-
-func (cli *client) GetUserIDByAccount(ctx context.Context, account string) (invalid bool, userID string, err error) {
-	vals := url.Values{}
-	vals.Add("account", account)
-	uri := fmt.Sprintf("%s%s?%s", cli.address, userIDByAccountURI, vals.Encode())
-	data, err := cli.httpClient.GetExpect2xxByte(ctx, uri, nil)
-	if err != nil {
-		cli.log.Errorf("[GetUserIDByAccount] request failed:%v, url:%s", err, uri)
-		err = errors.Wrapf(err, "request failed")
-
-		return
-	}
-
-	rsp := &getUserIDByAccountRsp{}
-
-	err = jsoniter.Unmarshal(data, rsp)
-	if err != nil {
-		cli.log.Errorf("[GetUserIDByAccount] Unmarshal failed:%v, res:%s", err, string(data))
-		err = errors.Wrapf(err, "Unmarshal failed")
-
-		return
-	}
-
-	invalid = rsp.Result && !rsp.User.DisableStatus
-	userID = rsp.User.ID
-
-	return
-}
-
-func (cli *client) getUserRoles(ctx context.Context, userID string) (userRoles []string, name string, err error) {
-	var usersInfos map[string]*iusermanagementacc.UserInfo
-
-	usersInfos, err = cli.GetUserInfoByUserID(ctx, []string{userID}, []string{"name", "roles"})
-	if err != nil {
-		return
-	}
-
-	userInfo, ok := usersInfos[userID]
-	if !ok {
-		cli.log.Errorf("user %s not found", userID)
-		err = fmt.Errorf("user %s not found", userID)
-
-		return
-	}
-
-	userRoles = userInfo.Roles
-	name = userInfo.Name
-
-	return
-}
-
-func (cli *client) IsSuperAdmin(ctx context.Context, userID string) (isSuperAdmin bool, err error) {
-	if cenvhelper.IsLocalDev() {
-		return true, nil
-	}
-
-	userRoles, _, err := cli.getUserRoles(ctx, userID)
-	if err != nil {
-		return
-	}
-
-	isSuperAdmin = slices.Contains(userRoles, "super_admin")
 
 	return
 }

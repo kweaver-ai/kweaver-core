@@ -48,10 +48,11 @@ usage() {
     echo "  ingress-nginx install         Install ingress-nginx-controller"
     echo "  ingress-nginx uninstall       Uninstall ingress-nginx-controller"
     echo "  kweaver-core install          Install KWeaver Core services; auto-installs K8s/data services if missing"
+    echo "  kweaver-core install --minimum  Minimum install (skip auth & business-domain modules)"
     echo "  kweaver-core download         Download/update KWeaver Core charts into deploy/.tmp/charts"
     echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
     echo "  kweaver-core status           Show KWeaver Core services status"
-    echo "                                Use --enable-isf=false to skip ISF installation"
+    echo "                                Use --set to pass custom values to all charts"
     echo "  isf install                   Install ISF services; auto-installs K8s/data services if missing"
     echo "  isf download                  Download/update ISF charts into deploy/.tmp/charts"
     echo "  isf uninstall                 Uninstall ISF services"
@@ -96,6 +97,7 @@ usage() {
     echo "  $0 kweaver-dip install --charts_dir=/path/to/charts  # Install DIP from a local charts directory"
     echo "  $0 kweaver-dip uninstall      # Uninstall KWeaver DIP services"
     echo "  $0 kweaver-dip status         # Show KWeaver DIP services status"
+    echo "  $0 kweaver-dip install --confirm-missing-openclaw-paths  # Continue even if configured dipStudio OpenClaw paths do not exist"
     echo "  $0 config generate            # Generate/update ~/.kweaver-ai/config.yaml"
     echo "  $0 all install                # Full initialization with all components"
     echo ""
@@ -104,11 +106,28 @@ usage() {
     echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
     echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
     echo "                                install only uses local charts when this option is explicitly set"
+    echo "  --version_file=<path>         Use an aggregate release manifest to resolve exact chart versions"
+    echo "                                (default auto path: deploy/release-manifests/<version>/<product>.yaml)"
+    echo "  --confirm-missing-openclaw-paths"
+    echo "                                Continue DIP install when dipStudio OpenClaw host paths are configured"
+    echo "                                but missing on disk. Only applies to the dip-studio chart."
+    echo "  --access_address=<addr>       KWeaver access address: host, host:port, or scheme://host:port/path"
+    echo "                                Example: --access_address=10.0.0.5 or --access_address=https://kweaver.example.com:443"
+    echo "  --api_server_address=<ip>     Kubernetes API server advertise address (must be a local interface IP)"
+    echo "                                Defaults to auto-detect from hostname -I"
+    echo "  --minimum, --min              Minimum install: skip auth & business-domain modules"
+    echo "                                Equivalent to: --set auth.enabled=false --set businessDomain.enabled=false"
+    echo "  --set <key>=<value>           Pass custom values to helm charts (can be used multiple times)"
+    echo "                                Example: --set auth.enabled=false --set image.tag=latest"
     echo ""
-    echo "  $0 kweaver-core install --enable-isf=false  # Install KWeaver Core without ISF; auto-installs K8s/data services if absent"
-    echo "  $0 kweaver-core download --enable-isf=false # Download Core charts only, skip ISF charts"
+    echo "  $0 kweaver-core install --minimum                 # Minimum install (skip auth & business-domain)"
+    echo "  $0 kweaver-core install --set auth.enabled=false  # Install KWeaver Core without ISF"
+    echo "  $0 kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false  # Same as --minimum"
+    echo "  $0 kweaver-core install --set image.registry=my-registry.com --set image.tag=v1.0.0  # Custom image settings"
     echo "  $0 kweaver-core download --charts_dir=/path/to/charts # Download Core charts into a specific local directory"
     echo "  $0 kweaver-core install --charts_dir=/path/to/charts  # Install Core from a local charts directory"
+    echo "  $0 kweaver-core download --version=0.4.0  # Auto-uses ./release-manifests/0.4.0/kweaver-core.yaml when present"
+    echo "  $0 kweaver-core download --version=0.4.0 --version_file=./release-manifests/0.4.0/kweaver-core.yaml"
     echo "  $0 kweaver-core install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
     echo "  $0 isf download --charts_dir=/path/to/charts         # Download ISF charts into a specific local directory"
     echo "  $0 isf install --charts_dir=/path/to/charts          # Install ISF from a local charts directory; auto-installs K8s/data services if absent"
@@ -210,28 +229,46 @@ confirm_access_address_before_install() {
     raw_path="$(_read_access_address_field "path")"
     raw_scheme="$(_read_access_address_field "scheme")"
 
-    local need_confirm="false"
-    if [[ "${config_missing_before}" == "true" ]]; then
-        need_confirm="true"
-    elif [[ -z "${raw_host}" && -z "${raw_port}" && -z "${raw_path}" && -z "${raw_scheme}" ]]; then
-        need_confirm="true"
-    fi
-
-    # 正常场景：配置文件存在且 accessAddress 已有内容时，不重复弹窗
-    if [[ "${need_confirm}" != "true" ]]; then
-        return 0
-    fi
-
     local host port path scheme
-    host="${raw_host:-$(_detect_node_ip)}"
-    port="${raw_port:-443}"
-    path="${raw_path:-/}"
-    scheme="${raw_scheme:-https}"
+
+    # --access_address supports: "host", "host:port", or "scheme://host:port/path"
+    if [[ -n "${KWEAVER_ACCESS_ADDRESS:-}" ]]; then
+        local addr="${KWEAVER_ACCESS_ADDRESS}"
+        if [[ "${addr}" == *"://"* ]]; then
+            scheme="${addr%%://*}"
+            local remainder="${addr#*://}"
+            if [[ "${remainder}" == *":"* ]]; then
+                host="${remainder%%:*}"
+                remainder="${remainder#*:}"
+                port="${remainder%%/*}"
+                local after_port="${remainder#*/}"
+                if [[ "${after_port}" != "${remainder}" ]]; then
+                    path="/${after_port}"
+                fi
+            else
+                host="${remainder%%/*}"
+            fi
+        elif [[ "${addr}" == *":"* ]]; then
+            host="${addr%%:*}"
+            port="${addr#*:}"
+        else
+            host="${addr}"
+        fi
+        port="${port:-${raw_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}}"
+        path="${path:-${raw_path:-/}}"
+        scheme="${scheme:-${raw_scheme:-https}}"
+    else
+        host="${raw_host:-$(_detect_node_ip)}"
+        port="${raw_port:-${INGRESS_NGINX_HTTPS_PORT:-443}}"
+        path="${raw_path:-/}"
+        scheme="${raw_scheme:-https}"
+    fi
 
     local url="${scheme}://${host}:${port}${path}"
 
-    if [[ ! -t 0 ]]; then
-        log_info "Non-interactive mode detected, use accessAddress: ${url}"
+    # If provided via CLI arg, skip interactive confirmation
+    if [[ -n "${KWEAVER_ACCESS_ADDRESS:-}" ]]; then
+        log_info "Using accessAddress from --access_address: ${url}"
         # For first-time initialization, generate full config first.
         if [[ "${config_missing_before}" == "true" ]]; then
             log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
@@ -243,20 +280,33 @@ confirm_access_address_before_install() {
     fi
 
     echo ""
-    log_info "Will use accessAddress: ${url}"
-    read -r -p "Confirm this address? [Y/n]: " confirm_answer
-    confirm_answer="${confirm_answer:-Y}"
+    echo "============================================"
+    echo "  KWeaver Access Address Configuration"
+    echo "============================================"
+    echo "  Current detected values:"
+    echo "    Host     : ${host}"
+    echo "    Port     : ${port}"
+    echo "    Path     : ${path}"
+    echo "    Protocol : ${scheme}  (http or https)"
+    echo "    URL      : ${url}"
+    echo "============================================"
+    echo ""
+    echo "Press Enter to keep the default, or type a new value."
+    echo ""
 
-    if [[ ! "${confirm_answer}" =~ ^[Yy]$ ]]; then
-        read -r -p "Enter host [${host}]: " input_host
-        read -r -p "Enter port [${port}]: " input_port
-        read -r -p "Enter path [${path}]: " input_path
-        read -r -p "Enter scheme [${scheme}]: " input_scheme
+    if [[ -t 0 ]]; then
+        local input_host input_port input_path input_scheme
+        read -r -p "  Host     [${host}]: " input_host
+        read -r -p "  Port     [${port}]: " input_port
+        read -r -p "  Path     [${path}]: " input_path
+        read -r -p "  Protocol [${scheme}]: " input_scheme
 
         host="${input_host:-${host}}"
         port="${input_port:-${port}}"
         path="${input_path:-${path}}"
         scheme="${input_scheme:-${scheme}}"
+    else
+        log_info "Non-interactive mode detected, using defaults."
     fi
 
     # For first-time initialization, generate full config first.
@@ -316,6 +366,15 @@ main() {
     
     # Handle k8s module
     if [[ "${module}" == "k8s" ]]; then
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --api_server_address=*) API_SERVER_ADVERTISE_ADDRESS="${1#*=}"; shift ;;
+                --api_server_address)   API_SERVER_ADVERTISE_ADDRESS="$2"; shift 2 ;;
+                --access_address=*)     KWEAVER_ACCESS_ADDRESS="${1#*=}"; shift ;;
+                --access_address)       KWEAVER_ACCESS_ADDRESS="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
         case "${action}" in
             install|init)
                 check_root
@@ -524,6 +583,7 @@ main() {
                 uninstall_core
                 ;;
             status)
+                parse_core_args "status" "$@"
                 show_core_status
                 ;;
             *)
@@ -554,6 +614,7 @@ main() {
                 uninstall_dip
                 ;;
             status)
+                parse_dip_args "status" "$@"
                 show_dip_status
                 ;;
             *)
@@ -581,6 +642,7 @@ main() {
                 uninstall_isf
                 ;;
             status)
+                parse_isf_args "status" "$@"
                 show_isf_status
                 ;;
             *)

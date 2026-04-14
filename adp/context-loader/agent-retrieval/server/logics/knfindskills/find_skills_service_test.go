@@ -7,11 +7,13 @@ package knfindskills
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/common"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/config"
+	infraErr "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/errors"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
 
@@ -35,6 +37,18 @@ func enCtx() context.Context {
 	return common.SetLanguageByCtx(context.Background(), common.AmericanEnglish)
 }
 
+func makeSkillsObjectTypeWithProps(propNames ...string) *interfaces.ObjectType {
+	props := make([]*interfaces.DataProperty, 0, len(propNames))
+	for _, name := range propNames {
+		props = append(props, &interfaces.DataProperty{Name: name})
+	}
+	return &interfaces.ObjectType{
+		ID:             "skills",
+		Name:           "skills",
+		DataProperties: props,
+	}
+}
+
 func TestFindSkills_NonEmpty_NoMessage(t *testing.T) {
 	bkn := &testBknBackend{
 		searchRelationTypesFunc: func(_ context.Context, _ *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
@@ -48,7 +62,7 @@ func TestFindSkills_NonEmpty_NoMessage(t *testing.T) {
 	}
 	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), oq, bkn)
 
-	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{KnID: "kn1", TopK: 10})
+	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{KnID: "kn1", ObjectTypeID: "skills", TopK: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -60,56 +74,26 @@ func TestFindSkills_NonEmpty_NoMessage(t *testing.T) {
 	}
 }
 
-func TestFindSkills_NetworkScopeTooWide(t *testing.T) {
-	bkn := &testBknBackend{
-		searchRelationTypesFunc: func(_ context.Context, _ *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
-			return &interfaces.RelationTypeConcepts{
-				Entries: []*interfaces.RelationType{
-					{ID: "rt_1", SourceObjectTypeID: "contract", TargetObjectTypeID: "skills"},
-				},
-			}, nil
-		},
-	}
-	oq := &testOntologyQuery{}
-	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), oq, bkn)
+func TestFindSkills_ObjectTypeRequired(t *testing.T) {
+	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), &testOntologyQuery{}, &testBknBackend{})
 
 	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{KnID: "kn1", TopK: 10})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatal("expected error when object_type_id is missing")
 	}
-	if len(resp.Entries) != 0 {
-		t.Fatalf("expected 0 entries, got %d", len(resp.Entries))
+	if resp != nil {
+		t.Fatalf("expected nil response on error, got %#v", resp)
 	}
-	if resp.Message == "" {
-		t.Fatal("expected message for empty result, got empty")
-	}
-	if !strings.Contains(resp.Message, "object_type_id") {
-		t.Errorf("network_scope_too_wide message should suggest object_type_id, got %q", resp.Message)
-	}
-}
 
-func TestFindSkills_NetworkNoSkills(t *testing.T) {
-	bkn := &testBknBackend{
-		searchRelationTypesFunc: func(_ context.Context, _ *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
-			return &interfaces.RelationTypeConcepts{Entries: []*interfaces.RelationType{}}, nil
-		},
+	httpErr := &infraErr.HTTPError{}
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected HTTPError, got %T", err)
 	}
-	oq := &testOntologyQuery{
-		queryObjectInstancesFunc: func(_ context.Context, _ *interfaces.QueryObjectInstancesReq) (*interfaces.QueryObjectInstancesResp, error) {
-			return &interfaces.QueryObjectInstancesResp{Data: []any{}}, nil
-		},
+	if httpErr.HTTPCode != 400 {
+		t.Fatalf("expected HTTP 400, got %d", httpErr.HTTPCode)
 	}
-	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), oq, bkn)
-
-	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{KnID: "kn1", TopK: 10})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(resp.Entries) != 0 {
-		t.Fatalf("expected 0 entries, got %d", len(resp.Entries))
-	}
-	if !strings.Contains(resp.Message, "Skill") {
-		t.Errorf("network_no_skills message should mention Skill, got %q", resp.Message)
+	if !strings.Contains(httpErr.Error(), "object_type_id") {
+		t.Fatalf("expected error to mention object_type_id, got %s", httpErr.Error())
 	}
 }
 
@@ -133,6 +117,164 @@ func TestFindSkills_ObjectTypeNoBinding(t *testing.T) {
 	}
 	if !strings.Contains(resp.Message, "绑定") {
 		t.Errorf("object_type_no_binding message should mention binding (绑定), got %q", resp.Message)
+	}
+}
+
+func TestFindSkills_ObjectTypeNotFound(t *testing.T) {
+	bkn := &testBknBackend{
+		getObjectTypeDetailFunc: func(_ context.Context, knID string, otIDs []string, includeDetail bool) ([]*interfaces.ObjectType, error) {
+			if knID != "kn1" {
+				t.Fatalf("expected knID=kn1, got %s", knID)
+			}
+			if len(otIDs) != 1 {
+				t.Fatalf("expected a single object type lookup, got %v", otIDs)
+			}
+			switch otIDs[0] {
+			case "skills":
+				if !includeDetail {
+					t.Fatal("expected includeDetail=true for skills contract check")
+				}
+				return []*interfaces.ObjectType{makeSkillsObjectTypeWithProps("skill_id", "name", "description")}, nil
+			case "contract":
+				if includeDetail {
+					t.Fatal("expected includeDetail=false for business object type existence check")
+				}
+				return []*interfaces.ObjectType{}, nil
+			default:
+				t.Fatalf("unexpected object type lookup: %v", otIDs)
+				return nil, nil
+			}
+		},
+	}
+	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), &testOntologyQuery{}, bkn)
+
+	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{
+		KnID: "kn1", ObjectTypeID: "contract", TopK: 10,
+	})
+	if err == nil {
+		t.Fatal("expected error when object_type_id does not exist in current knowledge network")
+	}
+	if resp != nil {
+		t.Fatalf("expected nil response on error, got %#v", resp)
+	}
+
+	httpErr := &infraErr.HTTPError{}
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected HTTPError, got %T", err)
+	}
+	if httpErr.HTTPCode != 404 {
+		t.Fatalf("expected HTTP 404, got %d", httpErr.HTTPCode)
+	}
+
+	details, ok := httpErr.ErrorDetails.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected structured error details, got %T", httpErr.ErrorDetails)
+	}
+	if details["kn_id"] != "kn1" {
+		t.Fatalf("expected details.kn_id=kn1, got %#v", details["kn_id"])
+	}
+	if details["object_type_id"] != "contract" {
+		t.Fatalf("expected details.object_type_id=contract, got %#v", details["object_type_id"])
+	}
+}
+
+func TestFindSkills_SkillsObjectTypeNotFound(t *testing.T) {
+	bkn := &testBknBackend{
+		getObjectTypeDetailFunc: func(_ context.Context, _ string, otIDs []string, includeDetail bool) ([]*interfaces.ObjectType, error) {
+			if len(otIDs) != 1 {
+				t.Fatalf("expected a single object type lookup, got %v", otIDs)
+			}
+			switch otIDs[0] {
+			case "contract":
+				if includeDetail {
+					t.Fatal("expected includeDetail=false for business object type existence check")
+				}
+				return []*interfaces.ObjectType{{ID: "contract", Name: "contract"}}, nil
+			case "skills":
+				if !includeDetail {
+					t.Fatal("expected includeDetail=true for skills contract check")
+				}
+				return []*interfaces.ObjectType{}, nil
+			default:
+				t.Fatalf("unexpected object type lookup: %v", otIDs)
+				return nil, nil
+			}
+		},
+	}
+	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), &testOntologyQuery{}, bkn)
+
+	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{
+		KnID: "kn1", ObjectTypeID: "contract", TopK: 10,
+	})
+	if err == nil {
+		t.Fatal("expected error when skills object type is missing")
+	}
+	if resp != nil {
+		t.Fatalf("expected nil response on error, got %#v", resp)
+	}
+
+	httpErr := &infraErr.HTTPError{}
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected HTTPError, got %T", err)
+	}
+	if httpErr.HTTPCode != 404 {
+		t.Fatalf("expected HTTP 404, got %d", httpErr.HTTPCode)
+	}
+}
+
+func TestFindSkills_SkillsContractMissingRequiredProperties(t *testing.T) {
+	bkn := &testBknBackend{
+		getObjectTypeDetailFunc: func(_ context.Context, _ string, otIDs []string, includeDetail bool) ([]*interfaces.ObjectType, error) {
+			if len(otIDs) != 1 {
+				t.Fatalf("expected a single object type lookup, got %v", otIDs)
+			}
+			switch otIDs[0] {
+			case "contract":
+				if includeDetail {
+					t.Fatal("expected includeDetail=false for business object type existence check")
+				}
+				return []*interfaces.ObjectType{{ID: "contract", Name: "contract"}}, nil
+			case "skills":
+				if !includeDetail {
+					t.Fatal("expected includeDetail=true for skills contract check")
+				}
+				return []*interfaces.ObjectType{makeSkillsObjectTypeWithProps("description")}, nil
+			default:
+				t.Fatalf("unexpected object type lookup: %v", otIDs)
+				return nil, nil
+			}
+		},
+	}
+	svc := NewFindSkillsServiceWith(&testLogger{}, newTestConfig(), &testOntologyQuery{}, bkn)
+
+	resp, err := svc.FindSkills(zhCtx(), &interfaces.FindSkillsReq{
+		KnID: "kn1", ObjectTypeID: "contract", TopK: 10,
+	})
+	if err == nil {
+		t.Fatal("expected error when skills contract is missing required properties")
+	}
+	if resp != nil {
+		t.Fatalf("expected nil response on error, got %#v", resp)
+	}
+
+	httpErr := &infraErr.HTTPError{}
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected HTTPError, got %T", err)
+	}
+	if httpErr.HTTPCode != 400 {
+		t.Fatalf("expected HTTP 400, got %d", httpErr.HTTPCode)
+	}
+
+	details, ok := httpErr.ErrorDetails.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected structured error details, got %T", httpErr.ErrorDetails)
+	}
+	missing, ok := details["missing_data_properties"].([]string)
+	if !ok {
+		t.Fatalf("expected missing_data_properties to be []string, got %T", details["missing_data_properties"])
+	}
+	if len(missing) != 2 {
+		t.Fatalf("expected 2 missing properties, got %v", missing)
 	}
 }
 
@@ -215,6 +357,7 @@ func TestFindSkills_SkillQueryNoMatch(t *testing.T) {
 				ID:   "skills",
 				Name: "skills",
 				DataProperties: []*interfaces.DataProperty{
+					{Name: "skill_id"},
 					{Name: "name", ConditionOperations: []interfaces.KnOperationType{interfaces.KnOperationTypeLike}},
 				},
 			}}, nil

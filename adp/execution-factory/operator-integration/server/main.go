@@ -39,10 +39,9 @@ func (s *Server) Start() {
 		panic(err)
 	}
 	// 初始化skill索引同步
-	err = s.skillIndexSyncService.Init(context.Background())
+	err = s.skillIndexSyncService.EnsureInitialized(context.Background())
 	if err != nil {
 		s.config.Logger.Errorf("init skill index sync service failed, error: %v", err)
-		panic(err)
 	}
 
 	// 注册路由 - 健康检查

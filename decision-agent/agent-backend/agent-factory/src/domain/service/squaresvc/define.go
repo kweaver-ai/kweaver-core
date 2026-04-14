@@ -8,7 +8,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/releaseacc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/visithistoryacc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/chttpinject"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/usermanagementacc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/idbaccess"
@@ -41,7 +40,7 @@ func NewSquareService() iv3portdriver.ISquareSvc {
 			releaseRepo:              releaseacc.NewReleaseRepo(),
 			releaseHistoryRepo:       releaseacc.NewReleaseHistoryRepo(),
 			agentConfRepo:            daconfdbacc.NewDataAgentRepo(),
-			usermanagementHttpClient: usermanagementacc.NewClient(),
+			usermanagementHttpClient: chttpinject.NewUserManagementClient(),
 			visitHistoryRepo:         visithistoryacc.NewVisitHistoryRepo(),
 
 			umHttp: chttpinject.NewUmHttpAcc(),

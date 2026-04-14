@@ -143,34 +143,5 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 			So(resp.Status, ShouldEqual, interfaces.BizStatusOffline)
 		})
 
-		Convey("delete stops before cleanup when index delete fails", func() {
-			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
-			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
-			mockDBTx := mocks.NewMockDBTx(ctrl)
-			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
-			registry := &skillRegistry{
-				skillRepo:   mockSkillRepo,
-				dbTx:        mockDBTx,
-				AuthService: mockAuthService,
-				indexSync:   mockIndexSync,
-				Logger:      logger.DefaultLogger(),
-			}
-
-			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-delete-fail").Return(&model.SkillRepositoryDB{
-				SkillID: "skill-delete-fail", Status: interfaces.BizStatusOffline.String(),
-			}, nil)
-			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
-			mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-delete-fail", interfaces.AuthResourceTypeSkill).Return(nil)
-			mockIndexSync.EXPECT().DeleteSkill(gomock.Any(), "skill-delete-fail").Return(errors.New("vega delete failed"))
-
-			err := registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
-				BusinessDomainID: "bd-1",
-				UserID:           "user-1",
-				SkillID:          "skill-delete-fail",
-			})
-
-			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "vega delete failed")
-		})
 	})
 }

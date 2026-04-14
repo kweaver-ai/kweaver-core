@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/umhttpaccess"
+	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/port/driven/ihttpaccess/iumacc"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
@@ -15,9 +16,15 @@ var (
 
 func NewUmHttpAcc() iumacc.UmHttpAcc {
 	umOnce.Do(func() {
-		umImpl = umhttpaccess.NewUmHttpAcc(
-			logger.GetLogger(),
-		)
+		if global.GConfig != nil &&
+			global.GConfig.SwitchFields != nil &&
+			global.GConfig.SwitchFields.Mock != nil &&
+			global.GConfig.SwitchFields.Mock.MockUserManagerModule {
+			umImpl = umhttpaccess.NewMockUmHttpAcc()
+			return
+		}
+
+		umImpl = umhttpaccess.NewUmHttpAcc(logger.GetLogger())
 	})
 
 	return umImpl

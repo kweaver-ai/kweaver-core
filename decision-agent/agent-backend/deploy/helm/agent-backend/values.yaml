@@ -57,6 +57,7 @@ service:
   mockSandboxPlatform: false
   mockHydra: false
   mockAuthz: false
+  mockUserManagerModule: false
   mockBizDomain: false
   # ========================================
 
@@ -81,6 +82,9 @@ service:
 
 # 业务域开关
 businessDomain:
+  enabled: true
+
+auth:
   enabled: true
 
 env:

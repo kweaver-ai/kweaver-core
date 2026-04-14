@@ -76,14 +76,33 @@ func TestSkillIndexSync(t *testing.T) {
 			So(descriptionProperty.Features[1].FeatureType, ShouldEqual, "fulltext")
 		})
 
+		Convey("EnsureDataset succeeds without embedding lookup when resource already exists", func() {
+			mockModelManager := mocks.NewMockMFModelManager(ctrl)
+			mockModelAPI := mocks.NewMockMFModelAPIClient(ctrl)
+			mockVegaClient := mocks.NewMockVegaBackendClient(ctrl)
+			syncer := &skillIndexSync{
+				modelManager: mockModelManager,
+				modelAPI:     mockModelAPI,
+				vegaClient:   mockVegaClient,
+				logger:       logger.DefaultLogger(),
+			}
+			mockVegaClient.EXPECT().GetCatalogByID(gomock.Any(), executionFactoryCatalogID).Return(&interfaces.VegaCatalog{ID: executionFactoryCatalogID}, nil)
+			mockVegaClient.EXPECT().GetResourceByID(gomock.Any(), executionFactorySkillDataset).Return(&interfaces.VegaResource{ID: executionFactorySkillDataset}, nil)
+
+			err := syncer.Init(context.Background())
+			So(err, ShouldBeNil)
+			So(syncer.isInitialized(), ShouldBeTrue)
+		})
+
 		Convey("UpsertSkill writes complete document with _id and vector", func() {
 			var writtenDocs []map[string]any
 			mockModelAPI := mocks.NewMockMFModelAPIClient(ctrl)
 			mockVegaClient := mocks.NewMockVegaBackendClient(ctrl)
 			syncer := &skillIndexSync{
-				modelAPI:   mockModelAPI,
-				vegaClient: mockVegaClient,
-				logger:     logger.DefaultLogger(),
+				modelAPI:    mockModelAPI,
+				vegaClient:  mockVegaClient,
+				logger:      logger.DefaultLogger(),
+				initialized: true,
 			}
 			mockModelAPI.EXPECT().Embeddings(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *interfaces.EmbeddingReq) (*interfaces.EmbeddingResp, error) {
 				So(req.Model, ShouldEqual, interfaces.SmallModelTypeEmbedding)
@@ -124,8 +143,9 @@ func TestSkillIndexSync(t *testing.T) {
 		Convey("DeleteSkill deletes dataset document by skill id", func() {
 			mockVegaClient := mocks.NewMockVegaBackendClient(ctrl)
 			syncer := &skillIndexSync{
-				vegaClient: mockVegaClient,
-				logger:     logger.DefaultLogger(),
+				vegaClient:  mockVegaClient,
+				logger:      logger.DefaultLogger(),
+				initialized: true,
 			}
 			mockVegaClient.EXPECT().DeleteDatasetDocumentByID(gomock.Any(), executionFactorySkillDataset, "skill-1").Return(nil)
 
@@ -137,9 +157,10 @@ func TestSkillIndexSync(t *testing.T) {
 			mockModelAPI := mocks.NewMockMFModelAPIClient(ctrl)
 			mockVegaClient := mocks.NewMockVegaBackendClient(ctrl)
 			syncer := &skillIndexSync{
-				modelAPI:   mockModelAPI,
-				vegaClient: mockVegaClient,
-				logger:     logger.DefaultLogger(),
+				modelAPI:    mockModelAPI,
+				vegaClient:  mockVegaClient,
+				logger:      logger.DefaultLogger(),
+				initialized: true,
 			}
 			mockModelAPI.EXPECT().Embeddings(gomock.Any(), gomock.Any()).Return(&interfaces.EmbeddingResp{}, nil)
 

@@ -25,6 +25,8 @@ data:
   agent-factory.yaml: |
     # 配置文件路径/sysvol/conf/agent-factory.yaml
 
+    auth_enable: {{ .Values.auth.enabled }}
+
     # ========== 特性开关配置 ==========
     switch_fields:
       keep_legacy_app_path: {{ .Values.service.keep_legacy_app_path | default false }}
@@ -37,6 +39,7 @@ data:
         mock_sandbox_platform: {{ .Values.service.mockSandboxPlatform | default false }}
         mock_hydra: {{ .Values.service.mockHydra | default false }}
         mock_authz: {{ .Values.service.mockAuthz | default false }}
+        mock_user_manager_module: {{ .Values.service.mockUserManagerModule | default false }}
         mock_biz_domain: {{ .Values.service.mockBizDomain | default false }}
     # ========================================
 

@@ -1,6 +1,7 @@
 {
   "input_schema": {
     "type": "object",
+    "required": ["object_type_id"],
     "properties": {
       "response_format": {
         "type": "string",
@@ -10,7 +11,7 @@
       },
       "object_type_id": {
         "type": "string",
-        "description": "对象类型 ID（可选）。提供时缩小技能召回范围至该对象类型"
+        "description": "对象类型 ID（必填）。当前版本仅支持对象类级或实例级技能召回，且该对象类型必须存在于当前知识网络中"
       },
       "instance_identities": {
         "type": "array",

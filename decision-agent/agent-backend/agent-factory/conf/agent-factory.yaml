@@ -1,3 +1,4 @@
+auth_enable: false
 
 switch_fields:
     # 是否保留老的APP路径
@@ -29,6 +30,9 @@ switch_fields:
 
         # 是否使用Mock AuthZ（本地开发时建议设置为true）
         mock_authz: true
+
+        # 是否使用 Mock UserManagerModule（本地开发时建议设置为true）
+        mock_user_manager_module: true
 
         # 是否使用Mock BizDomain（本地开发时建议设置为true）
         mock_biz_domain: true

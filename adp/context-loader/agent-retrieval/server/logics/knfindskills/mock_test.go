@@ -42,7 +42,16 @@ func (m *testBknBackend) GetObjectTypeDetail(ctx context.Context, knID string, o
 	if m.getObjectTypeDetailFunc != nil {
 		return m.getObjectTypeDetailFunc(ctx, knID, otIds, includeDetail)
 	}
-	return nil, nil
+	if len(otIds) == 0 {
+		return nil, nil
+	}
+	if otIds[0] == "skills" {
+		return []*interfaces.ObjectType{makeSkillsObjectTypeWithProps("skill_id", "name", "description")}, nil
+	}
+	return []*interfaces.ObjectType{{
+		ID:   otIds[0],
+		Name: otIds[0],
+	}}, nil
 }
 
 func (m *testBknBackend) GetKnowledgeNetworkDetail(ctx context.Context, knID string) (*interfaces.KnowledgeNetworkDetail, error) {

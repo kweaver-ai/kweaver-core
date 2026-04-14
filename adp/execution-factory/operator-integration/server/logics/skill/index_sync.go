@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/drivenadapters"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
@@ -26,6 +27,9 @@ type skillIndexSync struct {
 	modelAPI     interfaces.MFModelAPIClient
 	vegaClient   interfaces.VegaBackendClient
 	logger       interfaces.Logger
+	mu           sync.RWMutex
+	initialized  bool
+	retryOnce    sync.Once
 }
 
 var (
@@ -46,6 +50,16 @@ func NewSkillIndexSyncService() interfaces.SkillIndexSyncService {
 	return ssInstance
 }
 
+func (s *skillIndexSync) EnsureInitialized(ctx context.Context) error {
+	if err := s.Init(ctx); err != nil {
+		s.retryOnce.Do(func() {
+			go s.retryInit()
+		})
+		return err
+	}
+	return nil
+}
+
 // EnsureDataset 确保Skill索引数据集存在
 // 如果不存在，则创建
 // 如果存在，则检查是否为最新版本
@@ -55,6 +69,11 @@ func (s *skillIndexSync) Init(ctx context.Context) (err error) {
 	// 记录可观测
 	ctx, _ = o11y.StartInternalSpan(ctx)
 	defer o11y.EndSpan(ctx, err)
+
+	initialized := false
+	defer func() {
+		s.setInitialized(initialized)
+	}()
 	s.logger.WithContext(ctx).Infof("init skill index dataset, catalog_id=%s, resource_id=%s", executionFactoryCatalogID, executionFactorySkillDataset)
 	catalog, err := s.vegaClient.GetCatalogByID(ctx, executionFactoryCatalogID)
 	if err != nil {
@@ -81,10 +100,11 @@ func (s *skillIndexSync) Init(ctx context.Context) (err error) {
 		return err
 	}
 	if resource != nil {
+		initialized = true
 		s.logger.WithContext(ctx).Infof("resource already exists, resource_id=%s", executionFactorySkillDataset)
 		return nil
 	}
-
+	// 获取嵌入模型
 	embeddingModel, err := s.modelManager.GetEmbeddingModel(ctx, interfaces.SmallModelTypeEmbedding, interfaces.SmallModelTypeEmbedding)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("get embedding model failed, resource_id=%s, err=%v", executionFactorySkillDataset, err)
@@ -104,24 +124,69 @@ func (s *skillIndexSync) Init(ctx context.Context) (err error) {
 	})
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("create skill dataset resource failed, resource_id=%s, err=%v", executionFactorySkillDataset, err)
+		return err
 	}
-	return err
+	initialized = true
+	return nil
 }
 
 func (s *skillIndexSync) UpsertSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
 	log := s.logger
+	if !s.isInitialized() {
+		log.WithContext(ctx).Warnf("skip skill index upsert because dataset is not initialized, skill_id=%s", skill.SkillID)
+		return nil
+	}
 	document, err := s.buildSkillDocument(ctx, skill)
 	if err != nil {
 		log.Errorf("build skill index document failed, skill_id=%s, err=%v", skill.SkillID, err)
 		return err
 	}
 	log.Infof("upsert skill index document, skill_id=%s, resource_id=%s", skill.SkillID, executionFactorySkillDataset)
-	return s.vegaClient.WriteDatasetDocuments(ctx, executionFactorySkillDataset, []map[string]any{document})
+	if err = s.vegaClient.WriteDatasetDocuments(ctx, executionFactorySkillDataset, []map[string]any{document}); err != nil {
+		log.Errorf("write skill index document failed, skill_id=%s, err=%v", skill.SkillID, err)
+		return err
+	}
+	return nil
 }
 
 func (s *skillIndexSync) DeleteSkill(ctx context.Context, skillID string) error {
+	if !s.isInitialized() {
+		s.logger.WithContext(ctx).Warnf("skip skill index delete because dataset is not initialized, skill_id=%s", skillID)
+		return nil
+	}
 	s.logger.Infof("delete skill index document, skill_id=%s, resource_id=%s", skillID, executionFactorySkillDataset)
-	return s.vegaClient.DeleteDatasetDocumentByID(ctx, executionFactorySkillDataset, skillID)
+	if err := s.vegaClient.DeleteDatasetDocumentByID(ctx, executionFactorySkillDataset, skillID); err != nil {
+		s.logger.WithContext(ctx).Errorf("delete skill index document failed, skill_id=%s, err=%v", skillID, err)
+		return err
+	}
+	return nil
+}
+
+func (s *skillIndexSync) isInitialized() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.initialized
+}
+
+func (s *skillIndexSync) setInitialized(initialized bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.initialized = initialized
+}
+
+func (s *skillIndexSync) retryInit() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	s.logger.Warn("skill index sync service init retry loop started")
+	for range ticker.C {
+		if err := s.Init(context.Background()); err != nil {
+			s.logger.Warnf("retry init skill index sync service failed, error: %v", err)
+			continue
+		}
+		s.logger.Info("skill index sync service init retry succeeded")
+		return
+	}
 }
 
 func (s *skillIndexSync) buildSkillDocument(ctx context.Context, skill *model.SkillRepositoryDB) (map[string]any, error) {

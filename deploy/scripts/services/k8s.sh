@@ -113,7 +113,9 @@ init_k8s_master() {
     disable_selinux
     configure_system
     
-    # Get the default network interface IP if not specified
+    # Resolve API server advertise address
+    # This must be a real IP bound to a local network interface (not a domain
+    # or NAT public IP), because kubeadm binds the API server to it.
     if [[ -z "${API_SERVER_ADVERTISE_ADDRESS}" ]]; then
         API_SERVER_ADVERTISE_ADDRESS=$(hostname -I | awk '{print $1}')
     fi
@@ -963,6 +965,7 @@ reset_k8s() {
     rm -rf /var/lib/cni 2>/dev/null || true
     rm -rf /root/.kube 2>/dev/null || true
     rm -f /etc/kubernetes/admin.conf 2>/dev/null || true
+    rm -f "${HOME}/.kweaver-ai/config.yaml" 2>/dev/null || true
     
     log_warn "Reset completed. iptables/IPVS rules are not automatically cleaned by this script."
     log_info "Kubernetes reset done"

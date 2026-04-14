@@ -292,6 +292,20 @@ func (mr *MockSkillIndexSyncServiceMockRecorder) DeleteSkill(ctx, skillID any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).DeleteSkill), ctx, skillID)
 }
 
+// EnsureInitialized mocks base method.
+func (m *MockSkillIndexSyncService) EnsureInitialized(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnsureInitialized", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnsureInitialized indicates an expected call of EnsureInitialized.
+func (mr *MockSkillIndexSyncServiceMockRecorder) EnsureInitialized(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureInitialized", reflect.TypeOf((*MockSkillIndexSyncService)(nil).EnsureInitialized), ctx)
+}
+
 // Init mocks base method.
 func (m *MockSkillIndexSyncService) Init(ctx context.Context) error {
 	m.ctrl.T.Helper()

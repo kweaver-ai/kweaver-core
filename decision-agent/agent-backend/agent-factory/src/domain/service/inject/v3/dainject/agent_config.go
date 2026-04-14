@@ -14,7 +14,6 @@ import (
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/dbaccess/releaseacc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/chttpinject"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/httpinject"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/usermanagementacc"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/mqaccess"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/cmpopenai"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/cmp/rediscmp"
@@ -44,7 +43,7 @@ func NewDaConfSvc() iv3portdriver.IDataAgentConfigSvc {
 			PubedAgentRepo:    pubedagentdbacc.NewPubedAgentRepo(),
 			Logger:            logger.GetLogger(),
 			OpenAICmp:         openAICmp,
-			UmHttp:            usermanagementacc.NewClient(),
+			UmHttp:            chttpinject.NewUserManagementClient(),
 			ProductRepo:       productdbacc.NewProductRepo(),
 			Um2Http:           chttpinject.NewUmHttpAcc(),
 			TplSvc:            NewDaTplSvc(),

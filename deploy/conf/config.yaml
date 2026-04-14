@@ -23,6 +23,10 @@ flowAutomation:
         bucketName: ""
         skipVerify: true
         disableHTTPS: false
+dipStudio:
+  openClaw:
+    configHostPath: ''
+    workspaceHostPath: ''
 depServices:
   mq:
     auth:

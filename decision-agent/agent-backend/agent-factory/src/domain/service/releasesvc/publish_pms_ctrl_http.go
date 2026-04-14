@@ -5,15 +5,10 @@ import (
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/drivenadapter/httpaccess/authzhttp/authzhttpreq"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cenum"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
 	"github.com/pkg/errors"
 )
 
 func (svc *releaseSvc) removeUsePmsByHTTPAcc(ctx context.Context, agentID string) (err error) {
-	if cenvhelper.IsLocalDev() {
-		return
-	}
-
 	// 删除Agent使用权限
 	err = svc.authZHttp.DeleteAgentPolicy(ctx, agentID)
 	if err != nil {
@@ -38,10 +33,6 @@ func (svc *releaseSvc) grantUsePms(ctx context.Context, agentID, agentName strin
 	}
 
 	if len(accessors) == 0 {
-		return
-	}
-
-	if cenvhelper.IsLocalDev() {
 		return
 	}
 

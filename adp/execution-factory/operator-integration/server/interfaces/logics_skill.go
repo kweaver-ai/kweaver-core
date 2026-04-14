@@ -238,6 +238,7 @@ type SkillReader interface {
 
 type SkillIndexSyncService interface {
 	Init(ctx context.Context) error
+	EnsureInitialized(ctx context.Context) error
 	UpsertSkill(ctx context.Context, skill *model.SkillRepositoryDB) error
 	DeleteSkill(ctx context.Context, skillID string) error
 }

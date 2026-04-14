@@ -1,0 +1,51 @@
+apiVersion: deploy.kweaver.ai/v1alpha1
+kind: VersionSet
+product: isf
+version: 0.6.0
+source:
+  helmRepoName: kweaver
+  helmRepoUrl: https://kweaver-ai.github.io/helm-repo/
+releases:
+  isf-data-migrator:
+    chart: isf-data-migrator
+    version: 0.6.0-20260410.22-aa40b26
+    stage: pre
+  hydra:
+    chart: hydra
+    version: 0.6.0-10288a4-20260410.1
+  sharemgnt-single:
+    chart: sharemgnt-single
+    version: 0.6.0-89990a1-20260410.4
+  user-management:
+    chart: user-management
+    version: 0.6.0-aed33e6-20260410.1
+  sharemgnt:
+    chart: sharemgnt
+    version: 0.6.0-89990a1-20260410.4
+  authentication:
+    chart: authentication
+    version: 0.6.0-001416e-20260410.1
+  policy-management:
+    chart: policy-management
+    version: 0.6.0-a99a266-20260410.1
+  audit-log:
+    chart: audit-log
+    version: 0.6.0-d79e4dc-20260410.1
+  eacp:
+    chart: eacp
+    version: 0.6.0-a120571-20260410.2
+  isfwebthrift:
+    chart: isfwebthrift
+    version: 0.6.0-998e3f2-20260410.1
+  isfweb:
+    chart: isfweb
+    version: 0.6.0-998e3f2-20260410.1
+  authorization:
+    chart: authorization
+    version: 0.6.0-599a9a3-20260410.1
+  ingress-informationsecurityfabric:
+    chart: ingress-informationsecurityfabric
+    version: 0.6.0-2548ee2-20260410.1
+  oauth2-ui:
+    chart: oauth2-ui
+    version: 0.6.0-001416e-20260410.1
