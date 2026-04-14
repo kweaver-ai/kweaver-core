@@ -2,13 +2,17 @@ import json
 import re
 
 from app.commons.get_user_info import get_userid_by_search, get_username_by_ids
+from app.core.config import base_config
 from app.dao.llm_model_dao import llm_model_dao
 import hashlib
 
 
 async def reshape_source(result, total):
-    user_ids = await get_userid_by_search(result)
-    user_infos = await get_username_by_ids(user_ids)
+    if base_config.AUTH_ENABLED:
+        user_ids = await get_userid_by_search(result)
+        user_infos = await get_username_by_ids(user_ids)
+    else:
+        user_infos = {}
     result = {
         "count": total,
         "data": [
