@@ -18,6 +18,7 @@ from .models import (
     FeaturesConfig,
     O11yConfig,
     DialogLoggingConfig,
+    LLMMessageLoggingConfig,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "FeaturesConfig",
     "O11yConfig",
     "DialogLoggingConfig",
+    "LLMMessageLoggingConfig",
 ]

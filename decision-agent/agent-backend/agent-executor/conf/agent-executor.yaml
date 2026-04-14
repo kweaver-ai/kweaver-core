@@ -88,6 +88,11 @@ dialog_logging:
   single_profile_file_path: "./data/dialog_single_file_logs/profile.log"
   single_trajectory_file_path: "./data/dialog_single_file_logs/trajectory.log"
 
+# 9. LLM message 日志
+llm_message_logging:
+  enabled: false
+  log_dir: "./data/dolphin_llm_log"
+
 
 
 local_dev:

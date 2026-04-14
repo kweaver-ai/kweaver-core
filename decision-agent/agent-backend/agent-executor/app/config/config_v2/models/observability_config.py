@@ -89,3 +89,19 @@ class DialogLoggingConfig:
                 "single_trajectory_file_path", "./data/debug_logs/trajectory.log"
             ),
         )
+
+
+@dataclass
+class LLMMessageLoggingConfig:
+    """LLM message 日志配置"""
+
+    enabled: bool = False
+    log_dir: str = ".local/dolphin_llm_log"
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LLMMessageLoggingConfig":
+        """从字典创建配置对象"""
+        return cls(
+            enabled=data.get("enabled", False),
+            log_dir=data.get("log_dir", ".local/dolphin_llm_log"),
+        )

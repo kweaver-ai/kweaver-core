@@ -240,6 +240,16 @@ class AgentCoreV2:
                 context_variables, get_user_account_type(headers) or ""
             )
 
+            if Config.llm_message_logging and Config.llm_message_logging.enabled:
+                flags.set_flag(flags.LLM_MESSAGE_LOGGING, True)
+                flags.set_param(
+                    flags.LLM_MESSAGE_LOG_DIR,
+                    Config.llm_message_logging.log_dir,
+                )
+            else:
+                flags.set_flag(flags.LLM_MESSAGE_LOGGING, False)
+                flags.set_param(flags.LLM_MESSAGE_LOG_DIR, "")
+
             # 获取输出变量
             output_vars = agent_config.output_vars or []
 
