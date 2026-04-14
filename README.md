@@ -19,7 +19,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 - 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Web UI for KWeaver (username: `kweaver`, password: `111111`)
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
-- 📘 [Documentation](help/) - Product documentation and usage guides
+- 📘 [Documentation](help/README.md) - Product documentation and usage guides ([EN](help/en/README.md) / [中文](help/zh/README.md))
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver-core/) - KWeaver technical articles and updates
 - 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
 - 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
