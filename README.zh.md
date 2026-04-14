@@ -103,6 +103,18 @@ kweaver bkn list
 
 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
 
+使用以下命令安装 CLI：
+
+```bash
+npm install -g @kweaver-ai/kweaver-sdk
+```
+
+或者无需全局安装，直接运行：
+
+```bash
+npx kweaver --help
+```
+
 ### AI Agent Skills
 
 从 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 使用 [`npx skills`](https://www.npmjs.com/package/skills) 安装技能。

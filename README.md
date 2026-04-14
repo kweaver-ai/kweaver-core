@@ -102,6 +102,18 @@ After deploying KWeaver Core, we recommend installing [kweaver-sdk](https://gith
 
 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) gives AI agents (Claude Code, GPT, custom agents, etc.) access to KWeaver knowledge networks and Decision Agents via the `kweaver` CLI. It also provides Python and TypeScript SDKs for programmatic integration.
 
+Install the CLI with:
+
+```bash
+npm install -g @kweaver-ai/kweaver-sdk
+```
+
+Or run it without a global install:
+
+```bash
+npx kweaver --help
+```
+
 ### AI Agent Skills
 
 Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills).
