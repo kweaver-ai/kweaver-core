@@ -194,18 +194,24 @@ func ValidateObjectType(ctx context.Context, objectType *interfaces.ObjectType, 
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
 				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.Type))
 		}
-		if prop.DataSource == nil || prop.DataSource.Type == "" || prop.DataSource.ID == "" {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据来源(type、id)不能为空", objectType.OTName, prop.Name))
-		}
-		if !interfaces.ValidLogicSourceTypes[prop.DataSource.Type] {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据资源类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.DataSource.Type))
-		}
-		if prop.Type != prop.DataSource.Type {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据类型[%s]与其所绑定的数据资源类型[%s]不一致",
-					objectType.OTName, prop.Name, prop.Type, prop.DataSource.Type))
+
+		if prop.DataSource != nil && prop.DataSource.Type != "" && prop.DataSource.ID != "" {
+			// 不为空时，校验数据资源类型和逻辑属性类型是否一致
+			if !interfaces.ValidLogicSourceTypes[prop.DataSource.Type] {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据资源类型[%s]无效，只支持 metric, operator", objectType.OTName, prop.Name, prop.DataSource.Type))
+			}
+			if prop.Type != prop.DataSource.Type {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据类型[%s]与其所绑定的数据资源类型[%s]不一致",
+						objectType.OTName, prop.Name, prop.Type, prop.DataSource.Type))
+			}
+		} else {
+			// 为空时，校验是否在严格模式下，严格模式下不能为空
+			if strictMode {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ObjectType_InvalidParameter).
+					WithErrorDetails(fmt.Sprintf("对象类[%s]逻辑属性[%s]的数据来源(type、id)不能为空", objectType.OTName, prop.Name))
+			}
 		}
 
 		//  logic_property.parameters 非空时：参数名称非空
