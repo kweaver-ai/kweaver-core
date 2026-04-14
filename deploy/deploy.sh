@@ -61,6 +61,9 @@ usage() {
     echo "  kweaver-dip download          Download/update DIP + Core + ISF charts into deploy/.tmp/charts"
     echo "  kweaver-dip uninstall         Uninstall KWeaver DIP services"
     echo "  kweaver-dip status            Show KWeaver DIP services status"
+    echo "  etrino install                Install Etrino services (vega-hdfs, vega-calculate, vega-metadata)"
+    echo "  etrino uninstall              Uninstall Etrino services"
+    echo "  etrino status                 Show Etrino services status"
     echo "  all install                   Run full initialization (k8s + mariadb + redis + ingress-nginx)"
     echo ""
     echo "Examples:"
@@ -98,6 +101,9 @@ usage() {
     echo "  $0 kweaver-dip uninstall      # Uninstall KWeaver DIP services"
     echo "  $0 kweaver-dip status         # Show KWeaver DIP services status"
     echo "  $0 kweaver-dip install --confirm-missing-openclaw-paths  # Continue even if configured dipStudio OpenClaw paths do not exist"
+    echo "  $0 etrino install             # Install Etrino services only"
+    echo "  $0 etrino status              # Show Etrino services status"
+    echo "  $0 etrino uninstall           # Uninstall Etrino services"
     echo "  $0 config generate            # Generate/update ~/.kweaver-ai/config.yaml"
     echo "  $0 all install                # Full initialization with all components"
     echo ""
@@ -134,6 +140,7 @@ usage() {
     echo "  $0 isf install --config=/root/.kweaver-ai/config.yaml --helm_repo_name=kweaver"
     echo "  $0 isf download --force-refresh              # Force re-download ISF charts to deploy/.tmp/charts"
     echo "  $0 kweaver-dip install --config=/root/.kweaver-ai/config.yaml"
+    echo "  $0 etrino install --config=/root/.kweaver-ai/config.yaml"
 }
 
 _detect_node_ip() {
@@ -619,6 +626,35 @@ main() {
                 ;;
             *)
                 log_error "Unknown kweaver-dip action: ${action}"
+                usage
+                exit 1
+                ;;
+        esac
+        return 0
+    fi
+
+    # Handle etrino module
+    if [[ "${module}" == "etrino" ]]; then
+        local etrino_script="${SCRIPT_DIR}/scripts/services/etrino.sh"
+        if [[ ! -f "${etrino_script}" ]]; then
+            log_error "Etrino script not found at ${etrino_script}"
+            exit 1
+        fi
+
+        case "${action}" in
+            install|init)
+                check_root
+                CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" install "$@"
+                ;;
+            status)
+                CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" status "$@"
+                ;;
+            uninstall)
+                check_root
+                CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" uninstall "$@"
+                ;;
+            *)
+                log_error "Unknown etrino action: ${action}"
                 usage
                 exit 1
                 ;;
