@@ -219,3 +219,44 @@
   url: /api/agent-operator-integration/v1/function/execute
   method: POST
   headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+# Skill相关
+- name: 注册Skill
+  url: /api/agent-operator-integration/v1/skills
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取Skill列表
+  url: /api/agent-operator-integration/v1/skills
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取Skill详情
+  url: /api/agent-operator-integration/v1/skills/${skill_id}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 更新Skill状态
+  url: /api/agent-operator-integration/v1/skills/${skill_id}/status
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取Skill内容
+  url: /api/agent-operator-integration/v1/skills/${skill_id}/content
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 读取Skill文件
+  url: /api/agent-operator-integration/v1/skills/${skill_id}/file/${rel_path}
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 获取Skill市场列表
+  url: /api/agent-operator-integration/v1/skills/market
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+
+- name: 删除Skill
+  url: /api/agent-operator-integration/v1/skills/${skill_id}
+  method: DELETE
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

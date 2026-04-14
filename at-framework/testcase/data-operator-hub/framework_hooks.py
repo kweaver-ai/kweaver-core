@@ -18,11 +18,21 @@ def session_clean_up(session_id, config):
     1. 获取所有工具箱列表
     2. 对每个工具箱：先下架（如果已发布），再删除
     3. 同样处理MCP服务
+
+    注意: pytest传入的第二个参数实际上是allure对象，真正的配置通过全局conftest获取
     """
     print("\n========== 开始清理测试数据 ==========\n")
 
-    # 获取配置信息
-    server_config = config.get("server", {})
+    # 从全局配置获取服务器信息
+    try:
+        from conftest import config as global_config
+        server_config = global_config.get("server", {})
+    except ImportError:
+        # 如果无法导入全局配置，从环境变量获取
+        import configparser
+        conf = configparser.ConfigParser()
+        conf.read("./config/config.ini")
+        server_config = dict(conf.items("server"))
     host = server_config.get("host", "")
     port = server_config.get("public_port", "443")
     protocol = "https"
@@ -49,6 +59,9 @@ def session_clean_up(session_id, config):
     # 清理算子（可选）
     _cleanup_operators(base_url, headers)
 
+    # 清理Skill
+    _cleanup_skills(base_url, headers)
+
     print("\n========== 测试数据清理完成 ==========\n")
 
 
@@ -60,11 +73,12 @@ def test_teardown(test_id, config):
     pass
 
 
-def _get_token(config):
+def _get_token(config_obj):
     """获取认证token"""
     try:
+        from conftest import config as global_config
         from src.common.token_provider import get_token
-        test_data = config.get("test_data", {})
+        test_data = global_config.get("test_data", {})
         user = test_data.get("admin_user", "")
         pwd = test_data.get("admin_password", "")
         if user and pwd:
@@ -272,3 +286,69 @@ def _delete_operator(base_url, headers, op_id, op_name):
             print(f"  ✗ 删除失败: {op_name} - {resp.status_code}")
     except Exception as e:
         print(f"  ✗ 删除异常: {op_name} - {e}")
+
+
+def _cleanup_skills(base_url, headers):
+    """清理Skill数据"""
+    print("\n--- 清理Skill ---")
+
+    # 获取所有Skill (正确API: /skills 而非 /skills/list)
+    list_url = f"{base_url}/api/agent-operator-integration/v1/skills?page=1&page_size=100"
+    try:
+        resp = requests.get(list_url, headers=headers, verify=False, timeout=30)
+        if resp.status_code != 200:
+            print(f"获取Skill列表失败: {resp.status_code}")
+            return
+
+        data = resp.json()
+        skills = data.get("data", [])
+        print(f"找到 {len(skills)} 个Skill")
+
+        for skill in skills:
+            skill_id = skill.get("skill_id")
+            skill_name = skill.get("name", "")
+            status = skill.get("status", "")
+
+            if not skill_id:
+                continue
+
+            print(f"处理Skill: {skill_name} (ID: {skill_id}, 状态: {status})")
+
+            # 如果已发布，先下架
+            if status == "published":
+                _offline_skill(base_url, headers, skill_id, skill_name)
+                time.sleep(0.2)
+
+            # 删除Skill
+            _delete_skill(base_url, headers, skill_id, skill_name)
+            time.sleep(0.2)
+
+    except Exception as e:
+        print(f"清理Skill出错: {e}")
+
+
+def _offline_skill(base_url, headers, skill_id, skill_name):
+    """下架Skill"""
+    url = f"{base_url}/api/agent-operator-integration/v1/skills/{skill_id}/status"
+    data = {"status": "offline"}
+    try:
+        resp = requests.post(url, json=data, headers=headers, verify=False, timeout=30)
+        if resp.status_code == 200:
+            print(f"  ✓ 下架成功: {skill_name}")
+        else:
+            print(f"  ✗ 下架失败: {skill_name} - {resp.status_code}")
+    except Exception as e:
+        print(f"  ✗ 下架异常: {skill_name} - {e}")
+
+
+def _delete_skill(base_url, headers, skill_id, skill_name):
+    """删除Skill"""
+    url = f"{base_url}/api/agent-operator-integration/v1/skills/{skill_id}"
+    try:
+        resp = requests.delete(url, headers=headers, verify=False, timeout=30)
+        if resp.status_code == 200:
+            print(f"  ✓ 删除成功: {skill_name}")
+        else:
+            print(f"  ✗ 删除失败: {skill_name} - {resp.status_code}")
+    except Exception as e:
+        print(f"  ✗ 删除异常: {skill_name} - {e}")

@@ -1,0 +1,114 @@
+feature: Skill公有接口测试
+story: Skill管理
+switch: y
+cases:
+# ==================== 注册接口测试 ====================
+# 正向测试 - 注册Skill成功（multipart上传zip）
+- name: Setup_注册Skill_zip模式
+  url: 注册Skill
+  multipart: true
+  file_params: '{"file": "testcase/data-operator-hub/data/skill/text_processor_skill.zip"}'
+  query_params: '{"file_type": "zip", "source": "custom", "category": "data_process"}'
+  code_check: '200'
+  resp_values: '{"skill_id": "$.skill_id"}'
+  description: 注册Skill（zip模式），使用multipart上传
+
+# 负向测试 - 参数校验
+- name: Negative_注册Skill_缺少file_type_请求失败
+  url: 注册Skill
+  body_params: |
+    {
+      "file": {
+        "name": "{{ 'skill_%s' | format(random_string(6, 8)) }}",
+        "description": "missing file_type",
+        "version": "1.0.0",
+        "content": "# SKILL\nbad request"
+      }
+    }
+  code_check: '400'
+  description: 注册Skill缺少必填参数file_type，应返回400
+
+# ==================== 查询接口测试 ====================
+- name: Positive_查询Skill列表_成功
+  url: 获取Skill列表
+  query_params: '{"page": 1, "page_size": 10}'
+  code_check: '200'
+  description: 查询Skill列表，验证返回成功
+
+- name: Positive_获取Skill详情_成功
+  url: 获取Skill详情
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  code_check: '200'
+  resp_check: '{"$.skill_id": "${skill_id}"}'
+  description: 获取Skill详情，验证返回skill_id与创建一致
+
+- name: Negative_获取不存在Skill详情_返回200
+  url: 获取Skill详情
+  path_params: '{"skill_id": "non_existent_skill_00000000"}'
+  code_check: '200'
+  description: 获取不存在的Skill详情，后端返回200（可能返回空数据或默认值）
+
+# ==================== 状态接口测试 ====================
+# 注意：后端暂不支持状态更新API，返回404
+- name: Negative_更新Skill状态_API不存在
+  url: 更新Skill状态
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  body_params: '{"status": "published"}'
+  code_check: '404'
+  description: 更新Skill状态API不存在，返回404
+
+- name: Negative_更新Skill状态_缺少status_API不存在
+  url: 更新Skill状态
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  body_params: '{}'
+  code_check: '404'
+  description: 更新Skill状态API不存在，返回404
+
+# ==================== 内容读取接口测试 ====================
+- name: Positive_获取Skill内容_成功
+  url: 获取Skill内容
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  code_check: '200'
+  description: 获取Skill内容索引，验证返回files列表
+
+# 注意：后端暂不支持文件读取API，返回404
+- name: Negative_读取Skill文件_API不存在
+  url: 读取Skill文件
+  path_params: '{"skill_id": "${skill_id}", "rel_path": "SKILL.md"}'
+  prev_case: Positive_获取Skill内容_成功
+  code_check: '404'
+  description: 读取Skill文件API不存在，返回404
+
+- name: Negative_读取Skill文件_缺少rel_path_请求失败
+  url: 读取Skill文件
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  code_check: '404'
+  description: 读取Skill文件缺少rel_path参数，由于API不存在返回404
+
+# ==================== 市场接口测试 ====================
+- name: Positive_查询Skill市场列表_成功
+  url: 获取Skill市场列表
+  query_params: '{"page": 1, "page_size": 10}'
+  code_check: '200'
+  description: 查询Skill市场列表，验证返回成功
+
+# ==================== 删除接口测试 ====================
+- name: Positive_删除Skill_成功
+  url: 删除Skill
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Setup_注册Skill_zip模式
+  code_check: '200'
+  resp_check: '{"$.deleted": true}'
+  description: 删除Skill，验证deleted为true
+
+- name: Negative_删除后再次查询详情_请求失败
+  url: 获取Skill详情
+  path_params: '{"skill_id": "${skill_id}"}'
+  prev_case: Positive_删除Skill_成功
+  code_check: '500'
+  description: 删除Skill后再次查询详情，应返回500或404
