@@ -15,7 +15,7 @@ dependencies:
 releases:
   kweaver-core-data-migrator:
     chart: kweaver-core-data-migrator
-    version: 0.6.0-20260411.1.9fd9eb7
+    version: 0.6.0
     stage: pre
   mf-model-manager:
     chart: mf-model-manager
@@ -25,31 +25,31 @@ releases:
     version: 0.6.0
   bkn-backend:
     chart: bkn-backend
-    version: 0.6.0-20260411.3.9cf8630
+    version: 0.6.0
   ontology-query:
     chart: ontology-query
-    version: 0.6.0-20260411.2.9cf8630
+    version: 0.6.0-20260413.1.4047819
   vega-backend:
     chart: vega-backend
-    version: 0.6.0-20260411.4.9cf8630
+    version: 0.6.0
   data-connection:
     chart: data-connection
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   vega-gateway:
     chart: vega-gateway
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   vega-gateway-pro:
     chart: vega-gateway-pro
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   mdl-data-model:
     chart: mdl-data-model
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   mdl-uniquery:
     chart: mdl-uniquery
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   mdl-data-model-job:
     chart: mdl-data-model-job
-    version: 0.6.0-20260411.3.38003e5
+    version: 0.6.0-20260413.1.38003e5
   agent-operator-integration:
     chart: agent-operator-integration
     version: 0.6.0
@@ -73,7 +73,7 @@ releases:
     version: 0.3.2
   oss-gateway-backend:
     chart: oss-gateway-backend
-    version: 0.5.0
+    version: 0.6.0
   otelcol-contrib:
     chart: otelcol-contrib
     version: 0.2.3
