@@ -1,0 +1,20 @@
+{
+  "name": "text_processor_skill",
+  "description": "A simple text processing skill for testing",
+  "version": "1.0.0",
+  "category": "data_process",
+  "inputs": [
+    {
+      "name": "text",
+      "type": "string",
+      "description": "Input text to process"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "processed_text",
+      "type": "string",
+      "description": "Processed text output"
+    }
+  ]
+}

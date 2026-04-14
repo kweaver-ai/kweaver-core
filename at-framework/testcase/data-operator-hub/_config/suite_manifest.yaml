@@ -31,3 +31,7 @@ suites:
   description: 获取代码模板接口测试
   priority: medium
   estimated_duration: 10m
+- name: Skill管理.yaml
+  description: Skill公有接口测试
+  priority: high
+  estimated_duration: 30m

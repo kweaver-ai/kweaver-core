@@ -8,7 +8,7 @@
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
 - name: 获取Agent列表
-  url: /api/agent-factory/v3/agent
+  url: /api/agent-factory/v3/personal-space/agent-list
   method: GET
   headers: '{"Content-Type": "application/json", "Accept": "application/json", "x-business-domain": "bd_public"}'
 
