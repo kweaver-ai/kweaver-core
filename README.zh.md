@@ -80,6 +80,15 @@ kweaver auth login https://<节点IP> -k
 kweaver bkn list
 ```
 
+6. 查看帮助：
+
+```bash
+kweaver --help                   # 列出所有命令
+kweaver <command> --help         # 查看某命令的帮助，例如 kweaver bkn --help
+```
+
+完整产品文档参见[文档中心](help/README.md)（[中文](help/zh/README.md) / [EN](help/en/README.md)）。
+
 > **尚未部署？** 可访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) Web 界面在线体验（用户名：`kweaver`，密码：`111111`），或将 CLI/SDK 直接连接到 Demo 环境（见下方说明）。
 
 ### 核心子系统
@@ -179,16 +188,48 @@ kweaver auth login https://dip-poc.aishu.cn
 
 > **Demo 账号**：用户名 `kweaver`，密码 `111111`
 
-### 无浏览器环境登录（SSH、CI、容器等）
+### 无浏览器环境认证（SSH、CI、容器等）
 
-**npm 版** `kweaver` CLI 可在没有本地图形浏览器的环境完成 OAuth 登录：
+**npm 版** `kweaver` CLI 支持在没有本地浏览器的环境完成认证，提供两种方式：
 
-1. 在**有浏览器**的机器上执行 `kweaver auth login https://你的实例`；登录成功后，从回调页复制一行命令，或执行 `kweaver auth export` / `kweaver auth export --json`。
-2. 在**无头（headless）**机器上执行该命令，通过 `--client-id`、`--client-secret`、`--refresh-token` 换取令牌并写入 `~/.kweaver/`。
+**方式 1 — `--no-browser`（推荐，适合交互式无头会话）**
 
-若已持有上述参数，也可在无头机器上直接执行：`kweaver auth login <url> --client-id … --client-secret … --refresh-token …`。
+```bash
+kweaver auth login https://你的实例 --no-browser
+```
 
-完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication)）。
+CLI 不会打开浏览器，而是打印一个 OAuth URL。将该 URL 复制到**任意有浏览器的设备**（手机、笔记本等）打开并登录。登录后浏览器会跳转到 `localhost` 回调地址 — 页面会显示错误（这是正常的）。从浏览器地址栏复制**完整 URL**，粘贴回 CLI 提示符：
+
+```
+Open this URL on any device (use a private/incognito window if you need the full sign-in form):
+
+  https://你的实例/oauth2/auth?redirect_uri=...&client_id=...
+
+After login, the browser may show an error page (this is expected if nothing listens on localhost).
+Copy the FULL URL from the address bar and paste it here, or paste only the authorization code.
+
+Paste URL or code>
+```
+
+**方式 2 — 导出凭据后重放（适合 CI / 全自动化场景）**
+
+1. 在**有浏览器**的机器上执行 `kweaver auth login https://你的实例`，登录成功后导出凭据：
+
+```bash
+kweaver auth export              # 输出一行命令，可直接在无头机器上粘贴执行
+kweaver auth export --json       # JSON 格式（适合 CI 存入 secrets）
+```
+
+2. 在**无头机器**上粘贴导出的命令，它通过 `--client-id`、`--client-secret`、`--refresh-token` 换取令牌并写入 `~/.kweaver/`：
+
+```bash
+kweaver auth login https://你的实例 \
+  --client-id <ID> --client-secret <SECRET> --refresh-token <TOKEN>
+```
+
+> 已有 `~/.kweaver/` 保存的会话时，CLI 会在 access token 过期后自动使用 `refresh_token` 换取新令牌，无需额外操作。也可通过环境变量（`KWEAVER_BASE_URL`、`KWEAVER_TOKEN`）传入凭据，无需持久化到磁盘。
+
+完整说明见 [kweaver-sdk — 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication) 与 [Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置上述环境变量。
 
 ### CLI
 
