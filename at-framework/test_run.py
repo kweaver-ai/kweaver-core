@@ -8,7 +8,9 @@
 """
 import json
 import random
+import re
 import string as _str
+from datetime import datetime, timedelta
 from json import JSONDecodeError
 
 import allure
@@ -23,6 +25,189 @@ from conftest import config, compute_case_list, BEARER_AUTH
 from request.http_client import HTTPClient
 
 resp_values = {}
+
+
+def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
+    """
+    解析并执行 resp_check 表达式验证
+
+    支持的表达式格式：
+    - 精确匹配: "value" (字符串), 123 (数字), true/false (布尔), null
+    - 比较操作: ">0", "<10", ">=5", "<=100", "!=null"
+    - contains: "contains('skill')" - 检查数组中是否包含元素，或字符串是否包含子串
+    - exists: "exists" - 检查字段是否存在（非空）
+    - regex: "regex('^abc.*')" - 正则匹配
+    - type: "type('array')" - 类型检查
+
+    返回: (是否通过, 错误消息)
+    """
+    if expected_value is None:
+        # 期望值为 null，检查实际值是否为 None
+        return actual_value is None, "expect null, got %s" % repr(actual_value)
+
+    if isinstance(expected_value, (int, float, bool)):
+        # 数字或布尔值：精确匹配
+        return actual_value == expected_value, "expect %s, got %s" % (expected_value, repr(actual_value))
+
+    if not isinstance(expected_value, str):
+        # 其他类型（如直接传入的 dict/list）：精确匹配
+        return actual_value == expected_value, "expect %s, got %s" % (repr(expected_value), repr(actual_value))
+
+    # 字符串表达式解析
+    expr = expected_value.strip()
+
+    # 1. contains 操作
+    contains_match = re.match(r"^contains\((.+)\)$", expr)
+    if contains_match:
+        target = contains_match.group(1).strip()
+        # 移除可能的引号
+        if target.startswith("'") and target.endswith("'"):
+            target = target[1:-1]
+        elif target.startswith('"') and target.endswith('"'):
+            target = target[1:-1]
+
+        if isinstance(actual_value, (list, tuple)):
+            # 数组包含检查
+            found = any(str(item) == target or (isinstance(item, dict) and item.get("stage") == target) for item in actual_value)
+            # 特殊处理：检查数组元素的字段值
+            if not found and actual_value and isinstance(actual_value[0], dict):
+                # 尝试检查每个元素的特定字段
+                found = any(item.get("stage") == target for item in actual_value if isinstance(item, dict))
+            return found, "expect array/string contains '%s', got %s" % (target, repr(actual_value))
+        elif isinstance(actual_value, str):
+            # 字符串包含检查
+            return target in actual_value, "expect string contains '%s', got %s" % (target, repr(actual_value))
+        else:
+            return False, "contains() requires array or string, got %s" % type(actual_value).__name__
+
+    # 2. 比较操作符 (>、<、>=、<=、!=、==)
+    # 注意：需要先匹配 >= 和 <=，再匹配 > 和 <，避免部分匹配
+    compare_match = re.match(r"^(>=|<=|==|!=|>|<)(.+)$", expr)
+    if compare_match:
+        op = compare_match.group(1)
+        compare_value_str = compare_match.group(2).strip()
+
+        # 处理特殊值
+        if compare_value_str.lower() == "null":
+            compare_value = None
+        elif compare_value_str.lower() == "true":
+            compare_value = True
+        elif compare_value_str.lower() == "false":
+            compare_value = False
+        else:
+            try:
+                # 尝试转换为数字
+                if '.' in compare_value_str:
+                    compare_value = float(compare_value_str)
+                else:
+                    compare_value = int(compare_value_str)
+            except ValueError:
+                compare_value = compare_value_str
+
+        # 执行比较
+        try:
+            if op == ">":
+                result = actual_value > compare_value
+            elif op == "<":
+                result = actual_value < compare_value
+            elif op == ">=":
+                result = actual_value >= compare_value
+            elif op == "<=":
+                result = actual_value <= compare_value
+            elif op == "==":
+                result = actual_value == compare_value
+            elif op == "!=":
+                result = actual_value != compare_value
+            else:
+                return False, "unknown operator: %s" % op
+
+            if result:
+                return result, "OK"
+            else:
+                return result, "expect actual %s %s %s, but got %s (actual=%s)" % (
+                    repr(actual_value), op, repr(compare_value),
+                    "not satisfied" if op in (">", "<", ">=", "<=") else "different",
+                    repr(actual_value)
+                )
+        except TypeError as e:
+            return False, "comparison error: %s (actual=%s, compare=%s)" % (str(e), repr(actual_value), repr(compare_value))
+
+    # 3. exists 检查
+    if expr == "exists":
+        return actual_value is not None and actual_value != "", "expect exists (not None/empty), got %s" % repr(actual_value)
+
+    # 4. not_exists 检查
+    if expr == "not_exists" or expr == "null":
+        return actual_value is None or actual_value == "", "expect not_exists/null, got %s" % repr(actual_value)
+
+    # 5. regex 正则匹配
+    regex_match = re.match(r"^regex\((.+)\)$", expr)
+    if regex_match:
+        pattern = regex_match.group(1).strip()
+        # 移除可能的引号
+        if pattern.startswith("'") and pattern.endswith("'"):
+            pattern = pattern[1:-1]
+        elif pattern.startswith('"') and pattern.endswith('"'):
+            pattern = pattern[1:-1]
+
+        if actual_value is None:
+            return False, "regex match failed: actual value is None"
+
+        try:
+            result = re.search(pattern, str(actual_value)) is not None
+            return result, "expect regex match '%s', got %s" % (pattern, repr(actual_value))
+        except re.error as e:
+            return False, "regex pattern error: %s" % str(e)
+
+    # 6. type 类型检查
+    type_match = re.match(r"^type\((.+)\)$", expr)
+    if type_match:
+        expected_type = type_match.group(1).strip().lower()
+        # 移除可能的引号
+        if expected_type.startswith("'") and expected_type.endswith("'"):
+            expected_type = expected_type[1:-1]
+        elif expected_type.startswith('"') and expected_type.endswith('"'):
+            expected_type = expected_type[1:-1]
+
+        type_map = {
+            "string": str, "str": str,
+            "integer": int, "int": int,
+            "float": float, "number": (int, float),
+            "boolean": bool, "bool": bool,
+            "array": (list, tuple), "list": (list, tuple),
+            "object": dict, "dict": dict,
+            "null": type(None)
+        }
+
+        expected_type_class = type_map.get(expected_type)
+        if expected_type_class is None:
+            return False, "unknown type: %s" % expected_type
+
+        result = isinstance(actual_value, expected_type_class)
+        return result, "expect type '%s', got '%s'" % (expected_type, type(actual_value).__name__)
+
+    # 7. 精确匹配（默认行为）
+    # 处理字符串形式的特殊值
+    if expr.lower() == "null":
+        return actual_value is None, "expect null, got %s" % repr(actual_value)
+    elif expr.lower() == "true":
+        return actual_value == True, "expect true, got %s" % repr(actual_value)
+    elif expr.lower() == "false":
+        return actual_value == False, "expect false, got %s" % repr(actual_value)
+
+    # 尝试数字转换
+    try:
+        if '.' in expr:
+            num_expected = float(expr)
+            return actual_value == num_expected, "expect %s, got %s" % (num_expected, repr(actual_value))
+        else:
+            num_expected = int(expr)
+            return actual_value == num_expected, "expect %s, got %s" % (num_expected, repr(actual_value))
+    except ValueError:
+        pass
+
+    # 字符串精确匹配
+    return actual_value == expr, "expect '%s', got %s" % (expr, repr(actual_value))
 
 
 def _resolve_authorization(case_info):
@@ -76,6 +261,8 @@ def _jinja_random_string(length=8, model=8):
 
 _jinja_env = Environment()
 _jinja_env.globals["random_string"] = _jinja_random_string
+_jinja_env.globals["now"] = datetime.now
+_jinja_env.globals["timedelta"] = timedelta
 
 
 def _render_jinja_fields(case_info):
@@ -174,8 +361,20 @@ def test_case(feature, story, case_name, case_info):
             pass
 
     if case_info["resp_check"]:
-        for k, v in json.loads(case_info["resp_check"]).items():
-            assert jsonpath.jsonpath(client.resp_body(), k)[0] == v
+        resp_body = client.resp_body()
+        for jsonpath_key, expected_value in json.loads(case_info["resp_check"]).items():
+            # 获取实际值
+            actual_values = jsonpath.jsonpath(resp_body, jsonpath_key)
+            # jsonpath.jsonpath() 返回 False 或 None 表示未找到匹配项
+            if actual_values is False or actual_values is None or (isinstance(actual_values, list) and len(actual_values) == 0):
+                # jsonpath 未找到匹配项
+                assert False, "jsonpath '%s' not found in response" % jsonpath_key
+
+            actual_value = actual_values[0]
+
+            # 使用扩展的表达式解析函数进行验证
+            passed, error_msg = _parse_check_expression(expected_value, actual_value, jsonpath_key)
+            assert passed, "resp_check failed for '%s': %s" % (jsonpath_key, error_msg)
 
     if case_info["resp_schema"]:
         json_schema = genson(json.loads(case_info["resp_schema"]))

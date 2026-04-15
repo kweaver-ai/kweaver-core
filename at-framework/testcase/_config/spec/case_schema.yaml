@@ -64,7 +64,15 @@ fields:
     type: string
     required: false
     default: ""
-    description: JSON 对象，jsonpath 键与期望值，如 {"$.code":0,"$.data.name":"x"}；值可为任意 JSON 类型（字符串、数字、布尔、null），与 jsonpath 提取结果比较
+    description: |
+      JSON 对象，jsonpath 键与期望值表达式。支持多种表达式格式：
+      - 精确匹配：{"$.code": 0, "$.data.name": "x"} — 值可为任意 JSON 类型（字符串、数字、布尔、null）
+      - 比较操作：{"$.count": ">0", "$.size": "<10", "$.age": ">=18", "$.score": "<=100", "$.status": "!=null"}
+      - contains：{"$.items": "contains('skill')"} — 检查数组中是否包含元素，或字符串是否包含子串
+      - exists：{"$.field": "exists"} — 检查字段是否存在（非空）
+      - regex：{"$.id": "regex('^abc.*')"} — 正则匹配
+      - type：{"$.data": "type('array')"} — 类型检查（string/integer/float/boolean/array/object/null）
+      示例：验证技能调用 {"$.tool_call_count": ">0", "$.progress": "contains('skill')"}
   - name: resp_schema
     type: string
     required: false
