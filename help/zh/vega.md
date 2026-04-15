@@ -72,10 +72,84 @@ kweaver vega resource get res_orders_001
 # 预览资源数据（默认 10 行）
 kweaver vega resource preview res_orders_001 --limit 20
 
-# 对资源执行自定义查询
+# 对资源执行数据查询（POST .../resources/:id/data，结构化 body：过滤、排序、分页）
 kweaver vega resource query res_orders_001 \
-  -d '{"sql":"SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id ORDER BY total DESC LIMIT 10"}'
+  -d '{"limit":10,"offset":0,"need_total":true}'
 ```
+
+#### 结构化查询与 SQL 查询（vega-backend）
+
+以下两条命令都走 **`vega-backend`**，**不依赖** `vega-calculate-coordinator`（Trino）。适合在仅安装 KWeaver Core、已配置 MySQL/PostgreSQL Catalog 的场景下查数。
+
+**结构化查询** — `POST /api/vega-backend/v1/query/execute`
+
+```bash
+kweaver vega query execute -d '<json>'
+```
+
+请求体要点：`tables`（必填，`resource_id` + 可选 `alias`）、`joins`（同 Catalog 内多表）、`output_fields`、`filter_condition`、`sort`、`offset` / `limit`（`limit` 最大 10000）、`need_total`。首页分页时 `query_id` 可不传；翻页需带上次返回的 `query_id`。JOIN 的 `on` 条件里 **`left_field` / `right_field` 须与 `kweaver vega resource get` 返回的 `schema_definition[].name` 一致**（逻辑名，非数据库原始列名若不同则需以 schema 为准）。**所有表必须属于同一 Catalog**，否则返回 501。
+
+`filter_condition` 常用 `operation`：`==`/`eq`、`!=`/`not_eq`、`>`/`gt`、`>=`/`gte`、`<`/`lt`、`<=`/`lte`、`in`/`not_in`、`like`/`not_like`（仅当该字段在 schema 中为 string 类型）、`range`、`null`/`not_null`；逻辑组合用 `and`/`or` 嵌套 `sub_conditions`。叶子条件通常含 `field`、`operation`、`value`、`value_from`（常量填 `"const"`）。
+
+单表示例：
+
+```bash
+kweaver vega query execute -d '{"tables":[{"resource_id":"res_mysql_supplier"}],"limit":5,"need_total":true}'
+```
+
+两表 JOIN 示例（请替换为真实 `resource_id` 与字段名）：
+
+```bash
+kweaver vega query execute -d '{
+  "tables": [
+    {"resource_id":"res_a","alias":"a"},
+    {"resource_id":"res_b","alias":"b"}
+  ],
+  "joins":[{"type":"inner","left_table_alias":"a","right_table_alias":"b","on":[{"left_field":"fk_id","right_field":"id"}]}],
+  "output_fields":["a.name","b.amount"],
+  "limit":10
+}'
+```
+
+**直连 SQL** — `POST /api/vega-backend/v1/resources/query`
+
+```bash
+kweaver vega sql -d '<json>'
+kweaver vega sql --help
+```
+
+请求体必填：`query`（SQL 字符串，或 OpenSearch 的 DSL 对象）、`resource_type`（`mysql` | `mariadb` | `postgresql` | `opensearch`）。可选：`stream_size`（100–10000）、`query_timeout`（秒，1–3600）、`query_id`。
+
+SQL 中可使用占位符 `{{.<资源ID>}}` 或 `{{<资源ID>}}`（资源 ID 为 Vega `resource_id`），后端替换为该资源的物理表标识。无占位符时也可写**原生 SQL**（仍需 `resource_type`），表名需符合目标库语法。
+
+占位符示例：
+
+```bash
+kweaver vega sql -d '{
+  "resource_type":"mysql",
+  "query":"SELECT * FROM {{.res_mysql_supplier}} LIMIT 5"
+}'
+```
+
+原生 SQL 示例（表名按实际库填写）：
+
+```bash
+kweaver vega sql -d '{
+  "resource_type":"mysql",
+  "query":"SELECT 1 AS one"
+}'
+```
+
+**三种查询方式对照**
+
+| 方式 | 入口 | 依赖 | 典型用途 |
+|------|------|------|----------|
+| 结构化查询 | `kweaver vega query execute` | vega-backend | 同 Catalog 多表 JOIN、统一 filter DSL |
+| 直连 SQL | `kweaver vega sql` | vega-backend | 复杂 SQL、聚合、占位符引用资源 |
+| 单资源数据 API | `kweaver vega resource query <id> -d {...}` | vega-backend | 单表过滤、sort、`search_after` 分页 |
+| Dataview + `--sql` | `kweaver dataview query ... --sql` | mdl-uniquery + **Trino**（Etrino） | 跨源/复杂 SQL 经计算集群（需单独安装 Etrino） |
+
+SDK：TypeScript `client.vega.executeQuery(body)` 为结构化查询，`client.vega.sqlQuery(body)` 为 `resources/query`；Python `client.vega.query.execute(...)` 为结构化查询（参数见 SDK），`client.vega.query.sql_query(body)` 为 `resources/query`。
 
 #### 连接器类型
 
@@ -160,11 +234,18 @@ preview = client.vega.resource.preview("res_orders_001", limit=5)
 for row in preview["rows"]:
     print(row)
 
-result = client.vega.resource.query("res_orders_001", {
-    "sql": "SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id LIMIT 10"
+result = client.vega.resources.data("res_orders_001", body={"limit": 10, "offset": 0, "need_total": True})
+
+# 结构化查询（vega-backend /query/execute）；tables 可为 resource_id 字符串或 {"resource_id","alias"} 字典
+q = client.vega.query.execute(tables=["res_orders_001"], limit=5, need_total=True)
+print(q)
+
+# 直连 SQL（vega-backend /resources/query）
+sql_rows = client.vega.query.sql_query({
+    "resource_type": "mysql",
+    "query": "SELECT 1 AS one",
 })
-for row in result["data"]:
-    print(row["customer_id"], row["total"])
+print(sql_rows)
 
 connectors = client.vega.connector_type.list()
 for ct in connectors["data"]:
@@ -211,10 +292,23 @@ resources.data.forEach((res) => console.log(res.id, res.name, res.rowCount));
 const preview = await client.vega.resource.preview('res_orders_001', { limit: 5 });
 preview.rows.forEach((row) => console.log(row));
 
-const queryResult = await client.vega.resource.query('res_orders_001', {
-  sql: 'SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id LIMIT 10',
-});
-queryResult.data.forEach((row) => console.log(row.customerId, row.total));
+const resData = await client.vega.queryResourceData('res_orders_001', JSON.stringify({
+  limit: 10, offset: 0, need_total: true,
+}));
+console.log(resData);
+
+const structured = await client.vega.executeQuery(JSON.stringify({
+  tables: [{ resource_id: 'res_orders_001' }],
+  limit: 5,
+  need_total: true,
+}));
+console.log(structured);
+
+const sqlResp = await client.vega.sqlQuery(JSON.stringify({
+  resource_type: 'mysql',
+  query: 'SELECT 1 AS one',
+}));
+console.log(sqlResp);
 
 const dvList = await client.dataview.list();
 dvList.data.forEach((dv) => console.log(dv.id, dv.name));
@@ -258,13 +352,24 @@ curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat_pg001/resources?categor
 curl -sk "$KWEAVER_BASE/api/vega-backend/v1/resources/res_orders_001/preview?limit=10" \
   -H "Authorization: Bearer $TOKEN"
 
-# 查询资源
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/res_orders_001/query" \
+# 查询资源数据（结构化 body，与 CLI resource query 一致）
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/res_orders_001/data" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "sql": "SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id ORDER BY total DESC LIMIT 10"
-  }'
+  -H "x-http-method-override: GET" \
+  -d '{"limit":10,"offset":0,"need_total":true}'
+
+# 结构化查询 query/execute
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/query/execute" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tables":[{"resource_id":"res_orders_001"}],"limit":5,"need_total":true}'
+
+# 直连 SQL resources/query
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/query" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resource_type":"mysql","query":"SELECT 1 AS one"}'
 
 # 列出连接器类型
 curl -sk "$KWEAVER_BASE/api/vega-backend/v1/connector-types" \

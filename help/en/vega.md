@@ -73,12 +73,87 @@ kweaver vega resource list
 # Get metadata for a specific resource
 kweaver vega resource get <resource_id>
 
-# Query a resource with SQL
-kweaver vega resource query <resource_id> "SELECT * FROM t LIMIT 10"
+# Query resource data (POST .../resources/:id/data — structured body: filters, sort, paging)
+kweaver vega resource query <resource_id> \
+  -d '{"limit":10,"offset":0,"need_total":true}'
 
-# Preview a resource (first N rows with schema info)
-kweaver vega resource preview <resource_id> --rows 20
+# Preview a resource (first N rows)
+kweaver vega resource preview <resource_id> --limit 20
 ```
+
+### Structured query and SQL (vega-backend)
+
+Both commands below use **`vega-backend`** only and **do not** require `vega-calculate-coordinator` (Trino). Use them on Core-only installs with MySQL/PostgreSQL catalogs.
+
+**Structured query** — `POST /api/vega-backend/v1/query/execute`
+
+```bash
+kweaver vega query execute -d '<json>'
+```
+
+Body highlights: `tables` (required: `resource_id` + optional `alias`), `joins` (multi-table within one catalog), `output_fields`, `filter_condition`, `sort`, `offset` / `limit` (max 10000), `need_total`. Omit `query_id` on the first page; reuse it when paging. In `joins[].on`, **`left_field` / `right_field` must match `schema_definition[].name` from `kweaver vega resource get`**. All tables must share one catalog (501 otherwise).
+
+Common `filter_condition` operations: `==`/`eq`, `!=`/`not_eq`, `>`/`gt`, `>=`/`gte`, `<`/`lt`, `<=`/`lte`, `in`/`not_in`, `like`/`not_like` (only if the field is typed as string in schema), `range`, `null`/`not_null`, nested `and`/`or` via `sub_conditions`. Leaf nodes usually include `field`, `operation`, `value`, `value_from` (`"const"` for literals).
+
+Single-table example:
+
+```bash
+kweaver vega query execute -d '{"tables":[{"resource_id":"res_mysql_supplier"}],"limit":5,"need_total":true}'
+```
+
+Two-table JOIN (replace IDs and field names):
+
+```bash
+kweaver vega query execute -d '{
+  "tables": [
+    {"resource_id":"res_a","alias":"a"},
+    {"resource_id":"res_b","alias":"b"}
+  ],
+  "joins":[{"type":"inner","left_table_alias":"a","right_table_alias":"b","on":[{"left_field":"fk_id","right_field":"id"}]}],
+  "output_fields":["a.name","b.amount"],
+  "limit":10
+}'
+```
+
+**Direct SQL** — `POST /api/vega-backend/v1/resources/query`
+
+```bash
+kweaver vega sql -d '<json>'
+kweaver vega sql --help
+```
+
+Required: `query` (SQL string or OpenSearch DSL object), `resource_type` (`mysql` | `mariadb` | `postgresql` | `opensearch`). Optional: `stream_size` (100–10000), `query_timeout` (seconds 1–3600), `query_id`.
+
+Placeholders: `{{.<resource_id>}}` or `{{<resource_id>}}` (Vega resource id) are replaced with the resource’s physical table id. You may also run **native SQL** without placeholders if table names are valid for the engine.
+
+Placeholder example:
+
+```bash
+kweaver vega sql -d '{
+  "resource_type":"mysql",
+  "query":"SELECT * FROM {{.res_mysql_supplier}} LIMIT 5"
+}'
+```
+
+Native SQL example:
+
+```bash
+kweaver vega sql -d '{
+  "resource_type":"mysql",
+  "query":"SELECT 1 AS one"
+}'
+```
+
+**Comparison**
+
+| Approach | Entry | Depends on | Typical use |
+|----------|-------|------------|---------------|
+| Structured | `kweaver vega query execute` | vega-backend | Same-catalog JOINs, filter DSL |
+| Direct SQL | `kweaver vega sql` | vega-backend | Complex SQL, aggregations, placeholders |
+| Resource data | `kweaver vega resource query <id> -d {...}` | vega-backend | Single resource, filters, `search_after` |
+| Dataview `--sql` | `kweaver dataview query ... --sql` | mdl-uniquery + **Trino** (Etrino) | Cross-engine SQL via coordinator |
+
+SDK: TypeScript `client.vega.executeQuery(body)` and `client.vega.sqlQuery(body)`; Python `client.vega.query.execute(...)` and `client.vega.query.sql_query(body)`.
 
 ### Connector Types
 
@@ -174,8 +249,10 @@ resources = client.vega.list_resources()
 for r in resources:
     print(r["id"], r["name"], r["catalog_id"])
 
-# Query a resource with SQL
-rows = client.vega.query_resource("res-001", sql="SELECT * FROM t LIMIT 5")
+# Resource data (structured body) and vega-backend queries
+_ = client.vega.resources.data("res-001", body={"limit": 10, "offset": 0, "need_total": True})
+q = client.vega.query.execute(tables=["res-001"], limit=5, need_total=True)
+sql_rows = client.vega.query.sql_query({"resource_type": "mysql", "query": "SELECT 1 AS one"})
 
 # List dataviews
 views = client.vega.list_dataviews()
@@ -225,6 +302,19 @@ console.log('reachable:', ok.success);
 // Discover and list resources
 const schemas = await client.vega.discoverCatalog('cat-001');
 const resources = await client.vega.listResources();
+
+const structured = await client.vega.executeQuery(JSON.stringify({
+  tables: [{ resource_id: 'res-001' }],
+  limit: 5,
+  need_total: true,
+}));
+console.log(structured);
+
+const sqlOut = await client.vega.sqlQuery(JSON.stringify({
+  resource_type: 'mysql',
+  query: 'SELECT 1 AS one',
+}));
+console.log(sqlOut);
 
 // Query a dataview
 const result = await client.vega.queryDataview({
@@ -276,11 +366,24 @@ curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat-001/discover" \
 curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat-001/resources" \
   -H "Authorization: Bearer $TOKEN"
 
-# Query a resource via SQL
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/res-001/query" \
+# Query resource data (structured body; same as CLI resource query)
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/res-001/data" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sql": "SELECT * FROM t LIMIT 10"}'
+  -H "x-http-method-override: GET" \
+  -d '{"limit":10,"offset":0,"need_total":true}'
+
+# Structured query /query/execute
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/query/execute" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tables":[{"resource_id":"res-001"}],"limit":5,"need_total":true}'
+
+# Direct SQL /resources/query
+curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/query" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resource_type":"mysql","query":"SELECT 1 AS one"}'
 
 # List dataviews
 curl -sk "$KWEAVER_BASE/api/vega-backend/v1/dataviews" \
