@@ -112,8 +112,7 @@ kweaver bkn list
 ### HTTP（可选）
 
 ```bash
-export KWEAVER_BASE="https://<访问地址>"
-curl -sk "$KWEAVER_BASE/health" || true
+curl -sk "https://<访问地址>/health" || true
 ```
 
 具体路径因 Ingress 与版本而异；子系统路由以环境中的 OpenAPI 为准。
@@ -122,7 +121,7 @@ curl -sk "$KWEAVER_BASE/health" || true
 
 仅安装 **KWeaver Core** 时，`kweaver dataview query <id>` 不带 `--sql` 通常已可用（按视图定义分页查询等）。**`kweaver dataview query --sql "..."` 自定义 SQL** 依赖集群内的 **`vega-calculate-coordinator`**；该进程由 **Etrino** 相关 Chart 提供，与 **`vega-hdfs`、`vega-calculate`（内含 coordinator）、`vega-metadata`** 一并部署。
 
-**不必安装 DIP**：在已存在 Core 的集群上，直接使用 `deploy.sh` 新增的 `etrino` 子命令即可：
+在已存在 Core 的集群上，直接使用 `deploy.sh` 新增的 `etrino` 子命令即可：
 
 ```bash
 cd kweaver-core/deploy
@@ -134,8 +133,6 @@ cd kweaver-core/deploy
 ```
 
 如需指定配置文件，可附加 `--config=/path/to/config.yaml`。底层仍调用仓库中的 Etrino 安装脚本：检查 Helm、为节点打标签、创建 HDFS 所需目录、添加 Helm 仓库别名 **`myrepo`**（`https://kweaver-ai.github.io/helm-repo/`）、依次安装 **`vega-hdfs` → `vega-calculate` → `vega-metadata`**。请保证节点磁盘与资源足够，镜像仓库对你的环境可达（chart 默认镜像可能与 Core 所用仓库不同，必要时在 values 或 chart 升级中覆盖 `image.registry` 等）。
-
-**仅需要计算引擎（极小化）时**：也可只安装 chart **`kweaver/vega-calculate`**（`helm repo` 可用别名 `kweaver` 或 `myrepo`，与脚本一致即可），并为本环境配置 `depServices`（MariaDB、Kafka、ZooKeeper）、内存与镜像；若 chart 依赖 HDFS 相关 ConfigMap，需与 `vega-hdfs` 或官方说明对齐。
 
 **若仍会安装 DIP**：`./deploy.sh kweaver-dip install` 在完成 DIP 图表后也会执行同一套 Etrino 安装逻辑，无需重复安装。
 

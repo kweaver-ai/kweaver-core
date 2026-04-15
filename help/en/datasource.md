@@ -16,15 +16,6 @@ Ingress prefix (typical):
 
 mysql, postgresql, sqlserver, oracle, clickhouse, hive, opensearch, elasticsearch, and more. Run `kweaver vega connector-type list` to see which connector types are installed on your platform.
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ## CLI
 
 ### Connect a Data Source
@@ -234,20 +225,20 @@ await client.ds.delete('ds-abc123');
 
 ```bash
 # List data sources
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources?page=1&size=20" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/builder/v1/datasources?page=1&size=20" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Filter by type
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources?type=mysql&page=1&size=20" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/builder/v1/datasources?type=mysql&page=1&size=20" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get data source details
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/builder/v1/datasources/ds-abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Connect a new data source
-curl -sk -X POST "$KWEAVER_BASE/api/builder/v1/datasources" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/builder/v1/datasources" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "mysql",
@@ -259,10 +250,10 @@ curl -sk -X POST "$KWEAVER_BASE/api/builder/v1/datasources" \
   }'
 
 # Discover tables
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123/tables" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/builder/v1/datasources/ds-abc123/tables" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Delete a data source
-curl -sk -X DELETE "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X DELETE "https://<access-address>/api/builder/v1/datasources/ds-abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

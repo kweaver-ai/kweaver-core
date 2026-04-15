@@ -6,6 +6,8 @@
 
 **相关模块：** [VEGA 引擎](vega.md)（视图背后的数据）、[Context Loader](context-loader.md)（基于本体的上下文）、[Decision Agent](decision-agent.md)（运行时消费 BKN）。
 
+**运维提示：** 语义搜索由 **bkn-backend** 与 **ontology-query** 协同完成；需在 **模型工厂** 注册 Embedding，并在两侧配置与注册名一致的默认小模型（`model_name`）。步骤与排障见 [模型管理 — 启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+
 ---
 
 ## BKN 语言
@@ -414,20 +416,20 @@ const buildStatus = await client.knowledgeNetworks.buildAndWait(knId, {
 
 ```bash
 # 列出知识网络
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks?name=客户&sort=update_time&direction=desc&limit=50" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/ontology-manager/v1/knowledge-networks?name=客户&sort=update_time&direction=desc&limit=50" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取知识网络详情
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn_abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/ontology-manager/v1/knowledge-networks/kn_abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 列出对象类型
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn_abc123/object-types" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/ontology-manager/v1/knowledge-networks/kn_abc123/object-types" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 查询对象类型实例
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/query" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/ontology-query/v1/query" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "kn_id": "kn_abc123",
@@ -441,8 +443,8 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/query" \
   }'
 
 # 语义搜索
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/ontology-query/v1/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "kn_id": "kn_abc123",
@@ -451,8 +453,8 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/search" \
   }'
 
 # 创建对象类型
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn_abc123/object-types" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/ontology-manager/v1/knowledge-networks/kn_abc123/object-types" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "客户",
@@ -468,8 +470,8 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn_ab
   }'
 
 # 执行动作
-curl -sk -X POST "$KWEAVER_BASE/api/bkn-backend/v1/knowledge-networks/kn_abc123/actions/at_send_email/execute" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/bkn-backend/v1/knowledge-networks/kn_abc123/actions/at_send_email/execute" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "params": {"to": "user@example.com", "subject": "提醒", "body": "您好"}

@@ -14,15 +14,6 @@
 
 **相关模块：** [VEGA 引擎](vega.md)、[Execution Factory](execution-factory.md)、[BKN 引擎](bkn.md)。
 
-## 使用方式
-
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ### CLI
 
 #### 列出流程
@@ -195,20 +186,20 @@ console.log('运行 ID:', runWithUrl.runId);
 
 ```bash
 # 列出所有 DAG 流程
-curl -sk "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 触发运行
-curl -sk -X POST "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "params": {"date": "2025-01-15", "mode": "full"}
   }'
 
 # 使用远程配置文件触发运行
-curl -sk -X POST "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "file_url": "https://storage.example.com/configs/etl-prod.json",
@@ -216,20 +207,20 @@ curl -sk -X POST "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_d
   }'
 
 # 查询运行历史
-curl -sk "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs?since=2025-01-15&limit=50" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs?since=2025-01-15&limit=50" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取运行日志（摘要）
-curl -sk "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs/run_20250115_001/logs" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs/run_20250115_001/logs" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取运行日志（详细）
-curl -sk "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs/run_20250115_001/logs?detail=true" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/flow-stream-data-pipeline/v1/flows/dag_etl_daily/runs/run_20250115_001/logs?detail=true" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 代码执行器调用
-curl -sk -X POST "$KWEAVER_BASE/api/coderunner/execute" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/coderunner/execute" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "language": "python",

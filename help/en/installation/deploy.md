@@ -112,8 +112,7 @@ Use the same host as `--access_address` or the node IP from the installer.
 ### HTTP (optional)
 
 ```bash
-export KWEAVER_BASE="https://<access-address>"
-curl -sk "$KWEAVER_BASE/health" || true
+curl -sk "https://<access-address>/health" || true
 ```
 
 Exact paths depend on your ingress and version; use OpenAPI from your environment for subsystem routes.
@@ -122,7 +121,7 @@ Exact paths depend on your ingress and version; use OpenAPI from your environmen
 
 On a **KWeaver Core–only** install, `kweaver dataview query <id>` without `--sql` usually works (paging against the view definition). **Ad-hoc SQL** via `kweaver dataview query --sql "..."` requires **`vega-calculate-coordinator`** in the cluster. That comes from the **Etrino** Helm stack: **`vega-hdfs`**, **`vega-calculate`** (includes the coordinator), and **`vega-metadata`**.
 
-**You do not need to install DIP.** On a cluster where Core is already running, use the new `etrino` subcommand in `deploy.sh`:
+On a cluster where Core is already running, use the new `etrino` subcommand in `deploy.sh`:
 
 ```bash
 cd kweaver-core/deploy
@@ -134,8 +133,6 @@ cd kweaver-core/deploy
 ```
 
 If needed, add `--config=/path/to/config.yaml`. Under the hood this still runs the Etrino installer logic: adds the Helm repo alias **`myrepo`** (`https://kweaver-ai.github.io/helm-repo/`), labels nodes, prepares HDFS directories, and installs **`vega-hdfs` → `vega-calculate` → `vega-metadata`**. Ensure nodes have disk and resources; image registries in the chart defaults may differ from Core, so override `image.registry` / values when needed.
-
-**Minimal option (engine only):** `helm install` the **`kweaver/vega-calculate`** chart only and configure `depServices` (MariaDB, Kafka, ZooKeeper), memory, and images for your environment. If the chart expects HDFS-related ConfigMaps, align with `vega-hdfs` or vendor docs.
 
 **If you install DIP anyway:** `./deploy.sh kweaver-dip install` runs the same Etrino installation flow after DIP charts, so you do not need to run it twice.
 

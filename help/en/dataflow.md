@@ -14,15 +14,6 @@ Typical ingress prefixes (see Helm values in `adp/dataflow`):
 
 **Related modules:** [VEGA Engine](vega.md), [Execution Factory](execution-factory.md), [BKN Engine](bkn.md).
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ## CLI
 
 ### Listing Dataflows
@@ -207,12 +198,12 @@ logs.steps.forEach((step) => {
 
 ```bash
 # List all dataflows
-curl -sk "$KWEAVER_BASE/api/automation/v1/flows" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/automation/v1/flows" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Trigger a run (JSON input)
-curl -sk -X POST "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/automation/v1/flows/dag-doc-ingest/runs" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "contract-import",
@@ -220,28 +211,28 @@ curl -sk -X POST "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs" \
   }'
 
 # Trigger a run with file upload (multipart)
-curl -sk -X POST "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/automation/v1/flows/dag-doc-ingest/runs" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -F "name=contract-import" \
   -F "file=@./contracts/new-agreement.pdf"
 
 # List runs for a dataflow (with since filter)
-curl -sk "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs?since=2026-04-01&limit=20" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/automation/v1/flows/dag-doc-ingest/runs?since=2026-04-01&limit=20" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get a specific run's status
-curl -sk "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs/run-abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/automation/v1/flows/dag-doc-ingest/runs/run-abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get detailed logs for a run
-curl -sk "$KWEAVER_BASE/api/automation/v1/flows/dag-doc-ingest/runs/run-abc123/logs?detail=true" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/automation/v1/flows/dag-doc-ingest/runs/run-abc123/logs?detail=true" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get stream/pipeline status
-curl -sk "$KWEAVER_BASE/api/flow-stream-data-pipeline/v1/pipelines" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/flow-stream-data-pipeline/v1/pipelines" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Health check
-curl -sk "$KWEAVER_BASE/api/automation/v1/health" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/automation/v1/health" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

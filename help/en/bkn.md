@@ -6,6 +6,8 @@ The **Business Knowledge Network (BKN)** is the semantic layer of KWeaver Core. 
 
 **Related modules:** [VEGA Engine](vega.md) (data behind views), [Context Loader](context-loader.md) (context from ontology), [Decision Agent](decision-agent.md) (uses BKN at runtime).
 
+**Operations note:** Semantic search is handled by **bkn-backend** and **ontology-query** together. Register an embedding in the **model factory** and set the default small-model name on both sides to match the registered `model_name`. See [Model configuration — Enable BKN semantic search](model.md#enable-bkn-semantic-search).
+
 ---
 
 ## BKN Language
@@ -457,16 +459,16 @@ const buildStatus = await client.knowledgeNetworks.buildAndWait(knId, {
 
 ```bash
 # List knowledge networks
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks?name=order&sort=update_time&direction=desc&limit=50" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/ontology-manager/v1/knowledge-networks?name=order&sort=update_time&direction=desc&limit=50" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get a single knowledge network
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn-001" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/ontology-manager/v1/knowledge-networks/kn-001" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Create a knowledge network
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/ontology-manager/v1/knowledge-networks" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "ecommerce",
@@ -476,12 +478,12 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks" \
   }'
 
 # List object types
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn-001/object-types" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/ontology-manager/v1/knowledge-networks/kn-001/object-types" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Create an object type
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn-001/object-types" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/ontology-manager/v1/knowledge-networks/kn-001/object-types" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Order",
@@ -496,8 +498,8 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn-00
   }'
 
 # Query instances with conditions
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/query" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/ontology-query/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/query" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "conditions": [
@@ -510,26 +512,26 @@ curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/knowledge-networks/kn-001/
   }'
 
 # Semantic search across a network
-curl -sk -X POST "$KWEAVER_BASE/api/ontology-query/v1/knowledge-networks/kn-001/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/ontology-query/v1/knowledge-networks/kn-001/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"query": "overdue invoices in Q1", "limit": 10}'
 
 # List relation types
-curl -sk "$KWEAVER_BASE/api/ontology-manager/v1/knowledge-networks/kn-001/relation-types" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/ontology-manager/v1/knowledge-networks/kn-001/relation-types" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Execute an action type
-curl -sk -X POST "$KWEAVER_BASE/api/bkn-backend/v1/knowledge-networks/kn-001/actions/act-risk/execute" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/bkn-backend/v1/knowledge-networks/kn-001/actions/act-risk/execute" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"input": {"customer_id": "C-1001"}}'
 
 # Get action execution result
-curl -sk "$KWEAVER_BASE/api/bkn-backend/v1/knowledge-networks/kn-001/action-executions/exec-001" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/bkn-backend/v1/knowledge-networks/kn-001/action-executions/exec-001" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Build / rebuild network indexes
-curl -sk -X POST "$KWEAVER_BASE/api/bkn-backend/v1/knowledge-networks/kn-001/build" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X POST "https://<access-address>/api/bkn-backend/v1/knowledge-networks/kn-001/build" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

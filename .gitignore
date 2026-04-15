@@ -45,6 +45,9 @@ htmlcov/
 *.log
 logs/
 
+# Local/platform test reports and outputs (not versioned)
+reports/
+
 # Database
 *.db
 *.sqlite

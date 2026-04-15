@@ -16,14 +16,9 @@ Typical ingress prefixes:
 
 > **Model configuration prerequisite**: Agents require an LLM and an Embedding model. A `--minimum` install does not include pre-configured models — complete the [model configuration in the deploy guide](installation/deploy.md#configure-models-required-for-semantic-search-and-agent) before using agents. Use `--llm-id` when creating an agent to specify the registered LLM ID.
 
-## Prerequisites
+## Usage
 
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
-
----
+Run `kweaver auth login <platform-url>` first (`-k` for self-signed TLS). The CLI examples below assume a saved session. For raw HTTP, see the **curl** section at the end.
 
 ## CLI
 
@@ -111,7 +106,7 @@ kweaver agent chat <agent_id>
 # Agent: Based on the data, the average order value is $142.50...
 # > Break that down by region
 # Agent: Here's the regional breakdown...
-# > /quit
+# > quit   # or exit, q (see kweaver agent chat --help)
 ```
 
 ### Session and History Management
@@ -126,12 +121,14 @@ kweaver agent history <agent_id> <conversation_id>
 
 ### Trace Integration
 
+The first argument is **agent id**, the second is **conversation id** (from chat output or `kweaver agent sessions`). If the one-line `trace` summary under `kweaver agent --help` disagrees with `kweaver agent trace --help`, **trust `trace --help`**.
+
 ```bash
-# View the full trace for a conversation (reasoning chain, tool calls, context)
-kweaver agent trace <conversation_id>
+# Full trace for a conversation (reasoning chain, tool calls, context)
+kweaver agent trace <agent_id> <conversation_id>
 
 # Pretty-printed trace output
-kweaver agent trace <conversation_id> --pretty
+kweaver agent trace <agent_id> <conversation_id> --pretty
 ```
 
 ### Deleting an Agent
@@ -169,12 +166,12 @@ kweaver agent chat agt-xyz789 -m "Show me the revenue trend for the last 6 month
 # 7. Continue interactively
 kweaver agent chat agt-xyz789
 # > Which product categories drove the most growth?
-# > /quit
+# > quit
 
-# 8. Review sessions and trace
+# 8. Review sessions and trace (use the same agent_id; conversation_id from chat or sessions)
 kweaver agent sessions agt-xyz789
 kweaver agent history agt-xyz789 <conversation_id>
-kweaver agent trace <conversation_id> --pretty
+kweaver agent trace agt-xyz789 <conversation_id> --pretty
 ```
 
 ---
@@ -184,7 +181,8 @@ kweaver agent trace <conversation_id> --pretty
 ```python
 from kweaver_sdk import KWeaverClient
 
-client = KWeaverClient(base_url="https://<access-address>")
+# Same as CLI: use ~/.kweaver/ after kweaver auth login (see kweaver-sdk for constructors)
+client = KWeaverClient()
 
 # List published agents
 agents = client.agent.list()
@@ -247,8 +245,8 @@ history = client.agent.history(agent["id"], reply["conversation_id"])
 for msg in history:
     print(msg["role"], ":", msg["content"][:100])
 
-# Trace
-trace = client.agent.trace(reply["conversation_id"])
+# Trace (agent_id and conversation_id)
+trace = client.agent.trace(agent["id"], reply["conversation_id"])
 for span in trace["spans"]:
     print(span["name"], span["duration_ms"], span["status"])
 
@@ -329,32 +327,32 @@ for (const s of sessions) {
 
 ```bash
 # List published agents
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get agent details
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents/agt-xyz789" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/agents/agt-xyz789" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List personal agents
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents/personal" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/agents/personal" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List templates
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/templates" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/templates" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get a template
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/templates/tpl-data-analyst" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/templates/tpl-data-analyst" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List categories
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/categories" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/categories" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Create an agent
-curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Sales Analyst",
@@ -364,24 +362,24 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents" \
   }'
 
 # Update an agent (bind knowledge network)
-curl -sk -X PUT "$KWEAVER_BASE/api/agent-factory/v1/agents/agt-xyz789" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X PUT "https://<access-address>/api/agent-factory/v1/agents/agt-xyz789" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"knowledge_network_id": "kn-ecommerce"}'
 
 # Publish an agent
-curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents/agt-xyz789/publish" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X POST "https://<access-address>/api/agent-factory/v1/agents/agt-xyz789/publish" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Chat with an agent
-curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt-xyz789/chat" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/chat" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"message": "Show me the revenue trend for the last 6 months"}'
 
 # Continue a conversation
-curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt-xyz789/chat" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/chat" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Which product categories drove the most growth?",
@@ -389,14 +387,14 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt-xyz789/chat" \
   }'
 
 # List sessions
-curl -sk "$KWEAVER_BASE/api/agent-app/v1/agents/agt-xyz789/sessions" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/sessions" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get conversation history
-curl -sk "$KWEAVER_BASE/api/agent-app/v1/agents/agt-xyz789/sessions/conv-abc123/history" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-app/v1/agents/agt-xyz789/sessions/conv-abc123/history" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Delete an agent
-curl -sk -X DELETE "$KWEAVER_BASE/api/agent-factory/v1/agents/agt-xyz789" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X DELETE "https://<access-address>/api/agent-factory/v1/agents/agt-xyz789" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

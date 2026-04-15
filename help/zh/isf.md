@@ -8,15 +8,6 @@
 
 **相关模块：** 所有接受 `Authorization` 的子系统；主要消费者包括 [Decision Agent](decision-agent.md)、[VEGA 引擎](vega.md)。
 
-## 使用方式
-
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ### CLI
 
 #### 登录
@@ -65,17 +56,20 @@ kweaver auth whoami
 
 # 查看当前会话的详细状态（Token 有效期、刷新状态等）
 kweaver auth status
+```
 
+**`auth whoami` 与 no-auth**：`whoami` 需 OAuth 登录写入的 `id_token`。若会话为 **`auth login … --no-auth`** 或平台关闭鉴权，CLI 为 **no-auth**，`whoami` 会报错提示无 `id_token`，属正常；请用 `auth status` 确认模式，勿与登录失败混淆。
+
+```bash
 # 导出当前会话的 Token（用于脚本或 CI/CD）
 kweaver auth export
 ```
 
-`kweaver auth export` 输出当前有效的 Bearer Token，可用于 shell 变量：
+在已登录会话下，REST 调用可直接使用 **`kweaver token`**（与 `kweaver auth export` 均可得到 Bearer 串；示例优先用前者）：
 
 ```bash
-export TOKEN=$(kweaver auth export)
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```
 
 #### 登出与删除
@@ -129,6 +123,8 @@ kweaver config list-bd
 kweaver config set-bd bd_sales
 ```
 
+**`config list-bd` / `config set-bd` 与最小化安装**：**`--minimum` / 最小化安装** **不包含**这两条子命令依赖的**业务域管理服务**（未随最小化部署），`list-bd` 常 **404** 等，属部署裁剪，不是 CLI 故障。平台仍有默认业务域，请用 `config show` 查看。**完整安装**下再用 `list-bd` / `set-bd` 枚举或切换域；若仍失败，再查网关或相关服务。
+
 **业务域优先级说明**：当设置了业务域后，所有 API 调用会在请求头中携带 `X-Business-Domain` 字段。平台根据此字段进行数据隔离与权限控制。优先级为：命令行 `--bd` 参数 > `kweaver config set-bd` 配置 > 默认业务域。
 
 ```bash
@@ -155,10 +151,7 @@ kweaver config set-bd bd_sales
 kweaver bkn list --limit 5
 kweaver agent list --limit 5
 
-# 5. 导出 Token 用于脚本
-export TOKEN=$(kweaver auth export)
-
-# 6. 会话结束后登出
+# 5. 会话结束后登出
 kweaver auth logout
 ```
 
@@ -255,30 +248,30 @@ console.log('知识网络数:', networks.data.length);
 
 ```bash
 # OAuth2 Token 获取（密码模式，适用于启用完整认证的环境）
-curl -sk -X POST "$KWEAVER_BASE/oauth2/token" \
+curl -sk -X POST "https://<访问地址>/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password&username=admin&password=MySecurePassword&client_id=kweaver-cli&scope=openid"
 
 # 使用 Token 访问受保护资源
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 查看当前用户信息
-curl -sk "$KWEAVER_BASE/api/isf/v1/userinfo" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/isf/v1/userinfo" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 发现 OpenID 配置
-curl -sk "$KWEAVER_BASE/.well-known/openid-configuration"
+curl -sk "https://<访问地址>/.well-known/openid-configuration"
 
 # Token 内省（检查 Token 有效性）
-curl -sk -X POST "$KWEAVER_BASE/oauth2/introspect" \
+curl -sk -X POST "https://<访问地址>/oauth2/introspect" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "token=$TOKEN&client_id=kweaver-cli"
+  -d "token=<access-token>&client_id=kweaver-cli"
 
 # 刷新 Token
-curl -sk -X POST "$KWEAVER_BASE/oauth2/token" \
+curl -sk -X POST "https://<访问地址>/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=refresh_token&refresh_token=$REFRESH_TOKEN&client_id=kweaver-cli"
+  -d "grant_type=refresh_token&refresh_token=<refresh-token>&client_id=kweaver-cli"
 
 # 最小化安装 — 无需 Token 直接访问
 curl -sk "https://localhost:30000/api/agent-factory/v1/agents"

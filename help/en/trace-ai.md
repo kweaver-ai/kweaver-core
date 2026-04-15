@@ -14,28 +14,21 @@ Typical ingress prefix:
 
 **Related modules:** [Decision Agent](decision-agent.md), platform-wide logging and metrics pipelines (feed-ingester integration).
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ## CLI
+
+`kweaver agent trace` takes **agent id** first, then **conversation id** (from chat output or `kweaver agent sessions <agent_id>`).
 
 ### Retrieving Traces
 
 ```bash
-# Get the full trace for a conversation
-kweaver agent trace <conversation_id>
+# Full trace for a conversation
+kweaver agent trace <agent_id> <conversation_id>
 
 # Pretty-printed with indentation and color
-kweaver agent trace <conversation_id> --pretty
+kweaver agent trace <agent_id> <conversation_id> --pretty
 
 # Compact single-line JSON output (for piping to jq)
-kweaver agent trace <conversation_id> --compact
+kweaver agent trace <agent_id> <conversation_id> --compact
 ```
 
 ### Trace Data Structure
@@ -119,8 +112,8 @@ Traces enable **evidence chain analysis** — tracing every claim in an agent's 
 kweaver agent chat agt-001 -m "What were Q1 revenues?"
 # → conversation_id: conv-xyz789
 
-# 2. Pull the trace
-kweaver agent trace conv-xyz789 --pretty
+# 2. Pull the trace (same agent id as step 1)
+kweaver agent trace agt-001 conv-xyz789 --pretty
 
 # 3. Walk the evidence chain:
 #    agent.turn → context.retrieval (kn-ecommerce, 12 results from ot-orders)
@@ -156,10 +149,10 @@ Key attributes to look for in each span type:
 ```python
 from kweaver_sdk import KWeaverClient
 
-client = KWeaverClient(base_url="https://<access-address>")
+client = KWeaverClient()  # after kweaver auth login; see kweaver-sdk for client setup
 
-# Get the full trace for a conversation
-trace = client.agent.trace("conv-xyz789")
+# Full trace (agent id + conversation id)
+trace = client.agent.trace("agt-001", "conv-xyz789")
 print("trace_id:", trace["trace_id"])
 print("duration:", trace["duration_ms"], "ms")
 print("status:", trace["status"])
@@ -202,10 +195,10 @@ for ts in tool_spans:
 ```typescript
 import { KWeaverClient } from '@kweaver-ai/kweaver-sdk';
 
-const client = new KWeaverClient({ baseUrl: 'https://<access-address>' });
+const client = await KWeaverClient.connect();
 
-// Get trace
-const trace = await client.agent.trace('conv-xyz789');
+// Get trace (agent id + conversation id)
+const trace = await client.agent.trace('agt-001', 'conv-xyz789');
 console.log('trace_id:', trace.traceId);
 console.log('duration:', trace.durationMs, 'ms');
 
@@ -253,12 +246,12 @@ toolSpans.forEach((ts) => {
 
 ```bash
 # Get trace for a conversation
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/traces/conv-xyz789" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-observability/v1/traces/conv-xyz789" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Search traces by agent ID and time range
-curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-observability/v1/traces/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_id": "agt-001",
@@ -268,16 +261,16 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
   }'
 
 # Get spans for a specific trace
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/traces/tr-abc123/spans" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-observability/v1/traces/tr-abc123/spans" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get a single span's details
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/traces/tr-abc123/spans/sp-003" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-observability/v1/traces/tr-abc123/spans/sp-003" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Search traces by status (find failed agent turns)
-curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-observability/v1/traces/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "error",
@@ -286,6 +279,6 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
   }'
 
 # Health check
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/health" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-observability/v1/health" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

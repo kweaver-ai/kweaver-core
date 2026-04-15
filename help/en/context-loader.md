@@ -4,7 +4,7 @@
 
 The **Context Loader** (including **agent-retrieval** services) assembles **high-quality context** for Decision Agents: ontology-aware recall, ranking, and on-demand loading from BKN and data plane. It sits between raw data/VEGA and the agent runtime.
 
-The Context Loader is also exposed as an **MCP server**, providing tools, resources, templates, and prompts that coding agents and LLM-based applications can use directly.
+The Context Loader is also exposed as an **MCP server**, providing **MCP tools** that coding agents and LLM-based applications can use directly.
 
 Typical ingress prefix:
 
@@ -77,24 +77,6 @@ Once configured, MCP clients can discover and call these tools:
 
 Every tool call requires the common parameter `kn_id` (knowledge network ID). Use `kweaver bkn list` to find it.
 
-### MCP Resources and Prompts
-
-Beyond tools, Context Loader also provides MCP resources and prompt templates:
-
-```bash
-# List available resources (e.g. kn://kn_abc123/object-types)
-kweaver context-loader resources
-
-# Read a specific resource
-kweaver context-loader resource "kn://kn_abc123/object-types"
-
-# List prompt templates
-kweaver context-loader prompts
-
-# Get a specific prompt
-kweaver context-loader prompt schema-explorer
-```
-
 ### Verify with CLI
 
 You can verify the MCP server is working without configuring a full MCP client:
@@ -105,21 +87,11 @@ kweaver context-loader config set --kn-id kn_abc123
 
 # List MCP tools
 kweaver context-loader tools
-
-# List MCP resources
-kweaver context-loader resources
 ```
 
 ---
 
 ## CLI
-
-Set base URL and token for HTTP examples:
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
 
 ### Configuration Management
 
@@ -147,15 +119,6 @@ The Context Loader exposes MCP (Model Context Protocol) endpoints for tool-aware
 ```bash
 # List available MCP tools
 kweaver mcp tools
-
-# List available MCP resources
-kweaver mcp resources
-
-# List MCP prompt templates
-kweaver mcp templates
-
-# List MCP prompts
-kweaver mcp prompts
 ```
 
 ### Knowledge Network Search
@@ -271,9 +234,6 @@ print(action_info["name"], action_info["parameters"])
 tools = client.context_loader.list_mcp_tools()
 for tool in tools:
     print(tool["name"], tool["description"])
-
-# List MCP resources
-resources = client.context_loader.list_mcp_resources()
 ```
 
 ---
@@ -336,42 +296,34 @@ if (rt) {
 
 ```bash
 # Health check
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/health" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-retrieval/v1/health" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Semantic search across a knowledge network
-curl -sk -X POST "$KWEAVER_BASE/api/agent-retrieval/v1/knowledge-networks/kn-001/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-retrieval/v1/knowledge-networks/kn-001/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"query": "quarterly revenue trends", "limit": 10}'
 
 # Query a specific object instance
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Query the subgraph around an instance
-curl -sk -X POST "$KWEAVER_BASE/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521/subgraph" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521/subgraph" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"depth": 2}'
 
 # Get logic properties
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521/logic-properties" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-retrieval/v1/knowledge-networks/kn-001/object-types/ot-orders/instances/ord-5521/logic-properties" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get action type information
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/knowledge-networks/kn-001/actions/act-escalate/info" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-retrieval/v1/knowledge-networks/kn-001/actions/act-escalate/info" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List MCP tools
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/mcp/tools" \
-  -H "Authorization: Bearer $TOKEN"
-
-# List MCP resources
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/mcp/resources" \
-  -H "Authorization: Bearer $TOKEN"
-
-# List MCP prompt templates
-curl -sk "$KWEAVER_BASE/api/agent-retrieval/v1/mcp/templates" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-retrieval/v1/mcp/tools" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```
