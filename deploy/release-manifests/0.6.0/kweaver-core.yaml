@@ -28,28 +28,28 @@ releases:
     version: 0.6.0
   ontology-query:
     chart: ontology-query
-    version: 0.6.0-20260413.1.4047819
+    version: 0.6.0
   vega-backend:
     chart: vega-backend
     version: 0.6.0
   data-connection:
     chart: data-connection
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   vega-gateway:
     chart: vega-gateway
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   vega-gateway-pro:
     chart: vega-gateway-pro
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   mdl-data-model:
     chart: mdl-data-model
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   mdl-uniquery:
     chart: mdl-uniquery
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   mdl-data-model-job:
     chart: mdl-data-model-job
-    version: 0.6.0-20260413.1.38003e5
+    version: 0.6.0
   agent-operator-integration:
     chart: agent-operator-integration
     version: 0.6.0
