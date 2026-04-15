@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.moduleName }}-cm
   namespace: {{ .Values.namespace }}
 data:
-  kafka-connect-config.yaml: |
+  kafka-connect.properties: |
     bootstrap.servers={{ .Values.depServices.mq.mqHost }}:{{ .Values.depServices.mq.mqPort }}
     group.id=connect-cluster
     key.converter=org.apache.kafka.connect.json.JsonConverter
@@ -19,3 +19,15 @@ data:
     status.storage.replication.factor=1
     offset.flush.interval.ms=10000
     plugin.path=/usr/share/java
+  {{- if eq .Values.depServices.mq.auth.mechanism "PLAIN" }}
+    security.protocol=SASL_PLAINTEXT
+    sasl.mechanism={{ .Values.depServices.mq.auth.mechanism }}
+    sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{{ .Values.depServices.mq.auth.username }}" password="{{ .Values.depServices.mq.auth.password }}";
+    producer.security.protocol=SASL_PLAINTEXT
+    producer.sasl.mechanism={{ .Values.depServices.mq.auth.mechanism }}
+    producer.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{{ .Values.depServices.mq.auth.username }}" password="{{ .Values.depServices.mq.auth.password }}";
+    consumer.security.protocol=SASL_PLAINTEXT
+    consumer.sasl.mechanism={{ .Values.depServices.mq.auth.mechanism }}
+    consumer.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{{ .Values.depServices.mq.auth.username }}" password="{{ .Values.depServices.mq.auth.password }}";
+  {{- end }}
+   

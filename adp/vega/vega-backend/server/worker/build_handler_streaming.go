@@ -563,17 +563,6 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *int
 		interfaces.CONTENT_TYPE_NAME: interfaces.CONTENT_TYPE_JSON,
 	}
 
-	// Start a goroutine to subscribe to Kafka messages if not already running
-	sh.subscriptionMutex.Lock()
-	if !sh.runningSubscriptions[resource.ID] {
-		sh.runningSubscriptions[resource.ID] = true
-		sh.subscriptionMutex.Unlock()
-		go sh.subscribeToKafkaMessages(ctx, resource, uniqueKeys)
-	} else {
-		sh.subscriptionMutex.Unlock()
-		logger.Infof("Kafka subscription for resource %s is already running", resource.ID)
-	}
-
 	retryInterval := interfaces.DATASET_BUILD_RETRY_INTERVAL * time.Second
 	for {
 		// Check task status before each batch
@@ -613,6 +602,7 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *int
 			if database == nil || database == "" {
 				database = resource.Database
 			}
+			mqSetting := sh.appSetting.MQSetting
 			connectorBody := map[string]any{
 				"name": connectorName,
 				"config": map[string]any{
@@ -625,11 +615,20 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *int
 					"database.server.id":    fmt.Sprintf("%d", getServerID(connectorName)),
 					"database.server.name":  getServerName(fmt.Sprintf("%v", catalog.ConnectorCfg["host"])),
 					"database.include.list": database,
-					"schema.history.internal.kafka.bootstrap.servers": fmt.Sprintf("%s:%d", sh.appSetting.MQSetting.MQHost, sh.appSetting.MQSetting.MQPort),
+					"schema.history.internal.kafka.bootstrap.servers": fmt.Sprintf("%s:%d", mqSetting.MQHost, mqSetting.MQPort),
 					"schema.history.internal.kafka.topic":             fmt.Sprintf("%s-schema-changes", KafkaTopicPrefix),
 					"include.schema.changes":                          "true",
 					"topic.prefix":                                    fmt.Sprintf("%s-%s", KafkaTopicPrefix, resource.ID),
 				},
+			}
+			if mqSetting.Auth.Mechanism != "" && mqSetting.Auth.Username != "" && mqSetting.Auth.Password != "" {
+				jaasConfig := fmt.Sprintf("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";", mqSetting.Auth.Username, mqSetting.Auth.Password)
+				connectorBody["config"].(map[string]any)["schema.history.internal.consumer.security.protocol"] = "SASL_PLAINTEXT"
+				connectorBody["config"].(map[string]any)["schema.history.internal.consumer.sasl.mechanism"] = mqSetting.Auth.Mechanism
+				connectorBody["config"].(map[string]any)["schema.history.internal.consumer.sasl.jaas.config"] = jaasConfig
+				connectorBody["config"].(map[string]any)["schema.history.internal.producer.security.protocol"] = "SASL_PLAINTEXT"
+				connectorBody["config"].(map[string]any)["schema.history.internal.producer.sasl.mechanism"] = mqSetting.Auth.Mechanism
+				connectorBody["config"].(map[string]any)["schema.history.internal.producer.sasl.jaas.config"] = jaasConfig
 			}
 			respCode, respBody, err := sh.httpClient.Post(ctx, connectorUrl, headers, connectorBody)
 			if err != nil {
@@ -659,6 +658,16 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *int
 							continue
 						}
 					}
+					// Start a goroutine to subscribe to Kafka messages if not already running
+					sh.subscriptionMutex.Lock()
+					if !sh.runningSubscriptions[resource.ID] {
+						sh.runningSubscriptions[resource.ID] = true
+						sh.subscriptionMutex.Unlock()
+						go sh.subscribeToKafkaMessages(ctx, resource, uniqueKeys)
+					} else {
+						sh.subscriptionMutex.Unlock()
+					}
+					time.Sleep(retryInterval * 2) // for task status check
 				}
 			} else {
 				logger.Errorf("Invalid respBody type: %T", respBody)
