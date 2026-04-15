@@ -13,10 +13,10 @@
 USE kweaver;
 
 -- 删除原有的 uk_catalog_name 唯一索引
-ALTER TABLE t_resource DROP INDEX uk_catalog_name;
+DROP INDEX uk_catalog_name ON t_resource;
 
 -- 添加新的 uk_catalog_source_identifier 唯一索引
-ALTER TABLE t_resource ADD UNIQUE INDEX uk_catalog_source_identifier (f_catalog_id, f_source_identifier);
+CREATE UNIQUE INDEX uk_catalog_source_identifier ON t_resource (f_catalog_id, f_source_identifier);
 
 ALTER TABLE t_discover_task ADD COLUMN IF NOT EXISTS f_scheduled_id varchar(40) DEFAULT NULL AFTER f_catalog_id;
 ALTER TABLE t_discover_task ADD COLUMN IF NOT EXISTS f_strategies varchar(100) DEFAULT NULL AFTER f_scheduled_id;
