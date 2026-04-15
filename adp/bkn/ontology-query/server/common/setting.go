@@ -81,6 +81,9 @@ var (
 	vp         *viper.Viper
 
 	settingOnce sync.Once
+
+	// 当前系统时区
+	APP_LOCATION *time.Location
 )
 
 // NewSetting 读取服务配置
@@ -122,6 +125,14 @@ func loadSetting(vp *viper.Viper) {
 	if err := vp.Unmarshal(appSetting); err != nil {
 		logger.Fatalf("err:%s\n", err)
 	}
+
+	// 加载时区
+	loc, err := time.LoadLocation(os.Getenv("TZ"))
+	if err != nil {
+		loc = time.Local
+		logger.Warnf("WARNING: Failed to load timezone from env, using Local[%v] as default. Error: %v\n", time.Local, err)
+	}
+	APP_LOCATION = loc
 
 	SetLogSetting(appSetting.LogSetting)
 

@@ -11,11 +11,18 @@ CREATE TABLE IF NOT EXISTS t_knowledge_network (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
   f_skill_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT DEFAULT NULL,
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_business_domain VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -35,10 +42,17 @@ CREATE TABLE IF NOT EXISTS t_object_type (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT DEFAULT NULL,
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_data_source VARCHAR(255 CHAR) NOT NULL,
@@ -80,10 +94,17 @@ CREATE TABLE IF NOT EXISTS t_relation_type (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT DEFAULT NULL,
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_source_object_type_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -105,10 +126,17 @@ CREATE TABLE IF NOT EXISTS t_action_type (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT DEFAULT NULL,
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_action_type VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -172,10 +200,17 @@ CREATE TABLE IF NOT EXISTS t_concept_group (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_bkn_raw_content TEXT DEFAULT NULL,
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -239,11 +274,18 @@ CREATE INDEX IF NOT EXISTS idx_action_schedule_action_type ON t_action_schedule(
 CREATE TABLE IF NOT EXISTS t_risk_type (
   f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_name VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL,
   f_tags VARCHAR(255 CHAR) DEFAULT NULL,
   f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
   f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_bkn_raw_content TEXT NOT NULL,
+=======
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_tags VARCHAR(255 CHAR) DEFAULT NULL,
+  f_icon VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+  f_color VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
   f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
@@ -256,3 +298,33 @@ CREATE TABLE IF NOT EXISTS t_risk_type (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_risk_type_name ON t_risk_type(f_kn_id, f_branch, f_name);
+<<<<<<< HEAD
+=======
+
+
+-- BKN 指标定义（0.7.0 相对 0.6.0 新增；与 01-metric_definition.sql 一致）
+CREATE TABLE IF NOT EXISTS t_metric_definition (
+  f_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_kn_id VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_branch VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_name VARCHAR(128 CHAR) NOT NULL DEFAULT '',
+  f_comment VARCHAR(1000 CHAR) NOT NULL DEFAULT '',
+  f_unit_type VARCHAR(64 CHAR) NOT NULL DEFAULT '',
+  f_unit VARCHAR(64 CHAR) NOT NULL DEFAULT '',
+  f_metric_type VARCHAR(32 CHAR) NOT NULL DEFAULT 'atomic',
+  f_scope_type VARCHAR(32 CHAR) NOT NULL DEFAULT 'object_type',
+  f_scope_ref VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_time_dimension TEXT DEFAULT NULL,
+  f_calculation_formula TEXT NOT NULL,
+  f_analysis_dimensions TEXT DEFAULT NULL,
+  f_creator VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_creator_type VARCHAR(20 CHAR) NOT NULL DEFAULT '',
+  f_create_time BIGINT NOT NULL DEFAULT 0,
+  f_updater VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+  f_updater_type VARCHAR(20 CHAR) NOT NULL DEFAULT '',
+  f_update_time BIGINT NOT NULL DEFAULT 0,
+  CLUSTER PRIMARY KEY (f_kn_id, f_branch, f_id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_metric_name ON t_metric_definition(f_kn_id, f_branch, f_name);
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)

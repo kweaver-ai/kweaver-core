@@ -32,6 +32,7 @@ import (
 	"bkn-backend/logics/business_system"
 	"bkn-backend/logics/concept_group"
 	"bkn-backend/logics/job"
+	"bkn-backend/logics/metric"
 	"bkn-backend/logics/object_type"
 	"bkn-backend/logics/permission"
 	"bkn-backend/logics/relation_type"
@@ -54,6 +55,7 @@ type knowledgeNetworkService struct {
 	cgs        interfaces.ConceptGroupService
 	js         interfaces.JobService
 	kna        interfaces.KNAccess
+	ms         interfaces.MetricService
 	mfa        interfaces.ModelFactoryAccess
 	ota        interfaces.ObjectTypeAccess
 	ots        interfaces.ObjectTypeService
@@ -78,6 +80,7 @@ func NewKNService(appSetting *common.AppSetting) interfaces.KNService {
 			db:         logics.DB,
 			js:         job.NewJobService(appSetting),
 			kna:        logics.KNA,
+			ms:         metric.NewMetricService(appSetting),
 			mfa:        logics.MFA,
 			ota:        logics.OTA,
 			ots:        object_type.NewObjectTypeService(appSetting),
@@ -947,6 +950,14 @@ func (kns *knowledgeNetworkService) DeleteKN(ctx context.Context, kn *interfaces
 	if err != nil {
 		logger.Errorf("DeleteActionTypesByKnID error: %s", err.Error())
 		span.SetStatus(codes.Error, "删除业务知识网络动作类失败")
+		return err
+	}
+
+	// 删除业务知识网络下的所有指标
+	err = kns.ms.DeleteMetricsByKnID(ctx, tx, kn.KNID, kn.Branch)
+	if err != nil {
+		logger.Errorf("DeleteMetricsByKnID error: %s", err.Error())
+		span.SetStatus(codes.Error, "删除业务知识网络指标失败")
 		return err
 	}
 

@@ -54,8 +54,8 @@ func (mfa *modelFactoryAccess) GetDefaultModel(ctx context.Context) (*interfaces
 		defaultModelName := mfa.appSetting.ServerSetting.DefaultSmallModelName
 		smallModel, err := mfa.GetModelByName(ctx, defaultModelName)
 		if err != nil {
-			logger.Errorf("Get default model by name failed: %v", err)
-			return nil, fmt.Errorf("get default model by name failed: %w", err)
+			logger.Errorf("Get default model by name[%s] failed: %v", defaultModelName, err)
+			return nil, fmt.Errorf("get default model by name[%s] failed: %w", defaultModelName, err)
 		}
 		return smallModel, nil
 	} else {

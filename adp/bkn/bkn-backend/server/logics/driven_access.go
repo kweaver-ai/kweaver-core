@@ -23,6 +23,7 @@ var (
 	DVA            interfaces.DataViewAccess
 	JA             interfaces.JobAccess
 	KNA            interfaces.KNAccess
+	MA             interfaces.MetricAccess
 	MFA            interfaces.ModelFactoryAccess
 	OSA            interfaces.OpenSearchAccess
 	OTA            interfaces.ObjectTypeAccess
@@ -71,6 +72,10 @@ func SetJobAccess(ja interfaces.JobAccess) {
 
 func SetKNAccess(kna interfaces.KNAccess) {
 	KNA = kna
+}
+
+func SetMetricAccess(ma interfaces.MetricAccess) {
+	MA = ma
 }
 
 func SetModelFactoryAccess(mfa interfaces.ModelFactoryAccess) {

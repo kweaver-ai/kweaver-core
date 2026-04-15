@@ -2323,7 +2323,7 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			So(len(result.Entries), ShouldEqual, 0)
 		})
 
-		Convey("Failed when Convert condition returns error with DefaultSmallModelEnabled false\n", func() {
+		Convey("KNN is ignored when DefaultSmallModelEnabled is false, search still queries dataset\n", func() {
 			query := &interfaces.ConceptsQuery{
 				KNID:   "kn1",
 				Branch: interfaces.MAIN_BRANCH,
@@ -2338,8 +2338,14 @@ func Test_objectTypeService_SearchObjectTypes(t *testing.T) {
 			}
 
 			ps.EXPECT().CheckPermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			datasetResp := &interfaces.DatasetQueryResponse{
+				Entries: []map[string]any{},
+			}
+			vba.EXPECT().QueryResourceData(gomock.Any(), gomock.Any(), gomock.Any()).Return(datasetResp, nil)
+
 			result, err := service.SearchObjectTypes(ctx, query)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+			So(result.Entries, ShouldNotBeNil)
 			So(len(result.Entries), ShouldEqual, 0)
 		})
 

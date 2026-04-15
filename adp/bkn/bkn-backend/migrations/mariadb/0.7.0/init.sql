@@ -11,11 +11,18 @@ CREATE TABLE IF NOT EXISTS t_knowledge_network (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络id',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络名称',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '备注',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
   f_skill_content MEDIUMTEXT NOT NULL COMMENT 'SkillContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+  f_bkn_raw_content MEDIUMTEXT DEFAULT NULL COMMENT 'BKNRawContent',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_business_domain VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务域',
   f_creator VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
@@ -34,10 +41,17 @@ CREATE TABLE IF NOT EXISTS t_object_type (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '对象类id',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '对象类名称',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '备注',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+  f_bkn_raw_content MEDIUMTEXT DEFAULT NULL COMMENT 'BKNRawContent',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络id',
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_data_source VARCHAR(255) NOT NULL COMMENT '数据来源，当前只有视图',
@@ -78,10 +92,17 @@ CREATE TABLE IF NOT EXISTS t_relation_type (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '关系类id',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '关系类名称',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '备注',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+  f_bkn_raw_content MEDIUMTEXT DEFAULT NULL COMMENT 'BKNRawContent',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络id',
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_source_object_type_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '起点对象类',
@@ -103,10 +124,17 @@ CREATE TABLE IF NOT EXISTS t_action_type (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '行动类id',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '行动类名称',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '备注',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+  f_bkn_raw_content MEDIUMTEXT DEFAULT NULL COMMENT 'BKNRawContent',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络id',
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_action_type VARCHAR(40) NOT NULL DEFAULT '' COMMENT '行动类型',
@@ -169,10 +197,17 @@ CREATE TABLE IF NOT EXISTS t_concept_group (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '概念分组id',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '概念分组名称',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '备注',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+  f_bkn_raw_content MEDIUMTEXT DEFAULT NULL COMMENT 'BKNRawContent',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络id',
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_creator VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
@@ -233,11 +268,18 @@ CREATE TABLE IF NOT EXISTS t_action_schedule (
 CREATE TABLE IF NOT EXISTS t_risk_type (
   f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '风险类ID',
   f_name VARCHAR(40) NOT NULL DEFAULT '' COMMENT '风险类名称',
+<<<<<<< HEAD
   f_comment TEXT NOT NULL COMMENT '描述',
   f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
   f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
   f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
   f_bkn_raw_content MEDIUMTEXT NOT NULL COMMENT 'BKNRawContent',
+=======
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '描述',
+  f_tags VARCHAR(255) DEFAULT NULL COMMENT '标签',
+  f_icon VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图标',
+  f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色',
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)
   f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络ID',
   f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
   f_creator VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
@@ -249,3 +291,30 @@ CREATE TABLE IF NOT EXISTS t_risk_type (
   PRIMARY KEY (f_kn_id, f_branch, f_id),
   UNIQUE KEY uk_risk_type_name (f_kn_id, f_branch, f_name)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '风险类';
+<<<<<<< HEAD
+=======
+
+CREATE TABLE IF NOT EXISTS t_metric_definition (
+  f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '指标ID',
+  f_kn_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '业务知识网络ID',
+  f_branch VARCHAR(40) NOT NULL DEFAULT '' COMMENT '分支',
+  f_name VARCHAR(128) NOT NULL DEFAULT '' COMMENT '指标技术名',
+  f_comment VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '描述',
+  f_unit_type VARCHAR(64) NOT NULL DEFAULT '' COMMENT '单位类型',
+  f_unit VARCHAR(64) NOT NULL DEFAULT '' COMMENT '单位',
+  f_metric_type VARCHAR(32) NOT NULL DEFAULT 'atomic' COMMENT '指标类型 atomic|derived|composite',
+  f_scope_type VARCHAR(32) NOT NULL DEFAULT 'object_type' COMMENT '统计主体类型',
+  f_scope_ref VARCHAR(40) NOT NULL DEFAULT '' COMMENT '对象类或子图ID',
+  f_time_dimension LONGTEXT DEFAULT NULL COMMENT '时间维度 JSON',
+  f_calculation_formula LONGTEXT NOT NULL COMMENT '计算公式 JSON',
+  f_analysis_dimensions LONGTEXT DEFAULT NULL COMMENT '分析维度 JSON',
+  f_creator VARCHAR(40) NOT NULL DEFAULT '' COMMENT '创建者id',
+  f_creator_type VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
+  f_create_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
+  f_updater VARCHAR(40) NOT NULL DEFAULT '' COMMENT '更新者id',
+  f_updater_type VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
+  f_update_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (f_kn_id, f_branch, f_id),
+  UNIQUE KEY uk_metric_name (f_kn_id, f_branch, f_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = 'BKN 指标定义';
+>>>>>>> eb17aa73 ([feature] 198-issue 【BKN】bkn支持指标模型，以实现基于业务语义的指标定义-方案)

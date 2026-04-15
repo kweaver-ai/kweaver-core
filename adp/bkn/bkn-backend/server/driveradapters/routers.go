@@ -29,6 +29,7 @@ import (
 	"bkn-backend/logics/concept_group"
 	"bkn-backend/logics/job"
 	"bkn-backend/logics/knowledge_network"
+	metriclogics "bkn-backend/logics/metric"
 	"bkn-backend/logics/object_type"
 	"bkn-backend/logics/relation_type"
 	"bkn-backend/logics/risk_type"
@@ -50,6 +51,7 @@ type restHandler struct {
 	ots        interfaces.ObjectTypeService
 	rts        interfaces.RelationTypeService
 	rtsRisk    interfaces.RiskTypeService
+	ms         interfaces.MetricService
 	bs         interfaces.BKNService
 }
 
@@ -65,6 +67,7 @@ func NewRestHandler(appSetting *common.AppSetting) RestHandler {
 		ots:        object_type.NewObjectTypeService(appSetting),
 		rts:        relation_type.NewRelationTypeService(appSetting),
 		rtsRisk:    risk_type.NewRiskTypeService(appSetting),
+		ms:         metriclogics.NewMetricService(appSetting),
 		bs:         bkn.NewBKNService(appSetting),
 	}
 	return r
@@ -123,6 +126,14 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiV1.PUT("/knowledge-networks/:kn_id/action-types/:at_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateActionTypeByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/action-types", r.ListActionTypesByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/action-types/:at_ids", r.GetActionTypesByEx)
+
+		// 指标
+		apiV1.POST("/knowledge-networks/:kn_id/metrics", r.verifyJsonContentTypeMiddleWare(), r.HandleMetricGetOverrideByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/metrics/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateMetricsByEx)
+		apiV1.DELETE("/knowledge-networks/:kn_id/metrics/:metric_ids", r.DeleteMetricsByIDsByEx)
+		apiV1.PUT("/knowledge-networks/:kn_id/metrics/:metric_ids", r.verifyJsonContentTypeMiddleWare(), r.UpdateMetricByEx)
+		apiV1.GET("/knowledge-networks/:kn_id/metrics", r.ListMetricsByEx)
+		apiV1.GET("/knowledge-networks/:kn_id/metrics/:metric_ids", r.GetMetricsByIDsByEx)
 
 		// 风险类
 		apiV1.POST("/knowledge-networks/:kn_id/risk-types", r.verifyJsonContentTypeMiddleWare(), r.HandleRiskTypeGetOverrideByEx)
@@ -194,6 +205,14 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiInV1.PUT("/knowledge-networks/:kn_id/action-types/:at_id", r.verifyJsonContentTypeMiddleWare(), r.UpdateActionTypeByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/action-types", r.ListActionTypesByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/action-types/:at_ids", r.GetActionTypesByIn)
+
+		// 指标（内部）
+		apiInV1.POST("/knowledge-networks/:kn_id/metrics", r.verifyJsonContentTypeMiddleWare(), r.HandleMetricGetOverrideByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/metrics/validation", r.verifyJsonContentTypeMiddleWare(), r.ValidateMetricsByIn)
+		apiInV1.DELETE("/knowledge-networks/:kn_id/metrics/:metric_ids", r.DeleteMetricsByIDsByIn)
+		apiInV1.PUT("/knowledge-networks/:kn_id/metrics/:metric_ids", r.verifyJsonContentTypeMiddleWare(), r.UpdateMetricByIn)
+		apiInV1.GET("/knowledge-networks/:kn_id/metrics", r.ListMetricsByIn)
+		apiInV1.GET("/knowledge-networks/:kn_id/metrics/:metric_ids", r.GetMetricsByIDsByIn)
 
 		// 风险类（内部 API：GetRiskTypesByIn 支持 risk_type_ids 查询参数）
 		apiInV1.POST("/knowledge-networks/:kn_id/risk-types", r.verifyJsonContentTypeMiddleWare(), r.HandleRiskTypeGetOverrideByIn)
