@@ -2,7 +2,7 @@
 
 This walkthrough assumes KWeaver Core is already [deployed](installation/deploy.md), including the post-install checks in that page.
 
-> **Model configuration note**: Semantic search (Step 4) and Agent chat (Step 5) require LLM and Embedding models. A `--minimum` install does not include pre-configured models — complete the [model configuration in the deploy guide](installation/deploy.md#configure-models-required-for-semantic-search-and-agent) first. Data source connection, knowledge network creation, and conditional queries work without models.
+> **Model configuration note**: **Register at least one LLM and one embedding (vector) small model** when possible: the LLM powers Agent chat and reasoning; the embedding model powers semantic search and vectorization. Semantic search (Step 4) and Agent chat (Step 5) depend on these; after registering an embedding, complete [Enable BKN semantic search](model.md#enable-bkn-semantic-search) in the cluster (ConfigMap / default small-model name). Other registration details are in [Model management](model.md). A `--minimum` install has no bundled models; see also [Deploy — model configuration](installation/deploy.md#configure-models-required-for-semantic-search-and-agent). Data source connection, knowledge network creation, and conditional queries work without models.
 
 ---
 
@@ -20,14 +20,35 @@ kweaver auth login <platform-url> -k
 
 - `<platform-url>` is the access address printed by `deploy.sh` after installation completes.
 - `-k` skips TLS certificate verification — use it with self-signed certificates; omit if you have a valid cert.
-- If multiple business domains were configured during installation, verify the active domain after login:
+
+**How to sign in**
+
+| Scenario | What to use |
+|----------|-------------|
+| **Local browser (default)** | `kweaver auth login <platform-url>`; add `-k` for self-signed or untrusted TLS. |
+| **No browser — `--no-browser`** (interactive headless, recommended) | The CLI prints an OAuth URL; open it on another device, sign in, then paste the **full callback URL** from the address bar back into the terminal. |
+| **No browser — export & replay** (CI / fully automated) | After `kweaver auth login` on a machine with a browser: the **browser success page** shows **Headless machine** instructions and a one-line `kweaver auth login '<platform-url>' --client-id '…' --client-secret '…' --refresh-token '…'` (often with a **Copy command** button); or run **`kweaver auth export`** (or `--json`) in a terminal. On the **headless** host, run that one-line command to populate `~/.kweaver/`. |
+| **No browser — Playwright** | `npm install playwright && npx playwright install chromium`, then `kweaver auth login … -u <user> -p <password> -k`. **`--playwright`** without `-u`/`-p` opens a visible browser for manual sign-in. |
+
+After a successful browser login, the page states you can close the tab and explains what to run on a machine **without** a browser (SSH, CI, containers, etc.). **Keep the shown credentials secure** — anyone with the **refresh token** and **client secret** can obtain new access tokens; do not commit them to source control.
+
+- After login, run `kweaver config show` to see the active business domain (minimal installs still have a default domain — they simply do not ship the two commands below).
 
 ```bash
 kweaver config show
-# If later commands return empty results, try switching to the correct domain:
+```
+
+If later commands return empty results, the domain may be wrong. The next two commands — **`kweaver config list-bd`** and **`kweaver config set-bd`** — require the platform’s **business-domain management service**. **`--minimum` / minimal installs omit that service**, so **these two CLI subcommands are not available** (e.g. `list-bd` returns **404**). That does **not** mean there is no business domain or that `config show` is wrong — on minimal installs **do not run** the commands below; trust `config show`. Use them only on a **full install** when you need to **list or switch** among multiple domains:
+
+```bash
 kweaver config list-bd
 kweaver config set-bd <uuid>
 ```
+
+> **Note**
+>
+> - **`kweaver auth whoami`** needs an `id_token` from OAuth login. If you used `kweaver auth login … --no-auth` (or the platform is a minimal / no-auth install), the CLI is in **no-auth** mode and `whoami` will report no `id_token` — **expected**; use `kweaver auth status` to confirm no-auth.
+> - **`kweaver config list-bd` / `set-bd`**: As above, **minimal installs do not include** the backend for these two subcommands. Use `config show` for the default domain. On a **full install**, use `list-bd` / `set-bd` to list or switch domains; if `list-bd` still returns **404**, check gateway routing or whether the service is deployed.
 
 ### Step 2: Connect a Data Source
 
@@ -88,7 +109,7 @@ kweaver bkn object-type list <kn_id>
 
 ### Step 4: Semantic Search
 
-> Semantic search requires an Embedding model. If not configured, this step returns an error. See [model configuration](installation/deploy.md#configure-models-required-for-semantic-search-and-agent). The **conditional query** below works without an Embedding model.
+> Semantic search requires an embedding model and [Enable BKN semantic search](model.md#enable-bkn-semantic-search). If either is missing, this step may fail. See also [Model management](model.md) and [Deploy — model configuration](installation/deploy.md#configure-models-required-for-semantic-search-and-agent). The **conditional query** below works without semantic search enabled.
 
 ```bash
 kweaver bkn search <kn_id> "overdue orders"
@@ -191,6 +212,8 @@ const subgraph = await client.bkn.querySubgraph(knId, {
 
 ### Semantic Search
 
+> Requires a registered embedding and [Enable BKN semantic search](model.md#enable-bkn-semantic-search).
+
 ```typescript
 const result = await client.bkn.semanticSearch(knId, 'overdue orders');
 for (const concept of result.concepts ?? []) {
@@ -218,7 +241,7 @@ const mcpInstances = await cl.queryInstances({ ot_id: otId, limit: 5 });
 
 **Story**: The knowledge network is built. Now you want to give your business team a natural-language interface — no SQL needed, just ask questions and get answers.
 
-> **Prerequisite**: Agents require an LLM and an Embedding model. If not yet configured, complete [model configuration](installation/deploy.md#configure-models-required-for-semantic-search-and-agent) first.
+> **Prerequisite**: Agents require an LLM and an embedding; see [Model management](model.md) and [Deploy — model configuration](installation/deploy.md#configure-models-required-for-semantic-search-and-agent). For semantic features, also complete [Enable BKN semantic search](model.md#enable-bkn-semantic-search).
 
 ### CLI
 
@@ -301,8 +324,8 @@ const messages = await client.conversations.listMessages(conversationId, { limit
 # List conversation sessions
 kweaver agent sessions <agent_id>
 
-# Get the full trace
-kweaver agent trace <conversation_id> --pretty
+# Get the full trace (agent id + conversation id)
+kweaver agent trace <agent_id> <conversation_id> --pretty
 ```
 
 The trace returns a Span tree ordered by time, showing:
@@ -364,9 +387,14 @@ kweaver dataview query <view_id> --limit 10
 
 # Custom SQL query (use fully-qualified catalog."schema"."table" names)
 kweaver dataview query <view_id> --sql "SELECT supplier_name, city FROM <catalog>.\"supply_chain\".\"supplier_entity\" LIMIT 10"
+
+# Prefer names from the data view (do not guess the catalog):
+# kweaver dataview get <view_id> → use JSON field meta_table_name (Vega catalog id + source schema + table)
 ```
 
-On a **Core-only** install, `dataview query` without `--sql` supports structured reads (pagination, column selection, etc.). **Ad-hoc `--sql`** requires **`vega-calculate-coordinator`**, shipped as part of the **Etrino** stack (`vega-hdfs`, `vega-calculate`, `vega-metadata`). **You do not need DIP:** from the `deploy` directory run `./deploy.sh etrino install`. See [Deploy](installation/deploy.md) and [VEGA](vega.md).
+`<catalog>` must be the **Vega catalog id** for that data source (see `kweaver vega catalog list`); `"supply_chain"` / `"supplier_entity"` map to the source database/schema and table. **Reliable approach**: copy the **`meta_table_name`** field from **`kweaver dataview get <view_id>`** into your SQL. For `sql_str`, `fields`, and the field table, see the Dataview section in [VEGA](vega.md).
+
+On a **Core-only** install, `dataview query` without `--sql` supports structured reads (pagination, column selection, etc.). **Ad-hoc `--sql`** requires **`vega-calculate-coordinator`**, shipped as part of the **Etrino** stack (`vega-hdfs`, `vega-calculate`, `vega-metadata`). From the `deploy` directory run `./deploy.sh etrino install`. See [Deploy](installation/deploy.md) and [VEGA](vega.md).
 
 ---
 
@@ -395,6 +423,8 @@ kweaver dataflow logs <dag_id> <instance_id> --detail
 | Goal | Doc |
 | --- | --- |
 | Full BKN operations (schema, conditional queries, actions) | [bkn.md](bkn.md) |
+| Model registration & testing | [Model management](model.md) |
+| Enable semantic search in the cluster (ConfigMap) | [Enable BKN semantic search](model.md#enable-bkn-semantic-search) |
 | Data virtualization & catalog management | [vega.md](vega.md) |
 | Agent lifecycle | [decision-agent.md](decision-agent.md) |
 | Pipeline orchestration details | [dataflow.md](dataflow.md) |

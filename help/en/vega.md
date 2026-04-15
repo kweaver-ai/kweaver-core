@@ -12,73 +12,108 @@ Ingress prefix (typical):
 
 **Related modules:** [BKN Engine](bkn.md) (semantic layer on top of data), [Context Loader](context-loader.md), [Dataflow](dataflow.md) (pipelines that land or transform data).
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
+The **[curl](#curl)** section at the end is **optional** — use it only if you need raw HTTP or shell scripts. If you rely on the **`kweaver` CLI** or language SDKs, you can skip it.
 
 ---
 
 ## CLI
 
-### Health and Diagnostics
+Common flags for all `kweaver vega` subcommands: `-bd` / `--biz-domain <s>` (default from `kweaver config`), `--pretty` (pretty-print JSON, default on). Run `kweaver vega --help` for the full command tree.
+
+### Health and diagnostics
 
 ```bash
-# Quick health check — returns service status and version
+# Reachability probe (Node CLI: GET .../catalogs?limit=1 with auth)
 kweaver vega health
 
-# Platform statistics: connection count, catalog count, total resources
+# Catalog count (lists up to 100 catalogs and counts entries)
 kweaver vega stats
 
-# Deep inspection: per-catalog health, resource counts, recent errors
+# Health probe JSON + catalog_count (same catalog list cap)
 kweaver vega inspect
 ```
 
-### Catalog Management
+The **npm** CLI does not call `GET /health` on the vega-backend pod; it uses an authenticated **catalogs list** probe. The **Python** SDK’s `client.vega.health()` calls `GET /api/vega-backend/v1/health` when that route is exposed behind your ingress.
+
+### Catalog management
 
 ```bash
-# List all registered catalogs
+# List catalogs (optional filters)
 kweaver vega catalog list
+kweaver vega catalog list --status healthy --limit 20
 
-# Get details for a single catalog
+# Get one catalog
 kweaver vega catalog get <catalog_id>
 
-# Health check for a specific catalog connection
-kweaver vega catalog health <catalog_id>
+# Health status for one or more catalogs, or all
+kweaver vega catalog health cat_pg001 cat_mysql002
+kweaver vega catalog health --all
 
-# Test connectivity before registering
-kweaver vega catalog test-connection \
-  --type mysql \
-  --host db.example.com \
-  --port 3306 \
-  --database mydb \
-  --username root \
-  --password secret
+# Test connectivity for an existing catalog (registered in Vega)
+kweaver vega catalog test-connection <catalog_id>
 
-# Discover schemas and tables from a catalog
+# Discover metadata; optional wait
 kweaver vega catalog discover <catalog_id>
+kweaver vega catalog discover <catalog_id> --wait
 
-# List resources (tables, views) within a catalog
+# Resources under a catalog
 kweaver vega catalog resources <catalog_id>
+kweaver vega catalog resources <catalog_id> --category table --limit 30
+
+# Create / update / delete catalogs
+kweaver vega catalog create \
+  --name my-mysql \
+  --connector-type mysql \
+  --connector-config '{"host":"db.example.com","port":3306,"database":"mydb","username":"u","password":"p"}'
+
+kweaver vega catalog update <catalog_id> --name new-name --connector-config '{"host":"..."}'
+
+kweaver vega catalog delete <catalog_id> [<catalog_id> ...]   # prompts unless -y
+kweaver vega catalog delete cat_a,cat_b -y
 ```
 
-### Resource Operations
+### Resource operations
+
+There is **no** `kweaver vega resource preview` subcommand. Use **`resource query`** with a small `limit` to sample rows.
 
 ```bash
-# List all resources across catalogs
+# List resources (optional filters)
 kweaver vega resource list
+kweaver vega resource list --catalog-id <catalog_id> --category table --limit 50
 
-# Get metadata for a specific resource
+# List all resources (GET .../resources/list)
+kweaver vega resource list-all [--limit N] [--offset N]
+
 kweaver vega resource get <resource_id>
 
-# Query resource data (POST .../resources/:id/data — structured body: filters, sort, paging)
+# Structured data query (POST .../resources/:id/data)
 kweaver vega resource query <resource_id> \
   -d '{"limit":10,"offset":0,"need_total":true}'
 
-# Preview a resource (first N rows)
-kweaver vega resource preview <resource_id> --limit 20
+# Create / update / delete resources
+kweaver vega resource create \
+  --catalog-id <catalog_id> \
+  --name my_table \
+  --category table \
+  [--source-identifier <si>] [--database <db>] [-d '{"extra":"fields"}']
+
+kweaver vega resource update <resource_id> [--name X] [--status X] [--tags t1,t2] [-d '{"k":"v"}']
+
+kweaver vega resource delete <resource_id> [<resource_id> ...] [-y]
+```
+
+### Dataset (documents and build)
+
+For dataset-type resources, manage indexed documents and async build jobs:
+
+```bash
+kweaver vega dataset create-docs <resource_id> -d '[{"id":"doc1",...},...]'
+kweaver vega dataset update-docs <resource_id> -d '[{"id":"doc1",...},...]'
+kweaver vega dataset delete-docs <resource_id> <doc_id> [<doc_id> ...]
+kweaver vega dataset delete-docs-query <resource_id> -d '{"filter":...}'
+
+kweaver vega dataset build <resource_id> [--mode full|incremental|realtime]
+kweaver vega dataset build-status <resource_id> <task_id>
 ```
 
 ### Structured query and SQL (vega-backend)
@@ -117,32 +152,22 @@ kweaver vega query execute -d '{
 
 **Direct SQL** — `POST /api/vega-backend/v1/resources/query`
 
+**Simple mode** (no JSON body): pass engine type and query as separate flags (quote the SQL).
+
+```bash
+kweaver vega sql --resource-type mysql --query "SELECT * FROM {{.res_mysql_supplier}} LIMIT 5"
+```
+
+**Advanced mode**: full JSON body; when `-d` is present, `--resource-type` / `--query` are ignored.
+
 ```bash
 kweaver vega sql -d '<json>'
 kweaver vega sql --help
 ```
 
-Required: `query` (SQL string or OpenSearch DSL object), `resource_type` (`mysql` | `mariadb` | `postgresql` | `opensearch`). Optional: `stream_size` (100–10000), `query_timeout` (seconds 1–3600), `query_id`.
+Required in the JSON body: `query` (SQL string or OpenSearch DSL object), `resource_type` (`mysql` | `mariadb` | `postgresql` | `opensearch`). Optional: `stream_size` (100–10000), `query_timeout` (seconds 1–3600), `query_id`.
 
 Placeholders: `{{.<resource_id>}}` or `{{<resource_id>}}` (Vega resource id) are replaced with the resource’s physical table id. You may also run **native SQL** without placeholders if table names are valid for the engine.
-
-Placeholder example:
-
-```bash
-kweaver vega sql -d '{
-  "resource_type":"mysql",
-  "query":"SELECT * FROM {{.res_mysql_supplier}} LIMIT 5"
-}'
-```
-
-Native SQL example:
-
-```bash
-kweaver vega sql -d '{
-  "resource_type":"mysql",
-  "query":"SELECT 1 AS one"
-}'
-```
 
 **Comparison**
 
@@ -153,253 +178,291 @@ kweaver vega sql -d '{
 | Resource data | `kweaver vega resource query <id> -d {...}` | vega-backend | Single resource, filters, `search_after` |
 | Dataview `--sql` | `kweaver dataview query ... --sql` | mdl-uniquery + **Trino** (Etrino) | Cross-engine SQL via coordinator |
 
-SDK: TypeScript `client.vega.executeQuery(body)` and `client.vega.sqlQuery(body)`; Python `client.vega.query.execute(...)` and `client.vega.query.sql_query(body)`.
+TypeScript: `client.vega.executeQuery(jsonString)` and `client.vega.sqlQuery(jsonString)`.  
+Python: `client.vega.query.execute(...)` and `client.vega.query.sql_query({...})`.
 
-### Connector Types
+### Connector types
 
 ```bash
-# List all supported connector types (mysql, postgres, hive, etc.)
 kweaver vega connector-type list
-
-# Get details for a connector type (supported features, config schema)
 kweaver vega connector-type get mysql
+
+kweaver vega connector-type register -d '{"name":"custom",...}'
+kweaver vega connector-type update <type> -d '{...}'
+kweaver vega connector-type delete <type> [-y]
+kweaver vega connector-type enable <type> --enabled true
 ```
 
-### Dataview Operations
+### Dataview operations
+
+Data views are served by **mdl-uniquery** (not the vega-backend router). Use the **`dataview`** command group:
 
 ```bash
-# List all dataviews
 kweaver dataview list
-
-# Search dataviews by name
 kweaver dataview find --name "order"
-
-# Get dataview details
 kweaver dataview get <dataview_id>
-
-# Query a dataview with SQL
-kweaver dataview query <dataview_id> "SELECT order_id, amount FROM t WHERE status = 'active' LIMIT 10"
-
-# Pass SQL via flag instead of positional arg
-kweaver dataview query <dataview_id> --sql "SELECT COUNT(*) AS total FROM t"
+# In --sql, FROM must be fully qualified: use meta_table_name from get; mysql_demo."sales"."orders" is illustrative
+kweaver dataview query <dataview_id> --sql "SELECT order_id, amount FROM mysql_demo.\"sales\".\"orders\" WHERE status = 'active' LIMIT 10"
+kweaver dataview query <dataview_id> --sql "SELECT COUNT(*) AS total FROM mysql_demo.\"sales\".\"orders\""
 ```
 
-**Custom SQL (`--sql`) and Etrino**: Without `--sql`, `dataview query` uses the view’s stored definition and talks to the data source directly. With `--sql`, traffic goes through **`vega-calculate-coordinator`** (Hetu/Presto–style engine), which is **not** in the default KWeaver Core manifest. Install the **Etrino** charts: `vega-hdfs`, `vega-calculate` (includes the coordinator), and `vega-metadata`. **You do not need to install DIP:** run `./deploy.sh etrino install` from the `deploy` directory to install Etrino only. For a minimal setup you can `helm install` only `kweaver/vega-calculate` and align images and `depServices` yourself. **Use fully-qualified `catalog."schema"."table"` names for ad-hoc SQL.** See **Optional: Etrino** in [Deploy](installation/deploy.md).
+**Custom SQL (`--sql`) and Etrino**: Without `--sql`, `dataview query` uses the view’s stored definition and talks to the data source directly. With `--sql`, traffic goes through **`vega-calculate-coordinator`** (Hetu/Presto–style engine), which is **not** in the default KWeaver Core manifest. Install the **Etrino** charts: `vega-hdfs`, `vega-calculate` (includes the coordinator), and `vega-metadata`. Run `./deploy.sh etrino install` from the `deploy` directory to install Etrino only. **Use fully-qualified `catalog."schema"."table"` names for ad-hoc SQL.** See **Optional: Etrino** in [Deploy](installation/deploy.md).
 
-### End-to-End Example
+**`dataview get` response fields (for custom `--sql`)**: The JSON from `kweaver dataview get <view_id> --pretty` includes the following; names match REST and the TypeScript / Python SDK.
+
+| Field | Role |
+|-------|------|
+| **`meta_table_name`** | **Required for ad-hoc SQL**: the fully-qualified table name string (`catalog."schema"."table"`). Use it verbatim in `FROM` / `JOIN`; do not guess the catalog from the view’s logical name. |
+| **`sql_str`** | The stored view SQL; cross-check table references with `meta_table_name`. |
+| **`fields`** | Column metadata (`name`, `type`, etc.); **does not** include the fully-qualified table name. |
+
+**Where `meta_table_name` / fully-qualified names come from**: With `--sql`, the engine resolves identifiers in **Trino/Hetu style** as **`catalog."schema"."table"`**:
+
+- **catalog**: The **Vega catalog id** for that data source (same as the **id** from `kweaver vega catalog list`; often prefixed by connector family, e.g. `mysql_…`, depending on the environment).
+- **schema**: The source **namespace**—for MySQL this is usually the **database** name; for PostgreSQL, often the **schema** name; exact semantics follow the connector metadata.
+- **table**: Physical table (or view) name.
+
+When a data view is created, the platform materializes this into **`meta_table_name`** (and the built-in **`sql_str`**). **Do not guess the catalog segment from the view’s logical name alone**; run **`kweaver dataview get <view_id>`** and reuse **`meta_table_name`** verbatim in `FROM` / `JOIN`, or match the table references in **`sql_str`**. Multi-table joins must stay within one data source (one catalog).
+
+TypeScript: `client.dataviews.list()`, `client.dataviews.find(...)`, `client.dataviews.query(id, { sql: '...' })`.  
+Python: `client.dataviews.list()`, `client.dataviews.query(...)`, etc.
+
+### End-to-end example
 
 ```bash
-# 1. Check VEGA is healthy
 kweaver vega health
-
-# 2. See which connector types are available
 kweaver vega connector-type list
-
-# 3. Test connection to a MySQL database
-kweaver vega catalog test-connection \
-  --type mysql --host db.example.com --port 3306 \
-  --database orders_db --username reader --password pass123
-
-# 4. After registering (via API or BKN create-from-ds), discover resources
-kweaver vega catalog discover <catalog_id>
-kweaver vega catalog resources <catalog_id>
-
-# 5. Query a dataview built from the discovered tables
+kweaver vega catalog health --all
+kweaver vega catalog discover <catalog_id> --wait
+kweaver vega catalog resources <catalog_id> --category table
+kweaver vega resource query <resource_id> -d '{"limit":5,"need_total":true}'
 kweaver dataview find --name "orders"
-kweaver dataview query <dataview_id> "SELECT customer_id, SUM(amount) AS total FROM t GROUP BY customer_id ORDER BY total DESC LIMIT 10"
+kweaver dataview query <dataview_id> --sql "SELECT customer_id, SUM(amount) AS total FROM mysql_demo.\"sales\".\"orders\" GROUP BY customer_id LIMIT 10"
 ```
 
 ---
 
 ## Python SDK
 
+Use **`client.vega.*`** for vega-backend (nested resources: `catalogs`, `resources`, `query`, `connector_types`, etc.). **Catalog/resource CRUD and dataset build APIs** are not yet on the Python `VegaCatalogsResource` / `VegaResourcesResource`; use the **CLI** or **TypeScript** client below, or call the REST paths in the curl section.
+
 ```python
-from kweaver_sdk import KWeaverClient
+from kweaver import KWeaverClient
 
 client = KWeaverClient(base_url="https://<access-address>")
 
-# Health check
+# Health (GET /api/vega-backend/v1/health when exposed)
 health = client.vega.health()
-print(health["status"], health["version"])
+print(health.server_name, health.server_version)
 
-# List catalogs
-catalogs = client.vega.list_catalogs()
+# Composite stats (best-effort counts; see VegaPlatformStats)
+stats = client.vega.stats()
+print(f"catalog_count={stats.catalog_count}, data_view_count={stats.data_view_count}")
+
+# Catalogs
+catalogs = client.vega.catalogs.list(status="healthy", limit=20)
 for cat in catalogs:
-    print(cat["id"], cat["name"], cat["type"])
+    print(cat.id, cat.name, getattr(cat, "health_status", None) or getattr(cat, "health_check_status", None))
 
-# Get catalog details
-detail = client.vega.get_catalog("cat-001")
+cat = client.vega.catalogs.get("cat-001")
+hs = client.vega.catalogs.health_status(["cat-001", "cat-002"])
+ok = client.vega.catalogs.test_connection("cat-001")
+client.vega.catalogs.discover("cat-001", wait=True)
+resources_in_cat = client.vega.catalogs.resources("cat-001", category="table", limit=50)
 
-# Test connection before registering
-ok = client.vega.test_connection(
-    type="mysql",
-    host="db.example.com",
-    port=3306,
-    database="mydb",
-    username="root",
-    password="secret",
+# Resources
+resources = client.vega.resources.list(catalog_id="cat-001", category="table", limit=50)
+res = client.vega.resources.get("res_orders_001")
+rows = client.vega.resources.data("res_orders_001", body={"limit": 10, "offset": 0, "need_total": True})
+
+# Structured query + direct SQL (vega-backend)
+q = client.vega.query.execute(tables=["res_orders_001"], limit=5, need_total=True)
+sql_rows = client.vega.query.sql_query({
+    "resource_type": "mysql",
+    "query": "SELECT 1 AS one",
+})
+
+# Connector types
+for ct in client.vega.connector_types.list():
+    print(ct.type, getattr(ct, "name", ""))
+
+# Data views (mdl-uniquery — separate from vega-backend)
+for dv in client.dataviews.list():
+    print(dv.id, dv.name)
+result = client.dataviews.query(
+    "dv_001",
+    sql='SELECT * FROM mysql_demo."sales"."orders" LIMIT 5',  # FROM: use meta_table_name from dataview get; illustrative name here
 )
-print("reachable:", ok["success"])
-
-# Discover schemas and tables
-schemas = client.vega.discover_catalog("cat-001")
-
-# List resources
-resources = client.vega.list_resources()
-for r in resources:
-    print(r["id"], r["name"], r["catalog_id"])
-
-# Resource data (structured body) and vega-backend queries
-_ = client.vega.resources.data("res-001", body={"limit": 10, "offset": 0, "need_total": True})
-q = client.vega.query.execute(tables=["res-001"], limit=5, need_total=True)
-sql_rows = client.vega.query.sql_query({"resource_type": "mysql", "query": "SELECT 1 AS one"})
-
-# List dataviews
-views = client.vega.list_dataviews()
-
-# Query a dataview
-result = client.vega.query_dataview(
-    dataview_id="dv-001",
-    sql="SELECT order_id, amount FROM t WHERE status = 'active' LIMIT 10",
-)
-for row in result["data"]:
-    print(row)
-
-# List connector types
-connectors = client.vega.list_connector_types()
-for ct in connectors:
-    print(ct["name"], ct["supported_features"])
 ```
 
 ---
 
 ## TypeScript SDK
 
+`client.vega` uses a **flat** method surface (`listCatalogs`, `createCatalog`, …). JSON bodies for `executeQuery`, `sqlQuery`, `createResource`, `updateCatalog`, etc. are **strings** (`JSON.stringify(...)`).
+
 ```typescript
 import { KWeaverClient } from '@kweaver-ai/kweaver-sdk';
 
 const client = new KWeaverClient({ baseUrl: 'https://<access-address>' });
 
-// Health check
+// Health: CLI-style probe result { status, probe, statusCode }
 const health = await client.vega.health();
-console.log(health.status, health.version);
+console.log(health);
 
-// List catalogs
-const catalogs = await client.vega.listCatalogs();
-catalogs.forEach((cat) => console.log(cat.id, cat.name, cat.type));
+const catalogs = await client.vega.listCatalogs({ status: 'healthy', limit: 20 });
+catalogs.forEach((c: any) => console.log(c.id, c.name));
 
-// Test connection
-const ok = await client.vega.testConnection({
-  type: 'mysql',
-  host: 'db.example.com',
-  port: 3306,
-  database: 'mydb',
-  username: 'root',
-  password: 'secret',
+const detail = await client.vega.getCatalog('cat-001');
+const healthStatus = await client.vega.catalogHealthStatus('cat-001,cat-002');
+const test = await client.vega.testCatalogConnection('cat-001');
+await client.vega.discoverCatalog('cat-001', { wait: true });
+const catRes = await client.vega.listCatalogResources('cat-001', { category: 'table', limit: 50 });
+
+await client.vega.createCatalog({
+  name: 'my-mysql',
+  connector_type: 'mysql',
+  connector_config: { host: 'db.example.com', port: 3306, database: 'mydb', username: 'u', password: 'p' },
 });
-console.log('reachable:', ok.success);
+await client.vega.updateCatalog('cat-001', JSON.stringify({ name: 'renamed' }));
+await client.vega.deleteCatalogs('cat-001');
 
-// Discover and list resources
-const schemas = await client.vega.discoverCatalog('cat-001');
-const resources = await client.vega.listResources();
+const resources = await client.vega.listResources({ catalogId: 'cat-001', limit: 50 });
+const allRes = await client.vega.listAllResources({ limit: 100 });
+const res = await client.vega.getResource('res-001');
+const data = await client.vega.queryResourceData('res-001', JSON.stringify({ limit: 5, need_total: true }));
+
+await client.vega.createResource(JSON.stringify({
+  catalog_id: 'cat-001', name: 't', category: 'table',
+}));
+await client.vega.updateResource('res-001', JSON.stringify({ status: 'active' }));
+await client.vega.deleteResources('res-001');
+
+await client.vega.createDatasetDocs('res-ds', JSON.stringify([{ id: 'd1' }]));
+await client.vega.buildDataset('res-ds', 'full');
+const build = await client.vega.getDatasetBuildStatus('res-ds', '<task-id>');
 
 const structured = await client.vega.executeQuery(JSON.stringify({
   tables: [{ resource_id: 'res-001' }],
   limit: 5,
   need_total: true,
 }));
-console.log(structured);
-
 const sqlOut = await client.vega.sqlQuery(JSON.stringify({
   resource_type: 'mysql',
   query: 'SELECT 1 AS one',
 }));
-console.log(sqlOut);
 
-// Query a dataview
-const result = await client.vega.queryDataview({
-  dataviewId: 'dv-001',
-  sql: "SELECT order_id, amount FROM t WHERE status = 'active' LIMIT 10",
-});
-result.data.forEach((row) => console.log(row));
-
-// Connector types
 const connectors = await client.vega.listConnectorTypes();
-connectors.forEach((ct) => console.log(ct.name, ct.supportedFeatures));
+
+const dvList = await client.dataviews.list({ limit: 50 });
+const dvResult = await client.dataviews.query('dv-001', {
+  sql: "SELECT order_id, amount FROM mysql_demo.\"sales\".\"orders\" WHERE status = 'active' LIMIT 10", // FROM: meta_table_name from dataview get
+});
 ```
 
 ---
 
 ## curl
 
+After `kweaver auth login`, use **`Authorization: Bearer $(kweaver token)`** for protected calls. Replace **`https://<access-address>`** with your deployment URL.
+
 ```bash
-# Health check
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/health" \
-  -H "Authorization: Bearer $TOKEN"
+# Probe catalogs list (same idea as `kweaver vega health` in Node CLI)
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs?limit=1" \
+  -H "Authorization: Bearer $(kweaver token)" \
+  -H "x-business-domain: bd_public"
 
-# List catalogs
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs" \
-  -H "Authorization: Bearer $TOKEN"
+# Optional: raw pod health (path is /health on vega-backend, not under /v1)
+# curl -sk "https://<access-address>/health" -H "Authorization: Bearer $(kweaver token)"
 
-# Get a single catalog
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat-001" \
-  -H "Authorization: Bearer $TOKEN"
+# List / get catalogs
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs?status=healthy&limit=20" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-# Test a connection
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/catalogs/test-connection" \
-  -H "Authorization: Bearer $TOKEN" \
+# Create / update / delete catalog
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/catalogs" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '{
-    "type": "mysql",
-    "host": "db.example.com",
-    "port": 3306,
-    "database": "mydb",
-    "username": "root",
-    "password": "secret"
-  }'
+  -d '{"name":"my","connector_type":"mysql","connector_config":{"host":"h","port":3306,"database":"d","username":"u","password":"p"}}'
+curl -sk -X PUT "https://<access-address>/api/vega-backend/v1/catalogs/cat-001" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"new-name"}'
+curl -sk -X DELETE "https://<access-address>/api/vega-backend/v1/catalogs/cat-001" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-# Discover schemas within a catalog
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat-001/discover" \
-  -H "Authorization: Bearer $TOKEN"
+# Catalog health / test-connection / discover / resources
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001,cat-002/health-status" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/test-connection" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/discover" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/resources?category=table&limit=30" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-# List resources in a catalog
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/catalogs/cat-001/resources" \
-  -H "Authorization: Bearer $TOKEN"
+# Resources: list, list-all, get, create, update, delete, data
+curl -sk "https://<access-address>/api/vega-backend/v1/resources?catalog_id=cat-001&limit=50" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk "https://<access-address>/api/vega-backend/v1/resources/list?limit=50" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+  -H "Content-Type: application/json" \
+  -d '{"catalog_id":"cat-001","name":"t","category":"table"}'
+curl -sk -X PUT "https://<access-address>/api/vega-backend/v1/resources/res-001" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"active"}'
+curl -sk -X DELETE "https://<access-address>/api/vega-backend/v1/resources/res-001" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-# Query resource data (structured body; same as CLI resource query)
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/res-001/data" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/res-001/data" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
   -H "x-http-method-override: GET" \
   -d '{"limit":10,"offset":0,"need_total":true}'
 
-# Structured query /query/execute
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/query/execute" \
-  -H "Authorization: Bearer $TOKEN" \
+# Dataset docs + build (replace resource id / task id)
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/docs" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+  -H "Content-Type: application/json" \
+  -d '[{"id":"doc1"}]'
+# Dataset build (vega-backend: POST .../resources/dataset/:id/build)
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/build" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"full"}'
+curl -sk "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/build/<task-id>" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+
+# Structured query / direct SQL
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/query/execute" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
   -d '{"tables":[{"resource_id":"res-001"}],"limit":5,"need_total":true}'
-
-# Direct SQL /resources/query
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/resources/query" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/query" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
   -d '{"resource_type":"mysql","query":"SELECT 1 AS one"}'
 
-# List dataviews
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/dataviews" \
-  -H "Authorization: Bearer $TOKEN"
-
-# Query a dataview
-curl -sk -X POST "$KWEAVER_BASE/api/vega-backend/v1/dataviews/dv-001/query" \
-  -H "Authorization: Bearer $TOKEN" \
+# Connector types
+curl -sk "https://<access-address>/api/vega-backend/v1/connector-types" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+curl -sk "https://<access-address>/api/vega-backend/v1/connector-types/mysql" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
+# curl -sk -X POST "https://<access-address>/api/vega-backend/v1/connector-types" \
+#   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
+#   -H "Content-Type: application/json" \
+#   -d '<connector-type-json>'
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/connector-types/mysql/enabled" \
+  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '{"sql": "SELECT order_id, amount FROM t WHERE status = '\''active'\'' LIMIT 10"}'
-
-# List connector types
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/connector-types" \
-  -H "Authorization: Bearer $TOKEN"
-
-# Get connector type details
-curl -sk "$KWEAVER_BASE/api/vega-backend/v1/connector-types/mysql" \
-  -H "Authorization: Bearer $TOKEN"
+  -d '{"enabled":true}'
 ```
+
+Dataview HTTP paths are defined by **mdl-uniquery**, not vega-backend; use `kweaver dataview` or the `client.dataviews` SDK.
+
+Full details: [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) and `kweaver vega --help` / `kweaver vega <subcommand> --help`.

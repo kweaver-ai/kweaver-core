@@ -12,15 +12,6 @@ Typical ingress prefix:
 
 **Related modules:** [Decision Agent](decision-agent.md), [Dataflow](dataflow.md) (automation and code-runner paths).
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ## CLI
 
 ### Calling Operator APIs
@@ -196,22 +187,22 @@ await client.skill.install('skill-kg-analyzer', { version: '1.2.0' });
 
 ```bash
 # List operators
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/operators" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/operators" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get operator details
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op-weather" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/operators/op-weather" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Invoke an operator
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op-weather/invoke" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-operator-integration/v1/operators/op-weather/invoke" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"city": "Shanghai", "units": "metric"}'
 
 # Register a new operator
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/operators" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-operator-integration/v1/operators" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "weather-lookup",
@@ -226,28 +217,28 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/operators" \
   }'
 
 # Delete an operator
-curl -sk -X DELETE "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op-weather" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X DELETE "https://<access-address>/api/agent-operator-integration/v1/operators/op-weather" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List skills
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/skills" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/skills" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Search marketplace
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/skills/market?query=data+analysis" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/skills/market?query=data+analysis" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Get skill content
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/skills/skill-kg-analyzer/content" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/skills/skill-kg-analyzer/content" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Read a file within a skill
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/skills/skill-kg-analyzer/files/SKILL.md" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-operator-integration/v1/skills/skill-kg-analyzer/files/SKILL.md" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Install a skill
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/skills/skill-kg-analyzer/install" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<access-address>/api/agent-operator-integration/v1/skills/skill-kg-analyzer/install" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"version": "1.2.0"}'
 ```

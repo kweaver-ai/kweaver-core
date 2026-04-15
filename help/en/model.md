@@ -26,6 +26,25 @@ All operations below use `kweaver call`, which auto-injects auth and the platfor
 
 ### LLM Management
 
+#### Supported types and series
+
+**LLM `model_type` (when registering an LLM)**  
+
+Supported: **`llm`**, **`rlm`**, **`vu`**. Typical chat workloads use **`llm`**; you may omit the field — it defaults to **`llm`**.
+
+**LLM `model_series` (when registering an LLM)**  
+
+Supported: `tome`, `qwen`, `openai`, `internlm`, `deepseek`, `qianxun`, `claude`, `chatglm`, `llama`, `others`, `baidu`, `baidu_tianchen`. Pick the value that matches your provider (e.g. `qwen` for Tongyi Qwen, `deepseek` for DeepSeek).
+
+**`openai` means Azure OpenAI only** — configure `api_url`, deployment name, and keys as required by Azure.  
+For **any other OpenAI Chat Completions–compatible HTTP endpoint** (official OpenAI, Tencent Cloud MaaS, and other **non-Azure** hosts), use **`others`**. Do not register those endpoints under `openai`.
+
+**Small-model `model_type` (when registering a small model)**  
+
+Supported: **`embedding`**, **`reranker`**.
+
+---
+
 #### Register an LLM
 
 Register an OpenAI-compatible LLM:
@@ -43,10 +62,22 @@ kweaver call /api/mf-model-manager/v1/llm/add -d '{
   }
 }'
 
-# OpenAI
+# Azure OpenAI (`model_series` must be `openai`; set `api_url` / `api_model` per Azure portal)
+kweaver call /api/mf-model-manager/v1/llm/add -d '{
+  "model_name": "gpt-4o-azure",
+  "model_series": "openai",
+  "max_model_len": 128000,
+  "model_config": {
+    "api_key": "<your-azure-api-key>",
+    "api_model": "<your-azure-deployment-name>",
+    "api_url": "<azure-openai-resource-base-url-from-portal>"
+  }
+}'
+
+# Official OpenAI and other OpenAI Chat Completions–compatible, non-Azure hosts — use `others`
 kweaver call /api/mf-model-manager/v1/llm/add -d '{
   "model_name": "gpt-4o",
-  "model_series": "openai",
+  "model_series": "others",
   "max_model_len": 128000,
   "model_config": {
     "api_key": "<your-api-key>",
@@ -66,9 +97,21 @@ kweaver call /api/mf-model-manager/v1/llm/add -d '{
     "api_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
   }
 }'
+
+# Tencent Cloud MaaS (OpenAI Chat Completions–compatible; not Azure — use `others`)
+kweaver call /api/mf-model-manager/v1/llm/add -d '{
+  "model_name": "glm-5.1",
+  "model_series": "others",
+  "max_model_len": 128000,
+  "model_config": {
+    "api_key": "<your-api-key>",
+    "api_model": "glm-5.1",
+    "api_url": "https://tokenhub.tencentmaas.com/v1/chat/completions"
+  }
+}'
 ```
 
-Supported `model_series`: `openai`, `deepseek`, `qwen`, `claude`, `tome` (private deployment), etc. Any endpoint compatible with the OpenAI Chat Completions API can be registered.
+**Reminder:** **`openai` = Azure OpenAI**; **other OpenAI-compatible endpoints use `others`**. If a vendor documents a dedicated series (e.g. `qwen`, `deepseek`), prefer that series when it applies.
 
 #### List LLMs
 
@@ -83,6 +126,31 @@ kweaver call /api/mf-model-manager/v1/llm/test -d '{
   "model_id": "<model_id>"
 }'
 ```
+
+#### Chat with an LLM directly (Model Factory)
+
+To talk to a registered LLM **without** going through Decision Agent, call the Model Factory **Chat Completions** API. `kweaver call` injects the current platform auth and business domain for you.
+
+- **Endpoint**: `POST /api/mf-model-api/v1/chat/completions`
+- **`model`**: use the registered **`model_name`** from **`llm/list`** (usually the same string as upstream `api_model`)
+- **Body**: common OpenAI Chat Completions fields such as **`messages`** (`system` / `user` / `assistant`), **`stream`**, **`max_tokens`**, **`temperature`**, **`top_p`**, **`top_k`**, etc. If the model emits long “reasoning” text, set **`max_tokens`** high enough or the reply may be cut off
+
+Non-streaming example:
+
+```bash
+kweaver call /api/mf-model-api/v1/chat/completions -X POST \
+  -d '{
+    "model": "<model_name>",
+    "messages": [{"role": "user", "content": "Introduce yourself in one sentence."}],
+    "stream": false,
+    "max_tokens": 512,
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 50
+  }' --pretty
+```
+
+For streaming, set **`"stream": true`** (SSE stream; your terminal or client must handle chunked output).
 
 #### Delete an LLM
 
@@ -189,21 +257,32 @@ kweaver call /api/mf-model-manager/v1/small-model/delete -d '{
 
 ## Enable BKN Semantic Search
 
-After registering an Embedding model, enable BKN's semantic vectorization (disabled by default):
+After registering an embedding in the **model factory**, point **bkn-backend** and **ontology-query** at the same default name — the **`model_name`** from the list API.
+
+**1.** Run the list call to read **`model_name`**, then `kubectl edit configmap bkn-backend-cm` and `ontology-query-cm` (namespace is often `kweaver`). In the YAML blob under `data`, under **`server:`**, set:
 
 ```bash
-kubectl edit configmap bkn-backend-cm -n kweaver
-# Change defaultSmallModelEnabled: false → true
-# Set defaultSmallModelName to your registered embedding model name (e.g. bge-m3)
+kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
+```
 
+```yaml
+server:
+  defaultSmallModelEnabled: true
+  defaultSmallModelName: <model_name from above>
+```
+
+Edit **both** ConfigMaps; **`defaultSmallModelName` must match**. Add the line under `server:` if it is missing.
+
+**2.** Save, restart, and test; run **`bkn build`** again if indexes were built with the wrong model.
+
+```bash
 kubectl rollout restart deployment/bkn-backend -n kweaver
-```
-
-Verify:
-
-```bash
+kubectl rollout restart deployment/ontology-query -n kweaver
 kweaver bkn search <kn_id> "test query"
+# optional: kweaver bkn build <kn_id> --wait --timeout 600
 ```
+
+**Troubleshooting**: **`IdNotExist`** usually means `defaultSmallModelName` does not match the list, or only one ConfigMap was edited / pods not restarted. **`Redis GET` timeout**: check **mf-model-api** ↔ Redis/Sentinel or restart **mf-model-api**.
 
 ---
 
@@ -242,6 +321,7 @@ kweaver bkn search <kn_id> "test query"
 | DeepSeek | LLM | `deepseek-chat` | `https://api.deepseek.com/chat/completions` |
 | OpenAI | LLM | `gpt-4o` | `https://api.openai.com/v1/chat/completions` |
 | Qwen | LLM | `qwen-plus` | `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions` |
+| Tencent Cloud MaaS | LLM | `glm-5.1` (see console) | `https://tokenhub.tencentmaas.com/v1/chat/completions` |
 | SiliconFlow | Embedding | `BAAI/bge-m3` | `https://api.siliconflow.cn/v1/embeddings` |
 | SiliconFlow | Reranker | `BAAI/bge-reranker-v2-m3` | `https://api.siliconflow.cn/v1/rerank` |
 | OpenAI | Embedding | `text-embedding-3-small` | `https://api.openai.com/v1/embeddings` |
@@ -287,9 +367,12 @@ kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
 kweaver call /api/mf-model-manager/v1/llm/test -d '{"model_id": "<llm_id>"}'
 kweaver call /api/mf-model-manager/v1/small-model/test -d '{"model_id": "<embedding_id>"}'
 
-# 5. Enable BKN semantic search (requires kubectl)
+# 5. Enable BKN semantic search (kubectl): see "Enable BKN Semantic Search" steps 1–2 above
 kubectl edit configmap bkn-backend-cm -n kweaver
+kubectl edit configmap ontology-query-cm -n kweaver
 kubectl rollout restart deployment/bkn-backend -n kweaver
+kubectl rollout restart deployment/ontology-query -n kweaver
+kweaver bkn build <kn_id> --wait --timeout 600
 
 # 6. Verify semantic search
 kweaver bkn search <kn_id> "test query"

@@ -8,15 +8,6 @@ With **`--minimum` install**, many auth components are disabled for a simpler la
 
 **Related modules:** All subsystems that accept `Authorization` headers; [Decision Agent](decision-agent.md) and [VEGA Engine](vega.md) are primary consumers.
 
-## Prerequisites
-
-```bash
-export KWEAVER_BASE="https://<access-address>"
-export TOKEN="<bearer-token>"   # often unused when auth.enabled=false
-```
-
----
-
 ## CLI
 
 ### Authentication — Login
@@ -67,10 +58,13 @@ kweaver auth whoami
 
 # Show connection status and token expiry
 kweaver auth status
+```
 
+**`auth whoami` and no-auth**: `whoami` requires an `id_token` from OAuth login. If you used **`auth login … --no-auth`** or the platform has authentication disabled, the CLI is in **no-auth** mode and `whoami` will error with no `id_token` — **expected**. Use `auth status` to confirm; do not treat it as a failed login.
+
+```bash
 # Export the current token (for use in scripts or curl)
 kweaver auth export
-# Usage: export TOKEN=$(kweaver auth export)
 
 # Logout from the current server
 kweaver auth logout
@@ -105,10 +99,9 @@ kweaver auth status
 # → user: admin
 # → token expires: 2026-04-14T22:30:00Z
 
-# 4. Export a token for scripting
-export TOKEN=$(kweaver auth export)
+# 4. Call a protected API (after auth use prod — same session as CLI)
 curl -sk "https://prod.kweaver.example.com/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 5. Cleanup
 kweaver auth logout           # logout from active connection
@@ -127,6 +120,8 @@ kweaver config list-bd
 # Set the active business domain
 kweaver config set-bd <bd_uuid>
 ```
+
+**`config list-bd` / `config set-bd` and minimal installs**: **`--minimum` / minimal installs do not ship** the **business-domain management service** these two subcommands call, so **`list-bd` / `set-bd` are unavailable** (e.g. `list-bd` returns **404**) — deployment choice, not a CLI bug. A default domain still exists; use `config show`. On a **full install**, use `list-bd` / `set-bd` to list or switch domains; if that still fails, check routing or whether the service is deployed.
 
 ### Business Domain Priority
 
@@ -239,37 +234,37 @@ await client.auth.logout();
 
 ```bash
 # Discover OpenID configuration
-curl -sk "$KWEAVER_BASE/.well-known/openid-configuration"
+curl -sk "https://<access-address>/.well-known/openid-configuration"
 
 # Get an access token via OAuth2 password grant
-curl -sk -X POST "$KWEAVER_BASE/oauth2/token" \
+curl -sk -X POST "https://<access-address>/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password&username=admin&password=secretpass&client_id=kweaver-cli&scope=openid"
 
 # Get an access token via client credentials
-curl -sk -X POST "$KWEAVER_BASE/oauth2/token" \
+curl -sk -X POST "https://<access-address>/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials&client_id=<client_id>&client_secret=<client_secret>&scope=openid"
 
 # Verify a token (introspection)
-curl -sk -X POST "$KWEAVER_BASE/oauth2/introspect" \
+curl -sk -X POST "https://<access-address>/oauth2/introspect" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "token=$TOKEN"
+  -d "token=<access-token>"
 
 # Get current user info
-curl -sk "$KWEAVER_BASE/userinfo" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/userinfo" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Use the token to call a protected API
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # List business domains
-curl -sk "$KWEAVER_BASE/api/bkn-backend/v1/business-domains" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<access-address>/api/bkn-backend/v1/business-domains" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # Set business domain header for scoped requests
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk "https://<access-address>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "X-Business-Domain: bd-sales"
 ```

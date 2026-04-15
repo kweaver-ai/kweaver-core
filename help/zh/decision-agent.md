@@ -18,12 +18,7 @@
 
 ## 使用方式
 
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
+推荐先 `kweaver auth login <平台地址>`（自签名证书加 `-k`），再使用下文 CLI；REST 示例见文档末尾 curl 一节。
 
 ### CLI
 
@@ -136,7 +131,7 @@ kweaver agent chat agt_001 -m '能否按月份细分？' \
 kweaver agent chat agt_001
 # > 你好，请帮我查询VIP客户列表
 # > 这些客户的平均订单金额是多少？
-# > /quit
+# > quit   # 或 exit、q（与 kweaver agent chat --help 一致）
 ```
 
 #### 会话管理
@@ -151,12 +146,14 @@ kweaver agent history agt_001 conv_20250115_001
 
 #### 链路追踪
 
+第一个参数为**智能体 ID**，第二个为**会话 ID**（与 `kweaver agent chat` 输出或 `kweaver agent sessions` 中一致）。`kweaver agent --help` 总览里对 `trace` 的一行描述可能与 `kweaver agent trace --help` 不一致时，**以 `trace --help` 为准**。
+
 ```bash
 # 查看会话的执行链路（格式化输出）
-kweaver agent trace conv_20250115_001 --pretty
+kweaver agent trace agt_001 conv_20250115_001 --pretty
 
 # 紧凑输出（适合管道处理）
-kweaver agent trace conv_20250115_001 --compact
+kweaver agent trace agt_001 conv_20250115_001 --compact
 ```
 
 #### 删除
@@ -171,6 +168,8 @@ kweaver agent delete agt_001 -y
 
 #### 端到端流程
 
+下文用 **`agt_002`** 作为示例智能体 ID：第 3 步创建成功后，请将其**全部替换**为命令输出中的真实 ID。第 7 步的 **`conv_xxx`** 须与第 6 步对话返回的会话 ID 一致，或通过 `kweaver agent sessions agt_002` 查看。
+
 ```bash
 # 1. 查看可用模板
 kweaver agent template-list
@@ -178,7 +177,7 @@ kweaver agent template-list
 # 2. 选择模板并保存配置
 kweaver agent template-get tpl_qa_assistant --save-config ./qa-config.json
 
-# 3. 基于模板创建智能体
+# 3. 基于模板创建智能体（记下返回的 agent id，下文以 agt_002 为例）
 kweaver agent create \
   --name "产品问答助手" \
   --profile "回答关于产品功能的问题" \
@@ -191,11 +190,11 @@ kweaver agent update agt_002 --knowledge-network-id kn_abc123
 # 5. 发布到市场
 kweaver agent publish agt_002 --category-id cat_product
 
-# 6. 对话测试
+# 6. 对话测试（记下 conversation_id，或通过 sessions 查询）
 kweaver agent chat agt_002 -m '这个产品支持哪些数据库？' --stream
 
-# 7. 查看执行链路
-kweaver agent trace conv_20250116_001 --pretty
+# 7. 查看执行链路（须同时传入智能体 ID 与会话 ID）
+kweaver agent trace agt_002 conv_20250116_001 --pretty
 
 # 8. 清理（如不再需要）
 kweaver agent unpublish agt_002
@@ -209,7 +208,8 @@ kweaver agent delete agt_002 -y
 ```python
 from kweaver_sdk import KWeaverClient
 
-client = KWeaverClient(base_url="https://<访问地址>")
+# 使用已 login 的 ~/.kweaver/ 凭据（需先 kweaver auth login；具体构造方式以 kweaver-sdk 为准）
+client = KWeaverClient()
 
 agents = client.agent.list(name="客服", limit=50)
 for agt in agents["data"]:
@@ -268,7 +268,7 @@ history = client.agent.history(new_agent["id"], reply["conversation_id"])
 for msg in history["messages"]:
     print(f"[{msg['role']}] {msg['content'][:80]}")
 
-trace = client.agent.trace(reply["conversation_id"])
+trace = client.agent.trace(new_agent["id"], reply["conversation_id"])
 for span in trace["spans"]:
     print(f"  {'  ' * span['depth']}{span['operation']} ({span['duration_ms']}ms)")
 
@@ -349,25 +349,25 @@ for (const s of sessions) {
 ### curl
 
 ```bash
-# 列出智能体
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents?name=客服&limit=50" \
-  -H "Authorization: Bearer $TOKEN"
+# 列出智能体（查询串含中文时，部分环境需对 name 做 URL 编码）
+curl -sk "https://<访问地址>/api/agent-factory/v1/agents?name=客服&limit=50" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取智能体详情
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/agents/agt_001" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/agents/agt_001" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 列出模板
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/templates" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/templates" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取模板详情
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/templates/tpl_qa_assistant" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/templates/tpl_qa_assistant" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 创建智能体
-curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-factory/v1/agents" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "数据分析助手",
@@ -381,22 +381,22 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents" \
   }'
 
 # 更新智能体
-curl -sk -X PUT "$KWEAVER_BASE/api/agent-factory/v1/agents/agt_001" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X PUT "https://<访问地址>/api/agent-factory/v1/agents/agt_001" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "knowledge_network_id": "kn_abc123"
   }'
 
 # 发布智能体
-curl -sk -X POST "$KWEAVER_BASE/api/agent-factory/v1/agents/agt_001/publish" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-factory/v1/agents/agt_001/publish" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{"category_id": "cat_customer_service"}'
 
 # 对话（非流式）
-curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "最近一周有多少新客户注册？",
@@ -404,8 +404,8 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
   }'
 
 # 对话（流式 SSE）
-curl -sk -N -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -N -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -414,8 +414,8 @@ curl -sk -N -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
   }'
 
 # 在已有会话中继续对话
-curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-app/v1/agents/agt_001/chat" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "能否按月份细分？",
@@ -424,18 +424,18 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/chat" \
   }'
 
 # 列出会话
-curl -sk "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/sessions" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-app/v1/agents/agt_001/sessions" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 查看会话历史
-curl -sk "$KWEAVER_BASE/api/agent-app/v1/agents/agt_001/sessions/conv_20250115_001/history" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-app/v1/agents/agt_001/sessions/conv_20250115_001/history" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 删除智能体
-curl -sk -X DELETE "$KWEAVER_BASE/api/agent-factory/v1/agents/agt_001" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X DELETE "https://<访问地址>/api/agent-factory/v1/agents/agt_001" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 列出分类
-curl -sk "$KWEAVER_BASE/api/agent-factory/v1/categories" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-factory/v1/categories" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

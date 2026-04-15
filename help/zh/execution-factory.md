@@ -20,15 +20,6 @@
 
 **相关模块：** [Decision Agent](decision-agent.md)、[Dataflow](dataflow.md)（自动化与 code-runner 路径）。
 
-## 使用方式
-
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ### CLI
 
 #### 算子调用
@@ -198,16 +189,16 @@ console.log(content);
 
 ```bash
 # 列出算子
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/operators" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-operator-integration/v1/operators" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取算子详情
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op_text_extract" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-operator-integration/v1/operators/op_text_extract" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 调用算子
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op_text_extract/invoke" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-operator-integration/v1/operators/op_text_extract/invoke" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "input": {"url": "https://example.com/report.pdf"},
@@ -215,12 +206,12 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/operators/op_t
   }'
 
 # 列出工具
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/tools" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-operator-integration/v1/tools" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 调用工具
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/tools/tool_web_search/invoke" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-operator-integration/v1/tools/tool_web_search/invoke" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "KWeaver 最新版本",
@@ -228,17 +219,17 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/tools/tool_web
   }'
 
 # 列出已安装技能包
-curl -sk "$KWEAVER_BASE/api/agent-operator-integration/v1/skills" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-operator-integration/v1/skills" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 注册技能包
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/skills" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-operator-integration/v1/skills" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -F "file=@./my-skill-v1.0.zip"
 
 # 从市场安装技能包
-curl -sk -X POST "$KWEAVER_BASE/api/agent-operator-integration/v1/skills/install" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-operator-integration/v1/skills/install" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "data-quality-checker",

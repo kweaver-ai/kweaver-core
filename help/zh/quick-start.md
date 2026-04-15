@@ -2,7 +2,7 @@
 
 以下步骤假设 KWeaver Core 已按 [部署](installation/deploy.md) 文档完成安装及文中的安装后检查。
 
-> **模型配置提示**：语义搜索（第 4 步）和 Agent 对话（第 5 步）需要预先注册 LLM 和 Embedding 模型。KWeaver 默认不包含预置模型，请先完成 [模型管理](model.md) 中的注册操作。数据源接入、知识网络创建和条件查询无需模型即可使用。
+> **模型配置提示**：**建议至少配置 1 个 LLM（大语言模型）和 1 个 Embedding（向量小模型）**：前者用于 Agent 对话与推理，后者用于语义搜索与向量化。语义搜索（第 4 步）和 Agent 对话（第 5 步）依赖上述能力；注册 Embedding 后还须在集群中 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)（ConfigMap / 默认小模型名）。其它注册与参数见 [模型管理](model.md)。数据源接入、知识网络创建和条件查询无需模型即可使用。
 
 ---
 
@@ -20,14 +20,35 @@ kweaver auth login <平台地址> -k
 
 - `<平台地址>` 是部署完成后 `deploy.sh` 输出的访问地址。
 - `-k` 用于自签名证书；正式证书可省略。
-- 如果安装时配置了多个业务域，登录后需确认当前域是否正确：
+
+**登录方式概览**
+
+| 场景 | 做法 |
+|------|------|
+| **本机浏览器（默认）** | `kweaver auth login <平台地址>`；自签名或不受信任证书加 `-k`。 |
+| **无浏览器 — `--no-browser`**（交互式无头，推荐） | CLI 打印 OAuth URL，在其它设备浏览器打开并登录，将地址栏**完整回调 URL** 贴回终端。 |
+| **无浏览器 — 导出重放**（适合 CI / 全自动化） | 在有浏览器机器完成 `kweaver auth login` 后：**浏览器内登录成功页**会展示「Headless machine」说明，并给出可复制的一行 `kweaver auth login '<平台地址>' --client-id '…' --client-secret '…' --refresh-token '…'`（与 **复制命令** 按钮）；也可在终端执行 **`kweaver auth export`**（或 `--json`）。在**无头机器**上执行该一行命令即可写入 `~/.kweaver/`。 |
+| **无浏览器 — Playwright** | 先 `npm install playwright && npx playwright install chromium`，再 `kweaver auth login … -u <用户> -p <密码> -k`；仅 `--playwright` 不带 `-u`/`-p` 时可开可见浏览器手动登录。 |
+
+在有图形界面的机器上完成浏览器登录后，除提示 **Login successful**、可关闭标签页外，上述成功页会说明：在**没有浏览器**的机器（SSH、CI、容器等）上运行页面中的命令；请**妥善保管**页面展示的凭据（持有 **refresh token** 与 **client secret** 即可换取新的 access token，勿泄露或提交到仓库）。
+
+- 登录后可用 `kweaver config show` 查看当前业务域（最小化安装同样有默认域，只是不提供下面两条命令）。
 
 ```bash
 kweaver config show
-# 若后续命令返回空结果，尝试切换到正确的业务域：
+```
+
+若后续命令返回空结果，可能是业务域不对。下面两条——**`kweaver config list-bd`** 与 **`kweaver config set-bd`**——依赖平台部署的**业务域管理服务**；**最小化安装（`--minimum`）不包含该服务**，因此这两条命令不可用（例如 `list-bd` 返回 **404**），**并非**「平台没有业务域」或 `config show` 无效。最小化场景请**不要**执行下列命令，以 `config show` 为准即可。仅在**完整安装、且存在多业务域需要枚举或切换**时再使用：
+
+```bash
 kweaver config list-bd
 kweaver config set-bd <uuid>
 ```
+
+> **说明**
+>
+> - **`kweaver auth whoami`** 依赖 OAuth 登录后保存的 `id_token`。若使用 `kweaver auth login … --no-auth`（或平台为最小化/无鉴权安装），CLI 处于 **no-auth** 模式，执行 `whoami` 会提示没有 `id_token`，属**预期行为**；可用 `kweaver auth status` 查看是否为 no-auth。
+> - **`kweaver config list-bd` / `set-bd`**：与上文一致，**最小化安装未包含**这两条子命令对应的后端能力。请用 `config show` 查看默认域。**完整安装**下可用 `list-bd` 列域、`set-bd` 切域；若 `list-bd` 仍 **404**，再排查网关路由或组件是否部署。
 
 ### 第 2 步：接入数据源
 
@@ -88,7 +109,7 @@ kweaver bkn object-type list <kn_id>
 
 ### 第 4 步：语义搜索
 
-> 语义搜索需要 Embedding 模型。如果未配置，此步骤会返回错误。请先完成 [模型管理](model.md) 中的 Embedding 注册。即使没有 Embedding 模型，下面的**条件查询**仍然可用。
+> 语义搜索需要 Embedding 模型，并完成 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。缺任一项时此步骤可能报错；Embedding 注册与其它说明见 [模型管理](model.md)。即使没有 Embedding 或未启用语义搜索，下面的**条件查询**仍然可用。
 
 ```bash
 kweaver bkn search <kn_id> "超期订单"
@@ -191,6 +212,8 @@ const subgraph = await client.bkn.querySubgraph(knId, {
 
 ### 语义搜索
 
+> 需已注册 Embedding 并完成 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
+
 ```typescript
 const result = await client.bkn.semanticSearch(knId, '超期订单');
 for (const concept of result.concepts ?? []) {
@@ -218,7 +241,7 @@ const mcpInstances = await cl.queryInstances({ ot_id: otId, limit: 5 });
 
 **故事线**：知识网络建好了，你希望给业务团队一个自然语言接口 — 不用写 SQL，直接问问题就能得到回答。
 
-> **前置条件**：Agent 需要 LLM 和 Embedding 模型。如果尚未配置，请先完成 [模型管理](model.md)。
+> **前置条件**：Agent 需要 LLM 和 Embedding；配置见 [模型管理](model.md)，语义能力需 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
 
 ### CLI 方式
 
@@ -301,8 +324,8 @@ const messages = await client.conversations.listMessages(conversationId, { limit
 # 查看会话列表
 kweaver agent sessions <agent_id>
 
-# 获取完整 trace
-kweaver agent trace <conversation_id> --pretty
+# 获取完整 trace（须同时传入智能体 ID 与会话 ID）
+kweaver agent trace <agent_id> <conversation_id> --pretty
 ```
 
 Trace 返回按时间排列的 Span 树，展示：
@@ -364,9 +387,14 @@ kweaver dataview query <view_id> --limit 10
 
 # 自定义 SQL 查询（需使用 catalog."schema"."table" 全限定名）
 kweaver dataview query <view_id> --sql "SELECT supplier_name, city FROM <catalog>.\"supply_chain\".\"supplier_entity\" LIMIT 10"
+
+# 全限定名请以 dataview 为准（勿手写猜 catalog）：
+# kweaver dataview get <view_id> → 使用响应 JSON 字段 meta_table_name（与 vega catalog id + 源库 schema/表名 一致）
 ```
 
-仅 **Core** 部署时，`dataview query` 不带 `--sql` 可做分页、选列等结构化查询；**`--sql` 复杂自定义 SQL** 需要 **`vega-calculate-coordinator`**，由 **Etrino** 套件提供（`vega-hdfs`、`vega-calculate`、`vega-metadata`）。**不必装 DIP**：在 `deploy` 目录执行 `./deploy.sh etrino install` 即可。详见 [部署文档](installation/deploy.md) 与 [VEGA](vega.md)。
+其中 `<catalog>` 须替换为该数据源在 **Vega** 中注册得到的 **catalog id**（见 `kweaver vega catalog list`），**不要**用视图逻辑名或裸表名代替；`"supply_chain"`、`"supplier_entity"` 分别对应源库中的 database/schema 与物理表名。**可靠做法**：`kweaver dataview get <view_id>` 取响应中的 **`meta_table_name`** 字段，在 SQL 中原样引用；`sql_str`、`fields` 含义见 [VEGA](vega.md)「数据视图」中的字段表。
+
+仅 **Core** 部署时，`dataview query` 不带 `--sql` 可做分页、选列等结构化查询；**`--sql` 复杂自定义 SQL** 需要 **`vega-calculate-coordinator`**，由 **Etrino** 套件提供（`vega-hdfs`、`vega-calculate`、`vega-metadata`）。在 `deploy` 目录执行 `./deploy.sh etrino install` 即可。详见 [部署文档](installation/deploy.md) 与 [VEGA](vega.md)。
 
 ---
 
@@ -396,6 +424,7 @@ kweaver dataflow logs <dag_id> <instance_id> --detail
 | --- | --- |
 | 完整 BKN 操作（Schema、条件查询、Action） | [bkn.md](bkn.md) |
 | 模型注册、测试与管理 | [model.md](model.md) |
+| 集群中启用语义搜索（ConfigMap） | [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索) |
 | 数据虚拟化与 Catalog 管理 | [vega.md](vega.md) |
 | Agent 全生命周期 | [decision-agent.md](decision-agent.md) |
 | 流程编排详细 | [dataflow.md](dataflow.md) |

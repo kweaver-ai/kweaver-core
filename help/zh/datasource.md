@@ -16,15 +16,6 @@
 
 mysql、postgresql、sqlserver、oracle、clickhouse、hive、opensearch、elasticsearch 等。使用 `kweaver vega connector-type list` 可查看当前平台已安装的连接器类型。
 
-## 使用方式
-
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ### CLI
 
 #### 连接数据源
@@ -219,20 +210,20 @@ await client.ds.delete('ds-abc123');
 
 ```bash
 # 列出数据源
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources?page=1&size=20" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/builder/v1/datasources?page=1&size=20" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 按类型过滤
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources?type=mysql&page=1&size=20" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/builder/v1/datasources?type=mysql&page=1&size=20" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取数据源详情
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/builder/v1/datasources/ds-abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 连接新数据源
-curl -sk -X POST "$KWEAVER_BASE/api/builder/v1/datasources" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/builder/v1/datasources" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "mysql",
@@ -244,10 +235,10 @@ curl -sk -X POST "$KWEAVER_BASE/api/builder/v1/datasources" \
   }'
 
 # 列出表结构
-curl -sk "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123/tables" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/builder/v1/datasources/ds-abc123/tables" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 删除数据源
-curl -sk -X DELETE "$KWEAVER_BASE/api/builder/v1/datasources/ds-abc123" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk -X DELETE "https://<访问地址>/api/builder/v1/datasources/ds-abc123" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```

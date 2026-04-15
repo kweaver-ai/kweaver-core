@@ -54,22 +54,15 @@ Trace 数据支持以下分析场景：
 - **决策路径回放**：按父子关系重建智能体的完整思考与执行路径
 - **工具调用审计**：检查每个工具调用的输入参数与返回结果
 
-## 使用方式
-
-```bash
-export KWEAVER_BASE="https://<访问地址>"
-export TOKEN="<bearer-token>"
-```
-
----
-
 ### CLI
+
+`kweaver agent trace` 需要两个参数：**智能体 ID**、**会话 ID**（与 `kweaver agent sessions <agent_id>` 或对话返回一致）。
 
 #### 查看对话链路
 
 ```bash
 # 格式化输出 — 以树形结构展示 Span 层级、耗时与状态
-kweaver agent trace conv_20250115_001 --pretty
+kweaver agent trace agt_001 conv_20250115_001 --pretty
 ```
 
 `--pretty` 输出示例：
@@ -105,7 +98,7 @@ conversation (3,245ms) ✓
 
 ```bash
 # 紧凑输出 — 适合管道处理与日志聚合
-kweaver agent trace conv_20250115_001 --compact
+kweaver agent trace agt_001 conv_20250115_001 --compact
 ```
 
 `--compact` 输出为单行 JSON 数组，每个元素一个 Span：
@@ -133,9 +126,9 @@ kweaver agent trace conv_20250115_001 --compact
 ```python
 from kweaver_sdk import KWeaverClient
 
-client = KWeaverClient(base_url="https://<访问地址>")
+client = KWeaverClient()  # 需先 kweaver auth login；构造方式以 kweaver-sdk 为准
 
-trace = client.agent.trace("conv_20250115_001")
+trace = client.agent.trace("agt_001", "conv_20250115_001")
 print(f"Trace ID: {trace['trace_id']}")
 print(f"总耗时: {trace['duration_ms']}ms")
 print(f"Span 数: {len(trace['spans'])}")
@@ -179,9 +172,9 @@ for span in sorted_spans[:5]:
 ```typescript
 import { KWeaverClient } from '@kweaver-ai/kweaver-sdk';
 
-const client = new KWeaverClient({ baseUrl: 'https://<访问地址>' });
+const client = await KWeaverClient.connect();
 
-const trace = await client.agent.trace('conv_20250115_001');
+const trace = await client.agent.trace('agt_001', 'conv_20250115_001');
 console.log(`Trace ID: ${trace.traceId}`);
 console.log(`总耗时: ${trace.durationMs}ms`);
 console.log(`Span 数: ${trace.spans.length}`);
@@ -227,12 +220,12 @@ sorted.slice(0, 5).forEach((s) => console.log(`  ${s.operation}: ${s.durationMs}
 
 ```bash
 # 获取对话 Trace
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/traces/conv_20250115_001" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-observability/v1/traces/conv_20250115_001" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 按条件搜索 Trace
-curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sk -X POST "https://<访问地址>/api/agent-observability/v1/traces/search" \
+  -H "Authorization: Bearer $(kweaver token)" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_id": "agt_001",
@@ -243,10 +236,10 @@ curl -sk -X POST "$KWEAVER_BASE/api/agent-observability/v1/traces/search" \
   }'
 
 # 获取特定 Span 详情
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/spans/sp_003" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-observability/v1/spans/sp_003" \
+  -H "Authorization: Bearer $(kweaver token)"
 
 # 获取 Trace 统计摘要（耗时分布、错误率等）
-curl -sk "$KWEAVER_BASE/api/agent-observability/v1/traces/conv_20250115_001/summary" \
-  -H "Authorization: Bearer $TOKEN"
+curl -sk "https://<访问地址>/api/agent-observability/v1/traces/conv_20250115_001/summary" \
+  -H "Authorization: Bearer $(kweaver token)"
 ```
