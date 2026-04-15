@@ -72,6 +72,116 @@ def _read_yaml(path):
 #             out.append({"name": str(v), "description": "", "ref": "${%s}" % v})
 #     return out
 
+# def load_case_from_yaml(base_dir):
+#     """
+#     从 YAML 目录加载用例，返回与 load_case 相同结构的 case_list。
+#     目录结构建议：
+#       base_dir/
+#         _config/
+#           global.yaml   # 全局变量 name: value
+#           apis.yaml    # 接口定义 name -> {name, url, method, headers}
+#         suites/
+#           *.yaml       # 每个文件: feature, story, switch, cases (list)
+#     依赖 PyYAML，未安装时抛出 ImportError。
+#     """
+#     if not _YAML_AVAILABLE:
+#         raise ImportError("YAML 用例加载需要安装 PyYAML: pip install PyYAML")
+#
+#     base_dir = os.path.abspath(base_dir)
+#     config_dir = os.path.join(base_dir, "_config")
+#     suites_dir = os.path.join(base_dir, "suites")
+#
+#     # 全局变量：支持 {name: value} 或 [{name, value}, ...]
+#     raw_global = _read_yaml(os.path.join(config_dir, "global.yaml"), {})
+#     if isinstance(raw_global, list):
+#         global_params = {item["name"]: item["value"] for item in raw_global}
+#     else:
+#         global_params = dict(raw_global)
+#     # 嵌套引用一次替换
+#     params = dict(global_params)
+#     global_flat = {k: string.Template(str(v)).safe_substitute(**params) for k, v in params.items()}
+#
+#     # 接口信息：name -> {name, url, method, headers}
+#     apis_list = _read_yaml(os.path.join(config_dir, "apis.yaml"), {})
+#     if isinstance(apis_list, list):
+#         api_params = {item["name"]: item for item in apis_list}
+#     else:
+#         api_params = {k: v if isinstance(v, dict) else {"name": k, "url": v, "method": "GET", "headers": "{}"}
+#                      for k, v in apis_list.items()}
+#     for k, v in api_params.items():
+#         if "name" not in v:
+#             v["name"] = k
+#         if "url" not in v:
+#             v["url"] = ""
+#         if "method" not in v:
+#             v["method"] = "GET"
+#         if "headers" not in v:
+#             v["headers"] = "{}"
+#
+#     # 用例字段默认值（与 YAML case 结构一致，含 OpenAPI 对齐的 header/cookie/resp_headers）
+#     case_keys = ["name", "url", "prev_case", "path_params", "query_params", "header_params", "cookie_params",
+#                  "body_params", "form_params", "resp_values", "code_check", "resp_headers_check",
+#                  "resp_schema", "resp_check", "description"]
+#
+#     def _normalize_case(c):
+#         out = {}
+#         for key in case_keys:
+#             val = c.get(key, "")
+#             if isinstance(val, (dict, list)):
+#                 val = json.dumps(val, ensure_ascii=False)
+#             out[key] = str(val) if val is not None else ""
+#         return out
+#
+#     case_list = []
+#     skipped_missing_api = []
+#     if not os.path.isdir(suites_dir):
+#         return case_list
+#
+#     for fn in sorted(os.listdir(suites_dir)):
+#         if not fn.endswith((".yaml", ".yml")):
+#             continue
+#         path = os.path.join(suites_dir, fn)
+#         if not os.path.isfile(path):
+#             continue
+#         with open(path, "r", encoding="utf-8") as f:
+#             suite = yaml.safe_load(f) or {}
+#         feature = suite.get("feature", "")
+#         story = suite.get("story", fn.replace(".yaml", "").replace(".yml", ""))
+#         if str(suite.get("switch", "")).lower() != "y":
+#             continue
+#         suite_tags = suite.get("tags")
+#         if suite_tags is None:
+#             suite_tags = []
+#         if not isinstance(suite_tags, list):
+#             suite_tags = [suite_tags] if suite_tags else []
+#         for c in suite.get("cases", []):
+#             case = _normalize_case(c)
+#             api_name = case["url"]
+#             if api_name not in api_params:
+#                 cname = (case.get("name") or "").strip() or "(unnamed)"
+#                 skipped_missing_api.append("  suite=%s case=%s api_name=%r" % (fn, cname, api_name))
+#                 continue
+#             case["feature"] = feature
+#             case["story"] = story
+#             case["_suite_file"] = fn
+#             # 仅从 apis 合并 url/method/headers，避免 API 项的 name 覆盖用例的 name
+#             api_row = api_params[api_name]
+#             case["url"] = api_row.get("url", "")
+#             case["method"] = api_row.get("method", "GET")
+#             case["headers"] = api_row.get("headers", "{}")
+#             case = replace_params(case, **global_flat)
+#             case["api_name"] = api_name
+#             case["_suite_file"] = fn
+#             ct = c.get("tags")
+#             if isinstance(ct, list) and ct:
+#                 case["tags"] = list(ct)
+#             else:
+#                 case["tags"] = list(suite_tags)
+#             # 套件或单条用例可设 token_source: login，执行时走 token_provider.get_token
+#             case["_token_source"] = str(
+#                 c.get("token_source") or suite.get("token_source", "") or ""
+#             ).strip()
+#             case_list.append(case)
 
 def _resolve_scope_to_tags(base_dir: str, scope):
     """根据 path_scope_mapping 将 scope(id) 解析为 tags 列表。"""
@@ -86,7 +196,7 @@ def _resolve_scope_to_tags(base_dir: str, scope):
     return []
 
 
-def load_case_by_suite(file_path):
+def load_case_by_suite(file_path: str):
     """
     从suite配置中加载用例信息
     """
@@ -104,16 +214,18 @@ def load_case_by_suite(file_path):
             "switch": suite.get("switch"),
             "description": suite.get("description"),
             "tags": suite.get("tags", []),
-            "_suite_file": os.path.basename(file_path)
+            "_suite_file": os.path.basename(file_path),
+            "_token_source": suite.get("token_source", "")
         }
 
         # 追加case级别tag并去重
         case_info["tags"].extend(case.get("tags", []))
         case_info["tags"] = set(case_info["tags"])
-
         case.pop("tags", "")
+
         for k, v in case.items():
             # 序列化用例参数，兼容不同功能模块的原始逻辑，统一处理流程
+            # 除tag外，同名字段case覆盖suite配置
             case_info[k] = json.dumps(v, ensure_ascii=False)
 
         case_list.append(case_info)

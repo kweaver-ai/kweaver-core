@@ -11,7 +11,6 @@ import random
 import re
 import string as _str
 from datetime import datetime, timedelta
-from json import JSONDecodeError
 
 import allure
 import jsonpath
@@ -365,11 +364,10 @@ def test_case(feature, story, case_name, case_info):
         assert str(resp_code) == case_info["code_check"]
 
     if "resp_headers_check" in case_info:
-        for k, v in json.loads(case_info.get("resp_headers_check", "{}")).items():
+        for k, v in json.loads(case_info["resp_headers_check"]).items():
             assert client.resp.headers.get(k) == v
 
-    if case_info["resp_check"]:
-        resp_body = client.resp_body()
+    if "resp_check" in case_info:
         for jsonpath_key, expected_value in json.loads(case_info["resp_check"]).items():
             # 获取实际值
             actual_values = jsonpath.jsonpath(resp_body, jsonpath_key)
@@ -391,7 +389,7 @@ def test_case(feature, story, case_name, case_info):
 
     # 提取响应中的变量
     if "resp_values" in case_info:
-        for k, v in json.loads(case_info.get("resp_values", "{}")).items():
+        for k, v in json.loads(case_info["resp_values"]).items():
             param = jsonpath.jsonpath(resp_body, v)[0]
             if isinstance(param, list) or isinstance(param, dict):
                 # 将对象存储为字符串,加载用例参数时再转换为JSON格式
