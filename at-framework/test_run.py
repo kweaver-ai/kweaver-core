@@ -23,7 +23,6 @@ from conftest import config, compute_case_list, BEARER_AUTH
 from request.http_client import HTTPClient
 
 resp_values = {}
-global _case_list_cache
 
 
 def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
@@ -304,7 +303,7 @@ def test_case(feature, story, case_name, case_info):
 
     if case_info.get("prev_case", "") != '':
         with allure.step("执行前置用例执行"):
-            for x in _case_list_cache:
+            for x in compute_case_list():
                 if x["name"] == case_info["prev_case"]:
                     test_case(x["feature"], x["story"], x["name"], x)
                     # 若存在同名用例，仅执行第一个匹配项
@@ -323,7 +322,7 @@ def test_case(feature, story, case_name, case_info):
         case_info = replace_params(case_info, **case_path_params)
 
         # 参数格式转换
-        case_header_params = {**case_info.get("headers", {}),
+        case_header_params = {**json.loads(case_info.get("headers", "{}")),
                               **json.loads(case_info.get("header_params", "{}")),
                               "Authorization": _resolve_authorization(case_info)}
         case_cookie_params = json.loads(case_info.get("cookie_params", "{}"))

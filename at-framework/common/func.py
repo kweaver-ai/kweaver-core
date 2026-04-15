@@ -220,13 +220,11 @@ def load_case_by_suite(file_path: str):
 
         # 追加case级别tag并去重
         case_info["tags"].extend(case.get("tags", []))
-        case_info["tags"] = set(case_info["tags"])
+        case_info["tags"] = sorted(set(case_info["tags"]))
         case.pop("tags", "")
 
-        for k, v in case.items():
-            # 序列化用例参数，兼容不同功能模块的原始逻辑，统一处理流程
-            # 除tag外，同名字段case覆盖suite配置
-            case_info[k] = json.dumps(v, ensure_ascii=False)
+        # 除tag外，同名字段case覆盖suite配置
+        case_info.update(case)
 
         case_list.append(case_info)
 
@@ -498,14 +496,8 @@ def replace_params_with_placeholders(input_case, **kwargs):
 
 
 if __name__ == "__main__":
-    rst = _read_yaml("D:\\kweaver-ai\\kweaver-core\\at-framework\\testcase\\_config\\spec\\apis.template.yaml")
-    print(rst)
-
-    # import sys
-    #
-    # base = os.path.join(os.path.dirname(__file__), "..")
-    # case_file = os.path.join(base, "testcase", "vega")  # 默认示例模块
-    # if len(sys.argv) > 1:
-    #     case_file = sys.argv[1]
-    # rst = load_case(case_file)
-    # print("loaded %d cases" % len(rst))
+    base = os.path.join(os.path.dirname(__file__), "..")
+    case_file = os.path.join(base, "testcase", "agent-backend")  # 默认示例模块
+    rst = load_case(case_file)
+    # for x in rst:
+    #     print(x)
