@@ -1,750 +1,644 @@
-# Dataset 写入节点设计
+# DataSet 写入节点及 Dataflow-Dataset-BKN CLI 优化
 
-## 1. 背景与目标
+## 概述
 
-### 1.1 问题背景
+本文档描述如何打通 Dataflow → Dataset → BKN 的完整流程，使用户能够通过 CLI 命令快速创建和关联这三类资源。
 
-当前非结构化数据处理链路中，Dataflow 将解析结果写入 OpenSearch，再经过数据连接扫描、原子视图生成、BKN 建模等步骤完成知识网络构建。这条链路较长，OpenSearch 主要承担"中间存储层"角色。
+### 目标
 
-为降低链路复杂度，引入 dataset 作为 Dataflow 的直接写入目标，使链路收敛为：
+1. 新增 `DatasetWriteDocs` 节点，支持 dataflow 向指定 dataset 写入文档
+2. 扩展 kweaver CLI，支持通过模板创建 dataset、bkn、dataflow
+3. 提供内置模板系统，简化用户操作
 
-```
-Dataflow → Dataset → BKN
-```
-
-### 1.2 设计目标
-
-新增 Dataset 写入节点，支持：
-
-- 接收上游任意结构化输出
-- 自动补充运行时元字段
-- 批量调用 dataset docs 写入接口
-- 返回执行结果统计
-
-### 1.3 非目标
-
-节点**不负责**：
-
-- 创建 dataset / 更新 schema
-- 创建 BKN / 建立映射关系
-- 触发 BKN 构建任务
-
-这些能力由平台资源管理侧承担，kweaver cli 提供快捷创建命令。
-
----
-
-## 2. 职责边界
-
-### 2.1 节点职责
-
-Dataset 写入节点职责：
-
-| 职责 | 说明 |
-|------|------|
-| 接收输入数据 | 兼容多种输入格式 |
-| 数据规范化 | 统一为 dataset docs 写入格式，补充元字段 |
-| 批量写入 | 调用 dataset docs 接口，汇总结果 |
-
-### 2.2 平台职责
-
-| 职责 | 说明 |
-|------|------|
-| 创建 dataset | 平台预先创建目标 dataset |
-| 创建 BKN | 平台预先创建知识网络 |
-| 维护映射关系 | dataset 与 BKN 的映射由平台维护 |
-
-### 2.3 整体数据流
+### 服务架构图
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              整体数据流                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   ┌─────────────────┐                                                       │
-│   │ 平台资源管理侧   │                                                       │
-│   │                 │                                                       │
-│   │  ① 创建 Dataset │────────────────────────┐                              │
-│   │  ② 创建 BKN     │                        │                              │
-│   │  ③ 建立映射     │                        ▼                              │
-│   └─────────────────┘              ┌──────────────────┐                     │
-│                                    │    Dataset       │                     │
-│                                    │  (预先创建)       │                     │
-│                                    └────────▲─────────┘                     │
-│                                             │                               │
-│   ┌─────────────────┐                       │                               │
-│   │   Dataflow      │                       │                               │
-│   │                 │                       │                               │
-│   │  ┌───────────┐  │    ┌──────────────────┴──────────────────┐           │
-│   │  │ 文档解析   │  │    │         DatasetWriteDocs           │           │
-│   │  │ 节点      │──┼───►│              (本节点)                │           │
-│   │  └───────────┘  │    │                                    │           │
-│   │  ┌───────────┐  │    │  • 归一化输入数据                    │           │
-│   │  │ 文本分割   │  │    │  • 补充运行时元字段                  │           │
-│   │  │ 节点      │──┼───►│  • 批量写入                         │           │
-│   │  └───────────┘  │    │  • 返回执行结果                      │           │
-│   │                 │    └──────────────────┬──────────────────┘           │
-│   └─────────────────┘                       │                               │
-│                                             ▼                               │
-│                                    ┌──────────────────┐                     │
-│                                    │    执行结果      │                     │
-│                                    │  total/success   │                     │
-│                                    │  /failed/reasons │                     │
-│                                    └──────────────────┘                     │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         kweaver CLI                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
+│  │ templates   │  │create-dataset│ │ create-bkn  │   create     │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  ┌──────┐    │
+│         │                │                │         │      │    │
+│         ▼                ▼                ▼         │      │    │
+│  ┌─────────────────────────────────────────────┐   │      │    │
+│  │              Template Loader                 │   │      │    │
+│  │  - 加载内置模板 / 文件路径                     │   │      │    │
+│  │  - 解析 manifest.json                        │   │      │    │
+│  │  - 参数合并与校验                             │   │      │    │
+│  │  - 占位符替换                                 │   │      │    │
+│  └─────────────────────────────────────────────┘   │      │    │
+└─────────────────────────────────────────────────────┼──────┼────┘
+                                                      │      │
+                              ┌───────────────────────┼──────┼────┐
+                              │                       │      │    │
+                              ▼                       ▼      ▼    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                           Backend Services                           │
+│                                                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │
+│  │ vega-backend    │  │ontology-manager │  │  dataflow-backend   │  │
+│  │ /resources      │  │/knowledge-      │  │  /dataflows         │  │
+│  │ (Dataset CRUD)  │  │ networks (BKN)  │  │  (Dataflow CRUD)    │  │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘  │
+│           │                    │                      │             │
+│           ▼                    ▼                      ▼             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                      OpenSearch                              │   │
+│  │  - content_index (切片向量)                                   │   │
+│  │  - content_element (文档元素)                                 │   │
+│  │  - content_document (文件元信息)                              │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. 节点设计
+## 一、DatasetWriteDocs 节点设计
 
-### 3.1 节点名称
+### 1.1 节点定义
 
-**`DatasetWriteDocs`**
+| 属性 | 值 |
+|------|-----|
+| 节点名称 | `DatasetWriteDocs` |
+| 操作符 | `@dataset/write-docs` |
+| 功能 | 向指定 dataset 写入文档数据 |
 
-语义上直接对应 dataset docs 写入接口。
+### 1.2 输入参数
 
-### 3.2 参数定义
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `dataset_id` | string | 是 | 目标 dataset ID |
+| `documents` | array/object | 是 | 待写入的文档数据，支持数组或单个对象 |
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `dataset_id` | string | 是 | - | 目标 dataset 资源 ID |
-| `documents` | any | 是 | - | 待写入数据，支持多种格式 |
-| `record_type` | string | 否 | - | 记录业务类型，如 `chunk`、`element` |
-| `auto_timestamp` | bool | 否 | true | 自动补充 `@timestamp` 字段 |
-| `batch_size` | int | 否 | 1000 | 分批写入大小 |
+### 1.3 文档结构
 
-### 3.3 输入格式支持
-
-`documents` 字段支持以下格式：
-
-| 格式 | 示例 |
-|------|------|
-| JSON object | `{"id": "1", "text": "..."}` |
-| JSON array | `[{"id": "1"}, {"id": "2"}]` |
-| JSON string | `"{\"id\": \"1\"}"` |
-| JSON string array | `["{\"id\": \"1\"}", "{\"id\": \"2\"}"]` |
-
-### 3.4 输出格式
+documents 参数支持的结构与 `OpenSearchBulkUpsert` 解析方式一致：
 
 ```json
-{
-  "total": 100,
-  "success": 90,
-  "failed": 10,
-  "reasons": ["[0-50] dataset write timeout", "[50-100] schema mismatch"]
-}
-```
-
-### 3.5 配置示例
-
-**写入 chunk 数据：**
-
-```json
-{
-  "dataset_id": "ds_resume_parse_001",
-  "record_type": "chunk",
-  "auto_timestamp": true,
-  "batch_size": 500,
-  "documents": "{{__3.documents}}"
-}
-```
-
-**写入 element 数据：**
-
-```json
-{
-  "dataset_id": "ds_resume_parse_001",
-  "record_type": "element",
-  "documents": "{{__4.elements}}"
-}
-```
-
----
-
-## 4. 服务依赖
-
-### 4.1 依赖接口
-
-节点依赖 VegaBackend 的 dataset 文档写入接口：
-
-| 接口 | 方法 | 路径 | 说明 |
-|------|------|------|------|
-| 批量写文档 | POST | `/api/vega-backend/in/v1/resources/dataset/{id}/docs` | 核心依赖 |
-
-### 4.2 客户端复用
-
-复用 `execution-factory` 中已有的 `VegaBackendClient`：
-
-```go
-// 已有方法，可直接调用
-WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
-```
-
-### 4.3 配置依赖
-
-节点通过环境变量获取 VegaBackend 服务地址：
-
-| 配置项 | 说明 |
-|--------|------|
-| `VEGA_BACKEND_PRIVATE_HOST` | 内网地址 |
-| `VEGA_BACKEND_PRIVATE_PORT` | 内网端口 |
-| `VEGA_BACKEND_PRIVATE_PROTOCOL` | 协议 (http/https) |
-
----
-
-## 5. 前置准备
-
-### 5.1 Dataset 创建流程
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        Dataset 创建流程                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   步骤1: 创建 Catalog (若不存在)                                             │
-│   ┌─────────────────────────────────────────────────────────────────────┐   │
-│   │ POST /api/vega-backend/v1/catalogs                                  │   │
-│   │ {                                                                    │   │
-│   │   "name": "dataset-catalog",                                        │   │
-│   │   "description": "Dataset存储目录",                                  │   │
-│   │   "connector_type": "mariadb",                                      │   │
-│   │   "connector_config": { ... }                                       │   │
-│   │ }                                                                    │   │
-│   └─────────────────────────────────────────────────────────────────────┘   │
-│                                    │                                        │
-│                                    ▼                                        │
-│   步骤2: 创建 Dataset Resource                                              │
-│   ┌─────────────────────────────────────────────────────────────────────┐   │
-│   │ POST /api/vega-backend/v1/resources                                 │   │
-│   │ {                                                                    │   │
-│   │   "catalog_id": "{catalog_id}",                                     │   │
-│   │   "name": "ds_resume_parse",                                        │   │
-│   │   "category": "dataset",                                            │   │
-│   │   "status": "active",                                               │   │
-│   │   "schema_definition": [ ... ]                                      │   │
-│   │ }                                                                    │   │
-│   └─────────────────────────────────────────────────────────────────────┘   │
-│                                    │                                        │
-│                                    ▼                                        │
-│   步骤3: 创建 BKN (平台管理)                                                 │
-│   ┌─────────────────────────────────────────────────────────────────────┐   │
-│   │ 通过 BKN 管理接口创建知识网络                                          │   │
-│   │ 建立 Dataset 与 BKN 的映射关系                                        │   │
-│   └─────────────────────────────────────────────────────────────────────┘   │
-│                                    │                                        │
-│                                    ▼                                        │
-│   步骤4: Dataflow 配置 DatasetWriteDocs 节点                                │
-│   ┌─────────────────────────────────────────────────────────────────────┐   │
-│   │ 在 Dataflow 流程中配置节点，使用步骤2创建的 dataset_id                 │   │
-│   └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 5.2 Dataset 创建参数示例
-
-#### 5.2.1 Chunk 数据 Dataset
-
-用于存储文档分块数据：
-
-```json
-{
-  "catalog_id": "default",
-  "name": "ds_doc_chunks",
-  "tags": ["dataflow", "chunk"],
-  "description": "文档分块数据集",
-  "category": "dataset",
-  "status": "active",
-  "source_identifier": "dataflow_chunks",
-  "schema_definition": [
-    {"name": "id", "type": "keyword", "display_name": "ID", "description": "分块唯一标识"},
-    {"name": "document_id", "type": "keyword", "display_name": "文档ID", "description": "来源文档标识"},
-    {"name": "@timestamp", "type": "long", "display_name": "时间戳", "description": "事件时间"},
-    {"name": "__write_time", "type": "long", "display_name": "写入时间", "description": "写入时间戳"},
-    {"name": "__record_type", "type": "keyword", "display_name": "记录类型", "description": "chunk/element"},
-    {"name": "__task_id", "type": "keyword", "display_name": "任务ID", "description": "Dataflow任务标识"},
-    {"name": "chunk_text", "type": "text", "display_name": "分块文本", "description": "分块内容"},
-    {"name": "chunk_index", "type": "integer", "display_name": "分块索引", "description": "分块序号"},
-    {"name": "doc_name", "type": "text", "display_name": "文档名称", "description": "来源文档名称"},
-    {"name": "content_vector", "type": "vector", "display_name": "内容向量", "description": "文本向量", "features": [
-      {
-        "name": "content_vector",
-        "feature_type": "vector",
-        "ref_property": "content_vector",
-        "is_default": true,
-        "is_native": true,
-        "config": {
-          "dimension": 768,
-          "method": {"name": "hnsw", "engine": "lucene", "parameters": {"ef_construction": 256}}
-        }
-      }
-    ]}
-  ]
-}
-```
-
-#### 5.2.2 Element 数据 Dataset
-
-用于存储文档解析后的结构化元素：
-
-```json
-{
-  "catalog_id": "default",
-  "name": "ds_doc_elements",
-  "tags": ["dataflow", "element"],
-  "description": "文档解析元素数据集",
-  "category": "dataset",
-  "status": "active",
-  "source_identifier": "dataflow_elements",
-  "schema_definition": [
-    {"name": "id", "type": "keyword", "display_name": "ID", "description": "元素唯一标识"},
-    {"name": "document_id", "type": "keyword", "display_name": "文档ID", "description": "来源文档标识"},
-    {"name": "@timestamp", "type": "long", "display_name": "时间戳", "description": "事件时间"},
-    {"name": "__write_time", "type": "long", "display_name": "写入时间", "description": "写入时间戳"},
-    {"name": "__record_type", "type": "keyword", "display_name": "记录类型", "description": "chunk/element"},
-    {"name": "__task_id", "type": "keyword", "display_name": "任务ID", "description": "Dataflow任务标识"},
-    {"name": "element_type", "type": "keyword", "display_name": "元素类型", "description": "table/image/text等"},
-    {"name": "element_content", "type": "text", "display_name": "元素内容", "description": "元素文本内容"},
-    {"name": "page_number", "type": "integer", "display_name": "页码", "description": "所在页码"},
-    {"name": "bbox", "type": "json", "display_name": "边界框", "description": "元素位置信息"}
-  ]
-}
-```
-
-#### 5.2.3 完整文档解析 Dataset
-
-用于存储完整的文档解析结果：
-
-```json
-{
-  "catalog_id": "default",
-  "name": "ds_resume_parse_001",
-  "tags": ["dataflow", "resume"],
-  "description": "简历解析结果数据集",
-  "category": "dataset",
-  "status": "active",
-  "source_identifier": "dataflow_resume",
-  "schema_definition": [
-    {"name": "id", "type": "keyword", "display_name": "ID", "description": "记录唯一标识"},
-    {"name": "document_id", "type": "keyword", "display_name": "文档ID", "description": "来源文档标识"},
-    {"name": "@timestamp", "type": "long", "display_name": "时间戳", "description": "事件时间"},
-    {"name": "__write_time", "type": "long", "display_name": "写入时间", "description": "写入时间戳"},
-    {"name": "__record_type", "type": "keyword", "display_name": "记录类型", "description": "记录业务类型"},
-    {"name": "__task_id", "type": "keyword", "display_name": "任务ID", "description": "Dataflow任务标识"},
-    {"name": "doc_name", "type": "text", "display_name": "文档名称", "description": "来源文档名称", "features": [
-      {"name": "keyword_name", "feature_type": "keyword", "ref_property": "doc_name", "is_default": true, "is_native": true}
-    ]},
-    {"name": "chunk_text", "type": "text", "display_name": "分块文本", "description": "分块内容"},
-    {"name": "element_type", "type": "keyword", "display_name": "元素类型", "description": "元素类型"},
-    {"name": "content_vector", "type": "vector", "display_name": "内容向量", "description": "文本向量", "features": [
-      {
-        "name": "content_vector",
-        "feature_type": "vector",
-        "ref_property": "content_vector",
-        "is_default": true,
-        "is_native": true,
-        "config": {
-          "dimension": 768,
-          "method": {"name": "hnsw", "engine": "lucene", "parameters": {"ef_construction": 256}}
-        }
-      }
-    ]}
-  ]
-}
-```
-
-### 5.3 数据契约
-
-Dataset 数据字段定义：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | keyword | 文档唯一标识 |
-| `document_id` | keyword | 来源文档 ID |
-| `@timestamp` | long | 时间戳 |
-| `__write_time` | long | 写入时间 |
-| `__record_type` | keyword | 记录类型 (运行时补充) |
-| `__task_id` | keyword | 任务 ID (运行时补充) |
-
----
-
-## 6. 执行流程
-
-### 6.1 核心执行流程
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           核心执行流程                                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐                                                        │
-│  │ 1. 参数校验      │                                                        │
-│  └────────┬────────┘                                                        │
-│           │ dataset_id 必填                                                 │
-│           ▼                                                                 │
-│  ┌─────────────────┐                                                        │
-│  │ 2. 设置默认值    │                                                        │
-│  └────────┬────────┘                                                        │
-│           │ batch_size=1000, auto_timestamp=true                            │
-│           ▼                                                                 │
-│  ┌─────────────────┐                                                        │
-│  │ 3. 输入归一化    │                                                        │
-│  └────────┬────────┘                                                        │
-│           │ • 将 documents 转换为 []map[string]any                           │
-│           │ • 补充运行时元字段                                                │
-│           ▼                                                                 │
-│  ┌─────────────────┐     ┌─────────────────┐                                │
-│  │ 4. 空输入检查    │────►│ 返回空结果       │                                │
-│  └────────┬────────┘     └─────────────────┘                                │
-│           │ len(documents) > 0                                              │
-│           ▼                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ 5. 分批写入循环                                                      │    │
-│  │ ┌─────────────────────────────────────────────────────────────────┐ │    │
-│  │ │ for i := 0; i < len(documents); i += batchSize {                │ │    │
-│  │ │   batch := documents[i:min(i+batchSize, len(documents))]        │ │    │
-│  │ │                                                                 │ │    │
-│  │ │   err := WriteDatasetDocuments(ctx, datasetID, batch)           │ │    │
-│  │ │                                                                 │ │    │
-│  │ │   if err != nil {                                               │ │    │
-│  │ │     failed += len(batch)                                        │ │    │
-│  │ │     reasons = append(reasons, error)                            │ │    │
-│  │ │   } else {                                                      │ │    │
-│  │ │     success += len(batch)                                       │ │    │
-│  │ │   }                                                             │ │    │
-│  │ │ }                                                               │ │    │
-│  │ └─────────────────────────────────────────────────────────────────┘ │    │
-│  └────────────────────────────────────────┬────────────────────────────┘    │
-│                                           │                                 │
-│           ┌───────────────────────────────┘                                 │
-│           ▼                                                                 │
-│  ┌─────────────────┐                                                        │
-│  │ 6. 结果汇总      │                                                        │
-│  └────────┬────────┘                                                        │
-│           │ total = len(documents)                                          │
-│           ▼                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ 返回结果                                                              │    │
-│  │ {                                                                     │    │
-│  │   "total": N,                                                         │    │
-│  │   "success": success,                                                 │    │
-│  │   "failed": failed,                                                   │    │
-│  │   "reasons": reasons (若有失败)                                        │    │
-│  │ }                                                                     │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 6.2 归一化流程
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           输入归一化流程                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  输入: documents (any)                                                      │
-│                                                                             │
-│           ┌─────────────────────────────────────────────────────────┐       │
-│           │                     类型判断                              │       │
-│           └─────────────────────────────────────────────────────────┘       │
-│                          │                                                  │
-│          ┌───────────────┼───────────────┬───────────────┐                  │
-│          ▼               ▼               ▼               ▼                  │
-│   ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│   │ string     │  │ map[string]│  │ []any      │  │ 其他       │           │
-│   │            │  │ any        │  │            │  │            │           │
-│   └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘           │
-│         │               │               │               │                  │
-│         ▼               │               │               ▼                  │
-│   ┌────────────┐        │               │         ┌────────────┐           │
-│   │ JSON解析   │        │               │         │ 返回 error │           │
-│   │ 递归处理   │        │               │         └────────────┘           │
-│   └─────┬──────┘        │               │                                  │
-│         │               │               │                                  │
-│         └───────────────┴───────────────┘                                  │
-│                         │                                                  │
-│                         ▼                                                  │
-│           ┌─────────────────────────────────────────────────────────┐       │
-│           │ 对每条 document 执行：                                    │       │
-│           │                                                         │       │
-│           │ 1. 若缺失 @timestamp 且 auto_timestamp=true:             │       │
-│           │    doc["@timestamp"] = time.Now().UnixMilli()           │       │
-│           │                                                         │       │
-│           │ 2. 补充 __write_time:                                   │       │
-│           │    doc["__write_time"] = time.Now().UnixMilli()         │       │
-│           │                                                         │       │
-│           │ 3. 若配置了 record_type:                                 │       │
-│           │    doc["__record_type"] = recordType                    │       │
-│           │                                                         │       │
-│           │ 4. 补充 __task_id:                                      │       │
-│           │    doc["__task_id"] = ctx.GetTaskID()                   │       │
-│           └─────────────────────────────────────────────────────────┘       │
-│                         │                                                  │
-│                         ▼                                                  │
-│           输出: []map[string]any                                           │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 6.3 自动补充字段
-
-| 字段 | 条件 | 说明 |
-|------|------|------|
-| `@timestamp` | 缺失且 `auto_timestamp=true` | 当前毫秒时间戳 |
-| `__write_time` | 始终 | 写入时间戳 |
-| `__record_type` | 配置了 `record_type` 参数 | 记录类型 |
-| `__task_id` | 始终 | 当前任务 ID |
-
-### 6.4 与 OpenSearch 节点对比
-
-| 对比项 | OpenSearchBulkUpsert | DatasetWriteDocs |
-|--------|---------------------|------------------|
-| 目标资源 | index | dataset resource |
-| 创建能力 | 内置 settings/mappings | 不创建 schema |
-| 写入接口 | bulk upsert | docs create |
-| 批量大小 | 1000 | 1000 (配置) |
-| 输出格式 | total/success/failed/reasons | 相同 |
-| 元字段 | `__base_type`, `__data_type`, `__catetory` | `__record_type`, `__task_id` |
-
----
-
-## 7. 异常处理
-
-### 7.1 参数错误
-
-| 场景 | 处理方式 |
-|------|----------|
-| `dataset_id` 为空 | 直接返回 error |
-| `documents` 类型不支持 | 直接返回 error |
-| JSON 字符串无法解析 | 直接返回 error |
-
-### 7.2 写入错误
-
-| 场景 | 处理方式 |
-|------|----------|
-| 单批写入失败 | 当前批记为失败，记录 reason，继续后续批次 |
-| dataset 服务不可用 | 批次失败，继续尝试后续批次 |
-| dataset 不存在 | 批次失败，继续尝试后续批次 |
-| schema 不匹配 | 批次失败，继续尝试后续批次 |
-
-### 7.3 空输入
-
-上游无输出或输出为空数组时，直接返回：
-
-```json
-{
-  "total": 0,
-  "success": 0,
-  "failed": 0
-}
-```
-
----
-
-
-## 附录 A：代码参考
-
-### A.1 节点结构体
-
-```go
-type DatasetWriteDocs struct {
-    DatasetID     string `json:"dataset_id"`
-    Documents     any    `json:"documents"`
-    RecordType    string `json:"record_type,omitempty"`
-    AutoTimestamp bool   `json:"auto_timestamp,omitempty"`
-    BatchSize     int    `json:"batch_size,omitempty"`
-}
-```
-
-### A.2 归一化函数签名
-
-```go
-func normalizeDatasetDocuments(
-    documents any,
-    recordType string,
-    autoTimestamp bool,
-    ctx entity.ExecuteContext,
-) []map[string]any
-```
-
-### A.3 执行伪代码
-
-```go
-func (b *DatasetWriteDocs) Run(
-    ctx entity.ExecuteContext,
-    params interface{},
-    token *entity.Token,
-) (interface{}, error) {
-    // 1. 参数校验
-    input := params.(*DatasetWriteDocs)
-    if input.DatasetID == "" {
-        return nil, fmt.Errorf("dataset_id is required")
-    }
-
-    // 2. 设置默认值
-    batchSize := input.BatchSize
-    if batchSize <= 0 {
-        batchSize = 1000
-    }
-
-    // 3. 归一化文档
-    documents := normalizeDatasetDocuments(
-        input.Documents,
-        input.RecordType,
-        input.AutoTimestamp,
-        ctx,
-    )
-
-    // 4. 空输入处理
-    if len(documents) == 0 {
-        return map[string]any{"total": 0, "success": 0, "failed": 0}, nil
-    }
-
-    // 5. 批量写入
-    result := map[string]any{}
-    success, failed := 0, 0
-    reasons := []string{}
-
-    for i := 0; i < len(documents); i += batchSize {
-        end := min(i+batchSize, len(documents))
-        batch := documents[i:end]
-
-        err := datasetClient.WriteDatasetDocuments(ctx.Context(), input.DatasetID, batch)
-        if err != nil {
-            reasons = append(reasons, fmt.Sprintf("[%d-%d] %s", i, end, err.Error()))
-            failed += len(batch)
-        } else {
-            success += len(batch)
-        }
-    }
-
-    // 6. 返回结果
-    result["total"] = len(documents)
-    result["success"] = success
-    result["failed"] = failed
-    if len(reasons) > 0 {
-        result["reasons"] = reasons
-    }
-
-    return result, nil
-}
-```
-
-### A.4 归一化实现参考
-
-```go
-func normalizeDocuments(documents any, recordType string, autoTimestamp bool, ctx entity.ExecuteContext) []map[string]any {
-    switch v := documents.(type) {
-    case string:
-        var parsed any
-        if err := json.Unmarshal([]byte(v), &parsed); err != nil {
-            return nil
-        }
-        return normalizeDocuments(parsed, recordType, autoTimestamp, ctx)
-    case map[string]any:
-        writeTime := time.Now().UnixMilli()
-        v["__write_time"] = writeTime
-        v["__task_id"] = ctx.GetTaskID()
-        if recordType != "" {
-            v["__record_type"] = recordType
-        }
-        if _, ok := v["@timestamp"]; !ok && autoTimestamp {
-            v["@timestamp"] = writeTime
-        }
-        return []map[string]any{v}
-    case []any:
-        results := []map[string]any{}
-        for _, item := range v {
-            if nested := normalizeDocuments(item, recordType, autoTimestamp, ctx); nested != nil {
-                results = append(results, nested...)
-            }
-        }
-        return results
-    default:
-        return nil
-    }
-}
-```
-
----
-
-## 附录 B：接口详情
-
-### B.1 批量写文档接口
-
-**请求：**
-
-```http
-POST /api/vega-backend/in/v1/resources/dataset/{datasetID}/docs
-Content-Type: application/json
-
 [
-  {"id": "doc1", "text": "content1", "@timestamp": 1234567890000},
-  {"id": "doc2", "text": "content2", "@timestamp": 1234567890000}
+  {
+    "id": "doc-1",
+    "field1": "value1",
+    "field2": "value2"
+  },
+  {
+    "id": "doc-2",
+    "field1": "value3",
+    "field2": "value4"
+  }
 ]
 ```
 
-**响应：**
+### 1.4 节点配置示例
 
 ```json
 {
-  "ids": ["generated_id_1", "generated_id_2"]
+  "id": "1001",
+  "title": "写入文档到dataset",
+  "operator": "@dataset/write-docs",
+  "parameters": {
+    "dataset_id": "{{__0.dataset_id}}",
+    "documents": "{{__1.chunks}}"
+  }
 }
 ```
 
-### B.2 创建资源接口
+### 1.5 实现参考
 
-**请求：**
+参考 `opensearch.go` 中的 `OpenSearchBulkUpsert` 实现：
 
-```http
-POST /api/vega-backend/v1/resources
-Content-Type: application/json
+- 输入数据解析方式保持一致
+- 调用 `/api/vega-backend/v1/resources/dataset/${dataset_id}/docs` 写入数据
+- 支持异步写入和批量写入
 
+---
+
+## 二、CLI 命令设计
+
+### 2.1 命令结构
+
+```
+kweaver dataflow
+├── templates                    # 列出所有可用模板
+├── create-dataset               # 创建 dataset
+├── create-bkn                   # 创建 bkn
+└── create                       # 创建 dataflow
+```
+
+### 2.2 命令详解
+
+#### 2.2.1 templates - 列出模板
+
+```bash
+kweaver dataflow templates
+```
+
+输出示例：
+```
+Dataset Templates:
+  - document          文档元信息数据集
+  - document-content  文档切片及向量数据集
+  - document-element  文档元素数据集
+
+BKN Templates:
+  - document          文档知识网络
+
+Dataflow Templates:
+  - unstructured      非结构化文档处理流程
+```
+
+`--json` 输出：
+```json
 {
-  "catalog_id": "default",
-  "name": "ds_example",
-  "category": "dataset",
-  "status": "active",
-  "schema_definition": [...]
+  "dataset": [
+    { "name": "document", "description": "文档元信息数据集" },
+    { "name": "document-content", "description": "文档切片及向量数据集" },
+    { "name": "document-element", "description": "文档元素数据集" }
+  ],
+  "bkn": [
+    { "name": "document", "description": "文档知识网络" }
+  ],
+  "dataflow": [
+    { "name": "unstructured", "description": "非结构化文档处理流程" }
+  ]
 }
 ```
 
-**响应：**
+#### 2.2.2 create-dataset - 创建 dataset
+
+```bash
+kweaver dataflow create-dataset --template <template> --set "key=value" [--json]
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--template` | 模板名称（内置）或文件路径 |
+| `--set` | 设置参数值，可多次使用 |
+| `--json` | JSON 格式输出 |
+
+示例：
+```bash
+# 使用内置模板
+kweaver dataflow create-dataset --template document --set "name=my-docs"
+
+# 使用文件路径
+kweaver dataflow create-dataset --template ./my-template.json --set "name=my-docs" --json
+```
+
+输出：
+```
+dataset created: id=abc123
+```
+
+`--json` 输出：
+```json
+{
+  "success": true,
+  "id": "abc123",
+  "name": "my-docs"
+}
+```
+
+#### 2.2.3 create-bkn - 创建 bkn
+
+```bash
+kweaver dataflow create-bkn --template <template> --set "key=value" [--json]
+```
+
+示例：
+```bash
+kweaver dataflow create-bkn --template document \
+  --set "name=my-bkn" \
+  --set "document_content_id=dataset-id-123" \
+  --set "document_id=dataset-id-456" \
+  --set "document_element_id=dataset-id-789"
+```
+
+#### 2.2.4 create - 创建 dataflow
+
+```bash
+kweaver dataflow create --template <template> --set "key=value" [--json]
+```
+
+示例：
+```bash
+kweaver dataflow create --template unstructured \
+  --set "name=my-flow" \
+  --json
+```
+
+### 2.3 --set 语法规则
+
+- 格式：`--set "key=value"`
+- 支持多次使用：`--set "key1=value1" --set "key2=value2"`
+- 仅支持顶层参数，不支持嵌套路径
+- 值始终作为字符串处理，类型转换由模板 manifest 定义
+
+### 2.4 输出格式
+
+**默认模式：** 打印资源 ID
+
+```
+<type> created: id=xxx
+```
+
+**--json 模式：**
 
 ```json
 {
-  "id": "generated_dataset_id",
-  "name": "ds_example",
-  "category": "dataset"
+  "success": true,
+  "id": "xxx",
+  "name": "xxx"
 }
 ```
 
 ---
 
-## 附录 C：节点注册
+## 三、模板文件结构
 
-### C.1 操作符常量
+### 3.1 目录结构
 
-在 `common/actionMap.go` 中添加：
-
-```go
-const (
-    OpDatasetWriteDocs = "@dataset/write-docs"
-)
+```
+kweaver-sdk/packages/typescript/templates/
+├── dataset/
+│   ├── document/
+│   │   ├── template.json      # 数据集定义模板
+│   │   └── manifest.json      # 元数据与参数定义
+│   ├── document-content/
+│   │   ├── template.json
+│   │   └── manifest.json
+│   └── document-element/
+│       ├── template.json
+│       └── manifest.json
+├── bkn/
+│   └── document/
+│       ├── template.json      # BKN 定义模板
+│       └── manifest.json
+└── dataflow/
+    └── unstructured/
+        ├── template.json      # Dataflow 定义模板
+        └── manifest.json
 ```
 
-### C.2 Action 映射
+### 3.2 template.json 示例
 
-在 `ActionMap` 中添加：
-
-```go
-var ActionMap = map[string]string{
-    OpDatasetWriteDocs: "dataset/writedocs.json",
+```json
+{
+  "catalog_id": "{{catalog_id}}",
+  "name": "{{name}}",
+  "category": "dataset",
+  "status": "active",
+  "description": "文档元信息数据集",
+  "source_identifier": "dataflow_document",
+  "schema_definition": [
+    { "name": "id", "type": "keyword" },
+    { "name": "document_id", "type": "keyword" },
+    { "name": "doc_name", "type": "text" }
+  ]
 }
 ```
 
-### C.3 Schema 文件
+### 3.3 manifest.json 结构
 
-创建 `schemas/dataset/writedocs.json` 定义节点配置表单。
+```json
+{
+  "name": "document",
+  "type": "dataset",
+  "description": "文档元信息数据集",
+  "arguments": [
+    {
+      "name": "name",
+      "required": true,
+      "description": "数据集名称",
+      "type": "string",
+      "path": "$.name"
+    },
+    {
+      "name": "catalog_id",
+      "required": false,
+      "default": "adp_bkn_catalog",
+      "description": "所属目录ID",
+      "type": "string",
+      "path": "$.catalog_id"
+    }
+  ]
+}
+```
+
+### 3.4 arguments 字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 是 | 参数名称，对应 --set 的 key |
+| `required` | boolean | 是 | 是否必填 |
+| `description` | string | 是 | 参数描述 |
+| `type` | string | 是 | 参数类型：string, integer, boolean, array |
+| `default` | any | 否 | 默认值（仅 required=false 时有效） |
+| `path` | string | 是 | JSONPath，定位模板中的替换位置 |
+
+### 3.5 模板加载规则
+
+```
+1. 判断 --template 参数类型：
+   - 不含路径分隔符 → 内置模板
+   - 含路径分隔符 → 文件路径
+
+2. 内置模板定位：
+   templates/<type>/<name>/template.json
+   templates/<type>/<name>/manifest.json
+
+3. 文件路径：
+   直接加载指定文件
+   manifest 文件在同目录下查找 manifest.json
+```
+
+---
+
+## 四、执行流程
+
+### 4.1 总体流程图
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                          CLI 执行流程                                   │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   1. 解析 --template 参数      │
+                    │   - 内置模板 or 文件路径        │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   2. 加载模板文件              │
+                    │   - template.json             │
+                    │   - manifest.json (可选)       │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   3. 解析 arguments           │
+                    │   - 用户参数 (--set)          │
+                    │   - 默认值 (manifest)         │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   4. 校验必填参数              │
+                    │   缺失 → 报错退出              │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   5. 占位符替换                │
+                    │   按 path 定位并替换           │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   6. 调用后端 API              │
+                    │   - create-dataset → vega     │
+                    │   - create-bkn → ontology     │
+                    │   - create → dataflow         │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │   7. 输出结果                  │
+                    │   - 默认: 打印 id              │
+                    │   - --json: 完整 JSON          │
+                    └───────────────────────────────┘
+```
+
+### 4.2 create-dataset 执行流程
+
+```
+1. 解析 --template 参数，定位模板
+   - 内置模板：templates/dataset/<name>/template.json
+   - 文件路径：直接加载
+
+2. 加载 manifest.json（如果存在），解析 arguments
+
+3. 合并参数：
+   - 从 --set 获取用户参数
+   - 从 manifest.default 获取默认值
+   - 检查必填参数是否全部提供
+
+4. 执行占位符替换：
+   - 遍历 arguments
+   - 按 path（JSONPath）定位模板字段
+   - 替换 {{argument_name}} 为实际值
+
+5. 调用 API 创建 dataset：
+   POST /api/vega-backend/v1/resources
+   Body: 替换后的 template.json
+
+6. 输出结果：
+   - 默认：打印 dataset id
+   - --json：输出完整响应 JSON
+```
+
+### 4.3 create-bkn 执行流程
+
+```
+1. 解析模板，加载 manifest
+
+2. 合并参数，检查必填项
+
+3. 执行占位符替换
+
+4. 调用 API 创建 BKN：
+   POST /api/ontology-manager/v1/knowledge-networks?validate_dependency=false
+   Headers: { "x-business-domain": "bd_public" }
+   Body: 替换后的 template.json
+
+5. 输出结果
+```
+
+### 4.4 create (dataflow) 执行流程
+
+```
+1. 解析模板，加载 manifest
+
+2. 合并参数，检查必填项
+
+3. 执行占位符替换
+
+4. 调用 API 创建 dataflow：
+   POST /api/dataflow-backend/v1/dataflows
+   Body: 替换后的 template.json
+
+5. 输出结果
+```
+
+### 4.5 完整使用流程
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     用户完整操作流程                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Step 1: 创建 3 个 Dataset
+┌─────────────────────────────────────────────────────────────────────────┐
+│ $ kweaver dataflow create-dataset --template document \                 │
+│     --set "name=my-document" --json                                     │
+│ > {"success": true, "id": "ds-document-001"}                            │
+│                                                                         │
+│ $ kweaver dataflow create-dataset --template document-content \         │
+│     --set "name=my-document-content" --json                             │
+│ > {"success": true, "id": "ds-content-002"}                             │
+│                                                                         │
+│ $ kweaver dataflow create-dataset --template document-element \         │
+│     --set "name=my-document-element" --json                             │
+│ > {"success": true, "id": "ds-element-003"}                             │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+Step 2: 创建 BKN（关联 Dataset）
+┌─────────────────────────────────────────────────────────────────────────┐
+│ $ kweaver dataflow create-bkn --template document \                     │
+│     --set "name=my-bkn" \                                               │
+│     --set "document_content_id=ds-content-002" \                        │
+│     --set "document_id=ds-document-001" \                               │
+│     --set "document_element_id=ds-element-003" \                        │
+│     --json                                                              │
+│ > {"success": true, "id": "bkn-001"}                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+Step 3: 创建 Dataflow（关联 Dataset）
+┌─────────────────────────────────────────────────────────────────────────┐
+│ $ kweaver dataflow create --template unstructured \                     │
+│     --set "name=my-flow" \                                              │
+│     --set "content_dataset_id=ds-content-002" \                         │
+│     --set "document_dataset_id=ds-document-001" \                       │
+│     --set "element_dataset_id=ds-element-003" \                         │
+│     --json                                                              │
+│ > {"success": true, "id": "flow-001"}                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 五、错误处理
+
+### 5.1 错误场景与处理
+
+| 场景 | 错误码 | 处理方式 |
+|------|--------|----------|
+| 模板不存在 | `TEMPLATE_NOT_FOUND` | 报错退出，提示模板路径 |
+| manifest.json 缺失 | - | 视为无参数模板，直接使用 template.json |
+| 必填参数缺失 | `MISSING_ARGUMENT` | 报错退出，列出缺失参数 |
+| 参数类型不匹配 | `INVALID_ARGUMENT_TYPE` | 报错退出，提示期望类型 |
+| API 调用失败 | `API_ERROR` | 输出错误信息，退出码非零 |
+| JSONPath 定位失败 | `PATH_NOT_FOUND` | 报错退出，提示无效路径 |
+
+### 5.2 错误输出格式
+
+**普通模式：**
+```
+Error: Missing required argument: name
+Usage: kweaver dataflow create-dataset --template document --set "name=xxx"
+
+Run 'kweaver dataflow create-dataset --help' for more information.
+```
+
+**--json 模式：**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "MISSING_ARGUMENT",
+    "message": "Missing required argument: name",
+    "details": {
+      "missing": ["name"]
+    }
+  }
+}
+```
+
+---
+
+## 六、代码实现位置
+
+### 6.1 kweaver-core（节点实现）
+
+```
+kweaver-core/adp/dataflow/flow-automation/pkg/actions/
+└── dataset.go        # DatasetWriteDocs 节点实现（新增）
+```
+
+参考 `opensearch.go` 中的 `OpenSearchBulkUpsert` 实现。
+
+### 6.2 kweaver-sdk（CLI + 模板）
+
+```
+kweaver-sdk/packages/typescript/
+├── src/
+│   └── cli/
+│       └── dataflow/
+│           ├── index.ts           # dataflow 子命令入口
+│           ├── templates.ts       # templates 命令实现
+│           ├── create-dataset.ts  # create-dataset 命令
+│           ├── create-bkn.ts      # create-bkn 命令
+│           ├── create.ts          # create 命令
+│           └── template-loader.ts # 模板加载与占位符替换
+└── templates/
+    ├── dataset/
+    │   ├── document/
+    │   │   ├── template.json
+    │   │   └── manifest.json
+    │   ├── document-content/
+    │   │   ├── template.json
+    │   │   └── manifest.json
+    │   └── document-element/
+    │       ├── template.json
+    │       └── manifest.json
+    ├── bkn/
+    │   └── document/
+    │       ├── template.json
+    │       └── manifest.json
+    └── dataflow/
+        └── unstructured/
+            ├── template.json
+            └── manifest.json
+```
+
+---
+
+## 七、设计总结
+
+### 7.1 核心变更
+
+| 模块 | 变更内容 |
+|------|----------|
+| kweaver-core | 新增 `DatasetWriteDocs` 节点，支持向指定 dataset 写入文档 |
+| kweaver-sdk CLI | 新增 `dataflow` 子命令，包含 `templates`、`create-dataset`、`create-bkn`、`create` |
+| kweaver-sdk templates | 新增内置模板目录，包含 dataset/bkn/dataflow 模板及 manifest |
+
+### 7.2 API 端点汇总
+
+| 操作 | 端点 | 方法 |
+|------|------|------|
+| 创建 Dataset | `/api/vega-backend/v1/resources` | POST |
+| 写入 Dataset 文档 | `/api/vega-backend/v1/resources/dataset/${id}/docs` | POST |
+| 创建 BKN | `/api/ontology-manager/v1/knowledge-networks?validate_dependency=false` | POST |
+| 创建 Dataflow | `/api/dataflow-backend/v1/dataflows` | POST |
+
+### 7.3 依赖关系
+
+```
+┌─────────────┐
+│  Dataset x3 │ (document, document-content, document-element)
+└──────┬──────┘
+       │
+       ├──────────────────────┐
+       │                      │
+       ▼                      ▼
+┌─────────────┐      ┌─────────────┐
+│     BKN     │      │  Dataflow   │
+│ (关联Dataset)│      │ (关联Dataset)│
+└─────────────┘      └─────────────┘
+```
