@@ -856,6 +856,20 @@ func (mr *MockVegaBackendClientMockRecorder) WriteDatasetDocuments(ctx, datasetI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).WriteDatasetDocuments), ctx, datasetID, documents)
 }
 
+// UpdateDatasetDocuments mocks base method.
+func (m *MockVegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDatasetDocuments", ctx, datasetID, documents)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDatasetDocuments indicates an expected call of UpdateDatasetDocuments.
+func (mr *MockVegaBackendClientMockRecorder) UpdateDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).UpdateDatasetDocuments), ctx, datasetID, documents)
+}
+
 // MockOSSGatewayBackendClient is a mock of OSSGatewayBackendClient interface.
 type MockOSSGatewayBackendClient struct {
 	ctrl     *gomock.Controller

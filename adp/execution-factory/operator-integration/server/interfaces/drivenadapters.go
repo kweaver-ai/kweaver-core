@@ -906,6 +906,7 @@ type VegaBackendClient interface {
 	GetResourceByID(ctx context.Context, id string) (*VegaResource, error)
 	CreateResource(ctx context.Context, req *VegaResourceRequest) (*VegaResource, error)
 	WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
+	UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
 	DeleteDatasetDocumentByID(ctx context.Context, datasetID string, docID string) error
 }
 

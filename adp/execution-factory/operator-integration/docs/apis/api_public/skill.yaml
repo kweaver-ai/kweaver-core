@@ -406,6 +406,249 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /skills/{skill_id}/metadata:
+    put:
+      summary: "更新 Skill 元数据"
+      description: "根据 Skill ID 更新 Skill 的名称、描述、分类、来源和扩展信息。该操作只更新草稿态，不直接变更发布态内容。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSkillMetadataReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSkillMetadataResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/package:
+    put:
+      summary: "更新 Skill 包"
+      description: "根据 Skill ID 更新 Skill 包内容。仅支持 `application/x-www-form-urlencoded` 和 `multipart/form-data`。`content` 模式只更新声明内容；`zip` 模式会重新解析 `SKILL.md` 与文件清单。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UpdateSkillPackageFormReq"
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file_type
+                - file
+              properties:
+                file_type:
+                  type: string
+                  enum: ["zip", "content"]
+                  description: "更新类型"
+                file:
+                  type: string
+                  format: binary
+                  description: "当 `file_type=zip` 时为 ZIP 文件；当 `file_type=content` 时为原始内容文件"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSkillPackageResp"
+        "400":
+          description: "参数错误或 Content-Type 不支持"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history:
+    get:
+      summary: "查询 Skill 发布历史"
+      description: "根据 Skill ID 查询发布历史摘要列表。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSkillReleaseHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history/republish:
+    post:
+      summary: "将历史版本回灌到草稿态"
+      description: "根据 Skill ID 和历史版本号，将指定历史版本恢复到当前草稿态。该操作不会直接覆盖当前发布态。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepublishSkillHistoryReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepublishSkillHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 或历史版本不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history/publish:
+    post:
+      summary: "直接发布历史版本"
+      description: "根据 Skill ID 和历史版本号，直接将指定历史版本重新发布为当前发布态。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishSkillHistoryReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishSkillHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 或历史版本不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /skills/{skill_id}/content:
     get:
       summary: "获取 Skill 内容"
@@ -648,6 +891,185 @@ components:
             status:
               type: string
               enum: ["unpublish", "published", "offline"]
+
+    UpdateSkillMetadataReq:
+      type: object
+      required:
+        - name
+        - description
+        - category
+      properties:
+        name:
+          type: string
+          description: "Skill 名称"
+        description:
+          type: string
+          description: "Skill 描述"
+        category:
+          type: string
+          enum: ["other_category", "system"]
+          description: "Skill 分类"
+        source:
+          type: string
+          enum: ["custom", "internal"]
+          description: "Skill 来源"
+        extend_info:
+          type: object
+          additionalProperties: true
+          description: "扩展信息"
+
+    UpdateSkillMetadataResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    UpdateSkillPackageFormReq:
+      type: object
+      required:
+        - file_type
+        - file
+      properties:
+        file_type:
+          type: string
+          enum: ["zip", "content"]
+          description: "更新类型"
+        file:
+          type: string
+          description: "当 `file_type=content` 时为原始内容；当 `file_type=zip` 时为编码后的文件内容"
+
+    UpdateSkillPackageResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    RepublishSkillHistoryReq:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: "历史版本号"
+
+    RepublishSkillHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    PublishSkillHistoryReq:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: "历史版本号"
+
+    PublishSkillHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    GetSkillReleaseHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillReleaseHistoryInfo"
+
+    SkillReleaseHistoryInfo:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: ["unpublish", "published", "editing", "offline"]
+        category:
+          type: string
+          enum: ["other_category", "system"]
+        source:
+          type: string
+        release_desc:
+          type: string
+        release_user:
+          type: string
+        release_time:
+          type: integer
+          format: int64
+        create_user:
+          type: string
+        create_time:
+          type: integer
+          format: int64
+        update_user:
+          type: string
+        update_time:
+          type: integer
+          format: int64
 
     QuerySkillListResp:
       type: object

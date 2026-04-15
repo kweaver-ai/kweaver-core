@@ -131,6 +131,36 @@ func (mr *MockSkillRegistryMockRecorder) RegisterSkill(ctx, req any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSkill", reflect.TypeOf((*MockSkillRegistry)(nil).RegisterSkill), ctx, req)
 }
 
+// UpdateSkillMetadata mocks base method.
+func (m *MockSkillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces.UpdateSkillMetadataReq) (*interfaces.UpdateSkillMetadataResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkillMetadata", ctx, req)
+	ret0, _ := ret[0].(*interfaces.UpdateSkillMetadataResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSkillMetadata indicates an expected call of UpdateSkillMetadata.
+func (mr *MockSkillRegistryMockRecorder) UpdateSkillMetadata(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkillMetadata", reflect.TypeOf((*MockSkillRegistry)(nil).UpdateSkillMetadata), ctx, req)
+}
+
+// UpdateSkillPackage mocks base method.
+func (m *MockSkillRegistry) UpdateSkillPackage(ctx context.Context, req *interfaces.UpdateSkillPackageReq) (*interfaces.UpdateSkillPackageResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkillPackage", ctx, req)
+	ret0, _ := ret[0].(*interfaces.UpdateSkillPackageResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSkillPackage indicates an expected call of UpdateSkillPackage.
+func (mr *MockSkillRegistryMockRecorder) UpdateSkillPackage(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkillPackage", reflect.TypeOf((*MockSkillRegistry)(nil).UpdateSkillPackage), ctx, req)
+}
+
 // UpdateSkillStatus mocks base method.
 func (m *MockSkillRegistry) UpdateSkillStatus(ctx context.Context, req *interfaces.UpdateSkillStatusReq) (*interfaces.UpdateSkillStatusResp, error) {
 	m.ctrl.T.Helper()
@@ -239,6 +269,21 @@ func (mr *MockSkillReaderMockRecorder) GetSkillContent(ctx, req any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSkillContent", reflect.TypeOf((*MockSkillReader)(nil).GetSkillContent), ctx, req)
 }
 
+// GetSkillReleaseHistory mocks base method.
+func (m *MockSkillReader) GetSkillReleaseHistory(ctx context.Context, req *interfaces.GetSkillReleaseHistoryReq) ([]*interfaces.SkillReleaseHistoryInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSkillReleaseHistory", ctx, req)
+	ret0, _ := ret[0].([]*interfaces.SkillReleaseHistoryInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSkillReleaseHistory indicates an expected call of GetSkillReleaseHistory.
+func (mr *MockSkillReaderMockRecorder) GetSkillReleaseHistory(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSkillReleaseHistory", reflect.TypeOf((*MockSkillReader)(nil).GetSkillReleaseHistory), ctx, req)
+}
+
 // ReadSkillFile mocks base method.
 func (m *MockSkillReader) ReadSkillFile(ctx context.Context, req *interfaces.ReadSkillFileReq) (*interfaces.ReadSkillFileResp, error) {
 	m.ctrl.T.Helper()
@@ -332,4 +377,18 @@ func (m *MockSkillIndexSyncService) UpsertSkill(ctx context.Context, skill *mode
 func (mr *MockSkillIndexSyncServiceMockRecorder) UpsertSkill(ctx, skill any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).UpsertSkill), ctx, skill)
+}
+
+// UpdateSkill mocks base method.
+func (m *MockSkillIndexSyncService) UpdateSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSkill", ctx, skill)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSkill indicates an expected call of UpdateSkill.
+func (mr *MockSkillIndexSyncServiceMockRecorder) UpdateSkill(ctx, skill any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSkill", reflect.TypeOf((*MockSkillIndexSyncService)(nil).UpdateSkill), ctx, skill)
 }

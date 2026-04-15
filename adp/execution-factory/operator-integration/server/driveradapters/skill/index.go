@@ -11,6 +11,10 @@ import (
 
 type SkillHandler interface {
 	RegisterSkill(c *gin.Context)
+	UpdateSkillMetadata(c *gin.Context)
+	UpdateSkillPackage(c *gin.Context)
+	RepublishSkillHistory(c *gin.Context)
+	PublishSkillHistory(c *gin.Context)
 	DeleteSkill(c *gin.Context)
 	UpdateSkillStatus(c *gin.Context)
 	DownloadSkill(c *gin.Context)
@@ -19,6 +23,7 @@ type SkillHandler interface {
 	GetSkillMarketDetail(c *gin.Context)
 	GetSkillDetail(c *gin.Context)
 	GetSkillContent(c *gin.Context)
+	GetSkillReleaseHistory(c *gin.Context)
 	ReadSkillFile(c *gin.Context)
 	ExecuteSkill(c *gin.Context)
 }

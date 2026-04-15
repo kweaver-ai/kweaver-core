@@ -21,6 +21,8 @@ import (
 
 type skillReader struct {
 	skillRepo             model.ISkillRepository
+	releaseRepo           model.ISkillReleaseDB
+	releaseHistoryRepo    model.ISkillReleaseHistoryDB
 	fileRepo              model.ISkillFileIndex
 	assetStore            skillAssetStore
 	AuthService           interfaces.IAuthorizationService
@@ -39,6 +41,8 @@ func NewSkillReader() interfaces.SkillReader {
 		conf := config.NewConfigLoader()
 		readerInst = &skillReader{
 			skillRepo:             dbaccess.NewSkillRepositoryDB(),
+			releaseRepo:           dbaccess.NewSkillReleaseDB(),
+			releaseHistoryRepo:    dbaccess.NewSkillReleaseHistoryDB(),
 			fileRepo:              dbaccess.NewSkillFileIndexDB(),
 			assetStore:            newOSSGatewaySkillAssetStore(),
 			AuthService:           auth.NewAuthServiceImpl(),
@@ -58,13 +62,8 @@ func (r *skillReader) GetSkillContent(ctx context.Context, req *interfaces.GetSk
 		"skill_id": req.SkillID,
 	})
 
-	skill, err := r.skillRepo.SelectSkillByID(ctx, nil, req.SkillID)
+	skill, err := r.getPublishedSkill(ctx, req.SkillID)
 	if err != nil {
-		err = errors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if skill == nil || skill.IsDeleted {
-		err = errors.DefaultHTTPError(ctx, http.StatusNotFound, fmt.Sprintf("skill not found: %s", req.SkillID))
 		return
 	}
 	// 如果是外部接口
@@ -124,15 +123,9 @@ func (r *skillReader) ReadSkillFile(ctx context.Context, req *interfaces.ReadSki
 		"skill_id": req.SkillID,
 		"rel_path": req.RelPath,
 	})
-	skill, err := r.skillRepo.SelectSkillByID(ctx, nil, req.SkillID)
+	skill, err := r.getPublishedSkill(ctx, req.SkillID)
 	if err != nil {
 		r.Logger.WithContext(ctx).Errorf("read skill file failed: %v", err)
-		err = errors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-		return nil, err
-	}
-	if skill == nil || skill.IsDeleted {
-		r.Logger.WithContext(ctx).Errorf("skill not found: %s", req.SkillID)
-		err = errors.DefaultHTTPError(ctx, http.StatusNotFound, fmt.Sprintf("skill not found: %s", req.SkillID))
 		return nil, err
 	}
 	if common.IsPublicAPIFromCtx(ctx) {
@@ -181,5 +174,76 @@ func (r *skillReader) ReadSkillFile(ctx context.Context, req *interfaces.ReadSki
 		URL:      downloadURL,
 		MimeType: file.MimeType,
 		FileType: file.FileType,
+	}, nil
+}
+
+// GetSkillReleaseHistory 查询 Skill 发布历史
+func (r *skillReader) GetSkillReleaseHistory(ctx context.Context, req *interfaces.GetSkillReleaseHistoryReq) (resp []*interfaces.SkillReleaseHistoryInfo, err error) {
+	ctx, _ = o11y.StartInternalSpan(ctx)
+	defer o11y.EndSpan(ctx, err)
+	telemetry.SetSpanAttributes(ctx, map[string]interface{}{
+		"skill_id": req.SkillID,
+	})
+
+	histories, err := r.releaseHistoryRepo.SelectBySkillID(ctx, nil, req.SkillID)
+	if err != nil {
+		return nil, errors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
+	}
+	if len(histories) == 0 {
+		return []*interfaces.SkillReleaseHistoryInfo{}, nil
+	}
+	resp = make([]*interfaces.SkillReleaseHistoryInfo, 0, len(histories))
+	for _, history := range histories {
+		release := &model.SkillReleaseDB{}
+		if history.SkillRelease != "" {
+			release = utils.JSONToObject[*model.SkillReleaseDB](history.SkillRelease)
+		}
+		if release == nil {
+			release = &model.SkillReleaseDB{}
+		}
+		resp = append(resp, &interfaces.SkillReleaseHistoryInfo{
+			SkillID:     history.SkillID,
+			Name:        release.Name,
+			Description: release.Description,
+			Version:     history.Version,
+			Status:      interfaces.BizStatus(release.Status),
+			Category:    interfaces.BizCategory(release.Category),
+			Source:      release.Source,
+			ReleaseDesc: history.ReleaseDesc,
+			ReleaseUser: release.ReleaseUser,
+			ReleaseTime: release.ReleaseTime,
+			CreateUser:  release.CreateUser,
+			CreateTime:  release.CreateTime,
+			UpdateUser:  release.UpdateUser,
+			UpdateTime:  release.UpdateTime,
+		})
+	}
+	return resp, nil
+}
+
+func (r *skillReader) getPublishedSkill(ctx context.Context, skillID string) (*model.SkillRepositoryDB, error) {
+	release, err := r.releaseRepo.SelectBySkillID(ctx, nil, skillID)
+	if err != nil {
+		return nil, errors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
+	}
+	if release == nil {
+		return nil, errors.DefaultHTTPError(ctx, http.StatusNotFound, fmt.Sprintf("skill not found: %s", skillID))
+	}
+	return &model.SkillRepositoryDB{
+		SkillID:      release.SkillID,
+		Name:         release.Name,
+		Description:  release.Description,
+		SkillContent: release.SkillContent,
+		Version:      release.Version,
+		Status:       release.Status,
+		Source:       release.Source,
+		Dependencies: release.Dependencies,
+		ExtendInfo:   release.ExtendInfo,
+		FileManifest: release.FileManifest,
+		CreateUser:   release.CreateUser,
+		CreateTime:   release.CreateTime,
+		UpdateUser:   release.UpdateUser,
+		UpdateTime:   release.UpdateTime,
+		Category:     release.Category,
 	}, nil
 }

@@ -171,5 +171,48 @@ func TestSkillIndexSync(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "embedding result is empty")
 		})
+
+		Convey("UpdateSkill updates complete document with _id and vector", func() {
+			var updatedDocs []map[string]any
+			mockModelAPI := mocks.NewMockMFModelAPIClient(ctrl)
+			mockVegaClient := mocks.NewMockVegaBackendClient(ctrl)
+			syncer := &skillIndexSync{
+				modelAPI:    mockModelAPI,
+				vegaClient:  mockVegaClient,
+				logger:      logger.DefaultLogger(),
+				initialized: true,
+			}
+			mockModelAPI.EXPECT().Embeddings(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, req *interfaces.EmbeddingReq) (*interfaces.EmbeddingResp, error) {
+				So(req.Model, ShouldEqual, interfaces.SmallModelTypeEmbedding)
+				So(req.Input, ShouldResemble, []string{"demo\ndesc"})
+				return &interfaces.EmbeddingResp{
+					Data: []interfaces.EmbeddingData{{Embedding: []float32{0.3, 0.4}}},
+				}, nil
+			})
+			mockVegaClient.EXPECT().UpdateDatasetDocuments(gomock.Any(), executionFactorySkillDataset, gomock.Any()).
+				DoAndReturn(func(ctx context.Context, datasetID string, documents []map[string]any) error {
+					So(datasetID, ShouldEqual, executionFactorySkillDataset)
+					updatedDocs = documents
+					return nil
+				})
+
+			err := syncer.UpdateSkill(context.Background(), &model.SkillRepositoryDB{
+				SkillID:     "skill-2",
+				Name:        "demo",
+				Description: "desc",
+				Version:     "1.0.1",
+				Category:    "general",
+				CreateUser:  "u1",
+				CreateTime:  101,
+				UpdateUser:  "u2",
+				UpdateTime:  201,
+			})
+			So(err, ShouldBeNil)
+			So(len(updatedDocs), ShouldEqual, 1)
+			So(updatedDocs[0]["_id"], ShouldEqual, "skill-2")
+			So(updatedDocs[0]["skill_id"], ShouldEqual, "skill-2")
+			So(updatedDocs[0]["version"], ShouldEqual, "1.0.1")
+			So(updatedDocs[0]["_vector"], ShouldResemble, []float32{0.3, 0.4})
+		})
 	})
 }
