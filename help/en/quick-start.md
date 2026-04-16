@@ -74,11 +74,13 @@ kweaver ds tables ds-abc123
 ```bash
 kweaver bkn create-from-ds ds-abc123 \
   --name "erp-supply-chain" \
-  --tables "orders,products,customers" \
+  --tables "erp.orders,erp.products,erp.customers" \
   --build --timeout 600
 ```
 
-This single command discovers table schemas, creates object types, maps fields, and builds the search index.
+> **Table name format**: `--tables` requires fully-qualified names in `database.table` format (matching the output of `kweaver ds tables`). Bare table names will result in a `No tables available` error.
+
+This single command discovers table schemas, creates object types, and maps fields. If the resulting object types are resource-backed (directly mapped to data source tables), `--build` is automatically skipped (no index needed — data is queried in real time from the source); only object types that require an independent index will be built.
 
 > **Note**: `create-from-ds` automatically selects a primary key and display key. If the source table has no explicit primary key, the auto-selection may be suboptimal (e.g. choosing `status`), causing records with the same key value to be merged. You can later fix this with `kweaver bkn object-type update`.
 
@@ -280,6 +282,8 @@ kweaver agent chat <agent_id>
 # > What improvements do you suggest?
 ```
 
+> **Tip**: Binding a knowledge network alone does not mean the Agent can automatically query data. The Agent also needs **tools/skills** configured (e.g. BKN query skill) to invoke the knowledge network during conversation. If the Agent replies "I don't have access to the data", it likely lacks tool bindings. See [execution-factory.md](execution-factory.md) for tool & skill management, and [decision-agent.md](decision-agent.md) for full Agent configuration.
+
 ### TypeScript SDK
 
 ```typescript
@@ -319,6 +323,8 @@ const messages = await client.conversations.listMessages(conversationId, { limit
 ## Scenario: Trace the Reasoning (Trace AI)
 
 **Story**: The agent's answer looks wrong. You want to know exactly what data it queried, which tools it called, and how long each step took.
+
+> **Note**: Trace depends on the full backend stack (including Uniquery/DataView components). On a Core-only minimal deployment, the trace endpoint may return HTTP 500; ensure the required services are running.
 
 ```bash
 # List conversation sessions
