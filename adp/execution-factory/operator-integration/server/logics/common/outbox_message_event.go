@@ -2,20 +2,20 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/creasty/defaults"
 	validator "github.com/go-playground/validator/v10"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/dbaccess"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/lock"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/mq"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
+	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	redis "github.com/redis/go-redis/v9"
 )
 
@@ -151,9 +151,9 @@ func (m *outboxMessageEvent) Publish(ctx context.Context, req *interfaces.Outbox
 		return
 	}
 	m.logger.WithContext(ctx).Warnf("publish outbox message failed: %v, topic:%s, message:%s", err, req.Topic, req.Payload)
-	if strings.Contains(err.Error(), "context canceled") {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
+		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 	}
 	// 处理失败，保存消息到数据库

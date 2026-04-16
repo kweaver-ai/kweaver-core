@@ -19,7 +19,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 - 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver Web 界面（用户名：`kweaver`，密码：`111111`）
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
-- 📘 [产品文档](help/) - 产品文档与使用指南
+- 📘 [产品文档](help/README.md) - 产品文档与使用指南（[中文](help/zh/README.md) / [EN](help/en/README.md)）
 - 📝 [博客](https://kweaver-ai.github.io/kweaver-core/) - KWeaver 技术文章与更新
 - 🚀 [发布规范](rules/RELEASE.zh.md) - 版本管理与发布流程
 - 🏗️ [架构规范](rules/ARCHITECTURE.zh.md) - 架构设计规范
@@ -30,13 +30,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 ## 🎬 演示视频
 
-<div align="center">
-<a href="https://www.bilibili.com/video/BV1nGXVBTEmo/?vd_source=4cdad687b2ac18a0b25e434f1fafe2f7" target="_blank">
-<img src="./help/demo-cover.png" alt="KWeaver 演示视频" width="75%"/>
-</a>
-
-点击图片在 Bilibili 观看 KWeaver 演示视频
-</div>
+[在 Bilibili 观看 KWeaver 演示](https://www.bilibili.com/video/BV1nGXVBTEmo/?vd_source=4cdad687b2ac18a0b25e434f1fafe2f7)。
 
 ## 🚀 快速开始
 
@@ -86,6 +80,15 @@ kweaver auth login https://<节点IP> -k
 kweaver bkn list
 ```
 
+6. 查看帮助：
+
+```bash
+kweaver --help                   # 列出所有命令
+kweaver <command> --help         # 查看某命令的帮助，例如 kweaver bkn --help
+```
+
+完整产品文档参见[文档中心](help/README.md)（[中文](help/zh/README.md) / [EN](help/en/README.md)）。
+
 > **尚未部署？** 可访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) Web 界面在线体验（用户名：`kweaver`，密码：`111111`），或将 CLI/SDK 直接连接到 Demo 环境（见下方说明）。
 
 ### 核心子系统
@@ -102,6 +105,18 @@ kweaver bkn list
 安装完 KWeaver Core 后，建议首先安装 [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk)。SDK 提供 `kweaver` CLI 和 AI Agent Skills，是与平台交互的主要方式。
 
 [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) 通过 `kweaver` CLI 为 AI 智能体（Claude Code、GPT、自定义 Agent 等）提供对 KWeaver 知识网络与 Decision Agent 的访问能力，同时提供 Python 与 TypeScript SDK 用于编程集成。
+
+使用以下命令安装 CLI：
+
+```bash
+npm install -g @kweaver-ai/kweaver-sdk
+```
+
+或者无需全局安装，直接运行：
+
+```bash
+npx kweaver --help
+```
 
 ### AI Agent Skills
 
@@ -173,16 +188,61 @@ kweaver auth login https://dip-poc.aishu.cn
 
 > **Demo 账号**：用户名 `kweaver`，密码 `111111`
 
-### 无浏览器环境登录（SSH、CI、容器等）
+### 无浏览器环境认证（SSH、CI、容器等）
 
-**npm 版** `kweaver` CLI 可在没有本地图形浏览器的环境完成 OAuth 登录：
+**npm 版** `kweaver` CLI 支持在没有本地图形浏览器、或不便粘贴回调 URL 的场景下完成认证，提供三种方式：
 
-1. 在**有浏览器**的机器上执行 `kweaver auth login https://你的实例`；登录成功后，从回调页复制一行命令，或执行 `kweaver auth export` / `kweaver auth export --json`。
-2. 在**无头（headless）**机器上执行该命令，通过 `--client-id`、`--client-secret`、`--refresh-token` 换取令牌并写入 `~/.kweaver/`。
+**方式 1 — `--no-browser`（推荐，适合交互式无头会话）**
 
-若已持有上述参数，也可在无头机器上直接执行：`kweaver auth login <url> --client-id … --client-secret … --refresh-token …`。
+```bash
+kweaver auth login https://你的实例 --no-browser
+```
 
-完整说明见 [kweaver-sdk — Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)（TypeScript 包 README）。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置 `KWEAVER_BASE_URL` / `KWEAVER_TOKEN` 等环境变量（见 [kweaver-sdk 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication)）。
+CLI 不会打开浏览器，而是打印一个 OAuth URL。将该 URL 复制到**任意有浏览器的设备**（手机、笔记本等）打开并登录。登录后浏览器会跳转到 `localhost` 回调地址 — 页面会显示错误（这是正常的）。从浏览器地址栏复制**完整 URL**，粘贴回 CLI 提示符：
+
+```
+Open this URL on any device (use a private/incognito window if you need the full sign-in form):
+
+  https://你的实例/oauth2/auth?redirect_uri=...&client_id=...
+
+After login, the browser may show an error page (this is expected if nothing listens on localhost).
+Copy the FULL URL from the address bar and paste it here, or paste only the authorization code.
+
+Paste URL or code>
+```
+
+**方式 2 — 导出凭据后重放（适合 CI / 全自动化场景）**
+
+1. 在**有浏览器**的机器上执行 `kweaver auth login https://你的实例`，登录成功后导出凭据：
+
+```bash
+kweaver auth export              # 输出一行命令，可直接在无头机器上粘贴执行
+kweaver auth export --json       # JSON 格式（适合 CI 存入 secrets）
+```
+
+2. 在**无头机器**上粘贴导出的命令，它通过 `--client-id`、`--client-secret`、`--refresh-token` 换取令牌并写入 `~/.kweaver/`：
+
+```bash
+kweaver auth login https://你的实例 \
+  --client-id <ID> --client-secret <SECRET> --refresh-token <TOKEN>
+```
+
+**方式 3 — Playwright + 用户名密码（本机全自动化，无需粘贴回调 URL）**
+
+在能运行 Node 并安装 Chromium 的环境（常见 CI Runner、Linux 容器）中，可用 Playwright 在**无头**浏览器里走完与 Web 登录相同的 OAuth2 授权码流程，并自动填写平台登录表单：
+
+```bash
+npm install playwright && npx playwright install chromium   # 每个环境执行一次即可
+kweaver auth login https://你的实例 -u <用户名> -p <密码> -k
+```
+
+同时提供 `-u` 与 `-p` 时会自动走 Playwright 无头登录（**不必**再加 `--playwright`）。CLI 会注册 OAuth 客户端、打开授权页、提交账号密码，并将令牌写入 `~/.kweaver/`；若 IdP 返回 `refresh_token`，后续换发 access token 的行为与普通浏览器登录一致。
+
+若只加 `--playwright` 而不带 `-u`/`-p`，则会打开**可见**浏览器窗口，由你手动完成登录（适合调试或登录页不是默认账号密码表单时）。
+
+> 已有 `~/.kweaver/` 保存的会话时，CLI 会在 access token 过期后自动使用 `refresh_token` 换取新令牌，无需额外操作。也可通过环境变量（`KWEAVER_BASE_URL`、`KWEAVER_TOKEN`）传入凭据，无需持久化到磁盘。
+
+完整说明见 [kweaver-sdk — 认证说明](https://github.com/kweaver-ai/kweaver-sdk#authentication) 与 [Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication)。Python 版 `kweaver` CLI 仍为交互式浏览器登录；可将 Node CLI 已完成登录的机器上的 `~/.kweaver/` 目录拷贝过来使用，或配置上述环境变量。
 
 ### CLI
 
