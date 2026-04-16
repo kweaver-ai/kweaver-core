@@ -41,6 +41,8 @@ kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloade
 
 （与 `kweaver context-loader tools` 不同：前者为 Operator 工具箱列表，后者为 MCP 工具列表。）
 
+轻量「分析助手」Agent 导入 JSON 模板见 [`sample-agent.import.json`](../examples/sample-agent.import.json)。
+
 ### 配置模型（按需）
 
 | 能力 | 需要的模型 | 不配会怎样 |
