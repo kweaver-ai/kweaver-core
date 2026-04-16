@@ -44,9 +44,14 @@ class TestHandleGetInfo:
                 )
                 mock_manager.cache_service.get_ttl = AsyncMock(return_value=3600)
 
-                with patch(
-                    "app.router.agent_controller_pkg.agent_cache_manage.action_get_info.get_cache_data_for_debug_mode",
-                    return_value={},
+                with (
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_get_info.get_cache_data_for_debug_mode",
+                        return_value={},
+                    ),
+                    patch(
+                        "app.router.agent_controller_pkg.agent_cache_manage.action_get_info.StandLogger.info"
+                    ) as mock_standard_info,
                 ):
                     from app.router.agent_controller_pkg.agent_cache_manage.action_get_info import (
                         handle_get_info,
@@ -64,6 +69,7 @@ class TestHandleGetInfo:
                     assert result is not None
                     assert result.cache_id == "test_cache_id"
                     assert result.ttl == 3600
+                    mock_standard_info.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_get_info_cache_not_exists(
@@ -81,17 +87,21 @@ class TestHandleGetInfo:
             ) as mock_manager:
                 mock_manager.cache_service.load = AsyncMock(return_value=None)
 
-                from app.router.agent_controller_pkg.agent_cache_manage.action_get_info import (
-                    handle_get_info,
-                )
+                with patch(
+                    "app.router.agent_controller_pkg.agent_cache_manage.action_get_info.StandLogger.info"
+                ) as mock_standard_info:
+                    from app.router.agent_controller_pkg.agent_cache_manage.action_get_info import (
+                        handle_get_info,
+                    )
 
-                result = await handle_get_info(
-                    request=mock_request,
-                    account_id="test_account",
-                    account_type="user",
-                    agent_id="test_agent",
-                    agent_version="v1.0",
-                    agent_config=mock_agent_config,
-                )
+                    result = await handle_get_info(
+                        request=mock_request,
+                        account_id="test_account",
+                        account_type="user",
+                        agent_id="test_agent",
+                        agent_version="v1.0",
+                        agent_config=mock_agent_config,
+                    )
 
-                assert result is None
+                    assert result is None
+                    mock_standard_info.assert_called_once()

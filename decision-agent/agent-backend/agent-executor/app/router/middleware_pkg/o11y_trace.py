@@ -8,6 +8,7 @@ from fastapi import Request, Response
 from opentelemetry import trace
 from opentelemetry.propagate import extract
 
+from app.common.stand_log import StandLogger
 from app.utils.observability.observability_log import get_logger as o11y_logger
 
 
@@ -25,8 +26,10 @@ def _should_skip_trace(path: str, config) -> bool:
         f"{config.app.host_prefix}/health/alive",
         f"{config.app.host_prefix}/health/ready",
     }
-    return path in configured_paths or path.endswith("/health/alive") or path.endswith(
-        "/health/ready"
+    return (
+        path in configured_paths
+        or path.endswith("/health/alive")
+        or path.endswith("/health/ready")
     )
 
 
@@ -82,14 +85,13 @@ async def o11y_trace(request: Request, call_next) -> Response:
 
             # 添加响应状态码到 span
             span.set_attribute("http.status_code", response.status_code)
-            logger = o11y_logger()
-            if logger:
-                logger.info(f"http status {response.status_code}")
+            StandLogger.info(f"http status {response.status_code}")
 
             return response
         except Exception as e:
             # 错误处理
             span.set_attribute("http.status_code", 500)
+            StandLogger.error(f"Error: {e}")
             logger = o11y_logger()
             if logger:
                 logger.error(f"Error: {e}")

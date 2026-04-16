@@ -110,9 +110,17 @@ class TestPrepare:
         from app.router.agent_controller_pkg.run_agent_v2.prepare import prepare
         from app.common.errors import AgentPermissionException
 
-        with patch(
-            "app.router.agent_controller_pkg.run_agent_v2.prepare.agent_factory_service"
-        ) as mock_service:
+        with (
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.agent_factory_service"
+            ) as mock_service,
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.StandLogger.error"
+            ) as mock_standard_error,
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.o11y_logger"
+            ) as mock_o11y_logger,
+        ):
             mock_service.set_headers = MagicMock()
             mock_service.get_agent_config_by_agent_id_and_version = AsyncMock(
                 return_value={"config": "{}"}
@@ -121,6 +129,42 @@ class TestPrepare:
 
             with pytest.raises(AgentPermissionException):
                 await prepare(request, req, "acc123", "premium", "dom456")
+
+        mock_standard_error.assert_called_once()
+        mock_o11y_logger().error.assert_called_once()
+
+    async def test_missing_agent_identifier_logs_both_standard_and_o11y(self):
+        """参数缺失属于异常，两个日志都应记录。"""
+        request = MagicMock(spec=Request)
+        request.headers = {}
+        req = MagicMock()
+        req.agent_config = None
+        req.agent_id = None
+        req.agent_version = "1.0"
+        req.agent_input = MagicMock()
+        req.options = None
+
+        from app.router.agent_controller_pkg.run_agent_v2.prepare import prepare
+        from app.common.errors import ParamException
+
+        with (
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.agent_factory_service"
+            ) as mock_service,
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.StandLogger.error"
+            ) as mock_standard_error,
+            patch(
+                "app.router.agent_controller_pkg.run_agent_v2.prepare.o11y_logger"
+            ) as mock_o11y_logger,
+        ):
+            mock_service.set_headers = MagicMock()
+
+            with pytest.raises(ParamException):
+                await prepare(request, req, "acc123", "premium", "dom456")
+
+        mock_standard_error.assert_called_once()
+        mock_o11y_logger().error.assert_called_once()
 
     async def test_returns_tuple(self):
         """测试返回三元组"""

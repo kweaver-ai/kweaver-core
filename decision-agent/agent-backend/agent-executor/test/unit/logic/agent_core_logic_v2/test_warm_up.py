@@ -97,6 +97,9 @@ class TestWarmUpHandler:
                 "app.logic.agent_core_logic_v2.warm_up.get_user_account_type",
                 return_value=None,
             ),
+            patch(
+                "app.logic.agent_core_logic_v2.warm_up.StandLogger.error"
+            ) as mock_standard_error,
             patch("app.logic.agent_core_logic_v2.warm_up.o11y_logger") as mock_logger,
         ):
             mock_run_dolphin.return_value = failing_generator()
@@ -104,6 +107,7 @@ class TestWarmUpHandler:
             # Should not raise exception, should log error
             await handler.warnup(headers)
 
+            mock_standard_error.assert_called_once()
             mock_logger().error.assert_called_once()
 
     async def test_warnup_with_span(self):

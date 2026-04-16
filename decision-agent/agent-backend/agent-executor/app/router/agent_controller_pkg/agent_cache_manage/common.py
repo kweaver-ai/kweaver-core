@@ -21,6 +21,7 @@ from app.common.errors import (
     APIError,
 )
 from app.common.config import Config
+from app.common.stand_log import StandLogger
 from app.driven.dip.agent_factory_service import agent_factory_service
 from app.domain.vo.agentvo import AgentConfigVo
 from app.domain.vo.agent_cache import AgentCacheIdVO
@@ -71,9 +72,12 @@ async def prepare_agent_config(
     if not await agent_factory_service.check_agent_permission(
         agent_config.agent_id, account_id, account_type
     ):
-        o11y_logger().error(
-            f"check_agent_permission failed: agent_id = {agent_config.agent_id}, account_id = {account_id}, account_type = {account_type}"
+        error_message = (
+            f"check_agent_permission failed: agent_id = {agent_config.agent_id}, "
+            f"account_id = {account_id}, account_type = {account_type}"
         )
+        StandLogger.error(error_message)
+        o11y_logger().error(error_message)
         raise AgentPermissionException(agent_config.agent_id, account_id)
 
     return agent_config

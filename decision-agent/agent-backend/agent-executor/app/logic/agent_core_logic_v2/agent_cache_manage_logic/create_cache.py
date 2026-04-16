@@ -8,6 +8,7 @@ import time
 from typing import Dict, TYPE_CHECKING
 from datetime import datetime
 
+from app.common.stand_log import StandLogger
 from app.domain.entity.agent_cache import AgentCacheEntity
 from app.domain.vo.agent_cache import AgentCacheIdVO
 from app.domain.vo.agentvo import AgentConfigVo
@@ -76,6 +77,7 @@ async def create_cache(
         await manager.cache_service.save(cache_entity)
 
     except Exception as e:
+        StandLogger.error(f"agent cache create failed: {e}")
         o11y_logger().error(f"agent cache create failed: {e}")
         raise e
 

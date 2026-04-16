@@ -254,7 +254,7 @@ class AgentCoreV2:
                     flags.set_flag(llm_message_flag, False)
                     flags.set_param(llm_message_log_dir_flag, "")
             elif Config.llm_message_logging and Config.llm_message_logging.enabled:
-                o11y_logger().warn(
+                StandLogger.warn(
                     "[agent_core_v2] Dolphin flags do not expose llm message logging; skipping flag configuration"
                 )
 
@@ -326,6 +326,7 @@ class AgentCoreV2:
                     user_id=get_user_account_id(headers) or "",
                 )
                 await ExceptionHandler.handle_exception(dolphin_except, res, headers)
+                StandLogger.error(f"agent run failed: {e}")
                 o11y_logger().error(f"agent run failed: {e}")
                 # 在yield前移除context键并添加 agent_run_id
                 res_with_run_id = self.remove_context_from_response(res)
@@ -334,6 +335,7 @@ class AgentCoreV2:
             except Exception as e:
                 # 处理其他异常
                 await ExceptionHandler.handle_exception(e, res, headers)
+                StandLogger.error(f"agent run failed: {e}")
                 o11y_logger().error(f"agent run failed: {e}")
                 # 在yield前移除context键并添加 agent_run_id
                 res_with_run_id = self.remove_context_from_response(res)
@@ -343,6 +345,7 @@ class AgentCoreV2:
         except Exception as e:
             # 处理整体异常
             await ExceptionHandler.handle_exception(e, res, headers)
+            StandLogger.error(f"agent run failed: {e}")
             o11y_logger().error(f"agent run failed: {e}")
             # 在yield前移除context键并添加 agent_run_id
             res_with_run_id = self.remove_context_from_response(res)

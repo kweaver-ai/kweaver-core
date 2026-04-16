@@ -5,6 +5,7 @@ Agent缓存管理 - 主入口函数
 
 from fastapi import Request, Depends
 
+from app.common.stand_log import StandLogger
 from app.driven.dip.agent_factory_service import agent_factory_service
 from app.domain.enum.common.user_account_header_key import (
     set_biz_domain_id,
@@ -86,5 +87,6 @@ async def manage_agent_cache(
             )
 
     except Exception as e:
+        StandLogger.error(f"manage_agent_cache failed: {e}")
         o11y_logger().error(f"manage_agent_cache failed: {e}")
         raise

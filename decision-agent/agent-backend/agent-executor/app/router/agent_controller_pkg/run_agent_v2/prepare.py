@@ -3,6 +3,7 @@ from typing import Dict, Tuple
 
 from fastapi import Request
 
+from app.common.stand_log import StandLogger
 from app.common.errors import (
     ParamException,
     AgentPermissionException,
@@ -75,9 +76,12 @@ async def prepare(
 
         agent_config = AgentConfigVo(**config_dict)
     else:
-        o11y_logger().error(
-            f"run_agent failed:At least one of agent_id or agent_config must be provided, agent_id = {req.agent_id}, agent_config = {req.agent_config}"
+        error_message = (
+            "run_agent failed:At least one of agent_id or agent_config must be "
+            f"provided, agent_id = {req.agent_id}, agent_config = {req.agent_config}"
         )
+        StandLogger.error(error_message)
+        o11y_logger().error(error_message)
         raise ParamException(
             "At least one of agent_id or agent_config must be provided."
         )
@@ -102,9 +106,12 @@ async def prepare(
     if not await agent_factory_service.check_agent_permission(
         agent_config.agent_id, account_id, account_type
     ):
-        o11y_logger().error(
-            f"check_agent_permission failed: agent_id = {agent_config.agent_id}, account_id = {account_id}, account_type = {account_type}"
+        error_message = (
+            f"check_agent_permission failed: agent_id = {agent_config.agent_id}, "
+            f"account_id = {account_id}, account_type = {account_type}"
         )
+        StandLogger.error(error_message)
+        o11y_logger().error(error_message)
         raise AgentPermissionException(agent_config.agent_id, account_id)
 
     return agent_config, agent_input, headers

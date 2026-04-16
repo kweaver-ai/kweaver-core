@@ -21,6 +21,8 @@ MODULE_PATH = (
 def _load_module():
     o11y_log = ModuleType("app.utils.observability.observability_log")
     o11y_log.get_logger = lambda: None
+    stand_log = ModuleType("app.common.stand_log")
+    stand_log.StandLogger = MagicMock()
 
     spec = importlib.util.spec_from_file_location("test_o11y_trace_module", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
@@ -28,11 +30,15 @@ def _load_module():
 
     with patch.dict(
         sys.modules,
-        {"app.utils.observability.observability_log": o11y_log},
+        {
+            "app.utils.observability.observability_log": o11y_log,
+            "app.common.stand_log": stand_log,
+        },
     ):
         spec.loader.exec_module(module)
 
     return module
+
 
 class TestO11yTrace:
     @pytest.mark.asyncio
@@ -77,20 +83,17 @@ class TestO11yTrace:
         mock_span.__enter__ = Mock(return_value=mock_span)
         mock_span.__exit__ = Mock(return_value=False)
         mock_tracer.start_as_current_span.return_value = mock_span
-        mock_logger = MagicMock()
-
         with patch.object(Config.o11y, "trace_enabled", True):
             with patch.object(Config.app, "host_prefix", "/api/agent-executor/v1"):
                 with patch.object(
                     module, "_get_request_tracer", return_value=mock_tracer
                 ) as mock_get_tracer:
-                    with patch.object(module, "o11y_logger", return_value=mock_logger):
-                        result = await module.o11y_trace(request, call_next)
+                    result = await module.o11y_trace(request, call_next)
 
         mock_get_tracer.assert_called_once_with()
         mock_tracer.start_as_current_span.assert_called_once()
         mock_span.set_attribute.assert_any_call("http.status_code", 201)
-        mock_logger.info.assert_called_once()
+        module.StandLogger.info.assert_called_once_with("http status 201")
         assert result is response
 
     @pytest.mark.asyncio
@@ -151,4 +154,5 @@ class TestO11yTrace:
 
         mock_span.set_attribute.assert_any_call("http.status_code", 500)
         mock_span.record_exception.assert_called_once_with(test_error)
+        module.StandLogger.error.assert_called_once_with("Error: Test error")
         mock_logger.error.assert_called_once()

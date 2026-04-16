@@ -1,4 +1,5 @@
 from app.domain.vo.agentvo import AgentConfigVo, AgentInputVo, AgentRunOptionsVo
+from app.common.stand_log import StandLogger
 from app.utils.observability.trace_wrapper import internal_span
 from opentelemetry.trace import Span
 
@@ -60,16 +61,12 @@ def process_options(
         agent_config.agent_id = options.agent_id
 
     if options.conversation_id:
-        from app.utils.observability.observability_log import get_logger as o11y_logger
-
-        o11y_logger().info(
+        StandLogger.info(
             f"[process_options] Setting conversation_id from options: {options.conversation_id}"
         )
         agent_config.conversation_id = options.conversation_id
     else:
-        from app.utils.observability.observability_log import get_logger as o11y_logger
-
-        o11y_logger().warn(
+        StandLogger.warn(
             f"[process_options] No conversation_id in options, will use auto-generated value: {agent_config.conversation_id}"
         )
 

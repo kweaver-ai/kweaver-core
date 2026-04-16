@@ -33,6 +33,58 @@ def create_dolphin_module(fullname):
     return mock_module
 
 
+class MockRedis:
+    async def get(self, key):
+        return None
+
+    async def set(self, key, value, ex=None):
+        return True
+
+    async def delete(self, *keys):
+        return 0
+
+    async def exists(self, *keys):
+        return 0
+
+    async def expire(self, key, time):
+        return True
+
+    async def close(self):
+        pass
+
+    async def ping(self):
+        return True
+
+    async def setnx(self, key, value):
+        return True
+
+    async def getset(self, key, value):
+        return None
+
+
+class MockConnectionPool:
+    def __init__(self, **kwargs):
+        pass
+
+    async def disconnect(self):
+        pass
+
+
+class MockSentinel:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def master_for(self, *args, **kwargs):
+        client = MockRedis()
+        client.connection_pool = MockConnectionPool()
+        return client
+
+    def slave_for(self, *args, **kwargs):
+        client = MockRedis()
+        client.connection_pool = MockConnectionPool()
+        return client
+
+
 class DolphinModuleFinder:
     """A custom module finder that creates mock modules for dolphin.* imports"""
 
@@ -156,39 +208,15 @@ class DolphinModuleFinder:
 
         # Special handling for redis module
         if spec.name == "redis.asyncio":
-            # Create mock redis asyncio classes
-            class MockRedis:
-                async def get(self, key):
-                    return None
-
-                async def set(self, key, value, ex=None):
-                    return True
-
-                async def delete(self, *keys):
-                    return 0
-
-                async def exists(self, *keys):
-                    return 0
-
-                async def expire(self, key, time):
-                    return True
-
-                async def close(self):
-                    pass
-
-                async def ping(self):
-                    return True
-
-            class MockConnectionPool:
-                def __init__(self, **kwargs):
-                    pass
-
-                async def disconnect(self):
-                    pass
-
             mock_module.Redis = MockRedis
             mock_module.ConnectionPool = MockConnectionPool
             mock_module.from_url = lambda url, **kwargs: MockRedis()
+
+        if spec.name == "redis.asyncio.connection":
+            mock_module.ConnectionPool = MockConnectionPool
+
+        if spec.name == "redis.asyncio.sentinel":
+            mock_module.Sentinel = MockSentinel
 
         if spec.name == "redis":
             # Create base redis module

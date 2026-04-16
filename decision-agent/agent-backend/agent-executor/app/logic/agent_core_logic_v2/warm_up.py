@@ -76,4 +76,5 @@ class WarmUpHandler:
 
         except Exception as e:
             # 处理整体异常
+            StandLogger.error(f"agent warnup failed: {e}")
             o11y_logger().error(f"agent warnup failed: {e}")
