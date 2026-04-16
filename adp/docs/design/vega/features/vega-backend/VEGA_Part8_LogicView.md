@@ -137,109 +137,130 @@ type Property struct {
 ### 7.1 join
 ```json
 {
+    "id": "test_join",
+    "catalog_id": "logicview",
+    "name": "复合视图join",
+    "tags": [],
+    "description": "两表join",
+    "category": "logicview",
     "logic_definition": [
         {
-            "id": "node_Jdopj",
-            "name": "数据关联",
+            "id": "node_output",
+            "name": "输出节点",
+            "type": "output",
+            "inputs": [
+                "node3"
+            ],
+            "config": {},
+            "output_fields": [
+                "*"
+            ]
+        },
+        {
+            "id": "node3",
+            "name": "学生表和选课信息表关联",
             "type": "join",
             "inputs": [
-                "node_8rFBz",
-                "node_xERlF"
+                "node1",
+                "node2"
             ],
             "config": {
-                "join_type": "left",
                 "join_on": [
                     {
-                        "right_field": "supplier_number",
+                        "left_field": "student_id",
                         "operator": "=",
-                        "left_field": "supplier_code"
+                        "right_field": "student_id"
                     }
-                ]
+                ],
+                "join_type": "left"
             },
             "output_fields": [
                 {
-                    "name": "paycond_name",
-                    "from": "paycond_name",
-                    "from_node": "node_8rFBz"
+                    "name": "student_id",
+                    "from": "student_id",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "purchaserid_name",
-                    "from": "purchaserid_name",
-                    "from_node": "node_8rFBz"
+                    "name": "student_no",
+                    "from": "student_no",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "societycreditcode",
-                    "from": "societycreditcode",
-                    "from_node": "node_8rFBz"
+                    "name": "student_name",
+                    "from": "student_name",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "supplier_code",
-                    "from": "supplier_code",
-                    "from_node": "node_8rFBz"
+                    "name": "gender",
+                    "from": "gender",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "supplier_name",
-                    "from": "supplier_name",
-                    "from_node": "node_8rFBz"
+                    "name": "age",
+                    "from": "age",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "material_name",
-                    "from": "material_name",
-                    "from_node": "node_xERlF"
+                    "name": "class_name",
+                    "from": "class_name",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "material_number",
-                    "from": "material_number",
-                    "from_node": "node_xERlF"
+                    "name": "create_time",
+                    "from": "create_time",
+                    "from_node": "node1"
                 },
                 {
-                    "name": "qty",
-                    "from": "qty",
-                    "from_node": "node_xERlF"
+                    "name": "sc_id",
+                    "from": "sc_id",
+                    "from_node": "node2"
+                },
+                {
+                    "name": "student_id_student_course",
+                    "from": "student_id",
+                    "from_node": "node2"
+                },
+                {
+                    "name": "course_id",
+                    "from": "course_id",
+                    "from_node": "node2"
+                },
+                {
+                    "name": "score",
+                    "from": "score",
+                    "from_node": "node2"
+                },
+                {
+                    "name": "select_time",
+                    "from": "select_time",
+                    "from_node": "node2"
                 }
             ]
         },
         {
-            "id": "node_8rFBz",
-            "name": "erp_supplier",
+            "id": "node2",
+            "name": "学生选课信息表",
             "type": "resource",
             "inputs": [],
             "config": {
-                "resource_id": "2017573348875202561",
-                "filters": {},
-                "distinct": false
-            },
-            "output_fields": [
-                "paycond_name",
-                "purchaserid_name",
-                "societycreditcode",
-                "supplier_code",
-                "supplier_name"
-            ]
-        },
-        {
-            "id": "node_xERlF",
-            "name": "erp_purchase_order",
-            "type": "resource",
-            "inputs": [],
-            "config": {
-                "resource_id": "2017573348875202562",
-                "filters": {},
-                "distinct": true
+                "resource_id": "d7fg89jkqlq4ronf0epg",
+                "distinct": false,
+                "filters": {}
             },
             "output_fields": [
                 "*"
             ]
         },
         {
-            "id": "node-output",
-            "type": "output",
-            "label": "",
-            "name": "输出视图",
-            "inputs": [
-                "node_Jdopj"
-            ],
-            "config": {},
+            "id": "node1",
+            "name": "学生信息表",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "distinct": false,
+                "filters": {},
+                "resource_id": "d7fg89jkqlq4ronf0ep0"
+            },
             "output_fields": [
                 "*"
             ]
@@ -251,111 +272,126 @@ type Property struct {
 ### 7.2 union
 ```json
 {
+    "id": "test_union",
+    "catalog_id": "logicview",
+    "name": "复合视图union",
+    "tags": [],
+    "description": "三表union",
+    "category": "logicview",
     "logic_definition": [
         {
-            "id": "node_UgVju",
-            "name": "erp_real_time_inventory",
-            "type": "resource",
-            "inputs": [],
-            "config": {
-                "resource_id": "2017573348090867713",
-                "filters": {},
-                "distinct": false
-            },
-            "output_fields": [
-                "aux_attr",
-                "available_base_qty",
-                "available_inventory_qty",
-                "base_qty",
-                "base_uom",
-                "batch_master",
-                "batch_no",
-                "bin_location",
-                "conv_ratio",
-                "conv_ratio_available",
-                "conv_ratio_reserved",
-                "custodian",
-                "custodian_type",
-                "expiry_date",
-                "inbound_date",
-                "inventory_org",
-                "inventory_qty",
-                "inventory_uom",
-                "manufacture_date",
-                "material_code",
-                "material_name",
-                "owner",
-                "owner_type",
-                "purchase_qty",
-                "purchase_qty_available",
-                "purchase_qty_reserved",
-                "purchase_uom",
-                "reserved_base_qty",
-                "reserved_inventory_qty",
-                "seq_no",
-                "spec_model",
-                "stock_status",
-                "stock_type",
-                "total_col",
-                "warehouse"
-            ]
-        },
-        {
-            "id": "node_CRfXL",
-            "name": "erp_material",
-            "type": "resource",
-            "inputs": [],
-            "config": {
-                "resource_id": "2017573348468355073",
-                "filters": {
-                    "value": "库存商品-产成品",
-                    "operation": "!=",
-                    "value_from": "const",
-                    "field": "group_name"
-                },
-                "distinct": false
-            },
-            "output_fields": [
-                "baseunit_name",
-                "baseunit_number",
-                "group_name",
-                "group_type",
-                "huid_productline_name",
-                "material_code",
-                "material_name",
-                "material_standard_price",
-                "materialattr",
-                "modelnum",
-                "product_fixedleadtime",
-                "product_status",
-                "purchase_fixedleadtime",
-                "purchase_huid_batchqty",
-                "purchase_huid_minlotsize"
-            ]
-        },
-        {
-            "id": "node_DQTew",
-            "name": "SQL",
-            "type": "sql",
+            "id": "node_output",
+            "name": "输出节点",
+            "type": "output",
             "inputs": [
-                "node_UgVju",
-                "node_CRfXL"
+                "node4"
+            ],
+            "config": {},
+            "output_fields": [
+                "*"
+            ]
+        },
+        {
+            "id": "node4",
+            "name": "大陆办公室员工表、香港办公室员工表和临时外包人员表",
+            "type": "union",
+            "inputs": [
+                "node1",
+                "node2",
+                "node3"
             ],
             "config": {
-                "sql": "SELECT *\nFROM {{.node_UgVju}} eri\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM {{.node_CRfXL}} emf\n    WHERE emf.material_code = eri.material_code\n)\n"
+                "union_type": "all"
+            },
+            "output_fields": [
+                {
+                    "name": "emp_id",
+                    "from": [
+                        {
+                            "from": "emp_id",
+                            "from_node": "node1"
+                        },
+                        {
+                            "from": "emp_id",
+                            "from_node": "node2"
+                        },
+                        {
+                            "from": "id",
+                            "from_node": "node3"
+                        }
+                    ]
+                },
+                {
+                    "name": "name",
+                    "from": [
+                        {
+                            "from": "name",
+                            "from_node": "node1"
+                        },
+                        {
+                            "from": "name",
+                            "from_node": "node2"
+                        },
+                        {
+                            "from": "full_name",
+                            "from_node": "node3"
+                        }
+                    ]
+                },
+                {
+                    "name": "role",
+                    "from": [
+                        {
+                            "from": "role",
+                            "from_node": "node1"
+                        },
+                        {
+                            "from": "role",
+                            "from_node": "node2"
+                        },
+                        {
+                            "from": "job_title",
+                            "from_node": "node3"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "node3",
+            "name": "临时外包人员表",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "d7g3sojkqlq7jfnadmdg",
+                "distinct": false,
+                "filters": {}
+            }
+        },
+        {
+            "id": "node2",
+            "name": "香港办公室员工表",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "d7g3sojkqlq7jfnadmd0",
+                "distinct": false,
+                "filters": {}
             },
             "output_fields": [
                 "*"
             ]
         },
         {
-            "id": "node-output",
-            "name": "输出视图",
-            "type": "output",
-            "inputs": [
-                "node_DQTew"
-            ],
-            "config": {},
+            "id": "node1",
+            "name": "大陆办公室员工表",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "distinct": false,
+                "filters": {},
+                "resource_id": "d7g3sojkqlq7jfnadmcg"
+            },
             "output_fields": [
                 "*"
             ]

@@ -95,7 +95,7 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 		refResourceCategory = dsView.Category
 	}
 
-	if len(refResourceCategory) != 1 {
+	if len(refResourceCategoryMap) != 1 {
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails("The source view of the custom view must have the same category")
 	}
