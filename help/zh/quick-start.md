@@ -56,6 +56,8 @@ npx skills add https://github.com/kweaver-ai/kweaver-sdk \
   --skill kweaver-core --skill create-bkn
 ```
 
+> 安装过程会弹出交互式选择器让你选择目标 AI 编程助手。如需跳过交互直接安装到所有已知助手，可加 `-y` 标志。
+
 安装后，在 AI 编程助手中即可通过自然语言或 `/kweaver-core` 斜杠命令操作平台。
 
 ### 完整对话示例
@@ -120,11 +122,13 @@ kweaver ds tables ds-abc123
 ```bash
 kweaver bkn create-from-ds ds-abc123 \
   --name "erp-供应链" \
-  --tables "orders,products,customers" \
+  --tables "erp.orders,erp.products,erp.customers" \
   --build --timeout 600
 ```
 
-这一条命令完成了：自动发现表结构 → 创建对象类型 → 映射字段 → 构建搜索索引。
+> **表名格式**：`--tables` 需要使用 `数据库名.表名` 的全限定格式（与 `kweaver ds tables` 输出一致）。裸表名会导致 `No tables available` 错误。
+
+这一条命令完成了：自动发现表结构 → 创建对象类型 → 映射字段。如果对象类型是 resource-backed（直接映射数据源表），`--build` 会自动跳过（不需要构建索引，数据直接从源表实时查询）；只有需要独立索引的对象类型才会执行构建。
 
 > **注意**：`create-from-ds` 会自动选择主键（primary key）和显示键（display key）。如果源表没有明确的主键，自动选择可能不理想（如选择 `status` 字段），导致相同主键值的记录被合并。建议后续通过 `kweaver bkn object-type update` 手动指定正确的主键。
 
@@ -195,11 +199,15 @@ kweaver agent chat <agent_id>
 # > 给出改进建议
 ```
 
+> **提示**：仅绑定知识网络不代表 Agent 能自动查询数据。Agent 还需要配置对应的**工具/技能**（如 BKN 查询技能）才能在对话时调用知识网络。如果 Agent 回复"没有访问数据的权限"，说明缺少工具绑定。工具与技能管理见 [execution-factory.md](execution-factory.md)，Agent 完整配置见 [decision-agent.md](decision-agent.md)。
+
 ---
 
 ### 场景：追踪推理过程（Trace AI）
 
 **故事线**：Agent 给出的回答看起来不太对，你想知道它到底查了哪些数据、调了哪些工具、每一步花了多少时间。
+
+> **注意**：Trace 功能依赖完整的后端服务（包括 Uniquery/DataView 等组件）。仅 Core 最小部署时，Trace 接口可能返回 500 错误；此时需确认相关服务已正常运行。
 
 ```bash
 # 查看会话列表
