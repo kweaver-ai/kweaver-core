@@ -50,33 +50,7 @@ OpenAPI 产物：
 
 ---
 
-## 3. 当前 Agent 编辑页面与关键配置
-
-编辑页概览：
-
-![Query 编辑页概览](./guide-assets/query-config-overview.webp)
-
-当前编辑页里最值得关注的配置块包括：
-- 基本信息
-- 角色指令
-- 输入配置
-- 知识来源
-- 技能
-- 默认模型配置
-- 长期记忆
-
-右侧能力配置区：
-
-![Query 右侧能力配置区](./guide-assets/query-config-capabilities.webp)
-
-聊天页概览：
-
-![Query 聊天页概览](./guide-assets/query-usage-overview.webp)
-
-
----
-
-## 4. 普通 Chat 与 API Chat 的区别
+## 3. 普通 Chat 与 API Chat 的区别
 
 `api_chat.go` 中的注释表明：API Chat 与普通外部 Chat 的主体逻辑几乎一致，核心差异主要在 URL，以及长期 token 的使用场景。
 
@@ -97,7 +71,7 @@ POST /api/agent-factory/v1/api/chat/completion
 
 ---
 
-## 5. 普通 Chat 请求
+## 4. 普通 Chat 请求
 
 抓到的请求地址：
 
@@ -139,7 +113,7 @@ x-business-domain: bd_public
 
 ---
 
-## 6. API Chat 请求体
+## 5. API Chat 请求体
 
 最小可用 body：
 
@@ -182,7 +156,7 @@ x-business-domain: bd_public
 
 ---
 
-## 7. API Chat cURL 示例
+## 6. API Chat cURL 示例
 
 流式示例：
 
@@ -231,7 +205,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 
 ---
 
-## 8. 返回结构怎么读
+## 7. 返回结构怎么读
 
 核心返回形态：
 
@@ -271,11 +245,11 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 
 ---
 
-## 9. 完整流式输出 vs 增量流式输出
+## 8. 完整流式输出 vs 增量流式输出
 
 已观测到的 processed 流式样本表明：Agent Factory 在内部会先把流式结果标准化为**完整快照**，而前端可以把它消费成**增量 delta**。
 
-### 9.1 什么叫完整流式快照
+### 8.1 什么叫完整流式快照
 
 每个 chunk 都可以是“当前时刻的完整响应对象”，而不是单纯的文本增量。
 
@@ -317,7 +291,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 }
 ```
 
-### 9.2 什么叫增量流式输出
+### 8.2 什么叫增量流式输出
 
 增量流式输出是下游消费模式：只把新增部分渲染或向下游转发。
 
@@ -326,13 +300,13 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 - 快照 N+1：`你好！我是你的AI助手，可以帮你`
 - 前端增量 delta：`，可以帮你`
 
-### 9.3 什么时候算“增量”
+### 8.3 什么时候算“增量”
 
 一般可按以下条件理解为增量：
 - `stream=true`
 - 且下游 / 前端按 `inc_stream=true` 的方式消费新增 delta，而不是每次都重绘累计全文
 
-### 9.4 增量流转的作用
+### 8.4 增量流转的作用
 
 增量流转主要帮助：
 - 减少前端单次有效更新量
@@ -340,7 +314,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 - 提高前端渲染性能
 - 减少网络传输数据量
 
-### 9.5 不使用增量流转的影响
+### 8.5 不使用增量流转的影响
 
 如果不使用增量流转：
 - 仍然可以流式返回
@@ -353,7 +327,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 
 ---
 
-## 10. 过程态与工具调用结构
+## 9. 过程态与工具调用结构
 
 一个代表性的结构如下：
 
@@ -407,7 +381,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 
 ---
 
-## 11. Agent Factory 内部调用链
+## 10. Agent Factory 内部调用链
 
 主路由注册：
 - `../src/driveradapter/api/httphandler/agenthandler/define.go`
@@ -435,7 +409,7 @@ API Chat handler 的主要行为：
 
 ---
 
-## 12. API 文档入口
+## 11. API 文档入口
 
 仓库内静态产物：
 - `./api/agent-factory.html`
@@ -469,7 +443,7 @@ POST /api/agent-factory/v1/app/{app_key}/api/doc
 
 ---
 
-## 13. 对接注意事项
+## 12. 对接注意事项
 
 - 网页 Chat 能用，不代表 API Chat 一定可用；API Chat 依赖 API Agent 发布状态
 - `inc_stream` 增量流式只在流式模式`stream`下有意义

@@ -50,32 +50,7 @@ Key Source Code:
 
 ---
 
-## 3. Current Agent Edit Page and Key Configurations
-
-Edit Page Overview:
-
-![Query Edit Page Overview](./guide-assets/query-config-overview.webp)
-
-The most noteworthy configuration blocks in the current edit page include:
-- Basic Information
-- Role Instructions
-- Input Configuration
-- Knowledge Sources
-- Skills
-- Default Model Configuration
-- Long-term Memory
-
-Right-side Capability Configuration Area:
-
-![Query Right-side Capability Configuration Area](./guide-assets/query-config-capabilities.webp)
-
-Chat Page Overview:
-
-![Query Chat Page Overview](./guide-assets/query-usage-overview.webp)
-
----
-
-## 4. Differences Between Regular Chat and API Chat
+## 3. Differences Between Regular Chat and API Chat
 
 Comments in `api_chat.go` indicate: API Chat and regular external Chat share almost identical main logic, with core differences mainly in URL and long-term token usage scenarios.
 
@@ -95,7 +70,7 @@ POST /api/agent-factory/v1/api/chat/completion
 
 ---
 
-## 5. Regular Chat Request
+## 4. Regular Chat Request
 
 Captured request URL:
 
@@ -137,7 +112,7 @@ This is highly valuable reference because API Chat body semantics are almost ide
 
 ---
 
-## 6. API Chat Request Body
+## 5. API Chat Request Body
 
 Minimum usable body:
 
@@ -180,7 +155,7 @@ A set of `chat_option` close to current page behavior:
 
 ---
 
-## 7. API Chat cURL Examples
+## 6. API Chat cURL Examples
 
 Streaming example:
 
@@ -229,7 +204,7 @@ curl 'https://{ip}/api/agent-factory/v1/api/chat/completion' \
 
 ---
 
-## 8. How to Read Response Structure
+## 7. How to Read Response Structure
 
 Core response format:
 
@@ -269,11 +244,11 @@ Most commonly used fields:
 
 ---
 
-## 9. Complete Streaming Output vs Incremental Streaming Output
+## 8. Complete Streaming Output vs Incremental Streaming Output
 
 Observed processed streaming samples indicate: Agent Factory internally standardizes streaming results into **complete snapshots** first, while the frontend can consume them as **incremental deltas**.
 
-### 9.1 What is a Complete Streaming Snapshot
+### 8.1 What is a Complete Streaming Snapshot
 
 Each chunk can be "the complete response object at the current moment," not just a simple text increment.
 
@@ -315,7 +290,7 @@ A representative complete snapshot format is as follows:
 }
 ```
 
-### 9.2 What is Incremental Streaming Output
+### 8.2 What is Incremental Streaming Output
 
 Incremental streaming output is a downstream consumption mode: only rendering or forwarding new parts downstream.
 
@@ -324,13 +299,13 @@ Example:
 - Snapshot N+1: `你好！我是你的AI助手，可以帮你`
 - Frontend incremental delta: `，可以帮你`
 
-### 9.3 When is it Considered "Incremental"
+### 8.3 When is it Considered "Incremental"
 
 Generally understood as incremental under the following conditions:
 - `stream=true`
 - And downstream/frontend consumes new deltas with `inc_stream=true`, instead of redrawing the full accumulated text each time
 
-### 9.4 Role of Incremental Streaming
+### 8.4 Role of Incremental Streaming
 
 Incremental streaming mainly helps:
 - Reduce frontend single effective update volume
@@ -338,7 +313,7 @@ Incremental streaming mainly helps:
 - Improve frontend rendering performance
 - Reduce network transmission data volume
 
-### 9.5 Impact of Not Using Incremental Streaming
+### 8.5 Impact of Not Using Incremental Streaming
 
 If incremental streaming is not used:
 - Can still return streaming
@@ -351,7 +326,7 @@ This usually doesn't affect correctness but affects efficiency and experience.
 
 ---
 
-## 10. Process State and Tool Call Structure
+## 9. Process State and Tool Call Structure
 
 A representative structure is as follows:
 
@@ -405,7 +380,7 @@ A practical rendering rule is:
 
 ---
 
-## 11. Agent Factory Internal Call Chain
+## 10. Agent Factory Internal Call Chain
 
 Main route registration:
 - `../src/driveradapter/api/httphandler/agenthandler/define.go`
@@ -433,7 +408,7 @@ Main steps of unified service `../src/domain/service/agentrunsvc/chat.go`:
 
 ---
 
-## 12. API Documentation Entry Points
+## 11. API Documentation Entry Points
 
 Static artifacts in repository:
 - `./api/agent-factory.html`
@@ -467,7 +442,7 @@ This dynamic interface will automatically rewrite:
 
 ---
 
-## 13. Integration Notes
+## 12. Integration Notes
 
 - Web Chat working doesn't guarantee API Chat availability; API Chat depends on API Agent publication status
 - `inc_stream` incremental streaming is only meaningful in streaming mode `stream`

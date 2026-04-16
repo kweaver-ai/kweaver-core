@@ -133,4 +133,3 @@ This document includes:
 - Complete snapshot stream and incremental stream explanations
 - Process state / tool call structure explanations
 - API documentation entry points
-- Page screenshot examples
