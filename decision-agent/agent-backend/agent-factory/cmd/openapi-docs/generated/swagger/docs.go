@@ -5032,6 +5032,19 @@ const docTemplate = `{
                 }
             }
         },
+        "daconfvalobj.NonDolphinModeConfig": {
+            "type": "object",
+            "properties": {
+                "disable_history_in_a_conversation": {
+                    "description": "是否禁用单次会话的历史记录",
+                    "type": "boolean"
+                },
+                "disable_llm_cache": {
+                    "description": "是否禁用LLM缓存",
+                    "type": "boolean"
+                }
+            }
+        },
         "daconfvalobj.OpeningRemarkConfig": {
             "type": "object",
             "properties": {
@@ -6040,6 +6053,14 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/daconfvalobj.ConfigMetadata"
+                        }
+                    ]
+                },
+                "non_dolphin_mode_config": {
+                    "description": "非Dolphin模式配置",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/daconfvalobj.NonDolphinModeConfig"
                         }
                     ]
                 },

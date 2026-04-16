@@ -21,6 +21,7 @@ class TestPromptBuilder:
         self.mock_config.memory = None
         self.mock_config.related_question = None
         self.mock_config.plan_mode = None
+        self.mock_config.disable_history_in_a_conversation = Mock(return_value=False)
 
         # Mock temp_files
         self.temp_files = {}
@@ -83,6 +84,20 @@ class TestPromptBuilder:
         assert "/explore/" in result
         assert "self_config" in result
         assert "header" in result
+
+    @pytest.mark.asyncio
+    @patch("app.logic.agent_core_logic_v2.prompt_builder.plan_mode_logic")
+    async def test_build_standard_mode_disables_history_when_configured(
+        self, mock_plan_mode_logic
+    ):
+        """测试标准模式下可按配置禁用 history"""
+        self.mock_config.disable_history_in_a_conversation = Mock(return_value=True)
+
+        builder = self.PromptBuilder(self.mock_config, self.temp_files)
+        result = await builder.build()
+
+        assert "history=False" in result
+        assert "history=True" not in result
 
     @pytest.mark.asyncio
     @patch("app.logic.agent_core_logic_v2.prompt_builder.plan_mode_logic")

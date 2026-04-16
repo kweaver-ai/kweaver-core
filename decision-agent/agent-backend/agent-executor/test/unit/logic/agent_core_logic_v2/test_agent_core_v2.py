@@ -47,6 +47,7 @@ class TestAgentCoreV2:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
+        config.disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -215,6 +216,7 @@ class TestAgentCoreV2Run:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
+        config.disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -478,7 +480,9 @@ class TestAgentCoreV2Run:
                                         )
                                         mock_config.features.disable_dolphin_sdk_llm_cache = False
                                         mock_config.llm_message_logging.enabled = True
-                                        mock_config.llm_message_logging.log_dir = "/tmp/llm-log"
+                                        mock_config.llm_message_logging.log_dir = (
+                                            "/tmp/llm-log"
+                                        )
 
                                         mock_flags = SimpleNamespace(
                                             EXPLORE_BLOCK_V2="EXPLORE_BLOCK_V2",
@@ -502,3 +506,80 @@ class TestAgentCoreV2Run:
 
                                             assert len(results) == 1
                                             mock_run_dolphin.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_run_disables_llm_cache_when_agent_config_requests_it(
+        self, mock_agent_config, mock_agent_input
+    ):
+        """测试全局开启缓存但 Agent 自身禁用时，会下发禁用缓存 flag。"""
+        from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
+
+        headers = {"x-user-id": "user123"}
+        mock_agent_config.disable_llm_cache.return_value = True
+
+        with patch(
+            "app.logic.agent_core_logic_v2.agent_core_v2.process_input",
+            new_callable=AsyncMock,
+            return_value={},
+        ):
+            with patch(
+                "app.logic.agent_core_logic_v2.agent_core_v2.process_tool_input",
+                new_callable=AsyncMock,
+                return_value=({}, None),
+            ):
+                with patch(
+                    "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_id",
+                    return_value="user123",
+                ):
+                    with patch(
+                        "app.logic.agent_core_logic_v2.agent_core_v2.get_user_account_type",
+                        return_value="standard",
+                    ):
+                        with patch(
+                            "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_id"
+                        ):
+                            with patch(
+                                "app.logic.agent_core_logic_v2.agent_core_v2.set_user_account_type"
+                            ):
+                                with patch(
+                                    "app.logic.agent_core_logic_v2.agent_core_v2.run_dolphin"
+                                ) as mock_run_dolphin:
+
+                                    async def mock_gen():
+                                        yield {"status": "success", "data": "test"}
+
+                                    mock_run_dolphin.return_value = mock_gen()
+
+                                    with patch(
+                                        "app.logic.agent_core_logic_v2.agent_core_v2.Config"
+                                    ) as mock_config:
+                                        mock_config.features.use_explore_block_v2 = (
+                                            False
+                                        )
+                                        mock_config.features.disable_dolphin_sdk_llm_cache = False
+                                        mock_config.llm_message_logging.enabled = False
+
+                                        mock_flags = SimpleNamespace(
+                                            EXPLORE_BLOCK_V2="EXPLORE_BLOCK_V2",
+                                            DISABLE_LLM_CACHE="DISABLE_LLM_CACHE",
+                                            set_flag=MagicMock(),
+                                            set_param=MagicMock(),
+                                        )
+
+                                        with patch(
+                                            "app.logic.agent_core_logic_v2.agent_core_v2.flags",
+                                            mock_flags,
+                                        ):
+                                            core = AgentCoreV2()
+                                            results = []
+                                            async for res in core.run(
+                                                mock_agent_config,
+                                                mock_agent_input,
+                                                headers,
+                                            ):
+                                                results.append(res)
+
+                                            assert len(results) == 1
+                                            mock_flags.set_flag.assert_any_call(
+                                                "DISABLE_LLM_CACHE", True
+                                            )

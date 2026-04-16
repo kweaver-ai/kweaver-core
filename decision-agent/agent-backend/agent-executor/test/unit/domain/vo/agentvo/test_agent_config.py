@@ -23,6 +23,7 @@ class TestAgentConfigVo:
         assert config.related_question == {}
         assert config.plan_mode is None
         assert config.metadata is not None  # Validator creates default ConfigMetadataVo
+        assert config.non_dolphin_mode_config is None
         assert config.agent_id is None
         assert config.conversation_id is not None  # Validator auto-generates if None
         assert config.agent_run_id is None
@@ -183,3 +184,16 @@ class TestAgentConfigVo:
         output_dict = {"default_format": "json"}
         config = AgentConfigVo(output=output_dict)
         assert config.output is not None
+
+    def test_non_dolphin_mode_config_dict_to_vo(self):
+        """测试字典转换为 NonDolphinModeConfigVo"""
+        config = AgentConfigVo(
+            non_dolphin_mode_config={
+                "disable_history_in_a_conversation": True,
+                "disable_llm_cache": True,
+            }
+        )
+
+        assert config.non_dolphin_mode_config is not None
+        assert config.disable_history_in_a_conversation() is True
+        assert config.disable_llm_cache() is True

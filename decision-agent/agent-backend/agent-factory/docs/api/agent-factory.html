@@ -4221,6 +4221,19 @@
         },
         "type": "object"
       },
+      "daconfvalobj.NonDolphinModeConfig": {
+        "properties": {
+          "disable_history_in_a_conversation": {
+            "description": "是否禁用单次会话的历史记录",
+            "type": "boolean"
+          },
+          "disable_llm_cache": {
+            "description": "是否禁用LLM缓存",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "daconfvalobj.OpeningRemarkConfig": {
         "properties": {
           "dynamic_opening_remark_prompt": {
@@ -7344,6 +7357,14 @@
               }
             ],
             "description": "配置元数据"
+          },
+          "non_dolphin_mode_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/daconfvalobj.NonDolphinModeConfig"
+              }
+            ],
+            "description": "非Dolphin模式配置"
           },
           "opening_remark_config": {
             "allOf": [

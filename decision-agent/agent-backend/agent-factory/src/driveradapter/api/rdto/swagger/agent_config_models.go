@@ -74,6 +74,7 @@ type AgentConfigConfig struct {
 	Memory                    *daconfvalobj.MemoryCfg                 `json:"memory"`                      // 长期记忆配置
 	RelatedQuestion           *daconfvalobj.RelatedQuestion           `json:"related_question"`            // 相关问题配置
 	PlanMode                  *daconfvalobj.PlanMode                  `json:"plan_mode"`                   // 任务规划模式配置
+	NonDolphinModeConfig      *daconfvalobj.NonDolphinModeConfig      `json:"non_dolphin_mode_config"`     // 非Dolphin模式配置
 	ConversationHistoryConfig *daconfvalobj.ConversationHistoryConfig `json:"conversation_history_config"` // 会话历史配置
 	Metadata                  daconfvalobj.ConfigMetadata             `json:"metadata"`                    // 配置元数据
 }

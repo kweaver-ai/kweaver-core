@@ -80,6 +80,7 @@ type Config struct {
 	MemoryCfg            *MemoryCfg            `json:"memory"`                     // 长期记忆配置
 	RelatedQuestion      *RelatedQuestion      `json:"related_question"`           // 相关问题配置
 	PlanMode             *PlanMode             `json:"plan_mode"`                  // 任务规划模式配置
+	NonDolphinModeConfig *NonDolphinModeConfig `json:"non_dolphin_mode_config"`    // 非Dolphin模式配置
 
 	ConversationHistoryConfig *ConversationHistoryConfig `json:"conversation_history_config"` // 会话历史配置
 
@@ -211,7 +212,15 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 		}
 	}
 
-	// 13. 验证conversation_history_config配置（如果为空则使用默认值）
+	// 13. 验证non_dolphin_mode_config相关配置
+	if p.NonDolphinModeConfig != nil {
+		if err = p.NonDolphinModeConfig.ValObjCheck(); err != nil {
+			err = errors.Wrap(err, "[Config]: non_dolphin_mode_config is invalid")
+			return
+		}
+	}
+
+	// 14. 验证conversation_history_config配置（如果为空则使用默认值）
 	if p.ConversationHistoryConfig == nil {
 		p.ConversationHistoryConfig = &ConversationHistoryConfig{
 			Strategy:    cdaenum.HistoryStrategyCount,
@@ -219,7 +228,7 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 		}
 	}
 
-	// 14. 验证conversation_history_config内部配置
+	// 15. 验证conversation_history_config内部配置
 	if err = p.ConversationHistoryConfig.ValObjCheck(); err != nil {
 		err = errors.Wrap(err, "[Config]: conversation_history_config is invalid")
 		return

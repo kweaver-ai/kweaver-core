@@ -147,13 +147,17 @@ func TestConfigForShow_AllFields(t *testing.T) {
 	t.Parallel()
 
 	config := &ConfigForShow{
-		Input:                &Input{Fields: []*Field{}},
-		SystemPrompt:         "system prompt",
-		Dolphin:              "dolphin template",
-		IsDolphinMode:        cdaenum.DolphinModeEnabled,
-		DataSource:           &datasourcevalobj.RetrieverDataSource{},
-		Skill:                &skillvalobj.Skill{},
-		Llms:                 []*LlmItem{},
+		Input:         &Input{Fields: []*Field{}},
+		SystemPrompt:  "system prompt",
+		Dolphin:       "dolphin template",
+		IsDolphinMode: cdaenum.DolphinModeEnabled,
+		DataSource:    &datasourcevalobj.RetrieverDataSource{},
+		Skill:         &skillvalobj.Skill{},
+		Llms:          []*LlmItem{},
+		NonDolphinModeConfig: &NonDolphinModeConfig{
+			DisableHistoryInAConversation: true,
+			DisableLLMCache:               true,
+		},
 		IsDataFlowSetEnabled: 1,
 		OpeningRemarkConfig:  &OpeningRemarkConfig{},
 		PresetQuestions:      []*PresetQuestion{},
@@ -163,6 +167,7 @@ func TestConfigForShow_AllFields(t *testing.T) {
 	assert.NotNil(t, config.Input)
 	assert.NotNil(t, config.DataSource)
 	assert.NotNil(t, config.Skill)
+	assert.NotNil(t, config.NonDolphinModeConfig)
 	assert.NotNil(t, config.Output)
 	assert.Equal(t, 1, config.IsDataFlowSetEnabled)
 }

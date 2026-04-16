@@ -228,11 +228,12 @@ class AgentCoreV2:
             else:
                 flags.set_flag(flags.EXPLORE_BLOCK_V2, False)
 
-            # 禁用dolphin sdk llm缓存
-            if Config.features.disable_dolphin_sdk_llm_cache:
-                flags.set_flag(flags.DISABLE_LLM_CACHE, True)
-            else:
-                flags.set_flag(flags.DISABLE_LLM_CACHE, False)
+            # 全局已禁用缓存，或 Agent 配置要求禁用缓存时，都下发禁用标记。
+            disable_llm_cache = (
+                Config.features.disable_dolphin_sdk_llm_cache
+                or agent_config.disable_llm_cache()
+            )
+            flags.set_flag(flags.DISABLE_LLM_CACHE, disable_llm_cache)
 
             # 将认证信息添加到 context_variables 中
             set_user_account_id(context_variables, get_user_account_id(headers) or "")

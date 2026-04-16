@@ -98,7 +98,8 @@ class PromptBuilder:
 
             explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
 
-            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history=True)$query -> answer\n"""
+            history_enabled = not self.agent_config.disable_history_in_a_conversation()
+            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled})$query -> answer\n"""
 
             dolphin_prompt = (
                 memory_prompt

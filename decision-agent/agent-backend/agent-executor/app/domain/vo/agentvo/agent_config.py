@@ -4,7 +4,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, validator, Field
 
 from app.utils.snow_id import snow_id
-from .agent_config_vos import SkillVo, OutputConfigVo, ConfigMetadataVo
+from .agent_config_vos import (
+    SkillVo,
+    OutputConfigVo,
+    ConfigMetadataVo,
+    NonDolphinModeConfigVo,
+)
 
 
 class AgentConfigVo(BaseModel):
@@ -35,6 +40,7 @@ class AgentConfigVo(BaseModel):
     plan_mode: Optional[Dict[str, bool]] = None
     # config metadata
     metadata: Optional[ConfigMetadataVo] = None
+    non_dolphin_mode_config: Optional[NonDolphinModeConfigVo] = None
 
     # agent-app 传入 (也改为由_options参数传入 2025年10月19日)
     agent_id: Optional[str] = None
@@ -106,6 +112,32 @@ class AgentConfigVo(BaseModel):
 
     def is_plan_mode(self) -> bool:
         return self.plan_mode and self.plan_mode.get("is_enabled", False)
+
+    @validator("non_dolphin_mode_config", pre=True, always=True)
+    def validate_non_dolphin_mode_config(cls, v):
+        """验证 non_dolphin_mode_config 字段"""
+        if v is None:
+            return None
+
+        if isinstance(v, NonDolphinModeConfigVo):
+            return v
+
+        if isinstance(v, dict):
+            return NonDolphinModeConfigVo(**v)
+
+        return None
+
+    def disable_history_in_a_conversation(self) -> bool:
+        return bool(
+            self.non_dolphin_mode_config
+            and self.non_dolphin_mode_config.disable_history_in_a_conversation
+        )
+
+    def disable_llm_cache(self) -> bool:
+        return bool(
+            self.non_dolphin_mode_config
+            and self.non_dolphin_mode_config.disable_llm_cache
+        )
 
     def append_task_plan_agent(self):
         if self.is_plan_mode():
