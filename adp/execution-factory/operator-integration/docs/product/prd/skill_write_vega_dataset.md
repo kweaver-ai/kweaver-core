@@ -112,7 +112,7 @@ Skill 对接 Vega Dataset 的流程分为两层：
 ## 7. Vega 初始化需求
 
 对接接口文档：
-- [vega-backend.yaml](/Users/chenshu/go/src/github.com/kweaver-ai/adp/docs/api/vega/vega-backend/vega-backend.yaml)
+- [common.yaml（OpenAPI 根）](/Users/chenshu/go/src/github.com/kweaver-ai/adp/docs/api/vega/vega-backend/common.yaml)
 
 初始化流程：
 
