@@ -142,10 +142,17 @@ data:
         host: {{ .Values.depServices.bizDomain.privateSvc.host | quote }}
         port: {{ .Values.depServices.bizDomain.privateSvc.port }}
         protocol: {{ .Values.depServices.bizDomain.privateSvc.protocol | quote }}
-    opentelemetry:
-      {{- toYaml .Values.opentelemetry | nindent 6 }}
     otel:
-      {{- toYaml .Values.otel | nindent 6 }}
+      service_name: "agent-factory"
+      service_version: "1.0.0"
+      environment: {{ .Values.otel.environment | quote }}
+      otlp_endpoint: {{ .Values.otel.otlp_endpoint | quote }}
+      trace:
+        enabled: {{ .Values.otel.trace.enabled }}
+        sampling_rate: {{ .Values.otel.trace.sampling_rate }}
+      log:
+        enabled: {{ .Values.otel.log.enabled }}
+        level: {{ .Values.otel.log.level | quote }}
   mq_config.yaml: |
     {{- toYaml .Values.depServices.mq | nindent 4 }}
 

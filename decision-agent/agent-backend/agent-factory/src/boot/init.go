@@ -1,15 +1,12 @@
 package boot
 
 import (
-	"context"
-
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/conf"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common"
 	_ "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cglobal"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/redishelper"
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/global"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/otel"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/mq"
 
@@ -93,12 +90,4 @@ func init() {
 		audit.Init(mqSetting)
 	}
 
-	// 9. 初始化 OTel (新版可观测性)
-	if global.GConfig.OtelV2Config != nil &&
-		(global.GConfig.OtelV2Config.Trace.Enabled || global.GConfig.OtelV2Config.Log.Enabled) {
-		_, err := otel.InitOTel(context.Background(), global.GConfig.OtelV2Config)
-		if err != nil {
-			logger.GetLogger().Errorf("init otel failed: %v", err)
-		}
-	}
 }

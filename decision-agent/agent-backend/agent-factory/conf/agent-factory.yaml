@@ -228,44 +228,7 @@ authorization:
     host: 192.168.232.11
     port: 13011
     protocol: http
-# OpenTelemetry 配置
-opentelemetry:
-  # 服务名称
-  service_name: "agent-factory"
-  # 服务版本
-  service_version: "1.0.0"
-
-  # Trace 配置
-  trace:
-    enabled: false
-    # 上报方式: console 或 http
-    exporter: "console"
-    # HTTP 上报端点 (当 exporter 为 http 时生效)
-    http_endpoint: "http://localhost:4318/v1/traces"
-    # 采样率: 0.0 - 1.0
-    sampling_rate: 1.0
-
-  # Log 配置
-  log:
-    enabled: false
-    # 上报方式: console 或 http
-    exporter: "console"
-    # HTTP 上报端点 (当 exporter 为 http 时生效)
-    http_endpoint: "http://localhost:4318/v1/logs"
-    # 日志级别: debug, info, warn, error
-    level: "info"
-
-  # Metric 配置
-  metric:
-    enabled: false
-    # 上报方式: console 或 http
-    exporter: "console"
-    # HTTP 上报端点 (当 exporter 为 http 时生效)
-    http_endpoint: "http://localhost:4318/v1/metrics"
-    # 指标上报间隔 (秒)
-    export_interval: 10
-
-# 新版 OTel Collector 配置
+# OTel Collector 配置
 otel:
   # 服务名称
   service_name: "agent-factory"

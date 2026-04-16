@@ -107,38 +107,6 @@ spec:
                   configMapKeyRef:
                     key: RDSDBNAME
                     name: agent-memory-yaml
-              - name: TRACE_URL
-                valueFrom:
-                  configMapKeyRef:
-                    key: TRACE_URL
-                    name: agent-memory-yaml
-              - name: TRACE_ENABLE
-                valueFrom:
-                  configMapKeyRef:
-                    key: TRACE_ENABLE
-                    name: agent-memory-yaml
-              # ========== OTel配置环境变量 ==========
-              - name: OTEL_SERVICE_NAME
-                valueFrom:
-                  configMapKeyRef:
-                    key: OTEL_SERVICE_NAME
-                    name: agent-memory-yaml
-              - name: OTEL_SERVICE_VERSION
-                valueFrom:
-                  configMapKeyRef:
-                    key: OTEL_SERVICE_VERSION
-                    name: agent-memory-yaml
-              - name: OTEL_ENVIRONMENT
-                valueFrom:
-                  configMapKeyRef:
-                    key: OTEL_ENVIRONMENT
-                    name: agent-memory-yaml
-              - name: OTEL_TRACE_SAMPLING_RATE
-                valueFrom:
-                  configMapKeyRef:
-                    key: OTEL_TRACE_SAMPLING_RATE
-                    name: agent-memory-yaml
-              # ========== OTel配置环境变量结束 ==========
               - name: GRAPHDB_TYPE
                 valueFrom:
                   configMapKeyRef:

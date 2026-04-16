@@ -147,8 +147,14 @@ data:
 
     # 10. o11y 相关
     o11y:
-      log_enabled: {{ .Values.agentExecutor.telemetry.log.enabled }}
+      service_name: "agent-executor"
+      service_version: "1.0.0"
+      environment: {{ .Values.otel.environment | quote }}
+      log_enabled: {{ .Values.otel.log.enabled }}
+      log_level: {{ .Values.otel.log.level | quote }}
       trace_enabled: {{ .Values.otel.trace.enabled }}
+      trace_endpoint: {{ .Values.otel.otlp_endpoint | quote }}
+      trace_sampling_rate: {{ .Values.otel.trace.sampling_rate }}
 
     # 11. 对话日志相关配置
     dialog_logging:

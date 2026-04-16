@@ -17,11 +17,11 @@ class TestServerInfo:
     @pytest.mark.asyncio
     async def test_server_info_initialization(self):
         """Test that server_info is properly initialized"""
-        from app.common.config import server_info
+        from app.common.config import Config, server_info
 
         assert server_info is not None
-        assert server_info.server_name == "agent-executor"
-        assert server_info.server_version == "1.0.0"
+        assert server_info.server_name == Config.o11y.service_name
+        assert server_info.server_version == Config.o11y.service_version
         assert server_info.language == "python"
         assert server_info.python_version == sys.version
 
@@ -52,13 +52,15 @@ class TestObservabilityConfig:
     @pytest.mark.asyncio
     async def test_trace_config_has_required_attributes(self):
         """Test trace config has required attributes"""
-        from app.common.config import observability_config
+        from app.common.config import Config, observability_config
 
         trace_config = observability_config.trace
         assert hasattr(trace_config, "trace_enabled")
         assert hasattr(trace_config, "trace_provider")
         assert hasattr(trace_config, "trace_max_queue_size")
         assert hasattr(trace_config, "max_export_batch_size")
+        assert trace_config.trace_enabled == Config.o11y.trace_enabled
+        assert trace_config.otlp_endpoint == Config.o11y.trace_endpoint
 
 
 class TestConfigInstance:

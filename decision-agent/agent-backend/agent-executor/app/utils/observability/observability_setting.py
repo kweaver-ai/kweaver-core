@@ -22,12 +22,14 @@ class LogSetting:
         log_load_interval: int = 0,
         log_load_max_log: int = 0,
         http_log_feed_ingester_url: str = "",
+        log_level: str = "info",
     ):
         self.log_enabled = log_enabled
         self.log_exporter = log_exporter
         self.log_load_interval = log_load_interval
         self.log_load_max_log = log_load_max_log
         self.http_log_feed_ingester_url = http_log_feed_ingester_url
+        self.log_level = log_level
 
 
 @dataclass
@@ -44,6 +46,8 @@ class TraceSetting:
         grpc_trace_feed_ingester_url: str = "",
         grpc_trace_job_id: str = "",
         otlp_endpoint: str = "",
+        environment: str = "",
+        sampling_rate: float = 1.0,
     ):
         self.trace_enabled = trace_enabled
         self.trace_provider = trace_provider
@@ -53,6 +57,8 @@ class TraceSetting:
         self.grpc_trace_feed_ingester_url = grpc_trace_feed_ingester_url
         self.grpc_trace_job_id = grpc_trace_job_id
         self.otlp_endpoint = otlp_endpoint
+        self.environment = environment
+        self.sampling_rate = sampling_rate
 
 
 @dataclass

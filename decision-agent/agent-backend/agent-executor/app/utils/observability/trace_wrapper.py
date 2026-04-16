@@ -9,6 +9,18 @@ from app.utils.observability.sdk_available import TELEMETRY_SDK_AVAILABLE
 from app.utils.common import func_judgment
 
 
+def _get_span_tracer():
+    """优先复用旧 TelemetrySDK tracer，不可用时回退到标准 OTel tracer。"""
+    if TELEMETRY_SDK_AVAILABLE:
+        from exporter.ar_trace.trace_exporter import tracer
+
+        return tracer
+
+    from opentelemetry import trace
+
+    return trace.get_tracer("agent-executor.internal")
+
+
 def internal_span(
     name: Optional[str] = None,
     attributes: Optional[dict] = None,
@@ -28,11 +40,11 @@ def internal_span(
         # 延迟导入 Config 避免循环依赖
         from app.common.config import Config
 
-        # 如果 SDK 不可用或追踪未启用，直接返回原函数
-        if not TELEMETRY_SDK_AVAILABLE or not Config.is_o11y_trace_enabled():
+        # 如果追踪未启用，直接返回原函数
+        if not Config.is_o11y_trace_enabled():
             return func
 
-        from exporter.ar_trace.trace_exporter import tracer
+        tracer = _get_span_tracer()
 
         # 设置 span 名称（如果未提供则使用函数名）
         span_name = name or func.__name__

@@ -72,8 +72,14 @@ features:
 
 # 7. o11y 相关
 o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
   log_enabled: false
+  log_level: "info"
   trace_enabled: false
+  trace_endpoint: ""
+  trace_sampling_rate: 1.0
 
 # 8. 对话日志相关配置
 dialog_logging:

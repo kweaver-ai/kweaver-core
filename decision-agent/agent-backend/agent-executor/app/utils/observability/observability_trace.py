@@ -1,10 +1,6 @@
 # -*- coding:utf-8 -*-
 
-"""
-Python 实现的可观测性追踪模块
-提供带上下文追踪的日志记录功能，支持多种日志导出方式
-使用标准 OpenTelemetry SDK
-"""
+"""Python 实现的可观测性追踪模块。"""
 
 import os
 
@@ -91,11 +87,10 @@ def init_trace_provider(server_info: ServerInfo, setting: TraceSetting) -> None:
         }
 
         # 添加 deployment.environment
-        otel_environment = os.getenv("OTEL_ENVIRONMENT")
-        if otel_environment:
-            resource_attributes["deployment.environment"] = otel_environment
+        if setting.environment:
+            resource_attributes["deployment.environment"] = setting.environment
             StandLogger.info_log(
-                f"[OTel] Adding deployment.environment={otel_environment}"
+                f"[OTel] Adding deployment.environment={setting.environment}"
             )
 
         # 添加 pod.name
@@ -112,7 +107,9 @@ def init_trace_provider(server_info: ServerInfo, setting: TraceSetting) -> None:
         # 设置采样率
         from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 
-        sampling_rate = float(os.getenv("OTEL_TRACE_SAMPLING_RATE", "1.0"))
+        sampling_rate = setting.sampling_rate
+        if sampling_rate <= 0 or sampling_rate > 1:
+            sampling_rate = 1.0
         sampler = ParentBasedTraceIdRatio(sampling_rate)
         StandLogger.info_log(f"[OTel] Sampling rate: {sampling_rate}")
 

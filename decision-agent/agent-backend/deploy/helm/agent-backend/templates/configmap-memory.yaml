@@ -31,16 +31,6 @@ data:
   REDISWRITEPASS: {{ .Values.depServices.redis.connectInfo.password | quote}}
   {{- end }}
   DUAL_STACK: {{ quote .Values.service.enableDualStack }}
-  LOG_URL: {{ .Values.agentMemory.telemetry.log.endpoint | quote }}
-  LOG_ENABLE: {{ quote .Values.agentMemory.telemetry.log.enabled }}
-  METRIC_URL: {{ .Values.agentMemory.telemetry.metric.endpoint | quote }}
-  METRIC_ENABLE: {{ quote .Values.agentMemory.telemetry.metric.enabled }}
-  TRACE_ENABLE: {{ quote .Values.otel.trace.enabled }}
-  TRACE_URL: {{ .Values.otel.otlp_endpoint | quote}}
-  OTEL_SERVICE_NAME: {{ .Values.otel.service_name | quote }}
-  OTEL_SERVICE_VERSION: {{ .Values.otel.service_version | quote }}
-  OTEL_ENVIRONMENT: {{ .Values.otel.environment | quote }}
-  OTEL_TRACE_SAMPLING_RATE: {{ quote .Values.otel.trace.sampling_rate }}
   OPENSEARCH_HOST: {{ .Values.depServices.opensearch.host | quote}}
   OPENSEARCHRED: {{ .Values.depServices.opensearch.read | quote}}
   OPENSEARCHWRITE: {{ .Values.depServices.opensearch.write | quote}}

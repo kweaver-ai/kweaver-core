@@ -195,27 +195,28 @@ class TestInitLogProvider:
     """测试 init_log_provider 函数"""
 
     @patch("app.utils.observability.observability_log.TELEMETRY_SDK_AVAILABLE", False)
-    def test_returns_early_when_sdk_unavailable(self):
-        """测试SDK不可用时直接返回"""
+    @patch("app.utils.observability.observability_log._build_standard_logger")
+    def test_uses_standard_otel_fallback_when_sdk_unavailable(self, m_build_standard):
+        """测试 SDK 不可用时回退到标准 OTel 日志 provider"""
         from app.utils.observability.observability_log import init_log_provider
         from app.utils.observability.observability_setting import ServerInfo, LogSetting
 
         server_info = ServerInfo(server_name="test", server_version="1.0")
         setting = LogSetting(log_enabled=True)
+        m_build_standard.return_value = MagicMock()
 
-        # Should not raise any error
         init_log_provider(server_info, setting)
+
+        m_build_standard.assert_called_once_with(server_info, setting)
 
     @patch("app.utils.observability.observability_log.TELEMETRY_SDK_AVAILABLE", True)
     @patch("app.utils.observability.observability_log.set_service_info")
     @patch("app.utils.observability.observability_log.SamplerLogger")
     @patch("app.utils.observability.observability_log.log_resource")
-    @patch("app.common.config.Config")
     def test_console_exporter_initialization(
-        self, m_config, m_log_resource, m_sampler_logger, m_set_service
+        self, m_log_resource, m_sampler_logger, m_set_service
     ):
         """测试使用console导出器初始化"""
-        m_config.is_o11y_log_enabled.return_value = True
         m_log_resource.return_value = MagicMock()
 
         mock_logger = MagicMock()
@@ -235,30 +236,26 @@ class TestInitLogProvider:
 
     @patch("app.utils.observability.observability_log.TELEMETRY_SDK_AVAILABLE", True)
     @patch("app.utils.observability.observability_log.set_service_info")
-    @patch("app.common.config.Config")
-    def test_returns_when_log_disabled_in_config(self, m_config, m_set_service):
-        """测试配置中禁用日志时直接返回"""
-        m_config.is_o11y_log_enabled.return_value = False
+    def test_returns_when_log_disabled_in_setting(self, m_set_service):
+        """测试 setting 中禁用日志时直接返回"""
         from app.utils.observability.observability_log import init_log_provider
         from app.utils.observability.observability_setting import ServerInfo, LogSetting
 
         server_info = ServerInfo(server_name="test", server_version="1.0")
-        setting = LogSetting(log_enabled=True)
+        setting = LogSetting(log_enabled=False)
 
         init_log_provider(server_info, setting)
 
-        m_set_service.assert_called_once()
+        m_set_service.assert_not_called()
 
     @patch("app.utils.observability.observability_log.TELEMETRY_SDK_AVAILABLE", True)
     @patch("app.utils.observability.observability_log.set_service_info")
     @patch("app.utils.observability.observability_log.SamplerLogger")
     @patch("app.utils.observability.observability_log.log_resource")
-    @patch("app.common.config.Config")
     def test_http_exporter_initialization(
-        self, m_config, m_log_resource, m_sampler_logger, m_set_service
+        self, m_log_resource, m_sampler_logger, m_set_service
     ):
         """测试使用HTTP导出器初始化"""
-        m_config.is_o11y_log_enabled.return_value = True
         m_log_resource.return_value = MagicMock()
 
         import sys
@@ -298,6 +295,50 @@ class TestInitLogProvider:
             del sys.modules["exporter.ar_log.log_exporter"]
             del sys.modules["exporter.public.client"]
             del sys.modules["exporter.public.public"]
+
+
+class TestStandardOtelLogger:
+    """测试标准 OTel logger 适配器。"""
+
+    def test_info_emits_log_record(self):
+        """测试 info 会通过标准 OTel logger 发出日志。"""
+        from app.utils.observability.observability_log import StandardOtelLogger
+
+        otel_logger = MagicMock()
+        provider = MagicMock()
+        logger = StandardOtelLogger(otel_logger, provider, level="info")
+
+        logger.info("hello", attributes={"foo": "bar"})
+
+        otel_logger.emit.assert_called_once()
+        kwargs = otel_logger.emit.call_args.kwargs
+        assert kwargs["body"] == "hello"
+        assert kwargs["severity_text"] == "INFO"
+        assert kwargs["attributes"]["foo"] == "bar"
+
+    def test_debug_respects_log_level(self):
+        """测试低于阈值的日志不会发出。"""
+        from app.utils.observability.observability_log import StandardOtelLogger
+
+        otel_logger = MagicMock()
+        provider = MagicMock()
+        logger = StandardOtelLogger(otel_logger, provider, level="warn")
+
+        logger.debug("skip me")
+
+        otel_logger.emit.assert_not_called()
+
+    def test_shutdown_calls_provider_shutdown(self):
+        """测试 shutdown 会关闭 provider。"""
+        from app.utils.observability.observability_log import StandardOtelLogger
+
+        otel_logger = MagicMock()
+        provider = MagicMock()
+        logger = StandardOtelLogger(otel_logger, provider, level="info")
+
+        logger.shutdown()
+
+        provider.shutdown.assert_called_once()
 
 
 class TestGetLogger:

@@ -1,5 +1,7 @@
 """单元测试 - config/config_v2/models/observability_config 模块"""
 
+import pytest
+
 
 class TestO11yConfig:
     """测试 O11yConfig 数据类"""
@@ -59,6 +61,53 @@ class TestO11yConfig:
 
         assert config.log_enabled is False
         assert config.trace_enabled is True
+
+    def test_from_dict_reads_otel_fields_from_yaml(self):
+        """测试从 YAML 读取统一 OTel 字段"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        config = O11yConfig.from_dict(
+            {
+                "service_name": "agent-executor",
+                "service_version": "1.0.1",
+                "environment": "staging",
+                "log_enabled": True,
+                "log_level": "warning",
+                "trace_enabled": True,
+                "trace_endpoint": "http://otelcol-contrib:4318",
+                "trace_sampling_rate": 0.25,
+            }
+        )
+
+        assert config.service_name == "agent-executor"
+        assert config.service_version == "1.0.1"
+        assert config.environment == "staging"
+        assert config.log_enabled is True
+        assert config.log_level == "warning"
+        assert config.trace_enabled is True
+        assert config.dolphin_trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
+        assert config.dolphin_trace_url == "http://otelcol-contrib:4318"
+        assert config.trace_sampling_rate == pytest.approx(0.25)
+
+    def test_from_dict_does_not_read_trace_env_vars(self, monkeypatch):
+        """测试不再从 TRACE 环境变量读取配置"""
+        monkeypatch.setenv("TRACE_ENABLE", "true")
+        monkeypatch.setenv("TRACE_URL", "http://env-only:4318")
+
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        config = O11yConfig.from_dict(
+            {
+                "trace_enabled": False,
+                "trace_endpoint": "http://yaml-only:4318",
+            }
+        )
+
+        assert config.trace_enabled is False
+        assert config.dolphin_trace_enabled is False
+        assert config.trace_endpoint == "http://yaml-only:4318"
+        assert config.dolphin_trace_url == "http://yaml-only:4318"
 
 
 class TestDialogLoggingConfig:

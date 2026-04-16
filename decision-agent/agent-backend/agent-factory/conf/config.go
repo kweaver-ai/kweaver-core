@@ -50,9 +50,6 @@ type Config struct {
 	// 流式响应配置
 	StreamDiffFrequency int `yaml:"stream_diff_frequency"`
 
-	// OpenTelemetry 配置
-	OtelConfig *OtelConfig `yaml:"opentelemetry"`
-
 	// 新版 OTel Collector 配置
 	OtelV2Config *otel.OtelV2Config `yaml:"otel"`
 
@@ -119,7 +116,6 @@ func NewConfig() *Config {
 
 		configImpl.Config = cconf.BaseDefConfig()
 
-		configImpl.OtelConfig = &OtelConfig{}
 		configImpl.OtelV2Config = &otel.OtelV2Config{}
 
 		bys := cconf.GetConfigBys("agent-factory.yaml")
@@ -128,7 +124,6 @@ func NewConfig() *Config {
 		cconf.LoadConfig(bys, configImpl)
 		configImpl.normalizeAuthRelatedSwitches()
 
-		setOtelDefaults(configImpl.OtelConfig)
 		configImpl.OtelV2Config.SetDefaults()
 
 		secretBys := cconf.GetConfigBys("secret/agent-factory-secret.yaml")

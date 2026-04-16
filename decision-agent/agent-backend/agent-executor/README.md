@@ -163,10 +163,19 @@ export AGENT_EXECUTOR_DEBUG=true
 export AGENT_EXECUTOR_DIPHOST={ip}
 ```
 ## 开启可观测性
-export O11Y_LOG_ENABLED=true
-export O11Y_LOG_EXPORTER=console
-export O11Y_TRACE_ENABLED=true
-export O11Y_TRACE_PROVIDER=console
+通过 `agent-executor.yaml` 中的 `o11y` 配置开启，例如：
+
+```yaml
+o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
+  log_enabled: true
+  log_level: "info"
+  trace_enabled: true
+  trace_endpoint: "otelcol-contrib:4318"
+  trace_sampling_rate: 1.0
+```
 
 
 ## 依赖服务配置
