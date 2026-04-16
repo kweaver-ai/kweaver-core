@@ -137,13 +137,30 @@ Fork 本仓库到你的 GitHub 账户。
 git checkout -b feature/my-feature
 # 或
 git checkout -b fix/bug-description
+# 或（模块作用域 + 关联 Issue：第二段常以「编号-简述」开头）
+git checkout -b feature/agent-web/123-add-login
+git checkout -b fix/bkn-backend/456-query-timeout
 ```
 
 **分支命名规范：**
 
-分支名称会在每次 Pull Request 时由 CI 自动校验。
+分支名称会在每次 Pull Request 时由 CI 自动校验（与 `.github/workflows/lint-branch-name.yml` 一致）。
 
-格式：`<类型>/<描述>` 或 `<类型>/<Issue编号>-<描述>`（关联 Issue 时）
+**格式（类型前缀之后最多两段路径）**：
+
+- `<类型>/<描述>`，例如 `feature/add-oauth-support`
+- `<类型>/<Issue编号>-<描述>`（关联 Issue 时常用），例如 `fix/123-memory-leak`
+- `<类型>/<模块>/<描述>`（可选，用于按子模块或目录划分），其中**描述**里可含 Issue 编号，例如 `feature/agent-web/123-add-login`、`fix/bkn-backend/456-query-timeout`
+
+**不要**使用类型前缀之后**三层及以上**路径，例如 `feature/foo/bar/baz` 会校验失败（CI 要求类型后至多 2 个 path 段）。
+
+**示例（含模块与 Issue）**：
+
+| 分支名 | 说明 |
+| --- | --- |
+| `feature/studio/789-export-pipeline` | 功能 + 子模块 `studio`，Issue `#789` |
+| `fix/ontology-query/404-id-not-exist` | 修复 + 子模块 `ontology-query`，Issue `#404` |
+| `docs/rules/120-contributing-branch` | 文档 + 目录 `rules`，Issue `#120` |
 
 | 分支类型 | 命名格式 | 说明 | 示例 |
 | --- | --- | --- | --- |
@@ -159,11 +176,11 @@ git checkout -b fix/bug-description
 | 构建分支 | `build/*` | 构建系统或依赖 | `build/update-go-module` |
 | 样式分支 | `style/*` | 代码样式 / 格式化 | `style/fix-linter-warnings` |
 | 回滚分支 | `revert/*` | 回滚之前的更改 | `revert/rollback-auth-change` |
-| 发布分支 | `release/x.x.x` | 发布准备 | `release/1.2.0` |
+| 发布分支 | `release/x.y.z`（或带预发布后缀） | 发布准备 | `release/1.2.0`、`release/1.2.0-rc.1` |
 
 规则：
-- 如果分支关联了 Issue，将 Issue 编号放在最前面：`<类型>/<N>-<描述>`（如 `fix/123-memory-leak`）
-- `<描述>` 必须为小写，使用连字符（`-`）、点（`.`）或下划线（`_`）作为分隔符
+- 若关联 Issue，常见写法是 `<类型>/<N>-<描述>`（如 `fix/123-memory-leak`）；也可在「模块/描述」两段式里带上编号（如 `feature/agent-web/123-add-login`）
+- 每一段（`/` 之间的部分）须为小写字母或数字开头，其余字符为连字符（`-`）、点（`.`）或下划线（`_`）等（与 CI 一致）
 - 分支名必须以有效的类型前缀开头，后跟 `/`
 - Bot 分支（`dependabot/*`、`renovate/*`）自动豁免
 

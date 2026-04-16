@@ -138,13 +138,30 @@ Create a new branch from `main` (or the appropriate base branch):
 git checkout -b feature/my-feature
 # or
 git checkout -b fix/bug-description
+# or (module scope + linked Issue: second segment often starts with "<number>-<slug>")
+git checkout -b feature/agent-web/123-add-login
+git checkout -b fix/bkn-backend/456-query-timeout
 ```
 
 **Branch Naming Convention:**
 
-Branch names are validated automatically by CI on every Pull Request.
+Branch names are validated automatically by CI on every Pull Request (see `.github/workflows/lint-branch-name.yml`).
 
-Format: `<type>/<description>` or `<type>/<issue-number>-<description>` (when linked to an Issue)
+**Formats (at most two path segments after the type prefix):**
+
+- `<type>/<description>`, e.g. `feature/add-oauth-support`
+- `<type>/<issue-number>-<description>` (common when linking an Issue), e.g. `fix/123-memory-leak`
+- `<type>/<module>/<description>` (optional, for scoped work); the **description** segment may include an issue number, e.g. `feature/agent-web/123-add-login`, `fix/bkn-backend/456-query-timeout`
+
+**Do not** use three or more segments after the type, e.g. `feature/foo/bar/baz` will fail CI.
+
+**Examples (module + Issue)**:
+
+| Branch name | Notes |
+| --- | --- |
+| `feature/studio/789-export-pipeline` | Feature scoped to `studio`, Issue `#789` |
+| `fix/ontology-query/404-id-not-exist` | Fix scoped to `ontology-query`, Issue `#404` |
+| `docs/rules/120-contributing-branch` | Docs under `rules/`, Issue `#120` |
 
 | Branch Type | Format | Description | Example |
 | --- | --- | --- | --- |
@@ -160,11 +177,11 @@ Format: `<type>/<description>` or `<type>/<issue-number>-<description>` (when li
 | Build | `build/*` | Build system or dependencies | `build/update-go-module` |
 | Style | `style/*` | Code style / formatting | `style/fix-linter-warnings` |
 | Revert | `revert/*` | Reverting previous changes | `revert/rollback-auth-change` |
-| Release | `release/x.x.x` | Release preparation | `release/1.2.0` |
+| Release | `release/x.y.z` (optional prerelease suffix) | Release preparation | `release/1.2.0`, `release/1.2.0-rc.1` |
 
 Rules:
-- If the branch is linked to an Issue, prepend the issue number: `<type>/<N>-<description>` (e.g. `fix/123-memory-leak`)
-- `<description>` must be lowercase, using hyphens (`-`), dots (`.`), or underscores (`_`) as separators
+- If the branch is linked to an Issue, a common pattern is `<type>/<N>-<description>` (e.g. `fix/123-memory-leak`); you can also put the issue number in a two-segment path (e.g. `feature/agent-web/123-add-login`)
+- Each segment (between `/`) must start with a lowercase letter or digit; the rest may use hyphens (`-`), dots (`.`), or underscores (`_`), matching CI
 - Branch names must start with a valid type prefix followed by `/`
 - Bot branches (`dependabot/*`, `renovate/*`) are automatically exempted
 
