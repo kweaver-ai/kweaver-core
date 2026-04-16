@@ -76,7 +76,7 @@ powershell -c "irm astral.sh/uv/install.sh | iex"
 # 1. 复制配置文件
 cp agent-executor.yaml.example agent-executor.yaml
 
-# 2. 自动同步环境并安装所有依赖（包括特殊依赖）
+# 2. 自动同步环境并安装所有依赖
 make uv-sync
 
 # 4. 根据需要修改配置
@@ -106,7 +106,7 @@ powershell -c "irm astral.sh/uv/install.sh | iex"
 # 1. 复制配置文件
 cp agent-executor.yaml.example agent-executor.yaml
 
-# 2. 自动同步环境并安装所有依赖（包括特殊依赖）
+# 2. 自动同步环境并安装所有依赖
 make uv-sync
 
 # 4. 根据需要修改配置
@@ -126,33 +126,6 @@ cd dolphin-language
 git checkout MISSION
 # 安装 DolphinSDK
 uv pip install .
-```
-
-### 特殊依赖安装
-
-#### proton-mq-python 依赖安装
-安装proton-mq-python需要将项目中的mq-sdk-lib 下的文件放在对应架构的开发环境的/usr/lib 目录下。
-
-```bash
-git clone https://devops.aishu.cn/AISHUDevOps/ONE-Architecture/_git/proton-mq-python
-cd /proton-mq-python
-uv pip install .
-```
-
-#### telemetrysdk-python 依赖安装
-**注意：** 这个依赖需要手动安装，请使用以下命令：
-
-```bash
-git clone https://devops.aishu.cn/AISHUDevOps/ONE-Architecture/_git/TelemetrySDK-Python
-cd /TelemetrySDK-Python
-uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir -r pytest_requirements.txt
-uv pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir -r requirements.txt
-uv pip install .
-```
-
-或者使用Makefile命令：
-```bash
-make install-TelemetrySDK-Python
 ```
 
 ## 开启 DEBUG 模式

@@ -6,7 +6,7 @@ import os
 
 from app.utils.observability.observability_setting import TraceSetting, ServerInfo
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import set_tracer_provider
 from opentelemetry.sdk.resources import Resource
 from app.common.stand_log import StandLogger
@@ -23,54 +23,29 @@ def init_trace_provider(server_info: ServerInfo, setting: TraceSetting) -> None:
         StandLogger.info_log("[OTel] init_trace_provider called")
         StandLogger.info_log(f"[OTel]   server_name={server_info.server_name}")
         StandLogger.info_log(f"[OTel]   server_version={server_info.server_version}")
-        StandLogger.info_log(f"[OTel]   trace_provider={setting.trace_provider}")
         StandLogger.info_log(f"[OTel]   otlp_endpoint={setting.otlp_endpoint}")
 
-        # 创建 trace exporter
-        trace_exporter = None
-
-        if setting.trace_provider == "console":
-            trace_exporter = ConsoleSpanExporter()
-            StandLogger.info_log("[OTel] Created ConsoleSpanExporter")
-
-        elif setting.trace_provider == "otlp":
-            # 使用标准 OTLP HTTP exporter（参考 agent-executor-tmp/otel_test_setup.py）
-            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-                OTLPSpanExporter,
-            )
-
-            otlp_endpoint = setting.otlp_endpoint
-            if not otlp_endpoint:
-                StandLogger.info_log(
-                    "[OTel] ❌ OTLP endpoint is empty, trace will not be exported"
-                )
-                return
-
-            StandLogger.info_log(f"[OTel] Raw OTLP endpoint: {otlp_endpoint}")
-
-            # 构造完整 URL
-            if not otlp_endpoint.startswith("http://") and not otlp_endpoint.startswith(
-                "https://"
-            ):
-                otlp_endpoint = f"http://{otlp_endpoint}"
-            if not otlp_endpoint.endswith("/v1/traces"):
-                otlp_endpoint = f"{otlp_endpoint}/v1/traces"
-
-            StandLogger.info_log(f"[OTel] Final OTLP endpoint: {otlp_endpoint}")
-            trace_exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
-            StandLogger.info_log("[OTel] ✅ OTLPSpanExporter created successfully")
-
-        else:
+        otlp_endpoint = setting.otlp_endpoint
+        if not otlp_endpoint:
             StandLogger.info_log(
-                f"[OTel] ❌ Unsupported trace provider: {setting.trace_provider}"
-            )
-
-        # 如果没有配置任何 exporter，直接返回
-        if trace_exporter is None:
-            StandLogger.info_log(
-                f"[OTel] ❌ No trace exporter configured for provider: {setting.trace_provider}"
+                "[OTel] ❌ OTLP endpoint is empty, trace will not be exported"
             )
             return
+
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+            OTLPSpanExporter,
+        )
+
+        if not otlp_endpoint.startswith("http://") and not otlp_endpoint.startswith(
+            "https://"
+        ):
+            otlp_endpoint = f"http://{otlp_endpoint}"
+        if not otlp_endpoint.endswith("/v1/traces"):
+            otlp_endpoint = f"{otlp_endpoint}/v1/traces"
+
+        StandLogger.info_log(f"[OTel] Final OTLP endpoint: {otlp_endpoint}")
+        trace_exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
+        StandLogger.info_log("[OTel] ✅ OTLPSpanExporter created successfully")
 
         StandLogger.info_log("[OTel] Creating BatchSpanProcessor...")
         trace_processor = BatchSpanProcessor(
@@ -123,7 +98,7 @@ def init_trace_provider(server_info: ServerInfo, setting: TraceSetting) -> None:
         set_tracer_provider(trace_provider)
         StandLogger.info_log("[OTel] ✅ Trace provider initialized successfully!")
         StandLogger.info_log(
-            f"[OTel] Summary: service={server_info.server_name}, version={server_info.server_version}, endpoint={setting.otlp_endpoint}, provider={setting.trace_provider}"
+            f"[OTel] Summary: service={server_info.server_name}, version={server_info.server_version}, endpoint={setting.otlp_endpoint}"
         )
 
     except Exception as e:

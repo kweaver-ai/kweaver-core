@@ -240,15 +240,23 @@ class AgentCoreV2:
                 context_variables, get_user_account_type(headers) or ""
             )
 
-            if Config.llm_message_logging and Config.llm_message_logging.enabled:
-                flags.set_flag(flags.LLM_MESSAGE_LOGGING, True)
-                flags.set_param(
-                    flags.LLM_MESSAGE_LOG_DIR,
-                    Config.llm_message_logging.log_dir,
+            llm_message_flag = getattr(flags, "LLM_MESSAGE_LOGGING", None)
+            llm_message_log_dir_flag = getattr(flags, "LLM_MESSAGE_LOG_DIR", None)
+
+            if llm_message_flag is not None and llm_message_log_dir_flag is not None:
+                if Config.llm_message_logging and Config.llm_message_logging.enabled:
+                    flags.set_flag(llm_message_flag, True)
+                    flags.set_param(
+                        llm_message_log_dir_flag,
+                        Config.llm_message_logging.log_dir,
+                    )
+                else:
+                    flags.set_flag(llm_message_flag, False)
+                    flags.set_param(llm_message_log_dir_flag, "")
+            elif Config.llm_message_logging and Config.llm_message_logging.enabled:
+                o11y_logger().warn(
+                    "[agent_core_v2] Dolphin flags do not expose llm message logging; skipping flag configuration"
                 )
-            else:
-                flags.set_flag(flags.LLM_MESSAGE_LOGGING, False)
-                flags.set_param(flags.LLM_MESSAGE_LOG_DIR, "")
 
             # 获取输出变量
             output_vars = agent_config.output_vars or []

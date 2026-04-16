@@ -6,15 +6,10 @@ from opentelemetry.trace import Status, StatusCode
 from contextlib import contextmanager, asynccontextmanager
 from typing import AsyncGenerator, Generator
 
-from app.utils.observability.sdk_available import TELEMETRY_SDK_AVAILABLE, sdk_tracer
-
 
 class TraceContext:
     def __init__(self) -> None:
-        if TELEMETRY_SDK_AVAILABLE and sdk_tracer is not None:
-            self.tracer: Tracer = sdk_tracer
-        else:
-            self.tracer: Tracer = trace.get_tracer(__name__)
+        self.tracer: Tracer = trace.get_tracer(__name__)
 
     @contextmanager
     def start_span(

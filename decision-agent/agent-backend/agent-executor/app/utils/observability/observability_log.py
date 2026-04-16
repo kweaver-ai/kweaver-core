@@ -1,9 +1,6 @@
 # -*- coding:utf-8 -*-
 
-"""
-Python 实现的可观测性日志模块
-提供带上下文追踪的日志记录功能，支持多种日志导出方式
-"""
+"""Python 实现的可观测性日志模块。"""
 
 import inspect
 import os
@@ -13,12 +10,6 @@ from opentelemetry import context
 from opentelemetry import trace as otel_trace
 from opentelemetry.trace import format_span_id, format_trace_id
 
-from app.utils.observability.sdk_available import (
-    TELEMETRY_SDK_AVAILABLE,
-    SamplerLogger,
-    log_resource,
-    set_service_info,
-)
 from app.utils.observability.observability_setting import LogSetting, ServerInfo
 
 
@@ -35,11 +26,7 @@ _LEVEL_PRIORITY = {
 
 
 class NullLogger:
-    """空操作日志器，当 TelemetrySDK 不可用时使用
-
-    实现与 SamplerLogger 相同的接口，但所有方法都是空操作（no-op）。
-    这样可以避免在 SDK 不可用时调用 o11y_logger().info() 等方法报错。
-    """
+    """空操作日志器。"""
 
     def info(
         self,
@@ -250,11 +237,7 @@ def _build_standard_logger(server_info: ServerInfo, setting: LogSetting):
     from opentelemetry._logs import set_logger_provider
     from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
     from opentelemetry.sdk._logs import LoggerProvider
-    from opentelemetry.sdk._logs.export import (
-        BatchLogRecordProcessor,
-        ConsoleLogExporter,
-        SimpleLogRecordProcessor,
-    )
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
     from opentelemetry.sdk.resources import Resource
 
     from app.common.config import Config
@@ -272,14 +255,10 @@ def _build_standard_logger(server_info: ServerInfo, setting: LogSetting):
         resource_attributes["pod.name"] = pod_name
 
     provider = LoggerProvider(resource=Resource.create(resource_attributes))
-
-    if setting.log_exporter == "console":
-        processor = SimpleLogRecordProcessor(ConsoleLogExporter())
-    else:
-        endpoint = _normalize_otlp_http_endpoint(Config.o11y.trace_endpoint, "/v1/logs")
-        if not endpoint:
-            return NullLogger()
-        processor = BatchLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
+    endpoint = _normalize_otlp_http_endpoint(Config.o11y.trace_endpoint, "/v1/logs")
+    if not endpoint:
+        return NullLogger()
+    processor = BatchLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
 
     provider.add_log_record_processor(processor)
     set_logger_provider(provider)
@@ -290,14 +269,7 @@ def _build_standard_logger(server_info: ServerInfo, setting: LogSetting):
 
 
 # 定义 全局 Telemetry Logger
-logger = None
-
-if TELEMETRY_SDK_AVAILABLE:
-    logger = SamplerLogger(log_resource())
-    # 默认级别为off，不打印日志
-    logger.set_level("off")
-else:
-    logger = NullLogger()
+logger = NullLogger()
 
 
 def get_caller_info() -> str:
@@ -395,33 +367,10 @@ def init_log_provider(server_info: ServerInfo, setting: LogSetting) -> None:
     global logger
 
     if not setting.log_enabled:
+        logger = NullLogger()
         return
 
-    if not TELEMETRY_SDK_AVAILABLE:
-        logger = _build_standard_logger(server_info, setting)
-        return
-
-    set_service_info(
-        server_info.server_name,
-        server_info.server_version,
-        os.getenv("POD_NAME", "unknown"),
-    )
-
-    logger = SamplerLogger(log_resource())
-    logger.set_level(setting.log_level)
-    if setting.log_exporter == "console":
-        logger.set_exporters()
-    elif setting.log_exporter == "http":
-        from exporter.ar_log.log_exporter import ARLogExporter
-        from exporter.public.client import HTTPClient
-        from exporter.public.public import WithAnyRobotURL
-
-        http_exporter = ARLogExporter(
-            HTTPClient(
-                WithAnyRobotURL(setting.http_log_feed_ingester_url),
-            )
-        )
-        logger.set_exporters(http_exporter)
+    logger = _build_standard_logger(server_info, setting)
 
 
 def get_logger():

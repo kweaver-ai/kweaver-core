@@ -1,7 +1,7 @@
 """测试 - 中间件整合"""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 
 @pytest.mark.asyncio
@@ -66,12 +66,11 @@ class TestStreamingRateLimiter:
 
         assert limiter.rate_limit == DEFAULT_RATE_LIMIT
 
-    def test_rate_limits_first_10_chunks(self):
+    async def test_rate_limits_first_10_chunks(self):
         """测试前10个块不限制"""
         from app.router.middleware_pkg.streaming_rate_limiter import (
             RateLimitedStreamingIterator,
         )
-        import asyncio
 
         async def mock_iterator():
             for i in range(15):
@@ -80,12 +79,8 @@ class TestStreamingRateLimiter:
         rate_limited = RateLimitedStreamingIterator(mock_iterator())
 
         chunks = []
-        # Simulate iteration
-        asyncio.run(
-            asyncio.get_event_loop().run_until_complete(
-                asyncio.gather(*[rate_limited.__anext__() for _ in range(15)])
-            )
-        )
+        async for item in rate_limited:
+            chunks.append(item)
 
         assert len(chunks) == 15
 
@@ -94,8 +89,8 @@ class TestStreamingRateLimiter:
 class TestO11yTrace:
     """测试链路追踪中间件"""
 
-    async def test_sdk_unavailable(self):
-        """测试SDK不可用时通过"""
+    async def test_trace_disabled(self):
+        """测试禁用追踪时通过"""
         from app.router.middleware_pkg.o11y_trace import o11y_trace
 
         request = MagicMock()
@@ -108,9 +103,9 @@ class TestO11yTrace:
         response = Mock(status_code=200)
         call_next = AsyncMock(return_value=response)
 
-        with patch(
-            "app.router.middleware_pkg.o11y_trace.TELEMETRY_SDK_AVAILABLE", False
-        ):
+        with patch("app.common.config.Config") as mock_config:
+            mock_config.o11y.trace_enabled = False
+            mock_config.app.host_prefix = "/api/agent-executor/v1"
             result = await o11y_trace(request, call_next)
 
         call_next.assert_called_once_with(request)

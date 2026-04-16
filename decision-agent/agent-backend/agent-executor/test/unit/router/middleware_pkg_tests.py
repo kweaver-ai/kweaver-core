@@ -2,7 +2,9 @@
 """单元测试 - 中间件模块"""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+from fastapi import Request
 
 
 @pytest.mark.asyncio
@@ -136,8 +138,8 @@ class TestStreamingResponseHandler:
 class TestO11yTrace:
     """测试 o11y_trace 中间件"""
 
-    async def test_sdk_unavailable_passes_through(self):
-        """测试SDK不可用时直接通过"""
+    async def test_trace_disabled_passes_through(self):
+        """测试禁用追踪时直接通过"""
         from app.router.middleware_pkg.o11y_trace import o11y_trace
 
         request = MagicMock()
@@ -149,9 +151,9 @@ class TestO11yTrace:
 
         call_next = AsyncMock(return_value=Mock(status_code=200))
 
-        with patch(
-            "app.router.middleware_pkg.o11y_trace.TELEMETRY_SDK_AVAILABLE", False
-        ):
+        with patch("app.common.config.Config") as mock_config:
+            mock_config.o11y.trace_enabled = False
+            mock_config.app.host_prefix = "/api/agent-executor/v1"
             response = await o11y_trace(request, call_next)
 
         call_next.assert_called_once_with(request)
@@ -177,15 +179,14 @@ class TestO11yTrace:
 
         mock_tracer.start_as_current_span = Mock(return_value=mock_span)
 
-        with patch(
-            "app.router.middleware_pkg.o11y_trace.TELEMETRY_SDK_AVAILABLE", True
-        ):
-            with patch("app.router.middleware_pkg.o11y_trace.Config") as MockConfig:
-                with patch.object(MockConfig.o11y, "trace_enabled", True):
-                    with patch(
-                        "app.router.middleware_pkg.o11y_trace.tracer", mock_tracer
-                    ):
-                        result = await o11y_trace(request, call_next)
+        with patch("app.common.config.Config") as mock_config:
+            mock_config.o11y.trace_enabled = True
+            mock_config.app.host_prefix = "/api/agent-executor/v1"
+            with patch(
+                "app.router.middleware_pkg.o11y_trace.trace.get_tracer",
+                return_value=mock_tracer,
+            ):
+                result = await o11y_trace(request, call_next)
 
         mock_tracer.start_as_current_span.assert_called_once()
 

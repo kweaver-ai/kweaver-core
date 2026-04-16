@@ -5,8 +5,6 @@ import stat
 
 from app.common.config import Config
 from app.utils.common import GetCallerInfo, IsInPod
-
-# from tlogging import SamplerLogger
 import os
 
 from logging.handlers import TimedRotatingFileHandler

@@ -3,21 +3,14 @@ from opentelemetry.trace import SpanKind
 from functools import wraps
 from typing import Optional, Callable, AsyncGenerator, Any, Awaitable
 
+from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
-from app.utils.observability.sdk_available import TELEMETRY_SDK_AVAILABLE
 from app.utils.common import func_judgment
 
 
 def _get_span_tracer():
-    """优先复用旧 TelemetrySDK tracer，不可用时回退到标准 OTel tracer。"""
-    if TELEMETRY_SDK_AVAILABLE:
-        from exporter.ar_trace.trace_exporter import tracer
-
-        return tracer
-
-    from opentelemetry import trace
-
+    """返回标准 OTel tracer。"""
     return trace.get_tracer("agent-executor.internal")
 
 

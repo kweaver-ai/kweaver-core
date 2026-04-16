@@ -23,17 +23,13 @@ def init_observability(server_info: ServerInfo, setting: ObservabilitySetting):
 
     if setting.trace.trace_enabled:
         StandLogger.info_log(
-            f"[Observability] Trace enabled, initializing trace provider: provider={setting.trace.trace_provider}, endpoint={setting.trace.otlp_endpoint}"
+            f"[Observability] Trace enabled, initializing trace provider: endpoint={setting.trace.otlp_endpoint}"
         )
         init_trace_provider(server_info, setting.trace)
     else:
         StandLogger.info_log(
             f"[Observability] Trace is disabled (trace_enabled={setting.trace.trace_enabled})"
         )
-
-    # if setting.metric.metric_enabled:
-    # pass
-    # init_meter_provider(server_info, setting.metric)
 
 
 def shutdown_observability() -> None:
