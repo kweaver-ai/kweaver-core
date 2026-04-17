@@ -272,8 +272,22 @@ func (lvs *logicViewService) executeCompositeViewByDSL(ctx context.Context, view
 			break
 		}
 
+		// dsl 转为 map
+		dslBytes, err := sonic.Marshal(dsl)
+		if err != nil {
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, rest.PublicError_InternalServerError).
+				WithErrorDetails(fmt.Sprintf("failed to marshal dsl: %v", err))
+		}
+
+		var dslMap map[string]any
+		err = sonic.Unmarshal(dslBytes, &dslMap)
+		if err != nil {
+			return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, rest.PublicError_InternalServerError).
+				WithErrorDetails(fmt.Sprintf("failed to unmarshal dsl: %v", err))
+		}
+
 		req := interfaces.SQLQueryRequest{
-			Query:        dsl,
+			Query:        dslMap,
 			ResourceType: resourceType,
 			QueryType:    params.QueryType,
 			StreamSize:   params.Limit,
