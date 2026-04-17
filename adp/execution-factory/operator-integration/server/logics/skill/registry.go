@@ -55,6 +55,8 @@ var (
 	registryInst interfaces.SkillRegistry
 )
 
+const maxSkillReleaseHistoryVersions = 10
+
 // NewSkillRegistry 创建技能注册器
 func NewSkillRegistry() interfaces.SkillRegistry {
 	registryOnce.Do(func() {
@@ -210,11 +212,11 @@ func (r *skillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces
 		if err != nil {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.Logger.WithContext(ctx).Errorf("rollback skill metadata update failed, skill_id=%s, err=%v", req.SkillID, rollbackErr)
-			} else {
-				commitErr := tx.Commit()
-				if commitErr != nil {
-					r.Logger.WithContext(ctx).Errorf("commit skill metadata update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
-				}
+			}
+		} else {
+			commitErr := tx.Commit()
+			if commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill metadata update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
 			}
 		}
 	}()
@@ -299,11 +301,11 @@ func (r *skillRegistry) UpdateSkillPackage(ctx context.Context, req *interfaces.
 		if err != nil {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.Logger.WithContext(ctx).Errorf("rollback skill package update failed, skill_id=%s, err=%v", req.SkillID, rollbackErr)
-			} else {
-				commitErr := tx.Commit()
-				if commitErr != nil {
-					r.Logger.WithContext(ctx).Errorf("commit skill package update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
-				}
+			}
+		} else {
+			commitErr := tx.Commit()
+			if commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill package update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
 			}
 		}
 	}()
@@ -408,6 +410,11 @@ func (r *skillRegistry) RepublishSkillHistory(ctx context.Context, req *interfac
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.Logger.WithContext(ctx).Errorf("rollback skill history republish failed, skill_id=%s, version=%s, err=%v", req.SkillID, req.Version, rollbackErr)
 			}
+		} else {
+			commitErr := tx.Commit()
+			if commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill history republish failed, skill_id=%s, version=%s, err=%v", req.SkillID, req.Version, commitErr)
+			}
 		}
 	}()
 
@@ -425,10 +432,6 @@ func (r *skillRegistry) RepublishSkillHistory(ctx context.Context, req *interfac
 	if err = r.skillRepo.UpdateSkill(ctx, tx, skill); err != nil {
 		return nil, err
 	}
-	if err = tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	return &interfaces.RepublishSkillHistoryResp{
 		SkillID: skill.SkillID,
 		Version: skill.Version,
@@ -489,6 +492,11 @@ func (r *skillRegistry) PublishSkillHistory(ctx context.Context, req *interfaces
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.Logger.WithContext(ctx).Errorf("rollback skill history publish failed, skill_id=%s, version=%s, err=%v", req.SkillID, req.Version, rollbackErr)
 			}
+		} else {
+			commitErr := tx.Commit()
+			if commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill history publish failed, skill_id=%s, version=%s, err=%v", req.SkillID, req.Version, commitErr)
+			}
 		}
 	}()
 
@@ -507,9 +515,6 @@ func (r *skillRegistry) PublishSkillHistory(ctx context.Context, req *interfaces
 		return nil, err
 	}
 	if err = r.publishSkillSnapshot(ctx, tx, skill, req.UserID); err != nil {
-		return nil, err
-	}
-	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	if r.indexSync != nil {
@@ -564,9 +569,15 @@ func (r *skillRegistry) DeleteSkill(ctx context.Context, req *interfaces.DeleteS
 	}
 	defer func() {
 		if err != nil {
-			_ = tx.Rollback()
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				r.Logger.WithContext(ctx).Errorf("rollback skill delete failed, skill_id=%s, err=%v", req.SkillID, rollbackErr)
+				return
+			}
 		} else {
-			_ = tx.Commit()
+			if commitErr := tx.Commit(); commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill delete failed, skill_id=%s, err=%v", req.SkillID, commitErr)
+				return
+			}
 		}
 	}()
 
@@ -662,11 +673,11 @@ func (r *skillRegistry) UpdateSkillStatus(ctx context.Context, req *interfaces.U
 		if err != nil {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				r.Logger.WithContext(ctx).Errorf("rollback skill status update failed, skill_id=%s, err=%v", req.SkillID, rollbackErr)
-			} else {
-				commitErr := tx.Commit()
-				if commitErr != nil {
-					r.Logger.WithContext(ctx).Errorf("commit skill status update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
-				}
+			}
+		} else {
+			if commitErr := tx.Commit(); commitErr != nil {
+				r.Logger.WithContext(ctx).Errorf("commit skill status update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
+				return
 			}
 		}
 	}()
@@ -1299,14 +1310,30 @@ func (r *skillRegistry) publishSkillSnapshot(ctx context.Context, tx *sql.Tx, sk
 			return err
 		}
 	}
+	// 添加历史记录
 	existingHistory, err := r.releaseHistoryRepo.SelectBySkillIDAndVersion(ctx, tx, skill.SkillID, skill.Version)
 	if err != nil {
 		return err
 	}
-	if existingHistory == nil {
-		if err = r.releaseHistoryRepo.Insert(ctx, tx, history); err != nil {
+	histories, err := r.releaseHistoryRepo.SelectBySkillID(ctx, tx, skill.SkillID)
+	if err != nil {
+		return err
+	}
+	if existingHistory != nil {
+		if err = r.releaseHistoryRepo.DeleteByID(ctx, tx, existingHistory.ID); err != nil {
 			return err
 		}
+	} else if len(histories) >= maxSkillReleaseHistoryVersions {
+		recordsToDelete := len(histories) - maxSkillReleaseHistoryVersions + 1
+		startIndex := len(histories) - recordsToDelete
+		for i := startIndex; i < len(histories); i++ {
+			if err = r.releaseHistoryRepo.DeleteByID(ctx, tx, histories[i].ID); err != nil {
+				return err
+			}
+		}
+	}
+	if err = r.releaseHistoryRepo.Insert(ctx, tx, history); err != nil {
+		return err
 	}
 	return nil
 }
