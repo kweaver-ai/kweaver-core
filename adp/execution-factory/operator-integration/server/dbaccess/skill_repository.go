@@ -194,6 +194,30 @@ func (s *skillRepositoryDB) SelectSkillListPage(ctx context.Context, tx *sql.Tx,
 	return skills, err
 }
 
+func (s *skillRepositoryDB) SelectSkillBuildPage(ctx context.Context, tx *sql.Tx, cursorUpdateTime int64, cursorSkillID string, limit int) (skills []*model.SkillRepositoryDB, err error) {
+	orm := s.orm
+	if tx != nil {
+		orm = s.orm.WithTx(tx)
+	}
+	query := orm.Select().From(tbSkillRepository)
+	if cursorUpdateTime > 0 || cursorSkillID != "" {
+		query = query.Or(func(w *ormhelper.WhereBuilder) {
+			w.Gt("f_update_time", cursorUpdateTime)
+			w.And(func(sub *ormhelper.WhereBuilder) {
+				sub.Eq("f_update_time", cursorUpdateTime)
+				sub.Gt("f_skill_id", cursorSkillID)
+			})
+		})
+	}
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	query = query.OrderByAsc("f_update_time").OrderByAsc("f_skill_id")
+	skills = []*model.SkillRepositoryDB{}
+	err = query.Get(ctx, &skills)
+	return skills, err
+}
+
 func (s *skillRepositoryDB) CountByWhereClause(ctx context.Context, tx *sql.Tx, filter map[string]interface{}) (count int64, err error) {
 	orm := s.orm
 	if tx != nil {

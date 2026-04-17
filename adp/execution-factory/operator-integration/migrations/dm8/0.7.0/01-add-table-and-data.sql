@@ -45,3 +45,29 @@ CREATE TABLE IF NOT EXISTS "t_skill_release_history" (
 CREATE UNIQUE INDEX IF NOT EXISTS t_skill_release_history_uk_skill_version ON t_skill_release_history(f_skill_id, f_version);
 
 CREATE INDEX IF NOT EXISTS t_skill_release_history_idx_skill_id_create_time ON t_skill_release_history(f_skill_id, f_create_time);
+
+
+CREATE TABLE IF NOT EXISTS "t_skill_index_build_task" (
+    "f_id" BIGINT IDENTITY(1, 1) NOT NULL,
+    "f_task_id" VARCHAR(40 CHAR) NOT NULL,
+    "f_status" VARCHAR(20 CHAR) NOT NULL,
+    "f_execute_type" VARCHAR(20 CHAR) NOT NULL,
+    "f_total_count" BIGINT NOT NULL DEFAULT 0,
+    "f_success_count" BIGINT NOT NULL DEFAULT 0,
+    "f_delete_count" BIGINT NOT NULL DEFAULT 0,
+    "f_failed_count" BIGINT NOT NULL DEFAULT 0,
+    "f_retry_count" BIGINT NOT NULL DEFAULT 0,
+    "f_max_retry" BIGINT NOT NULL DEFAULT 0,
+    "f_cursor_update_time" BIGINT NOT NULL DEFAULT 0,
+    "f_cursor_skill_id" VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+    "f_error_msg" text DEFAULT NULL,
+    "f_create_user" VARCHAR(50 CHAR) NOT NULL,
+    "f_create_time" BIGINT NOT NULL,
+    "f_update_time" BIGINT NOT NULL,
+    "f_last_finished_time" BIGINT NOT NULL DEFAULT 0,
+    CLUSTER PRIMARY KEY ("f_id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS t_skill_index_build_task_uk_task_id ON t_skill_index_build_task(f_task_id);
+CREATE INDEX IF NOT EXISTS t_skill_index_build_task_idx_status_create_time ON t_skill_index_build_task(f_status, f_create_time);
+CREATE INDEX IF NOT EXISTS t_skill_index_build_task_idx_exec_status_finish_time ON t_skill_index_build_task(f_execute_type, f_status, f_last_finished_time);

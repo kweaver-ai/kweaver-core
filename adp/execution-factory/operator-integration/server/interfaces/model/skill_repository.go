@@ -48,6 +48,7 @@ type ISkillRepository interface {
 	SelectSkillByID(ctx context.Context, tx *sql.Tx, skillID string) (skill *SkillRepositoryDB, err error)
 	SelectSkillListPage(ctx context.Context, tx *sql.Tx, filter map[string]interface{},
 		sort *ormhelper.SortParams, cursor *ormhelper.CursorParams) (skills []*SkillRepositoryDB, err error)
+	SelectSkillBuildPage(ctx context.Context, tx *sql.Tx, cursorUpdateTime int64, cursorSkillID string, limit int) (skills []*SkillRepositoryDB, err error)
 	CountByWhereClause(ctx context.Context, tx *sql.Tx, filter map[string]interface{}) (count int64, err error)
 	DeleteSkillByID(ctx context.Context, tx *sql.Tx, skillID string) error
 	SelectSkillByName(ctx context.Context, tx *sql.Tx, name string, status []string) (bool, *SkillRepositoryDB, error)

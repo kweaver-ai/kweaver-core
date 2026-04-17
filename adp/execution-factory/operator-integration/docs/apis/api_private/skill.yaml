@@ -15,6 +15,242 @@ servers:
         description: "服务端口"
 
 paths:
+  /skills/index/build:
+    get:
+      summary: "查询 Skill 索引构建任务列表"
+      description: "分页查询 Skill 索引构建任务列表，支持按状态、执行类型和创建人过滤。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/All"
+        - $ref: "#/components/parameters/SortBy"
+        - $ref: "#/components/parameters/SortOrder"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "pending"
+              - "running"
+              - "completed"
+              - "failed"
+        - name: execute_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "full"
+              - "incremental"
+        - name: create_user
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuerySkillIndexBuildTaskListResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: "创建 Skill 索引构建任务"
+      description: "创建 Skill 索引全量或增量构建任务，任务创建后由 Asynq worker 异步执行。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSkillIndexBuildTaskReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "已有运行中任务"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}:
+    get:
+      summary: "查询 Skill 索引构建任务"
+      description: "根据任务 ID 查询 Skill 索引构建任务状态和统计信息。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+        - name: task_id
+          in: path
+          description: "任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}/cancel:
+    post:
+      summary: "取消 Skill 索引构建任务"
+      description: "取消指定的 Skill 索引构建任务。对于 active 任务发送取消信号；对于 pending/scheduled/retry/archived 任务直接从队列移除。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+        - name: task_id
+          in: path
+          description: "任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelSkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "任务不可取消"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}/retry:
+    post:
+      summary: "重试 Skill 索引构建任务"
+      description: "仅允许对 failed 任务发起重试。重试会创建一个新的构建任务，不复用原 task_id。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/AccountID"
+        - $ref: "#/components/parameters/AccountType"
+        - name: task_id
+          in: path
+          description: "原任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetrySkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "任务不可重试"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /skills/market:
     get:
       summary: "查询 Skill 市场列表"
@@ -386,6 +622,248 @@ components:
         default: "desc"
 
   schemas:
+    CreateSkillIndexBuildTaskReq:
+      type: object
+      required:
+        - execute_type
+      properties:
+        execute_type:
+          type: string
+          enum:
+            - "full"
+            - "incremental"
+
+    CreateSkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+
+    SkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+            queue_state:
+              type: string
+              enum:
+                - "pending"
+                - "active"
+                - "scheduled"
+                - "retry"
+                - "archived"
+                - "completed"
+                - "aggregating"
+            total_count:
+              type: integer
+              format: int64
+            success_count:
+              type: integer
+              format: int64
+            delete_count:
+              type: integer
+              format: int64
+            failed_count:
+              type: integer
+              format: int64
+            retry_count:
+              type: integer
+              format: int64
+            max_retry:
+              type: integer
+              format: int64
+            cursor_update_time:
+              type: integer
+              format: int64
+            cursor_skill_id:
+              type: string
+            error_msg:
+              type: string
+            create_user:
+              type: string
+            create_time:
+              type: integer
+              format: int64
+            update_time:
+              type: integer
+              format: int64
+            last_finished_time:
+              type: integer
+              format: int64
+
+    CancelSkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            action:
+              type: string
+              enum:
+                - "cancel_processing"
+                - "delete_queue_task"
+            queue_state:
+              type: string
+              enum:
+                - "pending"
+                - "active"
+                - "scheduled"
+                - "retry"
+                - "archived"
+                - "completed"
+                - "aggregating"
+
+    RetrySkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            source_task_id:
+              type: string
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+
+    QuerySkillIndexBuildTaskListResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            page_size:
+              type: integer
+            total_pages:
+              type: integer
+            has_next:
+              type: boolean
+            has_prev:
+              type: boolean
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - "pending"
+                      - "running"
+                      - "completed"
+                      - "failed"
+                  execute_type:
+                    type: string
+                    enum:
+                      - "full"
+                      - "incremental"
+                  queue_state:
+                    type: string
+                  total_count:
+                    type: integer
+                    format: int64
+                  success_count:
+                    type: integer
+                    format: int64
+                  delete_count:
+                    type: integer
+                    format: int64
+                  failed_count:
+                    type: integer
+                    format: int64
+                  retry_count:
+                    type: integer
+                    format: int64
+                  max_retry:
+                    type: integer
+                    format: int64
+                  cursor_update_time:
+                    type: integer
+                    format: int64
+                  cursor_skill_id:
+                    type: string
+                  error_msg:
+                    type: string
+                  create_user:
+                    type: string
+                  create_time:
+                    type: integer
+                    format: int64
+                  update_time:
+                    type: integer
+                    format: int64
+                  last_finished_time:
+                    type: integer
+                    format: int64
+
     QuerySkillMarketListResp:
       type: object
       properties:
