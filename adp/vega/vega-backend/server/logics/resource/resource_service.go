@@ -79,20 +79,6 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 		accountInfo = v.(interfaces.AccountInfo)
 	}
 
-	var logicType string
-	switch req.Category {
-	case interfaces.ResourceCategoryLogicView:
-		logicType, err = rs.validateLogicDefinition(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		viewFields, err := rs.parseLogicDefinition(ctx, req.LogicDefinition)
-		if err != nil {
-			return nil, err
-		}
-		req.SchemaDefinition = viewFields
-	}
-
 	// 检查catalog是否存在
 	exists, err := rs.cs.CheckExistByID(ctx, req.CatalogID)
 	if err != nil {
@@ -110,6 +96,22 @@ func (rs *resourceService) Create(ctx context.Context, req *interfaces.ResourceR
 	if id == "" {
 		id = xid.New().String()
 	}
+
+	var logicType string
+	switch req.Category {
+	case interfaces.ResourceCategoryLogicView:
+		logicType, err = rs.validateLogicDefinition(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		viewFields, err := rs.parseLogicDefinition(ctx, req.LogicDefinition)
+		if err != nil {
+			return nil, err
+		}
+		req.SchemaDefinition = viewFields
+		req.SourceIdentifier = fmt.Sprintf("%s.%s", req.CatalogID, id)
+	}
+
 	resource := &interfaces.Resource{
 		ID:               id,
 		CatalogID:        req.CatalogID,

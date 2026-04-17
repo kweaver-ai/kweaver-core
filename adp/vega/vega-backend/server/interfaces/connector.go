@@ -61,9 +61,9 @@ type TableForeignKeyMeta struct {
 
 // QueryResult represents query execution result.
 type QueryResult struct {
-	Columns []string         `json:"columns"`
-	Rows    []map[string]any `json:"rows"`
-	Total   int64            `json:"total"`
+	Columns     []string         `json:"columns"`
+	Rows        []map[string]any `json:"rows"`
+	Total       int64            `json:"total"`
 }
 
 // FileMeta represents file metadata.

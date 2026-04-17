@@ -39,13 +39,13 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 
 	resourceNodeCount := 0
 	outputNodeCount := 0
-	dataScopeViewMap := make(map[string]*interfaces.Resource)
+	refResourceMap := make(map[string]*interfaces.Resource)
 
 	for _, node := range view.LogicDefinition {
 		switch node.Type {
 		case interfaces.LogicDefinitionNodeType_Resource:
 			// 校验资源节点
-			err := validateResourceNode(ctx, rs, node, dataScopeViewMap)
+			err := validateResourceNode(ctx, rs, node, refResourceMap)
 			if err != nil {
 				return "", err
 			}
@@ -87,21 +87,21 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 	}
 
 	var refResourceCategory string
-	dataScopeViewCategory := make(map[string]struct{})
-	dataScopeViewDataSourceID := make(map[string]struct{})
-	for _, dsView := range dataScopeViewMap {
-		dataScopeViewDataSourceID[dsView.CatalogID] = struct{}{}
-		dataScopeViewCategory[dsView.Category] = struct{}{}
+	refResourceCategoryMap := make(map[string]struct{})
+	refResourceCatalogMap := make(map[string]struct{})
+	for _, dsView := range refResourceMap {
+		refResourceCatalogMap[dsView.CatalogID] = struct{}{}
+		refResourceCategoryMap[dsView.Category] = struct{}{}
 		refResourceCategory = dsView.Category
 	}
 
-	if len(dataScopeViewCategory) != 1 {
+	if len(refResourceCategoryMap) != 1 {
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails("The source view of the custom view must have the same category")
 	}
 
 	// 如果数据源类型是opensearch，则不能跨opensearch数据源选择
-	if refResourceCategory == interfaces.ResourceCategoryIndex && len(dataScopeViewDataSourceID) > 1 {
+	if refResourceCategory == interfaces.ResourceCategoryIndex && len(refResourceCatalogMap) > 1 {
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails("The source view of query type DSL must have the same data source when create custom view")
 	}
@@ -111,7 +111,7 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 }
 
 func validateResourceNode(ctx context.Context, dvs *resourceService, node *interfaces.LogicDefinitionNode,
-	dataScopeView map[string]*interfaces.Resource) error {
+	refResourceMap map[string]*interfaces.Resource) error {
 	// 资源节点输入节点必须为空
 	if len(node.Inputs) != 0 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -143,10 +143,9 @@ func validateResourceNode(ctx context.Context, dvs *resourceService, node *inter
 	default:
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails(fmt.Sprintf("The source resource of the custom view '%s' is not supported", cfg.ResourceID))
-
 	}
 
-	dataScopeView[atomicView.ID] = atomicView
+	refResourceMap[atomicView.ID] = atomicView
 
 	// fieldsMap 是字段name和字段的映射
 	fieldsMap := make(map[string]*interfaces.Property)

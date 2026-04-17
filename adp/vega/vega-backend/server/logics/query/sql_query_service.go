@@ -226,6 +226,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 			// 直接执行SQL，不进行转换
 			result, err := s.executeSQLWithQueryType(ctx, catalog, replacedSQL, req.QueryType)
 			if err != nil {
+				span.SetStatus(codes.Error, "execute SQL failed")
 				return nil, err
 			}
 
