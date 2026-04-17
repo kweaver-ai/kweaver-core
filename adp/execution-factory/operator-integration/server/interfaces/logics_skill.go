@@ -183,20 +183,20 @@ type GetSkillReleaseHistoryReq struct {
 
 // SkillReleaseHistoryInfo Skill 发布历史摘要
 type SkillReleaseHistoryInfo struct {
-	SkillID      string      `json:"skill_id"`
-	Name         string      `json:"name"`
-	Description  string      `json:"description"`
-	Version      string      `json:"version"`
-	Status       BizStatus   `json:"status"`
-	Category     BizCategory `json:"category,omitempty"`
-	Source       string      `json:"source"`
-	ReleaseDesc  string      `json:"release_desc"`
-	ReleaseUser  string      `json:"release_user"`
-	ReleaseTime  int64       `json:"release_time"`
-	CreateUser   string      `json:"create_user"`
-	CreateTime   int64       `json:"create_time"`
-	UpdateUser   string      `json:"update_user"`
-	UpdateTime   int64       `json:"update_time"`
+	SkillID     string      `json:"skill_id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Version     string      `json:"version"`
+	Status      BizStatus   `json:"status"`
+	Category    BizCategory `json:"category,omitempty"`
+	Source      string      `json:"source"`
+	ReleaseDesc string      `json:"release_desc"`
+	ReleaseUser string      `json:"release_user"`
+	ReleaseTime int64       `json:"release_time"`
+	CreateUser  string      `json:"create_user"`
+	CreateTime  int64       `json:"create_time"`
+	UpdateUser  string      `json:"update_user"`
+	UpdateTime  int64       `json:"update_time"`
 }
 
 // UpdateSkillStatusReq 更新 Skill 状态请求
@@ -302,6 +302,107 @@ type ExecuteSkillResp struct {
 	Mocked        bool   `json:"mocked"`
 }
 
+type SkillIndexBuildExecuteType string
+
+func (e SkillIndexBuildExecuteType) String() string {
+	return string(e)
+}
+
+const (
+	SkillIndexBuildExecuteTypeFull        SkillIndexBuildExecuteType = "full"
+	SkillIndexBuildExecuteTypeIncremental SkillIndexBuildExecuteType = "incremental"
+)
+
+type SkillIndexBuildStatus string
+
+func (s SkillIndexBuildStatus) String() string {
+	return string(s)
+}
+
+const (
+	SkillIndexBuildStatusPending   SkillIndexBuildStatus = "pending"
+	SkillIndexBuildStatusRunning   SkillIndexBuildStatus = "running"
+	SkillIndexBuildStatusCompleted SkillIndexBuildStatus = "completed"
+	SkillIndexBuildStatusFailed    SkillIndexBuildStatus = "failed"
+)
+
+type CreateSkillIndexBuildTaskReq struct {
+	BusinessDomainID string                     `header:"x-business-domain" validate:"required"`
+	UserID           string                     `header:"user_id" validate:"required"`
+	ExecuteType      SkillIndexBuildExecuteType `json:"execute_type" validate:"required,oneof=full incremental"`
+}
+
+type CreateSkillIndexBuildTaskResp struct {
+	TaskID      string                `json:"task_id"`
+	Status      SkillIndexBuildStatus `json:"status"`
+	ExecuteType string                `json:"execute_type"`
+}
+
+type GetSkillIndexBuildTaskReq struct {
+	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	UserID           string `header:"user_id"`
+	TaskID           string `uri:"task_id" validate:"required"`
+}
+
+type CancelSkillIndexBuildTaskReq struct {
+	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	UserID           string `header:"user_id" validate:"required"`
+	TaskID           string `uri:"task_id" validate:"required"`
+}
+
+type CancelSkillIndexBuildTaskResp struct {
+	TaskID     string `json:"task_id"`
+	Action     string `json:"action"`
+	QueueState string `json:"queue_state,omitempty"`
+}
+
+type RetrySkillIndexBuildTaskReq struct {
+	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	UserID           string `header:"user_id" validate:"required"`
+	TaskID           string `uri:"task_id" validate:"required"`
+}
+
+type RetrySkillIndexBuildTaskResp struct {
+	SourceTaskID string                `json:"source_task_id"`
+	TaskID       string                `json:"task_id"`
+	Status       SkillIndexBuildStatus `json:"status"`
+	ExecuteType  string                `json:"execute_type"`
+}
+
+type QuerySkillIndexBuildTaskListReq struct {
+	BusinessDomainID string                `header:"x-business-domain" validate:"required"`
+	UserID           string                `header:"user_id"`
+	Status           SkillIndexBuildStatus `form:"status" validate:"omitempty,oneof=pending running completed failed"`
+	ExecuteType      string                `form:"execute_type" validate:"omitempty,oneof=full incremental"`
+	CreateUser       string                `form:"create_user"`
+	CommonPageParams `json:",inline"`
+}
+
+type QuerySkillIndexBuildTaskListResp struct {
+	CommonPageResult `json:",inline"`
+	Data             []*SkillIndexBuildTaskResp `json:"data"`
+}
+
+type SkillIndexBuildTaskResp struct {
+	TaskID           string                `json:"task_id"`
+	Status           SkillIndexBuildStatus `json:"status"`
+	ExecuteType      string                `json:"execute_type"`
+	QueueState       string                `json:"queue_state"`
+	TotalCount       int64                 `json:"total_count"`
+	SuccessCount     int64                 `json:"success_count"`
+	DeleteCount      int64                 `json:"delete_count"`
+	FailedCount      int64                 `json:"failed_count"`
+	RetryCount       int64                 `json:"retry_count"`
+	MaxRetry         int64                 `json:"max_retry"`
+	CursorUpdateTime int64                 `json:"cursor_update_time"`
+	CursorSkillID    string                `json:"cursor_skill_id"`
+	ErrorMsg         string                `json:"error_msg"`
+	CreateUser       string                `json:"create_user"`
+	CreateTime       int64                 `json:"create_time"`
+	UpdateTime       int64                 `json:"update_time"`
+	LastFinishedTime int64                 `json:"last_finished_time"`
+}
+
 // SkillRegistry Skill 管理接口
 type SkillRegistry interface {
 	RegisterSkill(ctx context.Context, req *RegisterSkillReq) (*RegisterSkillResp, error)
@@ -329,6 +430,15 @@ type SkillReader interface {
 	GetSkillContent(ctx context.Context, req *GetSkillContentReq) (*GetSkillContentResp, error)
 	ReadSkillFile(ctx context.Context, req *ReadSkillFileReq) (*ReadSkillFileResp, error)
 	GetSkillReleaseHistory(ctx context.Context, req *GetSkillReleaseHistoryReq) ([]*SkillReleaseHistoryInfo, error)
+}
+
+type SkillIndexBuildService interface {
+	CreateTask(ctx context.Context, req *CreateSkillIndexBuildTaskReq) (*CreateSkillIndexBuildTaskResp, error)
+	GetTask(ctx context.Context, req *GetSkillIndexBuildTaskReq) (*SkillIndexBuildTaskResp, error)
+	QueryTaskList(ctx context.Context, req *QuerySkillIndexBuildTaskListReq) (*QuerySkillIndexBuildTaskListResp, error)
+	CancelTask(ctx context.Context, req *CancelSkillIndexBuildTaskReq) (*CancelSkillIndexBuildTaskResp, error)
+	RetryTask(ctx context.Context, req *RetrySkillIndexBuildTaskReq) (*RetrySkillIndexBuildTaskResp, error)
+	RecoverRunningTasks(ctx context.Context) error
 }
 
 type SkillIndexSyncService interface {

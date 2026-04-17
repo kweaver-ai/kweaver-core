@@ -28,6 +28,7 @@ type Server struct {
 	outboxMessageEvent    interfaces.App
 	config                *config.Config
 	skillIndexSyncService interfaces.SkillIndexSyncService
+	skillIndexBuildWorker interfaces.App
 }
 
 // Start 开启服务
@@ -42,6 +43,13 @@ func (s *Server) Start() {
 	err = s.skillIndexSyncService.EnsureInitialized(context.Background())
 	if err != nil {
 		s.config.Logger.Errorf("init skill index sync service failed, error: %v", err)
+	}
+	if s.skillIndexBuildWorker != nil {
+		go func() {
+			if workerErr := s.skillIndexBuildWorker.Start(); workerErr != nil {
+				s.config.Logger.Errorf("start skill index build worker failed, error: %v", workerErr)
+			}
+		}()
 	}
 
 	// 注册路由 - 健康检查
@@ -77,6 +85,9 @@ func (s *Server) Stop(ctx context.Context) {
 	s.config.Logger.Info("stop agent-operator-integration server")
 	// sandbox.Close()      // 关闭并销毁沙箱会话池
 	s.outboxMessageEvent.Stop(ctx)
+	if s.skillIndexBuildWorker != nil {
+		s.skillIndexBuildWorker.Stop(ctx)
+	}
 	mcpinstance.Close() // 关闭实例池
 }
 
@@ -93,6 +104,7 @@ func main() {
 		outboxMessageEvent:    logicscommon.NewOutboxMessageEvent(),
 		MQHandler:             driveradapters.NewMQHandler(),
 		skillIndexSyncService: skill.NewSkillIndexSyncService(),
+		skillIndexBuildWorker: skill.NewSkillIndexBuildWorker(),
 	}
 	s.config.Logger.Info("start agent-operator-integration server")
 	// 检查是否开启了可观测性

@@ -192,6 +192,10 @@ func (conf *RedisConfig) GetClient() (cli, readCli *redis.Client, err error) {
 	})
 	return globalCli, globalReadCli, err
 }
+
+func (conf *RedisConfig) GetTLSConfig() (tlsConf *tls.Config, err error) {
+	return conf.getTLSConfig()
+}
 func (conf *RedisConfig) getClient() (cli, readCli *redis.Client, err error) {
 	tlsConf, err := conf.getTLSConfig()
 	if err != nil {

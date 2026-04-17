@@ -405,3 +405,28 @@ CREATE TABLE IF NOT EXISTS `t_skill_release_history` (
     UNIQUE KEY uk_skill_release_history (`f_skill_id`, `f_version`) USING BTREE,
     KEY `idx_skill_release_history_skill_id_create_time` (`f_skill_id`, `f_create_time`) USING BTREE
 ) ENGINE = InnoDB COMMENT = '技能发布历史表';
+
+
+CREATE TABLE IF NOT EXISTS `t_skill_index_build_task` (
+    `f_id` bigint AUTO_INCREMENT NOT NULL COMMENT '自增主键',
+    `f_task_id` varchar(40) NOT NULL COMMENT '任务ID',
+    `f_status` varchar(20) NOT NULL COMMENT '任务状态',
+    `f_execute_type` varchar(20) NOT NULL COMMENT '执行类型',
+    `f_total_count` bigint NOT NULL DEFAULT 0 COMMENT '扫描总数',
+    `f_success_count` bigint NOT NULL DEFAULT 0 COMMENT '写入成功数',
+    `f_delete_count` bigint NOT NULL DEFAULT 0 COMMENT '删除成功数',
+    `f_failed_count` bigint NOT NULL DEFAULT 0 COMMENT '失败数',
+    `f_retry_count` bigint NOT NULL DEFAULT 0 COMMENT '当前重试次数',
+    `f_max_retry` bigint NOT NULL DEFAULT 0 COMMENT '最大重试次数',
+    `f_cursor_update_time` bigint NOT NULL DEFAULT 0 COMMENT '增量游标更新时间',
+    `f_cursor_skill_id` varchar(40) NOT NULL DEFAULT '' COMMENT '增量游标skill_id',
+    `f_error_msg` text DEFAULT NULL COMMENT '错误信息',
+    `f_create_user` varchar(50) NOT NULL COMMENT '创建者',
+    `f_create_time` bigint(20) NOT NULL COMMENT '创建时间',
+    `f_update_time` bigint(20) NOT NULL COMMENT '更新时间',
+    `f_last_finished_time` bigint(20) NOT NULL DEFAULT 0 COMMENT '最后结束时间',
+    PRIMARY KEY (`f_id`),
+    UNIQUE KEY `uk_skill_index_build_task_id` (`f_task_id`) USING BTREE,
+    KEY `idx_skill_index_build_task_status_create_time` (`f_status`, `f_create_time`) USING BTREE,
+    KEY `idx_skill_index_build_task_exec_status_finish_time` (`f_execute_type`, `f_status`, `f_last_finished_time`) USING BTREE
+) ENGINE = InnoDB COMMENT = 'Skill 索引构建任务表';
