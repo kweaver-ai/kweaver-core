@@ -1,0 +1,84 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "response_format": {
+        "type": "string",
+        "enum": ["json", "toon"],
+        "default": "toon",
+        "description": "文本格式：json 或 toon，默认 toon"
+      },
+      "query": {
+        "type": "string",
+        "description": "用户查询问题或关键词，多个关键词之间用空格隔开"
+      },
+      "search_scope": {
+        "type": "object",
+        "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认三类全开。",
+        "properties": {
+          "include_object_types": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否返回对象类"
+          },
+          "include_relation_types": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否返回关系类"
+          },
+          "include_action_types": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否返回动作类"
+          }
+        }
+      },
+      "max_concepts": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 10,
+        "description": "Schema 候选规模上限"
+      },
+      "schema_brief": {
+        "type": "boolean",
+        "default": true,
+        "description": "是否返回精简 Schema。true 仅返回适合 Agent 决策下一步调用的必要字段。"
+      },
+      "enable_rerank": {
+        "type": "boolean",
+        "default": true,
+        "description": "是否对关系类型启用 Rerank"
+      }
+    },
+    "required": ["query"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "object_types": {
+        "type": "array",
+        "description": "对象类型列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "relation_types": {
+        "type": "array",
+        "description": "关系类型列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "action_types": {
+        "type": "array",
+        "description": "动作类型列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

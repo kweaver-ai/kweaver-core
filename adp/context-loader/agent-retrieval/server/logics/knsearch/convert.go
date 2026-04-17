@@ -58,14 +58,9 @@ func KnSearchLocalResponseToResp(local *interfaces.KnSearchLocalResponse) *inter
 	if local == nil {
 		return nil
 	}
-	resp := &interfaces.KnSearchResp{
+	return &interfaces.KnSearchResp{
 		ObjectTypes:   local.ObjectTypes,
 		RelationTypes: local.RelationTypes,
 		ActionTypes:   local.ActionTypes,
-		Nodes:         local.Nodes,
 	}
-	if local.Message != "" {
-		resp.Message = &local.Message
-	}
-	return resp
 }

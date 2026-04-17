@@ -19,7 +19,6 @@ import (
 	logicsKlp "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knlogicpropertyresolver"
 	logicsKqs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knquerysubgraph"
 	logicsFs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knfindskills"
-	logicsKr "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knretrieval"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knsearch"
 )
 
@@ -27,8 +26,7 @@ const (
 	serverName                      = "context-loader"
 	serverVersion                   = "1.0.0"
 	endpointPath                    = "/api/agent-retrieval/v1/mcp"
-	toolKeyKnSearch                 = "kn_search"
-	toolKeyKnSchemaSearch           = "kn_schema_search"
+	toolKeySearchSchema             = "search_schema"
 	toolKeyQueryObjectInstance      = "query_object_instance"
 	toolKeyQueryInstanceSubgraph    = "query_instance_subgraph"
 	toolKeyGetLogicPropertiesValues = "get_logic_properties_values"
@@ -44,19 +42,11 @@ func NewMCPHandler() http.Handler {
 	)
 
 	knSearchService := knsearch.NewKnSearchService()
-	knSearchName, knSearchDesc := loadToolMeta(toolKeyKnSearch)
-	knSearchInput, knSearchOutput := loadToolSchemas(toolKeyKnSearch)
+	searchSchemaName, searchSchemaDesc := loadToolMeta(toolKeySearchSchema)
+	searchSchemaInput, searchSchemaOutput := loadToolSchemas(toolKeySearchSchema)
 	mcpServer.AddTool(
-		newToolWithSchemas(knSearchName, knSearchDesc, knSearchInput, knSearchOutput),
-		handleKnSearch(knSearchService),
-	)
-
-	knSchemaSearchService := logicsKr.NewKnRetrievalService()
-	knSchemaSearchName, knSchemaSearchDesc := loadToolMeta(toolKeyKnSchemaSearch)
-	knSchemaSearchInput, knSchemaSearchOutput := loadToolSchemas(toolKeyKnSchemaSearch)
-	mcpServer.AddTool(
-		newToolWithSchemas(knSchemaSearchName, knSchemaSearchDesc, knSchemaSearchInput, knSchemaSearchOutput),
-		handleKnSchemaSearch(knSchemaSearchService),
+		newToolWithSchemas(searchSchemaName, searchSchemaDesc, searchSchemaInput, searchSchemaOutput),
+		handleSearchSchema(knSearchService),
 	)
 
 	ontologyQuery := drivenadapters.NewOntologyQueryAccess()

@@ -30,4 +30,6 @@ type IKnQuerySubgraphService interface {
 type IKnSearchService interface {
 	// KnSearch Knowledge network retrieval
 	KnSearch(ctx context.Context, req *KnSearchReq) (resp *KnSearchResp, err error)
+	// SearchSchema Unified schema search with normalization and output filtering
+	SearchSchema(ctx context.Context, req *SearchSchemaReq) (resp *SearchSchemaResp, err error)
 }

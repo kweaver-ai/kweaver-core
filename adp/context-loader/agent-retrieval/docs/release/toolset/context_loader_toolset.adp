@@ -317,497 +317,17 @@
             "dependencies_url": ""
           },
           {
-            "tool_id": "2fd071fa-a696-4fee-91e1-5b2dc190e88b",
-            "name": "kn_schema_search",
-            "description": "基于用户查询意图，返回业务知识网络中相关的概念信息",
-            "status": "enabled",
-            "metadata_type": "openapi",
-            "metadata": {
-              "version": "dcd121a4-e777-4281-b451-587339ea2440",
-              "summary": "kn_schema_search",
-              "description": "基于用户查询意图，返回业务知识网络中相关的概念信息",
-              "server_url": "http://agent-retrieval:30779",
-              "path": "/api/agent-retrieval/in/v1/kn/semantic-search",
-              "method": "POST",
-              "create_time": 1775798927802716000,
-              "update_time": 1775798927802716000,
-              "create_user": "72278a3c-eb67-11f0-b44a-023dfba2f4dd",
-              "update_user": "72278a3c-eb67-11f0-b44a-023dfba2f4dd",
-              "api_spec": {
-                "parameters": [
-                  {
-                    "name": "x-account-id",
-                    "in": "header",
-                    "description": "账户ID，用于内部服务调用时传递账户信息",
-                    "required": false,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  {
-                    "name": "x-account-type",
-                    "in": "header",
-                    "description": "账户类型：user(用户), app(应用), anonymous(匿名)",
-                    "required": false,
-                    "schema": {
-                      "enum": [
-                        "user",
-                        "app",
-                        "anonymous"
-                      ],
-                      "type": "string"
-                    }
-                  },
-                  {
-                    "name": "response_format",
-                    "in": "query",
-                    "description": "响应格式：json 或 toon，默认 json",
-                    "required": false,
-                    "schema": {
-                      "default": "json",
-                      "enum": [
-                        "json",
-                        "toon"
-                      ],
-                      "type": "string"
-                    }
-                  }
-                ],
-                "request_body": {
-                  "description": "",
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "$ref": "#/components/schemas/SemanticSearchRequest"
-                      }
-                    }
-                  },
-                  "required": false
-                },
-                "responses": [
-                  {
-                    "status_code": "200",
-                    "description": "成功返回相关概念信息",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "$ref": "#/components/schemas/SemanticSearchResponse"
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "status_code": "400",
-                    "description": "参数错误",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "status_code": "500",
-                    "description": "服务器内部错误",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                      }
-                    }
-                  }
-                ],
-                "components": {
-                  "schemas": {
-                    "ActionTypeDetail": {
-                      "properties": {
-                        "_score": {
-                          "type": "number",
-                          "format": "float",
-                          "description": "分数"
-                        },
-                        "comment": {
-                          "type": "string",
-                          "description": "备注"
-                        },
-                        "id": {
-                          "type": "string",
-                          "description": "行动类ID"
-                        },
-                        "module_type": {
-                          "type": "string",
-                          "description": "模块类型"
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "行动类名称"
-                        },
-                        "object_type_id": {
-                          "description": "行动类所绑定的对象类ID",
-                          "type": "string"
-                        },
-                        "tags": {
-                          "description": "标签",
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        }
-                      },
-                      "type": "object",
-                      "description": "行动类概念详情"
-                    },
-                    "ObjectTypeDetail": {
-                      "description": "对象类概念详情",
-                      "properties": {
-                        "data_properties": {
-                          "type": "array",
-                          "description": "数据属性",
-                          "items": {
-                            "$ref": "#/components/schemas/DataProperty"
-                          }
-                        },
-                        "module_type": {
-                          "type": "string",
-                          "description": "模块类型"
-                        },
-                        "comment": {
-                          "description": "备注",
-                          "type": "string"
-                        },
-                        "primary_keys": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array",
-                          "description": "主键字段"
-                        },
-                        "data_source": {
-                          "$ref": "#/components/schemas/ResourceInfo"
-                        },
-                        "id": {
-                          "description": "对象id",
-                          "type": "string"
-                        },
-                        "name": {
-                          "description": "对象名称",
-                          "type": "string"
-                        },
-                        "_score": {
-                          "description": "分数",
-                          "type": "number",
-                          "format": "float"
-                        },
-                        "tags": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array",
-                          "description": "标签"
-                        },
-                        "logic_properties": {
-                          "items": {
-                            "type": "object"
-                          },
-                          "type": "array",
-                          "description": "逻辑属性"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "SearchScope": {
-                      "type": "object",
-                      "description": "【可选】搜索域配置\n",
-                      "properties": {
-                        "include_object_types": {
-                          "type": "boolean",
-                          "description": "是否包含对象类"
-                        },
-                        "include_relation_types": {
-                          "type": "boolean",
-                          "description": "是否包含关系类"
-                        },
-                        "concept_groups": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array",
-                          "description": "限定的概念分组"
-                        },
-                        "include_action_types": {
-                          "description": "是否包含行作类",
-                          "type": "boolean"
-                        }
-                      }
-                    },
-                    "ResourceInfo": {
-                      "description": "数据来源信息",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "description": "视图名称"
-                        },
-                        "type": {
-                          "description": "数据来源类型",
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "string",
-                          "description": "数据视图id"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "ErrorResponse": {
-                      "type": "object",
-                      "properties": {
-                        "detail": {
-                          "description": "错误详情",
-                          "type": "object"
-                        },
-                        "link": {
-                          "description": "错误链接",
-                          "type": "string"
-                        },
-                        "solution": {
-                          "description": "解决方案",
-                          "type": "string"
-                        },
-                        "code": {
-                          "type": "string",
-                          "description": "错误码"
-                        },
-                        "description": {
-                          "description": "错误描述",
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "SemanticSearchRequest": {
-                      "required": [
-                        "query",
-                        "kn_id"
-                      ],
-                      "properties": {
-                        "kn_id": {
-                          "type": "string",
-                          "description": "业务知识网络ID"
-                        },
-                        "max_concepts": {
-                          "type": "integer",
-                          "description": "最大返回概念数量",
-                          "default": 10
-                        },
-                        "query": {
-                          "type": "string",
-                          "description": "用户自然语言查询"
-                        },
-                        "rerank_action": {
-                          "enum": [
-                            "default",
-                            "vector",
-                            "llm"
-                          ],
-                          "type": "string",
-                          "description": "重排动作",
-                          "default": "default"
-                        },
-                        "search_scope": {
-                          "$ref": "#/components/schemas/SearchScope"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "Concept": {
-                      "type": "object",
-                      "properties": {
-                        "concept_name": {
-                          "type": "string",
-                          "description": "概念类名称"
-                        },
-                        "concept_type": {
-                          "enum": [
-                            "object_type",
-                            "relation_type",
-                            "action_type"
-                          ],
-                          "type": "string",
-                          "description": "概念类型"
-                        },
-                        "concept_detail": {
-                          "description": "概念类详情，根据concept_type返回不同结构：\n- 当concept_type为\"object_type\"时，返回ObjectTypeDetail结构，包含对象类的完整信息\n- 当concept_type为\"relation_type\"时，返回RelationTypeDetail结构，包含关系类的完整信息\n- 当concept_type为\"action_type\"时，返回ActionTypeDetail结构，包含行动类的完整信息\n",
-                          "oneOf": [
-                            {
-                              "$ref": "#/components/schemas/ObjectTypeDetail"
-                            },
-                            {
-                              "$ref": "#/components/schemas/RelationTypeDetail"
-                            },
-                            {
-                              "$ref": "#/components/schemas/ActionTypeDetail"
-                            }
-                          ]
-                        },
-                        "concept_id": {
-                          "type": "string",
-                          "description": "概念类ID"
-                        }
-                      }
-                    },
-                    "DataProperty": {
-                      "type": "object",
-                      "description": "数据属性结构定义",
-                      "properties": {
-                        "mapped_field": {
-                          "description": "视图字段信息"
-                        },
-                        "name": {
-                          "description": "属性名称",
-                          "type": "string"
-                        },
-                        "type": {
-                          "description": "属性数据类型",
-                          "type": "string"
-                        },
-                        "comment": {
-                          "type": "string",
-                          "description": "备注"
-                        },
-                        "condition_operations": {
-                          "description": "该数据属性支持的查询条件操作符列表。\n",
-                          "items": {
-                            "type": "string",
-                            "enum": [
-                              "==",
-                              "!=",
-                              ">",
-                              "<",
-                              ">=",
-                              "<=",
-                              "in",
-                              "not_in",
-                              "like",
-                              "not_like",
-                              "range",
-                              "out_range",
-                              "exist",
-                              "not_exist",
-                              "regex",
-                              "match",
-                              "knn"
-                            ]
-                          },
-                          "type": "array"
-                        },
-                        "display_name": {
-                          "type": "string",
-                          "description": "属性显示名称"
-                        }
-                      }
-                    },
-                    "SemanticSearchResponse": {
-                      "type": "object",
-                      "properties": {
-                        "concepts": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Concept"
-                          }
-                        }
-                      }
-                    },
-                    "RelationTypeDetail": {
-                      "type": "object",
-                      "description": "关系类概念详情",
-                      "properties": {
-                        "name": {
-                          "description": "关系类名称",
-                          "type": "string"
-                        },
-                        "comment": {
-                          "type": "string",
-                          "description": "备注"
-                        },
-                        "module_type": {
-                          "type": "string",
-                          "description": "模块类型"
-                        },
-                        "type": {
-                          "type": "string",
-                          "description": "关系类型"
-                        },
-                        "target_object_type_id": {
-                          "type": "string",
-                          "description": "目标对象类ID"
-                        },
-                        "_score": {
-                          "description": "分数",
-                          "type": "number",
-                          "format": "float"
-                        },
-                        "tags": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array",
-                          "description": "标签"
-                        },
-                        "id": {
-                          "type": "string",
-                          "description": "关系类id"
-                        },
-                        "source_object_type_id": {
-                          "description": "起点对象类ID",
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                },
-                "callbacks": null,
-                "security": null,
-                "tags": [
-                  "SemanticSearch"
-                ],
-                "external_docs": null
-              }
-            },
-            "use_rule": "",
-            "global_parameters": {
-              "name": "",
-              "description": "",
-              "required": false,
-              "in": "",
-              "type": "",
-              "value": null
-            },
-            "create_time": 1775798927805742300,
-            "update_time": 1775798927805742300,
-            "create_user": "72278a3c-eb67-11f0-b44a-023dfba2f4dd",
-            "update_user": "72278a3c-eb67-11f0-b44a-023dfba2f4dd",
-            "extend_info": null,
-            "resource_object": "tool",
-            "source_id": "dcd121a4-e777-4281-b451-587339ea2440",
-            "source_type": "openapi",
-            "script_type": "",
-            "code": "",
-            "dependencies": [],
-            "dependencies_url": ""
-          },
-          {
             "tool_id": "52b35175-cee3-41ea-91c0-1d70e8371f9c",
-            "name": "kn_search",
-            "description": "基于知识网络的智能检索工具，支持传入完整的问题或一个或多个关键词，能够检索问题或关键词的属性信息和上下文信息。\r\n支持概念召回、语义实例召回、多轮对话等功能。\r\n",
+            "name": "search_schema",
+            "description": "统一的 Schema 探索入口。根据 query 返回相关 object_types、relation_types、action_types。",
             "status": "enabled",
             "metadata_type": "openapi",
             "metadata": {
               "version": "5f617e18-c485-4b51-8b71-4590b4b77c1c",
-              "summary": "kn_search",
-              "description": "基于知识网络的智能检索工具，支持传入完整的问题或一个或多个关键词，能够检索问题或关键词的属性信息和上下文信息。\n支持概念召回、语义实例召回、多轮对话等功能。\n",
+              "summary": "search_schema",
+              "description": "统一的 Schema 探索入口。根据 query 返回相关 object_types、relation_types、action_types。",
               "server_url": "http://agent-retrieval:30779",
-              "path": "/api/agent-retrieval/in/v1/kn/kn_search",
+              "path": "/api/agent-retrieval/in/v1/kn/search_schema",
               "method": "POST",
               "create_time": 1775798927802716000,
               "update_time": 1775798927802716000,
@@ -839,6 +359,15 @@
                     }
                   },
                   {
+                    "name": "x-kn-id",
+                    "in": "header",
+                    "description": "知识网络ID。Header 优先，body kn_id 为兼容兜底。",
+                    "required": false,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  {
                     "name": "response_format",
                     "in": "query",
                     "description": "响应格式：json 或 toon，默认 json",
@@ -854,11 +383,11 @@
                   }
                 ],
                 "request_body": {
-                  "description": "kn_search 请求体",
+                  "description": "search_schema 请求体",
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/KnSearchRequest"
+                        "$ref": "#/components/schemas/SearchSchemaRequest"
                       }
                     }
                   },
@@ -866,23 +395,12 @@
                 },
                 "responses": [
                   {
-                    "status_code": "500",
-                    "description": "服务器内部错误",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                      }
-                    }
-                  },
-                  {
                     "status_code": "200",
-                    "description": "成功返回检索结果",
+                    "description": "成功返回 Schema 探索结果",
                     "content": {
                       "application/json": {
                         "schema": {
-                          "$ref": "#/components/schemas/KnSearchResponse"
+                          "$ref": "#/components/schemas/SearchSchemaResponse"
                         }
                       }
                     }
@@ -897,48 +415,21 @@
                         }
                       }
                     }
+                  },
+                  {
+                    "status_code": "500",
+                    "description": "服务器内部错误",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                      }
+                    }
                   }
                 ],
                 "components": {
                   "schemas": {
-                    "KnSearchResponse": {
-                      "description": "检索结果，返回object_types/relation_types/action_types，并返回语义实例nodes/message。\n多轮时由concept_retrieval.return_union控制 nodes 的并集/增量。\n",
-                      "properties": {
-                        "relation_types": {
-                          "description": "关系类型列表（概念召回时返回）。\n精简模式和完整模式均包含：concept_id, concept_name, source_object_type_id, target_object_type_id\n",
-                          "items": {
-                            "$ref": "#/components/schemas/RelationType"
-                          },
-                          "type": "array"
-                        },
-                        "action_types": {
-                          "items": {
-                            "$ref": "#/components/schemas/ActionType"
-                          },
-                          "type": "array",
-                          "description": "操作类型列表（概念召回时返回）。\n当schema_brief=True时，每个action_type仅包含以下字段：id, name, action_type, object_type_id, object_type_name, comment, tags, kn_id\n"
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "提示信息（例如未召回到实例数据时返回原因说明）"
-                        },
-                        "nodes": {
-                          "description": "语义实例召回结果（当不提供conditions且召回到实例时返回），与条件召回节点风格对齐的扁平列表。\n每个节点至少包含 object_type_id、<object_type_id>_name、unique_identities\n",
-                          "items": {
-                            "$ref": "#/components/schemas/Node"
-                          },
-                          "type": "array"
-                        },
-                        "object_types": {
-                          "type": "array",
-                          "description": "对象类型列表（概念召回时返回）。\n当schema_brief=True时，仅包含：concept_id, concept_name, comment, data_properties（仅name和display_name）, logic_properties（仅name和display_name）, sample_data（当include_sample_data=True时）。\n当schema_brief=False时，包含完整字段（包括primary_keys, display_key, sample_data等）\n",
-                          "items": {
-                            "$ref": "#/components/schemas/ObjectType"
-                          }
-                        }
-                      },
-                      "type": "object"
-                    },
                     "DataProperty": {
                       "properties": {
                         "name": {
@@ -1022,42 +513,6 @@
                           "description": "属性名称"
                         }
                       }
-                    },
-                    "KnSearchRequest": {
-                      "required": [
-                        "query",
-                        "kn_id"
-                      ],
-                      "properties": {
-                        "retrieval_config": {
-                          "description": "召回配置参数，用于控制不同类型的召回场景（概念召回、语义实例召回、属性过滤）。如果不提供，将使用系统默认配置。",
-                          "properties": {
-                            "concept_retrieval": {
-                              "$ref": "#/components/schemas/ConceptRetrievalConfig"
-                            }
-                          },
-                          "type": "object"
-                        },
-                        "enable_rerank": {
-                          "default": true,
-                          "type": "boolean",
-                          "description": "是否启用重排序。如果为true，则启用重排序。"
-                        },
-                        "kn_id": {
-                          "description": "指定的知识网络ID，必须传递",
-                          "type": "string"
-                        },
-                        "only_schema": {
-                          "default": false,
-                          "type": "boolean",
-                          "description": "是否只召回概念（schema），不召回语义实例。如果为True，则只返回object_types、relation_types和action_types，不返回nodes。"
-                        },
-                        "query": {
-                          "type": "string",
-                          "description": "用户查询问题或关键词，多个关键词之间用空格隔开"
-                        }
-                      },
-                      "type": "object"
                     },
                     "ConceptRetrievalConfig": {
                       "type": "object",
@@ -1175,6 +630,88 @@
                         "concept_type": {
                           "description": "概念类型: relation_type",
                           "type": "string"
+                        }
+                      }
+                    },
+                    "SearchSchemaRequest": {
+                      "type": "object",
+                      "required": [
+                        "query"
+                      ],
+                      "properties": {
+                        "query": {
+                          "type": "string",
+                          "description": "用户查询问题或关键词"
+                        },
+                        "kn_id": {
+                          "type": "string",
+                          "description": "知识网络ID。Header x-kn-id 未传时，可在 body 中兜底传入。"
+                        },
+                        "search_scope": {
+                          "$ref": "#/components/schemas/SearchScope"
+                        },
+                        "max_concepts": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "default": 10,
+                          "description": "Schema 候选规模上限"
+                        },
+                        "schema_brief": {
+                          "type": "boolean",
+                          "default": true,
+                          "description": "是否返回精简 Schema"
+                        },
+                        "enable_rerank": {
+                          "type": "boolean",
+                          "default": true,
+                          "description": "是否启用关系类型 Rerank"
+                        }
+                      }
+                    },
+                    "SearchScope": {
+                      "type": "object",
+                      "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认三类全开。",
+                      "properties": {
+                        "include_object_types": {
+                          "type": "boolean",
+                          "default": true,
+                          "description": "是否包含对象类"
+                        },
+                        "include_relation_types": {
+                          "type": "boolean",
+                          "default": true,
+                          "description": "是否包含关系类"
+                        },
+                        "include_action_types": {
+                          "type": "boolean",
+                          "default": true,
+                          "description": "是否包含动作类"
+                        }
+                      }
+                    },
+                    "SearchSchemaResponse": {
+                      "type": "object",
+                      "properties": {
+                        "object_types": {
+                          "type": "array",
+                          "description": "对象类型列表",
+                          "items": {
+                            "$ref": "#/components/schemas/ObjectType"
+                          }
+                        },
+                        "relation_types": {
+                          "type": "array",
+                          "description": "关系类型列表",
+                          "items": {
+                            "$ref": "#/components/schemas/RelationType"
+                          }
+                        },
+                        "action_types": {
+                          "type": "array",
+                          "description": "动作类型列表",
+                          "items": {
+                            "$ref": "#/components/schemas/ActionType"
+                          }
                         }
                       }
                     }
@@ -3168,7 +2705,7 @@
                         },
                         "object_type_id": {
                           "type": "string",
-                          "description": "业务对象类型 ID（从 kn_search 或 kn_schema_search 返回的 concept_id 获取）。\n不传时为网络级召回；传入时为对象类级或实例级召回。\n"
+                          "description": "业务对象类型 ID（从 search_schema 返回的概念结果获取）。\n不传时为网络级召回；传入时为对象类级或实例级召回。\n"
                         },
                         "skill_query": {
                           "description": "可选的 Skill 语义过滤词，对 skills 实例的 name/description 字段追加文本过滤。\nBKN 已构建向量时使用 knn，已构建全文索引时使用 match，否则使用 like。\n若 skills ObjectType 元数据获取失败则返回 502。\n",

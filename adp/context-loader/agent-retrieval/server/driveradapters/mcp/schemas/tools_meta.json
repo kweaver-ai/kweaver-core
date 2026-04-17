@@ -1,11 +1,7 @@
 {
-  "kn_search": {
-    "name": "kn_search",
-    "description": "知识网络检索 v2。根据 query 召回相关概念（对象类/关系类/动作类）及可选语义实例。适用于探索发现：不确定有哪些对象类/关系类/动作类时。"
-  },
-  "kn_schema_search": {
-    "name": "kn_schema_search",
-    "description": "语义检索概念（Schema）。当不确定有哪些对象类/关系类/动作类时使用，返回相关 concepts。"
+  "search_schema": {
+    "name": "search_schema",
+    "description": "统一的 Schema 探索入口。根据 query 返回相关 object_types、relation_types、action_types，供 query_*、find_*、get_* 工具继续消费。"
   },
   "query_object_instance": {
     "name": "query_object_instance",

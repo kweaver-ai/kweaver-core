@@ -6,13 +6,14 @@
 
 | 字段 | 值 |
 | :--- | :--- |
-| 文档版本 | v1.2 |
+| 文档版本 | v1.3 |
 | 适用版本 | context-loader v0.6.0 |
-| 发布日期 | 2026-04-10 |
+| 发布日期 | 2026-04-16 |
 | 状态 | 正式发布 |
 
 | 修订日期 | 修订说明 |
 | :--- | :--- |
+| 2026-04-16 | Schema 探索入口统一为 `search_schema`；MCP 不再暴露 `kn_search` / `kn_schema_search`；补充标准 / 兼容 / legacy 接口分层说明 |
 | 2026-04-10 | 更新为 context-loader `0.6.0`，新增 `find_skills` 工具说明，并补充 `search/query/find/get` 四类工具语义 |
 | 2026-03-26 | 根据 `docs/apis/api_private` OpenAPI 更新 6 个工具的依赖说明与参数配置 |
 | 2026-01-04 | 首次发布 |
@@ -59,17 +60,22 @@ http://agent-retrieval:30779
 
 ### 3.3 最小调用示例：先查概念，再找入口实例
 
-1）查概念（Schema，推荐 v2：kn_search）：
+1）查概念（Schema，推荐：search_schema）：
 
 ```bash
-curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/kn_search" \
+curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/search_schema" \
   -H "Content-Type: application/json" \
   -H "x-account-id: <your-account-id>" \
   -H "x-account-type: user" \
+  -H "x-kn-id: kn_medical" \
   -d '{
-    "kn_id": "kn_medical",
     "query": "头晕吃什么药",
-    "only_schema": true
+    "search_scope": {
+      "include_object_types": true,
+      "include_relation_types": true,
+      "include_action_types": true
+    },
+    "max_concepts": 10
   }'
 ```
 
@@ -97,8 +103,8 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 
 ```
 用户问题
-  └─ Agent 规划
-      ├─ 探索发现：kn_schema_search / kn_search
+      └─ Agent 规划
+      ├─ 探索发现：search_schema
       ├─ 精确查询：query_object_instance / query_instance_subgraph
       ├─ 候选资源发现：find_skills（需要发现当前场景下可挂载的 Skill 时）
       ├─ 逻辑属性：get_logic_properties_values（需要动态参数时）
@@ -109,8 +115,7 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 
 | 工具 | 核心作用 | 何时用 |
 | :--- | :--- | :--- |
-| `kn_schema_search` | 语义检索概念（Schema） | 不确定有哪些对象类/关系类/动作类时 |
-| `kn_search` | 概念召回（Schema，v2） | 需要更强的概念召回控制能力（多轮/精简Schema等） |
+| `search_schema` | 统一的 Schema 探索入口 | 不确定有哪些对象类/关系类/动作类时 |
 | `query_object_instance` | 单对象类实例过滤查询 | 已知对象类与过滤条件，要查列表时 |
 | `query_instance_subgraph` | 沿关系路径拉取子图 | 需要跨关系找关联对象/多跳事实时 |
 | `find_skills` | 在业务边界内发现 Skill 候选 | 已知 `kn_id`，想知道当前场景下可考虑装配哪些 Skill 时 |
@@ -121,7 +126,7 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 
 - 精确查询依赖探索发现：
   - 结构化查询需要 `ot_id`（对象类 ID）与 Schema 信息（字段/主键/关系方向/动作绑定对象类）
-  - `ot_id` 与 Schema 通常来自 `kn_schema_search` 或 `kn_search` 的返回（object_types / relation_types / action_types）
+  - `ot_id` 与 Schema 通常来自 `search_schema` 的返回（object_types / relation_types / action_types）
 - 候选资源发现依赖 KN 边界与可选上下文：
   - `find_skills` 至少需要 `kn_id`
   - 若已通过探索发现确认对象类，可继续传 `object_type_id`
@@ -148,26 +153,29 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 
 本节仅给出开发接入时最常用的信息：用途、关键参数与最小示例。完整字段与响应结构以本目录下对应的 OpenAPI YAML 文件为准。
 
-### 6.1 kn_schema_search（语义检索 / 概念召回，v1）
+### 6.1 search_schema（统一 Schema 探索入口）
 
-> 接口定义：[docs/apis/api_private/kn_schema_search.yaml](../apis/api_private/kn_schema_search.yaml)
+> 接口定义：[docs/apis/api_private/search_schema.yaml](../apis/api_private/search_schema.yaml)
 
-- API：`POST /api/agent-retrieval/in/v1/kn/semantic-search`
-- 作用：根据 query 返回与之相关的概念信息（Schema）
+- API：`POST /api/agent-retrieval/in/v1/kn/search_schema`
+- 作用：根据 query 返回与之相关的 `object_types / relation_types / action_types`
+- 说明：这是新版本标准 Schema 探索接口，也是 MCP / Agent 唯一推荐入口。
 
 请求体（关键字段）：
 
 | 字段 | 必填 | 说明 |
 | :--- | :--- | :--- |
-| `kn_id` | 是 | 业务知识网络 ID |
 | `query` | 是 | 用户自然语言查询 |
-| `search_scope` | 否 | 限定概念分组、是否包含对象类/关系类/行动类 |
-| `max_concepts` | 否 | 最大概念数量（默认 10） |
-| `rerank_action` | 否 | 重排策略（default/vector/llm） |
+| `kn_id` | 否 | Header `x-kn-id` 未传时，可在 body 中兜底传入 |
+| `search_scope` | 否 | 是否包含对象类/关系类/动作类；至少开启一种，默认全开 |
+| `max_concepts` | 否 | 最大候选概念数量（默认 10） |
+| `schema_brief` | 否 | 是否返回精简 Schema（默认 true） |
+| `enable_rerank` | 否 | 是否启用关系类型 Rerank（默认 true） |
 
 返回要点：
 
-- `concepts`：相关概念列表
+- `object_types / relation_types / action_types`：分组后的 Schema 结果
+- 不返回实例数据，不返回 `nodes` / `message`
 
 Data Agent 配置（建议）：
 
@@ -175,47 +183,24 @@ Data Agent 配置（建议）：
 | :--- | :--- | :--- | :--- |
 | `x-account-id` | 应用变量 | Header 参数 | `header.x-account-id` |
 | `x-account-type` | 固定值/应用变量 | Header 参数 | `user` 或 `header.x-account-type` |
-| `kn_id` | 固定值/应用变量 | 知识网络 ID | `"kn_medical"` 或 `self_config.data_source.knowledge_network[0].knowledge_network_id` |
+| `x-kn-id` | 固定值/应用变量 | Header 参数（推荐） | `"kn_medical"` 或 `header.x-kn-id` |
+| `kn_id` | 固定值/应用变量 | 请求体兜底参数（可选） | `"kn_medical"` |
 | `query` | 模型生成 | 用户问题/关键词 | `模型生成` |
 | `search_scope` | 模型生成 | 请求体参数（可选） | `模型生成` |
 | `max_concepts` | 固定值 | 最大概念数 | `10` |
-| `rerank_action` | 固定值/模型生成 | 请求体参数（可选） | `default` |
-
-### 6.2 kn_search（知识网络检索 / 概念召回，v2）
-
-> 接口定义：[docs/apis/api_private/kn_search.yaml](../apis/api_private/kn_search.yaml)
-
-- API：`POST /api/agent-retrieval/in/v1/kn/kn_search`
-- 作用：返回 Schema（object_types / relation_types / action_types）
-- 说明：本指南暂时只覆盖“概念召回”。语义实例召回作为后续规划；需要实例请优先使用 `query_object_instance` / `query_instance_subgraph`。
-
-请求体（关键字段）：
-
-| 字段 | 必填 | 说明 |
-| :--- | :--- | :--- |
-| `kn_id` | 是 | 业务知识网络 ID |
-| `query` | 是 | 问题或关键词（多关键词用空格分隔） |
-| `only_schema` | 否 | 建议设置为 true（仅概念召回） |
-| `retrieval_config` | 否 | 召回配置；当前主要包含 `concept_retrieval.top_k`、`concept_retrieval.schema_brief`、`concept_retrieval.include_sample_data` |
-| `enable_rerank` | 否 | 是否启用重排序（默认 true） |
-
-返回要点：
-
-- `object_types / relation_types / action_types`：概念列表（Schema）
-
-Data Agent 配置（建议）：
-
-| 配置项 | 推荐类型 | 说明 | 示例 |
-| :--- | :--- | :--- | :--- |
-| `x-account-id` | 应用变量 | Header 参数（接口定义为可选） | `header.x-account-id` |
-| `x-account-type` | 固定值/应用变量 | Header 参数（接口定义为可选） | `user` 或 `header.x-account-type` |
-| `kn_id` | 固定值/应用变量 | 知识网络 ID | `"kn_medical"` 或 `self_config.data_source.knowledge_network[0].knowledge_network_id` |
-| `query` | 模型生成 | 用户问题/关键词 | `模型生成` |
-| `only_schema` | 固定值 | 仅概念召回 | `true` |
-| `retrieval_config.concept_retrieval.top_k` | 固定值 | 概念召回数量 | `10` |
-| `retrieval_config.concept_retrieval.schema_brief` | 固定值 | 精简 Schema | `true` |
-| `retrieval_config.concept_retrieval.include_sample_data` | 固定值 | 是否返回样例数据 | `false` |
+| `schema_brief` | 固定值 | 精简 Schema | `true` |
 | `enable_rerank` | 固定值 | 请求体参数（可选） | `true` |
+
+### 6.2 兼容与 Legacy 说明
+
+- `kn_search`
+  - 兼容 HTTP 接口：`POST /api/agent-retrieval/in/v1/kn/kn_search`
+  - 与 `search_schema` 共用收敛后的 Schema-only logic
+  - 旧字段可传，但不再恢复实例检索或 `nodes / message`
+- `kn_schema_search`
+  - legacy HTTP 接口：`POST /api/agent-retrieval/in/v1/kn/semantic-search`
+  - 保持历史 `concepts[]` 输出形态
+  - 不参与本次 shared logic 收敛
 
 ### 6.3 query_object_instance（对象实例查询）
 
@@ -363,7 +348,7 @@ Data Agent 配置（建议）：
 | 传 `object_type_id` 返回空结果 | 该对象类通常没有绑定 Skill | 确认该对象类与 `skills` 是否已配置绑定关系 |
 | 传 `object_type_id + instance_identities` 返回空结果 | 该实例通常没有命中 Skill，或不存在实例级绑定 | 可先回退到对象类级查看候选 Skill 是否存在 |
 | 传 `skill_query` 后返回空结果 | 当前过滤条件过严，或当前边界内本就没有匹配的 Skill | 放宽或去掉 `skill_query` 后重试 |
-| 传了不存在的 `object_type_id` | 当前知识网络中不存在该对象类 | 先通过 `kn_search` / `kn_schema_search` 确认合法对象类，再重试 |
+| 传了不存在的 `object_type_id` | 当前知识网络中不存在该对象类 | 先通过 `search_schema` 确认合法对象类，再重试 |
 | 当前知识网络中缺少 `skills` ObjectType，或缺少 `skill_id` / `name` 属性 | `find_skills` 的基础契约未满足 | 先补齐固定的 `skills` ObjectType 及必要数据属性后，再调用 `find_skills` |
 
 #### 6.5.4 参数与调用方式
@@ -383,7 +368,7 @@ Data Agent 配置（建议）：
 - 当前版本暂不开放网络级召回
 - 传 `kn_id + object_type_id`：对象类级召回
 - 传 `kn_id + object_type_id + instance_identities`：实例级召回
-- `skill_query` 不替代 `kn_search`；若调用方尚未明确对象类或实例，应先使用 `search_*` / `query_*`
+- `skill_query` 不替代 `search_schema`；若调用方尚未明确对象类或实例，应先使用 `search_*` / `query_*`
 
 返回要点：
 
@@ -512,7 +497,7 @@ Data Agent 配置（建议）：
 
 ### 7.1 场景：从问题到可审计事实链
 
-1）探索概念：用 `kn_schema_search` / `kn_search` 确认对象类/关系类  
+1）探索概念：用 `search_schema` 确认对象类/关系类
 2）精确定位实例：用 `query_object_instance`（单类过滤）或 `query_instance_subgraph`（跨关系/多跳）获取入口实例与事实  
 3）发现候选 Skill：用 `find_skills` 获取当前知识网络和对象上下文下可考虑挂载的 Skill  
 4）补充指标：用 `get_logic_properties_values` 获取逻辑属性值（必要时补 additional_context）  
@@ -522,8 +507,9 @@ Data Agent 配置（建议）：
 
 ### 8.1 本目录 OpenAPI 定义文件
 
-- `kn_schema_search.yaml`
+- `search_schema.yaml`
 - `kn_search.yaml`
+- `kn_schema_search.yaml`
 - `query_object_instance.yaml`
 - `query_instance_subgraph.yaml`
 - `find_skills.yaml`

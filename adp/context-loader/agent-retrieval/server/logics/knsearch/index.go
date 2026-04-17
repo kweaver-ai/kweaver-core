@@ -51,6 +51,7 @@ const useLocalSearch = true
 // KnSearchService kn_search service
 type KnSearchService interface {
 	KnSearch(ctx context.Context, req *interfaces.KnSearchReq) (resp *interfaces.KnSearchResp, err error)
+	SearchSchema(ctx context.Context, req *interfaces.SearchSchemaReq) (resp *interfaces.SearchSchemaResp, err error)
 }
 
 type knSearchService struct {

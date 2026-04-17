@@ -1,30 +1,28 @@
 openapi: 3.0.3
 info:
-  title: 知识网络检索兼容接口
+  title: Schema Search 标准接口
   version: 1.0.0
   description: |
-    `kn_search` 是 `search_schema` 的兼容 HTTP 契约。
+    `search_schema` 是新版本标准 Schema Search HTTP 契约。
 
-    该接口继续兼容旧请求字段写法，但底层与 `search_schema` 共用同一套收敛后的 Schema Search logic：
-    - 固定为 Schema-only
-    - 不再返回实例检索结果
-    - 不再返回 `nodes` / `message`
-    - `only_schema=false` 等旧写法不会报错，但也不会恢复旧能力
+    该接口用于根据自然语言 query 探索知识网络中的：
+    - `object_types`
+    - `relation_types`
+    - `action_types`
 
-    新接入方应优先使用 `POST /api/agent-retrieval/in/v1/kn/search_schema`。
+    该接口固定为 Schema-only，不返回实例数据，也不承担实例检索。
 servers:
   - url: http://agent-retrieval:30779
     description: agent-retrieval 服务
 paths:
-  /api/agent-retrieval/in/v1/kn/kn_search:
+  /api/agent-retrieval/in/v1/kn/search_schema:
     post:
       tags:
         - SchemaSearch
-      summary: kn_search（兼容接口）
+      summary: search_schema
       description: |
-        兼容历史 `kn_search` 调用方式的 HTTP 接口。
-        请求仍可携带部分旧字段，但输出统一收敛为 Schema 结果：
-        `object_types`、`relation_types`、`action_types`。
+        统一的 Schema 探索入口。适用于还不确定应该继续调用哪个
+        `query_*`、`find_*`、`get_*` 工具时，先通过该接口探索相关 schema 概念。
       parameters:
         - name: x-account-id
           in: header
@@ -37,6 +35,12 @@ paths:
           schema:
             type: string
             enum: [user, app, anonymous]
+        - name: x-kn-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 知识网络ID。Header 优先，body `kn_id` 为兼容兜底。
         - name: response_format
           in: query
           required: false
@@ -49,10 +53,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KnSearchCompatRequest'
+              $ref: '#/components/schemas/SearchSchemaRequest'
       responses:
         '200':
-          description: 成功返回 Schema 检索结果
+          description: 成功返回 Schema 探索结果
           content:
             application/json:
               schema:
@@ -72,57 +76,50 @@ paths:
 
 components:
   schemas:
-    KnSearchCompatRequest:
+    SearchSchemaRequest:
       type: object
       required:
         - query
-        - kn_id
       properties:
         query:
           type: string
           description: 用户查询问题或关键词
         kn_id:
           type: string
-          description: 指定的知识网络ID
-        retrieval_config:
-          type: object
-          nullable: true
-          description: |
-            兼容历史请求结构。仅 `concept_retrieval.top_k` 与
-            `concept_retrieval.schema_brief` 仍可被兼容吸收；
-            其他配置项即使传入也不会恢复旧能力。
-          properties:
-            concept_retrieval:
-              type: object
-              properties:
-                top_k:
-                  type: integer
-                  minimum: 1
-                  default: 10
-                  description: 兼容映射到候选规模上限
-                schema_brief:
-                  type: boolean
-                  default: true
-                  description: 兼容映射到 Schema 精简返回控制
-                include_sample_data:
-                  type: boolean
-                  default: false
-                  description: 兼容接收但当前版本不生效
-            semantic_instance_retrieval:
-              type: object
-              additionalProperties: true
-              description: 兼容接收但当前版本不生效
-            property_filter:
-              type: object
-              additionalProperties: true
-              description: 兼容接收但当前版本不生效
-        only_schema:
+          description: 知识网络ID。未配置 `x-kn-id` Header 时可在 body 中兜底传入。
+        search_scope:
+          $ref: '#/components/schemas/SearchScope'
+        max_concepts:
+          type: integer
+          minimum: 1
+          default: 10
+          description: Schema 候选规模上限
+        schema_brief:
           type: boolean
-          description: 兼容接收但不再改变行为；接口固定为 Schema-only，无论传入何值均按 true 处理
+          default: true
+          description: 是否返回精简 Schema
         enable_rerank:
           type: boolean
           default: true
           description: 是否启用关系类型 Rerank
+
+    SearchScope:
+      type: object
+      description: |
+        Schema 探索范围。至少需要开启一种概念类型；不传时默认三类全开。
+      properties:
+        include_object_types:
+          type: boolean
+          default: true
+          description: 是否包含对象类
+        include_relation_types:
+          type: boolean
+          default: true
+          description: 是否包含关系类
+        include_action_types:
+          type: boolean
+          default: true
+          description: 是否包含动作类
 
     SearchSchemaResponse:
       type: object

@@ -151,7 +151,8 @@ func TestKnSearch_UseLocalSearchTrue_Success(t *testing.T) {
 			ObjectTypes:   []*interfaces.KnSearchObjectType{},
 			RelationTypes: []*interfaces.KnSearchRelationType{},
 			ActionTypes:   []*interfaces.KnSearchActionType{},
-			Nodes:         []*interfaces.KnSearchNode{},
+			Nodes:         []*interfaces.KnSearchNode{{ObjectTypeID: "legacy-node"}},
+			Message:       "legacy message",
 		}
 		fakeLocal := &fakeLocalSearch{resp: localResp, err: nil}
 
@@ -172,7 +173,8 @@ func TestKnSearch_UseLocalSearchTrue_Success(t *testing.T) {
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(resp, convey.ShouldNotBeNil)
 		convey.So(resp.ObjectTypes, convey.ShouldResemble, localResp.ObjectTypes)
-		convey.So(resp.Nodes, convey.ShouldResemble, localResp.Nodes)
+		convey.So(resp.Nodes, convey.ShouldBeEmpty)
+		convey.So(resp.Message, convey.ShouldBeNil)
 	})
 }
 

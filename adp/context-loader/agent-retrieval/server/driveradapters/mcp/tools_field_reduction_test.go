@@ -18,27 +18,6 @@ import (
 
 // ==================== Stub Implementations ====================
 
-type stubKnRetrievalService struct {
-	resp *interfaces.SemanticSearchResponse
-	err  error
-	req  *interfaces.SemanticSearchRequest
-}
-
-func (s *stubKnRetrievalService) KeywordVectorRetrieval(_ context.Context, req *interfaces.SemanticSearchRequest) (*interfaces.SemanticSearchResponse, error) {
-	s.req = req
-	return s.resp, s.err
-}
-
-func (s *stubKnRetrievalService) AgentIntentRetrieval(_ context.Context, req *interfaces.SemanticSearchRequest) (*interfaces.SemanticSearchResponse, error) {
-	s.req = req
-	return s.resp, s.err
-}
-
-func (s *stubKnRetrievalService) AgentIntentPlanning(_ context.Context, req *interfaces.SemanticSearchRequest) (*interfaces.SemanticSearchResponse, error) {
-	s.req = req
-	return s.resp, s.err
-}
-
 type stubLogicPropertyResolverService struct {
 	resp *interfaces.ResolveLogicPropertiesResponse
 	err  error
@@ -73,6 +52,39 @@ func (s *stubOntologyQuery) QueryInstanceSubgraph(_ context.Context, _ *interfac
 	return nil, nil
 }
 
+type stubMCPKnSearchService struct {
+	knSearchResp *interfaces.KnSearchResp
+	knSearchErr  error
+	knSearchReq  *interfaces.KnSearchReq
+
+	searchSchemaResp *interfaces.SearchSchemaResp
+	searchSchemaErr  error
+	searchSchemaReq  *interfaces.SearchSchemaReq
+}
+
+func (s *stubMCPKnSearchService) KnSearch(_ context.Context, req *interfaces.KnSearchReq) (*interfaces.KnSearchResp, error) {
+	s.knSearchReq = req
+	if s.knSearchResp == nil {
+		s.knSearchResp = &interfaces.KnSearchResp{}
+	}
+	return s.knSearchResp, s.knSearchErr
+}
+
+func (s *stubMCPKnSearchService) SearchSchema(_ context.Context, req *interfaces.SearchSchemaReq) (*interfaces.SearchSchemaResp, error) {
+	s.searchSchemaReq = req
+	if s.searchSchemaErr != nil {
+		return nil, s.searchSchemaErr
+	}
+	if s.searchSchemaResp != nil {
+		return s.searchSchemaResp, nil
+	}
+	return &interfaces.SearchSchemaResp{
+		ObjectTypes:   []any{},
+		RelationTypes: []any{},
+		ActionTypes:   []any{},
+	}, nil
+}
+
 // ==================== Helper ====================
 
 func withAuthCtx(ctx context.Context) context.Context {
@@ -103,32 +115,19 @@ func resultToMap(t *testing.T, result *mcp.CallToolResult) map[string]interface{
 	return m
 }
 
-// ==================== FR-2: kn_schema_search ====================
+// ==================== FR-2: search_schema ====================
 
-func TestHandleKnSchemaSearch_StripsOutputFields(t *testing.T) {
-	convey.Convey("handleKnSchemaSearch strips score/samples/query_understanding/hits_total from output", t, func() {
-		stub := &stubKnRetrievalService{
-			resp: &interfaces.SemanticSearchResponse{
-				QueryUnderstanding: &interfaces.QueryUnderstanding{
-					OriginQuery: "test query",
-				},
-				HitsTotal: 42,
-				KnowledgeConcepts: []*interfaces.ConceptResult{
-					{
-						ConceptType:   interfaces.KnConceptTypeObject,
-						ConceptID:     "ot_1",
-						ConceptName:   "TestObject",
-						ConceptDetail: map[string]any{"id": "ot_1"},
-						IntentScore:   0.85,
-						MatchScore:    0.90,
-						RerankScore:   0.75,
-						Samples:       []any{"sample1", "sample2"},
-					},
-				},
+func TestHandleSearchSchema_AllowsAnonymousAccess(t *testing.T) {
+	convey.Convey("handleSearchSchema keeps schema exploration available without auth context", t, func() {
+		stub := &stubMCPKnSearchService{
+			searchSchemaResp: &interfaces.SearchSchemaResp{
+				ObjectTypes:   []any{map[string]any{"id": "ot_1"}},
+				RelationTypes: []any{},
+				ActionTypes:   []any{},
 			},
 		}
 
-		handler := handleKnSchemaSearch(stub)
+		handler := handleSearchSchema(stub)
 		req := mcpReq(map[string]any{
 			"query":           "test query",
 			"kn_id":           "kn-001",
@@ -139,26 +138,37 @@ func TestHandleKnSchemaSearch_StripsOutputFields(t *testing.T) {
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(result, convey.ShouldNotBeNil)
 		convey.So(result.IsError, convey.ShouldBeFalse)
+		convey.So(stub.searchSchemaReq, convey.ShouldNotBeNil)
+		convey.So(stub.searchSchemaReq.XAccountID, convey.ShouldEqual, "")
+		convey.So(stub.searchSchemaReq.XAccountType, convey.ShouldEqual, "")
+	})
+}
 
-		m := resultToMap(t, result)
+func TestHandleSearchSchema_MaxConceptsPassedThrough(t *testing.T) {
+	convey.Convey("handleSearchSchema passes max_concepts through to SearchSchema", t, func() {
+		stub := &stubMCPKnSearchService{
+			searchSchemaResp: &interfaces.SearchSchemaResp{
+				ObjectTypes:   []any{map[string]any{"id": "ot_1"}},
+				RelationTypes: []any{},
+				ActionTypes:   []any{},
+			},
+		}
 
-		convey.So(m, convey.ShouldNotContainKey, "query_understanding")
-		convey.So(m, convey.ShouldNotContainKey, "hits_total")
-		convey.So(m, convey.ShouldContainKey, "concepts")
+		handler := handleSearchSchema(stub)
+		req := mcpReq(map[string]any{
+			"query":           "test query",
+			"kn_id":           "kn-001",
+			"max_concepts":    5,
+			"response_format": "json",
+		})
 
-		concepts := m["concepts"].([]interface{})
-		convey.So(len(concepts), convey.ShouldEqual, 1)
-
-		concept := concepts[0].(map[string]interface{})
-		convey.So(concept, convey.ShouldNotContainKey, "intent_score")
-		convey.So(concept, convey.ShouldNotContainKey, "match_score")
-		convey.So(concept, convey.ShouldNotContainKey, "rerank_score")
-		convey.So(concept, convey.ShouldNotContainKey, "samples")
-
-		convey.So(concept, convey.ShouldContainKey, "concept_type")
-		convey.So(concept, convey.ShouldContainKey, "concept_id")
-		convey.So(concept, convey.ShouldContainKey, "concept_name")
-		convey.So(concept, convey.ShouldContainKey, "concept_detail")
+		result, err := handler(withAuthCtx(context.Background()), req)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(result, convey.ShouldNotBeNil)
+		convey.So(result.IsError, convey.ShouldBeFalse)
+		convey.So(stub.searchSchemaReq, convey.ShouldNotBeNil)
+		convey.So(stub.searchSchemaReq.MaxConcepts, convey.ShouldNotBeNil)
+		convey.So(*stub.searchSchemaReq.MaxConcepts, convey.ShouldEqual, 5)
 	})
 }
 
