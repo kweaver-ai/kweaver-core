@@ -25,5 +25,6 @@ type ISkillReleaseHistoryDB interface {
 	Insert(ctx context.Context, tx *sql.Tx, history *SkillReleaseHistoryDB) error
 	SelectBySkillID(ctx context.Context, tx *sql.Tx, skillID string) (histories []*SkillReleaseHistoryDB, err error)
 	SelectBySkillIDAndVersion(ctx context.Context, tx *sql.Tx, skillID, version string) (history *SkillReleaseHistoryDB, err error)
+	DeleteByID(ctx context.Context, tx *sql.Tx, id int64) error
 	DeleteBySkillID(ctx context.Context, tx *sql.Tx, skillID string) error
 }

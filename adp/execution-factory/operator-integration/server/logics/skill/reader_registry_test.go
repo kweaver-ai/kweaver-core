@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common/ormhelper"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
@@ -70,11 +70,16 @@ func (s *stubSkillReleaseRepo) DeleteBySkillID(ctx context.Context, tx *sql.Tx, 
 }
 
 type stubSkillReleaseHistoryRepo struct {
+	insert                    func(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error
 	selectBySkillID           func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error)
 	selectBySkillIDAndVersion func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error)
+	deleteByID                func(ctx context.Context, tx *sql.Tx, id int64) error
 }
 
 func (s *stubSkillReleaseHistoryRepo) Insert(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error {
+	if s.insert != nil {
+		return s.insert(ctx, tx, history)
+	}
 	return nil
 }
 
@@ -90,6 +95,13 @@ func (s *stubSkillReleaseHistoryRepo) SelectBySkillIDAndVersion(ctx context.Cont
 		return s.selectBySkillIDAndVersion(ctx, tx, skillID, version)
 	}
 	return nil, nil
+}
+
+func (s *stubSkillReleaseHistoryRepo) DeleteByID(ctx context.Context, tx *sql.Tx, id int64) error {
+	if s.deleteByID != nil {
+		return s.deleteByID(ctx, tx, id)
+	}
+	return nil
 }
 
 func (s *stubSkillReleaseHistoryRepo) DeleteBySkillID(ctx context.Context, tx *sql.Tx, skillID string) error {
@@ -188,12 +200,12 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			mockAuthService.EXPECT().OperationCheckAny(gomock.Any(), gomock.Any(), "skill-2", interfaces.AuthResourceTypeSkill,
 				interfaces.AuthOperationTypeExecute, interfaces.AuthOperationTypePublicAccess, interfaces.AuthOperationTypeView).Return(false, errors.New("execute forbidden"))
 
-				ctx := common.SetPublicAPIToCtx(context.Background(), true)
-				resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
-					BusinessDomainID: "bd-1",
-					SkillID:          "skill-2",
-					RelPath:          "refs/secret.md",
-				})
+			ctx := common.SetPublicAPIToCtx(context.Background(), true)
+			resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
+				BusinessDomainID: "bd-1",
+				SkillID:          "skill-2",
+				RelPath:          "refs/secret.md",
+			})
 
 			So(resp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
@@ -234,11 +246,11 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				StorageKey: "/tmp/f1",
 			}).Return("https://download/f1", nil)
 
-				ctx := common.SetPublicAPIToCtx(context.Background(), true)
-				resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
-					BusinessDomainID: "bd-1",
-					SkillID:          "skill-3",
-					RelPath:          "refs/guide.md",
+			ctx := common.SetPublicAPIToCtx(context.Background(), true)
+			resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
+				BusinessDomainID: "bd-1",
+				SkillID:          "skill-3",
+				RelPath:          "refs/guide.md",
 			})
 
 			So(err, ShouldBeNil)
@@ -378,12 +390,12 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			tx := &sql.Tx{}
 			defer patchTxMethods()()
 			registry := &skillRegistry{
-				skillRepo:           mockSkillRepo,
-				releaseRepo:         &stubSkillReleaseRepo{},
-				releaseHistoryRepo:  &stubSkillReleaseHistoryRepo{},
-				dbTx:                mockDBTx,
-				AuthService:         mockAuthService,
-				Logger:              logger.DefaultLogger(),
+				skillRepo:          mockSkillRepo,
+				releaseRepo:        &stubSkillReleaseRepo{},
+				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{},
+				dbTx:               mockDBTx,
+				AuthService:        mockAuthService,
+				Logger:             logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-publish").Return(&model.SkillRepositoryDB{
@@ -470,14 +482,14 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			tx := &sql.Tx{}
 			defer patchTxMethods()()
 			registry := &skillRegistry{
-				parser:       newSkillParser(),
-				skillRepo:    mockSkillRepo,
-				fileRepo:     mockFileRepo,
-				assetStore:   mockAssetStore,
-				dbTx:         mockDBTx,
-				AuthService:  mockAuthService,
-				indexSync:    mockIndexSync,
-				Logger:       logger.DefaultLogger(),
+				parser:      newSkillParser(),
+				skillRepo:   mockSkillRepo,
+				fileRepo:    mockFileRepo,
+				assetStore:  mockAssetStore,
+				dbTx:        mockDBTx,
+				AuthService: mockAuthService,
+				indexSync:   mockIndexSync,
+				Logger:      logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-pkg-1").Return(&model.SkillRepositoryDB{
@@ -550,15 +562,15 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{
 					selectBySkillIDAndVersion: func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error) {
 						return &model.SkillReleaseHistoryDB{
-							SkillID: "skill-hist-1",
-							Version: "hist-v1",
+							SkillID:      "skill-hist-1",
+							Version:      "hist-v1",
 							SkillRelease: `{"skill_id":"skill-hist-1","name":"hist-name","description":"hist-desc","skill_content":"hist content","version":"hist-v1","category":"other_category","status":"published","source":"custom","extend_info":"{\"foo\":\"bar\"}","dependencies":"{\"pkg\":\"1.0\"}","file_manifest":"[{\"rel_path\":\"refs/guide.md\"}]","create_user":"creator","create_time":1,"update_user":"publisher","update_time":2}`,
 						}, nil
 					},
 				},
-				dbTx:       mockDBTx,
+				dbTx:        mockDBTx,
 				AuthService: mockAuthService,
-				Logger:     logger.DefaultLogger(),
+				Logger:      logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-hist-1").Return(&model.SkillRepositoryDB{
@@ -625,16 +637,16 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{
 					selectBySkillIDAndVersion: func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error) {
 						return &model.SkillReleaseHistoryDB{
-							SkillID: "skill-publish-h1",
-							Version: "hist-v1",
+							SkillID:      "skill-publish-h1",
+							Version:      "hist-v1",
 							SkillRelease: `{"skill_id":"skill-publish-h1","name":"hist-name","description":"hist-desc","skill_content":"hist content","version":"hist-v1","category":"other_category","status":"published","source":"custom","extend_info":"{\"foo\":\"bar\"}","dependencies":"{\"pkg\":\"1.0\"}","file_manifest":"[{\"rel_path\":\"refs/guide.md\"}]","create_user":"creator","create_time":1,"update_user":"publisher","update_time":2}`,
 						}, nil
 					},
 				},
-				dbTx:       mockDBTx,
+				dbTx:        mockDBTx,
 				AuthService: mockAuthService,
-				indexSync:  mockIndexSync,
-				Logger:     logger.DefaultLogger(),
+				indexSync:   mockIndexSync,
+				Logger:      logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-publish-h1").Return(&model.SkillRepositoryDB{
@@ -672,7 +684,7 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			So(resp.SkillID, ShouldEqual, "skill-publish-h1")
 			So(resp.Version, ShouldEqual, "hist-v1")
 			So(resp.Status, ShouldEqual, interfaces.BizStatusPublished)
-			So(callOrder, ShouldResemble, []string{"update-skill", "insert-release", "commit", "index-sync"})
+			So(callOrder, ShouldResemble, []string{"update-skill", "insert-release", "index-sync", "commit"})
 		})
 
 		Convey("QuerySkillList omits instructions and files from list payload", func() {
@@ -989,11 +1001,11 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				StorageKey: testBuildObjectKey("skill-13b", "v1", SkillMD),
 			}).Return("https://download/skill-13b/SKILL.md", nil)
 
-				ctx := common.SetPublicAPIToCtx(context.Background(), true)
-				resp, err := reader.GetSkillContent(ctx, &interfaces.GetSkillContentReq{
-					BusinessDomainID: "bd-1",
-					SkillID:          "skill-13b",
-				})
+			ctx := common.SetPublicAPIToCtx(context.Background(), true)
+			resp, err := reader.GetSkillContent(ctx, &interfaces.GetSkillContentReq{
+				BusinessDomainID: "bd-1",
+				SkillID:          "skill-13b",
+			})
 
 			So(err, ShouldBeNil)
 			So(resp, ShouldNotBeNil)
@@ -1050,11 +1062,11 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				StorageKey: "/tmp/f14b",
 			}).Return("https://download/f14b", nil)
 
-				ctx := common.SetPublicAPIToCtx(context.Background(), true)
-				resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
-					BusinessDomainID: "bd-1",
-					SkillID:          "skill-14b",
-					RelPath:          "refs/guide.md",
+			ctx := common.SetPublicAPIToCtx(context.Background(), true)
+			resp, err := reader.ReadSkillFile(ctx, &interfaces.ReadSkillFileReq{
+				BusinessDomainID: "bd-1",
+				SkillID:          "skill-14b",
+				RelPath:          "refs/guide.md",
 			})
 
 			So(err, ShouldBeNil)
@@ -1072,9 +1084,9 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 					selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error) {
 						return []*model.SkillReleaseHistoryDB{
 							{
-								SkillID:     "skill-h1",
-								Version:     "v2",
-								ReleaseDesc: "stable release",
+								SkillID:      "skill-h1",
+								Version:      "v2",
+								ReleaseDesc:  "stable release",
 								SkillRelease: `{"skill_id":"skill-h1","name":"demo","description":"desc","version":"v2","status":"published","category":"other_category","source":"custom","release_user":"publisher","release_time":123456789,"create_user":"creator","create_time":123,"update_user":"publisher","update_time":456}`,
 							},
 						}, nil
@@ -1096,21 +1108,21 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			So(resp[0].ReleaseDesc, ShouldEqual, "stable release")
 			So(resp[0].ReleaseUser, ShouldEqual, "publisher")
 		})
-		
-			Convey("QuerySkillMarketList filters by public access and business domain visibility", func() {
-				mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
-				mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
-				mockBusinessDomainService := mocks.NewMockIBusinessDomainService(ctrl)
-				mockUserMgnt := mocks.NewMockUserManagement(ctrl)
-				mockCategoryManager := mocks.NewMockCategoryManager(ctrl)
-				registry := &skillRegistry{
-					skillRepo:             mockSkillRepo,
-					AuthService:           mockAuthService,
-					BusinessDomainService: mockBusinessDomainService,
-					UserMgnt:              mockUserMgnt,
-					CategoryManager:       mockCategoryManager,
-					Logger:                logger.DefaultLogger(),
-				}
+
+		Convey("QuerySkillMarketList filters by public access and business domain visibility", func() {
+			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
+			mockBusinessDomainService := mocks.NewMockIBusinessDomainService(ctrl)
+			mockUserMgnt := mocks.NewMockUserManagement(ctrl)
+			mockCategoryManager := mocks.NewMockCategoryManager(ctrl)
+			registry := &skillRegistry{
+				skillRepo:             mockSkillRepo,
+				AuthService:           mockAuthService,
+				BusinessDomainService: mockBusinessDomainService,
+				UserMgnt:              mockUserMgnt,
+				CategoryManager:       mockCategoryManager,
+				Logger:                logger.DefaultLogger(),
+			}
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "").Return(&interfaces.AuthAccessor{ID: "viewer"}, nil)
 			mockAuthService.EXPECT().ResourceListIDs(gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeSkill, interfaces.AuthOperationTypePublicAccess).Return([]string{"skill-m1", "skill-m2", "skill-m3"}, nil)
 			mockBusinessDomainService.EXPECT().BatchResourceList(gomock.Any(), []string{"bd-1"}, interfaces.AuthResourceTypeSkill).Return(map[string]string{
@@ -1131,12 +1143,12 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 						{SkillID: "skill-m1", Name: "visible", Status: interfaces.BizStatusPublished.String()},
 					}, nil
 				},
-				)
-				mockUserMgnt.EXPECT().GetUsersName(gomock.Any(), gomock.Any()).Return(map[string]string{}, nil)
-				mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("").AnyTimes()
+			)
+			mockUserMgnt.EXPECT().GetUsersName(gomock.Any(), gomock.Any()).Return(map[string]string{}, nil)
+			mockCategoryManager.EXPECT().GetCategoryName(gomock.Any(), gomock.Any()).Return("").AnyTimes()
 
-				ctx := common.SetPublicAPIToCtx(context.Background(), true)
-				ctx = common.SetBusinessDomainToCtx(ctx, "bd-1")
+			ctx := common.SetPublicAPIToCtx(context.Background(), true)
+			ctx = common.SetBusinessDomainToCtx(ctx, "bd-1")
 			resp, err := registry.QuerySkillMarketList(ctx, &interfaces.QuerySkillMarketListReq{
 				BusinessDomainID: "bd-1",
 				CommonPageParams: interfaces.CommonPageParams{Page: 1, PageSize: 10},
@@ -1286,12 +1298,12 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				Logger:                logger.DefaultLogger(),
 			}
 
-				tx, cleanup := beginTestTx(t)
-				defer cleanup()
+			tx, cleanup := beginTestTx(t)
+			defer cleanup()
 
-				mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-8").Return(&model.SkillRepositoryDB{
-					SkillID: "skill-8", Status: interfaces.BizStatusOffline.String(),
-				}, nil)
+			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-8").Return(&model.SkillRepositoryDB{
+				SkillID: "skill-8", Status: interfaces.BizStatusOffline.String(),
+			}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
 			mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-8", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
@@ -1302,7 +1314,7 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			mockAssetStore.EXPECT().Delete(gomock.Any(), &interfaces.OssObject{StorageKey: "/tmp/object-1"}).Return(nil)
 			mockFileRepo.EXPECT().DeleteSkillFileBySkillID(gomock.Any(), tx, "skill-8", gomock.Any()).Return(nil)
 			mockSkillRepo.EXPECT().DeleteSkillByID(gomock.Any(), tx, "skill-8").Return(nil)
-				mockBusinessDomainService.EXPECT().DisassociateResource(gomock.Any(), "bd-1", "skill-8", interfaces.AuthResourceTypeSkill).Return(nil)
+			mockBusinessDomainService.EXPECT().DisassociateResource(gomock.Any(), "bd-1", "skill-8", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockAuthService.EXPECT().DeletePolicy(gomock.Any(), []string{"skill-8"}, interfaces.AuthResourceTypeSkill).Return(nil)
 
 			err := registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
@@ -1314,10 +1326,10 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-			Convey("DeleteSkill keeps deleting status when asset cleanup fails", func() {
-				mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
-				mockFileRepo := mocks.NewMockISkillFileIndex(ctrl)
-				mockAssetStore := mocks.NewMockskillAssetStore(ctrl)
+		Convey("DeleteSkill keeps deleting status when asset cleanup fails", func() {
+			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockFileRepo := mocks.NewMockISkillFileIndex(ctrl)
+			mockAssetStore := mocks.NewMockskillAssetStore(ctrl)
 			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockBusinessDomainService := mocks.NewMockIBusinessDomainService(ctrl)
@@ -1327,39 +1339,39 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				assetStore:            mockAssetStore,
 				dbTx:                  mockDBTx,
 				AuthService:           mockAuthService,
-					BusinessDomainService: mockBusinessDomainService,
-					Logger:                logger.DefaultLogger(),
-				}
+				BusinessDomainService: mockBusinessDomainService,
+				Logger:                logger.DefaultLogger(),
+			}
 
-				db, sqlMock, err := sqlmock.New()
-				So(err, ShouldBeNil)
-				sqlMock.ExpectBegin()
-				tx, err := db.Begin()
-				So(err, ShouldBeNil)
-				sqlMock.ExpectRollback()
-				sqlMock.ExpectClose()
-				defer func() {
-					So(db.Close(), ShouldBeNil)
-					So(sqlMock.ExpectationsWereMet(), ShouldBeNil)
-				}()
+			db, sqlMock, err := sqlmock.New()
+			So(err, ShouldBeNil)
+			sqlMock.ExpectBegin()
+			tx, err := db.Begin()
+			So(err, ShouldBeNil)
+			sqlMock.ExpectRollback()
+			sqlMock.ExpectClose()
+			defer func() {
+				So(db.Close(), ShouldBeNil)
+				So(sqlMock.ExpectationsWereMet(), ShouldBeNil)
+			}()
 
-				mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-9").Return(&model.SkillRepositoryDB{
-					SkillID: "skill-9", Status: interfaces.BizStatusOffline.String(),
-				}, nil)
-				mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
-				mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-9", interfaces.AuthResourceTypeSkill).Return(nil)
-				mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-9").Return(&model.SkillRepositoryDB{
+				SkillID: "skill-9", Status: interfaces.BizStatusOffline.String(),
+			}, nil)
+			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
+			mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-9", interfaces.AuthResourceTypeSkill).Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
 			mockSkillRepo.EXPECT().UpdateSkillDeleted(gomock.Any(), tx, "skill-9", true, "user-1").Return(nil)
 			mockFileRepo.EXPECT().SelectSkillFileBySkillID(gomock.Any(), tx, "skill-9", gomock.Any()).Return([]*model.SkillFileIndexDB{
 				{SkillID: "skill-9", StorageKey: "/tmp/object-2"},
 			}, nil)
 			mockAssetStore.EXPECT().Delete(gomock.Any(), &interfaces.OssObject{StorageKey: "/tmp/object-2"}).Return(errors.New("delete failed"))
 
-				err = registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
-					BusinessDomainID: "bd-1",
-					UserID:           "user-1",
-					SkillID:          "skill-9",
-				})
+			err = registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
+				BusinessDomainID: "bd-1",
+				UserID:           "user-1",
+				SkillID:          "skill-9",
+			})
 
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "delete failed")
@@ -1374,8 +1386,8 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 				Logger:      logger.DefaultLogger(),
 			}
 
-				mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
-				mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-9b", interfaces.AuthResourceTypeSkill).Return(errors.New("delete forbidden"))
+			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
+			mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-9b", interfaces.AuthResourceTypeSkill).Return(errors.New("delete forbidden"))
 
 			err := registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
 				BusinessDomainID: "bd-1",
@@ -1563,6 +1575,203 @@ func patchTxMethods() func() {
 		rollbackPatch.Reset()
 		commitPatch.Reset()
 	}
+}
+
+func TestPublishSkillSnapshotKeepsNewest10HistoryVersions(t *testing.T) {
+	Convey("publishSkillSnapshot replaces the same skill version with the latest snapshot", t, func() {
+		histories := []*model.SkillReleaseHistoryDB{
+			{ID: 1, SkillID: "skill-history", Version: "v1"},
+		}
+		insertedCount := 0
+		deletedIDs := make([]int64, 0, 1)
+		registry := &skillRegistry{
+			releaseRepo: &stubSkillReleaseRepo{
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillReleaseDB, error) {
+					return &model.SkillReleaseDB{SkillID: skillID, Version: "v1"}, nil
+				},
+			},
+			releaseHistoryRepo: &stubSkillReleaseHistoryRepo{
+				insert: func(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error {
+					insertedCount++
+					history.ID = 2
+					histories = append([]*model.SkillReleaseHistoryDB{history}, histories...)
+					return nil
+				},
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error) {
+					return histories, nil
+				},
+				selectBySkillIDAndVersion: func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error) {
+					for _, history := range histories {
+						if history.SkillID == skillID && history.Version == version {
+							return history, nil
+						}
+					}
+					return nil, nil
+				},
+				deleteByID: func(ctx context.Context, tx *sql.Tx, id int64) error {
+					deletedIDs = append(deletedIDs, id)
+					filtered := make([]*model.SkillReleaseHistoryDB, 0, len(histories))
+					for _, history := range histories {
+						if history.ID != id {
+							filtered = append(filtered, history)
+						}
+					}
+					histories = filtered
+					return nil
+				},
+			},
+		}
+
+		err := registry.publishSkillSnapshot(context.Background(), nil, &model.SkillRepositoryDB{
+			SkillID: "skill-history",
+			Name:    "demo-skill",
+			Version: "v1",
+		}, "user-1")
+
+		So(err, ShouldBeNil)
+		So(insertedCount, ShouldEqual, 1)
+		So(deletedIDs, ShouldResemble, []int64{1})
+		So(len(histories), ShouldEqual, 1)
+		So(histories[0].ID, ShouldEqual, 2)
+		So(histories[0].Version, ShouldEqual, "v1")
+	})
+
+	Convey("publishSkillSnapshot replaces an existing version and keeps 10 histories", t, func() {
+		histories := []*model.SkillReleaseHistoryDB{
+			{ID: 10, SkillID: "skill-history", Version: "v10"},
+			{ID: 9, SkillID: "skill-history", Version: "v9"},
+			{ID: 8, SkillID: "skill-history", Version: "v8"},
+			{ID: 7, SkillID: "skill-history", Version: "v7"},
+			{ID: 6, SkillID: "skill-history", Version: "v6"},
+			{ID: 5, SkillID: "skill-history", Version: "v5"},
+			{ID: 4, SkillID: "skill-history", Version: "v4"},
+			{ID: 3, SkillID: "skill-history", Version: "v3"},
+			{ID: 2, SkillID: "skill-history", Version: "v2"},
+			{ID: 1, SkillID: "skill-history", Version: "v1"},
+		}
+		insertedCount := 0
+		deletedIDs := make([]int64, 0, 1)
+		registry := &skillRegistry{
+			releaseRepo: &stubSkillReleaseRepo{
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillReleaseDB, error) {
+					return &model.SkillReleaseDB{SkillID: skillID, Version: "v10"}, nil
+				},
+			},
+			releaseHistoryRepo: &stubSkillReleaseHistoryRepo{
+				insert: func(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error {
+					insertedCount++
+					history.ID = 11
+					histories = append([]*model.SkillReleaseHistoryDB{history}, histories...)
+					return nil
+				},
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error) {
+					return histories, nil
+				},
+				selectBySkillIDAndVersion: func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error) {
+					for _, history := range histories {
+						if history.SkillID == skillID && history.Version == version {
+							return history, nil
+						}
+					}
+					return nil, nil
+				},
+				deleteByID: func(ctx context.Context, tx *sql.Tx, id int64) error {
+					deletedIDs = append(deletedIDs, id)
+					filtered := make([]*model.SkillReleaseHistoryDB, 0, len(histories))
+					for _, history := range histories {
+						if history.ID != id {
+							filtered = append(filtered, history)
+						}
+					}
+					histories = filtered
+					return nil
+				},
+			},
+		}
+
+		err := registry.publishSkillSnapshot(context.Background(), nil, &model.SkillRepositoryDB{
+			SkillID: "skill-history",
+			Name:    "demo-skill",
+			Version: "v10",
+		}, "user-1")
+
+		So(err, ShouldBeNil)
+		So(insertedCount, ShouldEqual, 1)
+		So(deletedIDs, ShouldResemble, []int64{10})
+		So(len(histories), ShouldEqual, 10)
+		So(histories[0].ID, ShouldEqual, 11)
+		So(histories[0].Version, ShouldEqual, "v10")
+		for _, history := range histories {
+			So(history.ID, ShouldNotEqual, 10)
+		}
+	})
+
+	Convey("publishSkillSnapshot keeps the newest 10 distinct skill versions", t, func() {
+		histories := []*model.SkillReleaseHistoryDB{
+			{ID: 10, SkillID: "skill-history", Version: "v10"},
+			{ID: 9, SkillID: "skill-history", Version: "v9"},
+			{ID: 8, SkillID: "skill-history", Version: "v8"},
+			{ID: 7, SkillID: "skill-history", Version: "v7"},
+			{ID: 6, SkillID: "skill-history", Version: "v6"},
+			{ID: 5, SkillID: "skill-history", Version: "v5"},
+			{ID: 4, SkillID: "skill-history", Version: "v4"},
+			{ID: 3, SkillID: "skill-history", Version: "v3"},
+			{ID: 2, SkillID: "skill-history", Version: "v2"},
+			{ID: 1, SkillID: "skill-history", Version: "v1"},
+		}
+		deletedIDs := make([]int64, 0, 1)
+		registry := &skillRegistry{
+			releaseRepo: &stubSkillReleaseRepo{
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillReleaseDB, error) {
+					return &model.SkillReleaseDB{SkillID: skillID, Version: "v10"}, nil
+				},
+			},
+			releaseHistoryRepo: &stubSkillReleaseHistoryRepo{
+				insert: func(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error {
+					history.ID = 11
+					histories = append([]*model.SkillReleaseHistoryDB{history}, histories...)
+					return nil
+				},
+				selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error) {
+					return histories, nil
+				},
+				selectBySkillIDAndVersion: func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error) {
+					for _, history := range histories {
+						if history.SkillID == skillID && history.Version == version {
+							return history, nil
+						}
+					}
+					return nil, nil
+				},
+				deleteByID: func(ctx context.Context, tx *sql.Tx, id int64) error {
+					deletedIDs = append(deletedIDs, id)
+					filtered := make([]*model.SkillReleaseHistoryDB, 0, len(histories))
+					for _, history := range histories {
+						if history.ID != id {
+							filtered = append(filtered, history)
+						}
+					}
+					histories = filtered
+					return nil
+				},
+			},
+		}
+
+		err := registry.publishSkillSnapshot(context.Background(), nil, &model.SkillRepositoryDB{
+			SkillID: "skill-history",
+			Name:    "demo-skill",
+			Version: "v11",
+		}, "user-1")
+
+		So(err, ShouldBeNil)
+		So(len(histories), ShouldEqual, 10)
+		So(histories[0].ID, ShouldEqual, 11)
+		So(histories[0].Version, ShouldEqual, "v11")
+		So(deletedIDs, ShouldResemble, []int64{1})
+		for _, history := range histories {
+			So(history.Version, ShouldNotEqual, "v1")
+		}
+	})
 }
 
 func TestRegisterSkillPersistsSkillVersionForZipAssets(t *testing.T) {

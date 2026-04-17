@@ -99,6 +99,15 @@ func (s *skillReleaseHistoryDB) SelectBySkillIDAndVersion(ctx context.Context, t
 	return history, nil
 }
 
+func (s *skillReleaseHistoryDB) DeleteByID(ctx context.Context, tx *sql.Tx, id int64) error {
+	orm := s.orm
+	if tx != nil {
+		orm = s.orm.WithTx(tx)
+	}
+	_, err := orm.Delete().From(tbSkillReleaseHistory).WhereEq("f_id", id).Execute(ctx)
+	return err
+}
+
 func (s *skillReleaseHistoryDB) DeleteBySkillID(ctx context.Context, tx *sql.Tx, skillID string) error {
 	orm := s.orm
 	if tx != nil {
