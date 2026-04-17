@@ -79,11 +79,11 @@
   <header class="docs-nav">
   <div class="docs-nav__title">Decision Agent API Reference</div>
   <nav class="docs-nav__links">
-    <a href="agent-factory.html" aria-current="page">Scalar</a>
-    <a href="agent-factory-redoc.html">Redoc</a>
+    <a href="agent-factory.html">Scalar</a>
+    <a href="agent-factory-redoc.html" aria-current="page">Redoc</a>
   </nav>
 </header>
-  <noscript>Scalar requires JavaScript to render the API reference.</noscript>
+  <noscript>Redoc requires JavaScript to render the API reference.</noscript>
   <script type="application/json" id="openapi-document">{
   "components": {
     "parameters": {
@@ -13971,18 +13971,17 @@
   ]
 }
 </script>
+  <div id="redoc-container"></div>
+  <script src="ui/redoc.standalone.js"></script>
   <script>
     (() => {
-      const specElement = document.getElementById("openapi-document");
-      const referenceElement = document.createElement("script");
-      const specBlob = new Blob([specElement.textContent], { type: "application/json" });
-      const specURL = URL.createObjectURL(specBlob);
-      referenceElement.id = "api-reference";
-      referenceElement.dataset.url = specURL;
-      document.body.appendChild(referenceElement);
-      window.addEventListener("pagehide", () => URL.revokeObjectURL(specURL), { once: true });
+      const spec = JSON.parse(document.getElementById("openapi-document").textContent);
+      const container = document.getElementById("redoc-container");
+      Redoc.init(spec, {
+        hideDownloadButton: false,
+        scrollYOffset: 64,
+      }, container);
     })();
   </script>
-  <script src="ui/scalar-api-reference.js"></script>
 </body>
 </html>

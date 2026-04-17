@@ -7,7 +7,8 @@ Agent Factory is a Go service in Decision Agent responsible for Agent configurat
 ## Quick Access
 
 - External API documentation: [docs/api/README.md](./docs/api/README.md)
-- Static OpenAPI HTML: [docs/api/agent-factory.html](./docs/api/agent-factory.html)
+- Static OpenAPI Scalar HTML: [docs/api/agent-factory.html](./docs/api/agent-factory.html)
+- Static OpenAPI Redoc HTML: [docs/api/agent-factory-redoc.html](./docs/api/agent-factory-redoc.html)
 - Static OpenAPI JSON: [docs/api/agent-factory.json](./docs/api/agent-factory.json)
 - Static OpenAPI YAML: [docs/api/agent-factory.yaml](./docs/api/agent-factory.yaml)
 - API Chat entry code: [src/driveradapter/api/httphandler/agenthandler/api_chat.go](./src/driveradapter/api/httphandler/agenthandler/api_chat.go)
@@ -18,6 +19,8 @@ Common commands:
 ```bash
 make gen-api-docs
 make validate-api-docs
+make view-swag
+make view-redoc
 make goTest
 make ciLint
 make ciLintFix
@@ -115,6 +118,8 @@ make compare-api-docs
 
 Additional notes:
 - The Swagger host declared in `main.go` is `localhost:30777`, and the example port in `conf/agent-factory.example.yaml` is also `30777`
+- Runtime Scalar UI entry: `http://127.0.0.1:30777/swagger/index.html`
+- Runtime Redoc UI entry: `http://127.0.0.1:30777/redoc/index.html`
 - Run side public interface base path is `/api/agent-factory/v1`
 - Run side internal interface base path is `/api/agent-factory/internal/v1`
 

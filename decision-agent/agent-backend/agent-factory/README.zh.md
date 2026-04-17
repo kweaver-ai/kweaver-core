@@ -7,7 +7,8 @@ Agent Factory 是 Decision Agent 中负责 Agent 配置、发布、API 暴露和
 ## 快速入口
 
 - 对外 API 文档说明：[docs/api/README.md](./docs/api/README.md)
-- 静态 OpenAPI HTML：[docs/api/agent-factory.html](./docs/api/agent-factory.html)
+- 静态 OpenAPI Scalar HTML：[docs/api/agent-factory.html](./docs/api/agent-factory.html)
+- 静态 OpenAPI Redoc HTML：[docs/api/agent-factory-redoc.html](./docs/api/agent-factory-redoc.html)
 - 静态 OpenAPI JSON：[docs/api/agent-factory.json](./docs/api/agent-factory.json)
 - 静态 OpenAPI YAML：[docs/api/agent-factory.yaml](./docs/api/agent-factory.yaml)
 - API Chat 入口代码：[src/driveradapter/api/httphandler/agenthandler/api_chat.go](./src/driveradapter/api/httphandler/agenthandler/api_chat.go)
@@ -18,6 +19,8 @@ Agent Factory 是 Decision Agent 中负责 Agent 配置、发布、API 暴露和
 ```bash
 make gen-api-docs
 make validate-api-docs
+make view-swag
+make view-redoc
 make goTest
 make ciLint
 make ciLintFix
@@ -116,6 +119,8 @@ make compare-api-docs
 
 补充说明：
 - `main.go` 中声明的 Swagger host 是 `localhost:30777`，`conf/agent-factory.example.yaml` 里的示例端口也是 `30777`
+- 运行时 Scalar 页面入口：`http://127.0.0.1:30777/swagger/index.html`
+- 运行时 Redoc 页面入口：`http://127.0.0.1:30777/redoc/index.html`
 - Run 侧公开接口基路径是 `/api/agent-factory/v1`
 - Run 侧内部接口基路径是 `/api/agent-factory/internal/v1`
 

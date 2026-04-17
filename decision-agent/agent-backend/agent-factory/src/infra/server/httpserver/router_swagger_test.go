@@ -34,14 +34,33 @@ func TestRegisterSwaggerRoutes_ScalarDocsEnabled(t *testing.T) {
 	assert.Equal(t, http.StatusMovedPermanently, redirectResp.Code)
 	assert.Equal(t, scalarDocsPath, redirectResp.Header().Get("Location"))
 
+	redocRedirectReq := httptest.NewRequest(http.MethodGet, "/redoc", nil)
+	redocRedirectResp := httptest.NewRecorder()
+	engine.ServeHTTP(redocRedirectResp, redocRedirectReq)
+	assert.Equal(t, http.StatusMovedPermanently, redocRedirectResp.Code)
+	assert.Equal(t, redocDocsPath, redocRedirectResp.Header().Get("Location"))
+
 	indexReq := httptest.NewRequest(http.MethodGet, scalarDocsPath, nil)
 	indexResp := httptest.NewRecorder()
 	engine.ServeHTTP(indexResp, indexReq)
 	assert.Equal(t, http.StatusOK, indexResp.Code)
-	assert.Contains(t, indexResp.Body.String(), "@scalar/api-reference")
+	assert.Contains(t, indexResp.Body.String(), scalarJSAssetPath)
 	assert.Contains(t, indexResp.Body.String(), scalarDocJSONPath)
 	assert.Contains(t, indexResp.Body.String(), `rel="icon"`)
 	assert.Contains(t, indexResp.Body.String(), "favicon.png")
+	assert.Contains(t, indexResp.Body.String(), redocDocsPath)
+	assert.NotContains(t, indexResp.Body.String(), "cdn.jsdelivr.net")
+	assert.NotContains(t, indexResp.Body.String(), "cdn.redocly.com")
+
+	redocIndexReq := httptest.NewRequest(http.MethodGet, redocDocsPath, nil)
+	redocIndexResp := httptest.NewRecorder()
+	engine.ServeHTTP(redocIndexResp, redocIndexReq)
+	assert.Equal(t, http.StatusOK, redocIndexResp.Code)
+	assert.Contains(t, redocIndexResp.Body.String(), redocJSAssetPath)
+	assert.Contains(t, redocIndexResp.Body.String(), scalarDocsPath)
+	assert.Contains(t, redocIndexResp.Body.String(), scalarDocJSONPath)
+	assert.NotContains(t, redocIndexResp.Body.String(), "cdn.redocly.com")
+	assert.NotContains(t, redocIndexResp.Body.String(), "fonts.googleapis.com")
 
 	jsonReq := httptest.NewRequest(http.MethodGet, scalarDocJSONPath, nil)
 	jsonReq.Header.Set("X-Forwarded-Proto", "https")
@@ -100,6 +119,12 @@ func TestRegisterSwaggerRoutes_ScalarDocsEnabled(t *testing.T) {
 	assert.Equal(t, http.StatusOK, faviconResp.Code)
 	assert.Equal(t, "image/png", faviconResp.Header().Get("Content-Type"))
 	assert.NotEmpty(t, faviconResp.Body.Bytes())
+
+	uiReq := httptest.NewRequest(http.MethodGet, scalarJSAssetPath, nil)
+	uiResp := httptest.NewRecorder()
+	engine.ServeHTTP(uiResp, uiReq)
+	assert.Equal(t, http.StatusOK, uiResp.Code)
+	assert.NotEmpty(t, uiResp.Body.Bytes())
 }
 
 func TestRegisterSwaggerRoutes_Disabled(t *testing.T) {
@@ -121,6 +146,11 @@ func TestRegisterSwaggerRoutes_Disabled(t *testing.T) {
 	resp := httptest.NewRecorder()
 	engine.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+
+	redocReq := httptest.NewRequest(http.MethodGet, redocDocsPath, nil)
+	redocResp := httptest.NewRecorder()
+	engine.ServeHTTP(redocResp, redocReq)
+	assert.Equal(t, http.StatusNotFound, redocResp.Code)
 }
 
 func TestRegisterSwaggerRoutes_NilConfig(t *testing.T) {
@@ -142,6 +172,11 @@ func TestRegisterSwaggerRoutes_NilConfig(t *testing.T) {
 	resp := httptest.NewRecorder()
 	engine.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+
+	redocReq := httptest.NewRequest(http.MethodGet, redocDocsPath, nil)
+	redocResp := httptest.NewRecorder()
+	engine.ServeHTTP(redocResp, redocReq)
+	assert.Equal(t, http.StatusNotFound, redocResp.Code)
 }
 
 func TestCurrentRequestBaseURL_UsesForwardedHeaders(t *testing.T) {

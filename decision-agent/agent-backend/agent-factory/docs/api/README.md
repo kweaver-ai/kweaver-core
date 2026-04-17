@@ -9,9 +9,13 @@
 - `agent-factory.yaml`
   - OpenAPI 3 YAML 版本，适合人工阅读和分发
 - `agent-factory.html`
-  - 可直接打开的静态文档页面
+  - Scalar 风格的静态文档页面，适合 Try it Out
+- `agent-factory-redoc.html`
+  - Redoc 风格的静态文档页面，适合只读展示
 - `favicon.png`
   - 静态文档页面图标
+- `ui/`
+  - 本地化后的 JS 资源目录，供静态 HTML 离线加载
 
 ## 如何生成
 
@@ -37,15 +41,26 @@ make validate-api-docs
 
 ### 直接查看静态页面
 
-直接打开当前目录下的 `agent-factory.html`。
+直接打开当前目录下的任一页面：
+
+- `agent-factory.html`
+- `agent-factory-redoc.html`
+
+这两个页面都会加载当前目录下的 `ui/` 本地资源，不依赖外部 CDN。
 
 ### 启动服务后查看
 
 启动 Agent Factory 后访问：
 
 - `http://127.0.0.1:30777/swagger/index.html`
+- `http://127.0.0.1:30777/redoc/index.html`
 - `http://127.0.0.1:30777/swagger/doc.json`
 - `http://127.0.0.1:30777/swagger/doc.yaml`
+
+推荐方式：
+
+- 需要发起请求、Try it Out：使用 Scalar 页面
+- 需要更好的只读文档展示：使用 Redoc 页面
 
 ## 深入维护说明
 

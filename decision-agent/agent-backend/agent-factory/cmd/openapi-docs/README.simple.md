@@ -14,14 +14,14 @@
 
 `generate` 会一次写两套产物：
 
-- 对外目录：`docs/api/agent-factory.{json,yaml,html}` 与 `docs/api/favicon.png`
+- 对外目录：`docs/api/agent-factory.{json,yaml}`、`docs/api/agent-factory.html`、`docs/api/agent-factory-redoc.html`、`docs/api/favicon.png` 与 `docs/api/ui/*`
 - 运行时副本：`src/infra/server/apidocs/assets/*`
 
 ## 三个子命令
 
 ### `generate`
 
-生成最终 OpenAPI JSON / YAML / HTML，并同步运行时副本。
+生成最终 OpenAPI JSON / YAML / 双 HTML 页面，并同步运行时副本。
 
 ```bash
 go run ./cmd/openapi-docs generate

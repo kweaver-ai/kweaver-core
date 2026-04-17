@@ -6,13 +6,83 @@
   <title>Decision Agent API Reference</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
+      background: #f5f7fb;
+    }
+
+    .docs-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      backdrop-filter: blur(12px);
+    }
+
+    .docs-nav__title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .docs-nav__links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .docs-nav__links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .docs-nav__links a[aria-current="page"] {
+      color: #0f172a;
+      background: #f8fafc;
+      border-color: #f8fafc;
+    }
+
+    #redoc-container {
+      min-height: calc(100vh - 64px);
+    }
+
+    @media (max-width: 720px) {
+      .docs-nav {
+        padding: 14px 16px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
+  <header class="docs-nav">
+  <div class="docs-nav__title">Decision Agent API Reference</div>
+  <nav class="docs-nav__links">
+    <a href="agent-factory.html" aria-current="page">Scalar</a>
+    <a href="agent-factory-redoc.html">Redoc</a>
+  </nav>
+</header>
   <noscript>Scalar requires JavaScript to render the API reference.</noscript>
   <script type="application/json" id="openapi-document">{
   "components": {
@@ -13913,6 +13983,6 @@
       window.addEventListener("pagehide", () => URL.revokeObjectURL(specURL), { once: true });
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.34.6"></script>
+  <script src="ui/scalar-api-reference.js"></script>
 </body>
 </html>

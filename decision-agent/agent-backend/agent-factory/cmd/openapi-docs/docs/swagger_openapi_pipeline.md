@@ -19,7 +19,8 @@ flowchart TD
     E["cmd/openapi-docs/assets/overlay.yaml"] --> D
     F["cmd/openapi-docs/assets/baseline/agent-factory.json"] --> D
     G["src/infra/server/apidocs/assets/favicon.png"] --> D
-    D --> H["OpenAPI 3 JSON / YAML / HTML"]
+    M["src/infra/server/apidocs/assets/ui/*"] --> D
+    D --> H["OpenAPI 3 JSON / YAML / Scalar HTML / Redoc HTML"]
     H --> I["docs/api/*"]
     H --> J["src/infra/server/apidocs/assets/*"]
     I --> K["用户直接查看"]
@@ -62,13 +63,16 @@ go run ./cmd/openapi-docs generate
 - `../assets/overlay.yaml`
 - `../assets/baseline/agent-factory.json`
 - `../../src/infra/server/apidocs/assets/favicon.png`
+- `../../src/infra/server/apidocs/assets/ui/*`
 
 输出：
 
 - `../../docs/api/agent-factory.json`
 - `../../docs/api/agent-factory.yaml`
 - `../../docs/api/agent-factory.html`
+- `../../docs/api/agent-factory-redoc.html`
 - `../../docs/api/favicon.png`
+- `../../docs/api/ui/*`
 - `../../src/infra/server/apidocs/assets/*`
 
 ## 运行时怎么用
@@ -81,9 +85,11 @@ go run ./cmd/openapi-docs generate
 `router_swagger.go` 暴露：
 
 - `/swagger/index.html`
+- `/redoc/index.html`
 - `/swagger/doc.json`
 - `/swagger/doc.yaml`
 - `/swagger/favicon.png`
+- `/apidocs-ui/*`
 
 ## 为什么要保留两套最终文件
 
@@ -95,10 +101,12 @@ go run ./cmd/openapi-docs generate
 
 给运行时 `go:embed` 使用，避免把 Go 源文件放进 `docs/` 目录。
 
-`favicon.png` 也遵循同样规则，所以当前最少保留 2 份，而不是 1 份：
+`favicon.png` 和 `ui/*` 资源也遵循同样规则，所以当前最少保留 2 份，而不是 1 份：
 
 - `docs/api/favicon.png`
 - `src/infra/server/apidocs/assets/favicon.png`
+- `docs/api/ui/*`
+- `src/infra/server/apidocs/assets/ui/*`
 
 ## 校验点
 
@@ -106,7 +114,7 @@ go run ./cmd/openapi-docs generate
 
 1. OpenAPI JSON 能否通过 `kin-openapi` 校验
 2. 路径数和 operation 数是否符合预期
-3. HTML 是否包含 Scalar 所需标记
+3. Scalar / Redoc HTML 是否都包含预期标记，且不依赖外部 CDN
 4. `docs/api/*` 与 `src/infra/server/apidocs/assets/*` 是否完全一致
 
 ## 相关文档

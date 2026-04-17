@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -13,10 +14,13 @@ import (
 
 const (
 	scalarDocsPath    = "/swagger/index.html"
+	redocDocsPath     = "/redoc/index.html"
 	scalarDocJSONPath = "/swagger/doc.json"
 	scalarDocYAMLPath = "/swagger/doc.yaml"
 	scalarFaviconPath = "/swagger/favicon.png"
-	scalarCDNURL      = "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.34.6"
+	apidocsUIPath     = "/apidocs-ui"
+	scalarJSAssetPath = apidocsUIPath + "/scalar-api-reference.js"
+	redocJSAssetPath  = apidocsUIPath + "/redoc.standalone.js"
 )
 
 // registerSwaggerRoutes 注册 API 文档路由
@@ -24,6 +28,8 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 	if global.GConfig == nil || !global.GConfig.EnableSwagger {
 		return
 	}
+
+	engine.StaticFS(apidocsUIPath, apidocs.UIAssetsFileSystem())
 
 	engine.GET("/swagger", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
@@ -37,8 +43,17 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 	engine.GET("/scalar/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
 	})
+	engine.GET("/redoc", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, redocDocsPath)
+	})
+	engine.GET("/redoc/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, redocDocsPath)
+	})
 	engine.GET(scalarDocsPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderScalarPage(scalarDocJSONPath)))
+	})
+	engine.GET(redocDocsPath, func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderRedocPage(scalarDocJSONPath)))
 	})
 	engine.GET(scalarDocJSONPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "application/json; charset=utf-8", renderOpenAPIDocJSON(c))
@@ -52,7 +67,7 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 }
 
 func renderScalarPage(specURL string) string {
-	return `<!DOCTYPE html>
+	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -60,18 +75,46 @@ func renderScalarPage(specURL string) string {
   <title>Decision Agent API Reference</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-    }
+    %s
   </style>
 </head>
 <body>
+  %s
   <noscript>Scalar requires JavaScript to render the API reference.</noscript>
-  <script id="api-reference" data-url="` + specURL + `"></script>
-  <script src="` + scalarCDNURL + `"></script>
+  <script id="api-reference" data-url="%s"></script>
+  <script src="%s"></script>
 </body>
-</html>`
+</html>`, docsPageStyle(), runtimeDocsNavHTML("scalar"), specURL, scalarJSAssetPath)
+}
+
+func renderRedocPage(specURL string) string {
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Decision Agent API Reference</title>
+  <link rel="icon" type="image/png" href="%s" />
+  <style>
+    %s
+  </style>
+</head>
+<body>
+  %s
+  <noscript>Redoc requires JavaScript to render the API reference.</noscript>
+  <div id="redoc-container"></div>
+  <script src="%s"></script>
+  <script>
+    (() => {
+      const container = document.getElementById("redoc-container");
+      Redoc.init("%s", {
+        hideDownloadButton: false,
+        scrollYOffset: 64,
+      }, container);
+    })();
+  </script>
+</body>
+</html>`, scalarFaviconPath, docsPageStyle(), runtimeDocsNavHTML("redoc"), redocJSAssetPath, specURL)
 }
 
 func renderOpenAPIDocJSON(c *gin.Context) []byte {
@@ -182,4 +225,94 @@ func firstHeaderValue(value string) string {
 	}
 
 	return strings.TrimSpace(strings.Split(value, ",")[0])
+}
+
+func runtimeDocsNavHTML(active string) string {
+	scalarAttrs := `href="` + scalarDocsPath + `"`
+	redocAttrs := `href="` + redocDocsPath + `"`
+
+	if active == "scalar" {
+		scalarAttrs += ` aria-current="page"`
+	}
+	if active == "redoc" {
+		redocAttrs += ` aria-current="page"`
+	}
+
+	return `<header class="docs-nav">
+  <div class="docs-nav__title">Decision Agent API Reference</div>
+  <nav class="docs-nav__links">
+    <a ` + scalarAttrs + `>Scalar</a>
+    <a ` + redocAttrs + `>Redoc</a>
+  </nav>
+</header>`
+}
+
+func docsPageStyle() string {
+	return `:root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f7fb;
+    }
+
+    .docs-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      backdrop-filter: blur(12px);
+    }
+
+    .docs-nav__title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .docs-nav__links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .docs-nav__links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .docs-nav__links a[aria-current="page"] {
+      color: #0f172a;
+      background: #f8fafc;
+      border-color: #f8fafc;
+    }
+
+    #redoc-container {
+      min-height: calc(100vh - 64px);
+    }
+
+    @media (max-width: 720px) {
+      .docs-nav {
+        padding: 14px 16px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }`
 }

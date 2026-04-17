@@ -81,5 +81,6 @@ func BuildArtifactsFromFiles(ctx context.Context, opts BuildOptions) (*BuildArti
 		JSON:          finalJSON,
 		YAML:          finalYAML,
 		HTML:          []byte(RenderScalarStaticHTML(finalJSON)),
+		RedocHTML:     []byte(RenderRedocStaticHTML(finalJSON)),
 	}, nil
 }

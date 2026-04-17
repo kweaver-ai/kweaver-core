@@ -3,32 +3,42 @@ package main
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 
 	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/internal/openapidoc"
 	pkgerrors "github.com/pkg/errors"
 )
 
 type docOutputPaths struct {
-	PublicJSONPath     string
-	PublicYAMLPath     string
-	PublicHTMLPath     string
-	PublicFaviconPath  string
-	RuntimeJSONPath    string
-	RuntimeYAMLPath    string
-	RuntimeHTMLPath    string
-	RuntimeFaviconPath string
-	FaviconSourcePath  string
+	PublicJSONPath       string
+	PublicYAMLPath       string
+	PublicHTMLPath       string
+	PublicRedocHTMLPath  string
+	PublicFaviconPath    string
+	PublicUIDirPath      string
+	RuntimeJSONPath      string
+	RuntimeYAMLPath      string
+	RuntimeHTMLPath      string
+	RuntimeRedocHTMLPath string
+	RuntimeFaviconPath   string
+	RuntimeUIDirPath     string
+	FaviconSourcePath    string
+	UISourceDirPath      string
 }
 
 type mirroredArtifactPaths struct {
-	PublicJSONPath     string
-	PublicYAMLPath     string
-	PublicHTMLPath     string
-	PublicFaviconPath  string
-	RuntimeJSONPath    string
-	RuntimeYAMLPath    string
-	RuntimeHTMLPath    string
-	RuntimeFaviconPath string
+	PublicJSONPath       string
+	PublicYAMLPath       string
+	PublicHTMLPath       string
+	PublicRedocHTMLPath  string
+	PublicFaviconPath    string
+	PublicUIDirPath      string
+	RuntimeJSONPath      string
+	RuntimeYAMLPath      string
+	RuntimeHTMLPath      string
+	RuntimeRedocHTMLPath string
+	RuntimeFaviconPath   string
+	RuntimeUIDirPath     string
 }
 
 func writeGeneratedArtifacts(paths docOutputPaths, artifacts *openapidoc.BuildArtifacts) error {
@@ -48,6 +58,10 @@ func writeGeneratedArtifacts(paths docOutputPaths, artifacts *openapidoc.BuildAr
 		return err
 	}
 
+	if err := writeMirroredArtifact("redoc html", paths.PublicRedocHTMLPath, paths.RuntimeRedocHTMLPath, artifacts.RedocHTML); err != nil {
+		return err
+	}
+
 	if optionalPath(paths.FaviconSourcePath) != "" {
 		faviconData, err := os.ReadFile(paths.FaviconSourcePath)
 		if err != nil {
@@ -55,6 +69,12 @@ func writeGeneratedArtifacts(paths docOutputPaths, artifacts *openapidoc.BuildAr
 		}
 
 		if err := writeMirroredArtifact("favicon", paths.PublicFaviconPath, paths.RuntimeFaviconPath, faviconData); err != nil {
+			return err
+		}
+	}
+
+	if optionalPath(paths.UISourceDirPath) != "" {
+		if err := writeMirroredDirectory("ui", paths.UISourceDirPath, paths.PublicUIDirPath, paths.RuntimeUIDirPath); err != nil {
 			return err
 		}
 	}
@@ -78,6 +98,22 @@ func writeMirroredArtifact(label string, publicPath string, runtimePath string, 
 	return nil
 }
 
+func writeMirroredDirectory(label string, sourceDir string, publicDir string, runtimeDir string) error {
+	if optionalPath(publicDir) != "" {
+		if err := copyDirectory(sourceDir, publicDir); err != nil {
+			return pkgerrors.Wrapf(err, "write public %s directory", label)
+		}
+	}
+
+	if optionalPath(runtimeDir) != "" {
+		if err := copyDirectory(sourceDir, runtimeDir); err != nil {
+			return pkgerrors.Wrapf(err, "write runtime %s directory", label)
+		}
+	}
+
+	return nil
+}
+
 func validateMirroredArtifacts(paths mirroredArtifactPaths) error {
 	checks := []struct {
 		label       string
@@ -87,6 +123,7 @@ func validateMirroredArtifacts(paths mirroredArtifactPaths) error {
 		{label: "json", publicPath: paths.PublicJSONPath, runtimePath: paths.RuntimeJSONPath},
 		{label: "yaml", publicPath: paths.PublicYAMLPath, runtimePath: paths.RuntimeYAMLPath},
 		{label: "html", publicPath: paths.PublicHTMLPath, runtimePath: paths.RuntimeHTMLPath},
+		{label: "redoc html", publicPath: paths.PublicRedocHTMLPath, runtimePath: paths.RuntimeRedocHTMLPath},
 		{label: "favicon", publicPath: paths.PublicFaviconPath, runtimePath: paths.RuntimeFaviconPath},
 	}
 
@@ -110,5 +147,106 @@ func validateMirroredArtifacts(paths mirroredArtifactPaths) error {
 		}
 	}
 
+	if optionalPath(paths.PublicUIDirPath) != "" && optionalPath(paths.RuntimeUIDirPath) != "" {
+		if err := validateMirroredDirectory("ui", paths.PublicUIDirPath, paths.RuntimeUIDirPath); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func copyDirectory(sourceDir string, targetDir string) error {
+	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return pkgerrors.Wrap(err, "walk source directory")
+		}
+
+		relativePath, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return pkgerrors.Wrap(err, "resolve relative path")
+		}
+		if relativePath == "." {
+			return nil
+		}
+
+		targetPath := filepath.Join(targetDir, relativePath)
+		if info.IsDir() {
+			if err := os.MkdirAll(targetPath, 0o755); err != nil {
+				return pkgerrors.Wrap(err, "create mirrored directory")
+			}
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return pkgerrors.Wrap(err, "read source file")
+		}
+
+		if err := openapidoc.WriteFile(targetPath, data); err != nil {
+			return pkgerrors.Wrap(err, "write mirrored file")
+		}
+
+		return nil
+	})
+}
+
+func validateMirroredDirectory(label string, publicDir string, runtimeDir string) error {
+	publicFiles, err := readDirectoryFiles(publicDir)
+	if err != nil {
+		return pkgerrors.Wrapf(err, "read public %s directory", label)
+	}
+
+	runtimeFiles, err := readDirectoryFiles(runtimeDir)
+	if err != nil {
+		return pkgerrors.Wrapf(err, "read runtime %s directory", label)
+	}
+
+	if len(publicFiles) != len(runtimeFiles) {
+		return pkgerrors.Errorf("%s directory file counts differ between %s and %s", label, publicDir, runtimeDir)
+	}
+
+	for relativePath, publicData := range publicFiles {
+		runtimeData, ok := runtimeFiles[relativePath]
+		if !ok {
+			return pkgerrors.Errorf("%s file %s is missing in %s", label, relativePath, runtimeDir)
+		}
+
+		if !bytes.Equal(publicData, runtimeData) {
+			return pkgerrors.Errorf("%s file %s differs between %s and %s", label, relativePath, publicDir, runtimeDir)
+		}
+	}
+
+	return nil
+}
+
+func readDirectoryFiles(rootDir string) (map[string][]byte, error) {
+	files := make(map[string][]byte)
+
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return pkgerrors.Wrap(err, "walk mirrored directory")
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relativePath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return pkgerrors.Wrap(err, "resolve mirrored relative path")
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return pkgerrors.Wrap(err, "read mirrored file")
+		}
+		files[relativePath] = data
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
 }

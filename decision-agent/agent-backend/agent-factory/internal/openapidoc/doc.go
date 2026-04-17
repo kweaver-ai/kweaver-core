@@ -8,9 +8,12 @@ import (
 
 const (
 	agentFactoryBasePath = "/api/agent-factory"
-	scalarCDNURL         = "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.34.6"
 	apiKeySecurityName   = "ApiKeyAuth"
 	bearerSecurityName   = "BearerAuth"
+	staticScalarJSPath   = "ui/scalar-api-reference.js"
+	staticRedocJSPath    = "ui/redoc.standalone.js"
+	staticScalarPagePath = "agent-factory.html"
+	staticRedocPagePath  = "agent-factory-redoc.html"
 )
 
 var pathParamPattern = regexp.MustCompile(`\{([^}/]+)\}`)
@@ -31,4 +34,5 @@ type BuildArtifacts struct {
 	JSON          []byte
 	YAML          []byte
 	HTML          []byte
+	RedocHTML     []byte
 }
