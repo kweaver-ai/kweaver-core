@@ -6,6 +6,10 @@
 NAMESPACE="${NAMESPACE:-kweaver}"
 CONFIG_FILE="${CONFIG_FILE:-$HOME/.kweaver-ai/config.yaml}"
 
+VEGA_METADATA_VERSION="3.3.1-release"
+VEGA_CALCULATE_VERSION="3.3.4-release"
+VEGA_HDFS_VERSION="3.1.0-release"
+
 usage() {
     echo "Usage: $0 [install|status|uninstall] [--config <path>] [--namespace <name>]"
     echo ""
@@ -171,21 +175,21 @@ install_etrino() {
 
     if [[ "${VEGA_HDFS_INSTALLED}" == false ]]; then
         echo "Installing vega-hdfs..."
-        helm install -n "${NAMESPACE}" vega-hdfs myrepo/vega-hdfs --version 3.1.0-release "${values_args[@]}"
+        helm install -n "${NAMESPACE}" vega-hdfs myrepo/vega-hdfs --version $VEGA_HDFS_VERSION "${values_args[@]}"
     else
         echo "Skipping vega-hdfs (already installed)"
     fi
 
     if [[ "${VEGA_CALCULATE_INSTALLED}" == false ]]; then
         echo "Installing vega-calculate..."
-        helm install -n "${NAMESPACE}" vega-calculate myrepo/vega-calculate --version 3.3.3-release "${values_args[@]}"
+        helm install -n "${NAMESPACE}" vega-calculate myrepo/vega-calculate --version $VEGA_CALCULATE_VERSION "${values_args[@]}"
     else
         echo "Skipping vega-calculate (already installed)"
     fi
 
     if [[ "${VEGA_METADATA_INSTALLED}" == false ]]; then
         echo "Installing vega-metadata..."
-        helm install -n "${NAMESPACE}" vega-metadata myrepo/vega-metadata --version 3.3.0-release "${values_args[@]}"
+        helm install -n "${NAMESPACE}" vega-metadata myrepo/vega-metadata --version $VEGA_METADATA_VERSION "${values_args[@]}"
     else
         echo "Skipping vega-metadata (already installed)"
     fi
