@@ -5,7 +5,7 @@
 - name: ""          # 接口唯一名称，用例中 url 与此一致
   url: ""               # 路径，如 /api/xxx/v1/resource，路径参数用 ${id} 等
   method: ""       # GET | POST | PUT | DELETE | PATCH 等
-  headers: ""       # JSON 字符串，如 {"Content-Type": "application/json"}
+  headers: "{}"       # JSON 字符串，如 {"Content-Type": "application/json"}
   resp_schema:
-    200: {}  # 请求成功响应样例，可选，用于格式校验
-    400: {} # 请求失败响应样例，可选，用于格式校验
+    200: "{}"  # 请求成功响应样例，可选，用于格式校验
+    400: "{}" # 请求失败响应样例，可选，用于格式校验
