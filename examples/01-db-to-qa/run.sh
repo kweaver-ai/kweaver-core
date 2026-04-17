@@ -8,6 +8,30 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# ── CLI flags ────────────────────────────────────────────────────────────────
+SEED_ONLY=0
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Options:
+  -s, --seed-only   Run Step 0 only: import seed.sql into MySQL, then exit.
+                    Skips datasource / KN / agent steps. Useful for resetting
+                    the demo database without touching the platform.
+  -h, --help        Show this help.
+
+Environment variables are read from .env (see env.sample).
+EOF
+}
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -s|--seed-only) SEED_ONLY=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
+    esac
+    shift
+done
+
 # ── Debug helpers (set DEBUG=1 or DEBUG=true in .env) ───────────────────────
 # Never logs DB_PASS.
 DEBUG="${DEBUG:-0}"
@@ -87,6 +111,9 @@ DS_ID=""
 KN_ID=""
 
 cleanup() {
+    if [ -z "$KN_ID" ] && [ -z "$DS_ID" ]; then
+        return 0
+    fi
     echo ""
     echo "=== Cleanup ==="
     [ -n "$KN_ID" ] && kweaver bkn delete "$KN_ID" -y 2>/dev/null && echo "  Deleted KN $KN_ID"
@@ -106,6 +133,14 @@ debug "Step 0: mysql args (password hidden): -h $DB_HOST_SEED -P $DB_PORT -u $DB
 # Pass DB_NAME as the default database (seed.sql has no USE — works with schema-only users)
 "$MYSQL_BIN" -h "$DB_HOST_SEED" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$SCRIPT_DIR/seed.sql"
 echo "  Imported seed.sql → ${DB_NAME} (erp_material_bom, erp_purchase_order)"
+
+if [ "$SEED_ONLY" = "1" ]; then
+    echo ""
+    echo "=== Seed-only mode: stopping after Step 0 ==="
+    echo "  Database '${DB_NAME}' on ${DB_HOST_SEED}:${DB_PORT} is ready."
+    echo "  Re-run without --seed-only to continue with datasource / KN / agent steps."
+    exit 0
+fi
 
 # ── Step 1: Connect datasource ──────────────────────────────────────────────
 echo ""
