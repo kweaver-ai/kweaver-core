@@ -20,10 +20,6 @@ def process_options(
         agent_input: Agent输入
         span: OpenTelemetry追踪Span（可选）
     """
-    if span and span.is_recording():
-        span.set_attribute("session_id", agent_config.agent_run_id)
-        span.set_attribute("agent_id", agent_config.agent_id)
-
     """处理agent运行选项"""
     if not options:
         return
@@ -75,3 +71,9 @@ def process_options(
         # # 兼容老的
         # agent_config.session_id = options.agent_run_id
     # new add 2025年10月19日16:52:53 --end--
+
+    if span and span.is_recording():
+        if agent_config.agent_run_id is not None:
+            span.set_attribute("session_id", agent_config.agent_run_id)
+        if agent_config.agent_id is not None:
+            span.set_attribute("agent_id", agent_config.agent_id)

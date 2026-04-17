@@ -11,6 +11,7 @@ type ConfigForShow struct {
 	Input                *Input                                `json:"input" binding:"required"` // 输入参数
 	SystemPrompt         string                                `json:"system_prompt"`            // 系统提示词
 	Dolphin              string                                `json:"dolphin"`                  // Dolphin语句
+	DolphinEnhance       string                                `json:"dolphin_enhance"`          // Dolphin增强语句
 	IsDolphinMode        cdaenum.DolphinMode                   `json:"is_dolphin_mode"`          // 是否是dolphin模式
 	DataSource           *datasourcevalobj.RetrieverDataSource `json:"data_source"`              // 数据源
 	Skill                *skillvalobj.Skill                    `json:"skills"`                   // 技能

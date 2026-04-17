@@ -6013,6 +6013,10 @@ const docTemplate = `{
                     "description": "Dolphin 语句",
                     "type": "string"
                 },
+                "dolphin_enhance": {
+                    "description": "Dolphin 增强语句",
+                    "type": "string"
+                },
                 "input": {
                     "description": "输入参数",
                     "allOf": [

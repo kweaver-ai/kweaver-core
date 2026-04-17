@@ -62,15 +62,16 @@ func (h *ConversationHistoryConfig) ValObjCheck() (err error) {
 
 // Config 表示agent配置
 type Config struct {
-	Input         *Input                                `json:"input" binding:"required"` // 输入参数
-	SystemPrompt  string                                `json:"system_prompt"`            // 系统提示词
-	Dolphin       string                                `json:"dolphin"`                  // Dolphin语句
-	IsDolphinMode cdaenum.DolphinMode                   `json:"is_dolphin_mode"`          // 是否是dolphin模式
-	PreDolphin    []*DolphinTpl                         `json:"pre_dolphin"`              // 在用户自定义dolphin之前执行的内置dolphin语句
-	PostDolphin   []*DolphinTpl                         `json:"post_dolphin"`             // 在用户自定义dolphin之后执行的内置dolphin语句
-	DataSource    *datasourcevalobj.RetrieverDataSource `json:"data_source"`              // 数据源
-	Skill         *skillvalobj.Skill                    `json:"skills"`                   // 技能
-	Llms          []*LlmItem                            `json:"llms"`                     // LLM配置
+	Input          *Input                                `json:"input" binding:"required"` // 输入参数
+	SystemPrompt   string                                `json:"system_prompt"`            // 系统提示词
+	Dolphin        string                                `json:"dolphin"`                  // Dolphin语句
+	DolphinEnhance string                                `json:"dolphin_enhance"`          // Dolphin增强语句
+	IsDolphinMode  cdaenum.DolphinMode                   `json:"is_dolphin_mode"`          // 是否是dolphin模式
+	PreDolphin     []*DolphinTpl                         `json:"pre_dolphin"`              // 在用户自定义dolphin之前执行的内置dolphin语句
+	PostDolphin    []*DolphinTpl                         `json:"post_dolphin"`             // 在用户自定义dolphin之后执行的内置dolphin语句
+	DataSource     *datasourcevalobj.RetrieverDataSource `json:"data_source"`              // 数据源
+	Skill          *skillvalobj.Skill                    `json:"skills"`                   // 技能
+	Llms           []*LlmItem                            `json:"llms"`                     // LLM配置
 
 	IsDataFlowSetEnabled int                   `json:"is_data_flow_set_enabled"`   // 是否启用数据流设置
 	OpeningRemarkConfig  *OpeningRemarkConfig  `json:"opening_remark_config"`      // 开场白配置

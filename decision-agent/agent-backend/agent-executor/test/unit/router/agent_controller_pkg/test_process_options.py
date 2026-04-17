@@ -120,3 +120,30 @@ class TestProcessOptions:
             process_options(options, agent_config, MagicMock())
 
         mock_standard_warn.assert_called_once()
+
+    async def test_recording_span_uses_updated_agent_run_id(self):
+        """trace 属性应使用 options 更新后的 agent_run_id，且不能写入 None。"""
+        agent_config = MagicMock(spec=AgentConfigVo)
+        agent_config.agent_run_id = None
+        agent_config.agent_id = "agent-123"
+        agent_config.conversation_id = "conversation-123"
+        agent_config.llms = []
+        agent_config.input = {}
+
+        from app.domain.vo.agentvo import AgentRunOptionsVo
+        from app.router.agent_controller_pkg.run_agent_v2.process_options import (
+            process_options,
+        )
+
+        options = AgentRunOptionsVo(agent_run_id="run-123")
+        span = MagicMock()
+        span.is_recording.return_value = True
+
+        process_options.__wrapped__(options, agent_config, MagicMock(), span)
+
+        assert agent_config.agent_run_id == "run-123"
+        span.set_attribute.assert_any_call("session_id", "run-123")
+        assert not any(
+            call.args == ("session_id", None)
+            for call in span.set_attribute.call_args_list
+        )

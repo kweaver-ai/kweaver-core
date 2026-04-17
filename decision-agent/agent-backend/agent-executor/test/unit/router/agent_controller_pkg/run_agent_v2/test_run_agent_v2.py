@@ -30,6 +30,7 @@ class TestProcessOptions:
         from app.domain.vo.agentvo import AgentConfigVo
 
         agent_config = MagicMock(spec=AgentConfigVo)
+        agent_config.conversation_id = "conversation-123"
         agent_config.llms = []
         agent_config.input = {}
 
@@ -54,6 +55,7 @@ class TestProcessOptions:
         from app.domain.vo.agentvo import AgentConfigVo
 
         agent_config = MagicMock(spec=AgentConfigVo)
+        agent_config.conversation_id = "conversation-123"
         agent_config.llms = [
             {"is_default": False, "llm_config": {"name": "gpt-3.5"}},
             {"is_default": False, "llm_config": {"name": "gpt-4"}},
@@ -83,6 +85,7 @@ class TestProcessOptions:
 
         agent_config = MagicMock(spec=AgentConfigVo)
         agent_config.agent_id = "old-id"
+        agent_config.conversation_id = "conversation-123"
         agent_config.llms = []
         agent_config.input = {}
 

@@ -16,6 +16,7 @@ from app.utils.observability.trace_wrapper import internal_span
 from opentelemetry.trace import Span
 from app.utils.observability.observability_log import get_logger as o11y_logger
 from .dialog_log import DialogLogHandler
+from .dolphin_enhance import refresh_dolphin_from_enhance
 
 from .trace import span_set_attrs
 from .input_handler_pkg import (
@@ -69,14 +70,17 @@ async def run_dolphin(
     # 1. 构造dolphin使用的LLM参数
     llm_config = await build_llm_config(ac, user_id, visitor_type)
 
-    # 2. 构造dolphin_prompt
+    # 2. 构造skills
+    await build_skills(ac, headers, llm_config, context_variables, temp_files)
+
+    # 3. 根据 dolphin_enhance 刷新 dolphin 中的 callable 名称
+    refresh_dolphin_from_enhance(config)
+
+    # 4. 构造dolphin_prompt
     prompt_builder = PromptBuilder(config, temp_files)
     dolphin_prompt = await prompt_builder.build()
 
-    # 3. 构造skills
-    await build_skills(ac, headers, llm_config, context_variables, temp_files)
-
-    # 3.1 构造tool_dict
+    # 4.1 构造tool_dict
     from app.domain.vo.agentvo.agent_config_vos import SkillVo
 
     skills = ac.agent_config.skills if ac.agent_config is not None else SkillVo()
@@ -87,10 +91,10 @@ async def run_dolphin(
 
     tool_dict = await build_tools(ac, skills, request_headers=headers)
 
-    # 3.2 构造toolkit
+    # 4.2 构造toolkit
     toolkit = TriditionalToolkit.buildFromTooldict(tool_dict)
 
-    # 4. 记录信息
+    # 5. 记录信息
     # ANSI颜色码定义
     COLORS = {
         "header": "\033[95m",  # 紫色

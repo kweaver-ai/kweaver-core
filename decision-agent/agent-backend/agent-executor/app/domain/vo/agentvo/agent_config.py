@@ -26,6 +26,7 @@ class AgentConfigVo(BaseModel):
     system_prompt: Optional[str] = None
     is_dolphin_mode: bool = False
     dolphin: Optional[str] = None
+    dolphin_enhance: Optional[str] = None
 
     pre_dolphin: Optional[List[Dict[str, Any]]] = []
     post_dolphin: Optional[List[Dict[str, Any]]] = []

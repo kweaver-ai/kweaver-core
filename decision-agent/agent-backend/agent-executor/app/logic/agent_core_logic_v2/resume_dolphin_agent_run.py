@@ -1,5 +1,6 @@
-from typing import Any, AsyncGenerator, Dict, TYPE_CHECKING
+from typing import Any, AsyncGenerator, Dict, Optional, TYPE_CHECKING
 from dolphin.sdk.agent.dolphin_agent import DolphinAgent
+from opentelemetry.trace import Span
 
 # from DolphinLanguageSDK.context_engineer.core.context_manager import (
 #     ContextManager,
@@ -8,6 +9,7 @@ from dolphin.sdk.agent.dolphin_agent import DolphinAgent
 from app.domain.vo.agentvo import AgentConfigVo
 from app.utils.observability.trace_wrapper import internal_span
 from .dialog_log import DialogLogHandler
+from .trace import span_set_attrs
 
 
 from app.utils.interrupt_converter import interrupt_handle_to_resume_handle
@@ -28,6 +30,7 @@ async def resume_dolphin_agent_run(
     context_variables: Dict[str, Any],
     headers: Dict[str, str],
     is_debug: bool = False,
+    span: Optional[Span] = None,
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """运行Dolphin引擎处理请求
 
@@ -39,6 +42,13 @@ async def resume_dolphin_agent_run(
     Yields:
         Dict[str, Any]: Dolphin引擎生成的响应
     """
+
+    span_set_attrs(
+        span=span,
+        agent_run_id=agent_run_id or "",
+        agent_id=config.agent_id or "",
+        conversation_id=config.conversation_id or "",
+    )
 
     # 1. 验证 data 必须是 dict
     data = resume_info.data
