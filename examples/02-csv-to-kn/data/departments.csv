@@ -1,0 +1,6 @@
+id,name,location,budget_cny,head_count
+dept_01,Engineering,Shanghai,12000000,42
+dept_02,Product,Shanghai,6000000,18
+dept_03,Sales,Beijing,8000000,35
+dept_04,Operations,Shanghai,5000000,22
+dept_05,Finance,Shanghai,3000000,12
