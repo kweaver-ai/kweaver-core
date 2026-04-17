@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 02-csv-to-kn: From CSV Files to Knowledge Graph
+# 02-csv-to-kn: From CSV Files to Knowledge Network
 #
 # Import local CSV files → Knowledge Network → Graph Exploration → Agent Q&A
 # =============================================================================

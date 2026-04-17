@@ -1,4 +1,4 @@
-# 02 - From CSV Files to Knowledge Graph
+# 02 - From CSV Files to Knowledge Network
 
 End-to-end example: import local CSV files, build a Knowledge Network, explore
 the graph, run semantic search, and chat with an Agent.
