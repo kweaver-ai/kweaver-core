@@ -299,3 +299,57 @@ if [ "$SCHED_STATUS" = "inactive" ]; then
 fi
 echo "  Schedule status: $SCHED_STATUS"
 echo "  The knowledge network will act autonomously every morning at 08:00."
+
+# ── Step 10: Trigger action now ───────────────────────────────────────────────
+echo ""
+echo "=== Step 10: Trigger action — first run ==="
+echo "  (In production this runs automatically at 08:00.)"
+echo "  Executing now so you can see results immediately..."
+
+EXEC_BODY=$(python3 -c "import json; print(json.dumps({'_instance_identities': [{}]}))")
+EXEC_JSON=$(kweaver bkn action-type execute "$KN_ID" "$AT_ID" "$EXEC_BODY" \
+    --timeout 60 2>&1 || true)
+debug_dump_json "action-type execute" "$EXEC_JSON"
+
+EXEC_ID=$(echo "$EXEC_JSON" | python3 -c \
+    "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || true)
+EXEC_STATUS=$(echo "$EXEC_JSON" | python3 -c \
+    "import sys,json; print(json.load(sys.stdin).get('status','unknown'))" 2>/dev/null || true)
+EXEC_TOTAL=$(echo "$EXEC_JSON" | python3 -c \
+    "import sys,json; print(json.load(sys.stdin).get('total_count',0))" 2>/dev/null || true)
+
+echo "  Execution ID : ${EXEC_ID:-n/a}"
+echo "  Instances    : $EXEC_TOTAL"
+echo "  Status       : $EXEC_STATUS"
+echo "  (demo tool has no real backend — the execution record is what matters)"
+
+# ── Step 11: Audit log ────────────────────────────────────────────────────────
+echo ""
+echo "=== Step 11: Audit log — what the knowledge network has done ==="
+LOG_JSON=$(kweaver bkn action-log list "$KN_ID")
+debug_dump_json "action-log list" "$LOG_JSON"
+LOG_COUNT=$(echo "$LOG_JSON" | python3 -c \
+    "import sys,json; d=json.load(sys.stdin); print(d.get('total_count',0))" 2>/dev/null || echo 0)
+echo "  Total executions recorded: $LOG_COUNT"
+echo ""
+echo "$LOG_JSON" | python3 -c "
+import sys, json, datetime
+d = json.load(sys.stdin)
+entries = d.get('entries') or []
+for e in (entries[:5] if entries else []):
+    ts = e.get('create_time', 0)
+    t = datetime.datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d %H:%M') if ts else 'n/a'
+    print(f'  [{t}]  {e.get(\"action_type_name\",\"?\")} → {e.get(\"status\",\"?\")}  (id: {e.get(\"id\",\"?\")[:8]}...)')
+" 2>/dev/null || true
+
+echo ""
+echo "======================================================"
+echo "  Knowledge network is now self-acting."
+echo "  Every morning at 08:00 it will:"
+echo "    1. Identify POs linked to at-risk suppliers"
+echo "    2. Trigger the follow-up action"
+echo "    3. Record the result in the audit log"
+echo ""
+echo "  Check the log anytime:"
+echo "    kweaver bkn action-log list $KN_ID"
+echo "======================================================"
