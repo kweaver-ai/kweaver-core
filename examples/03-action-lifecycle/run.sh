@@ -2,29 +2,28 @@
 # =============================================================================
 # 03-action-lifecycle: Self-Evolving Knowledge Network
 #
-# Flow: MySQL → Knowledge Network → Register Action Tool →
+# Flow: CSV Files → Knowledge Network → Register Action Tool →
 #       Define Action → Schedule → Execute → Audit Log
+#
+# No local MySQL client needed — CSV files are uploaded to the platform.
 # =============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # ── CLI flags ─────────────────────────────────────────────────────────────────
-SEED_ONLY=0
 usage() {
     cat <<EOF
 Usage: $(basename "$0") [options]
 
 Options:
-  -s, --seed-only   Import seed.sql only, then exit.
-  -h, --help        Show this help.
+  -h, --help   Show this help.
 
 Environment variables are read from .env (see env.sample).
 EOF
 }
 while [ $# -gt 0 ]; do
     case "$1" in
-        -s|--seed-only) SEED_ONLY=1 ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
     esac
@@ -53,29 +52,10 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 DB_HOST="${DB_HOST:?Set DB_HOST in .env}"
-DB_HOST_SEED="${DB_HOST_SEED:-$DB_HOST}"
 DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:?Set DB_NAME in .env}"
 DB_USER="${DB_USER:?Set DB_USER in .env}"
 DB_PASS="${DB_PASS:?Set DB_PASS in .env}"
-
-MYSQL_BIN="${MYSQL_BIN:-mysql}"
-if ! command -v "$MYSQL_BIN" >/dev/null 2>&1; then
-    if [ "$MYSQL_BIN" = "mysql" ]; then
-        for _p in \
-            "$(brew --prefix mysql-client 2>/dev/null)/bin/mysql" \
-            /opt/homebrew/opt/mysql-client/bin/mysql \
-            /usr/local/opt/mysql-client/bin/mysql; do
-            if [ -x "$_p" ]; then MYSQL_BIN="$_p"; break; fi
-        done
-    fi
-fi
-if ! command -v "$MYSQL_BIN" >/dev/null 2>&1; then
-    echo "Error: MySQL client not found (${MYSQL_BIN})." >&2
-    echo "  macOS:  brew install mysql-client" >&2
-    echo "  Ubuntu: sudo apt install -y mysql-client" >&2
-    exit 1
-fi
 
 TIMESTAMP=$(date +%s)
 DS_NAME="example_action_ds_${TIMESTAMP}"
@@ -105,38 +85,35 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ── Step 0: Seed the database ─────────────────────────────────────────────────
-echo "=== Step 0: Seed sample data into MySQL ==="
-if [ "$DB_HOST_SEED" != "$DB_HOST" ]; then
-    echo "  (from this PC: $DB_HOST_SEED:$DB_PORT — platform will use $DB_HOST in Step 1)"
-fi
-"$MYSQL_BIN" -h "$DB_HOST_SEED" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
-    < "$SCRIPT_DIR/seed.sql"
-echo "  Imported: eval_suppliers (5 rows), eval_purchase_orders (10 rows, 4 at-risk)"
-
-if [ "$SEED_ONLY" = "1" ]; then
-    echo "Seed-only mode: done."
-    exit 0
-fi
-
 # ── Step 1: Connect datasource ────────────────────────────────────────────────
-echo ""
 echo "=== Step 1: Connect MySQL datasource ==="
-DS_JSON=$(kweaver ds connect mysql "$DB_HOST" "$DB_PORT" "$DB_NAME" \
-    --account "$DB_USER" --password "$DB_PASS" --name "$DS_NAME")
-debug_dump_json "ds connect" "$DS_JSON"
-DS_ID=$(echo "$DS_JSON" | python3 -c \
-    "import sys,json; d=json.load(sys.stdin); print(d.get('datasource_id') or d.get('id',''))")
+_DS_RAW=$(kweaver ds connect mysql "$DB_HOST" "$DB_PORT" "$DB_NAME" \
+    --account "$DB_USER" --password "$DB_PASS" --name "$DS_NAME" 2>&1)
+debug_dump_json "ds connect" "$_DS_RAW"
+DS_ID=$(echo "$_DS_RAW" | python3 -c "
+import sys,json
+txt=sys.stdin.read()
+d=json.loads(txt[txt.index('{'):])
+print(d.get('datasource_id') or d.get('id',''))
+")
 [ -z "$DS_ID" ] && { echo "Error: no datasource_id in response" >&2; exit 1; }
 echo "  Datasource: $DS_ID"
 
-# ── Step 2: Build Knowledge Network ──────────────────────────────────────────
+# ── Step 2: Import CSVs and build Knowledge Network ──────────────────────────
 echo ""
-echo "=== Step 2: Build Knowledge Network ==="
-KN_JSON=$(kweaver bkn create-from-ds "$DS_ID" --name "$KN_NAME" --build)
-debug_dump_json "create-from-ds" "$KN_JSON"
-KN_ID=$(echo "$KN_JSON" | python3 -c \
-    "import sys,json; d=json.load(sys.stdin); print(d.get('kn_id') or d.get('id',''))")
+echo "=== Step 2: Import CSVs → Build Knowledge Network ==="
+echo "  Files: $(ls "$SCRIPT_DIR/data/"*.csv | xargs -n1 basename | tr '\n' ' ')"
+KN_JSON=$(kweaver bkn create-from-csv "$DS_ID" \
+    --files "$SCRIPT_DIR/data/*.csv" \
+    --name "$KN_NAME" \
+    --build --timeout 300 2>&1)
+debug_dump_json "create-from-csv" "$KN_JSON"
+KN_ID=$(echo "$KN_JSON" | python3 -c "
+import sys,json
+txt=sys.stdin.read()
+d=json.loads(txt[txt.index('{'):])
+print(d.get('kn_id') or d.get('id',''))
+")
 [ -z "$KN_ID" ] && { echo "Error: no kn_id in response" >&2; exit 1; }
 echo "  Knowledge Network: $KN_ID"
 
@@ -173,7 +150,7 @@ echo ""
 echo "=== Step 4: Register tool (OpenAPI spec) ==="
 
 _OPENAPI_TMP=$(mktemp /tmp/eval_tool_openapi_XXXXXX.json)
-trap 'rm -f "$_OPENAPI_TMP"' EXIT
+trap 'rm -f "$_OPENAPI_TMP"; cleanup' EXIT
 cat > "$_OPENAPI_TMP" <<'OPENAPI'
 {
   "openapi": "3.0.0",
@@ -268,6 +245,17 @@ AFFECTED=$(echo "$QUERY_JSON" | python3 -c \
 echo "  Found $AFFECTED purchase order(s) linked to at-risk suppliers"
 echo "  (The knowledge network identified these via supplier relationship context)"
 
+# Capture first identity for use in Step 10
+FIRST_IDENTITY=$(echo "$QUERY_JSON" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+actions=d.get('actions',[])
+if actions:
+    print(json.dumps(actions[0].get('_instance_identity',{})))
+else:
+    print('{}')
+" 2>/dev/null || echo "{}")
+
 # ── Step 8: Create action schedule ────────────────────────────────────────────
 echo ""
 echo "=== Step 8: Schedule — every day at 08:00 ==="
@@ -307,7 +295,8 @@ echo "=== Step 10: Trigger action — first run ==="
 echo "  (In production this runs automatically at 08:00.)"
 echo "  Executing now so you can see results immediately..."
 
-EXEC_BODY=$(python3 -c "import json; print(json.dumps({'_instance_identities': [{}]}))")
+EXEC_BODY=$(python3 -c "import json,sys; print(json.dumps({'_instance_identities': [json.loads('$FIRST_IDENTITY')]}))" 2>/dev/null \
+    || python3 -c "import json; print(json.dumps({'_instance_identities': [{}]}))")
 EXEC_JSON=$(kweaver bkn action-type execute "$KN_ID" "$AT_ID" "$EXEC_BODY" \
     --timeout 60 2>&1 || true)
 debug_dump_json "action-type execute" "$EXEC_JSON"
@@ -327,20 +316,27 @@ echo "  (demo tool has no real backend — the execution record is what matters)
 # ── Step 11: Audit log ────────────────────────────────────────────────────────
 echo ""
 echo "=== Step 11: Audit log — what the knowledge network has done ==="
-LOG_JSON=$(kweaver bkn action-log list "$KN_ID")
+LOG_JSON=$(kweaver bkn action-log list "$KN_ID" 2>&1 || true)
 debug_dump_json "action-log list" "$LOG_JSON"
-LOG_COUNT=$(echo "$LOG_JSON" | python3 -c \
-    "import sys,json; d=json.load(sys.stdin); print(d.get('total_count',0))" 2>/dev/null || echo 0)
+LOG_COUNT=$(echo "$LOG_JSON" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+entries=d.get('entries') or []
+print(max(d.get('total_count',0), len(entries)))
+" 2>/dev/null || echo 0)
 echo "  Total executions recorded: $LOG_COUNT"
 echo ""
 echo "$LOG_JSON" | python3 -c "
 import sys, json, datetime
-d = json.load(sys.stdin)
-entries = d.get('entries') or []
-for e in (entries[:5] if entries else []):
-    ts = e.get('create_time', 0)
-    t = datetime.datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d %H:%M') if ts else 'n/a'
-    print(f'  [{t}]  {e.get(\"action_type_name\",\"?\")} → {e.get(\"status\",\"?\")}  (id: {e.get(\"id\",\"?\")[:8]}...)')
+try:
+    d = json.load(sys.stdin)
+    entries = d.get('entries') or []
+    for e in (entries[:5] if entries else []):
+        ts = e.get('create_time', 0)
+        t = datetime.datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d %H:%M') if ts else 'n/a'
+        print(f'  [{t}]  {e.get(\"action_type_name\",\"?\")} → {e.get(\"status\",\"?\")}  (id: {e.get(\"id\",\"?\")[:8]}...)')
+except Exception:
+    pass
 " 2>/dev/null || true
 
 echo ""

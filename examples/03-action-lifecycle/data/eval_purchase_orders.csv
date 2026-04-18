@@ -1,0 +1,11 @@
+id,supplier_id,supplier_status,material,quantity,due_date,status
+PO-2024-001,SUP-001,active,电容器 100μF,5000,2024-04-15,confirmed
+PO-2024-002,SUP-002,at_risk,钢材型材 Q235,2000,2024-04-10,pending
+PO-2024-003,SUP-002,at_risk,螺栓 M8×40,10000,2024-04-20,pending
+PO-2024-004,SUP-003,active,铝合金外壳,300,2024-04-18,confirmed
+PO-2024-005,SUP-004,at_risk,橡胶密封圈,8000,2024-04-12,pending
+PO-2024-006,SUP-004,at_risk,聚氨酯泡沫,1500,2024-04-25,pending
+PO-2024-007,SUP-005,active,PCB 主板,200,2024-04-22,confirmed
+PO-2024-008,SUP-001,active,电阻 10kΩ,20000,2024-04-30,pending
+PO-2024-009,SUP-003,active,散热片,500,2024-04-16,confirmed
+PO-2024-010,SUP-005,active,显示屏组件,150,2024-04-28,pending
