@@ -126,12 +126,12 @@ if isinstance(entries, dict):
     entries = entries.get('entries', [])
 for e in entries:
     name = (e.get('name','') + e.get('id','')).lower()
-    if 'purchase_order' in name or 'eval_purchase' in name:
+    if 'production_order' in name or 'eval_production' in name:
         print(e.get('id',''))
         break
 ")
-[ -z "$PO_OT_ID" ] && { echo "Error: could not find purchase_orders object type" >&2; exit 1; }
-echo "  PO object type: $PO_OT_ID"
+[ -z "$PO_OT_ID" ] && { echo "Error: could not find production_orders object type" >&2; exit 1; }
+echo "  Production order object type: $PO_OT_ID"
 
 # ── Step 3: Register demo action toolbox ──────────────────────────────────────
 echo ""
@@ -199,16 +199,16 @@ echo "  Toolbox published, tool enabled"
 
 # ── Step 6: Define action type ────────────────────────────────────────────────
 echo ""
-echo "=== Step 6: Define action type — 采购单风险跟进 ==="
+echo "=== Step 6: Define action type — 库存告急工单预警 ==="
 
 AT_BODY=$(python3 -c "
 import json
 body = {
-    'name': '采购单风险跟进',
+    'name': '库存告急工单预警',
     'action_type': 'modify',
     'object_type_id': '$PO_OT_ID',
-    'tags': ['采购', '风险管理'],
-    'comment': '发现供应商状态异常的采购单，自动触发跟进行动',
+    'tags': ['生产', '库存预警'],
+    'comment': '发现物料库存告急的生产工单，自动触发补货预警',
     'action_source': {
         'type': 'tool',
         'box_id': '$BOX_ID',
@@ -216,9 +216,9 @@ body = {
     },
     'condition': {
         'object_type_id': '$PO_OT_ID',
-        'field': 'supplier_status',
+        'field': 'material_risk',
         'operation': '==',
-        'value': 'at_risk'
+        'value': 'critical'
     }
 }
 print(json.dumps(body))
@@ -237,13 +237,13 @@ echo "  Action type: $AT_ID"
 
 # ── Step 7: Query — verify affected instances ─────────────────────────────────
 echo ""
-echo "=== Step 7: Query — which POs have at-risk suppliers? ==="
+echo "=== Step 7: Query — which production orders need replenishment? ==="
 QUERY_JSON=$(kweaver bkn action-type query "$KN_ID" "$AT_ID" '{}' 2>&1 || true)
 debug_dump_json "action-type query" "$QUERY_JSON"
 AFFECTED=$(echo "$QUERY_JSON" | python3 -c \
     "import sys,json; d=json.load(sys.stdin); print(d.get('total_count',0))" 2>/dev/null || echo "unknown")
-echo "  Found $AFFECTED purchase order(s) linked to at-risk suppliers"
-echo "  (The knowledge network identified these via supplier relationship context)"
+echo "  Found $AFFECTED production order(s) with critically low material inventory"
+echo "  (The knowledge network identified these via inventory-material-order relationships)"
 
 # Capture first identity for use in Step 10
 FIRST_IDENTITY=$(echo "$QUERY_JSON" | python3 -c "
@@ -263,7 +263,7 @@ echo "=== Step 8: Schedule — every day at 08:00 ==="
 SCHED_BODY=$(python3 -c "
 import json
 print(json.dumps({
-    'name': '采购单风险每日巡检',
+    'name': '生产工单库存每日巡检',
     'cron_expression': '0 8 * * *',
     'action_type_id': '$AT_ID',
     '_instance_identities': [{}]
@@ -343,8 +343,8 @@ echo ""
 echo "======================================================"
 echo "  Knowledge network is now self-acting."
 echo "  Every morning at 08:00 it will:"
-echo "    1. Identify POs linked to at-risk suppliers"
-echo "    2. Trigger the follow-up action"
+echo "    1. Identify production orders with critically low material inventory"
+echo "    2. Trigger the replenishment alert"
 echo "    3. Record the result in the audit log"
 echo ""
 echo "  Check the log anytime:"
