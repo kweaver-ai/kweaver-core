@@ -155,3 +155,66 @@ for e in entries:
 ")
 [ -z "$PO_OT_ID" ] && { echo "Error: could not find purchase_orders object type" >&2; exit 1; }
 echo "  PO object type: $PO_OT_ID"
+
+# ── Step 3: Register demo action toolbox ──────────────────────────────────────
+echo ""
+echo "=== Step 3: Register action tool backend ==="
+BOX_JSON=$(kweaver call "/api/agent-operator-integration/v1/tool-box" \
+    -X POST \
+    -d "{\"metadata_type\":\"openapi\",\"box_name\":\"eval_action_toolbox_${TIMESTAMP}\",\"box_desc\":\"Demo toolbox for action-lifecycle example\",\"box_svc_url\":\"http://ontology-manager-svc:13014\",\"source\":\"custom\"}")
+debug_dump_json "create toolbox" "$BOX_JSON"
+BOX_ID=$(echo "$BOX_JSON" | python3 -c \
+    "import sys,json; print(json.load(sys.stdin).get('box_id',''))")
+[ -z "$BOX_ID" ] && { echo "Error: no box_id in toolbox response" >&2; exit 1; }
+echo "  Toolbox: $BOX_ID"
+
+# ── Step 4: Register a tool in the toolbox ────────────────────────────────────
+echo ""
+echo "=== Step 4: Register tool (OpenAPI spec) ==="
+
+_OPENAPI_TMP=$(mktemp /tmp/eval_tool_openapi_XXXXXX.json)
+cat > "$_OPENAPI_TMP" <<'OPENAPI'
+{
+  "openapi": "3.0.0",
+  "info": {"title": "采购单风险跟进", "version": "1.0.0"},
+  "servers": [{"url": "http://ontology-manager-svc:13014"}],
+  "paths": {
+    "/api/ontology-manager/in/v1/health": {
+      "get": {
+        "summary": "采购单风险跟进",
+        "operationId": "follow_up_at_risk_po",
+        "responses": {"200": {"description": "ok"}}
+      }
+    }
+  }
+}
+OPENAPI
+
+_TOKEN=$(kweaver token 2>/dev/null)
+_PLATFORM=$(kweaver config show 2>/dev/null | python3 -c \
+    "import sys; [print(l.split()[-1]) for l in sys.stdin if 'Platform' in l]" | head -1)
+_BD=$(kweaver config show 2>/dev/null | python3 -c \
+    "import sys; [print(l.split()[2]) for l in sys.stdin if 'Business Domain' in l]" | head -1)
+
+_TOOL_RESP=$(curl -s \
+    -H "Authorization: Bearer $_TOKEN" \
+    -H "x-business-domain: $_BD" \
+    -F "metadata_type=openapi" \
+    -F "data=@${_OPENAPI_TMP}" \
+    "${_PLATFORM}/api/agent-operator-integration/v1/tool-box/$BOX_ID/tool")
+rm -f "$_OPENAPI_TMP"
+debug_dump_json "create tool" "$_TOOL_RESP"
+
+TOOL_ID=$(echo "$_TOOL_RESP" | python3 -c \
+    "import sys,json; d=json.load(sys.stdin); ids=d.get('success_ids',[]); print(ids[0] if ids else '')")
+[ -z "$TOOL_ID" ] && { echo "Error: no tool_id in response" >&2; exit 1; }
+echo "  Tool: $TOOL_ID"
+
+# ── Step 5: Publish toolbox and enable tool ───────────────────────────────────
+echo ""
+echo "=== Step 5: Publish toolbox ==="
+kweaver call "/api/agent-operator-integration/v1/tool-box/$BOX_ID/status" \
+    -X POST -d '{"status":"published"}' > /dev/null
+kweaver call "/api/agent-operator-integration/v1/tool-box/$BOX_ID/tools/status" \
+    -X POST -d "[{\"tool_id\":\"$TOOL_ID\",\"status\":\"enabled\"}]" > /dev/null
+echo "  Toolbox published, tool enabled"
