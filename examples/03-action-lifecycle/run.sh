@@ -75,8 +75,8 @@ cleanup() {
         && echo "  Deleted action-schedule $SCHED_ID" || true
     [ -n "$AT_ID" ] && kweaver bkn action-type delete "$KN_ID" "$AT_ID" -y 2>/dev/null \
         && echo "  Deleted action-type $AT_ID" || true
-    [ -n "$BOX_ID" ] && kweaver call "/api/agent-operator-integration/v1/tool-box/$BOX_ID" \
-        -X DELETE 2>/dev/null && echo "  Deleted toolbox $BOX_ID" || true
+    [ -n "$BOX_ID" ] && kweaver toolbox delete "$BOX_ID" -y 2>/dev/null \
+        && echo "  Deleted toolbox $BOX_ID" || true
     [ -n "$KN_ID" ] && kweaver bkn delete "$KN_ID" -y 2>/dev/null \
         && echo "  Deleted KN $KN_ID" || true
     [ -n "$DS_ID" ] && kweaver ds delete "$DS_ID" -y 2>/dev/null \
@@ -106,39 +106,51 @@ echo "  Files: $(ls "$SCRIPT_DIR/data/"*.csv | xargs -n1 basename | tr '\n' ' ')
 KN_JSON=$(kweaver bkn create-from-csv "$DS_ID" \
     --files "$SCRIPT_DIR/data/*.csv" \
     --name "$KN_NAME" \
+    --table-prefix "ex03_${TIMESTAMP}_" \
     --build --timeout 300 2>&1)
 debug_dump_json "create-from-csv" "$KN_JSON"
 KN_ID=$(echo "$KN_JSON" | python3 -c "
-import sys,json
-txt=sys.stdin.read()
-d=json.loads(txt[txt.index('{'):])
+import sys, json
+txt = sys.stdin.read()
+dec = json.JSONDecoder()
+objs, pos = [], 0
+while pos < len(txt):
+    try:
+        i = txt.index('{', pos)
+        obj, end = dec.raw_decode(txt, i)
+        objs.append(obj)
+        pos = end
+    except (ValueError, StopIteration):
+        break
+d = objs[-1] if objs else {}
 print(d.get('kn_id') or d.get('id',''))
 ")
 [ -z "$KN_ID" ] && { echo "Error: no kn_id in response" >&2; exit 1; }
 echo "  Knowledge Network: $KN_ID"
 
-# Discover the purchase-order object type ID (needed for action condition)
+# Discover the material/inventory object type ID (needed for action condition)
 OT_LIST=$(kweaver bkn object-type list "$KN_ID")
-PO_OT_ID=$(echo "$OT_LIST" | python3 -c "
+MAT_OT_ID=$(echo "$OT_LIST" | python3 -c "
 import sys, json
 entries = json.load(sys.stdin)
 if isinstance(entries, dict):
     entries = entries.get('entries', [])
 for e in entries:
     name = (e.get('name','') + e.get('id','')).lower()
-    if 'production_order' in name or 'eval_production' in name:
+    if 'inventory' in name or 'eval_inventory' in name or 'material' in name:
         print(e.get('id',''))
         break
 ")
-[ -z "$PO_OT_ID" ] && { echo "Error: could not find production_orders object type" >&2; exit 1; }
-echo "  Production order object type: $PO_OT_ID"
+[ -z "$MAT_OT_ID" ] && { echo "Error: could not find material/inventory object type" >&2; exit 1; }
+echo "  Material object type: $MAT_OT_ID"
 
 # ── Step 3: Register demo action toolbox ──────────────────────────────────────
 echo ""
 echo "=== Step 3: Register action tool backend ==="
-BOX_JSON=$(kweaver call "/api/agent-operator-integration/v1/tool-box" \
-    -X POST \
-    -d "{\"metadata_type\":\"openapi\",\"box_name\":\"eval_action_toolbox_${TIMESTAMP}\",\"box_desc\":\"Demo toolbox for action-lifecycle example\",\"box_svc_url\":\"http://ontology-manager-svc:13014\",\"source\":\"custom\"}")
+BOX_JSON=$(kweaver toolbox create \
+    --name "eval_action_toolbox_${TIMESTAMP}" \
+    --service-url "http://ontology-manager-svc:13014" \
+    --description "Demo toolbox for action-lifecycle example")
 debug_dump_json "create toolbox" "$BOX_JSON"
 BOX_ID=$(echo "$BOX_JSON" | python3 -c \
     "import sys,json; print(json.load(sys.stdin).get('box_id',''))")
@@ -168,18 +180,7 @@ cat > "$_OPENAPI_TMP" <<'OPENAPI'
 }
 OPENAPI
 
-_TOKEN=$(kweaver token 2>/dev/null)
-_PLATFORM=$(kweaver config show 2>/dev/null | python3 -c \
-    "import sys; [print(l.split()[-1]) for l in sys.stdin if 'Platform' in l]" | head -1)
-_BD=$(kweaver config show 2>/dev/null | python3 -c \
-    "import sys; [print(l.split()[2]) for l in sys.stdin if 'Business Domain' in l]" | head -1)
-
-_TOOL_RESP=$(curl -s \
-    -H "Authorization: Bearer $_TOKEN" \
-    -H "x-business-domain: $_BD" \
-    -F "metadata_type=openapi" \
-    -F "data=@${_OPENAPI_TMP}" \
-    "${_PLATFORM}/api/agent-operator-integration/v1/tool-box/$BOX_ID/tool")
+_TOOL_RESP=$(kweaver tool upload --toolbox "$BOX_ID" "$_OPENAPI_TMP")
 rm -f "$_OPENAPI_TMP"
 debug_dump_json "create tool" "$_TOOL_RESP"
 
@@ -191,31 +192,29 @@ echo "  Tool: $TOOL_ID"
 # ── Step 5: Publish toolbox and enable tool ───────────────────────────────────
 echo ""
 echo "=== Step 5: Publish toolbox ==="
-kweaver call "/api/agent-operator-integration/v1/tool-box/$BOX_ID/status" \
-    -X POST -d '{"status":"published"}' > /dev/null
-kweaver call "/api/agent-operator-integration/v1/tool-box/$BOX_ID/tools/status" \
-    -X POST -d "[{\"tool_id\":\"$TOOL_ID\",\"status\":\"enabled\"}]" > /dev/null
+kweaver toolbox publish "$BOX_ID" > /dev/null
+kweaver tool enable --toolbox "$BOX_ID" "$TOOL_ID" > /dev/null
 echo "  Toolbox published, tool enabled"
 
 # ── Step 6: Define action type ────────────────────────────────────────────────
 echo ""
-echo "=== Step 6: Define action type — 库存告急工单预警 ==="
+echo "=== Step 6: Define action type — 物料库存告急补货预警 ==="
 
 AT_BODY=$(python3 -c "
 import json
 body = {
-    'name': '库存告急工单预警',
+    'name': '物料库存告急补货预警',
     'action_type': 'modify',
-    'object_type_id': '$PO_OT_ID',
-    'tags': ['生产', '库存预警'],
-    'comment': '发现物料库存告急的生产工单，自动触发补货预警',
+    'object_type_id': '$MAT_OT_ID',
+    'tags': ['物料', '库存预警'],
+    'comment': '发现库存告急的物料，自动触发补货预警',
     'action_source': {
         'type': 'tool',
         'box_id': '$BOX_ID',
         'tool_id': '$TOOL_ID'
     },
     'condition': {
-        'object_type_id': '$PO_OT_ID',
+        'object_type_id': '$MAT_OT_ID',
         'field': 'material_risk',
         'operation': '==',
         'value': 'critical'
@@ -237,12 +236,12 @@ echo "  Action type: $AT_ID"
 
 # ── Step 7: Query — verify affected instances ─────────────────────────────────
 echo ""
-echo "=== Step 7: Query — which production orders need replenishment? ==="
+echo "=== Step 7: Query — which materials need replenishment? ==="
 QUERY_JSON=$(kweaver bkn action-type query "$KN_ID" "$AT_ID" '{}' 2>&1 || true)
 debug_dump_json "action-type query" "$QUERY_JSON"
 AFFECTED=$(echo "$QUERY_JSON" | python3 -c \
     "import sys,json; d=json.load(sys.stdin); print(d.get('total_count',0))" 2>/dev/null || echo "unknown")
-echo "  Found $AFFECTED production order(s) with critically low material inventory"
+echo "  Found $AFFECTED material(s) with critically low inventory"
 echo "  (The knowledge network identified these via inventory-material-order relationships)"
 
 # Capture first identity for use in Step 10
@@ -263,7 +262,7 @@ echo "=== Step 8: Schedule — every day at 08:00 ==="
 SCHED_BODY=$(python3 -c "
 import json
 print(json.dumps({
-    'name': '生产工单库存每日巡检',
+    'name': '物料库存每日巡检',
     'cron_expression': '0 8 * * *',
     'action_type_id': '$AT_ID',
     '_instance_identities': [{}]
@@ -287,7 +286,7 @@ if [ "$SCHED_STATUS" = "inactive" ]; then
     SCHED_STATUS="active"
 fi
 echo "  Schedule status: $SCHED_STATUS"
-echo "  The knowledge network will act autonomously every morning at 08:00."
+echo "  The knowledge network will scan materials every morning at 08:00."
 
 # ── Step 10: Trigger action now ───────────────────────────────────────────────
 echo ""
@@ -343,7 +342,7 @@ echo ""
 echo "======================================================"
 echo "  Knowledge network is now self-acting."
 echo "  Every morning at 08:00 it will:"
-echo "    1. Identify production orders with critically low material inventory"
+echo "    1. Identify materials with critically low inventory (material_risk == critical)"
 echo "    2. Trigger the replenishment alert"
 echo "    3. Record the result in the audit log"
 echo ""

@@ -1,30 +1,29 @@
 # 03 · Action Lifecycle — Self-Evolving Knowledge Network
 
-> A knowledge network that watches your production line and acts before things go wrong.
+> A knowledge network that monitors material inventory and acts before a stockout hits the line.
 
 ## The Problem
 
-Every morning, a procurement engineer checks three systems — inventory records, material lists,
-and production orders — to find which orders are at risk of material shortage. One missed order
-means a production stoppage.
+Every morning, a procurement engineer scans the inventory ledger to find which materials have
+dropped below safety stock and need urgent replenishment. One missed material means a
+production stoppage.
 
 ## What This Shows
 
 A knowledge network is not a static query layer. Once you define **action types** and a
 **schedule**, it operates autonomously:
 
-- **Finds the right entities** — using inventory-material-order relationship context to identify
-  production orders whose materials are critically low
-- **Triggers follow-up actions** — calling your business systems
+- **Finds the right entities** — identifies material objects where `material_risk == critical`
+- **Triggers follow-up actions** — calling your business system to raise a replenishment alert
 - **Records everything** — full audit trail in `action-log`
 
-The engineer arrives at 08:00. The list is already there.
+The engineer arrives at 08:00. The replenishment list is already there.
 
 ## Prerequisites
 
-- `kweaver` CLI ≥ 0.6.3 and a logged-in session (`kweaver auth whoami`)
+- `kweaver` CLI ≥ 0.6.4 and a logged-in session (`kweaver auth whoami`)
 - MySQL accessible from the kweaver platform
-- Python 3 and `curl` on your local machine
+- Python 3 on your local machine
 
 ## Quick Start
 
@@ -41,8 +40,8 @@ cp env.sample .env
 | 1 | Connect MySQL datasource |
 | 2 | Import CSVs → build knowledge network (inventory + production orders) |
 | 3–5 | Register action tool backend |
-| 6 | Define action type: *"find production orders with critically low materials"* |
-| 7 | Query confirms 5 at-risk orders found via inventory-material-order relationships |
+| 6 | Define action type: *"find materials where `material_risk == critical`, trigger replenishment alert"* |
+| 7 | Query confirms 3 critically low materials (MAT-001/003/005) |
 | 8–9 | Schedule: runs every day at 08:00 automatically |
 | 10 | Manual trigger: see results immediately |
 | 11 | Audit log: the network's history of autonomous actions |
