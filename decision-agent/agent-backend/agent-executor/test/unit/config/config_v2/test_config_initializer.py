@@ -1,6 +1,7 @@
 """单元测试 - config/config_v2/config_initializer 模块"""
 
 from unittest.mock import patch
+import pytest
 
 
 class TestConfigState:
@@ -79,6 +80,65 @@ class TestConfigInitializer:
         assert str(state.rds.port) == "5432"  # RdsConfig converts to int
         assert state.redis.port == "6379"  # RedisConfig keeps as string
         assert state.services.mf_model_api.host == "test"
+
+    @patch("app.config.config_v2.config_initializer.ConfigLoader")
+    def test_initialize_raises_for_invalid_o11y_config(self, m_loader):
+        """测试无效 o11y 配置会阻止初始化继续进行"""
+        m_loader.load_config_file.return_value = {
+            "o11y": {
+                "log_enabled": True,
+                "trace_endpoint": "   ",
+            }
+        }
+
+        from app.config.config_v2.config_initializer import (
+            ConfigInitializer,
+            ConfigState,
+        )
+
+        state = ConfigState()
+
+        with patch.object(ConfigInitializer, "_post_process_app_config") as m_app_post, patch.object(
+            ConfigInitializer, "_post_process_host_ip"
+        ) as m_ip_post, patch(
+            "app.config.config_v2.config_initializer.O11yConfig.from_dict",
+            side_effect=ValueError(
+                "o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true"
+            ),
+        ):
+            with patch(
+                "app.config.config_v2.config_initializer.AppConfig.from_dict"
+            ) as m_app_from_dict, patch(
+                "app.config.config_v2.config_initializer.RdsConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.RedisConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.GraphDBConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.ServicesConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.MemoryConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.LocalDevConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.OuterLLMConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.FeaturesConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.DialogLoggingConfig.from_dict"
+            ), patch(
+                "app.config.config_v2.config_initializer.LLMMessageLoggingConfig.from_dict"
+            ):
+                m_app_from_dict.return_value = object()
+
+                with pytest.raises(
+                    ValueError,
+                    match="o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true",
+                ):
+                    ConfigInitializer.initialize(state)
+
+        m_app_post.assert_not_called()
+        m_ip_post.assert_not_called()
 
     @patch("app.config.config_v2.config_initializer.ConfigLoader")
     @patch("app.config.config_v2.config_initializer.sys")

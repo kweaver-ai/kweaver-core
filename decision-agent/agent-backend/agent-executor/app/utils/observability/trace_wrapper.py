@@ -1,4 +1,5 @@
 # -*-coding:utf-8-*-
+import inspect
 from opentelemetry.trace import SpanKind
 from functools import wraps
 from typing import Optional, Callable, AsyncGenerator, Any, Awaitable
@@ -12,6 +13,22 @@ from app.utils.common import func_judgment
 def _get_span_tracer():
     """返回标准 OTel tracer。"""
     return trace.get_tracer("agent-executor.internal")
+
+
+def _should_inject_span(func: Callable, args: tuple, kwargs: dict) -> bool:
+    """判断是否需要为函数调用注入 span 参数。"""
+    try:
+        bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+    except TypeError:
+        return "span" not in kwargs
+
+    if "span" not in bound_args.arguments:
+        return True
+
+    if "span" in kwargs:
+        return kwargs["span"] is None
+
+    return False
 
 
 def internal_span(
@@ -50,15 +67,9 @@ def internal_span(
                 *args, **kwargs
             ) -> AsyncGenerator[Any, Any]:
                 from opentelemetry.trace import use_span
-                from app.common.stand_log import StandLogger
 
                 span = tracer.start_span(
                     span_name, kind=SpanKind.INTERNAL, attributes=attributes
-                )
-
-                span_context = span.get_span_context()
-                StandLogger.info_log(
-                    f"[trace_wrapper] Created span '{span_name}', trace_id={format(span_context.trace_id, '032x')}, span_id={format(span_context.span_id, '016x')}"
                 )
 
                 # 将span设置为当前上下文，使得子span可以自动关联
@@ -67,7 +78,8 @@ def internal_span(
                         span.set_status(Status(StatusCode.OK))
                         span.set_attribute("error", False)
 
-                        kwargs["span"] = span
+                        if _should_inject_span(func, args, kwargs):
+                            kwargs["span"] = span
 
                         result = func(*args, **kwargs)
                         async for item in result:
@@ -80,9 +92,6 @@ def internal_span(
                             span.record_exception(e)
                         raise
                     finally:
-                        StandLogger.info_log(
-                            f"[trace_wrapper] Ending span '{span_name}'"
-                        )
                         span.end()
 
             return async_generator_wrapper
@@ -91,15 +100,9 @@ def internal_span(
             @wraps(func)
             async def async_wrapper(*args, **kwargs) -> Awaitable[Any]:
                 from opentelemetry.trace import use_span
-                from app.common.stand_log import StandLogger
 
                 span = tracer.start_span(
                     span_name, kind=SpanKind.INTERNAL, attributes=attributes
-                )
-
-                span_context = span.get_span_context()
-                StandLogger.info_log(
-                    f"[trace_wrapper] Created span '{span_name}', trace_id={format(span_context.trace_id, '032x')}, span_id={format(span_context.span_id, '016x')}"
                 )
 
                 # 将span设置为当前上下文，使得子span可以自动关联
@@ -108,7 +111,8 @@ def internal_span(
                         span.set_status(Status(StatusCode.OK))
                         span.set_attribute("error", False)
 
-                        kwargs["span"] = span
+                        if _should_inject_span(func, args, kwargs):
+                            kwargs["span"] = span
 
                         result = await func(*args, **kwargs)
                         return result
@@ -120,9 +124,6 @@ def internal_span(
                             span.record_exception(e)
                         raise
                     finally:
-                        StandLogger.info_log(
-                            f"[trace_wrapper] Ending span '{span_name}'"
-                        )
                         span.end()
 
             return async_wrapper
@@ -131,22 +132,17 @@ def internal_span(
             @wraps(func)
             def sync_wrapper(*args, **kwargs) -> Any:
                 from opentelemetry.trace import use_span
-                from app.common.stand_log import StandLogger
 
                 # 创建 INTERNAL 类型的 span
                 span = tracer.start_span(
                     span_name, kind=SpanKind.INTERNAL, attributes=attributes
                 )
 
-                span_context = span.get_span_context()
-                StandLogger.info_log(
-                    f"[trace_wrapper] Created span '{span_name}', trace_id={format(span_context.trace_id, '032x')}, span_id={format(span_context.span_id, '016x')}"
-                )
-
                 # 将span设置为当前上下文，使得子span可以自动关联
                 with use_span(span, end_on_exit=False):
                     try:
-                        kwargs["span"] = span
+                        if _should_inject_span(func, args, kwargs):
+                            kwargs["span"] = span
                         # 执行被注解的函数
                         result = func(*args, **kwargs)
                         span.set_status(Status(StatusCode.OK))
@@ -159,9 +155,6 @@ def internal_span(
                             span.record_exception(e)
                         raise  # 重新抛出异常，不影响原有逻辑
                     finally:
-                        StandLogger.info_log(
-                            f"[trace_wrapper] Ending span '{span_name}'"
-                        )
                         span.end()
 
             return sync_wrapper

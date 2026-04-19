@@ -1,9 +1,6 @@
-import json
 from typing import Any, Dict, Optional
 from app.common.exceptions.tool_interrupt import ToolInterruptException
 
-from app.common.stand_log import StandLogger
-from app.utils.json import custom_serializer
 from app.utils.observability.trace_wrapper import internal_span
 from opentelemetry.trace import Span
 
@@ -34,13 +31,7 @@ class InterruptHandler:
             agent_id=context_variables.get("agent_id", ""),
         )
 
-        StandLogger.info(f"ToolInterruptException: {tool_interrupt}")
-
         # 直接使用 interrupt_info（dataclass 会被 custom_serializer 正确序列化）
         res["interrupt_info"] = tool_interrupt.interrupt_info
 
         res["status"] = "True"
-
-        StandLogger.info(
-            f"ToolInterrupt res: {json.dumps(res, ensure_ascii=False, default=custom_serializer)}"
-        )

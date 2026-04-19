@@ -178,11 +178,15 @@ class TestCheckAgentPermission:
             mock_session_instance.__aexit__ = AsyncMock(return_value=None)
             mock_session_class.return_value = mock_session_instance
 
-            result = await agent_factory_service.check_agent_permission(
-                agent_id, user_id, visitor_type
-            )
+            with patch("app.driven.dip.agent_factory_service.Config") as mock_config:
+                mock_config.local_dev.is_skip_pms_check = False
+
+                result = await agent_factory_service.check_agent_permission(
+                    agent_id, user_id, visitor_type
+                )
 
             assert result is True
+            mock_session_instance.post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_check_agent_permission_app_allowed(self, agent_factory_service):
@@ -210,11 +214,15 @@ class TestCheckAgentPermission:
             mock_session_instance.__aexit__ = AsyncMock(return_value=None)
             mock_session_class.return_value = mock_session_instance
 
-            result = await agent_factory_service.check_agent_permission(
-                agent_id, user_id, visitor_type
-            )
+            with patch("app.driven.dip.agent_factory_service.Config") as mock_config:
+                mock_config.local_dev.is_skip_pms_check = False
+
+                result = await agent_factory_service.check_agent_permission(
+                    agent_id, user_id, visitor_type
+                )
 
             assert result is True
+            mock_session_instance.post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_check_agent_permission_denied(self, agent_factory_service):
@@ -242,11 +250,15 @@ class TestCheckAgentPermission:
             mock_session_instance.__aexit__ = AsyncMock(return_value=None)
             mock_session_class.return_value = mock_session_instance
 
-            result = await agent_factory_service.check_agent_permission(
-                agent_id, user_id, visitor_type
-            )
+            with patch("app.driven.dip.agent_factory_service.Config") as mock_config:
+                mock_config.local_dev.is_skip_pms_check = False
+
+                result = await agent_factory_service.check_agent_permission(
+                    agent_id, user_id, visitor_type
+                )
 
             assert result is False
+            mock_session_instance.post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_check_agent_permission_skip_check(self, agent_factory_service):
@@ -283,6 +295,7 @@ class TestCheckAgentPermission:
                 )
 
             assert result is True
+            mock_session_instance.post.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_check_agent_permission_error_response(self, agent_factory_service):
@@ -308,10 +321,15 @@ class TestCheckAgentPermission:
             mock_session_instance.__aexit__ = AsyncMock(return_value=None)
             mock_session_class.return_value = mock_session_instance
 
-            with pytest.raises(CodeException):
-                await agent_factory_service.check_agent_permission(
-                    agent_id, user_id, visitor_type
-                )
+            with patch("app.driven.dip.agent_factory_service.Config") as mock_config:
+                mock_config.local_dev.is_skip_pms_check = False
+
+                with pytest.raises(CodeException):
+                    await agent_factory_service.check_agent_permission(
+                        agent_id, user_id, visitor_type
+                    )
+
+            mock_session_instance.post.assert_called_once()
 
 
 class TestGetAgentConfigByAgentIdAndVersion:

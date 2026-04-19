@@ -28,12 +28,17 @@ class TestO11yConfig:
         """测试从字典创建（所有字段）"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        data = {"log_enabled": True, "trace_enabled": True}
+        data = {
+            "log_enabled": True,
+            "trace_enabled": True,
+            "trace_endpoint": "http://otelcol-contrib:4318",
+        }
 
         config = O11yConfig.from_dict(data)
 
         assert config.log_enabled is True
         assert config.trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
 
     def test_from_dict_with_defaults(self):
         """测试从字典创建（默认值）"""
@@ -45,22 +50,48 @@ class TestO11yConfig:
         assert config.trace_enabled is False
 
     def test_from_dict_log_only(self):
-        """测试只启用日志"""
+        """测试只启用日志时要求带 trace_endpoint"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        config = O11yConfig.from_dict({"log_enabled": True})
+        config = O11yConfig.from_dict(
+            {"log_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
 
         assert config.log_enabled is True
         assert config.trace_enabled is False
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
 
     def test_from_dict_trace_only(self):
-        """测试只启用追踪"""
+        """测试只启用追踪时要求带 trace_endpoint"""
         from app.config.config_v2.models.observability_config import O11yConfig
 
-        config = O11yConfig.from_dict({"trace_enabled": True})
+        config = O11yConfig.from_dict(
+            {"trace_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
 
         assert config.log_enabled is False
         assert config.trace_enabled is True
+        assert config.trace_endpoint == "http://otelcol-contrib:4318"
+
+    def test_from_dict_raises_when_log_enabled_without_trace_endpoint(self):
+        """测试启用日志但未配置 trace_endpoint 时抛异常"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        with pytest.raises(
+            ValueError,
+            match="o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true",
+        ):
+            O11yConfig.from_dict({"log_enabled": True, "trace_endpoint": "   "})
+
+    def test_from_dict_raises_when_trace_enabled_without_trace_endpoint(self):
+        """测试启用追踪但未配置 trace_endpoint 时抛异常"""
+        from app.config.config_v2.models.observability_config import O11yConfig
+
+        with pytest.raises(
+            ValueError,
+            match="o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true",
+        ):
+            O11yConfig.from_dict({"trace_enabled": True, "trace_endpoint": ""})
 
     def test_from_dict_reads_otel_fields_from_yaml(self):
         """测试从 YAML 读取统一 OTel 字段"""

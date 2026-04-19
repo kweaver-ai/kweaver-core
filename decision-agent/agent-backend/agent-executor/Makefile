@@ -51,28 +51,28 @@ dev-setup: uv-sync
 # 测试相关
 test:
 	@echo "🧪 运行测试..."
-	uv run pytest test/ -v
+	uv run python -m pytest test/ -v
 
 test-unit:
 	@echo "🧪 运行单元测试..."
-	uv run pytest test/unit/ -v
+	uv run python -m pytest test/unit/ -v
 
 test-integration:
 	@echo "🧪 运行集成测试..."
-	uv run pytest test/integration/ -v
+	uv run python -m pytest test/integration/ -v
 
 test-integration-filter:
 	@echo "🧪 运行过滤集成测试..."
 	@echo "使用方法: make test-integration-filter FILTER=<pattern>"
 	@echo "示例: make test-integration-filter FILTER=poem"
-	uv run pytest test/integration/ -v -k "$(FILTER)"
+	uv run python -m pytest test/integration/ -v -k "$(FILTER)"
 
 test-legacy:
 	uv run python run_tests.py --legacy
 
 test-verbose:
 	@echo "🧪 详细模式运行测试..."
-	uv run pytest test/ -v -s
+	uv run python -m pytest test/ -v -s
 
 # 代码质量检查
 lint:

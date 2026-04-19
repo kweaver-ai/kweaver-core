@@ -215,6 +215,8 @@ class TestRunDolphin:
                                                     "app.logic.agent_core_logic_v2.run_dolphin.Config"
                                                 ) as mock_cfg:
                                                     mock_cfg.features.enable_dolphin_agent_output_variables_ctrl = False
+                                                    mock_cfg.is_dolphin_trace_enabled.return_value = False
+                                                    mock_cfg.is_o11y_trace_enabled.return_value = False
                                                     mock_cfg.app.enable_dolphin_agent_verbose = False
                                                     mock_cfg.app.get_stdlib_log_level.return_value = "INFO"
 
@@ -235,24 +237,40 @@ class TestRunDolphin:
                                                             with patch(
                                                                 "app.logic.agent_core_logic_v2.run_dolphin.agent_instance_manager"
                                                             ):
-                                                                from app.logic.agent_core_logic_v2.run_dolphin import (
-                                                                    run_dolphin,
-                                                                )
+                                                                with patch(
+                                                                    "app.logic.agent_core_logic_v2.run_dolphin.StandLogger.info"
+                                                                ) as mock_info:
+                                                                    with patch(
+                                                                        "app.logic.agent_core_logic_v2.run_dolphin.StandLogger.info_log"
+                                                                    ) as mock_info_log:
+                                                                        from app.logic.agent_core_logic_v2.run_dolphin import (
+                                                                            run_dolphin,
+                                                                        )
 
-                                                                results = []
-                                                                async for (
-                                                                    res
-                                                                ) in run_dolphin(
-                                                                    mock_agent_core,
-                                                                    mock_config,
-                                                                    {},
-                                                                    {
-                                                                        "x-user-id": "user123"
-                                                                    },
-                                                                ):
-                                                                    results.append(res)
+                                                                        results = []
+                                                                        async for (
+                                                                            res
+                                                                        ) in run_dolphin(
+                                                                            mock_agent_core,
+                                                                            mock_config,
+                                                                            {},
+                                                                            {
+                                                                                "x-user-id": "user123"
+                                                                            },
+                                                                        ):
+                                                                            results.append(
+                                                                                res
+                                                                            )
 
-                                                                assert len(results) > 0
+                                                                        assert len(results) > 0
+                                                                        mock_info.assert_not_called()
+                                                                        mock_info_log.assert_called_once()
+                                                                        assert (
+                                                                            "Agent execution details"
+                                                                            in mock_info_log.call_args.args[
+                                                                                0
+                                                                            ]
+                                                                        )
 
     @pytest.mark.asyncio
     async def test_run_dolphin_with_output_variables(

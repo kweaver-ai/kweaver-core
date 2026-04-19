@@ -1,7 +1,6 @@
 """单元测试 - get_account_type 依赖函数"""
 
 import pytest
-from app.common.errors import ParamException
 
 
 @pytest.mark.asyncio
@@ -41,26 +40,23 @@ class TestGetAccountType:
         )
         assert account_type == "new_type"  # Should prefer x_account_type
 
-    async def test_missing_both_headers_raises_error(self):
-        """测试缺少两个header时抛出异常"""
+    async def test_missing_both_headers_returns_empty_string(self):
+        """测试缺少两个header时返回空字符串"""
         from app.router.agent_controller_pkg.dependencies.get_account_type import (
             get_account_type,
         )
 
-        with pytest.raises(ParamException) as exc_info:
-            await get_account_type(x_account_type=None, x_user_type=None)
-
-        assert "account type" in str(exc_info.value).lower()
+        account_type = await get_account_type(x_account_type=None, x_user_type=None)
+        assert account_type == ""
 
     async def test_empty_string_header(self):
-        """测试空字符串header"""
+        """测试空字符串header时保持空字符串"""
         from app.router.agent_controller_pkg.dependencies.get_account_type import (
             get_account_type,
         )
 
-        # Empty string is falsy, so it should raise error
-        with pytest.raises(ParamException):
-            await get_account_type(x_account_type="", x_user_type=None)
+        account_type = await get_account_type(x_account_type="", x_user_type=None)
+        assert account_type == ""
 
     async def test_whitespace_header(self):
         """测试空白字符header"""

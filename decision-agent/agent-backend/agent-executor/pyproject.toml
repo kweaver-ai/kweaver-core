@@ -44,7 +44,8 @@ dev = [
      "pytest-cov>=4.0.0",
      "pylint==3.0.3",
      "pylint-junit==0.3.3",
- ]
+     "aioresponses>=0.7.8",
+]
 
 lint = [
     "pre-commit>=4.5.1",

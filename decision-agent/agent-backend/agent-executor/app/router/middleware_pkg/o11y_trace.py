@@ -85,7 +85,6 @@ async def o11y_trace(request: Request, call_next) -> Response:
 
             # 添加响应状态码到 span
             span.set_attribute("http.status_code", response.status_code)
-            StandLogger.info(f"http status {response.status_code}")
 
             return response
         except Exception as e:

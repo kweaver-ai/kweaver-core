@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 
 class TestInitTraceProvider:
+    @patch("app.utils.observability.observability_trace.StandLogger.info_log")
     @patch("app.utils.observability.observability_trace.set_tracer_provider")
     @patch("app.utils.observability.observability_trace.TracerProvider")
     @patch("app.utils.observability.observability_trace.BatchSpanProcessor")
@@ -14,6 +15,7 @@ class TestInitTraceProvider:
         m_batch_processor,
         m_tracer_provider,
         m_set_tracer,
+        m_info_log,
     ):
         from app.utils.observability.observability_trace import init_trace_provider
         from app.utils.observability.observability_setting import ServerInfo, TraceSetting
@@ -50,3 +52,4 @@ class TestInitTraceProvider:
         )
         m_tracer_provider.assert_called_once()
         m_set_tracer.assert_called_once_with(mock_provider)
+        m_info_log.assert_not_called()
