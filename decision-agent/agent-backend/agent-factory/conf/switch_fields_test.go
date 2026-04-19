@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,6 @@ func TestNewSwitchFields(t *testing.T) {
 		assert.False(t, sf.KeepLegacyAppPath)
 		assert.False(t, sf.DisablePmsCheck)
 		assert.False(t, sf.DisableBizDomain)
-		assert.False(t, sf.DisableBizDomainInit)
 		assert.False(t, sf.DisableAuditInit)
 	})
 
@@ -47,11 +47,10 @@ func TestSwitchFields_Struct(t *testing.T) {
 		t.Parallel()
 
 		sf := &SwitchFields{
-			KeepLegacyAppPath:    true,
-			DisablePmsCheck:      true,
-			DisableBizDomain:     true,
-			DisableBizDomainInit: true,
-			DisableAuditInit:     true,
+			KeepLegacyAppPath: true,
+			DisablePmsCheck:   true,
+			DisableBizDomain:  true,
+			DisableAuditInit:  true,
 			Mock: &MockSwitchFields{
 				MockMQClient:          true,
 				MockSandboxPlatform:   true,
@@ -159,4 +158,22 @@ func TestSwitchFields_IsBizDomainDisabled(t *testing.T) {
 
 		assert.False(t, sf.IsBizDomainDisabled())
 	})
+}
+
+func TestSwitchFields_ExposesExpectedFields(t *testing.T) {
+	t.Parallel()
+
+	typ := reflect.TypeOf(SwitchFields{})
+	actual := make([]string, 0, typ.NumField())
+	for i := range typ.NumField() {
+		actual = append(actual, typ.Field(i).Name)
+	}
+
+	assert.Equal(t, []string{
+		"KeepLegacyAppPath",
+		"DisablePmsCheck",
+		"DisableBizDomain",
+		"DisableAuditInit",
+		"Mock",
+	}, actual)
 }

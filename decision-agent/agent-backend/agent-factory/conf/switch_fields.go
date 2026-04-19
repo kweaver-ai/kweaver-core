@@ -11,9 +11,6 @@ type SwitchFields struct {
 	// 是否禁用业务域，默认false；开启后业务域相关逻辑全部失效
 	DisableBizDomain bool `yaml:"disable_biz_domain"`
 
-	// 是否禁用业务域初始化，默认false
-	DisableBizDomainInit bool `yaml:"disable_biz_domain_init"`
-
 	// 是否禁用审计日志初始化，默认false
 	DisableAuditInit bool `yaml:"disable_audit_init"`
 

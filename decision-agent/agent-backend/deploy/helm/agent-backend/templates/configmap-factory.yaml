@@ -32,7 +32,6 @@ data:
       keep_legacy_app_path: {{ .Values.service.keep_legacy_app_path | default false }}
       disable_pms_check: {{ .Values.service.disablePmsCheck | default false }}
       disable_biz_domain: {{ not $businessDomainEnabled }}
-      disable_biz_domain_init: {{ .Values.service.disableBizDomainInit | default false }}
       disable_audit_init: {{ .Values.service.disableAuditInit | default false }}
       mock:
         mock_mq_client: {{ .Values.service.mockMqClient | default false }}

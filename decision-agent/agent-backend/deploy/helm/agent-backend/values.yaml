@@ -47,11 +47,10 @@ service:
   streamDiffFrequency: 5
 
   # 是否保留老的APP路径
-  keep_legacy_app_path: true
+  keep_legacy_app_path: false
 
   # ========== 开发环境控制开关（生产环境建议设置为 false）==========
   disablePmsCheck: false
-  disableBizDomainInit: false
   disableAuditInit: false
   mockMqClient: false
   mockSandboxPlatform: false

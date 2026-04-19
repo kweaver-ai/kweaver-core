@@ -7,11 +7,8 @@ switch_fields:
     # 是否禁用权限检查（本地开发时建议设置为true）
     disable_pms_check: true
 
-    # 是否全局禁用业务域（开启后优先级高于 disable_biz_domain_init）
+    # 是否全局禁用业务域
     disable_biz_domain: false
-
-    # 是否禁用业务域初始化（本地开发时建议设置为true）
-    disable_biz_domain_init: true
 
 
 
