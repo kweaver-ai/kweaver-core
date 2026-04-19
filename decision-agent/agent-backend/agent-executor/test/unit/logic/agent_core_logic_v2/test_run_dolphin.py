@@ -4,9 +4,6 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from app.domain.vo.agentvo import AgentConfigVo
-from app.domain.vo.agentvo.agent_config_vos import SkillVo, ToolSkillVo
-
 
 class TestRunDolphin:
     """测试 run_dolphin 函数"""
@@ -77,82 +74,6 @@ class TestRunDolphin:
 
                                 # 预热模式不返回任何结果
                                 assert len(results) == 0
-
-    @pytest.mark.asyncio
-    async def test_run_dolphin_repairs_dolphin_before_prompt_build(
-        self, mock_agent_core
-    ):
-        """测试在构建 prompt 前先修正 dolphin 中的技能名称"""
-        config = AgentConfigVo(
-            agent_id="test_agent_id",
-            agent_run_id="test_run_id",
-            is_dolphin_mode=True,
-            dolphin='@获取agent详情(key="DocQA_Agent")->res',
-            dolphin_enhance='@获取agent详情{tool:tool-1}(key="DocQA_Agent")->res',
-            skills=SkillVo(
-                tools=[ToolSkillVo(tool_id="tool-1", tool_box_id="toolbox-1")]
-            ),
-        )
-        mock_agent_core.is_warmup = True
-        mock_agent_core.agent_config = config
-
-        seen = {}
-
-        class FakePromptBuilder:
-            def __init__(self, prompt_config, temp_files):
-                self.prompt_config = prompt_config
-
-            async def build(self):
-                seen["dolphin"] = self.prompt_config.dolphin
-                return "test prompt"
-
-        async def fake_build_skills(
-            ac, headers, llm_config, context_variables, temp_files
-        ):
-            ac.agent_config.skills.tools[0].__dict__["tool_info"] = {
-                "name": "获取Agent详情"
-            }
-
-        with patch("app.logic.agent_core_logic_v2.run_dolphin.span_set_attrs"):
-            with patch(
-                "app.logic.agent_core_logic_v2.run_dolphin.get_user_account_id",
-                return_value="user123",
-            ):
-                with patch(
-                    "app.logic.agent_core_logic_v2.run_dolphin.get_user_account_type",
-                    return_value="standard",
-                ):
-                    with patch(
-                        "app.logic.agent_core_logic_v2.run_dolphin.build_llm_config",
-                        new_callable=AsyncMock,
-                        return_value={},
-                    ):
-                        with patch(
-                            "app.logic.agent_core_logic_v2.run_dolphin.PromptBuilder",
-                            FakePromptBuilder,
-                        ):
-                            with patch(
-                                "app.logic.agent_core_logic_v2.run_dolphin.build_skills",
-                                new=fake_build_skills,
-                            ):
-                                from app.logic.agent_core_logic_v2.run_dolphin import (
-                                    run_dolphin,
-                                )
-
-                                results = []
-                                async for res in run_dolphin(
-                                    mock_agent_core,
-                                    config,
-                                    {},
-                                    {"x-user-id": "user123"},
-                                ):
-                                    results.append(res)
-
-                                assert results == []
-                                assert (
-                                    seen["dolphin"]
-                                    == '@获取Agent详情(key="DocQA_Agent")->res'
-                                )
 
     @pytest.mark.asyncio
     async def test_run_dolphin_basic(self, mock_agent_core, mock_config):

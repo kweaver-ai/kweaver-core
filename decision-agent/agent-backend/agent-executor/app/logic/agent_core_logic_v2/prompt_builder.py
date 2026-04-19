@@ -96,10 +96,7 @@ class PromptBuilder:
             else:
                 explore_system_prompt = self.agent_config.system_prompt
 
-            # explore_system_prompt = f"""{_SKILL_USAGE_RULES}
-
-#{explore_system_prompt}"""
-            #explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
+            explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
 
             history_enabled = not self.agent_config.disable_history_in_a_conversation()
             explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled})$query -> answer\n"""

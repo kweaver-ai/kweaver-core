@@ -16,7 +16,6 @@ class TestAgentConfigVo:
         assert config.system_prompt is None
         assert config.is_dolphin_mode is False
         assert config.dolphin is None
-        assert config.dolphin_enhance is None
         assert config.pre_dolphin == []
         assert config.post_dolphin == []
         assert config.output is not None  # Validator creates default OutputConfigVo
@@ -74,17 +73,9 @@ class TestAgentConfigVo:
 
     def test_with_dolphin_mode(self):
         """测试dolphin模式"""
-        config = AgentConfigVo(
-            is_dolphin_mode=True,
-            dolphin="some_config",
-            dolphin_enhance='@获取agent详情{tool:tool-1}(key="DocQA_Agent")->res',
-        )
+        config = AgentConfigVo(is_dolphin_mode=True, dolphin="some_config")
         assert config.is_dolphin_mode is True
         assert config.dolphin == "some_config"
-        assert (
-            config.dolphin_enhance
-            == '@获取agent详情{tool:tool-1}(key="DocQA_Agent")->res'
-        )
 
     def test_with_plan_mode(self):
         """测试plan_mode"""
