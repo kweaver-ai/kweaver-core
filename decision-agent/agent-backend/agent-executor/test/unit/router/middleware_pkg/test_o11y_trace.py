@@ -93,7 +93,7 @@ class TestO11yTrace:
         mock_get_tracer.assert_called_once_with()
         mock_tracer.start_as_current_span.assert_called_once()
         mock_span.set_attribute.assert_any_call("http.status_code", 201)
-        module.StandLogger.info.assert_called_once_with("http status 201")
+        module.StandLogger.info.assert_not_called()
         assert result is response
 
     @pytest.mark.asyncio

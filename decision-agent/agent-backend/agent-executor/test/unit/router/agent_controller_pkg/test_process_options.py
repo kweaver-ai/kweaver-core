@@ -78,8 +78,8 @@ class TestProcessOptions:
 
         assert agent_config.agent_id == "new-id"
 
-    async def test_with_conversation_id_logs_to_standard_logger_only(self):
-        """普通会话设置日志应只写标准日志。"""
+    async def test_with_conversation_id_does_not_log(self):
+        """普通会话设置不应额外输出 info 日志。"""
         agent_config = MagicMock(spec=AgentConfigVo)
         agent_config.agent_run_id = "run-123"
         agent_config.agent_id = "agent-123"
@@ -98,7 +98,7 @@ class TestProcessOptions:
             process_options(options, agent_config, MagicMock())
 
         assert agent_config.conversation_id == "new-conversation"
-        mock_standard_info.assert_called_once()
+        mock_standard_info.assert_not_called()
 
     async def test_without_conversation_id_logs_warning_to_standard_logger_only(self):
         """缺失会话ID属于普通告警，不应进入 O11Y。"""

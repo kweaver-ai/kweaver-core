@@ -168,11 +168,15 @@ class TestO11yConfigMassive:
         assert config.log_enabled is False
 
     def test_from_dict_log_enabled(self):
-        config = O11yConfig.from_dict({"log_enabled": True})
+        config = O11yConfig.from_dict(
+            {"log_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
         assert config.log_enabled is True
 
     def test_from_dict_trace_enabled(self):
-        config = O11yConfig.from_dict({"trace_enabled": True})
+        config = O11yConfig.from_dict(
+            {"trace_enabled": True, "trace_endpoint": "http://otelcol-contrib:4318"}
+        )
         assert config.trace_enabled is True
 
 

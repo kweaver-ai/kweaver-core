@@ -275,17 +275,23 @@ class TestAgentCoreV2Run:
                                         with patch(
                                             "app.logic.agent_core_logic_v2.agent_core_v2.flags"
                                         ):
-                                            core = AgentCoreV2()
-                                            results = []
-                                            async for res in core.run(
-                                                mock_agent_config,
-                                                mock_agent_input,
-                                                headers,
-                                            ):
-                                                results.append(res)
+                                            with patch(
+                                                "app.logic.agent_core_logic_v2.agent_core_v2.StandLogger.info"
+                                            ) as mock_info:
+                                                core = AgentCoreV2()
+                                                results = []
+                                                async for res in core.run(
+                                                    mock_agent_config,
+                                                    mock_agent_input,
+                                                    headers,
+                                                ):
+                                                    results.append(res)
 
-                                            assert len(results) == 1
-                                            assert results[0]["status"] == "success"
+                                                assert len(results) == 1
+                                                assert results[0]["status"] == "success"
+                                                mock_info.assert_called_once_with(
+                                                    "AgentCore run end"
+                                                )
 
     @pytest.mark.asyncio
     async def test_run_with_tool_interrupt(self, mock_agent_config, mock_agent_input):

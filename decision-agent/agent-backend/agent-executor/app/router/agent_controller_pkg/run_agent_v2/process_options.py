@@ -57,9 +57,6 @@ def process_options(
         agent_config.agent_id = options.agent_id
 
     if options.conversation_id:
-        StandLogger.info(
-            f"[process_options] Setting conversation_id from options: {options.conversation_id}"
-        )
         agent_config.conversation_id = options.conversation_id
     else:
         StandLogger.warn(

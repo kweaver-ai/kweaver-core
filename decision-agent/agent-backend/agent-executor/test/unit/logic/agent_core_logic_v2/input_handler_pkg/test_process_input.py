@@ -1,7 +1,15 @@
 """Tests for app.logic.agent_core_logic_v2.input_handler_pkg.process_input module."""
 
+import importlib
+
 import pytest
 from unittest.mock import MagicMock, patch
+
+
+def get_process_input_module():
+    return importlib.import_module(
+        "app.logic.agent_core_logic_v2.input_handler_pkg.process_input"
+    )
 
 
 @pytest.mark.asyncio
@@ -10,9 +18,8 @@ class TestProcessInput:
 
     async def test_process_input_with_string_field(self):
         """Test processing input with string field."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -26,13 +33,8 @@ class TestProcessInput:
         headers = {"x-user-id": "user123"}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ) as mock_span_attrs,
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs") as mock_span_attrs,
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -42,9 +44,8 @@ class TestProcessInput:
 
     async def test_process_input_with_string_field_empty(self):
         """Test processing input with empty string field."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -58,13 +59,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ) as mock_span_attrs,
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value=None,
-            ),
+            patch.object(module, "span_set_attrs") as mock_span_attrs,
+            patch.object(module, "get_user_account_id", return_value=None),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -73,9 +69,8 @@ class TestProcessInput:
 
     async def test_process_input_with_object_field_json(self):
         """Test processing input with object field containing JSON."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -90,13 +85,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -108,9 +98,8 @@ class TestProcessInput:
 
     async def test_process_input_with_object_field_non_string(self):
         """Test processing input with object field containing non-string value."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -125,13 +114,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -141,9 +125,8 @@ class TestProcessInput:
 
     async def test_process_input_with_object_field_empty(self):
         """Test processing input with empty object field."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -157,13 +140,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -172,9 +150,8 @@ class TestProcessInput:
 
     async def test_process_input_with_file_field(self):
         """Test processing input with file field."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -189,13 +166,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -206,9 +178,8 @@ class TestProcessInput:
 
     async def test_process_input_with_file_field_empty(self):
         """Test processing input with empty file field."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -222,13 +193,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -238,9 +204,8 @@ class TestProcessInput:
 
     async def test_process_input_sets_history(self):
         """Test that history is set to empty list if not present."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -254,13 +219,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -269,9 +229,8 @@ class TestProcessInput:
 
     async def test_process_input_sets_header_and_config(self):
         """Test that header and self_config are set."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -286,13 +245,8 @@ class TestProcessInput:
         headers = {"x-user-id": "user123", "x-account-type": "standard"}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 
@@ -302,9 +256,8 @@ class TestProcessInput:
 
     async def test_process_input_with_is_debug(self):
         """Test processing input with is_debug flag."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -318,13 +271,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(
                 mock_agent_config, mock_agent_input, headers, is_debug=True
@@ -335,9 +283,8 @@ class TestProcessInput:
 
     async def test_process_input_with_span(self):
         """Test processing input with span parameter."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -352,13 +299,8 @@ class TestProcessInput:
         mock_span = MagicMock()
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ) as mock_span_attrs,
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs") as mock_span_attrs,
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(
                 mock_agent_config, mock_agent_input, headers, span=mock_span
@@ -369,9 +311,8 @@ class TestProcessInput:
 
     async def test_process_input_multiple_fields(self):
         """Test processing input with multiple fields."""
-        from app.logic.agent_core_logic_v2.input_handler_pkg.process_input import (
-            process_input,
-        )
+        module = get_process_input_module()
+        process_input = module.process_input
 
         mock_agent_config = MagicMock()
         mock_agent_config.agent_run_id = "test_run_id"
@@ -397,13 +338,8 @@ class TestProcessInput:
         headers = {}
 
         with (
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.span_set_attrs"
-            ),
-            patch(
-                "app.logic.agent_core_logic_v2.input_handler_pkg.process_input.get_user_account_id",
-                return_value="user123",
-            ),
+            patch.object(module, "span_set_attrs"),
+            patch.object(module, "get_user_account_id", return_value="user123"),
         ):
             result = await process_input(mock_agent_config, mock_agent_input, headers)
 

@@ -129,16 +129,6 @@ async def run_dolphin(
         f"{COLORS['blue']}========================================{COLORS['end']}"
     )
 
-    # 6. 构造init_params
-    init_params = {
-        "config": llm_config,
-        "variables": context_variables,
-        "skillkit": toolkit,
-        # "skillkit_hook": skillkit_hook,
-    }
-
-    StandLogger.info(f"[run_dolphin] agent_init init_params = {init_params}")
-    StandLogger.info(f"[run_dolphin] agent_run dolphin_prompt = {dolphin_prompt}")
 
     # 8. 从llm_config字典创建GlobalConfig对象
     global_config = GlobalConfig.from_dict(llm_config)
@@ -164,38 +154,19 @@ async def run_dolphin(
 
     # 9.2 创建trace listener（如果启用）
     trace_listener = None
-    StandLogger.info(
-        f"[run_dolphin] Dolphin trace check: "
-        f"is_dolphin_trace_enabled={Config.is_dolphin_trace_enabled()}, "
-        f"is_o11y_trace_enabled={Config.is_o11y_trace_enabled()}"
-    )
-
     if Config.is_dolphin_trace_enabled():
         try:
             from dolphin.core.observability.otel_listener import OTelTraceListener
-
-            StandLogger.info(
-                f"[run_dolphin] Creating OTelTraceListener with: "
-                f"agent_id={config.agent_id}, "
-                f"conversation_id={config.conversation_id}, "
-                f"user_id={user_id}"
-            )
 
             trace_listener = OTelTraceListener(
                 agent_id=config.agent_id or "",
                 conversation_id=config.conversation_id or "",
                 user_id=user_id or "",
             )
-            StandLogger.info(
-                f"[run_dolphin] Dolphin trace listener created successfully: "
-                f"agent_id={config.agent_id}, conversation_id={config.conversation_id}"
-            )
         except Exception as e:
             StandLogger.warn(f"[run_dolphin] Failed to create trace listener: {e}")
             o11y_logger().warn(f"[run_dolphin] Failed to create trace listener: {e}")
             trace_listener = None
-    else:
-        StandLogger.info("[run_dolphin] Dolphin trace is disabled")
 
     # 适配 Dolphin SDK 的 history 变量名：
     # SDK 内部使用 KEY_HISTORY 常量（当前值为 "_history"）而不是 "history"

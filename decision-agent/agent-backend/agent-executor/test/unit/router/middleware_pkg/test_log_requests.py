@@ -1,8 +1,10 @@
 """单元测试 - log_requests 请求日志中间件"""
 
-import pytest
+import importlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
+
+import pytest
 from fastapi import Request, Response
 
 
@@ -19,6 +21,10 @@ class AsyncIterator:
         if not self.chunks:
             raise StopAsyncIteration
         return self.chunks.pop(0)
+
+
+def get_log_requests_module():
+    return importlib.import_module("app.router.middleware_pkg.log_requests")
 
 
 class TestLogRequests:
@@ -139,9 +145,8 @@ class TestLogRequests:
     @pytest.mark.asyncio
     async def test_request_body_json_cached(self):
         """测试JSON请求体被缓存"""
-        from app.router.middleware_pkg.log_requests import (
-            log_requests,
-        )
+        module = get_log_requests_module()
+        log_requests = module.log_requests
 
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"  # A path that's not in exclusion list
@@ -159,9 +164,7 @@ class TestLogRequests:
 
         call_next = AsyncMock(return_value=response)
 
-        with patch(
-            "app.router.middleware_pkg.log_requests.cache_request_body"
-        ) as mock_cache:
+        with patch.object(module, "cache_request_body") as mock_cache:
             result = await log_requests(request, call_next)
             # Check that cache was called with parsed JSON
             mock_cache.assert_called_once()
@@ -169,7 +172,8 @@ class TestLogRequests:
     @pytest.mark.asyncio
     async def test_request_body_non_json_cached_as_string(self):
         """测试非JSON请求体作为字符串缓存"""
-        from app.router.middleware_pkg.log_requests import log_requests
+        module = get_log_requests_module()
+        log_requests = module.log_requests
 
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"  # A path that's not in exclusion list
@@ -187,16 +191,15 @@ class TestLogRequests:
 
         call_next = AsyncMock(return_value=response)
 
-        with patch(
-            "app.router.middleware_pkg.log_requests.cache_request_body"
-        ) as mock_cache:
+        with patch.object(module, "cache_request_body") as mock_cache:
             result = await log_requests(request, call_next)
             mock_cache.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_streaming_response_detected_text_event_stream(self):
         """测试检测text/event-stream流式响应"""
-        from app.router.middleware_pkg.log_requests import log_requests
+        module = get_log_requests_module()
+        log_requests = module.log_requests
 
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"
@@ -213,9 +216,7 @@ class TestLogRequests:
 
         call_next = AsyncMock(return_value=response)
 
-        with patch(
-            "app.router.middleware_pkg.log_requests.handle_streaming_response"
-        ) as mock_handle:
+        with patch.object(module, "handle_streaming_response") as mock_handle:
             mock_handle.return_value = response
             result = await log_requests(request, call_next)
             mock_handle.assert_called_once()
@@ -223,7 +224,8 @@ class TestLogRequests:
     @pytest.mark.asyncio
     async def test_streaming_response_detected_application_x_ndjson(self):
         """测试检测application/x-ndjson流式响应"""
-        from app.router.middleware_pkg.log_requests import log_requests
+        module = get_log_requests_module()
+        log_requests = module.log_requests
 
         request = MagicMock(spec=Request)
         request.url.path = "/api/test"
@@ -240,9 +242,7 @@ class TestLogRequests:
 
         call_next = AsyncMock(return_value=response)
 
-        with patch(
-            "app.router.middleware_pkg.log_requests.handle_streaming_response"
-        ) as mock_handle:
+        with patch.object(module, "handle_streaming_response") as mock_handle:
             mock_handle.return_value = response
             result = await log_requests(request, call_next)
             mock_handle.assert_called_once()
@@ -324,9 +324,8 @@ class TestLogRequests:
     @pytest.mark.asyncio
     async def test_process_time_calculation(self):
         """测试处理时间计算"""
-        from app.router.middleware_pkg.log_requests import (
-            _handle_non_streaming_response,
-        )
+        module = get_log_requests_module()
+        _handle_non_streaming_response = module._handle_non_streaming_response
 
         # 直接测试 _handle_non_streaming_response 函数
         response = MagicMock()
@@ -334,7 +333,7 @@ class TestLogRequests:
         response.headers = {"content-type": "application/json"}
         response.body_iterator = AsyncIterator([b"test response"])
 
-        with patch("app.router.middleware_pkg.log_requests.Config") as mock_config:
+        with patch.object(module, "Config") as mock_config:
             mock_config.is_debug_mode.return_value = False
 
             result = await _handle_non_streaming_response(

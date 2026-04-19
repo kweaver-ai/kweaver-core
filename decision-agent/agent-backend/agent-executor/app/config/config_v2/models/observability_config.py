@@ -3,6 +3,11 @@
 from dataclasses import dataclass
 
 
+O11Y_TRACE_ENDPOINT_REQUIRED_ERROR = (
+    "o11y.trace_endpoint is required when o11y.log_enabled or o11y.trace_enabled is true"
+)
+
+
 @dataclass
 class O11yConfig:
     """可观测性配置"""
@@ -44,13 +49,17 @@ class O11yConfig:
         OTel 配置统一由 YAML 驱动，不再读取 TRACE_* / OTEL_* 环境变量。
         """
         trace_enabled = data.get("trace_enabled", False)
-        trace_endpoint = data.get("trace_endpoint", "")
+        log_enabled = data.get("log_enabled", False)
+        trace_endpoint = str(data.get("trace_endpoint") or "").strip()
+
+        if (log_enabled or trace_enabled) and not trace_endpoint:
+            raise ValueError(O11Y_TRACE_ENDPOINT_REQUIRED_ERROR)
 
         return cls(
             service_name=data.get("service_name", "agent-executor"),
             service_version=data.get("service_version", "1.0.0"),
             environment=data.get("environment", "production"),
-            log_enabled=data.get("log_enabled", False),
+            log_enabled=log_enabled,
             log_level=data.get("log_level", "info").lower(),
             trace_enabled=trace_enabled,
             trace_endpoint=trace_endpoint,
