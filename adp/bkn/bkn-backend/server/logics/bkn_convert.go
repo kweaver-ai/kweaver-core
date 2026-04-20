@@ -287,6 +287,13 @@ func ToADPRelationType(knID string, branch string, bknRel *bknsdk.BknRelationTyp
 			}
 			relType.MappingRules = indirect
 
+		case *bknsdk.FilteredCrossJoinMapping:
+			filtered := &interfaces.FilteredCrossJoinMapping{
+				SourceCondition: toADPCondCfg(rules.SourceCondition),
+				TargetCondition: toADPCondCfg(rules.TargetCondition),
+			}
+			relType.MappingRules = filtered
+
 		default:
 			logger.Errorf("Unknown mappingRules type: %T", rules)
 		}
