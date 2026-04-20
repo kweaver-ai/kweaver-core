@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	skillIndexBuildTaskType  = "skill:index:build"
+	skillIndexBuildTaskType  = "execution-factory:skill:index:build"
 	skillIndexBuildQueueName = "skill_index_build"
 )
 

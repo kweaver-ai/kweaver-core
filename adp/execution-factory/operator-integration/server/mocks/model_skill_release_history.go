@@ -42,6 +42,20 @@ func (m *MockISkillReleaseHistoryDB) EXPECT() *MockISkillReleaseHistoryDBMockRec
 	return m.recorder
 }
 
+// DeleteByID mocks base method.
+func (m *MockISkillReleaseHistoryDB) DeleteByID(ctx context.Context, tx *sql.Tx, id int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByID", ctx, tx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByID indicates an expected call of DeleteByID.
+func (mr *MockISkillReleaseHistoryDBMockRecorder) DeleteByID(ctx, tx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockISkillReleaseHistoryDB)(nil).DeleteByID), ctx, tx, id)
+}
+
 // DeleteBySkillID mocks base method.
 func (m *MockISkillReleaseHistoryDB) DeleteBySkillID(ctx context.Context, tx *sql.Tx, skillID string) error {
 	m.ctrl.T.Helper()

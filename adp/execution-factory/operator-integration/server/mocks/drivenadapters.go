@@ -842,20 +842,6 @@ func (mr *MockVegaBackendClientMockRecorder) GetResourceByID(ctx, id any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceByID", reflect.TypeOf((*MockVegaBackendClient)(nil).GetResourceByID), ctx, id)
 }
 
-// WriteDatasetDocuments mocks base method.
-func (m *MockVegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteDatasetDocuments", ctx, datasetID, documents)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WriteDatasetDocuments indicates an expected call of WriteDatasetDocuments.
-func (mr *MockVegaBackendClientMockRecorder) WriteDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).WriteDatasetDocuments), ctx, datasetID, documents)
-}
-
 // UpdateDatasetDocuments mocks base method.
 func (m *MockVegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
 	m.ctrl.T.Helper()
@@ -868,6 +854,20 @@ func (m *MockVegaBackendClient) UpdateDatasetDocuments(ctx context.Context, data
 func (mr *MockVegaBackendClientMockRecorder) UpdateDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).UpdateDatasetDocuments), ctx, datasetID, documents)
+}
+
+// WriteDatasetDocuments mocks base method.
+func (m *MockVegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteDatasetDocuments", ctx, datasetID, documents)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteDatasetDocuments indicates an expected call of WriteDatasetDocuments.
+func (mr *MockVegaBackendClientMockRecorder) WriteDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).WriteDatasetDocuments), ctx, datasetID, documents)
 }
 
 // MockOSSGatewayBackendClient is a mock of OSSGatewayBackendClient interface.

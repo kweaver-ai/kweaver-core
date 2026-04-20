@@ -37,11 +37,6 @@ func NewSkillRestHandler() SkillRestHandler {
 }
 func (r *skillRestHandler) RegisterPrivate(engine *gin.RouterGroup) {
 	engine.Use(middlewareBusinessDomain(false, false, r.businessDomainService))
-	engine.POST("/skills/index/build", r.SkillHandler.CreateSkillIndexBuildTask)
-	engine.GET("/skills/index/build", r.SkillHandler.QuerySkillIndexBuildTaskList)
-	engine.GET("/skills/index/build/:task_id", r.SkillHandler.GetSkillIndexBuildTask)
-	engine.POST("/skills/index/build/:task_id/cancel", r.SkillHandler.CancelSkillIndexBuildTask)
-	engine.POST("/skills/index/build/:task_id/retry", r.SkillHandler.RetrySkillIndexBuildTask)
 	/*市场接口*/
 	// 查询技能市场列表
 	engine.GET("/skills/market", r.SkillHandler.QuerySkillMarketList)
@@ -95,4 +90,10 @@ func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
 	engine.POST("/skills/:skill_id/execute", r.SkillHandler.ExecuteSkill)
 	// 查询技能发布历史
 	engine.GET("/skills/:skill_id/history", r.SkillHandler.GetSkillReleaseHistory)
+	/*构建接口*/
+	engine.POST("/skills/index/build", r.SkillHandler.CreateSkillIndexBuildTask)
+	engine.GET("/skills/index/build", r.SkillHandler.QuerySkillIndexBuildTaskList)
+	engine.GET("/skills/index/build/:task_id", r.SkillHandler.GetSkillIndexBuildTask)
+	engine.POST("/skills/index/build/:task_id/cancel", r.SkillHandler.CancelSkillIndexBuildTask)
+	engine.POST("/skills/index/build/:task_id/retry", r.SkillHandler.RetrySkillIndexBuildTask)
 }
