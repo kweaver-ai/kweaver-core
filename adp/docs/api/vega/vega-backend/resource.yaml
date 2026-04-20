@@ -931,20 +931,45 @@ definitions:
   interfaces.SQLQueryResponse:
     properties:
       columns:
-        description: 查询结果元数据
+        description: 查询结果列信息
         items:
+          properties:
+            name:
+              description: 列名
+              type: string
+            type:
+              description: 列类型
+              type: string
           type: object
         type: array
       entries:
-        description: 查询结果数据
+        description: 查询结果数据，每条记录为一个对象，key为列名，value为列值
         items:
           type: object
         type: array
       total_count:
-        description: 总条数
+        description: 查询结果总条数
         type: integer
       stats:
-        description: 查询状态信息
+        description: 查询统计信息
+        properties:
+          is_timeout:
+            description: 查询是否超时
+            type: boolean
+          query_id:
+            description: 查询ID，用于流式查询时获取下一批数据
+            type: string
+          has_more:
+            description: 是否还有更多数据（流式查询时使用）
+            type: boolean
+          search_after:
+            description: OpenSearch流式查询的search_after值，用于获取下一批数据
+            items:
+              type: object
+            type: array
+          offset:
+            description: 已获取到的数据总数（流式查询模式）
+            type: integer
         type: object
     type: object
   interfaces.TableInQuery:
