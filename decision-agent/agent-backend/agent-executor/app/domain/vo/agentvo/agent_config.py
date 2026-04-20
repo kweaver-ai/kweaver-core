@@ -26,6 +26,7 @@ class AgentConfigVo(BaseModel):
     system_prompt: Optional[str] = None
     mode: Optional[str] = None
     is_dolphin_mode: bool = False
+    is_use_tool_id_in_dolphin: int = 0  # 对齐 Go 侧 daconfvalobj.Config.IsUseToolIDInDolphin
     dolphin: Optional[str] = None
 
     pre_dolphin: Optional[List[Dict[str, Any]]] = []
@@ -114,6 +115,10 @@ class AgentConfigVo(BaseModel):
     def is_plan_mode(self) -> bool:
         return self.plan_mode and self.plan_mode.get("is_enabled", False)
 
+    def use_tool_id_in_dolphin(self) -> bool:
+        """是否在 Dolphin 语句中使用 (tool_type, tool_id) 作为工具键。"""
+        return bool(self.is_use_tool_id_in_dolphin)
+
     @validator("react_config", pre=True, always=True)
     def validate_react_config(cls, v):
         """验证 react_config 字段"""
@@ -127,7 +132,7 @@ class AgentConfigVo(BaseModel):
             return ReactConfigVo(**v)
 
         return None
-    
+
     def react_disable_history_in_a_conversation(self) -> bool:
         """
         react模式下，检查是否禁用历史对话，此方法仅在mode为react时有效
@@ -146,7 +151,7 @@ class AgentConfigVo(BaseModel):
         """
         if self.mode != "react":
             return False
-        
+
         return bool(
             self.react_config
             and self.react_config.disable_llm_cache

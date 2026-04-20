@@ -26,6 +26,7 @@ dependencies = [
     "structlog==24.1.0",
     "setuptools==76.0.0",
     "uvicorn==0.38.0",
+    "kweaver-dolphin==0.6.0",
     "python-dotenv>=1.0.0",
 ]
 
