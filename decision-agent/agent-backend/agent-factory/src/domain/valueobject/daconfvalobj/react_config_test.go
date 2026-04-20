@@ -2,30 +2,30 @@ package daconfvalobj
 
 import "testing"
 
-func TestNonDolphinModeConfig_ValObjCheck(t *testing.T) {
+func TestReactConfig_ValObjCheck(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		p    *NonDolphinModeConfig
+		p    *ReactConfig
 	}{
 		{
 			name: "全部开启",
-			p: &NonDolphinModeConfig{
+			p: &ReactConfig{
 				DisableHistoryInAConversation: true,
 				DisableLLMCache:               true,
 			},
 		},
 		{
 			name: "全部关闭",
-			p: &NonDolphinModeConfig{
+			p: &ReactConfig{
 				DisableHistoryInAConversation: false,
 				DisableLLMCache:               false,
 			},
 		},
 		{
 			name: "空结构体",
-			p:    &NonDolphinModeConfig{},
+			p:    &ReactConfig{},
 		},
 	}
 

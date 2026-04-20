@@ -2015,6 +2015,16 @@ components:
                     example: false
                     type: boolean
             type: object
+        cdaenum.AgentMode:
+            enum:
+                - default
+                - dolphin
+                - react
+            type: string
+            x-enum-varnames:
+                - AgentModeDefault
+                - AgentModeDolphin
+                - AgentModeReact
         cdaenum.AvatarType:
             enum:
                 - 1
@@ -2852,15 +2862,6 @@ components:
                     description: 是否启用
                     type: boolean
             type: object
-        daconfvalobj.NonDolphinModeConfig:
-            properties:
-                disable_history_in_a_conversation:
-                    description: 是否禁用单次会话的历史记录
-                    type: boolean
-                disable_llm_cache:
-                    description: 是否禁用LLM缓存
-                    type: boolean
-            type: object
         daconfvalobj.OpeningRemarkConfig:
             properties:
                 dynamic_opening_remark_prompt:
@@ -2892,6 +2893,15 @@ components:
                 question:
                     description: 问题内容
                     type: string
+            type: object
+        daconfvalobj.ReactConfig:
+            properties:
+                disable_history_in_a_conversation:
+                    description: 是否禁用单次会话的历史记录
+                    type: boolean
+                disable_llm_cache:
+                    description: 是否禁用LLM缓存
+                    type: boolean
             type: object
         daconfvalobj.RelatedQuestion:
             properties:
@@ -5315,6 +5325,9 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/cdaenum.DolphinMode'
                     description: 是否是 dolphin 模式
+                is_use_tool_id_in_dolphin:
+                    description: dolphin 中是否使用 tool id
+                    type: integer
                 llms:
                     description: LLM 配置
                     items:
@@ -5328,10 +5341,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/daconfvalobj.ConfigMetadata'
                     description: 配置元数据
-                non_dolphin_mode_config:
+                mode:
                     allOf:
-                        - $ref: '#/components/schemas/daconfvalobj.NonDolphinModeConfig'
-                    description: 非Dolphin模式配置
+                        - $ref: '#/components/schemas/cdaenum.AgentMode'
+                    description: 配置模式
                 opening_remark_config:
                     allOf:
                         - $ref: '#/components/schemas/daconfvalobj.OpeningRemarkConfig'
@@ -5359,6 +5372,10 @@ components:
                     items:
                         $ref: '#/components/schemas/daconfvalobj.PresetQuestion'
                     type: array
+                react_config:
+                    allOf:
+                        - $ref: '#/components/schemas/daconfvalobj.ReactConfig'
+                    description: ReAct 模式配置
                 related_question:
                     allOf:
                         - $ref: '#/components/schemas/daconfvalobj.RelatedQuestion'

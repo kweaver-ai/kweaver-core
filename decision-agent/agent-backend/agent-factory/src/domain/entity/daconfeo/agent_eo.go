@@ -11,9 +11,8 @@ import (
 type DataAgent struct {
 	dapo.DataAgentPo
 
-	Config *daconfvalobj.Config `json:"config"` // Agent 配置（用于创建、更新时使用）
-	// ConfigForShow *daconfvalobj.ConfigForShow `json:"-"`            // Agent 配置（用于展示时使用）
-	ProductName string `json:"product_name"` // 产品名称
+	Config      *daconfvalobj.Config `json:"config"`       // Agent 配置
+	ProductName string               `json:"product_name"` // 产品名称
 
 	CreatedByName string `json:"created_by_name"` // 创建人名称
 	UpdatedByName string `json:"updated_by_name"` // 更新人名称
