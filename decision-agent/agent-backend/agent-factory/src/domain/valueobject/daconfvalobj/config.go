@@ -224,6 +224,11 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 
 	// 13. 验证react_config相关配置
 	if p.ReactConfig != nil {
+		if p.Mode != cdaenum.AgentModeReact {
+			err = errors.New("[Config]: react_config is only allowed when mode is react")
+			return
+		}
+
 		if err = p.ReactConfig.ValObjCheck(); err != nil {
 			err = errors.Wrap(err, "[Config]: react_config is invalid")
 			return

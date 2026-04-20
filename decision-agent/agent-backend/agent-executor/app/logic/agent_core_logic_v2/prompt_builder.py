@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from opentelemetry.trace import Span
@@ -44,6 +45,19 @@ class PromptBuilder:
         self.agent_config = agent_config
         self.temp_files = temp_files
 
+    @staticmethod
+    def _is_skill_usage_rules_enabled() -> bool:
+        """是否将 _SKILL_USAGE_RULES 拼接到系统提示词。
+
+        由环境变量 ADD_SKILL_USAGE_RULES_IN_SYSTEM_PROMPT 控制，默认 false，
+        仅当值为 true/1/yes（大小写不敏感）时才拼接。
+        """
+        return os.getenv("ADD_SKILL_USAGE_RULES_IN_SYSTEM_PROMPT", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+
     @internal_span()
     async def build(self, span: Optional[Span] = None) -> str:
         span_set_attrs(
@@ -52,13 +66,15 @@ class PromptBuilder:
             agent_id=self.agent_config.agent_id,
         )
 
+        skill_rules_enabled = self._is_skill_usage_rules_enabled()
+
         if self.agent_config.is_dolphin_mode:
             # Skill usage rules are placed first so that every /explore/ or
             # /explore_v2/ block — whether it appears in pre_dolphin, dolphin,
             # or post_dolphin — can always see them.  Moving this after
             # pre_dolphin would hide the rules from any explore block that the
             # author placed inside a pre_dolphin section.
-            dolphin_prompt = _SKILL_USAGE_RULES + "\n"
+            dolphin_prompt = (_SKILL_USAGE_RULES + "\n") if skill_rules_enabled else ""
 
             for pre_dolphin in self.agent_config.pre_dolphin:
                 if not pre_dolphin.get("enabled", False):
@@ -96,9 +112,12 @@ class PromptBuilder:
             else:
                 explore_system_prompt = self.agent_config.system_prompt
 
-            explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
+            if skill_rules_enabled:
+                explore_system_prompt = explore_system_prompt + _SKILL_USAGE_RULES
 
-            history_enabled = not self.agent_config.disable_history_in_a_conversation()
+            history_enabled = (
+                not self.agent_config.react_disable_history_in_a_conversation()
+            )
             explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled})$query -> answer\n"""
 
             dolphin_prompt = (

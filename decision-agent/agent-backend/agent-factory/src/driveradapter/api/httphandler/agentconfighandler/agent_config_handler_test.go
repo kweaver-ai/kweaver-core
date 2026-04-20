@@ -63,6 +63,8 @@ func setACInternalAPI(c *gin.Context) {
 func setACVisitor(c *gin.Context, userID string) { //nolint:unused
 	visitor := &rest.Visitor{ID: userID}
 	c.Set(cenum.VisitUserInfoCtxKey.String(), visitor)
+	ctx := context.WithValue(c.Request.Context(), cenum.VisitUserInfoCtxKey.String(), visitor) //nolint:staticcheck
+	c.Request = c.Request.WithContext(ctx)
 }
 
 func registerACValidators(t *testing.T) {
@@ -95,6 +97,7 @@ func TestDAConfHTTPHandler_RegPubRouter(t *testing.T) {
 	routes := r.Routes()
 
 	assert.True(t, hasRoute(routes, http.MethodPost, "/v3/agent"))
+	assert.True(t, hasRoute(routes, http.MethodPost, "/v3/agent/react"))
 	assert.True(t, hasRoute(routes, http.MethodPut, "/v3/agent/:agent_id"))
 	assert.True(t, hasRoute(routes, http.MethodGet, "/v3/agent/:agent_id"))
 	assert.True(t, hasRoute(routes, http.MethodGet, "/v3/agent/by-key/:key"))
@@ -244,6 +247,77 @@ func TestDAConfHTTPHandler_Create_BadJSONMissingRequired(t *testing.T) {
 
 	h.Create(c)
 	assert.NotEmpty(t, c.Errors)
+}
+
+func TestDAConfHTTPHandler_CreateReact_ModeIsNotReact(t *testing.T) {
+	t.Parallel()
+
+	registerACValidators(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSvc := v3portdrivermock.NewMockIDataAgentConfigSvc(ctrl)
+	h := &daConfHTTPHandler{daConfSvc: mockSvc, logger: acTestLogger{}}
+
+	body := `{
+		"name":"test_agent",
+		"profile":"test-profile",
+		"avatar_type":1,
+		"avatar":"1",
+		"product_key":"dip",
+		"config":{
+			"mode":"default",
+			"input":{"fields":[{"name":"query","type":"string"}]},
+			"llms":[{"is_default":true,"llm_config":{"name":"test","max_tokens":100}}],
+			"output":{"default_format":"markdown"}
+		}
+	}`
+	c, recorder := newACTestCtx(http.MethodPost, "/v3/agent/react", body)
+	setACInternalAPI(c)
+
+	h.CreateReact(c)
+
+	require.NotEmpty(t, c.Errors)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, c.Errors.String(), `config.mode must be`)
+	assert.Contains(t, c.Errors.String(), `react`)
+}
+
+func TestDAConfHTTPHandler_CreateReact_Happy(t *testing.T) {
+	t.Parallel()
+
+	registerACValidators(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSvc := v3portdrivermock.NewMockIDataAgentConfigSvc(ctrl)
+	mockSvc.EXPECT().Create(gomock.Any(), gomock.Any()).Return("react-agent-id", nil)
+
+	h := &daConfHTTPHandler{daConfSvc: mockSvc, logger: acTestLogger{}}
+
+	body := `{
+		"name":"react_agent",
+		"profile":"react-profile",
+		"avatar_type":1,
+		"avatar":"1",
+		"product_key":"dip",
+		"config":{
+			"mode":"react",
+			"input":{"fields":[{"name":"query","type":"string"}]},
+			"llms":[{"is_default":true,"llm_config":{"name":"test","max_tokens":100}}],
+			"output":{"default_format":"markdown"}
+		}
+	}`
+	c, recorder := newACTestCtx(http.MethodPost, "/v3/agent/react", body)
+	setACVisitor(c, "user-1")
+
+	h.CreateReact(c)
+
+	require.Empty(t, c.Errors)
+	assert.Equal(t, http.StatusCreated, recorder.Code)
+	assert.JSONEq(t, `{"id":"react-agent-id","version":"v0"}`, recorder.Body.String())
 }
 
 // --- Delete handler tests ---

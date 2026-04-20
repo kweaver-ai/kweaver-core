@@ -47,7 +47,7 @@ class TestAgentCoreV2:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
-        config.disable_llm_cache.return_value = False
+        config.react_disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -216,7 +216,7 @@ class TestAgentCoreV2Run:
         config.agent_run_id = "test_run_id"
         config.agent_id = "test_agent_id"
         config.output_vars = []
-        config.disable_llm_cache.return_value = False
+        config.react_disable_llm_cache.return_value = False
         return config
 
     @pytest.fixture
@@ -517,11 +517,11 @@ class TestAgentCoreV2Run:
     async def test_run_disables_llm_cache_when_agent_config_requests_it(
         self, mock_agent_config, mock_agent_input
     ):
-        """测试全局开启缓存但 Agent 自身禁用时，会下发禁用缓存 flag。"""
+        """测试 react 模式配置要求禁用缓存时，会下发禁用缓存 flag。"""
         from app.logic.agent_core_logic_v2.agent_core_v2 import AgentCoreV2
 
         headers = {"x-user-id": "user123"}
-        mock_agent_config.disable_llm_cache.return_value = True
+        mock_agent_config.react_disable_llm_cache.return_value = True
 
         with patch(
             "app.logic.agent_core_logic_v2.agent_core_v2.process_input",

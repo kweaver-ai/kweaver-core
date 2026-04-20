@@ -3644,6 +3644,47 @@ paths:
       summary: 获取dolphin模板列表
       tags:
       - 其他
+  /v3/agent/react:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。
+      parameters:
+      - description: React Agent 配置
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/swagger.AgentConfigCreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 成功
+          schema:
+            $ref: '#/definitions/swagger.AgentConfigCreateRes'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/swagger.APIError'
+      security:
+      - BearerAuth: []
+      summary: 创建react agent
+      tags:
+      - agent
+      - agent-internal
   /v3/agent/temp-zone/file-ext-map:
     get:
       consumes:

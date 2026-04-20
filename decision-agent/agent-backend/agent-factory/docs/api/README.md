@@ -52,6 +52,15 @@ make validate-api-docs
 
 对外文档与详情响应统一使用 `react_config`。
 
+## React Agent 专用创建接口
+
+新增了 React Agent 专用创建接口：
+
+- `/api/agent-factory/v3/agent/react`
+  - request body 与 `/api/agent-factory/v3/agent` 保持一致
+  - 仅用于创建 ReAct 模式 agent
+  - Handler 层会额外校验 `config.mode`，如果不为 `react`，则返回 `400`
+
 ## 如何查看
 
 ### 直接查看静态页面

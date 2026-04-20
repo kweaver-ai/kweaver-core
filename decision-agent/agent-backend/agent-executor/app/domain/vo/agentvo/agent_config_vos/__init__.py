@@ -25,7 +25,7 @@ from .output_config_vo import (
     DefaultFormatEnum,
 )
 from .config_metadata_vo import ConfigMetadataVo
-from .non_dolphin_mode_config_vo import NonDolphinModeConfigVo
+from .react_config_vo import ReactConfigVo
 
 __all__ = [
     "SkillVo",
@@ -44,7 +44,7 @@ __all__ = [
     "OutputVariablesVo",
     "DefaultFormatEnum",
     "ConfigMetadataVo",
-    "NonDolphinModeConfigVo",
+    "ReactConfigVo",
     # "InputTypeEnum",
     # "MapTypeEnum",
     "DataSourceTypeEnum",

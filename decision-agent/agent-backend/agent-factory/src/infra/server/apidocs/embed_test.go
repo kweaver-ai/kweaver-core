@@ -49,6 +49,28 @@ func TestAgentFactoryJSON_CreateAgentResponseUsesCreateRes(t *testing.T) {
 	assert.Len(t, properties, 2)
 }
 
+func TestAgentFactoryJSON_CreateReactAgentUsesSameSchemasAsCreateAgent(t *testing.T) {
+	t.Parallel()
+
+	doc := mustLoadAgentFactoryDoc(t)
+
+	createReqRef := mustResolvePathSchemaRef(t, doc,
+		"paths", "/api/agent-factory/v3/agent", "post", "requestBody", "content", "application/json", "schema", "$ref",
+	)
+	createReactReqRef := mustResolvePathSchemaRef(t, doc,
+		"paths", "/api/agent-factory/v3/agent/react", "post", "requestBody", "content", "application/json", "schema", "$ref",
+	)
+	assert.Equal(t, createReqRef, createReactReqRef)
+
+	createRespRef := mustResolvePathSchemaRef(t, doc,
+		"paths", "/api/agent-factory/v3/agent", "post", "responses", "201", "content", "application/json", "schema", "$ref",
+	)
+	createReactRespRef := mustResolvePathSchemaRef(t, doc,
+		"paths", "/api/agent-factory/v3/agent/react", "post", "responses", "201", "content", "application/json", "schema", "$ref",
+	)
+	assert.Equal(t, createRespRef, createReactRespRef)
+}
+
 func TestAgentFactoryJSON_DetailAndUpdateSchemasIncludeSkillItems(t *testing.T) {
 	t.Parallel()
 

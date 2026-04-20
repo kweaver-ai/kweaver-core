@@ -2123,6 +2123,70 @@
                 }
             }
         },
+        "/v3/agent/react": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent",
+                    "agent-internal"
+                ],
+                "summary": "创建react agent",
+                "parameters": [
+                    {
+                        "description": "React Agent 配置",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AgentConfigCreateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.AgentConfigCreateRes"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "禁止访问",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/v3/agent/temp-zone/file-ext-map": {
             "get": {
                 "security": [

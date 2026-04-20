@@ -11268,6 +11268,79 @@
         ]
       }
     },
+    "/api/agent-factory/v3/agent/react": {
+      "post": {
+        "description": "创建一个新的 React 模式 Agent 配置。请求体与普通创建接口一致，但 config.mode 必须为 react。",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/swagger.AgentConfigCreateReq"
+              }
+            }
+          },
+          "description": "React Agent 配置",
+          "x-originalParamName": "request"
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.AgentConfigCreateRes"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "请求参数错误"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "未授权"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "禁止访问"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/swagger.APIError"
+                }
+              }
+            },
+            "description": "服务器内部错误"
+          }
+        },
+        "summary": "创建react agent",
+        "tags": [
+          "agent",
+          "agent-internal"
+        ]
+      }
+    },
     "/api/agent-factory/v3/agent/temp-zone/file-ext-map": {
       "get": {
         "description": "获取文件扩展名映射",

@@ -231,7 +231,7 @@ class AgentCoreV2:
             # 全局已禁用缓存，或 Agent 配置要求禁用缓存时，都下发禁用标记。
             disable_llm_cache = (
                 Config.features.disable_dolphin_sdk_llm_cache
-                or agent_config.disable_llm_cache()
+                or agent_config.react_disable_llm_cache()
             )
             flags.set_flag(flags.DISABLE_LLM_CACHE, disable_llm_cache)
 
