@@ -2,7 +2,7 @@ import json
 from typing import Any, AsyncGenerator, Dict, Optional, TYPE_CHECKING
 from dolphin.sdk.agent.dolphin_agent import DolphinAgent
 from dolphin.core.config.global_config import GlobalConfig
-from dolphin.sdk.skill.traditional_toolkit import TriditionalToolkit
+from dolphin.sdk.tool.traditional_toolkit import TriditionalToolkit
 from dolphin.core.common.constants import KEY_HISTORY
 
 from app.common.config import Config
