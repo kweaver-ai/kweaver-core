@@ -8,7 +8,7 @@ source:
 releases:
   isf-data-migrator:
     chart: isf-data-migrator
-    version: 0.6.0-20260410.22-aa40b26
+    version: 0.6.0-20260417.1-2f7545f
     stage: pre
   hydra:
     chart: hydra
