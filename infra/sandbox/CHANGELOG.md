@@ -2,6 +2,36 @@
 
 All new features and capabilities added in this branch (`feature/803264`) are documented below.
 
+## [0.3.3]
+
+### 🚀 New Features
+
+- **Control Plane Takeover for K8s Sessions**
+  - Added startup takeover flow so a restarted or upgraded control plane can detect active K8s session pods created by a previous control-plane pod
+  - Added control-plane pod identity propagation (`POD_NAME`, `POD_UID`) and executor pod owner references so recreated session pods are rebound to the current control plane
+  - Added startup takeover handling for interrupted in-flight executions, marking them failed when the executor pod must be recreated during upgrade
+
+### 🐛 Bug Fixes
+
+- **Session Recovery Stability After Control Plane Restart**
+  - Fixed K8s session recovery to resolve templates from the direct template repository during startup state sync, preventing recovery failures caused by missing template resolution
+  - Fixed same-name pod recreation conflicts by waiting for stale terminating pods to be fully deleted before retrying executor pod creation
+  - Refreshed recovered sessions' activity timestamps after takeover recovery so the idle cleanup task does not immediately terminate newly recovered sessions
+
+### 🔧 Improvements
+
+- Added direct session and execution repository support for startup state sync so takeover logic can paginate all active sessions and persist interrupted execution state changes without request-scoped dependencies
+- Expanded unit coverage for K8s takeover, owner reference handling, stale pod recreation conflicts, dependency wiring, and recovery activity refresh
+
+### 📚 Documentation
+
+- Added PRD and design docs for control-plane and executor lifecycle binding during restart and upgrade scenarios
+- Added a `sandbox_local` Helm chart with local deployment templates, component metadata, RBAC, and operational documentation for packaging and environment setup
+
+---
+
+*Released on 2026-04-20*
+
 ## [0.3.2]
 
 ### 🚀 New Features
