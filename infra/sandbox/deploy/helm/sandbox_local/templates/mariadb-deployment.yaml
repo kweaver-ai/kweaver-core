@@ -1,0 +1,116 @@
+{{- if .Values.mariadb.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mariadb-pv
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: mariadb
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/mariadb
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: mariadb
+spec:
+  accessModes:
+    - {{ .Values.mariadb.persistence.accessMode }}
+  storageClassName: manual
+  volumeName: mariadb-pv
+  resources:
+    requests:
+      storage: {{ .Values.mariadb.persistence.size }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: mariadb
+spec:
+  replicas: {{ .Values.mariadb.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "sandbox.fullname" . }}
+      component: mariadb
+  template:
+    metadata:
+      labels:
+        app: {{ include "sandbox.fullname" . }}
+        component: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: "{{- if .Values.mariadb.image.registry }}{{ .Values.mariadb.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
+          imagePullPolicy: {{ .Values.mariadb.image.pullPolicy }}
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: {{ .Values.mariadb.auth.rootPassword | quote }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mariadb.auth.database | quote }}
+            {{- if .Values.mariadb.auth.username }}
+            - name: MYSQL_USER
+              value: {{ .Values.mariadb.auth.username | quote }}
+            - name: MYSQL_PASSWORD
+              value: {{ .Values.mariadb.auth.password | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            {{- toYaml .Values.mariadb.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mariadb
+      {{- with .Values.mariadb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mariadb.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: mariadb
+spec:
+  type: {{ .Values.mariadb.service.type }}
+  ports:
+    - name: mysql
+      port: {{ .Values.mariadb.service.port }}
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: {{ include "sandbox.fullname" . }}
+    component: mariadb
+{{- end }}

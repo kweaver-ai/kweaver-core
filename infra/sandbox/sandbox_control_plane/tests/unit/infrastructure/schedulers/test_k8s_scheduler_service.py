@@ -3,6 +3,7 @@ Kubernetes 调度服务单元测试
 
 测试 K8sSchedulerService 的功能。
 """
+import os
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 
@@ -46,14 +47,15 @@ class TestK8sSchedulerService:
     @pytest.fixture
     def service(self, container_scheduler, template_repo, executor_client):
         """创建 K8s 调度服务"""
-        return K8sSchedulerService(
-            container_scheduler=container_scheduler,
-            template_repo=template_repo,
-            executor_client=executor_client,
-            executor_port=8080,
-            control_plane_url="http://sandbox-control-plane.sandbox-system.svc.cluster.local:8000",
-            disable_bwrap=True,
-        )
+        with patch.dict(os.environ, {"POD_NAME": "cp-0", "POD_UID": "uid-0"}, clear=False):
+            return K8sSchedulerService(
+                container_scheduler=container_scheduler,
+                template_repo=template_repo,
+                executor_client=executor_client,
+                executor_port=8080,
+                control_plane_url="http://sandbox-control-plane.sandbox-system.svc.cluster.local:8000",
+                disable_bwrap=True,
+            )
 
     @pytest.fixture
     def schedule_request(self):
@@ -127,6 +129,10 @@ class TestK8sSchedulerService:
 
         assert result == "sandbox-sess-123"
         container_scheduler.create_container.assert_called_once()
+        config = container_scheduler.create_container.await_args.args[0]
+        assert config.owner_context is not None
+        assert config.owner_context.pod_name == "cp-0"
+        assert config.owner_context.pod_uid == "uid-0"
 
     @pytest.mark.asyncio
     async def test_create_container_template_not_found(
@@ -184,6 +190,16 @@ class TestK8sSchedulerService:
                 workspace_path="s3://bucket/sessions/sess-123",
                 node_id="k8s-cluster",
             )
+
+    def test_init_fails_without_owner_context(self, container_scheduler, template_repo, executor_client):
+        """测试缺少 POD_NAME/POD_UID 时初始化失败。"""
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(RuntimeError, match="POD_NAME and POD_UID"):
+                K8sSchedulerService(
+                    container_scheduler=container_scheduler,
+                    template_repo=template_repo,
+                    executor_client=executor_client,
+                )
 
     @pytest.mark.asyncio
     async def test_destroy_container_success(self, service, container_scheduler):
@@ -285,21 +301,23 @@ class TestK8sSchedulerService:
 
     def test_default_disable_bwrap(self, container_scheduler, template_repo, executor_client):
         """测试默认禁用 bwrap"""
-        service = K8sSchedulerService(
-            container_scheduler=container_scheduler,
-            template_repo=template_repo,
-            executor_client=executor_client,
-        )
+        with patch.dict(os.environ, {"POD_NAME": "cp-0", "POD_UID": "uid-0"}, clear=False):
+            service = K8sSchedulerService(
+                container_scheduler=container_scheduler,
+                template_repo=template_repo,
+                executor_client=executor_client,
+            )
 
         assert service._disable_bwrap is True
 
     def test_custom_disable_bwrap(self, container_scheduler, template_repo, executor_client):
         """测试自定义禁用 bwrap"""
-        service = K8sSchedulerService(
-            container_scheduler=container_scheduler,
-            template_repo=template_repo,
-            executor_client=executor_client,
-            disable_bwrap=False,
-        )
+        with patch.dict(os.environ, {"POD_NAME": "cp-0", "POD_UID": "uid-0"}, clear=False):
+            service = K8sSchedulerService(
+                container_scheduler=container_scheduler,
+                template_repo=template_repo,
+                executor_client=executor_client,
+                disable_bwrap=False,
+            )
 
         assert service._disable_bwrap is False

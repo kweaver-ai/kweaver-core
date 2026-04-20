@@ -1,0 +1,128 @@
+{{- if .Values.minio.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minio-pv
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: minio
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/minio
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: minio
+spec:
+  accessModes:
+    - {{ .Values.minio.persistence.accessMode }}
+  storageClassName: manual
+  volumeName: minio-pv
+  resources:
+    requests:
+      storage: {{ .Values.minio.persistence.size }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: minio
+spec:
+  replicas: {{ .Values.minio.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "sandbox.fullname" . }}
+      component: minio
+  template:
+    metadata:
+      labels:
+        app: {{ include "sandbox.fullname" . }}
+        component: minio
+    spec:
+      containers:
+        - name: minio
+          image: "{{- if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.minio.repository }}:{{ .Values.image.minio.tag }}"
+          imagePullPolicy: {{ .Values.image.minio.pullPolicy }}
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          ports:
+            - name: api
+              containerPort: {{ .Values.minio.service.apiPort }}
+              protocol: TCP
+            - name: console
+              containerPort: {{ .Values.minio.service.consolePort }}
+              protocol: TCP
+          env:
+            - name: MINIO_ROOT_USER
+              value: {{ .Values.minio.auth.rootUser | quote }}
+            - name: MINIO_ROOT_PASSWORD
+              value: {{ .Values.minio.auth.rootPassword | quote }}
+            - name: MINIO_DEFAULT_BUCKETS
+              value: {{ join "," .Values.minio.defaultBuckets | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.minio.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio
+      {{- with .Values.minio.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.minio.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: minio
+  {{- with .Values.minio.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.minio.service.type }}
+  ports:
+    - name: api
+      port: {{ .Values.minio.service.apiPort }}
+      targetPort: api
+      protocol: TCP
+    - name: console
+      port: {{ .Values.minio.service.consolePort }}
+      targetPort: console
+      protocol: TCP
+  selector:
+    app: {{ include "sandbox.fullname" . }}
+    component: minio
+{{- end }}

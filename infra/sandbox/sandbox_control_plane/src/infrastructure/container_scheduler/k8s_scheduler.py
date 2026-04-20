@@ -21,6 +21,7 @@ from kubernetes.client import (
     V1Pod,
     V1PodSpec,
     V1ObjectMeta,
+    V1OwnerReference,
     V1Container,
     V1ContainerPort,
     V1EnvVar,
@@ -45,6 +46,7 @@ from src.infrastructure.container_scheduler.base import (
     ContainerConfig,
     ContainerInfo,
     ContainerResult,
+    ContainerOwnershipInfo,
 )
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.logging import get_logger
@@ -172,6 +174,50 @@ class K8sScheduler(IContainerScheduler):
         pod_name = pod_name.strip('-')
         # 限制长度（K8s Pod 名称最多 253 字符）
         return pod_name[:253]
+
+    def _build_owner_references(self, config: ContainerConfig) -> Optional[list[V1OwnerReference]]:
+        """基于 control plane owner 上下文构造 ownerReferences。"""
+        if config.owner_context is None:
+            return None
+
+        return [
+            V1OwnerReference(
+                api_version="v1",
+                kind="Pod",
+                name=config.owner_context.pod_name,
+                uid=config.owner_context.pod_uid,
+                controller=True,
+                block_owner_deletion=True,
+            )
+        ]
+
+    async def _read_pod(self, pod_name: str) -> Optional[V1Pod]:
+        """读取指定 Pod，不存在时返回 None。"""
+        try:
+            return await asyncio.to_thread(
+                self._core_v1.read_namespaced_pod,
+                name=pod_name,
+                namespace=self._namespace,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                return None
+            raise
+
+    async def _wait_until_pod_deleted(
+        self,
+        pod_name: str,
+        timeout_seconds: float = 30.0,
+        poll_interval_seconds: float = 1.0,
+    ) -> bool:
+        """等待 Pod 从 API 中彻底删除，避免同名重建时出现 409。"""
+        deadline = asyncio.get_running_loop().time() + timeout_seconds
+        while asyncio.get_running_loop().time() < deadline:
+            existing_pod = await self._read_pod(pod_name)
+            if existing_pod is None:
+                return True
+            await asyncio.sleep(poll_interval_seconds)
+        return False
 
 
     def _build_executor_container(
@@ -472,6 +518,9 @@ exec gosu sandbox python -m executor.interfaces.http.rest
         annotations = {
             "sandbox-session-id": config.name,
         }
+        if config.owner_context is not None:
+            annotations["control-plane-pod-name"] = config.owner_context.pod_name
+            annotations["control-plane-pod-uid"] = config.owner_context.pod_uid
         if dependencies_value:
             annotations["dependencies"] = dependencies_value
         # 恢复 dependencies 到 config.labels，避免影响后续调用
@@ -484,6 +533,7 @@ exec gosu sandbox python -m executor.interfaces.http.rest
                 name=pod_name,
                 labels=labels,
                 annotations=annotations,
+                owner_references=self._build_owner_references(config),
             ),
             spec=V1PodSpec(
                 containers=containers,
@@ -512,6 +562,34 @@ exec gosu sandbox python -m executor.interfaces.http.rest
             return created_pod.metadata.name
 
         except ApiException as e:
+            if e.status == 409:
+                existing_pod = await self._read_pod(pod_name)
+                deletion_timestamp = getattr(
+                    getattr(existing_pod, "metadata", None),
+                    "deletion_timestamp",
+                    None,
+                )
+                if existing_pod is None or deletion_timestamp is not None:
+                    logger.warning(
+                        "Pod name conflict during create, waiting for stale pod deletion before retry",
+                        pod_name=pod_name,
+                        namespace=self._namespace,
+                        deleting=deletion_timestamp is not None,
+                    )
+                    deleted = await self._wait_until_pod_deleted(pod_name)
+                    if deleted:
+                        created_pod = await asyncio.to_thread(
+                            self._core_v1.create_namespaced_pod,
+                            namespace=self._namespace,
+                            body=pod,
+                        )
+                        mount_method = "s3fs" if use_s3_mount else "emptyDir"
+                        logger.info(
+                            f"Created pod {created_pod.metadata.name} for session {config.name} "
+                            f"in namespace {self._namespace} after waiting for stale pod deletion "
+                            f"(mount method: {mount_method})"
+                        )
+                        return created_pod.metadata.name
             logger.error(f"Failed to create pod: {e}")
             raise
 
@@ -671,6 +749,50 @@ exec gosu sandbox python -m executor.interfaces.http.rest
         except Exception as e:
             logger.warning(f"Failed to check pod {container_id} status: {e}")
             return False
+
+    async def get_container_ownership(
+        self,
+        container_id: str,
+    ) -> Optional[ContainerOwnershipInfo]:
+        """读取 Pod 的 ownerReferences 和 takeover 相关 annotations。"""
+        await self._ensure_connected()
+
+        try:
+            pod = await asyncio.to_thread(
+                self._core_v1.read_namespaced_pod,
+                name=container_id,
+                namespace=self._namespace,
+            )
+        except ApiException as e:
+            if e.status == 404:
+                return None
+            logger.error(f"Failed to get ownership for pod {container_id}: {e}")
+            raise
+
+        owner_refs = list(pod.metadata.owner_references or [])
+        owner_pod_name = None
+        owner_pod_uid = None
+        has_pod_owner_reference = False
+
+        for owner_ref in owner_refs:
+            if owner_ref.kind == "Pod":
+                owner_pod_name = owner_ref.name
+                owner_pod_uid = owner_ref.uid
+                has_pod_owner_reference = True
+                break
+
+        annotations = dict(pod.metadata.annotations or {})
+        if owner_pod_name is None:
+            owner_pod_name = annotations.get("control-plane-pod-name")
+        if owner_pod_uid is None:
+            owner_pod_uid = annotations.get("control-plane-pod-uid")
+
+        return ContainerOwnershipInfo(
+            owner_pod_name=owner_pod_name,
+            owner_pod_uid=owner_pod_uid,
+            annotations=annotations,
+            has_owner_reference=has_pod_owner_reference,
+        )
 
     async def get_container_logs(
         self,

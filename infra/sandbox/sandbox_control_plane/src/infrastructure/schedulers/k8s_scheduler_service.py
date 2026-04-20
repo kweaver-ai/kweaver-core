@@ -4,6 +4,7 @@ Kubernetes 调度服务
 实现调度策略，使用 Kubernetes API 创建 Pod。
 """
 import logging
+import os
 from typing import List, Optional
 
 from src.domain.services.scheduler import (
@@ -16,6 +17,7 @@ from src.domain.value_objects.execution_request import ExecutionRequest
 from src.infrastructure.container_scheduler.base import (
     IContainerScheduler,
     ContainerConfig,
+    ControlPlaneOwnerContext,
 )
 from src.infrastructure.executors import ExecutorClient
 
@@ -47,6 +49,7 @@ class K8sSchedulerService(IScheduler):
         self._executor_port = executor_port
         self._control_plane_url = control_plane_url
         self._disable_bwrap = disable_bwrap
+        self._owner_context = self._load_owner_context()
 
         # K8s 集群作为单个逻辑节点
         self._cluster_node = RuntimeNode(
@@ -59,6 +62,20 @@ class K8sSchedulerService(IScheduler):
             session_count=0,
             max_sessions=1000,
             cached_templates=[],
+        )
+
+    def _load_owner_context(self) -> ControlPlaneOwnerContext:
+        """加载当前 control plane Pod 的 owner 上下文。"""
+        pod_name = os.getenv("POD_NAME", "").strip()
+        pod_uid = os.getenv("POD_UID", "").strip()
+        if not pod_name or not pod_uid:
+            raise RuntimeError(
+                "POD_NAME and POD_UID must be set in Kubernetes mode before creating executor pods"
+            )
+
+        return ControlPlaneOwnerContext(
+            pod_name=pod_name,
+            pod_uid=pod_uid,
         )
 
     async def schedule(self, request: ScheduleRequest) -> RuntimeNode:
@@ -146,6 +163,7 @@ class K8sSchedulerService(IScheduler):
                 "managed_by": "sandbox-control-plane",
                 "dependencies": dependencies_json,
             },
+            owner_context=self._owner_context,
         )
 
         # 创建 Pod

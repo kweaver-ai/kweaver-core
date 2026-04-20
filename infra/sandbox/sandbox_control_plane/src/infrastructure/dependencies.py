@@ -957,7 +957,94 @@ def _create_direct_session_repository(db_mgr):
                     model.f_updated_at = int(time.time() * 1000)
                     await db.commit()
 
+        async def find_sessions(
+            self,
+            status: str | None = None,
+            template_id: str | None = None,
+            limit: int = 50,
+            offset: int = 0,
+        ):
+            async with self._db_mgr.get_session() as session:
+                stmt = select(SessionModel)
+                if status is not None:
+                    stmt = stmt.where(SessionModel.f_status == status)
+                if template_id is not None:
+                    stmt = stmt.where(SessionModel.f_template_id == template_id)
+                stmt = (
+                    stmt.order_by(SessionModel.f_created_at.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
+                models_result = await session.execute(stmt)
+                return [model.to_entity() for model in models_result.scalars().all()]
+
+        async def count_sessions(
+            self,
+            status: str | None = None,
+            template_id: str | None = None,
+        ) -> int:
+            async with self._db_mgr.get_session() as session:
+                stmt = select(func.count()).select_from(SessionModel)
+                if status is not None:
+                    stmt = stmt.where(SessionModel.f_status == status)
+                if template_id is not None:
+                    stmt = stmt.where(SessionModel.f_template_id == template_id)
+                result = await session.execute(stmt)
+                return result.scalar() or 0
+
     return DirectSessionRepository(db_mgr)
+
+
+def _create_direct_execution_repository(db_mgr):
+    """
+    创建直接使用数据库的执行仓储。
+
+    用于状态同步服务在 takeover 场景回写中断 execution 状态。
+    """
+    from src.infrastructure.persistence.models.execution_model import ExecutionModel
+    from src.domain.value_objects.execution_status import ExecutionStatus
+    from sqlalchemy import select
+
+    class DirectExecutionRepository:
+        def __init__(self, db_mgr):
+            self._db_mgr = db_mgr
+
+        async def find_by_session_id(self, session_id: str, limit: int = 100):
+            async with self._db_mgr.get_session() as session:
+                stmt = (
+                    select(ExecutionModel)
+                    .where(ExecutionModel.f_session_id == session_id)
+                    .order_by(ExecutionModel.f_created_at.desc())
+                    .limit(limit)
+                )
+                result = await session.execute(stmt)
+                return [model.to_entity() for model in result.scalars().all()]
+
+        async def save(self, execution):
+            import time
+            async with self._db_mgr.get_session() as session:
+                model = await session.get(ExecutionModel, execution.id)
+                if model is None:
+                    return
+
+                model.f_status = execution.state.status.value
+                model.f_stdout = execution.stdout
+                model.f_stderr = execution.stderr
+                model.f_exit_code = execution.state.exit_code or 0
+                model.f_error_message = execution.state.error_message or ""
+                model.f_completed_at = (
+                    int(execution.completed_at.timestamp() * 1000)
+                    if execution.completed_at
+                    else 0
+                )
+                model.f_updated_at = int(time.time() * 1000)
+                await session.commit()
+
+        async def commit(self):
+            """Direct repository 每次 save 已提交，保留兼容空实现。"""
+            return None
+
+    return DirectExecutionRepository(db_mgr)
 
 
 def _create_direct_template_repository(db_mgr):
@@ -980,7 +1067,7 @@ def _create_direct_template_repository(db_mgr):
     return DirectTemplateRepository(db_mgr)
 
 
-def _create_scheduler_for_state_sync(container_scheduler):
+def _create_scheduler_for_state_sync(container_scheduler, template_repo=None):
     """为状态同步服务创建调度器"""
     settings = get_settings()
 
@@ -989,11 +1076,6 @@ def _create_scheduler_for_state_sync(container_scheduler):
 
     if IS_IN_KUBERNETES:
         from src.infrastructure.schedulers.k8s_scheduler_service import K8sSchedulerService
-
-        # 创建一个简单的 template repo 用于 scheduler
-        class SimpleTemplateRepo:
-            async def find_by_id(self, template_id: str):
-                return None
 
         # Build CONTROL_PLANE_URL based on kubernetes_namespace
         control_plane_url = (
@@ -1004,7 +1086,7 @@ def _create_scheduler_for_state_sync(container_scheduler):
 
         return K8sSchedulerService(
             container_scheduler=container_scheduler,
-            template_repo=SimpleTemplateRepo(),
+            template_repo=template_repo,
             executor_client=None,
             executor_port=8080,
             control_plane_url=control_plane_url,
@@ -1031,15 +1113,20 @@ def get_state_sync_service():
     # 创建会话仓储
     if USE_SQL_REPOSITORIES:
         session_repo = _create_direct_session_repository(db_manager)
+        execution_repo = _create_direct_execution_repository(db_manager)
         template_repo = _create_direct_template_repository(db_manager)
     else:
         session_repo = MockSessionRepository()
+        execution_repo = MockExecutionRepository()
         template_repo = MockTemplateRepository()
 
     # 创建或复用调度器
     scheduler = _scheduler_singleton
     if scheduler is None:
-        scheduler = _create_scheduler_for_state_sync(container_scheduler)
+        scheduler = _create_scheduler_for_state_sync(
+            container_scheduler=container_scheduler,
+            template_repo=template_repo,
+        )
         _scheduler_singleton = scheduler
 
     # Build CONTROL_PLANE_URL based on environment
@@ -1055,6 +1142,7 @@ def get_state_sync_service():
     return StateSyncService(
         session_repo=session_repo,
         container_scheduler=container_scheduler,
+        execution_repo=execution_repo,
         template_repo=template_repo,
         scheduler=scheduler,
         control_plane_url=control_plane_url,

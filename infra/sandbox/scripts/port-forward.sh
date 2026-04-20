@@ -15,7 +15,7 @@
 set -eo pipefail
 
 # Default configuration
-NAMESPACE="sandbox-system"
+NAMESPACE="anyshare"
 PID_DIR="${TMPDIR:-/tmp}/sandbox-port-forward"
 LOG_DIR="${PID_DIR}/logs"
 
