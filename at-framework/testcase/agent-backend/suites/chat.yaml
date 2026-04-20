@@ -61,6 +61,7 @@ cases:
 # ==================== 对话Completion ====================
 - name: Positive_对话Completion_请求成功
   url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${chat_test_agent_key}"
@@ -83,6 +84,7 @@ cases:
 # ==================== 对话Completion带历史对话 ====================
 - name: Positive_对话Completion_带历史对话_请求成功
   url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${chat_test_agent_key}"
@@ -229,6 +231,7 @@ cases:
 # ==================== API Chat ====================
 - name: Positive_API_Chat_请求成功
   url: API Chat
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${api_test_agent_key}"

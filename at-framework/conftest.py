@@ -9,28 +9,6 @@ from common.hooks import load_session_clean_up
 
 config = load_sys_config("./config/config.ini")
 
-
-def _default_bearer_auth():
-    """默认 Authorization：AT_AUTH_SOURCE 为 login 时走 get_token；否则使用静态 token。"""
-    src = at_env.auth_token_source(config)
-    static_tok = at_env.static_access_token(config)
-    if src in ("login", "get_token", "token_provider"):
-        user, pwd = "", ""
-        try:
-            from src.common.token_provider import get_token, clear_token_cache
-
-            user, pwd = at_env.admin_credentials(config)
-            if user and pwd:
-                # 清理缓存并强制刷新token，避免使用过期的缓存token
-                clear_token_cache(user)
-                tok = get_token(user, pwd, force_refresh=True)
-                if tok:
-                    return "Bearer %s" % tok
-        except Exception as ex:
-            pass
-    return "Bearer %s" % static_tok if static_tok else "Bearer "
-
-
 _default_case_file = at_env.default_case_file(config).strip()
 _case_file = _default_case_file.strip()
 _module_name = os.path.basename(os.path.normpath(os.path.abspath(_case_file))) if _case_file else ""
@@ -75,9 +53,6 @@ def compute_case_list():
     else:
         _case_list_cache = load_case(_case_file)
     return _case_list_cache
-
-
-BEARER_AUTH = _default_bearer_auth()
 
 
 def pytest_collection_modifyitems(items) -> None:
@@ -145,7 +120,6 @@ def clean_up(request):
         yield
         return
 
-    # yield 让测试先执行，测试结束后再执行清理
     print("Tests will run now, cleanup after...\n")
     yield
     print("\n========== TESTS FINISHED, STARTING CLEANUP ==========\n")

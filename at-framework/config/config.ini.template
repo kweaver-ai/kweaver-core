@@ -11,18 +11,10 @@ host = <YOUR_API_HOST>
 ; 与 host 同环境的完整基址，用于推导请求协议 https|http（见 common.at_env.request_scheme）
 base_url = https://<YOUR_API_HOST>
 ; 登录流程端口（src/auth/login.py）
-adminUrlPort = 4445
-getnewPort = 9998
 public_port = 443
-
-[test_data]
-; 登录取 token 用（AT_AUTH_SOURCE=login 时）；仅读此处，不走环境变量
-admin_user = <ADMIN_USERNAME>
-admin_password = <ADMIN_PASSWORD>
-; 是否应用账号（按业务使用）
-is_application_account = false
-; 静态 Bearer token（可被环境变量 API_ACCESS_TOKEN 覆盖）；不含「Bearer 」前缀
-application_token = <ACCESS_TOKEN_OR_LEAVE_EMPTY>
+ssh_port = 22
+ssh_user = <SSH_USER>
+ssh_password = <SSH_PASSWORD>
 
 [database]
 host = <DB_HOST>
@@ -37,14 +29,40 @@ port = 3306
 user = <VIEW_DB_USER>
 password = <VIEW_DB_PASSWORD>
 database = <VIEW_DB_NAME>
-data_type = maria
-data_source_id = <DATA_SOURCE_UUID>
-kn_id = <KN_ID>
-ldbc_30 = <LDBC_30_UUID>
-ldnc_01 = <LDNC_01_UUID>
 
-[config_data]
-model_id = <MODEL_ID>
+[embedding_info]
+embedding_model_name = <EMBEDDING_MODEL_NAME>
+embedding_model_type = embedding
+embedding_api_url = <EMBEDDING_API_URL>
+embedding_api_model = <EMBEDDING_API_MODEL>
+embedding_api_key = <EMBEDDING_API_KEY>
+
+[llm_info]
+llm_name = <LLM_NAME>
+llm_series = deepseek
+llm_max_model_len = 128
+llm_api_model = <LLM_API_MODEL>
+llm_api_url = <LLM_API_URL>
+llm_api_key = <LLM_API_KEY>
+
+[rerank_info]
+rerank_model_name = <RERANK_MODEL_NAME>
+rerank_model_type = reranker
+rerank_api_url = <RERANK_API_URL>
+rerank_api_model = <RERANK_API_MODEL>
+; 与 small-model/add 中 batch_size 一致，默认 2048
+rerank_batch_size = 2048
+
+[oss_info]
+storage_name = <STORAGE_NAME>
+vendor_type = OBS
+endpoint = <OSS_ENDPOINT>
+bucket_name = <BUCKET_NAME>
+access_key_id = <ACCESS_KEY_ID>
+access_key_secret = <ACCESS_KEY_SECRET>
+is_default = true
+internal_endpoint =
+region = <REGION>
 
 [log]
 level = INFO

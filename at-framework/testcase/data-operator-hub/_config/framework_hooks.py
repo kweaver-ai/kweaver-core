@@ -28,16 +28,9 @@ def session_clean_up(session_id, config):
     protocol = "https"
     base_url = f"{protocol}://{host}:{port}"
 
-    # 获取token
-    token = _get_token(config)
-    if not token:
-        print("警告: 无法获取token，跳过清理")
-        return
-
     headers = {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": f"Bearer {token}"
+        "Accept": "application/json"
     }
 
     # 清理工具箱
@@ -58,21 +51,6 @@ def test_setup(test_id, config):
 
 def test_teardown(test_id, config):
     pass
-
-
-def _get_token(config):
-    """获取认证token"""
-    try:
-        from src.common.token_provider import get_token
-        test_data = config.get("test_data", {})
-        user = test_data.get("admin_user", "")
-        pwd = test_data.get("admin_password", "")
-        if user and pwd:
-            tok = get_token(user, pwd)
-            return tok
-    except Exception as e:
-        print(f"获取token失败: {e}")
-    return None
 
 
 def _cleanup_toolboxes(base_url, headers):

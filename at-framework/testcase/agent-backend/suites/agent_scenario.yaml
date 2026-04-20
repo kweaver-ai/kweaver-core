@@ -630,6 +630,7 @@ cases:
 # Step 5: 进行问答测试（使用对话Completion非流式，获取conversation_id和agent_run_id）
 - name: Positive_调用技能Agent_进行问答
   url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${skill_caller_agent_key}"
@@ -655,6 +656,7 @@ cases:
 # 当前采用备选方案：通过对话响应内容质量验证技能调用是否成功
 - name: Positive_验证技能调用_响应内容质量检查
   url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${skill_caller_agent_key}"

@@ -38,11 +38,6 @@ def session_clean_up(config, allure):
         print("[清理] 无法导入test_run模块")
 
     # 同时通过API查询本次创建的数据
-    token = _get_token(config)
-    if not token:
-        print("[清理] 警告: 无法获取token，跳过清理")
-        return
-
     server_config = config.get("server", {})
     host = server_config.get("host", "")
     port = server_config.get("public_port", "443")
@@ -51,7 +46,6 @@ def session_clean_up(config, allure):
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": f"Bearer {token}",
         "x-business-domain": "bd_public"
     }
 
@@ -135,17 +129,3 @@ def test_setup(test_id, config):
 def test_teardown(test_id, config):
     pass
 
-
-def _get_token(config):
-    """获取认证token"""
-    try:
-        from src.common.token_provider import get_token
-        test_data = config.get("test_data", {})
-        user = test_data.get("admin_user", "")
-        pwd = test_data.get("admin_password", "")
-        if user and pwd:
-            tok = get_token(user, pwd, force_refresh=True)
-            return tok
-    except Exception as e:
-        print(f"[清理] 获取token失败: {e}")
-    return None

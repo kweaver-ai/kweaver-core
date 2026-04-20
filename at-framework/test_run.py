@@ -7,6 +7,7 @@
 @File   : test_run.py
 """
 import json
+import os
 import random
 import re
 import string as _str
@@ -14,15 +15,98 @@ from datetime import datetime, timedelta
 
 import allure
 import jsonpath
+import pytest
 from jinja2 import Environment
 from jsonschema.validators import validate
 
-from common import at_env
 from common.func import replace_params, replace_placeholders, genson, _COMMON_HANZI
-from conftest import config, compute_case_list, BEARER_AUTH
+from common import at_env
+from common.model_registry import (
+    ensure_llm_model_and_get_id,
+    register_embedding_model,
+    register_rerank_model,
+    register_oss_storage,
+)
+from conftest import config, compute_case_list
 from request.http_client import HTTPClient
 
 resp_values = {}
+
+
+def _truthy(val):
+    if val is None:
+        return False
+    if isinstance(val, bool):
+        return val
+    s = str(val).strip().lower()
+    return s in ("1", "true", "yes", "on", "y")
+
+
+def _parse_prepare_models(case_info):
+    """
+    从单条用例读取前置小模型需求。
+    - prepare_models: 字符串 "embedding" / "reranker" / "oss" / 逗号组合 或 YAML 列表
+    - prepare_embedding / prepare_reranker / prepare_oss: 可选布尔，等价于列入 prepare_models
+    """
+    names = []
+    raw = case_info.get("prepare_models")
+    if raw is None or raw == "":
+        parts = []
+    elif isinstance(raw, str):
+        parts = [x.strip() for x in re.split(r"[,;\s]+", raw.strip()) if x.strip()]
+    elif isinstance(raw, list):
+        parts = [str(x).strip() for x in raw if str(x).strip()]
+    else:
+        parts = []
+
+    if _truthy(case_info.get("prepare_embedding")):
+        parts.append("embedding")
+    if _truthy(case_info.get("prepare_reranker")):
+        parts.append("reranker")
+    if _truthy(case_info.get("prepare_oss")):
+        parts.append("oss")
+
+    seen = set()
+    for p in parts:
+        pl = p.lower()
+        if pl in ("embedding", "embed"):
+            if "embedding" not in seen:
+                seen.add("embedding")
+                names.append("embedding")
+        elif pl in ("reranker", "rerank"):
+            if "reranker" not in seen:
+                seen.add("reranker")
+                names.append("reranker")
+        elif pl in ("oss", "storage"):
+            if "oss" not in seen:
+                seen.add("oss")
+                names.append("oss")
+    return names
+
+
+def _run_prepare_models_for_case(case_info):
+    """按单条用例声明，向 mf-model-manager 注册所需小模型（配置仍来自 config.ini）。"""
+    for kind in _parse_prepare_models(case_info):
+        if kind == "embedding":
+            register_embedding_model(config)
+        elif kind == "reranker":
+            register_rerank_model(config)
+        elif kind == "oss":
+            register_oss_storage(config)
+
+
+def _prepare_llm_id_for_case():
+    """
+    根据 config.ini 的 [llm_info] 动态获取 llm_config_id：
+    - 已存在则取 id
+    - 不存在则创建后取 id
+    """
+    llm_id = ensure_llm_model_and_get_id(config)
+    if llm_id:
+        resp_values["llm_config_id"] = str(llm_id)
+    llm_name = ((config.get("llm_info") or {}).get("llm_name") or "").strip()
+    if llm_name:
+        resp_values["llm_config_name"] = llm_name
 
 
 def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
@@ -208,32 +292,6 @@ def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
     return actual_value == expr, "expect '%s', got %s" % (expr, repr(actual_value))
 
 
-def _resolve_authorization(case_info):
-    """默认 Bearer 见 conftest（环境变量优先）；套件 token_source: login 时再调 get_token。"""
-    src = (case_info.get("_token_source") or "").strip().lower()
-    if src not in ("login", "get_token", "token_provider"):
-        return BEARER_AUTH
-    try:
-        from src.common.token_provider import get_token, clear_token_cache
-
-        user, pwd = at_env.admin_credentials(config)
-        if not user:
-            allure.attach("token_source=login 但未配置 test_data.admin_user，已回退默认 Bearer", name="鉴权说明")
-            return BEARER_AUTH
-        # 清理缓存并强制刷新token，避免使用过期的缓存token
-        clear_token_cache(user)
-        tok = get_token(user, pwd, force_refresh=True)
-        if tok:
-            return "Bearer %s" % tok
-        allure.attach(
-            "get_token 返回空，已回退默认 Bearer（API_ACCESS_TOKEN / test_data.application_token）",
-            name="鉴权说明",
-        )
-    except Exception as ex:
-        allure.attach(str(ex), name="get_token 异常")
-    return BEARER_AUTH
-
-
 def _jinja_random_string(length=8, model=8):
     """
     生成指定长度的随机字符串
@@ -283,6 +341,48 @@ def _render_jinja_fields(case_info):
     return out
 
 
+def _contains_unresolved_placeholder(value):
+    if isinstance(value, str):
+        return "${" in value and "}" in value
+    if isinstance(value, dict):
+        return any(_contains_unresolved_placeholder(v) for v in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_unresolved_placeholder(v) for v in value)
+    return False
+
+
+def _build_multipart_files(case_info):
+    """
+    解析 file_params，构建 requests 的 files 参数。
+    当前支持：
+    - {"file": "relative/or/abs/path.txt"}
+    - {"fieldA": "pathA", "fieldB": "pathB"}
+    返回: (files_dict, opened_file_handles)
+    """
+    raw = case_info.get("file_params", "")
+    if not raw:
+        return None, []
+    try:
+        file_params = json.loads(raw)
+    except Exception:
+        return None, []
+    if not isinstance(file_params, dict) or not file_params:
+        return None, []
+
+    files = {}
+    handles = []
+    for field_name, file_path in file_params.items():
+        if not field_name or not file_path:
+            continue
+        p = str(file_path)
+        if not os.path.isabs(p):
+            p = os.path.abspath(p)
+        fh = open(p, "rb")
+        handles.append(fh)
+        files[str(field_name)] = (os.path.basename(p), fh)
+    return files or None, handles
+
+
 def pytest_generate_tests(metafunc):
     if metafunc.function.__name__ != "test_case":
         return
@@ -305,11 +405,18 @@ def test_case(feature, story, case_name, case_info):
         with allure.step("执行前置用例执行"):
             for x in compute_case_list():
                 if x["name"] == case_info["prev_case"]:
-                    test_case(x["feature"], x["story"], x["name"], x)
+                    try:
+                        test_case(x["feature"], x["story"], x["name"], x)
+                    except Exception as e:
+                        # 前置失败时当前用例跳过，避免根因用例在依赖链中重复计失败。
+                        pytest.skip("prev_case '%s' failed: %s" % (case_info["prev_case"], e))
                     # 若存在同名用例，仅执行第一个匹配项
                     break
 
     with allure.step("加载用例参数"):
+        with allure.step("前置：大模型（llm_info）"):
+            _prepare_llm_id_for_case()
+
         # 更新前序用例提取的变量
         case_info = replace_params(case_info, **resp_values)
 
@@ -321,22 +428,44 @@ def test_case(feature, story, case_name, case_info):
         case_path_params = json.loads(case_info.get("path_params", "{}"))
         case_info = replace_params(case_info, **case_path_params)
 
+        with allure.step("前置：小模型（prepare_models）"):
+            _run_prepare_models_for_case(case_info)
+
         # 参数格式转换
-        case_header_params = {**json.loads(case_info.get("headers", "{}")),
-                              **json.loads(case_info.get("header_params", "{}")),
-                              "Authorization": _resolve_authorization(case_info)}
+        case_header_params = {
+            **json.loads(case_info.get("headers", "{}")),
+            **json.loads(case_info.get("header_params", "{}")),
+        }
+        # AT 框架禁用默认鉴权注入：所有 API 请求不自动传 token。
+        case_header_params.pop("Authorization", None)
         case_cookie_params = json.loads(case_info.get("cookie_params", "{}"))
         case_query_params = json.loads(case_info.get("query_params", "{}"))
         case_body_params = json.loads(case_info.get("body_params", "{}"))
         case_form_params = json.loads(case_info.get("form_params", "{}"))
-
+        case_file_params = json.loads(case_info.get("file_params", "{}")) if case_info.get("file_params") else {}
+        is_multipart = _truthy(case_info.get("multipart"))
         url = case_info.get("url", "")
+        unresolved_fields = []
+        for _name, _val in (
+            ("query_params", case_query_params),
+            ("body_params", case_body_params),
+            ("form_params", case_form_params),
+            ("file_params", case_file_params),
+            ("url", url),
+        ):
+            if _contains_unresolved_placeholder(_val):
+                unresolved_fields.append(_name)
+        if unresolved_fields:
+            msg = "Unresolved placeholders found before request send: %s" % ", ".join(unresolved_fields)
+            if case_info.get("prev_case", ""):
+                pytest.skip("%s (likely caused by prev_case failure)" % msg)
+            raise AssertionError(msg)
 
         allure.attach(
             body="url: %s\nheaders: %s\ncookies：%s\n"
-                 "query_params: %s\nbody_params: %s\nform_params: %s" % (
+                 "query_params: %s\nbody_params: %s\nform_params: %s\nfile_params: %s\nmultipart: %s" % (
                      url, case_header_params, case_cookie_params,
-                     case_query_params, case_body_params, case_form_params),
+                     case_query_params, case_body_params, case_form_params, case_file_params, is_multipart),
             name="请求参数"
         )
 
@@ -347,7 +476,22 @@ def test_case(feature, story, case_name, case_info):
         send_kw = dict(params=case_query_params, json=case_body_params, data=case_form_params)
         if case_cookie_params:
             send_kw["cookies"] = case_cookie_params
-        client.send(**send_kw)
+        opened_files = []
+        try:
+            files, opened_files = _build_multipart_files(case_info)
+            if files is not None:
+                # multipart 上传由 requests 自动设置 Content-Type + boundary。
+                send_kw.pop("json", None)
+                if "Content-Type" in case_header_params:
+                    case_header_params.pop("Content-Type", None)
+                send_kw["files"] = files
+            client.send(**send_kw)
+        finally:
+            for fh in opened_files:
+                try:
+                    fh.close()
+                except Exception:
+                    pass
 
         resp_code = client.resp_code()
         resp_body = client.resp_body()

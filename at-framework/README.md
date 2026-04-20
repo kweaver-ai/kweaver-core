@@ -97,7 +97,8 @@ pip install -r requirement.txt
 | `CASE_FILE` / `AT_CASE_FILE`（环境变量） | 当前运行的模块目录，如 `./testcase/vega` |
 | `AT_CLEAN_UP`（环境变量） | `1` 且本会话包含 `test_run` 用例时，调用模块 `framework_hooks.session_clean_up` |
 | `AT_CLEAN_UP_MODULE`（环境变量） | 仅当模块名匹配时执行上述清理 |
-| `[test_data].application_token` | 默认 Bearer Token，请求头中自动注入 |
+| `[embedding_info]` / `[rerank_info]` / `[oss_info]` | `prepare_models` 触发时，前置资源注册参数来源 |
+| `[model_manager]` | 小模型注册的 add/list 地址与超时等配置（默认由 `[server].base_url` 推导） |
 
 **环境变量**：`AT_STRICT_LOAD_APIS=1` 时，若用例引用的接口名不在 `apis.yaml` 中则**加载失败**（CI 推荐）；默认仅告警并跳过错误引用。
 
@@ -180,6 +181,10 @@ CASE_FILE=testcase/vega python scripts/extract_cases.py --globals
 | cookie_params | string(JSON) | 否 | Cookie 键值，多数 REST 可省略 |
 | body_params | string(JSON) | 否 | 请求体，可引用 `${var}`、`${bin_data_template_xxx}` |
 | form_params | string(JSON) | 否 | 表单参数 |
+| prepare_models | string/list | 否 | 本 case 请求前按需注册前置资源：`embedding` / `reranker` / `oss` 或组合列表 |
+| prepare_embedding | bool | 否 | `true` 时等价于 `prepare_models` 包含 `embedding` |
+| prepare_reranker | bool | 否 | `true` 时等价于 `prepare_models` 包含 `reranker` |
+| prepare_oss | bool | 否 | `true` 时等价于 `prepare_models` 包含 `oss` |
 | resp_values | string(JSON) | 否 | 从响应提取供后续用例用，如 `{"catalog_id":"$.id"}`（jsonpath） |
 | code_check | string | 否 | 期望 HTTP 状态码 |
 | resp_headers_check | string(JSON) | 否 | 响应头断言，如 `{"Content-Type":"application/json"}` |
@@ -189,6 +194,30 @@ CASE_FILE=testcase/vega python scripts/extract_cases.py --globals
 | description | string | 否 | 说明，不参与执行 |
 
 **变量引用**：用例中写 `$var` 或 `${var}`；替换顺序：global.yaml 展开 → 前序用例 resp_values → path_params → Jinja2 渲染。
+
+**前置资源（单 case）**：仅当该 case 声明 `prepare_models`（或 `prepare_embedding` / `prepare_reranker` / `prepare_oss`）时，框架才会在发请求前注册对应资源；同一测试会话内同类型只会实际请求一次。
+
+示例：
+
+```yaml
+- name: 场景A_需要embedding
+  url: 创建智能体
+  prepare_models: embedding
+  body_params: '{"name":"demo"}'
+  code_check: "200"
+
+- name: 场景B_需要embedding和reranker
+  url: 创建智能体
+  prepare_models: [embedding, reranker]
+  body_params: '{"name":"demo2"}'
+  code_check: "200"
+
+- name: 场景C_需要OSS存储
+  url: 上传文件接口
+  prepare_models: oss
+  body_params: '{"name":"demo3"}'
+  code_check: "200"
+```
 
 ### 5.3 套件字段（suite_schema 要点）
 

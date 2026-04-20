@@ -8,6 +8,7 @@
 """
 import requests
 import urllib3
+import json
 
 urllib3.disable_warnings(urllib3.connectionpool.InsecureRequestWarning)
 
@@ -30,9 +31,39 @@ class HTTPClient:
         kwargs["headers"] = self.headers
         self.resp = self.session.request(verify=False, allow_redirects=True, **kwargs)
 
-        print("request: %s" % kwargs)
-        print("code: %s" % self.resp_code())
-        print("response: %s" % self.resp_body())
+        self._safe_print("request: %s" % self._to_log_text(kwargs))
+        self._safe_print("code: %s" % self.resp_code())
+        self._safe_print("response: %s" % self._to_log_text(self.resp_body()))
+
+    @staticmethod
+    def _to_log_text(value):
+        """将任意对象序列化为稳定文本，避免 repr 触发编码问题。"""
+        try:
+            return json.dumps(value, ensure_ascii=False, default=str)
+        except Exception:
+            return str(value)
+
+    @staticmethod
+    def _safe_print(text):
+        """
+        兼容 Windows(GBK/CP936) 与 Linux(UTF-8) 控制台输出：
+        当 stdout 编码不支持某些字符时，自动 replace，避免中断测试流程。
+        """
+        try:
+            print(text)
+            return
+        except UnicodeEncodeError:
+            pass
+
+        # 兜底路径：按当前 stdout 编码进行降级替换后再输出
+        try:
+            import sys
+            enc = (getattr(sys.stdout, "encoding", None) or "utf-8")
+            safe_text = text.encode(enc, errors="replace").decode(enc, errors="replace")
+            print(safe_text)
+        except Exception:
+            # 最终兜底，保证任何环境都不因日志打印中断
+            print(str(text).encode("ascii", errors="replace").decode("ascii"))
 
     def resp_code(self):
         return self.resp.status_code

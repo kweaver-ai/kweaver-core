@@ -37,13 +37,8 @@ def _get_base_url(config: Dict[str, Any]) -> str:
 
 
 def _get_auth_header(config: Dict[str, Any]) -> Dict[str, str]:
-    """获取认证头"""
-    token = config.get("test_data", {}).get("application_token", "")
-    if token:
-        return {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
+    """获取请求头（不注入鉴权信息）"""
+    return {"Content-Type": "application/json"}
     return {"Content-Type": "application/json"}
 
 
@@ -194,26 +189,6 @@ def session_clean_up(config: Dict[str, Any], allure_module) -> None:
     base_url = _get_base_url(config)
     headers = _get_auth_header(config)
     headers["x-business-domain"] = "bd_public"
-
-    # 获取OAuth token
-    try:
-        from src.common.token_provider import get_token, clear_token_cache
-        user, pwd = "", ""
-        try:
-            from common import at_env
-            user, pwd = at_env.admin_credentials(config)
-        except:
-            pass
-        if user and pwd:
-            clear_token_cache(user)
-            token = get_token(user, pwd, force_refresh=True)
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-                logger.info("[agent-backend] Successfully got OAuth token")
-            else:
-                logger.warning("[agent-backend] Failed to get OAuth token")
-    except Exception as e:
-        logger.warning(f"[agent-backend] Failed to get OAuth token: {e}")
 
     # ========== 1. 清理Agent ==========
     agent_deleted = 0
