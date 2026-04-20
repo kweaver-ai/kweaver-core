@@ -35,7 +35,22 @@ func (d *DetailRes) LoadFromEo(eo *daconfeo.DataAgent) error {
 		return errors.Wrap(err, "[DetailRes]: LoadFromEo failed")
 	}
 
-	d.Config = eo.Config
+	if eo.Config == nil {
+		d.Config = nil
+		return nil
+	}
+
+	respConfig := &daconfvalobj.Config{}
+	err = cutil.CopyStructUseJSON(respConfig, eo.Config)
+	if err != nil {
+		return errors.Wrap(err, "[DetailRes]: copy config failed")
+	}
+
+	if respConfig.Mode == "" {
+		respConfig.Mode = respConfig.GetMode()
+	}
+
+	d.Config = respConfig
 
 	return nil
 }

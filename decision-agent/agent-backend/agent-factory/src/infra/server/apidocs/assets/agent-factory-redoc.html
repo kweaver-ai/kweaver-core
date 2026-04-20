@@ -2762,6 +2762,19 @@
         },
         "type": "object"
       },
+      "cdaenum.AgentMode": {
+        "enum": [
+          "default",
+          "dolphin",
+          "react"
+        ],
+        "type": "string",
+        "x-enum-varnames": [
+          "AgentModeDefault",
+          "AgentModeDolphin",
+          "AgentModeReact"
+        ]
+      },
       "cdaenum.AvatarType": {
         "enum": [
           1,
@@ -3947,19 +3960,6 @@
         },
         "type": "object"
       },
-      "daconfvalobj.NonDolphinModeConfig": {
-        "properties": {
-          "disable_history_in_a_conversation": {
-            "description": "是否禁用单次会话的历史记录",
-            "type": "boolean"
-          },
-          "disable_llm_cache": {
-            "description": "是否禁用LLM缓存",
-            "type": "boolean"
-          }
-        },
-        "type": "object"
-      },
       "daconfvalobj.OpeningRemarkConfig": {
         "properties": {
           "dynamic_opening_remark_prompt": {
@@ -4008,6 +4008,19 @@
           "question": {
             "description": "问题内容",
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "daconfvalobj.ReactConfig": {
+        "properties": {
+          "disable_history_in_a_conversation": {
+            "description": "是否禁用单次会话的历史记录",
+            "type": "boolean"
+          },
+          "disable_llm_cache": {
+            "description": "是否禁用LLM缓存",
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -7061,6 +7074,10 @@
             ],
             "description": "是否是 dolphin 模式"
           },
+          "is_use_tool_id_in_dolphin": {
+            "description": "dolphin 中是否使用 tool id",
+            "type": "integer"
+          },
           "llms": {
             "description": "LLM 配置",
             "items": {
@@ -7084,13 +7101,13 @@
             ],
             "description": "配置元数据"
           },
-          "non_dolphin_mode_config": {
+          "mode": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/daconfvalobj.NonDolphinModeConfig"
+                "$ref": "#/components/schemas/cdaenum.AgentMode"
               }
             ],
-            "description": "非Dolphin模式配置"
+            "description": "配置模式"
           },
           "opening_remark_config": {
             "allOf": [
@@ -7136,6 +7153,14 @@
               "$ref": "#/components/schemas/daconfvalobj.PresetQuestion"
             },
             "type": "array"
+          },
+          "react_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/daconfvalobj.ReactConfig"
+              }
+            ],
+            "description": "ReAct 模式配置"
           },
           "related_question": {
             "allOf": [

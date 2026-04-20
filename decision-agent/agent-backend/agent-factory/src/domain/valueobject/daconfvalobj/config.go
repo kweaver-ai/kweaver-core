@@ -62,15 +62,17 @@ func (h *ConversationHistoryConfig) ValObjCheck() (err error) {
 
 // Config 表示agent配置
 type Config struct {
-	Input         *Input                                `json:"input" binding:"required"` // 输入参数
-	SystemPrompt  string                                `json:"system_prompt"`            // 系统提示词
-	Dolphin       string                                `json:"dolphin"`                  // Dolphin语句
-	IsDolphinMode cdaenum.DolphinMode                   `json:"is_dolphin_mode"`          // 是否是dolphin模式
-	PreDolphin    []*DolphinTpl                         `json:"pre_dolphin"`              // 在用户自定义dolphin之前执行的内置dolphin语句
-	PostDolphin   []*DolphinTpl                         `json:"post_dolphin"`             // 在用户自定义dolphin之后执行的内置dolphin语句
-	DataSource    *datasourcevalobj.RetrieverDataSource `json:"data_source"`              // 数据源
-	Skill         *skillvalobj.Skill                    `json:"skills"`                   // 技能
-	Llms          []*LlmItem                            `json:"llms"`                     // LLM配置
+	Input                *Input                                `json:"input" binding:"required"`  // 输入参数
+	SystemPrompt         string                                `json:"system_prompt"`             // 系统提示词
+	Dolphin              string                                `json:"dolphin"`                   // Dolphin语句
+	Mode                 cdaenum.AgentMode                     `json:"mode"`                      // 配置模式
+	IsDolphinMode        cdaenum.DolphinMode                   `json:"is_dolphin_mode"`           // 是否是dolphin模式
+	IsUseToolIDInDolphin int                                   `json:"is_use_tool_id_in_dolphin"` // dolphin 中是否使用 tool id
+	PreDolphin           []*DolphinTpl                         `json:"pre_dolphin"`               // 在用户自定义dolphin之前执行的内置dolphin语句
+	PostDolphin          []*DolphinTpl                         `json:"post_dolphin"`              // 在用户自定义dolphin之后执行的内置dolphin语句
+	DataSource           *datasourcevalobj.RetrieverDataSource `json:"data_source"`               // 数据源
+	Skill                *skillvalobj.Skill                    `json:"skills"`                    // 技能
+	Llms                 []*LlmItem                            `json:"llms"`                      // LLM配置
 
 	IsDataFlowSetEnabled int                   `json:"is_data_flow_set_enabled"`   // 是否启用数据流设置
 	OpeningRemarkConfig  *OpeningRemarkConfig  `json:"opening_remark_config"`      // 开场白配置
@@ -80,7 +82,7 @@ type Config struct {
 	MemoryCfg            *MemoryCfg            `json:"memory"`                     // 长期记忆配置
 	RelatedQuestion      *RelatedQuestion      `json:"related_question"`           // 相关问题配置
 	PlanMode             *PlanMode             `json:"plan_mode"`                  // 任务规划模式配置
-	NonDolphinModeConfig *NonDolphinModeConfig `json:"non_dolphin_mode_config"`    // 非Dolphin模式配置
+	ReactConfig          *ReactConfig          `json:"react_config"`               // ReAct 模式配置
 
 	ConversationHistoryConfig *ConversationHistoryConfig `json:"conversation_history_config"` // 会话历史配置
 
@@ -103,6 +105,14 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 	// 1. 检查Input是否为空
 	if p.Input == nil {
 		err = errors.New("[Config]: input is required")
+		return
+	}
+
+	// 0. 对齐新旧模式字段
+	p.normalizeMode()
+
+	if err = p.Mode.EnumCheck(); err != nil {
+		err = errors.Wrap(err, "[Config]: mode is invalid")
 		return
 	}
 
@@ -212,10 +222,10 @@ func (p *Config) ValObjCheckWithCtx(ctx context.Context, isPrivateAPI bool) (err
 		}
 	}
 
-	// 13. 验证non_dolphin_mode_config相关配置
-	if p.NonDolphinModeConfig != nil {
-		if err = p.NonDolphinModeConfig.ValObjCheck(); err != nil {
-			err = errors.Wrap(err, "[Config]: non_dolphin_mode_config is invalid")
+	// 13. 验证react_config相关配置
+	if p.ReactConfig != nil {
+		if err = p.ReactConfig.ValObjCheck(); err != nil {
+			err = errors.Wrap(err, "[Config]: react_config is invalid")
 			return
 		}
 	}
@@ -242,6 +252,11 @@ func (p *Config) checkAboutDolphin() (err error) {
 	// 1. 验证IsDolphinMode枚举值的有效性
 	if err = p.IsDolphinMode.EnumCheck(); err != nil {
 		err = errors.Wrap(err, "[Config]: is_dolphin_mode is invalid")
+		return
+	}
+
+	if p.Mode != "" && p.Mode != cdaenum.AgentModeDolphin && p.IsDolphinMode.Bool() {
+		err = errors.New("[Config]: mode conflicts with is_dolphin_mode")
 		return
 	}
 
@@ -290,6 +305,52 @@ func (p *Config) GetBuiltInDsDocSourceFields() (fields []*datasourcevalobj.DocSo
 
 func (p *Config) GetConfigMetadata() *ConfigMetadata {
 	return &p.Metadata
+}
+
+func (p *Config) GetMode() cdaenum.AgentMode {
+	if p == nil {
+		return cdaenum.AgentModeDefault
+	}
+
+	if p.Mode == "" {
+		if p.IsDolphinMode.Bool() {
+			return cdaenum.AgentModeDolphin
+		}
+
+		return cdaenum.AgentModeDefault
+	}
+
+	if p.Mode == cdaenum.AgentModeDolphin {
+		return cdaenum.AgentModeDolphin
+	}
+
+	return p.Mode
+}
+
+func (p *Config) normalizeMode() {
+	if p == nil {
+		return
+	}
+
+	if p.ReactConfig == nil {
+		p.ReactConfig = nil
+	}
+
+	switch p.Mode {
+	case cdaenum.AgentModeDolphin:
+		p.IsDolphinMode = cdaenum.DolphinModeEnabled
+	case cdaenum.AgentModeDefault, cdaenum.AgentModeReact:
+		if !p.IsDolphinMode.Bool() {
+			p.IsDolphinMode = cdaenum.DolphinModeDisabled
+		}
+	case "":
+		p.Mode = p.GetMode()
+		if p.Mode == cdaenum.AgentModeDolphin {
+			p.IsDolphinMode = cdaenum.DolphinModeEnabled
+		}
+	default:
+		// invalid mode 留给 EnumCheck 兜底
+	}
 }
 
 // CheckProductAndDataSource 检查产品类型与数据源是否相符

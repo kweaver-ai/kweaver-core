@@ -3869,6 +3869,19 @@ const docTemplate = `{
                 "RespErrorTypeAgentExecutor"
             ]
         },
+        "cdaenum.AgentMode": {
+            "type": "string",
+            "enum": [
+                "default",
+                "dolphin",
+                "react"
+            ],
+            "x-enum-varnames": [
+                "AgentModeDefault",
+                "AgentModeDolphin",
+                "AgentModeReact"
+            ]
+        },
         "cdaenum.AvatarType": {
             "type": "integer",
             "enum": [
@@ -4592,19 +4605,6 @@ const docTemplate = `{
                 }
             }
         },
-        "daconfvalobj.NonDolphinModeConfig": {
-            "type": "object",
-            "properties": {
-                "disable_history_in_a_conversation": {
-                    "description": "是否禁用单次会话的历史记录",
-                    "type": "boolean"
-                },
-                "disable_llm_cache": {
-                    "description": "是否禁用LLM缓存",
-                    "type": "boolean"
-                }
-            }
-        },
         "daconfvalobj.OpeningRemarkConfig": {
             "type": "object",
             "properties": {
@@ -4658,6 +4658,19 @@ const docTemplate = `{
                 "question": {
                     "description": "问题内容",
                     "type": "string"
+                }
+            }
+        },
+        "daconfvalobj.ReactConfig": {
+            "type": "object",
+            "properties": {
+                "disable_history_in_a_conversation": {
+                    "description": "是否禁用单次会话的历史记录",
+                    "type": "boolean"
+                },
+                "disable_llm_cache": {
+                    "description": "是否禁用LLM缓存",
+                    "type": "boolean"
                 }
             }
         },
@@ -5593,6 +5606,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "is_use_tool_id_in_dolphin": {
+                    "description": "dolphin 中是否使用 tool id",
+                    "type": "integer"
+                },
                 "llms": {
                     "description": "LLM 配置",
                     "type": "array",
@@ -5616,11 +5633,11 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "non_dolphin_mode_config": {
-                    "description": "非Dolphin模式配置",
+                "mode": {
+                    "description": "配置模式",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/daconfvalobj.NonDolphinModeConfig"
+                            "$ref": "#/definitions/cdaenum.AgentMode"
                         }
                     ]
                 },
@@ -5668,6 +5685,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/daconfvalobj.PresetQuestion"
                     }
+                },
+                "react_config": {
+                    "description": "ReAct 模式配置",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/daconfvalobj.ReactConfig"
+                        }
+                    ]
                 },
                 "related_question": {
                     "description": "相关问题配置",

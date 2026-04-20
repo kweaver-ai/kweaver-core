@@ -37,6 +37,21 @@ make validate-api-docs
 - 路径数、接口数是否符合预期
 - 这里的公共文档是否与运行时副本一致
 
+## v3 Agent Config 模式说明
+
+`/api/agent-factory/v3/agent` 的 `config` 现在以 `mode` 作为主模式字段：
+
+- `default`
+  - 使用 `system_prompt`、`plan_mode`
+- `dolphin`
+  - 使用 `dolphin`
+  - `is_dolphin_mode` 仍保留，用于兼容旧请求
+  - 新增 `is_use_tool_id_in_dolphin`
+- `react`
+  - 使用 `system_prompt`、`react_config`、`plan_mode`
+
+对外文档与详情响应统一使用 `react_config`。
+
 ## 如何查看
 
 ### 直接查看静态页面
