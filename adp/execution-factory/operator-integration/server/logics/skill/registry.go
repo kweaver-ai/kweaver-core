@@ -603,6 +603,16 @@ func (r *skillRegistry) DeleteSkill(ctx context.Context, req *interfaces.DeleteS
 	if err = r.fileRepo.DeleteSkillFileBySkillID(ctx, tx, req.SkillID, skill.Version); err != nil {
 		return err
 	}
+	if r.releaseRepo != nil {
+		if err = r.deletePublishedSkillSnapshot(ctx, tx, req.SkillID); err != nil {
+			return err
+		}
+	}
+	if r.releaseHistoryRepo != nil {
+		if err = r.releaseHistoryRepo.DeleteBySkillID(ctx, tx, req.SkillID); err != nil {
+			return err
+		}
+	}
 	if err = r.skillRepo.DeleteSkillByID(ctx, tx, req.SkillID); err != nil {
 		return err
 	}
@@ -611,7 +621,15 @@ func (r *skillRegistry) DeleteSkill(ctx context.Context, req *interfaces.DeleteS
 		return err
 	}
 	// 删除技能的权限策略
-	return r.AuthService.DeletePolicy(ctx, []string{req.SkillID}, interfaces.AuthResourceTypeSkill)
+	if err = r.AuthService.DeletePolicy(ctx, []string{req.SkillID}, interfaces.AuthResourceTypeSkill); err != nil {
+		return err
+	}
+	if r.indexSync != nil {
+		if syncErr := r.indexSync.DeleteSkill(ctx, req.SkillID); syncErr != nil {
+			r.Logger.WithContext(ctx).Errorf("delete skill index failed after skill delete, skill_id=%s, err=%v", req.SkillID, syncErr)
+		}
+	}
+	return nil
 }
 
 // UpdateSkillStatus 更新技能状态

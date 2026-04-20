@@ -74,6 +74,7 @@ type stubSkillReleaseHistoryRepo struct {
 	selectBySkillID           func(ctx context.Context, tx *sql.Tx, skillID string) ([]*model.SkillReleaseHistoryDB, error)
 	selectBySkillIDAndVersion func(ctx context.Context, tx *sql.Tx, skillID, version string) (*model.SkillReleaseHistoryDB, error)
 	deleteByID                func(ctx context.Context, tx *sql.Tx, id int64) error
+	deleteBySkillID           func(ctx context.Context, tx *sql.Tx, skillID string) error
 }
 
 func (s *stubSkillReleaseHistoryRepo) Insert(ctx context.Context, tx *sql.Tx, history *model.SkillReleaseHistoryDB) error {
@@ -105,6 +106,9 @@ func (s *stubSkillReleaseHistoryRepo) DeleteByID(ctx context.Context, tx *sql.Tx
 }
 
 func (s *stubSkillReleaseHistoryRepo) DeleteBySkillID(ctx context.Context, tx *sql.Tx, skillID string) error {
+	if s.deleteBySkillID != nil {
+		return s.deleteBySkillID(ctx, tx, skillID)
+	}
 	return nil
 }
 
@@ -1288,13 +1292,17 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockBusinessDomainService := mocks.NewMockIBusinessDomainService(ctrl)
+			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			releaseHistoryRepo := &stubSkillReleaseHistoryRepo{}
 			registry := &skillRegistry{
 				skillRepo:             mockSkillRepo,
 				fileRepo:              mockFileRepo,
+				releaseHistoryRepo:    releaseHistoryRepo,
 				assetStore:            mockAssetStore,
 				dbTx:                  mockDBTx,
 				AuthService:           mockAuthService,
 				BusinessDomainService: mockBusinessDomainService,
+				indexSync:             mockIndexSync,
 				Logger:                logger.DefaultLogger(),
 			}
 
@@ -1313,14 +1321,72 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			}, nil)
 			mockAssetStore.EXPECT().Delete(gomock.Any(), &interfaces.OssObject{StorageKey: "/tmp/object-1"}).Return(nil)
 			mockFileRepo.EXPECT().DeleteSkillFileBySkillID(gomock.Any(), tx, "skill-8", gomock.Any()).Return(nil)
+			releaseHistoryRepo.deleteBySkillID = func(ctx context.Context, txArg *sql.Tx, skillID string) error {
+				So(txArg, ShouldEqual, tx)
+				So(skillID, ShouldEqual, "skill-8")
+				return nil
+			}
 			mockSkillRepo.EXPECT().DeleteSkillByID(gomock.Any(), tx, "skill-8").Return(nil)
 			mockBusinessDomainService.EXPECT().DisassociateResource(gomock.Any(), "bd-1", "skill-8", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockAuthService.EXPECT().DeletePolicy(gomock.Any(), []string{"skill-8"}, interfaces.AuthResourceTypeSkill).Return(nil)
+			mockIndexSync.EXPECT().DeleteSkill(gomock.Any(), "skill-8").Return(nil)
 
 			err := registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
 				BusinessDomainID: "bd-1",
 				UserID:           "user-1",
 				SkillID:          "skill-8",
+			})
+
+			So(err, ShouldBeNil)
+		})
+
+		Convey("DeleteSkill keeps succeeding when dataset cleanup fails", func() {
+			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockFileRepo := mocks.NewMockISkillFileIndex(ctrl)
+			mockAssetStore := mocks.NewMockskillAssetStore(ctrl)
+			mockDBTx := mocks.NewMockDBTx(ctrl)
+			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
+			mockBusinessDomainService := mocks.NewMockIBusinessDomainService(ctrl)
+			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			releaseHistoryRepo := &stubSkillReleaseHistoryRepo{}
+			registry := &skillRegistry{
+				skillRepo:             mockSkillRepo,
+				fileRepo:              mockFileRepo,
+				releaseHistoryRepo:    releaseHistoryRepo,
+				assetStore:            mockAssetStore,
+				dbTx:                  mockDBTx,
+				AuthService:           mockAuthService,
+				BusinessDomainService: mockBusinessDomainService,
+				indexSync:             mockIndexSync,
+				Logger:                logger.DefaultLogger(),
+			}
+
+			tx, cleanup := beginTestTx(t)
+			defer cleanup()
+
+			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-8b").Return(&model.SkillRepositoryDB{
+				SkillID: "skill-8b", Status: interfaces.BizStatusOffline.String(),
+			}, nil)
+			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
+			mockAuthService.EXPECT().CheckDeletePermission(gomock.Any(), gomock.Any(), "skill-8b", interfaces.AuthResourceTypeSkill).Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().UpdateSkillDeleted(gomock.Any(), tx, "skill-8b", true, "user-1").Return(nil)
+			mockFileRepo.EXPECT().SelectSkillFileBySkillID(gomock.Any(), tx, "skill-8b", gomock.Any()).Return(nil, nil)
+			mockFileRepo.EXPECT().DeleteSkillFileBySkillID(gomock.Any(), tx, "skill-8b", gomock.Any()).Return(nil)
+			releaseHistoryRepo.deleteBySkillID = func(ctx context.Context, txArg *sql.Tx, skillID string) error {
+				So(txArg, ShouldEqual, tx)
+				So(skillID, ShouldEqual, "skill-8b")
+				return nil
+			}
+			mockSkillRepo.EXPECT().DeleteSkillByID(gomock.Any(), tx, "skill-8b").Return(nil)
+			mockBusinessDomainService.EXPECT().DisassociateResource(gomock.Any(), "bd-1", "skill-8b", interfaces.AuthResourceTypeSkill).Return(nil)
+			mockAuthService.EXPECT().DeletePolicy(gomock.Any(), []string{"skill-8b"}, interfaces.AuthResourceTypeSkill).Return(nil)
+			mockIndexSync.EXPECT().DeleteSkill(gomock.Any(), "skill-8b").Return(errors.New("dataset delete failed"))
+
+			err := registry.DeleteSkill(context.Background(), &interfaces.DeleteSkillReq{
+				BusinessDomainID: "bd-1",
+				UserID:           "user-1",
+				SkillID:          "skill-8b",
 			})
 
 			So(err, ShouldBeNil)

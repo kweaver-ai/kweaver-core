@@ -46,8 +46,9 @@ func (s *skillReleaseDB) Insert(ctx context.Context, tx *sql.Tx, release *model.
 	if tx != nil {
 		orm = s.orm.WithTx(tx)
 	}
-	now := time.Now().UnixNano()
-	release.ReleaseTime = now
+	if release.ReleaseTime == 0 {
+		release.ReleaseTime = time.Now().UnixNano()
+	}
 	row, err := orm.Insert().Into(tbSkillRelease).Values(map[string]interface{}{
 		"f_skill_id":      release.SkillID,
 		"f_name":          release.Name,
@@ -86,7 +87,9 @@ func (s *skillReleaseDB) UpdateBySkillID(ctx context.Context, tx *sql.Tx, releas
 	if tx != nil {
 		orm = s.orm.WithTx(tx)
 	}
-	release.ReleaseTime = time.Now().UnixNano()
+	if release.ReleaseTime == 0 {
+		release.ReleaseTime = time.Now().UnixNano()
+	}
 	_, err := orm.Update(tbSkillRelease).SetData(map[string]interface{}{
 		"f_name":          release.Name,
 		"f_description":   release.Description,
