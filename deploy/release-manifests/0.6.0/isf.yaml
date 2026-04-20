@@ -42,7 +42,7 @@ releases:
     version: 0.6.0-998e3f2-20260410.1
   authorization:
     chart: authorization
-    version: 0.6.0-599a9a3-20260410.1
+    version: 0.6.0-38a2f02-20260416.5
   ingress-informationsecurityfabric:
     chart: ingress-informationsecurityfabric
     version: 0.6.0-2548ee2-20260410.1
