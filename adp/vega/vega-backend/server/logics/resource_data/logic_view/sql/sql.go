@@ -678,7 +678,7 @@ func (b *SQLBuilder) ApplyParams(ctx context.Context, params *interfaces.Resourc
 	}
 
 	// 3. 处理分页/限制
-	if params.QueryType == "standard" && params.Limit > 0 {
+	if (params.QueryType == "" || params.QueryType == interfaces.QueryType_Standard) && params.Limit > 0 {
 		b.Limit(params.Limit)
 	}
 

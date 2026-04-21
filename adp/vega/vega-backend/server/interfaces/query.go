@@ -7,6 +7,11 @@ package interfaces
 
 import "context"
 
+const (
+	QueryType_Standard = "standard" // 标准查询
+	QueryType_Stream   = "stream"   // 流式查询
+)
+
 // QueryExecuteRequest 统一查询请求；query_id 必填，用于游标 session
 type QueryExecuteRequest struct {
 	QueryID         string         `json:"query_id"`                   // 必填，同一轮查询一致
