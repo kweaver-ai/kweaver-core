@@ -28,9 +28,6 @@ from app.utils.observability.observability_log import get_logger as o11y_logger
 from .trace import span_set_attrs
 from app.domain.enum.common.user_account_header_key import (
     get_user_account_id,
-    get_user_account_type,
-    set_user_account_id,
-    set_user_account_type,
 )
 from .input_handler_pkg import (
     process_input,
@@ -235,11 +232,12 @@ class AgentCoreV2:
             )
             flags.set_flag(flags.DISABLE_LLM_CACHE, disable_llm_cache)
 
-            # 将认证信息添加到 context_variables 中
-            set_user_account_id(context_variables, get_user_account_id(headers) or "")
-            set_user_account_type(
-                context_variables, get_user_account_type(headers) or ""
-            )
+            # 认证信息当前仍通过 headers 传递给下游，不再镜像写入
+            # context_variables。保留注释便于后续回溯这段兼容逻辑。
+            # set_user_account_id(context_variables, get_user_account_id(headers) or "")
+            # set_user_account_type(
+            #     context_variables, get_user_account_type(headers) or ""
+            # )
 
             llm_message_flag = getattr(flags, "LLM_MESSAGE_LOGGING", None)
             llm_message_log_dir_flag = getattr(flags, "LLM_MESSAGE_LOG_DIR", None)

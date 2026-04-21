@@ -52,8 +52,10 @@ class WarmUpHandler:
             # 处理不同类型的输入
             temp_files = {}
 
-            # 将认证信息添加到 context_variables 中
-            context_variables = {}
+            # Warmup only needs the config payload for skill construction.
+            context_variables = {
+                "self_config": agent_config.model_dump(),
+            }
             set_user_account_id(context_variables, get_user_account_id(headers) or "")
             set_user_account_type(
                 context_variables, get_user_account_type(headers) or ""
