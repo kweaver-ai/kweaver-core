@@ -2164,60 +2164,6 @@
         },
         "type": "object"
       },
-      "agent_list_for_benchmark": {
-        "description": "智能体列表",
-        "properties": {
-          "entries": {
-            "description": "智能体列表",
-            "items": {
-              "$ref": "#/components/schemas/agent_list_for_benchmark_item"
-            },
-            "type": "array"
-          },
-          "total": {
-            "description": "- 总数\n- 包括已发布和未发布\n  - 如果同一个agent同时存在已发布和未发布版本，算2个\n",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "agent_list_for_benchmark_item": {
-        "properties": {
-          "id": {
-            "description": "agent id",
-            "example": "xxx",
-            "type": "string"
-          },
-          "key": {
-            "description": "agent 标识",
-            "example": "xxx",
-            "type": "string"
-          },
-          "name": {
-            "description": "名字",
-            "example": "agent1",
-            "type": "string"
-          },
-          "status": {
-            "description": "- 状态\n  - unpublished: 未发布\n  - published: 已发布\n",
-            "enum": [
-              "unpublished",
-              "published"
-            ],
-            "example": "unpublished",
-            "type": "string"
-          },
-          "updated_at": {
-            "description": "更新时间",
-            "type": "integer"
-          },
-          "version": {
-            "description": "- 版本\n  - 未发布的为：v0\n  - 发布的为：latest\n",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "agent_list_item": {
         "properties": {
           "avatar": {
@@ -2508,8 +2454,7 @@
       },
       "agentresperr.RespError": {
         "properties": {
-          "error": {
-          }
+          "error": {}
         },
         "type": "object"
       },
@@ -3087,8 +3032,7 @@
           "agent_info": {
             "$ref": "#/components/schemas/valueobject.AgentInfo"
           },
-          "content": {
-          },
+          "content": {},
           "content_type": {
             "$ref": "#/components/schemas/chatresenum.AnswerType"
           },
@@ -4668,15 +4612,13 @@
                       "type": "boolean"
                     },
                     {
-                      "items": {
-                      },
+                      "items": {},
                       "type": "array"
                     },
                     {
                       "type": "object"
                     },
-                    {
-                    }
+                    {}
                   ]
                 }
               },
@@ -6105,15 +6047,13 @@
                       "type": "boolean"
                     },
                     {
-                      "items": {
-                      },
+                      "items": {},
                       "type": "array"
                     },
                     {
                       "type": "object"
                     },
-                    {
-                    }
+                    {}
                   ]
                 }
               },
@@ -7659,8 +7599,7 @@
       },
       "valueobject.TempFile": {
         "properties": {
-          "details": {
-          },
+          "details": {},
           "id": {
             "type": "string"
           },
@@ -8558,48 +8497,6 @@
       }
     },
     "/api/agent-factory/v3/agent": {
-      "get": {
-        "description": "- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/page"
-          },
-          {
-            "$ref": "#/components/parameters/pageLimit"
-          },
-          {
-            "$ref": "#/components/parameters/name"
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/agent_list_for_benchmark"
-                }
-              }
-            },
-            "description": "成功"
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "403": {
-            "$ref": "#/components/responses/403"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        },
-        "summary": "Agent列表（benchmarch）",
-        "tags": [
-          "agent-ignore"
-        ]
-      },
       "post": {
         "description": "创建一个新的 Agent 配置",
         "requestBody": {
@@ -9039,16 +8936,10 @@
                     "description": "所有agent都成功导入",
                     "summary": "导入成功",
                     "value": {
-                      "agent_key_conflict": [
-
-                      ],
-                      "config_invalid": [
-
-                      ],
+                      "agent_key_conflict": [],
+                      "config_invalid": [],
                       "is_success": true,
-                      "no_create_system_agent_pms": [
-
-                      ]
+                      "no_create_system_agent_pms": []
                     }
                   }
                 },
@@ -9202,9 +9093,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "智能体详情（已发布或未发布）",
         "tags": [
           "已发布",
@@ -9794,9 +9683,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "发布智能体模板",
         "tags": [
           "模板"
@@ -9933,9 +9820,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "更新模板发布信息",
         "tags": [
           "模板"
@@ -9991,9 +9876,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "取消发布智能体模板",
         "tags": [
           "模板"
@@ -11092,9 +10975,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "发布智能体",
         "tags": [
           "发布相关",
@@ -11144,9 +11025,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "获取已发布智能体的发布信息",
         "tags": [
           "发布相关",
@@ -11225,9 +11104,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "更新发布信息",
         "tags": [
           "发布相关"
@@ -11278,9 +11155,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "获取发布历史记录列表",
         "tags": [
           "已发布"
@@ -11349,9 +11224,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "取消发布智能体",
         "tags": [
           "发布相关"
@@ -11389,9 +11262,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "获取智能体分类",
         "tags": [
           "发布相关"
@@ -11443,9 +11314,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "个人空间（开发）下Agent列表",
         "tags": [
           "个人空间（开发）"
@@ -11783,9 +11652,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "已发布智能体列表",
         "tags": [
           "已发布"
@@ -11852,9 +11719,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "已发布智能体信息列表",
         "tags": [
           "已发布"
@@ -11944,9 +11809,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "已发布模板详情",
         "tags": [
           "已发布"
@@ -12006,9 +11869,7 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "security": [
-
-        ],
+        "security": [],
         "summary": "获取最近访问的智能体",
         "tags": [
           "最近访问"

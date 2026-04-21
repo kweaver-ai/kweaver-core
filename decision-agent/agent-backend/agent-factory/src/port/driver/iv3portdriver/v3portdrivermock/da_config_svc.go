@@ -186,21 +186,6 @@ func (mr *MockIDataAgentConfigSvcMockRecorder) Detail(ctx, id, key any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Detail", reflect.TypeOf((*MockIDataAgentConfigSvc)(nil).Detail), ctx, id, key)
 }
 
-// ListForBenchmark mocks base method.
-func (m *MockIDataAgentConfigSvc) ListForBenchmark(ctx context.Context, req *agentconfigreq.ListForBenchmarkReq) (*agentconfigresp.ListForBenchmarkResp, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListForBenchmark", ctx, req)
-	ret0, _ := ret[0].(*agentconfigresp.ListForBenchmarkResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListForBenchmark indicates an expected call of ListForBenchmark.
-func (mr *MockIDataAgentConfigSvcMockRecorder) ListForBenchmark(ctx, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForBenchmark", reflect.TypeOf((*MockIDataAgentConfigSvc)(nil).ListForBenchmark), ctx, req)
-}
-
 // TmpTest mocks base method.
 func (m *MockIDataAgentConfigSvc) TmpTest(ctx context.Context, req *agentconfigreq.TestTmpReq) error {
 	m.ctrl.T.Helper()

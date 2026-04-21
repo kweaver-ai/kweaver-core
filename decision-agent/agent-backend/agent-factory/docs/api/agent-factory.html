@@ -2336,60 +2336,6 @@
         },
         "type": "object"
       },
-      "agent_list_for_benchmark": {
-        "description": "智能体列表",
-        "properties": {
-          "entries": {
-            "description": "智能体列表",
-            "items": {
-              "$ref": "#/components/schemas/agent_list_for_benchmark_item"
-            },
-            "type": "array"
-          },
-          "total": {
-            "description": "- 总数\n- 包括已发布和未发布\n  - 如果同一个agent同时存在已发布和未发布版本，算2个\n",
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "agent_list_for_benchmark_item": {
-        "properties": {
-          "id": {
-            "description": "agent id",
-            "example": "xxx",
-            "type": "string"
-          },
-          "key": {
-            "description": "agent 标识",
-            "example": "xxx",
-            "type": "string"
-          },
-          "name": {
-            "description": "名字",
-            "example": "agent1",
-            "type": "string"
-          },
-          "status": {
-            "description": "- 状态\n  - unpublished: 未发布\n  - published: 已发布\n",
-            "enum": [
-              "unpublished",
-              "published"
-            ],
-            "example": "unpublished",
-            "type": "string"
-          },
-          "updated_at": {
-            "description": "更新时间",
-            "type": "integer"
-          },
-          "version": {
-            "description": "- 版本\n  - 未发布的为：v0\n  - 发布的为：latest\n",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "agent_list_item": {
         "properties": {
           "avatar": {
@@ -9484,48 +9430,6 @@
       }
     },
     "/api/agent-factory/v3/agent": {
-      "get": {
-        "description": "- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/page"
-          },
-          {
-            "$ref": "#/components/parameters/pageLimit"
-          },
-          {
-            "$ref": "#/components/parameters/name"
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/agent_list_for_benchmark"
-                }
-              }
-            },
-            "description": "成功"
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "403": {
-            "$ref": "#/components/responses/403"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        },
-        "summary": "Agent列表（benchmarch）",
-        "tags": [
-          "agent-ignore"
-        ]
-      },
       "post": {
         "description": "创建一个新的 Agent 配置",
         "requestBody": {
