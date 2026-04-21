@@ -91,6 +91,18 @@ maybe_import_context_loader_toolset_post_core() {
         return 0
     fi
 
+    # ISF (Hydra/EACP) 在场时，impex API 会强校验 Bearer + admin 权限。
+    # 当前部署脚本无法自动获取 admin token（参见 README / TODO config 子命令），
+    # 强行调用必然 401/403。改为提示用户手工导入，避免误导。
+    if kubectl get deploy hydra -n "${namespace}" &>/dev/null; then
+        log_info "Context Loader toolset auto-import skipped: ISF (Hydra) detected in namespace ${namespace}."
+        log_info "  In auth-enabled environments the impex API requires an admin Bearer token."
+        log_info "  Please import manually after install:"
+        log_info "    kweaver auth login"
+        log_info "    kweaver toolbox import --file <repo>/adp/context-loader/agent-retrieval/docs/release/toolset/context_loader_toolset.adp --mode upsert"
+        return 0
+    fi
+
     local _lib_dir
     _lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
     local repo_root
