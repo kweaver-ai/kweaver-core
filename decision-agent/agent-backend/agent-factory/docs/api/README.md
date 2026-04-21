@@ -37,6 +37,16 @@ make validate-api-docs
 - 路径数、接口数是否符合预期
 - 这里的公共文档是否与运行时副本一致
 
+## APIChat 路径说明
+
+- 推荐使用 `/api/agent-factory/v1/api/chat/completion`
+  - 通过 body 中的 `agent_key` 指定目标 agent
+- `/api/agent-factory/v1/app/{app_key}/api/chat/completion`
+  - 已废弃，仅保留兼容旧调用
+  - 新接入请迁移到无 `app_key` 的主入口
+
+`GetAPIDoc` 使用的静态模板也按上述推荐路径维护在 `src/static/agent-api.json` 和 `src/static/agent-api.yaml` 中。
+
 ## v3 Agent Config 模式说明
 
 `/api/agent-factory/v3/agent` 的 `config` 现在以 `mode` 作为主模式字段：

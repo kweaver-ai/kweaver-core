@@ -438,27 +438,27 @@ components:
     ChatRequest:
       type: object
       properties:
-        agent_id:
+        agent_key:
           type: string
-          description: agent ID
+          description: agent key
         agent_version:
           type: string
-          description: agent_version, 可指定版本，不传则默认使用最新发布版本
+          description: agent_version，可以指定版本，默认值为latest
         stream:
           type: boolean
           description: 是否流式返回
         inc_stream:
           type: boolean
-          description: 是否增量流式返回
+          description: 是否增量流式返回，仅在stream为true时有效
         conversation_id:
           type: string
-          description: 会话ID
+          description: 对话ID
         temporary_area_id:
           type: string
           description: 临时区域ID
         temp_files:
           type: array
-          description: 临时文件
+          description: 临时文件，输入配置中配置了文件变量，可以传入临时文件
           items:
             type: object
             properties:
@@ -476,43 +476,30 @@ components:
           description: 用户提问问题
         custom_querys:
           type: object
-          description: 自定义输入变量，map[string]any
-        tool:
-          type: object
-          description: 中断处理，如果是中断操作，tool 不为空
-          $ref: "#/components/schemas/tool"
+          description: 输入配置中的自定义输入变量，map[string]any
         interrupted_assistant_message_id:
           type: string
           description: 中断的助手信息ID
         chat_mode:
           type: string
           description: 聊天模式，deep_thinking 深度思考，normal 正常
-        confirm_plan:
-          type: boolean
-          description: 默认为true， 在中断处理中告诉agent-app下次是否要弹出“确认计划”提示
         regenerate_user_message_id:
           type: string
           description: 编辑问题时，用户消息ID，不可以同时传入regenerate_assistant_message_id
         regenerate_assistant_message_id:
           type: string
           description: 重新生成时，助手消息ID，不可以同时传入regenerate_user_message_id
-        # history:
-        #   type: array
-        #   description: 历史消息
-        #   items:
-        #     type: object
-        #     $ref: "#/components/schemas/LLMHistory"
-        # llm_config:
-        #   type: object
-        #   description: llm配置
-        #   $ref: "#/components/schemas/LlmConfig"
-        # data_source:
-        #   type: object
-        #   description: 数据源
-        #   $ref: "#/components/schemas/RetrieverDataSource"
+        history:
+          type: array
+          description: 历史消息, 可以传入用户自己维护的历史消息，若不传，则根据conversation_id查询历史消息，若conversation_id为空，则为新对话，历史记录为空
+          items:
+            $ref: "#/components/schemas/LLMHistory"
+        chat_option:
+          $ref: "#/components/schemas/ChatOption"
+          description: chat option
       required:
         - query
-        - agent_id
+        - agent_key
         - stream
     LLMHistory:
       type: object
@@ -524,74 +511,23 @@ components:
         content:
           type: string
           description: 内容
-    LlmConfig:
-      type: object
-      required:
-        - name
-        - max_tokens
-      properties:
-        id:
-          type: string
-          description: 模型ID
-        name:
-          type: string
-          description: 模型名
-        model_type:
-          type: string
-          description: 模型类型
-        temperature:
-          type: number
-          minimum: 0
-          maximum: 2
-          description: 温度参数
-        top_p:
-          type: number
-          minimum: 0
-          maximum: 1
-          description: Top-p参数
-        top_k:
-          type: integer
-          minimum: 0
-          description: Top-k参数
-        frequency_penalty:
-          type: number
-          minimum: -2
-          maximum: 2
-          description: 频率惩罚
-        presence_penalty:
-          type: number
-          minimum: -2
-          maximum: 2
-          description: 存在惩罚
-        max_tokens:
-          type: integer
-          minimum: 0
-          description: 最大token数
-    RetrieverDataSource:
+    ChatOption:
       type: object
       properties:
-        kg:
-          type: array
-          items:
-            $ref: "#/components/schemas/KgSource"
-          description: 图谱类型数据源
-        doc:
-          type: array
-          items:
-            $ref: "#/components/schemas/DocSource"
-          description: 文档类型数据源
-        advanced_config:
-          $ref: "#/components/schemas/RetrieverAdvancedConfig"
-          description: 召回高级配置
-    RetrieverAdvancedConfig:
-      type: object
-      properties:
-        kg:
-          $ref: "#/components/schemas/KGAdvancedConfig"
-          description: 图谱高级配置
-        doc:
-          $ref: "#/components/schemas/DocAdvancedConfig"
-          description: 文档高级配置
+        is_need_history:
+          type: boolean
+          description: 是否需要历史上下文
+          default: false
+        is_need_doc_retrival_post_process:
+          type: boolean
+          description: 是否需要文档检索后处理
+          default: false
+        is_need_progress:
+          type: boolean
+          description: 是否需要progress
+        enable_dependency_cache:
+          type: boolean
+          description: 是否需要使用缓存
     KGAdvancedConfig:
       type: object
       required:
@@ -740,25 +676,6 @@ components:
         source:
           type: string
           description: 字段来源
-    tool:
-      type: object
-      description: 工具调用信息
-      properties:
-        session_id:
-          type: string
-        tool_name:
-          type: string
-        tool_args:
-          type: array
-          items:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-              type:
-                type: string
     Progress:
       type: object
       properties:
