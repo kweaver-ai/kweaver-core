@@ -117,6 +117,10 @@ parse_core_args() {
                 CORE_SET_VALUES+=("businessDomain.enabled=false")
                 shift
                 ;;
+            --force-upgrade)
+                FORCE_UPGRADE="true"
+                shift
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

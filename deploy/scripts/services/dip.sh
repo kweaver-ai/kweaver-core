@@ -79,6 +79,10 @@ parse_dip_args() {
                 DIP_CONFIRM_MISSING_OPENCLAW_PATHS="true"
                 shift
                 ;;
+            --force-upgrade)
+                FORCE_UPGRADE="true"
+                shift
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

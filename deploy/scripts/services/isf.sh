@@ -82,6 +82,10 @@ parse_isf_args() {
                 FORCE_REFRESH_CHARTS="true"
                 shift
                 ;;
+            --force-upgrade)
+                FORCE_UPGRADE="true"
+                shift
+                ;;
             *)
                 log_error "Unknown argument: $1"
                 return 1

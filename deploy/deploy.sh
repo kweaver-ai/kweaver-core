@@ -5,6 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONF_DIR="${CONF_DIR:-${HOME}/.kweaver-ai}"
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
 
+# Global flag: bypass "skip when chart version unchanged" optimization so that
+# helm upgrade re-renders templates with the latest values.yaml. Use this after
+# editing config.yaml on a previously-installed cluster.
+FORCE_UPGRADE="${FORCE_UPGRADE:-false}"
+
 # Fix paths to use script's conf directory, not user home
 FLANNEL_MANIFEST_PATH="${SCRIPT_DIR}/conf/kube-flannel.yml"
 LOCALPV_MANIFEST_PATH="${SCRIPT_DIR}/conf/local-path-storage.yaml"
@@ -108,6 +113,8 @@ usage() {
     echo "  $0 all install                # Full initialization with all components"
     echo ""
     echo "Global Options:"
+    echo "  --force-upgrade               Always run helm upgrade even if installed chart version equals target."
+    echo "                                Use this after editing config.yaml on a previously-installed cluster."
     echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
     echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
     echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
@@ -330,6 +337,14 @@ confirm_access_address_before_install() {
 
 # Main function
 main() {
+    # Parse global flags before module/action
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force-upgrade) FORCE_UPGRADE="true"; shift ;;
+            *) break ;;
+        esac
+    done
+
     local module="${1:-}"
     local action="${2:-}"
     shift 2 2>/dev/null || true
@@ -377,6 +392,7 @@ main() {
             case "$1" in
                 --api_server_address=*) API_SERVER_ADVERTISE_ADDRESS="${1#*=}"; shift ;;
                 --api_server_address)   API_SERVER_ADVERTISE_ADDRESS="$2"; shift 2 ;;
+                --force-upgrade)        FORCE_UPGRADE="true"; shift ;;
                 --access_address=*)     KWEAVER_ACCESS_ADDRESS="${1#*=}"; shift ;;
                 --access_address)       KWEAVER_ACCESS_ADDRESS="$2"; shift 2 ;;
                 *) shift ;;
