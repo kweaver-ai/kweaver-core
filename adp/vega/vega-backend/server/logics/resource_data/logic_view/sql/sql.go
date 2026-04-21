@@ -436,16 +436,66 @@ func (g *logicViewSQLGenerator) buildSqlNodeSQL(ctx context.Context, node *inter
 	g.nodeFieldsMap[node.ID] = outputFieldsMap
 
 	var allArgs []any
+
+	// 预构建所有输入节点的 SQL 并生成别名
+	type nodeContext struct {
+		SQL     string
+		Alias   string
+		WithSQL string // 带别名的完整 SQL: (subquery) AS alias
+	}
+	nodeContexts := make(map[string]*nodeContext)
+
+	for _, inputID := range node.Inputs {
+		subSQL, subArgs, err := g.buildNodeSQL(ctx, inputID, depth)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to build sql node input %s: %w", inputID, err)
+		}
+		allArgs = append(allArgs, subArgs...)
+
+		// 生成唯一别名：将节点 ID 中的特殊字符替换为下划线
+		alias := sanitizeAlias(inputID)
+
+		nodeContexts[inputID] = &nodeContext{
+			SQL:     subSQL,
+			Alias:   alias,
+			WithSQL: fmt.Sprintf("(%s) AS %s", subSQL, alias),
+		}
+	}
+
 	// 创建模板函数映射
 	funcMap := template.FuncMap{
+		// node 函数：返回带别名的子查询 SQL
 		"node": func(nodeID string) (string, error) {
-			subSQL, subArgs, err := g.buildNodeSQL(ctx, nodeID, depth)
-			if err != nil {
-				return "", err
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
 			}
-			allArgs = append(allArgs, subArgs...)
-			return "(" + subSQL + ")", nil
+			return ctx.WithSQL, nil
 		},
+		// nodeSQL 函数：仅返回子查询 SQL（不带别名和括号）
+		"nodeSQL": func(nodeID string) (string, error) {
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
+			}
+			return ctx.SQL, nil
+		},
+		// nodeAlias 函数：返回节点别名
+		"nodeAlias": func(nodeID string) (string, error) {
+			ctx, ok := nodeContexts[nodeID]
+			if !ok {
+				return "", fmt.Errorf("unknown node ID in template: %s", nodeID)
+			}
+			return ctx.Alias, nil
+		},
+	}
+
+	// 准备模板上下文：提供两种引用方式
+	// 1. 直接使用 .node1 会获取带别名的 SQL（向后兼容）
+	// 2. 使用模板函数 node()/nodeSQL()/nodeAlias() 获取不同形式
+	contextMap := make(map[string]string)
+	for inputID, ctx := range nodeContexts {
+		contextMap[inputID] = ctx.WithSQL
 	}
 
 	// 解析模板
@@ -454,23 +504,27 @@ func (g *logicViewSQLGenerator) buildSqlNodeSQL(ctx context.Context, node *inter
 		return "", nil, fmt.Errorf("failed to parse SQL template for node %s: %w", node.ID, err)
 	}
 
-	// 准备上下文
-	contextMap := make(map[string]string)
-	for _, inputID := range node.Inputs {
-		subSQL, subArgs, err := g.buildNodeSQL(ctx, inputID, depth)
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to build sql node input %s: %w", inputID, err)
-		}
-		contextMap[inputID] = "(" + subSQL + ")"
-		allArgs = append(allArgs, subArgs...)
-	}
-
 	var result strings.Builder
 	if err := tmpl.Execute(&result, contextMap); err != nil {
 		return "", nil, fmt.Errorf("failed to execute SQL template for node %s: %w", node.ID, err)
 	}
 
 	return result.String(), allArgs, nil
+}
+
+// sanitizeAlias 清理节点 ID 生成合法的 SQL 别名
+func sanitizeAlias(nodeID string) string {
+	// 替换所有非字母数字字符为下划线
+	alias := regexp.MustCompile(`[^a-zA-Z0-9_]`).ReplaceAllString(nodeID, "_")
+	// 如果以数字开头，添加前缀
+	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
+		alias = "n_" + alias
+	}
+	// 限制长度（MySQL 标识符最大 64 字符）
+	if len(alias) > 60 {
+		alias = alias[:60]
+	}
+	return alias
 }
 
 // GetNodeFieldsMap 获取节点的输出字段map
