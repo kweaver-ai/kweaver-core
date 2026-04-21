@@ -2,42 +2,38 @@ package skill
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/dbaccess"
-	infracommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common/ormhelper"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
 	infraerrors "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/errors"
 	infralock "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/lock"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
+	"github.com/redis/go-redis/v9"
 )
 
 const skillIndexBuildBatchSize = 200
-const skillIndexBuildCreateLockKey = "lock:skill:index:build:create"
-const skillIndexBuildCreateLockExpiry = 15 * time.Second
+const skillIndexBuildAssignLockExpiry = 5 * time.Second
+const skillIndexBuildRunningTimeout = 30 * time.Minute
 
-type skillIndexBuildCreateLocker interface {
+type skillIndexBuildAssignLocker interface {
 	Lock(ctx context.Context) (bool, error)
 	Unlock(ctx context.Context)
 }
 
 type skillIndexBuildService struct {
-	logger       interfaces.Logger
-	taskRepo     model.ISkillIndexBuildTaskDB
-	skillRepo    model.ISkillRepository
-	releaseRepo  model.ISkillReleaseDB
-	indexSync    interfaces.SkillIndexSyncService
-	enqueuer     skillIndexBuildTaskEnqueuer
-	inspector    skillIndexBuildInspector
-	createLocker func() skillIndexBuildCreateLocker
+	logger              interfaces.Logger
+	taskRepo            model.ISkillIndexBuildTaskDB
+	skillRepo           model.ISkillRepository
+	releaseRepo         model.ISkillReleaseDB
+	indexSync           interfaces.SkillIndexSyncService
+	assignLockerFactory func(taskID string) skillIndexBuildAssignLocker
 }
 
 var (
@@ -45,26 +41,17 @@ var (
 	skillIndexBuildInst interfaces.SkillIndexBuildService
 )
 
+// NewSkillIndexBuildService 创建技能索引构建服务
 func NewSkillIndexBuildService() interfaces.SkillIndexBuildService {
 	skillIndexBuildOnce.Do(func() {
 		conf := config.NewConfigLoader()
-		enqueuer, err := newSkillIndexBuildTaskEnqueuer()
-		if err != nil {
-			panic(err)
-		}
-		inspector, err := newSkillIndexBuildInspector()
-		if err != nil {
-			panic(err)
-		}
 		skillIndexBuildInst = &skillIndexBuildService{
-			logger:       conf.GetLogger(),
-			taskRepo:     dbaccess.NewSkillIndexBuildTaskDB(),
-			skillRepo:    dbaccess.NewSkillRepositoryDB(),
-			releaseRepo:  dbaccess.NewSkillReleaseDB(),
-			indexSync:    NewSkillIndexSyncService(),
-			enqueuer:     enqueuer,
-			inspector:    inspector,
-			createLocker: newSkillIndexBuildCreateLockerFactory(),
+			logger:              conf.GetLogger(),
+			taskRepo:            dbaccess.NewSkillIndexBuildTaskDB(),
+			skillRepo:           dbaccess.NewSkillRepositoryDB(),
+			releaseRepo:         dbaccess.NewSkillReleaseDB(),
+			indexSync:           NewSkillIndexSyncService(),
+			assignLockerFactory: newSkillIndexBuildAssignLockerFactory(),
 		}
 	})
 	return skillIndexBuildInst
@@ -83,20 +70,6 @@ func (s *skillIndexBuildService) CreateTask(ctx context.Context, req *interfaces
 }
 
 func (s *skillIndexBuildService) createTask(ctx context.Context, userID string, executeType interfaces.SkillIndexBuildExecuteType) (*interfaces.RetrySkillIndexBuildTaskResp, error) {
-	if s.createLocker != nil {
-		locker := s.createLocker()
-		if locker != nil {
-			ok, err := locker.Lock(ctx)
-			if err != nil {
-				return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-			}
-			if !ok {
-				return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "skill index build task is being created")
-			}
-			defer locker.Unlock(ctx)
-		}
-	}
-
 	runningTask, err := s.taskRepo.SelectRunningTask(ctx, nil)
 	if err != nil {
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
@@ -110,7 +83,7 @@ func (s *skillIndexBuildService) createTask(ctx context.Context, userID string, 
 		Status:      interfaces.SkillIndexBuildStatusPending.String(),
 		ExecuteType: executeType.String(),
 		CreateUser:  userID,
-		MaxRetry:    10,
+		MaxRetry:    3,
 	}
 	if executeType == interfaces.SkillIndexBuildExecuteTypeIncremental {
 		lastTask, lastErr := s.taskRepo.SelectLatestCompletedIncrementalTask(ctx, nil)
@@ -123,14 +96,6 @@ func (s *skillIndexBuildService) createTask(ctx context.Context, userID string, 
 		}
 	}
 	if err = s.taskRepo.Insert(ctx, nil, task); err != nil {
-		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-	}
-
-	if err = s.enqueuer.Enqueue(copyTaskContext(ctx), newSkillIndexBuildTaskPayload(ctx, task.TaskID)); err != nil {
-		task.Status = interfaces.SkillIndexBuildStatusFailed.String()
-		task.ErrorMsg = err.Error()
-		task.LastFinishedTime = time.Now().UnixNano()
-		_ = s.taskRepo.UpdateByTaskID(ctx, nil, task)
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
 	}
 
@@ -150,7 +115,6 @@ func (s *skillIndexBuildService) GetTask(ctx context.Context, req *interfaces.Ge
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusNotFound, "skill index build task not found")
 	}
 	resp := toSkillIndexBuildTaskResp(task)
-	resp.QueueState = s.getQueueState(ctx, task.TaskID)
 	return resp, nil
 }
 
@@ -194,7 +158,6 @@ func (s *skillIndexBuildService) QueryTaskList(ctx context.Context, req *interfa
 	}
 	for _, task := range taskList {
 		item := toSkillIndexBuildTaskResp(task)
-		item.QueueState = s.getQueueState(ctx, task.TaskID)
 		resp.Data = append(resp.Data, item)
 	}
 	return resp, nil
@@ -208,46 +171,24 @@ func (s *skillIndexBuildService) CancelTask(ctx context.Context, req *interfaces
 	if task == nil {
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusNotFound, "skill index build task not found")
 	}
-	if s.inspector == nil {
-		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, "skill index build inspector is not initialized")
-	}
-	info, err := s.inspector.GetTaskInfo(skillIndexBuildQueueName, req.TaskID)
-	if err != nil {
-		if errors.Is(err, asynq.ErrTaskNotFound) || errors.Is(err, asynq.ErrQueueNotFound) {
-			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "skill index build task is not cancellable")
-		}
-		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-	}
-	resp := &interfaces.CancelSkillIndexBuildTaskResp{
-		TaskID:     req.TaskID,
-		QueueState: asynqTaskStateToString(info.State),
-	}
-	switch info.State {
-	case asynq.TaskStateActive:
-		if err = s.inspector.CancelProcessing(req.TaskID); err != nil {
-			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-		}
-		task.ErrorMsg = "cancel requested by user"
-		if updateErr := s.taskRepo.UpdateByTaskID(ctx, nil, task); updateErr != nil {
-			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, updateErr.Error())
-		}
-		resp.Action = "cancel_processing"
-		return resp, nil
-	case asynq.TaskStatePending, asynq.TaskStateScheduled, asynq.TaskStateRetry, asynq.TaskStateArchived:
-		if err = s.inspector.DeleteTask(skillIndexBuildQueueName, req.TaskID); err != nil {
-			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
-		}
-		task.Status = interfaces.SkillIndexBuildStatusFailed.String()
-		task.ErrorMsg = "task canceled by user"
-		task.LastFinishedTime = time.Now().UnixNano()
-		if updateErr := s.taskRepo.UpdateByTaskID(ctx, nil, task); updateErr != nil {
-			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, updateErr.Error())
-		}
-		resp.Action = "delete_queue_task"
-		return resp, nil
+	switch interfaces.SkillIndexBuildStatus(task.Status) {
+	case interfaces.SkillIndexBuildStatusPending, interfaces.SkillIndexBuildStatusRunning:
 	default:
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "skill index build task is not cancellable")
 	}
+
+	task.Status = interfaces.SkillIndexBuildStatusCanceled.String()
+	task.ErrorMsg = "task canceled by user"
+	task.LastFinishedTime = time.Now().UnixNano()
+	if err = s.taskRepo.UpdateByTaskID(ctx, nil, task); err != nil {
+		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
+	}
+
+	resp := &interfaces.CancelSkillIndexBuildTaskResp{
+		TaskID: req.TaskID,
+	}
+	resp.Action = "cancel_task"
+	return resp, nil
 }
 
 func (s *skillIndexBuildService) RetryTask(ctx context.Context, req *interfaces.RetrySkillIndexBuildTaskReq) (*interfaces.RetrySkillIndexBuildTaskResp, error) {
@@ -258,19 +199,48 @@ func (s *skillIndexBuildService) RetryTask(ctx context.Context, req *interfaces.
 	if task == nil {
 		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusNotFound, "skill index build task not found")
 	}
-	if task.Status != interfaces.SkillIndexBuildStatusFailed.String() {
-		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "only failed skill index build task can be retried")
+	switch interfaces.SkillIndexBuildStatus(task.Status) {
+	case interfaces.SkillIndexBuildStatusFailed, interfaces.SkillIndexBuildStatusCanceled, interfaces.SkillIndexBuildStatusCompleted:
+	default:
+		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "only failed or canceled skill index build task can be retried")
 	}
-	resp, err := s.createTask(ctx, req.UserID, interfaces.SkillIndexBuildExecuteType(task.ExecuteType))
+	runningTask, err := s.taskRepo.SelectRunningTask(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
 	}
-	resp.SourceTaskID = req.TaskID
-	return resp, nil
-}
+	if runningTask != nil && runningTask.TaskID != task.TaskID {
+		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusConflict, "skill index build task is already running")
+	}
 
-func (s *skillIndexBuildService) RecoverRunningTasks(ctx context.Context) error {
-	return nil
+	task.Status = interfaces.SkillIndexBuildStatusPending.String()
+	task.TotalCount = 0
+	task.SuccessCount = 0
+	task.DeleteCount = 0
+	task.FailedCount = 0
+	task.RetryCount = 0
+	task.ErrorMsg = ""
+	task.LastFinishedTime = 0
+	task.CursorUpdateTime = 0
+	task.CursorSkillID = ""
+	if interfaces.SkillIndexBuildExecuteType(task.ExecuteType) == interfaces.SkillIndexBuildExecuteTypeIncremental {
+		lastTask, lastErr := s.taskRepo.SelectLatestCompletedIncrementalTask(ctx, nil)
+		if lastErr != nil {
+			return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, lastErr.Error())
+		}
+		if lastTask != nil {
+			task.CursorUpdateTime = lastTask.CursorUpdateTime
+			task.CursorSkillID = lastTask.CursorSkillID
+		}
+	}
+	if err = s.taskRepo.UpdateByTaskID(ctx, nil, task); err != nil {
+		return nil, infraerrors.DefaultHTTPError(ctx, http.StatusInternalServerError, err.Error())
+	}
+	return &interfaces.RetrySkillIndexBuildTaskResp{
+		TaskID:       task.TaskID,
+		SourceTaskID: req.TaskID,
+		Status:       interfaces.SkillIndexBuildStatusPending,
+		ExecuteType:  task.ExecuteType,
+	}, nil
 }
 
 func (s *skillIndexBuildService) runTask(ctx context.Context, taskID string) error {
@@ -282,11 +252,18 @@ func (s *skillIndexBuildService) runTask(ctx context.Context, taskID string) err
 		}
 		return nil
 	}
-	task.Status = interfaces.SkillIndexBuildStatusRunning.String()
-	task.ErrorMsg = ""
-	if err = s.taskRepo.UpdateByTaskID(ctx, nil, task); err != nil {
-		s.logger.WithContext(ctx).Errorf("mark skill index build task running failed, task_id=%s, err=%v", taskID, err)
-		return err
+	if shouldStopTask(task) {
+		return nil
+	}
+	if interfaces.SkillIndexBuildStatus(task.Status) == interfaces.SkillIndexBuildStatusPending {
+		task.Status = interfaces.SkillIndexBuildStatusRunning.String()
+		task.ErrorMsg = ""
+		if err = s.taskRepo.UpdateByTaskID(ctx, nil, task); err != nil {
+			s.logger.WithContext(ctx).Errorf("mark skill index build task running failed, task_id=%s, err=%v", taskID, err)
+			return err
+		}
+	} else if interfaces.SkillIndexBuildStatus(task.Status) != interfaces.SkillIndexBuildStatusRunning {
+		return nil
 	}
 	if err = s.indexSync.EnsureInitialized(ctx); err != nil {
 		return s.failTask(ctx, task, err)
@@ -295,6 +272,14 @@ func (s *skillIndexBuildService) runTask(ctx context.Context, taskID string) err
 	cursorUpdateTime := task.CursorUpdateTime
 	cursorSkillID := task.CursorSkillID
 	for {
+		shouldRun, checkErr := s.shouldContinueTask(ctx, task.TaskID)
+		if checkErr != nil {
+			return checkErr
+		}
+		if !shouldRun {
+			return nil
+		}
+
 		skills, scanErr := s.skillRepo.SelectSkillBuildPage(ctx, nil, cursorUpdateTime, cursorSkillID, skillIndexBuildBatchSize)
 		if scanErr != nil {
 			return s.failTask(ctx, task, scanErr)
@@ -308,8 +293,17 @@ func (s *skillIndexBuildService) runTask(ctx context.Context, taskID string) err
 			}
 			return nil
 		}
-
+		s.logger.WithContext(ctx).Infof("process %d skills", len(skills))
 		for _, skill := range skills {
+			shouldRun, checkErr = s.shouldContinueTask(ctx, task.TaskID)
+			if checkErr != nil {
+				return checkErr
+			}
+			if !shouldRun {
+				s.logger.WithContext(ctx).Debugf("stop skill index build task, task_id=%s", task.TaskID)
+				return nil
+			}
+
 			task.TotalCount++
 			action, actionErr := s.handleSkill(ctx, skill)
 			if actionErr != nil {
@@ -332,6 +326,17 @@ func (s *skillIndexBuildService) runTask(ctx context.Context, taskID string) err
 			return s.failTask(ctx, task, err)
 		}
 	}
+}
+
+func (s *skillIndexBuildService) shouldContinueTask(ctx context.Context, taskID string) (bool, error) {
+	task, err := s.refreshRunningTask(ctx, taskID)
+	if err != nil {
+		return false, err
+	}
+	if shouldStopTask(task) {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (s *skillIndexBuildService) handleSkill(ctx context.Context, skill *model.SkillRepositoryDB) (string, error) {
@@ -385,6 +390,32 @@ func (s *skillIndexBuildService) handleSkill(ctx context.Context, skill *model.S
 }
 
 func (s *skillIndexBuildService) failTask(ctx context.Context, task *model.SkillIndexBuildTaskDB, err error) error {
+	if task != nil && task.MaxRetry > 0 && task.RetryCount < task.MaxRetry {
+		task.Status = interfaces.SkillIndexBuildStatusPending.String()
+		task.TotalCount = 0
+		task.SuccessCount = 0
+		task.DeleteCount = 0
+		task.FailedCount = 0
+		task.RetryCount++
+		task.ErrorMsg = ""
+		task.LastFinishedTime = 0
+		task.CursorUpdateTime = 0
+		task.CursorSkillID = ""
+		if interfaces.SkillIndexBuildExecuteType(task.ExecuteType) == interfaces.SkillIndexBuildExecuteTypeIncremental {
+			lastTask, lastErr := s.taskRepo.SelectLatestCompletedIncrementalTask(ctx, nil)
+			if lastErr != nil {
+				s.logger.WithContext(ctx).Errorf("load latest completed incremental task failed, task_id=%s, err=%v", task.TaskID, lastErr)
+			} else if lastTask != nil {
+				task.CursorUpdateTime = lastTask.CursorUpdateTime
+				task.CursorSkillID = lastTask.CursorSkillID
+			}
+		}
+		if updateErr := s.taskRepo.UpdateByTaskID(ctx, nil, task); updateErr != nil {
+			s.logger.WithContext(ctx).Errorf("reschedule failed skill index build task status failed, task_id=%s, err=%v", task.TaskID, updateErr)
+		}
+		s.logger.WithContext(ctx).Warnf("skill index build task scheduled for retry, task_id=%s, retry_count=%d, err=%v", task.TaskID, task.RetryCount, err)
+		return err
+	}
 	task.Status = interfaces.SkillIndexBuildStatusFailed.String()
 	task.ErrorMsg = err.Error()
 	task.LastFinishedTime = time.Now().UnixNano()
@@ -393,21 +424,6 @@ func (s *skillIndexBuildService) failTask(ctx context.Context, task *model.Skill
 	}
 	s.logger.WithContext(ctx).Errorf("skill index build task failed, task_id=%s, err=%v", task.TaskID, err)
 	return err
-}
-
-func copyTaskContext(ctx context.Context) context.Context {
-	bg := context.Background()
-	if authCtx, ok := infracommon.GetAccountAuthContextFromCtx(ctx); ok {
-		bg = infracommon.SetAccountAuthContextToCtx(bg, authCtx)
-	}
-	if businessDomain, ok := infracommon.GetBusinessDomainFromCtx(ctx); ok {
-		bg = infracommon.SetBusinessDomainToCtx(bg, businessDomain)
-	}
-	bg = infracommon.SetPublicAPIToCtx(bg, infracommon.IsPublicAPIFromCtx(ctx))
-	if language := infracommon.GetLanguageFromCtx(ctx); language != "" {
-		bg = infracommon.SetLanguageToCtx(bg, language)
-	}
-	return bg
 }
 
 func releaseToSkillRepository(release *model.SkillReleaseDB) *model.SkillRepositoryDB {
@@ -455,38 +471,6 @@ func toSkillIndexBuildTaskResp(task *model.SkillIndexBuildTaskDB) *interfaces.Sk
 	}
 }
 
-func (s *skillIndexBuildService) getQueueState(ctx context.Context, taskID string) string {
-	if s.inspector == nil || taskID == "" {
-		return ""
-	}
-	info, err := s.inspector.GetTaskInfo(skillIndexBuildQueueName, taskID)
-	if err != nil || info == nil {
-		return ""
-	}
-	return asynqTaskStateToString(info.State)
-}
-
-func asynqTaskStateToString(state asynq.TaskState) string {
-	switch state {
-	case asynq.TaskStateActive:
-		return "active"
-	case asynq.TaskStatePending:
-		return "pending"
-	case asynq.TaskStateScheduled:
-		return "scheduled"
-	case asynq.TaskStateRetry:
-		return "retry"
-	case asynq.TaskStateArchived:
-		return "archived"
-	case asynq.TaskStateCompleted:
-		return "completed"
-	case asynq.TaskStateAggregating:
-		return "aggregating"
-	default:
-		return ""
-	}
-}
-
 func buildCommonPageResult(page, pageSize int, total int64) interfaces.CommonPageResult {
 	if pageSize <= 0 {
 		pageSize = interfaces.DefaultPageSize
@@ -505,14 +489,92 @@ func buildCommonPageResult(page, pageSize int, total int64) interfaces.CommonPag
 	}
 }
 
-func newSkillIndexBuildCreateLockerFactory() func() skillIndexBuildCreateLocker {
+func (s *skillIndexBuildService) refreshRunningTask(ctx context.Context, taskID string) (*model.SkillIndexBuildTaskDB, error) {
+	task, err := s.taskRepo.SelectByTaskID(ctx, nil, taskID)
+	if err != nil {
+		s.logger.WithContext(ctx).Errorf("refresh skill index build task failed, task_id=%s, err=%v", taskID, err)
+		return nil, err
+	}
+	return task, nil
+}
+
+func shouldStopTask(task *model.SkillIndexBuildTaskDB) bool {
+	if task == nil {
+		return true
+	}
+	status := interfaces.SkillIndexBuildStatus(task.Status)
+	return status == interfaces.SkillIndexBuildStatusCanceled || status == interfaces.SkillIndexBuildStatusCompleted || status == interfaces.SkillIndexBuildStatusFailed
+}
+
+func (s *skillIndexBuildService) tryStartPendingTask(ctx context.Context, taskID string) (bool, error) {
+	if taskID == "" {
+		return false, nil
+	}
+	locker := s.newAssignLocker(taskID)
+	if locker == nil {
+		return false, nil
+	}
+	ok, err := locker.Lock(ctx)
+	if err != nil || !ok {
+		return false, err
+	}
+	defer locker.Unlock(ctx)
+
+	task, err := s.taskRepo.SelectByTaskID(ctx, nil, taskID)
+	if err != nil {
+		return false, err
+	}
+	if task == nil || interfaces.SkillIndexBuildStatus(task.Status) != interfaces.SkillIndexBuildStatusPending {
+		return false, nil
+	}
+	task.Status = interfaces.SkillIndexBuildStatusRunning.String()
+	task.ErrorMsg = ""
+	if err = s.taskRepo.UpdateByTaskID(ctx, nil, task); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *skillIndexBuildService) recoverStaleRunningTask(ctx context.Context) error {
+	task, err := s.taskRepo.SelectRunningTask(ctx, nil)
+	if err != nil || task == nil {
+		return err
+	}
+	if interfaces.SkillIndexBuildStatus(task.Status) != interfaces.SkillIndexBuildStatusRunning {
+		return nil
+	}
+	if time.Since(time.Unix(0, task.UpdateTime)) <= skillIndexBuildRunningTimeout {
+		return nil
+	}
+	task.Status = interfaces.SkillIndexBuildStatusFailed.String()
+	task.ErrorMsg = "stale running task recovered as failed"
+	task.LastFinishedTime = time.Now().UnixNano()
+	return s.taskRepo.UpdateByTaskID(ctx, nil, task)
+}
+
+func (s *skillIndexBuildService) newAssignLocker(taskID string) skillIndexBuildAssignLocker {
+	if s.assignLockerFactory == nil {
+		return nil
+	}
+	return s.assignLockerFactory(taskID)
+}
+
+func newSkillIndexBuildAssignLockerFactory() func(taskID string) skillIndexBuildAssignLocker {
 	conf := config.NewConfigLoader()
 	redisCli, _, err := conf.RedisConfig.GetClient()
 	if err != nil || redisCli == nil {
+		return func(taskID string) skillIndexBuildAssignLocker { return nil }
+	}
+	instanceID := conf.Project.GetMachineID()
+	return func(taskID string) skillIndexBuildAssignLocker {
+		return newSkillIndexBuildAssignLocker(redisCli, taskID, instanceID)
+	}
+}
+
+func newSkillIndexBuildAssignLocker(redisCli *redis.Client, taskID, instanceID string) skillIndexBuildAssignLocker {
+	if redisCli == nil || taskID == "" {
 		return nil
 	}
-	lockValue := conf.Project.GetMachineID()
-	return func() skillIndexBuildCreateLocker {
-		return infralock.NewRedisLocker(redisCli, skillIndexBuildCreateLockKey, lockValue, skillIndexBuildCreateLockExpiry)
-	}
+	lockKey := "lock:skill:index:build:assign:" + taskID
+	return infralock.NewRedisLocker(redisCli, lockKey, instanceID, skillIndexBuildAssignLockExpiry)
 }

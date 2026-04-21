@@ -2,21 +2,17 @@ package skill
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
-	"github.com/hibiken/asynq"
-	infracommon "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/common"
-	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 )
 
 type skillIndexBuildWorker struct {
-	server  *asynq.Server
-	mux     *asynq.ServeMux
-	logger  interfaces.Logger
 	service *skillIndexBuildService
+	stopCh  chan struct{}
+	doneCh  chan struct{}
+	once    sync.Once
 }
 
 var (
@@ -26,71 +22,66 @@ var (
 
 func NewSkillIndexBuildWorker() *skillIndexBuildWorker {
 	skillIndexBuildWorkerOnce.Do(func() {
-		conf := config.NewConfigLoader()
-		redisOpt, err := buildSkillIndexBuildRedisConnOpt()
-		if err != nil {
-			panic(err)
-		}
 		svc, _ := NewSkillIndexBuildService().(*skillIndexBuildService)
-		mux := asynq.NewServeMux()
-		worker := &skillIndexBuildWorker{
-			server: asynq.NewServer(redisOpt, asynq.Config{
-				Concurrency:     1,
-				Queues:          map[string]int{skillIndexBuildQueueName: 1},
-				BaseContext:     func() context.Context { return context.Background() },
-				ShutdownTimeout: 30 * time.Second,
-			}),
-			mux:     mux,
-			logger:  conf.GetLogger(),
+		skillIndexBuildWorkerInst = &skillIndexBuildWorker{
 			service: svc,
+			stopCh:  make(chan struct{}),
+			doneCh:  make(chan struct{}),
 		}
-		mux.HandleFunc(skillIndexBuildTaskType, worker.processTask)
-		skillIndexBuildWorkerInst = worker
 	})
 	return skillIndexBuildWorkerInst
 }
 
 func (w *skillIndexBuildWorker) Start() error {
-	return w.server.Start(w.mux)
+	w.once.Do(func() {
+		go w.loop()
+	})
+	return nil
 }
 
 func (w *skillIndexBuildWorker) Stop(ctx context.Context) {
-	_ = ctx
-	w.server.Shutdown()
+	select {
+	case <-w.stopCh:
+	default:
+		close(w.stopCh)
+	}
+	select {
+	case <-w.doneCh:
+	case <-ctx.Done():
+	}
 }
 
-func (w *skillIndexBuildWorker) processTask(ctx context.Context, task *asynq.Task) error {
-	payload := &skillIndexBuildTaskPayload{}
-	if err := json.Unmarshal(task.Payload(), payload); err != nil {
-		return err
-	}
-	ctx = decorateSkillIndexBuildTaskContext(ctx, payload)
-	if w.service != nil && payload.TaskID != "" {
-		if taskDB, err := w.service.taskRepo.SelectByTaskID(ctx, nil, payload.TaskID); err == nil && taskDB != nil {
-			if retried, ok := asynq.GetRetryCount(ctx); ok {
-				taskDB.RetryCount = int64(retried)
-			}
-			if maxRetry, ok := asynq.GetMaxRetry(ctx); ok {
-				taskDB.MaxRetry = int64(maxRetry)
-			}
-			_ = w.service.taskRepo.UpdateByTaskID(ctx, nil, taskDB)
+func (w *skillIndexBuildWorker) loop() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	defer close(w.doneCh)
+
+	_ = w.service.recoverStaleRunningTask(context.Background())
+	for {
+		select {
+		case <-w.stopCh:
+			return
+		case <-ticker.C:
+			_ = w.service.recoverStaleRunningTask(context.Background())
+			w.processPendingTask(context.Background())
 		}
 	}
-	return w.service.runTask(ctx, payload.TaskID)
 }
 
-func decorateSkillIndexBuildTaskContext(ctx context.Context, payload *skillIndexBuildTaskPayload) context.Context {
-	if payload == nil {
-		return ctx
+func (w *skillIndexBuildWorker) processPendingTask(ctx context.Context) {
+	if w.service == nil {
+		return
 	}
-	if payload.BusinessDomainID != "" {
-		ctx = infracommon.SetBusinessDomainToCtx(ctx, payload.BusinessDomainID)
+	task, err := w.service.taskRepo.SelectRunningTask(ctx, nil)
+	if err != nil || task == nil {
+		return
 	}
-	if payload.AccountID != "" {
-		ctx = infracommon.SetAccountAuthContextToCtx(ctx, &interfaces.AccountAuthContext{
-			AccountID:   payload.AccountID,
-			AccountType: payload.AccountType,
-		})
+	if interfaces.SkillIndexBuildStatus(task.Status) != interfaces.SkillIndexBuildStatusPending {
+		return
 	}
-	return ctx
+	ok, err := w.service.tryStartPendingTask(ctx, task.TaskID)
+	if err != nil || !ok {
+		return
+	}
+	_ = w.service.runTask(ctx, task.TaskID)
 }

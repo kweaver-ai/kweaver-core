@@ -413,20 +413,6 @@ func (mr *MockSkillIndexBuildServiceMockRecorder) QueryTaskList(ctx, req any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryTaskList", reflect.TypeOf((*MockSkillIndexBuildService)(nil).QueryTaskList), ctx, req)
 }
 
-// RecoverRunningTasks mocks base method.
-func (m *MockSkillIndexBuildService) RecoverRunningTasks(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RecoverRunningTasks", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RecoverRunningTasks indicates an expected call of RecoverRunningTasks.
-func (mr *MockSkillIndexBuildServiceMockRecorder) RecoverRunningTasks(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecoverRunningTasks", reflect.TypeOf((*MockSkillIndexBuildService)(nil).RecoverRunningTasks), ctx)
-}
-
 // RetryTask mocks base method.
 func (m *MockSkillIndexBuildService) RetryTask(ctx context.Context, req *interfaces.RetrySkillIndexBuildTaskReq) (*interfaces.RetrySkillIndexBuildTaskResp, error) {
 	m.ctrl.T.Helper()

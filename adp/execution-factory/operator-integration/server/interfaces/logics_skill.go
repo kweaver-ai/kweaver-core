@@ -324,6 +324,7 @@ const (
 	SkillIndexBuildStatusRunning   SkillIndexBuildStatus = "running"
 	SkillIndexBuildStatusCompleted SkillIndexBuildStatus = "completed"
 	SkillIndexBuildStatusFailed    SkillIndexBuildStatus = "failed"
+	SkillIndexBuildStatusCanceled  SkillIndexBuildStatus = "canceled"
 )
 
 type CreateSkillIndexBuildTaskReq struct {
@@ -433,12 +434,16 @@ type SkillReader interface {
 }
 
 type SkillIndexBuildService interface {
+	// CreateTask 创建任务
 	CreateTask(ctx context.Context, req *CreateSkillIndexBuildTaskReq) (*CreateSkillIndexBuildTaskResp, error)
+	// GetTask 获取任务
 	GetTask(ctx context.Context, req *GetSkillIndexBuildTaskReq) (*SkillIndexBuildTaskResp, error)
+	// QueryTaskList 查询任务列表
 	QueryTaskList(ctx context.Context, req *QuerySkillIndexBuildTaskListReq) (*QuerySkillIndexBuildTaskListResp, error)
+	// CancelTask 取消任务
 	CancelTask(ctx context.Context, req *CancelSkillIndexBuildTaskReq) (*CancelSkillIndexBuildTaskResp, error)
+	// RetryTask 重试任务
 	RetryTask(ctx context.Context, req *RetrySkillIndexBuildTaskReq) (*RetrySkillIndexBuildTaskResp, error)
-	RecoverRunningTasks(ctx context.Context) error
 }
 
 type SkillIndexSyncService interface {
