@@ -2335,38 +2335,6 @@ paths:
       tags:
       - 对话session管理
   /v3/agent:
-    get:
-      consumes:
-      - application/json
-      description: '- Agent列表（供模型工厂做 Agent 的 Benchmarch 使用） - 只提供`内部接口`'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            type: object
-        "400":
-          description: 失败
-          schema:
-            type: object
-        "401":
-          description: 失败
-          schema:
-            type: object
-        "403":
-          description: 失败
-          schema:
-            type: object
-        "500":
-          description: 失败
-          schema:
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Agent列表（benchmarch）
-      tags:
-      - agent-ignore
     post:
       consumes:
       - application/json

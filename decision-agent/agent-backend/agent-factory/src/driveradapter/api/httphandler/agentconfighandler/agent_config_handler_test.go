@@ -407,57 +407,6 @@ func TestDAConfHTTPHandler_GetBuiltInAvatar_NonNumeric(t *testing.T) {
 	assert.NotEqual(t, http.StatusOK, recorder.Code)
 }
 
-// --- AgentListListForBenchmark handler tests ---
-
-func TestDAConfHTTPHandler_AgentListListForBenchmark_BindError(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSvc := v3portdrivermock.NewMockIDataAgentConfigSvc(ctrl)
-	h := &daConfHTTPHandler{daConfSvc: mockSvc, logger: acTestLogger{}}
-
-	// size 值非法
-	c, _ := newACTestCtx(http.MethodGet, "/v3/agent?size=abc", "")
-	h.AgentListListForBenchmark(c)
-	assert.NotEmpty(t, c.Errors)
-}
-
-func TestDAConfHTTPHandler_AgentListListForBenchmark_SvcError(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSvc := v3portdrivermock.NewMockIDataAgentConfigSvc(ctrl)
-	mockSvc.EXPECT().ListForBenchmark(gomock.Any(), gomock.Any()).
-		Return(nil, errors.New("svc error"))
-
-	h := &daConfHTTPHandler{daConfSvc: mockSvc, logger: acTestLogger{}}
-
-	c, _ := newACTestCtx(http.MethodGet, "/v3/agent", "")
-	h.AgentListListForBenchmark(c)
-	assert.NotEmpty(t, c.Errors)
-}
-
-func TestDAConfHTTPHandler_AgentListListForBenchmark_Happy(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockSvc := v3portdrivermock.NewMockIDataAgentConfigSvc(ctrl)
-	mockSvc.EXPECT().ListForBenchmark(gomock.Any(), gomock.Any()).
-		Return(&agentconfigresp.ListForBenchmarkResp{}, nil)
-
-	h := &daConfHTTPHandler{daConfSvc: mockSvc, logger: acTestLogger{}}
-
-	c, recorder := newACTestCtx(http.MethodGet, "/v3/agent", "")
-	h.AgentListListForBenchmark(c)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-}
-
 // --- Update handler tests ---
 
 func TestDAConfHTTPHandler_Update_EmptyID(t *testing.T) {

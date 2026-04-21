@@ -15,7 +15,6 @@ import (
 	reflect "reflect"
 
 	cdaenum "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/enum/cdaenum"
-	agentconfigreq "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
 	dapo "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/persistence/dapo"
 	sqlx "github.com/kweaver-ai/proton-rds-sdk-go/sqlx"
 	gomock "go.uber.org/mock/gomock"
@@ -279,22 +278,6 @@ func (m *MockIDataAgentConfigRepo) GetMapByIDs(ctx context.Context, ids []string
 func (mr *MockIDataAgentConfigRepoMockRecorder) GetMapByIDs(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMapByIDs", reflect.TypeOf((*MockIDataAgentConfigRepo)(nil).GetMapByIDs), ctx, ids)
-}
-
-// ListForBenchmark mocks base method.
-func (m *MockIDataAgentConfigRepo) ListForBenchmark(ctx context.Context, req *agentconfigreq.ListForBenchmarkReq) ([]*dapo.ListForBenchmarkPo, int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListForBenchmark", ctx, req)
-	ret0, _ := ret[0].([]*dapo.ListForBenchmarkPo)
-	ret1, _ := ret[1].(int64)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ListForBenchmark indicates an expected call of ListForBenchmark.
-func (mr *MockIDataAgentConfigRepoMockRecorder) ListForBenchmark(ctx, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForBenchmark", reflect.TypeOf((*MockIDataAgentConfigRepo)(nil).ListForBenchmark), ctx, req)
 }
 
 // Update mocks base method.
