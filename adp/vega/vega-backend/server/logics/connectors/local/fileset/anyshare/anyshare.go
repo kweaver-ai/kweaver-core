@@ -27,13 +27,15 @@ const (
 	authTypeToken       = 1
 	authTypeAppSecret   = 2
 	docLibTypeKnowledge = 1
-	// docLibTypeDocument = 2 — list all entry doc libs when not filtering by knowledge type
+	docLibTypeDocument  = 2
 
 	httpTimeout = 60 * time.Second
 
 	PORT_MIN = 1
 	// PORT_MAX 有效端口最大值
 	PORT_MAX = 65535
+
+	customDocLibSubTypeDocumentId = "54425A761CC54DC6A990DA3C9EFB328D" // 自定义文档库子类[文档库]id
 )
 
 type anyshareConfig struct {
@@ -63,6 +65,19 @@ type userInfoDTO struct {
 }
 
 type docLibDTO struct {
+	ID      string         `json:"id"`
+	Name    string         `json:"name"`
+	Type    string         `json:"type"`
+	SubType *docLibSubType `json:"subtype"`
+}
+
+type docLibSubType struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// entryDocLibDTO 用于表示getEntryDocLib接口返回的文档库信息
+type entryDocLibDTO struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
 	Type       string      `json:"type"`
@@ -161,7 +176,7 @@ func (c *AnyShareConnector) GetFieldConfig() map[string]interfaces.ConnectorFiel
 		"token":        {Name: "访问令牌", Type: "string", Description: "auth_type=1 时必填", Required: false, Encrypted: true},
 		"app_id":       {Name: "应用账户 ID", Type: "string", Description: "auth_type=2 时必填", Required: false, Encrypted: false},
 		"app_secret":   {Name: "应用密钥", Type: "string", Description: "auth_type=2 时必填", Required: false, Encrypted: true},
-		"doc_lib_type": {Name: "文档库类型", Type: "integer", Description: "1=知识库", Required: true, Encrypted: false},
+		"doc_lib_type": {Name: "文档库类型", Type: "integer", Description: "1=知识库，2=文档库", Required: true, Encrypted: false},
 		"paths":        {Name: "路径列表", Type: "array", Description: "可选；按文档库名称路径解析起点，空则按文档库类型枚举", Required: false, Encrypted: false},
 	}
 }
@@ -203,8 +218,8 @@ func (c *AnyShareConnector) New(cfg interfaces.ConnectorConfig) (connectors.Conn
 			return nil, fmt.Errorf("anyshare app_id and app_secret are required when auth_type=2")
 		}
 	}
-	if ac.DocLibType != docLibTypeKnowledge {
-		return nil, fmt.Errorf("anyshare doc_lib_type must be 1 (knowledge)")
+	if ac.DocLibType != docLibTypeKnowledge && ac.DocLibType != docLibTypeDocument {
+		return nil, fmt.Errorf("anyshare doc_lib_type must be 1 (knowledge) or 2 (document)")
 	}
 
 	// 检查数组中是否存在重复元素
@@ -337,12 +352,51 @@ func (c *AnyShareConnector) TestConnection(ctx context.Context) error {
 			if docInfo.Size != -1 {
 				return fmt.Errorf("path %q must be a directory, not a file", p)
 			}
+
+			// 获取文档详细信息，判断路径类型
+			detail, err := c.getDocItemDetail(ctx, docInfo.DocID, "doc_lib")
+			if err != nil {
+				return fmt.Errorf("failed to get doc item detail for path %q: %w", p, err)
+			}
+
+			// 判断路径类型是否与配置一致
+			if err := c.validateDocLibType(detail.DocLib); err != nil {
+				return fmt.Errorf("path %q validation failed: %w", p, err)
+			}
 		}
 		return nil
 	}
 	// 没有配置 paths 时，通过 getEntryDocLib 判断
 	_, err := c.getEntryDocLib(ctx)
 	return err
+}
+
+// validateDocLibType 验证文档库类型是否与配置一致
+func (c *AnyShareConnector) validateDocLibType(docLib docLibDTO) error {
+	// 先判断type
+	if docLib.Type == "knowledge_doc_lib" {
+		if c.config.DocLibType != docLibTypeKnowledge {
+			return fmt.Errorf("path belongs to knowledge doc lib, but config expects document lib")
+		}
+		return nil
+	}
+
+	// 再判断subtype
+	if docLib.Type == "custom_doc_lib" {
+		if c.config.DocLibType != docLibTypeDocument {
+			return fmt.Errorf("path belongs to document lib, but config expects knowledge lib")
+		}
+		// 检查subtype是否为文档库
+		if docLib.SubType == nil {
+			return fmt.Errorf("custom doc lib missing subtype information")
+		}
+		if docLib.SubType.ID != customDocLibSubTypeDocumentId {
+			return fmt.Errorf("custom doc lib subtype is not document lib")
+		}
+		return nil
+	}
+
+	return fmt.Errorf("unknown doc lib type: %s", docLib.Type)
 }
 
 // GetMetadata returns basic catalog metadata.

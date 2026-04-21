@@ -26,7 +26,7 @@ func (c *AnyShareConnector) ListFilesets(ctx context.Context) ([]*interfaces.Fil
 	var out []*interfaces.FilesetMeta
 
 	if len(c.config.Paths) == 0 {
-		// 获取知识库列表（仅第一层）
+		// 获取文档库列表（仅第一层）
 		libs, err := c.getEntryDocLib(ctx)
 		if err != nil {
 			return nil, err
@@ -56,7 +56,7 @@ func (c *AnyShareConnector) ListFilesets(ctx context.Context) ([]*interfaces.Fil
 		}
 
 		// 获取文件夹详细信息
-		detail, err := c.getDocItemDetail(ctx, docInfo.DocID)
+		detail, err := c.getDocItemDetail(ctx, docInfo.DocID, "all")
 		if err != nil {
 			return nil, err
 		}
@@ -112,15 +112,18 @@ func buildFilesetMeta(id, name, displayPath, itemType, createdAt, modifiedAt str
 	}
 }
 
-func (c *AnyShareConnector) getEntryDocLib(ctx context.Context) ([]docLibDTO, error) {
+func (c *AnyShareConnector) getEntryDocLib(ctx context.Context) ([]entryDocLibDTO, error) {
 	q := url.Values{}
 	q.Set("sort", "doc_lib_name")
 	q.Set("direction", "asc")
 	if c.config.DocLibType == docLibTypeKnowledge {
 		q.Set("type", "knowledge_doc_lib")
+	} else if c.config.DocLibType == docLibTypeDocument {
+		q.Set("type", "custom_doc_lib")
+		q.Set("subtype_id", customDocLibSubTypeDocumentId)
 	}
 	u := fmt.Sprintf("%s/api/document/v1/entry-doc-lib?%s", c.baseURL, q.Encode())
-	var libs []docLibDTO
+	var libs []entryDocLibDTO
 	if err := c.getJSON(ctx, u, &libs); err != nil {
 		return nil, err
 	}
@@ -162,7 +165,7 @@ func (c *AnyShareConnector) getDocIDByPath(ctx context.Context, namepath string)
 	return info, nil
 }
 
-func (c *AnyShareConnector) getDocItemDetail(ctx context.Context, docID string) (*docItemDetailDTO, error) {
+func (c *AnyShareConnector) getDocItemDetail(ctx context.Context, docID string, field string) (*docItemDetailDTO, error) {
 	// docID格式为 gns://.../.../object_id，需要提取object_id
 	parts := strings.Split(docID, "/")
 	if len(parts) == 0 {
@@ -170,7 +173,7 @@ func (c *AnyShareConnector) getDocItemDetail(ctx context.Context, docID string) 
 	}
 	objectID := parts[len(parts)-1]
 
-	u := fmt.Sprintf("%s/api/efast/v2/items/%s/all", c.baseURL, objectID)
+	u := fmt.Sprintf("%s/api/efast/v2/items/%s/%s", c.baseURL, objectID, field)
 
 	var detail docItemDetailDTO
 	if err := c.getJSON(ctx, u, &detail); err != nil {

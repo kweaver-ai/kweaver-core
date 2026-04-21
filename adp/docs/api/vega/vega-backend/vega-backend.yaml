@@ -146,7 +146,7 @@ definitions:
       - token (string, optional): 访问令牌，auth_type=1时必填，加密存储
       - app_id (string, optional): 应用账户ID，auth_type=2时必填
       - app_secret (string, optional): 应用密钥，auth_type=2时必填，加密存储
-      - doc_lib_type (integer, required): 文档库类型，1=知识库
+      - doc_lib_type (integer, required): 文档库类型，1=知识库，2=文档库
       - paths (array, optional): 路径列表，按文档库名称路径解析起点，空则按文档库类型枚举
   interfaces.DiscoverResult:
     properties:
@@ -218,14 +218,150 @@ definitions:
     type: object
   interfaces.ResourceDataQueryParams:
     properties:
-      filter_condition: {}
+      filter_condition:
+        description: |
+          过滤条件，支持复杂的嵌套条件表达式。每个条件对象包含以下字段:
+          - field: 字段名（部分操作符不需要）
+              * 需要字段名的操作符: 所有比较操作符、字符串操作符、范围操作符、存在性操作符(exist, not_exist, null, not_null, empty, not_empty)、布尔操作符、时间操作符、向量操作符
+              * 不需要字段名的操作符: 逻辑操作符(and, or)、文本搜索操作符(match, match_phrase, multi_match)
+          - fields: 字段数组（仅文本搜索操作符 match, match_phrase, multi_match 需要或可选）
+              * 注意: field 和 fields 二选一，不能同时使用
+          - operation: 操作符（所有操作符都需要）
+          - value: 比较值（部分操作符不需要）
+              * 需要值的操作符: 比较操作符、字符串操作符、范围操作符、文本搜索操作符、向量操作符
+              * 不需要值的操作符: 逻辑操作符、存在性操作符(exist, not_exist, null, not_null, empty, not_empty)、布尔操作符、时间操作符(current)
+          - sub_conditions: 子条件数组（仅逻辑操作符 and, or, knn_vector 需要）
+          - value_from: 值来源类型，可选值: const(常量，默认值), field(字段)
+          - match_type: 匹配类型（仅 multi_match 操作符可选）
+          - k: 返回的最近邻数量（仅 knn_vector 操作符需要）
+          
+          不同连接器支持的操作符:
+          - index 类型:
+            * OpenSearch: 支持所有操作符
+          - table 类型:
+            * MariaDB/PostgreSQL: 支持除 match, match_phrase, multi_match, knn_vector 之外的所有操作符
+          - fileset 类型:
+            * AnyShare: 仅支持部分操作符，有以下限制:
+              - 逻辑操作符: and, or
+              - 比较操作符:
+                * ==: 支持 created_at, modified_at, tags, extension, created_by, modified_by 字段
+                * ">", ">=", "<", "<=": 仅支持 created_at, modified_at 字段
+                * in: 支持 created_at, modified_at, tags, extension, created_by, modified_by 字段
+                * not_in: 仅支持 created_at, modified_at, tags 字段
+              - 范围操作符: range, between (仅支持 created_at, modified_at 字段)
+              - 文本搜索操作符: match, match_phrase (仅支持 basename, content, summary 字段)
+              - 限制:
+                * 同一字段在条件中只能出现一次
+                * 所有操作符只支持 value_from: const
+                * match 和 match_phrase 不能同时出现在同一个条件树中，且各自在整个条件树中只能出现一次
+                * or 条件中的子条件只能使用 created_at, modified_at, tags 字段
+
+          
+          逻辑操作符:
+          - and: 逻辑与，所有子条件都必须满足
+            示例: {"operation": "and", "sub_conditions": [{...}, {...}]}
+          - or: 逻辑或，任一子条件满足即可
+            示例: {"operation": "or", "sub_conditions": [{...}, {...}]}
+          
+          比较操作符:
+          - "==" 或 eq: 等于
+            符号形式: {"field": "age", "operation": "==", "value": 18}
+            文本形式: {"field": "age", "operation": "eq", "value": 18}
+          - "!=" 或 not_eq: 不等于
+            符号形式: {"field": "status", "operation": "!=", "value": "deleted"}
+            文本形式: {"field": "status", "operation": "not_eq", "value": "deleted"}
+          - ">" 或 gt: 大于
+            符号形式: {"field": "price", "operation": ">", "value": 100}
+            文本形式: {"field": "price", "operation": "gt", "value": 100}
+          - ">=" 或 gte: 大于等于
+            符号形式: {"field": "score", "operation": ">=", "value": 60}
+            文本形式: {"field": "score", "operation": "gte", "value": 60}
+          - "<" 或 lt: 小于
+            符号形式: {"field": "quantity", "operation": "<", "value": 10}
+            文本形式: {"field": "quantity", "operation": "lt", "value": 10}
+          - "<=" 或 lte: 小于等于
+            符号形式: {"field": "age", "operation": "<=", "value": 30}
+            文本形式: {"field": "age", "operation": "lte", "value": 30}
+          - in: 在列表中
+            示例: {"field": "category", "operation": "in", "value": ["book", "electronics"]}
+          - not_in: 不在列表中
+            示例: {"field": "status", "operation": "not_in", "value": ["deleted", "disabled"]}
+          
+          字符串操作符:
+          - like: 模糊匹配
+            示例: {"field": "name", "operation": "like", "value": "%john%"}
+          - not_like: 模糊不匹配
+            示例: {"field": "title", "operation": "not_like", "value": "%test%"}
+          - contain: 包含
+            示例: {"field": "description", "operation": "contain", "value": "keyword"}
+          - not_contain: 不包含
+            示例: {"field": "content", "operation": "not_contain", "value": "spam"}
+          - prefix: 前缀匹配
+            示例: {"field": "code", "operation": "prefix", "value": "A-"}
+          - not_prefix: 前缀不匹配
+            示例: {"field": "id", "operation": "not_prefix", "value": "temp-"}
+          - regex: 正则表达式匹配
+            示例: {"field": "email", "operation": "regex", "value": "^[a-z0-9]+@[a-z0-9]+\\.[a-z]+$"}
+          
+          范围操作符:
+          - range: 在范围内
+            示例: {"field": "price", "operation": "range", "value": [100, 500]}
+          - out_range: 不在范围内
+            示例: {"field": "age", "operation": "out_range", "value": [18, 60]}
+          - between: 在两个值之间（包含边界）
+            示例: {"field": "date", "operation": "between", "value": ["2023-01-01", "2023-12-31"]}
+          
+          存在性操作符:
+          - exist: 字段存在
+            示例: {"field": "email", "operation": "exist"}
+          - not_exist: 字段不存在
+            示例: {"field": "deleted_at", "operation": "not_exist"}
+          - null: 字段为空
+            示例: {"field": "phone", "operation": "null"}
+          - not_null: 字段不为空
+            示例: {"field": "name", "operation": "not_null"}
+          - empty: 字段为空字符串或空数组
+            示例: {"field": "tags", "operation": "empty"}
+          - not_empty: 字段不为空字符串且不为空数组
+            示例: {"field": "description", "operation": "not_empty"}
+          
+          布尔操作符:
+          - true: 字段值为true
+            示例: {"field": "is_active", "operation": "true"}
+          - false: 字段值为false
+            示例: {"field": "is_deleted", "operation": "false"}
+          
+          文本搜索操作符:
+          - match: 全文匹配
+            新写法（推荐）: {"operation": "match", "value": "search term", "fields": ["title", "description"]}
+            兼容旧写法: {"field": "title", "operation": "match", "value": "search term"}
+            支持全部字段: {"operation": "match", "value": "search term", "fields": ["*"]}
+          - match_phrase: 短语匹配
+            新写法（推荐）: {"operation": "match_phrase", "value": "exact phrase", "fields": ["content"]}
+            兼容旧写法: {"field": "content", "operation": "match_phrase", "value": "exact phrase"}
+            支持全部字段: {"operation": "match_phrase", "value": "exact phrase", "fields": ["*"]}
+          - multi_match: 多字段全文匹配
+            示例: {"operation": "multi_match", "value": "search term", "fields": ["title", "content"], "match_type": "best_fields"}
+            match_type可选值: best_fields, most_fields, cross_fields, phrase, phrase_prefix, bool_prefix
+          
+          时间操作符:
+          - before: 在指定时间之前
+            示例: {"field": "created_at", "operation": "before", "value": "2023-01-01T00:00:00Z"}
+          - current: 当前时间
+            示例: {"field": "updated_at", "operation": "current"}
+          
+          向量操作符:
+          - knn_vector: K近邻向量搜索
+            示例: {"field": "embedding", "operation": "knn_vector", "value": [0.1, 0.2, 0.3], "k": 10}
+        type: object
       limit:
-        description: 返回结果的最大数量。对于AnyShare知识库类资源，limit不能大于100
+        description: 返回结果的最大数量。对于AnyShare数据源的资源，limit不能大于100
         type: integer
       need_total:
-        description: 是否返回总数。对于AnyShare知识库类资源，只有第一页(offset=0)会返回
+        description: 是否返回总数。对于AnyShare数据源的资源，无法获取总数
         type: boolean
       offset:
+        description: 分页偏移量，从0开始
         type: integer
       output_fields:
         description: 指定输出的字段列表
@@ -233,6 +369,7 @@ definitions:
           type: string
         type: array
       sort:
+        description: 排序字段列表，支持多字段排序
         items:
           $ref: '#/definitions/interfaces.SortField'
         type: array
@@ -556,8 +693,10 @@ definitions:
   interfaces.SortField:
     properties:
       direction:
+        description: 排序方向，asc表示升序，desc表示降序
         type: string
       field:
+        description: 排序字段名
         type: string
     type: object
   interfaces.LogicDefinitionNode:
@@ -1802,7 +1941,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            properties:
+              entries:
+                description: 数据条目列表
+                type: array
+                items:
+                  type: object
+              total_count:
+                description: 总记录数，仅当 need_total 为 true 时返回
+                type: integer
             type: object
         "400":
           description: Bad Request

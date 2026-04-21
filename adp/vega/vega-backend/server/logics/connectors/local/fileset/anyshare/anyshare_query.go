@@ -14,6 +14,8 @@ import (
 	"io"
 	"net/http"
 	"vega-backend/interfaces"
+
+	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
 
 // ExecuteQuery executes a query on the fileset.
@@ -66,25 +68,24 @@ func (c *AnyShareConnector) ExecuteQuery(ctx context.Context, resource *interfac
 	}
 
 	// Call SearchFiles to get results
-	files, total, err := c.SearchFiles(ctx, docID, keyword, dimension, model, custom, condition, params.Limit, params.Offset, sortParams, params.OutputFields)
+	files, err := c.SearchFiles(ctx, docID, keyword, dimension, model, custom, condition, params.Limit, params.Offset, sortParams, params.OutputFields)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 
 	}
 
 	return &interfaces.QueryResult{
-		Rows:  files,
-		Total: total,
+		Rows: files,
 	}, nil
 }
 
 // SearchFiles searches files based on query parameters.
-func (c *AnyShareConnector) SearchFiles(ctx context.Context, docID, keyword string, dimension []string, model string, custom []map[string]interface{}, condition map[string]interface{}, rows, start int, sort map[string]interface{}, outputFields []string) ([]map[string]any, int64, error) {
+func (c *AnyShareConnector) SearchFiles(ctx context.Context, docID, keyword string, dimension []string, model string, custom []map[string]interface{}, condition map[string]interface{}, rows, start int, sort map[string]interface{}, outputFields []string) ([]map[string]any, error) {
 	if err := c.Connect(ctx); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if docID == "" {
-		return nil, 0, fmt.Errorf("empty doc id")
+		return nil, fmt.Errorf("empty doc id")
 	}
 	u := fmt.Sprintf("%s/api/ecosearch/v1/file-search", c.baseURL)
 	payload := map[string]interface{}{
@@ -117,46 +118,46 @@ func (c *AnyShareConnector) SearchFiles(ctx context.Context, docID, keyword stri
 	if len(sort) > 0 {
 		payload["sort"] = sort
 	}
-	fmt.Printf("-------payload: %v\n", payload)
+
+	logger.Debugf("AnyShare file search params: %v", payload)
+
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", c.authHeader)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, 0, fmt.Errorf("file-search http %d: %s", resp.StatusCode, truncateForLog(raw))
+		return nil, fmt.Errorf("file-search http %d: %s", resp.StatusCode, truncateForLog(raw))
 	}
 
 	var result struct {
 		Files []map[string]any `json:"files"`
-		Hits  int64            `json:"hits"`
 	}
 	if err := json.Unmarshal(raw, &result); err != nil {
-		return nil, 0, fmt.Errorf("file-search decode: %w", err)
+		return nil, fmt.Errorf("file-search decode: %w", err)
 	}
 
-	fmt.Printf("==================result:%v\n", result)
 	// Process output fields if specified
 	if len(outputFields) > 0 {
 		result.Files = filterOutputFields(result.Files, outputFields)
 	}
 
-	return result.Files, result.Hits, nil
+	return result.Files, nil
 }
 
 // processSortParams processes sort parameters and converts them to the format required by /file-search API.
@@ -218,6 +219,7 @@ func processSortParams(sort []*interfaces.SortField) (map[string]interface{}, er
 func validateOutputFields(outputFields []string) error {
 	// Define allowed fields for output
 	allowedFields := map[string]bool{
+		"*":              true,
 		"doc_id":         true,
 		"basename":       true,
 		"source":         true,
@@ -243,7 +245,7 @@ func validateOutputFields(outputFields []string) error {
 	// Validate all output fields
 	for _, field := range outputFields {
 		if !allowedFields[field] {
-			return fmt.Errorf("invalid output field: %s, allowed fields are: doc_id, basename, source, parent_path, doc_lib_type, extension, summary, created_by, modified_by, created_at, modified_at, size, security_level, doc_type, content, tags, title, embedded_image, only_display, score", field)
+			return fmt.Errorf("invalid output field: %s, allowed fields are: *, doc_id, basename, source, parent_path, doc_lib_type, extension, summary, created_by, modified_by, created_at, modified_at, size, security_level, doc_type, content, tags, title, embedded_image, only_display, score", field)
 		}
 	}
 	return nil
@@ -254,6 +256,13 @@ func validateOutputFields(outputFields []string) error {
 func filterOutputFields(files []map[string]any, outputFields []string) []map[string]any {
 	if len(files) == 0 || len(outputFields) == 0 {
 		return files
+	}
+
+	// Check if outputFields contains "*", if so, return all fields without filtering
+	for _, field := range outputFields {
+		if field == "*" {
+			return files
+		}
 	}
 
 	// Filter each file to only include the specified output fields

@@ -34,6 +34,26 @@ func NewFieldUsageTracker() *FieldUsageTracker {
 	}
 }
 
+// convertTimeValue converts a time value to milliseconds, keeping -1 unchanged
+func convertTimeValue(v int64) int64 {
+	if v != -1 {
+		return v * 1000
+	}
+	return v
+}
+
+// toInt64 converts an interface{} value to int64
+func toInt64(val interface{}) (int64, error) {
+	switch v := val.(type) {
+	case int64:
+		return v, nil
+	case float64:
+		return int64(v), nil
+	default:
+		return 0, fmt.Errorf("value must be int64 or float64, got %T", val)
+	}
+}
+
 // checkMatchAndMatchPhraseConflict recursively checks if there are both MatchCond and MatchPhraseCond in the condition tree
 // and ensures that MatchCond or MatchPhraseCond appears at most once
 func checkMatchAndMatchPhraseConflict(cond interfaces.FilterCondition) (bool, bool, error) {
@@ -496,19 +516,15 @@ func (c *AnyShareConnector) convertFilterConditionEqual(ctx context.Context, con
 
 	switch cond.Lfield.Name {
 	case "created_at", "modified_at":
-		var timeValue int64
-		if v, ok := cond.Value.(int64); ok {
-			timeValue = v
-		} else if v, ok := cond.Value.(float64); ok {
-			timeValue = int64(v)
-		} else {
-			return nil, fmt.Errorf("time value must be int64 or float64, got %T", cond.Value)
+		timeValue, err := toInt64(cond.Value)
+		if err != nil {
+			return nil, fmt.Errorf("time value error: %w", err)
 		}
 		result.Custom = append(result.Custom, map[string]interface{}{
 			"key":   cond.Lfield.Name,
 			"type":  "date",
 			"mode":  "=",
-			"value": []int64{timeValue},
+			"value": []int64{convertTimeValue(timeValue)},
 		})
 	case "tags":
 		if tagValue, ok := cond.Value.(string); ok {
@@ -563,19 +579,15 @@ func (c *AnyShareConnector) convertFilterConditionGte(ctx context.Context, condi
 
 	switch cond.Lfield.Name {
 	case "created_at", "modified_at":
-		var timeValue int64
-		if v, ok := cond.Value.(int64); ok {
-			timeValue = v
-		} else if v, ok := cond.Value.(float64); ok {
-			timeValue = int64(v)
-		} else {
-			return nil, fmt.Errorf("time value must be int64 or float64, got %T", cond.Value)
+		timeValue, err := toInt64(cond.Value)
+		if err != nil {
+			return nil, fmt.Errorf("time value error: %w", err)
 		}
 		result.Custom = append(result.Custom, map[string]interface{}{
 			"key":   cond.Lfield.Name,
 			"type":  "date",
 			"mode":  ">=",
-			"value": []int64{timeValue},
+			"value": []int64{convertTimeValue(timeValue)},
 		})
 	default:
 		if !customFields[cond.Lfield.Name] {
@@ -617,19 +629,15 @@ func (c *AnyShareConnector) convertFilterConditionGt(ctx context.Context, condit
 
 	switch cond.Lfield.Name {
 	case "created_at", "modified_at":
-		var timeValue int64
-		if v, ok := cond.Value.(int64); ok {
-			timeValue = v
-		} else if v, ok := cond.Value.(float64); ok {
-			timeValue = int64(v)
-		} else {
-			return nil, fmt.Errorf("time value must be int64 or float64, got %T", cond.Value)
+		timeValue, err := toInt64(cond.Value)
+		if err != nil {
+			return nil, fmt.Errorf("time value error: %w", err)
 		}
 		result.Custom = append(result.Custom, map[string]interface{}{
 			"key":   cond.Lfield.Name,
 			"type":  "date",
 			"mode":  ">",
-			"value": []int64{timeValue},
+			"value": []int64{convertTimeValue(timeValue)},
 		})
 	default:
 		if !customFields[cond.Lfield.Name] {
@@ -671,19 +679,15 @@ func (c *AnyShareConnector) convertFilterConditionLte(ctx context.Context, condi
 
 	switch cond.Lfield.Name {
 	case "created_at", "modified_at":
-		var timeValue int64
-		if v, ok := cond.Value.(int64); ok {
-			timeValue = v
-		} else if v, ok := cond.Value.(float64); ok {
-			timeValue = int64(v)
-		} else {
-			return nil, fmt.Errorf("time value must be int64 or float64, got %T", cond.Value)
+		timeValue, err := toInt64(cond.Value)
+		if err != nil {
+			return nil, fmt.Errorf("time value error: %w", err)
 		}
 		result.Custom = append(result.Custom, map[string]interface{}{
 			"key":   cond.Lfield.Name,
 			"type":  "date",
 			"mode":  "<=",
-			"value": []int64{timeValue},
+			"value": []int64{convertTimeValue(timeValue)},
 		})
 	default:
 		if !customFields[cond.Lfield.Name] {
@@ -725,19 +729,15 @@ func (c *AnyShareConnector) convertFilterConditionLt(ctx context.Context, condit
 
 	switch cond.Lfield.Name {
 	case "created_at", "modified_at":
-		var timeValue int64
-		if v, ok := cond.Value.(int64); ok {
-			timeValue = v
-		} else if v, ok := cond.Value.(float64); ok {
-			timeValue = int64(v)
-		} else {
-			return nil, fmt.Errorf("time value must be int64 or float64, got %T", cond.Value)
+		timeValue, err := toInt64(cond.Value)
+		if err != nil {
+			return nil, fmt.Errorf("time value error: %w", err)
 		}
 		result.Custom = append(result.Custom, map[string]interface{}{
 			"key":   cond.Lfield.Name,
 			"type":  "date",
 			"mode":  "<",
-			"value": []int64{timeValue},
+			"value": []int64{convertTimeValue(timeValue)},
 		})
 	default:
 		if !customFields[cond.Lfield.Name] {
@@ -795,11 +795,11 @@ func (c *AnyShareConnector) convertFilterConditionIn(ctx context.Context, condit
 	case "created_at", "modified_at":
 		values := []int64{}
 		for _, val := range cond.Value {
-			if v, ok := val.(int64); ok {
-				values = append(values, v)
-			} else if v, ok := val.(float64); ok {
-				values = append(values, int64(v))
+			v, err := toInt64(val)
+			if err != nil {
+				return nil, fmt.Errorf("time value error: %w", err)
 			}
+			values = append(values, convertTimeValue(v))
 		}
 		if len(values) > 0 {
 			result.Custom = append(result.Custom, map[string]interface{}{
@@ -878,11 +878,11 @@ func (c *AnyShareConnector) convertFilterConditionNotIn(ctx context.Context, con
 	case "created_at", "modified_at":
 		values := []int64{}
 		for _, val := range cond.Value {
-			if v, ok := val.(int64); ok {
-				values = append(values, v)
-			} else if v, ok := val.(float64); ok {
-				values = append(values, int64(v))
+			v, err := toInt64(val)
+			if err != nil {
+				return nil, fmt.Errorf("time value error: %w", err)
 			}
+			values = append(values, convertTimeValue(v))
 		}
 		if len(values) > 0 {
 			result.Custom = append(result.Custom, map[string]interface{}{
@@ -949,18 +949,12 @@ func (c *AnyShareConnector) convertFilterConditionRange(ctx context.Context, con
 			var min, max int64
 			minOk := false
 			maxOk := false
-			if v, ok := cond.Value[0].(int64); ok {
-				min = v
-				minOk = true
-			} else if v, ok := cond.Value[0].(float64); ok {
-				min = int64(v)
+			if minVal, err := toInt64(cond.Value[0]); err == nil {
+				min = convertTimeValue(minVal)
 				minOk = true
 			}
-			if v, ok := cond.Value[1].(int64); ok {
-				max = v
-				maxOk = true
-			} else if v, ok := cond.Value[1].(float64); ok {
-				max = int64(v)
+			if maxVal, err := toInt64(cond.Value[1]); err == nil {
+				max = convertTimeValue(maxVal)
 				maxOk = true
 			}
 			if minOk && maxOk {
@@ -1015,18 +1009,12 @@ func (c *AnyShareConnector) convertFilterConditionBetween(ctx context.Context, c
 			var min, max int64
 			minOk := false
 			maxOk := false
-			if v, ok := cond.Value[0].(int64); ok {
-				min = v
-				minOk = true
-			} else if v, ok := cond.Value[0].(float64); ok {
-				min = int64(v)
+			if minVal, err := toInt64(cond.Value[0]); err == nil {
+				min = convertTimeValue(minVal)
 				minOk = true
 			}
-			if v, ok := cond.Value[1].(int64); ok {
-				max = v
-				maxOk = true
-			} else if v, ok := cond.Value[1].(float64); ok {
-				max = int64(v)
+			if maxVal, err := toInt64(cond.Value[1]); err == nil {
+				max = convertTimeValue(maxVal)
 				maxOk = true
 			}
 			if minOk && maxOk {
