@@ -25,7 +25,7 @@ OpenAPI Artifacts:
 - `./api/agent-factory.yaml`
 
 Runtime entry points after starting local service:
-- `http://{ip}/scalar/index.html`
+- `http://{ip}/scalar`
 - `http://{ip}/scalar/doc.json`
 - `http://{ip}/scalar/doc.yaml`
 
@@ -416,7 +416,7 @@ Static artifacts in repository:
 - `./api/agent-factory.yaml`
 
 Scalar after starting local service:
-- `http://localhost:13020/scalar/index.html`
+- `http://localhost:13020/scalar`
 - `http://localhost:13020/scalar/doc.json`
 - `http://localhost:13020/scalar/doc.yaml`
 

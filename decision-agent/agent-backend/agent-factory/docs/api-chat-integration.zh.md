@@ -25,7 +25,7 @@ OpenAPI 产物：
 - `./api/agent-factory.yaml`
 
 本地服务启动后的运行时入口：
-- `http://{ip}/scalar/index.html`
+- `http://{ip}/scalar`
 - `http://{ip}/scalar/doc.json`
 - `http://{ip}/scalar/doc.yaml`
 
@@ -417,7 +417,7 @@ API Chat handler 的主要行为：
 - `./api/agent-factory.yaml`
 
 本地服务启动后的 Scalar：
-- `http://localhost:13020/scalar/index.html`
+- `http://localhost:13020/scalar`
 - `http://localhost:13020/scalar/doc.json`
 - `http://localhost:13020/scalar/doc.yaml`
 

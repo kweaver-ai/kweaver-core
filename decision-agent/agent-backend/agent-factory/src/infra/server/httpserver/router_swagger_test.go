@@ -28,22 +28,10 @@ func TestRegisterSwaggerRoutes_ScalarDocsEnabled(t *testing.T) {
 
 	server.registerSwaggerRoutes(engine)
 
-	redirectReq := httptest.NewRequest(http.MethodGet, "/scalar", nil)
-	redirectResp := httptest.NewRecorder()
-	engine.ServeHTTP(redirectResp, redirectReq)
-	assert.Equal(t, http.StatusMovedPermanently, redirectResp.Code)
-	assert.Equal(t, scalarDocsPath, redirectResp.Header().Get("Location"))
-
 	legacyRedirectReq := httptest.NewRequest(http.MethodGet, "/swagger", nil)
 	legacyRedirectResp := httptest.NewRecorder()
 	engine.ServeHTTP(legacyRedirectResp, legacyRedirectReq)
 	assert.Equal(t, http.StatusNotFound, legacyRedirectResp.Code)
-
-	redocRedirectReq := httptest.NewRequest(http.MethodGet, "/redoc", nil)
-	redocRedirectResp := httptest.NewRecorder()
-	engine.ServeHTTP(redocRedirectResp, redocRedirectReq)
-	assert.Equal(t, http.StatusMovedPermanently, redocRedirectResp.Code)
-	assert.Equal(t, redocDocsPath, redocRedirectResp.Header().Get("Location"))
 
 	indexReq := httptest.NewRequest(http.MethodGet, scalarDocsPath, nil)
 	indexResp := httptest.NewRecorder()
@@ -61,6 +49,12 @@ func TestRegisterSwaggerRoutes_ScalarDocsEnabled(t *testing.T) {
 	assert.NotContains(t, indexResp.Body.String(), "cdn.redocly.com")
 	assert.NotContains(t, indexResp.Body.String(), "/swagger/index.html")
 
+	trailingScalarReq := httptest.NewRequest(http.MethodGet, scalarDocsPath+"/", nil)
+	trailingScalarResp := httptest.NewRecorder()
+	engine.ServeHTTP(trailingScalarResp, trailingScalarReq)
+	assert.Equal(t, http.StatusMovedPermanently, trailingScalarResp.Code)
+	assert.Equal(t, scalarDocsPath, trailingScalarResp.Header().Get("Location"))
+
 	redocIndexReq := httptest.NewRequest(http.MethodGet, redocDocsPath, nil)
 	redocIndexResp := httptest.NewRecorder()
 	engine.ServeHTTP(redocIndexResp, redocIndexReq)
@@ -72,6 +66,12 @@ func TestRegisterSwaggerRoutes_ScalarDocsEnabled(t *testing.T) {
 	assert.Contains(t, redocIndexResp.Body.String(), "--docs-nav-height")
 	assert.NotContains(t, redocIndexResp.Body.String(), "cdn.redocly.com")
 	assert.NotContains(t, redocIndexResp.Body.String(), "fonts.googleapis.com")
+
+	trailingRedocReq := httptest.NewRequest(http.MethodGet, redocDocsPath+"/", nil)
+	trailingRedocResp := httptest.NewRecorder()
+	engine.ServeHTTP(trailingRedocResp, trailingRedocReq)
+	assert.Equal(t, http.StatusMovedPermanently, trailingRedocResp.Code)
+	assert.Equal(t, redocDocsPath, trailingRedocResp.Header().Get("Location"))
 
 	legacyIndexReq := httptest.NewRequest(http.MethodGet, "/swagger/index.html", nil)
 	legacyIndexResp := httptest.NewRecorder()

@@ -118,8 +118,8 @@ make compare-api-docs
 
 Additional notes:
 - The Swagger host declared in `main.go` is `localhost:30777`, and the example port in `conf/agent-factory.example.yaml` is also `30777`
-- Runtime Scalar UI entry: `http://127.0.0.1:30777/scalar/index.html`
-- Runtime Redoc UI entry: `http://127.0.0.1:30777/redoc/index.html`
+- Runtime Scalar UI entry: `http://127.0.0.1:30777/scalar`
+- Runtime Redoc UI entry: `http://127.0.0.1:30777/redoc`
 - Run side public interface base path is `/api/agent-factory/v1`
 - Run side internal interface base path is `/api/agent-factory/internal/v1`
 

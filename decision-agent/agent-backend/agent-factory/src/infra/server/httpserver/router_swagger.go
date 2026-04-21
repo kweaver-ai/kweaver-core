@@ -14,12 +14,15 @@ import (
 )
 
 const (
-	scalarDocsPath    = "/scalar/index.html"
-	redocDocsPath     = "/redoc/index.html"
+	scalarDocsPath    = "/scalar"
+	redocDocsPath     = "/redoc"
+
 	scalarDocJSONPath = "/scalar/doc.json"
 	scalarDocYAMLPath = "/scalar/doc.yaml"
 	scalarFaviconPath = "/scalar/favicon.png"
+
 	apidocsUIPath     = "/apidocs-ui"
+	
 	scalarJSAssetPath = apidocsUIPath + "/scalar-api-reference.js"
 	redocJSAssetPath  = apidocsUIPath + "/redoc.standalone.js"
 )
@@ -32,24 +35,13 @@ func (s *httpServer) registerSwaggerRoutes(engine *gin.Engine) {
 
 	engine.StaticFS(apidocsUIPath, apidocs.UIAssetsFileSystem())
 
-	engine.GET("/scalar", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
-	engine.GET("/scalar/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, scalarDocsPath)
-	})
-	engine.GET("/redoc", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, redocDocsPath)
-	})
-	engine.GET("/redoc/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, redocDocsPath)
-	})
 	engine.GET(scalarDocsPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderScalarPage(scalarDocJSONPath)))
 	})
 	engine.GET(redocDocsPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(renderRedocPage(scalarDocJSONPath)))
 	})
+
 	engine.GET(scalarDocJSONPath, func(c *gin.Context) {
 		c.Data(http.StatusOK, "application/json; charset=utf-8", renderOpenAPIDocJSON(c))
 	})

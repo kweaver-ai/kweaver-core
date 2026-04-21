@@ -119,8 +119,8 @@ make compare-api-docs
 
 补充说明：
 - `main.go` 中声明的 Swagger host 是 `localhost:30777`，`conf/agent-factory.example.yaml` 里的示例端口也是 `30777`
-- 运行时 Scalar 页面入口：`http://127.0.0.1:30777/scalar/index.html`
-- 运行时 Redoc 页面入口：`http://127.0.0.1:30777/redoc/index.html`
+- 运行时 Scalar 页面入口：`http://127.0.0.1:30777/scalar`
+- 运行时 Redoc 页面入口：`http://127.0.0.1:30777/redoc`
 - Run 侧公开接口基路径是 `/api/agent-factory/v1`
 - Run 侧内部接口基路径是 `/api/agent-factory/internal/v1`
 
