@@ -158,7 +158,8 @@ paths:
   /skills/index/build/{task_id}/cancel:
     post:
       summary: "取消 Skill 索引构建任务"
-      description: "取消指定的 Skill 索引构建任务。对于 active 任务发送取消信号；对于 pending/scheduled/retry/archived 任务直接从队列移除。"
+      description: "取消指定的 Skill 索引构建任务。对于 active 任务发送取消信号；对于
+        pending/scheduled/retry/archived 任务直接从队列移除。"
       tags:
         - "Skill 索引"
       parameters:
@@ -496,50 +497,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-
-  /skills/{skill_id}/history:
-    get:
-      summary: "查询 Skill 发布历史"
-      description: "根据 Skill ID 查询发布历史摘要列表，用于集群内部服务读取。"
-      tags:
-        - "Skill 读取"
-      parameters:
-        - $ref: "#/components/parameters/BusinessDomain"
-        - $ref: "#/components/parameters/AccountID"
-        - $ref: "#/components/parameters/AccountType"
-        - $ref: "#/components/parameters/SkillID"
-      responses:
-        "200":
-          description: "成功"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetSkillReleaseHistoryResp"
-        "400":
-          description: "参数错误"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "403":
-          description: "无权限"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "404":
-          description: "Skill 不存在"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: "内部错误"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
 components:
   parameters:
     BusinessDomain:
@@ -1116,62 +1073,6 @@ components:
             mocked:
               type: boolean
               description: "当前是否为 mock Sandbox 响应"
-
-    GetSkillReleaseHistoryResp:
-      type: object
-      properties:
-        code:
-          type: integer
-        msg:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/SkillReleaseHistoryInfo"
-
-    SkillReleaseHistoryInfo:
-      type: object
-      properties:
-        skill_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        version:
-          type: string
-        status:
-          type: string
-          enum:
-            - "unpublish"
-            - "published"
-            - "editing"
-            - "offline"
-        category:
-          type: string
-          enum:
-            - "other_category"
-            - "system"
-        source:
-          type: string
-        release_desc:
-          type: string
-        release_user:
-          type: string
-        release_time:
-          type: integer
-          format: int64
-        create_user:
-          type: string
-        create_time:
-          type: integer
-          format: int64
-        update_user:
-          type: string
-        update_time:
-          type: integer
-          format: int64
-
     Error:
       type: object
       properties:

@@ -1,8 +1,8 @@
 # 🧩 PRD: Skill DataSet 重建与增量构建
 
-> 状态: In Review  
-> 负责人: 待确认  
-> 更新时间: 2026-04-17  
+> 状态: In Review
+> 负责人: 待确认
+> 更新时间: 2026-04-17
 
 ---
 
@@ -80,7 +80,7 @@
 - 统一以 `t_skill_repository` 作为扫描数据源。
 - 在 `editing` 状态下增加 `t_skill_release` 校验逻辑。
 - 构建任务支持 `upsert` 和 `delete` 两种 DataSet 动作。
-- 任务执行通过 Asynq/Redis 异步调度，任务状态以 MySQL 任务表为准。
+- 任务状态以 `t_skill_index_build_task` 任务表为准，后台由进程内 worker 自动推进任务执行。
 
 ### ❌ Out of Scope
 
@@ -113,27 +113,27 @@
 
 #### 【FR-1】创建 Skill DataSet 构建任务
 
-**描述：**  
+**描述：**
 系统提供内部接口创建 Skill DataSet 离线构建任务，任务类型仅支持 `full` 和 `incremental`。
 
-**用户价值：**  
+**用户价值：**
 让运维和研发能够通过统一入口发起数据修复任务，而不是依赖临时脚本。
 
 **交互流程：**
 1. 调用方调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build`。
 2. 系统校验请求头和请求体。
-3. 系统检查是否已有 `pending` 或 `running` 任务。
-4. 若不存在运行中任务，系统创建 `t_skill_index_build_task` 记录并投递异步任务。
+3. 系统检查是否已有 `running` 任务。
+4. 若不存在运行中任务，系统创建 `t_skill_index_build_task` 记录，状态为 `pending`。
 5. 系统返回 `task_id`。
 
 **业务规则：**
 - `execute_type` 必填，枚举值仅允许 `full`、`incremental`。
-- 同一时刻只允许一个构建任务处于 `pending` 或 `running`。
-- 任务创建成功后必须落库，再投递异步消息。
+- 同一时刻只允许一个构建任务处于 `running`。
+- 任务创建成功后必须先落库，再由后台 worker 轮询执行。
 
 **边界条件：**
 - 首次执行 `incremental` 时，如果不存在历史成功游标，系统从零游标开始扫描。
-- 构建任务不能复用旧 `task_id`。
+- 任务创建阶段生成新的 `task_id`。
 
 **异常处理：**
 - 参数非法时返回 `400`。
@@ -144,22 +144,22 @@
 
 #### 【FR-2】查询 Skill DataSet 构建任务列表
 
-**描述：**  
+**描述：**
 系统提供内部接口分页查询构建任务列表，支持按状态、执行类型和创建人过滤。
 
-**用户价值：**  
+**用户价值：**
 让运维和研发能够快速定位失败任务、查看历史执行记录，并选择后续取消或重试动作。
 
 **交互流程：**
 1. 调用方调用 `GET /api/agent-operator-integration/internal-v1/skills/index/build`。
 2. 系统校验请求头和查询参数。
 3. 系统按过滤条件查询 `t_skill_index_build_task`。
-4. 系统返回任务列表、分页信息和每个任务的 `queue_state`。
+4. 系统返回任务列表、分页信息和每个任务的任务统计信息。
 
 **业务规则：**
 - 支持按 `status`、`execute_type`、`create_user` 过滤。
 - 支持按 `create_time`、`update_time`、`task_id` 排序。
-- 返回结果必须包含任务状态、类型、统计信息、游标、重试信息和 Asynq 队列状态。
+- 返回结果必须包含任务状态、类型、统计信息、游标、错误信息和重试信息。
 
 **异常处理：**
 - 参数非法时返回 `400`。
@@ -169,10 +169,10 @@
 
 #### 【FR-3】查询 Skill DataSet 构建任务详情
 
-**描述：**  
+**描述：**
 系统提供内部接口查询指定构建任务的状态和执行进度。
 
-**用户价值：**  
+**用户价值：**
 让运维和研发能够查看任务是否成功、失败原因以及最后游标。
 
 **交互流程：**
@@ -182,7 +182,7 @@
 4. 系统返回任务详情。
 
 **业务规则：**
-- 查询结果必须包含任务状态、类型、统计信息、游标、错误信息、重试信息、队列状态、创建时间和更新时间。
+- 查询结果必须包含任务状态、类型、统计信息、游标、错误信息、重试信息、创建时间和更新时间。
 - `task_id` 必须全局唯一。
 
 **边界条件：**
@@ -197,37 +197,37 @@
 
 #### 【FR-4】取消与重试构建任务
 
-**描述：**  
-系统提供取消任务和基于失败任务创建新任务的重试能力。
+**描述：**
+系统提供取消任务和基于既有任务重置状态的重试能力。
 
-**用户价值：**  
+**用户价值：**
 让运维和研发在发现错误任务后可立即停止，或在失败后通过标准接口重新执行，而不是依赖手工修库或临时脚本。
 
 **交互流程：**
 1. 调用方调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build/:task_id/cancel` 取消任务。
-2. 系统读取任务详情和 Asynq 队列状态。
-3. `active` 任务调用 `CancelProcessing`；`pending/scheduled/retry/archived` 任务从队列删除并更新任务表。
-4. 调用方调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build/:task_id/retry` 重试失败任务。
-5. 系统校验原任务状态为 `failed`，并创建新任务，不复用原 `task_id`。
+2. 系统读取任务详情。
+3. 对 `pending` 或 `running` 任务直接更新任务状态为 `canceled`。
+4. 调用方调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build/:task_id/retry` 重试任务。
+5. 系统校验原任务状态允许重试后，将原任务重置为 `pending` 并清空统计信息。
 
 **业务规则：**
-- 仅 `failed` 任务允许重试。
-- 重试必须创建新任务，原任务仅作为历史记录保留。
-- 取消接口必须返回当前队列状态和本次执行动作。
+- 仅 `failed`、`canceled`、`completed` 任务允许重试。
+- 重试复用原 `task_id`，不新建任务。
+- 取消接口返回固定动作 `cancel_task`。
 
 **异常处理：**
 - 任务不存在时返回 `404`。
 - 任务状态不允许取消或重试时返回 `409`。
-- Asynq 操作失败时返回 `500`。
+- 状态更新失败时返回 `500`。
 
 ---
 
 #### 【FR-5】Skill DataSet 全量重建
 
-**描述：**  
+**描述：**
 系统支持扫描全量 `t_skill_repository`，逐条对齐 Skill DataSet。
 
-**用户价值：**  
+**用户价值：**
 在历史数据缺失或脏数据较多时，能够一次性恢复 Skill DataSet 的整体正确性。
 
 **交互流程：**
@@ -255,10 +255,10 @@
 
 #### 【FR-6】Skill DataSet 增量构建
 
-**描述：**  
+**描述：**
 系统支持基于主表更新时间游标扫描 `t_skill_repository` 的变更数据，并执行补写或补删。
 
-**用户价值：**  
+**用户价值：**
 在在线双写失败后，以较低成本完成补偿，而不必每次都跑全量。
 
 **交互流程：**
@@ -288,10 +288,10 @@
 
 #### 【FR-7】可见态解析
 
-**描述：**  
+**描述：**
 系统根据 `t_skill_repository` 和 `t_skill_release` 的组合状态，决定某个 `skill_id` 是否对外可见，以及 DataSet 文档来源。
 
-**用户价值：**  
+**用户价值：**
 避免误删正常对外可见的 Skill，并确保 DataSet 内容与发布态一致。
 
 **交互流程：**
@@ -346,13 +346,13 @@ flowchart TD
 
 ### 7.2 交互规则
 - 点击行为：不涉及前台页面交互，由内部调用方通过 API 触发。
-- 状态变化：任务状态支持 `pending`、`running`、`completed`、`failed`。
+- 状态变化：任务状态支持 `pending`、`running`、`completed`、`failed`、`canceled`。
 - 提示文案：
   - 创建成功：返回 `task_id`
   - 已有运行中任务：返回冲突错误
   - 任务不存在：返回 `404`
-  - 取消成功：返回实际队列动作和 `queue_state`
-  - 重试成功：返回新 `task_id` 和原 `source_task_id`
+  - 取消成功：返回 `cancel_task`
+  - 重试成功：返回原 `task_id` 以及 `source_task_id`
 
 ---
 
@@ -366,6 +366,7 @@ flowchart TD
 ### 8.2 可用性
 - 任务状态必须持久化到 MySQL，服务重启后可查询历史任务。
 - 在线双写与离线构建分离，离线任务失败不阻塞在线主链路。
+- worker 需支持周期性全量构建、陈旧任务恢复和过期任务清理。
 
 ### 8.3 安全
 - 权限控制：沿用现有内部接口 header 校验和业务域校验机制。
@@ -400,7 +401,7 @@ flowchart TD
 
 ### 依赖
 - 外部系统：无第三方外部系统依赖。
-- 内部服务：`vega-backend`、`mf-model-manage`、`mf-model-api`、`Asynq/Redis`。
+- 内部服务：`vega-backend`、`mf-model-manage`、`mf-model-api`、`Redis`。
 
 ---
 
@@ -417,48 +418,56 @@ flowchart TD
 
 ## ✅ 12. 验收标准（Acceptance Criteria）
 
-- Given 不存在运行中的 Skill DataSet 构建任务  
-  When 调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build` 且 `execute_type=full`  
+- Given 不存在运行中的 Skill DataSet 构建任务
+  When 调用 `POST /api/agent-operator-integration/internal-v1/skills/index/build` 且 `execute_type=full`
   Then 系统创建一条 `t_skill_index_build_task` 记录并返回 `task_id`
 
-- Given 已存在 `pending` 或 `running` 状态的 Skill DataSet 构建任务  
-  When 再次创建构建任务  
+- Given 已存在 `pending` 或 `running` 状态的 Skill DataSet 构建任务
+  When 再次创建构建任务
   Then 系统返回 `409`
 
-- Given 已存在多条历史 Skill DataSet 构建任务  
-  When 调用任务列表接口并指定分页参数  
-  Then 系统返回分页结果、过滤后的任务列表以及每条任务的 `queue_state`
+- Given 已存在多条历史 Skill DataSet 构建任务
+  When 调用任务列表接口并指定分页参数
+  Then 系统返回分页结果、过滤后的任务列表以及每条任务的状态、统计和游标信息
 
-- Given 一条处于 `failed` 状态的 Skill DataSet 构建任务  
-  When 调用重试接口  
-  Then 系统创建新的构建任务，返回新的 `task_id`，且原任务保持不变
+- Given 一条处于 `failed` 状态的 Skill DataSet 构建任务
+  When 调用重试接口
+  Then 系统重置原任务为 `pending`，复用原 `task_id`
 
-- Given 一条仍在 Asynq 队列中的 Skill DataSet 构建任务  
-  When 调用取消接口  
-  Then 系统返回取消动作，并将对应任务从队列取消或删除
+- Given 一条处于 `pending` 或 `running` 状态的 Skill DataSet 构建任务
+  When 调用取消接口
+  Then 系统返回 `cancel_task`，并将任务状态更新为 `canceled`
 
-- Given 一条 `editing` 状态的主表 Skill 且存在同 `skill_id` 的发布快照  
-  When 构建任务处理该 Skill  
+- Given 开启了周期性全量构建且当前没有运行中任务
+  When 距离最近一次成功 full 任务的完成时间超过配置间隔
+  Then 系统自动创建新的 full 构建任务
+
+- Given 一条 `running` 状态的构建任务长时间未更新
+  When 后台 worker 执行陈旧任务恢复
+  Then 系统将该任务标记为 `failed`
+
+- Given 一条 `editing` 状态的主表 Skill 且存在同 `skill_id` 的发布快照
+  When 构建任务处理该 Skill
   Then 系统执行 `upsert` 且文档内容来源为 `t_skill_release`
 
-- Given 一条 `editing` 状态的主表 Skill 且不存在同 `skill_id` 的发布快照  
-  When 构建任务处理该 Skill  
+- Given 一条 `editing` 状态的主表 Skill 且不存在同 `skill_id` 的发布快照
+  When 构建任务处理该 Skill
   Then 系统执行 `delete`
 
-- Given 一条 `offline`、`unpublish` 或 `is_deleted=true` 的主表 Skill  
-  When 构建任务处理该 Skill  
+- Given 一条 `offline`、`unpublish` 或 `is_deleted=true` 的主表 Skill
+  When 构建任务处理该 Skill
   Then 系统执行 `delete`
 
-- Given 一条 `published` 状态的主表 Skill 且存在发布快照  
-  When 构建任务处理该 Skill  
+- Given 一条 `published` 状态的主表 Skill 且存在发布快照
+  When 构建任务处理该 Skill
   Then 系统执行 `upsert` 且文档内容来源为 `t_skill_release`
 
-- Given 增量任务已存在最近一次成功游标  
-  When 触发新的 `incremental` 任务  
+- Given 增量任务已存在最近一次成功游标
+  When 触发新的 `incremental` 任务
   Then 系统从最近一次 `completed` 的 `incremental` 任务游标继续扫描
 
-- Given 构建任务中的单条 Skill 写入或删除失败  
-  When 当前批次继续执行  
+- Given 构建任务中的单条 Skill 写入或删除失败
+  When 当前批次继续执行
   Then 系统记录失败数并继续处理后续 Skill
 
 ---

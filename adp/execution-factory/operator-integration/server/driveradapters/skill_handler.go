@@ -49,8 +49,6 @@ func (r *skillRestHandler) RegisterPrivate(engine *gin.RouterGroup) {
 	engine.POST("/skills/:skill_id/files/read", r.SkillHandler.ReadSkillFile)
 	// 执行技能
 	engine.POST("/skills/:skill_id/execute", r.SkillHandler.ExecuteSkill)
-	// 查询技能发布历史
-	engine.GET("/skills/:skill_id/history", r.SkillHandler.GetSkillReleaseHistory)
 }
 
 func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
