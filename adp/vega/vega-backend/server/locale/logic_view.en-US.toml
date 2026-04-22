@@ -1,3 +1,8 @@
+[VegaBackend.LogicView.InvalidParameter.JoinType]
+Description = "Invalid logic view join type"
+Solution = "Please check the join type of the logic view definition"
+ErrorLink = "None"
+
 [VegaBackend.LogicView.InvalidParameter.LogicDefinition]
 Description = "Invalid logic view definition"
 Solution = "Please check the logic view definition"

@@ -1,3 +1,8 @@
+[VegaBackend.LogicView.InvalidParameter.JoinType]
+Description = "不支持的逻辑视图关联类型"
+Solution = "请检查逻辑视图join节点join_type配置"
+ErrorLink = "暂无"
+
 [VegaBackend.LogicView.InvalidParameter.LogicDefinition]
 Description = "无效的逻辑视图定义"
 Solution = "请检查逻辑视图定义"

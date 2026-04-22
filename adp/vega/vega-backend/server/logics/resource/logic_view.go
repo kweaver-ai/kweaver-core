@@ -214,10 +214,10 @@ func validateJoinNode(ctx context.Context, node *interfaces.LogicDefinitionNode,
 			WithErrorDetails("The logic definition join config is invalid")
 	}
 
-	// join_type 只能为 inner, left, right, full outer
+	// join_type 只能为 inner, left, right
 	if _, ok := interfaces.JoinTypeMap[cfg.JoinType]; !ok {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
-			WithErrorDetails("The logic definition join config is invalid, join_type must be inner, left, right, full outer")
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_JoinType).
+			WithErrorDetails("The logic definition join config is invalid, join_type must be inner, left, right")
 	}
 
 	// join_on 校验
