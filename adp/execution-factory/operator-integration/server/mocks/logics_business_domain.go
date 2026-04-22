@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gin "github.com/gin-gonic/gin"
 	interfaces "github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -96,6 +97,20 @@ func (m *MockIBusinessDomainService) DisassociateResource(ctx context.Context, b
 func (mr *MockIBusinessDomainServiceMockRecorder) DisassociateResource(ctx, bdID, resourceID, resourceType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisassociateResource", reflect.TypeOf((*MockIBusinessDomainService)(nil).DisassociateResource), ctx, bdID, resourceID, resourceType)
+}
+
+// GetBusinessDomainFromHeader mocks base method.
+func (m *MockIBusinessDomainService) GetBusinessDomainFromHeader(c *gin.Context) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBusinessDomainFromHeader", c)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetBusinessDomainFromHeader indicates an expected call of GetBusinessDomainFromHeader.
+func (mr *MockIBusinessDomainServiceMockRecorder) GetBusinessDomainFromHeader(c any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBusinessDomainFromHeader", reflect.TypeOf((*MockIBusinessDomainService)(nil).GetBusinessDomainFromHeader), c)
 }
 
 // ResourceList mocks base method.

@@ -168,6 +168,21 @@ func (v *vegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID
 	return nil
 }
 
+func (v *vegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
+	headers := v.buildHeaders(ctx)
+	v.logger.WithContext(ctx).Infof("update vega dataset documents, resource_id=%s, documents=%d, url=%s", datasetID, len(documents), src)
+	respCode, respData, err := v.httpClient.PutNoUnmarshal(ctx, src, headers, documents)
+	if err != nil {
+		v.logger.WithContext(ctx).Errorf("failed to update vega dataset documents, resource_id=%s, documents=%d, url=%s, err=%v", datasetID, len(documents), src, err)
+		return err
+	}
+	if respCode != http.StatusNoContent && respCode != http.StatusOK {
+		return fmt.Errorf("update dataset documents failed: %s", string(respData))
+	}
+	return nil
+}
+
 func (v *vegaBackendClient) DeleteDatasetDocumentByID(ctx context.Context, datasetID string, docID string) error {
 	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs/%s", v.baseURL, url.PathEscape(datasetID), url.PathEscape(docID))
 	headers := v.buildHeaders(ctx)

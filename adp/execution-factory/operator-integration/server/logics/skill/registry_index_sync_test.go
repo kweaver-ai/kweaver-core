@@ -2,9 +2,11 @@ package skill
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/logger"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces/model"
@@ -20,13 +22,22 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 
 		Convey("publish updates status then upserts index", func() {
 			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			tx := &sql.Tx{}
+			rollbackPatch := gomonkey.ApplyFunc((*sql.Tx).Rollback, func(*sql.Tx) error { return nil })
+			defer rollbackPatch.Reset()
+			commitPatch := gomonkey.ApplyFunc((*sql.Tx).Commit, func(*sql.Tx) error { return nil })
+			defer commitPatch.Reset()
 			registry := &skillRegistry{
-				skillRepo:   mockSkillRepo,
-				AuthService: mockAuthService,
-				indexSync:   mockIndexSync,
-				Logger:      logger.DefaultLogger(),
+				skillRepo:          mockSkillRepo,
+				releaseRepo:        &stubSkillReleaseRepo{},
+				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{},
+				dbTx:               mockDBTx,
+				AuthService:        mockAuthService,
+				indexSync:          mockIndexSync,
+				Logger:             logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-publish").Return(&model.SkillRepositoryDB{
@@ -35,7 +46,8 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
 			mockAuthService.EXPECT().CheckPublishPermission(gomock.Any(), gomock.Any(), "skill-publish", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockSkillRepo.EXPECT().SelectSkillByName(gomock.Any(), gomock.Nil(), "demo-skill", []string{interfaces.BizStatusPublished.String()}).Return(false, nil, nil)
-			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), gomock.Nil(), "skill-publish", interfaces.BizStatusPublished.String(), "user-1").Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), tx, "skill-publish", interfaces.BizStatusPublished.String(), "user-1").Return(nil)
 			mockIndexSync.EXPECT().UpsertSkill(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, skill *model.SkillRepositoryDB) error {
 				So(skill.SkillID, ShouldEqual, "skill-publish")
 				return nil
@@ -54,13 +66,22 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 
 		Convey("publish still succeeds when deferred index sync fails", func() {
 			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			tx := &sql.Tx{}
+			rollbackPatch := gomonkey.ApplyFunc((*sql.Tx).Rollback, func(*sql.Tx) error { return nil })
+			defer rollbackPatch.Reset()
+			commitPatch := gomonkey.ApplyFunc((*sql.Tx).Commit, func(*sql.Tx) error { return nil })
+			defer commitPatch.Reset()
 			registry := &skillRegistry{
-				skillRepo:   mockSkillRepo,
-				AuthService: mockAuthService,
-				indexSync:   mockIndexSync,
-				Logger:      logger.DefaultLogger(),
+				skillRepo:          mockSkillRepo,
+				releaseRepo:        &stubSkillReleaseRepo{},
+				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{},
+				dbTx:               mockDBTx,
+				AuthService:        mockAuthService,
+				indexSync:          mockIndexSync,
+				Logger:             logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-publish-fail").Return(&model.SkillRepositoryDB{
@@ -69,7 +90,8 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
 			mockAuthService.EXPECT().CheckPublishPermission(gomock.Any(), gomock.Any(), "skill-publish-fail", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockSkillRepo.EXPECT().SelectSkillByName(gomock.Any(), gomock.Nil(), "demo-skill", []string{interfaces.BizStatusPublished.String()}).Return(false, nil, nil)
-			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), gomock.Nil(), "skill-publish-fail", interfaces.BizStatusPublished.String(), "user-1").Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), tx, "skill-publish-fail", interfaces.BizStatusPublished.String(), "user-1").Return(nil)
 			mockIndexSync.EXPECT().UpsertSkill(gomock.Any(), gomock.Any()).Return(errors.New("vega write failed"))
 
 			resp, err := registry.UpdateSkillStatus(context.Background(), &interfaces.UpdateSkillStatusReq{
@@ -85,13 +107,26 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 
 		Convey("offline updates status then deletes index", func() {
 			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			tx := &sql.Tx{}
+			rollbackPatch := gomonkey.ApplyFunc((*sql.Tx).Rollback, func(*sql.Tx) error { return nil })
+			defer rollbackPatch.Reset()
+			commitPatch := gomonkey.ApplyFunc((*sql.Tx).Commit, func(*sql.Tx) error { return nil })
+			defer commitPatch.Reset()
 			registry := &skillRegistry{
-				skillRepo:   mockSkillRepo,
-				AuthService: mockAuthService,
-				indexSync:   mockIndexSync,
-				Logger:      logger.DefaultLogger(),
+				skillRepo: mockSkillRepo,
+				releaseRepo: &stubSkillReleaseRepo{
+					selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillReleaseDB, error) {
+						return &model.SkillReleaseDB{SkillID: skillID, Version: "v1"}, nil
+					},
+				},
+				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{},
+				dbTx:               mockDBTx,
+				AuthService:        mockAuthService,
+				indexSync:          mockIndexSync,
+				Logger:             logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-offline").Return(&model.SkillRepositoryDB{
@@ -99,7 +134,8 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 			}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
 			mockAuthService.EXPECT().CheckUnpublishPermission(gomock.Any(), gomock.Any(), "skill-offline", interfaces.AuthResourceTypeSkill).Return(nil)
-			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), gomock.Nil(), "skill-offline", interfaces.BizStatusOffline.String(), "user-1").Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), tx, "skill-offline", interfaces.BizStatusOffline.String(), "user-1").Return(nil)
 			mockIndexSync.EXPECT().DeleteSkill(gomock.Any(), "skill-offline").Return(nil)
 
 			resp, err := registry.UpdateSkillStatus(context.Background(), &interfaces.UpdateSkillStatusReq{
@@ -115,13 +151,26 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 
 		Convey("offline still succeeds when deferred index delete fails", func() {
 			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockIndexSync := mocks.NewMockSkillIndexSyncService(ctrl)
+			tx := &sql.Tx{}
+			rollbackPatch := gomonkey.ApplyFunc((*sql.Tx).Rollback, func(*sql.Tx) error { return nil })
+			defer rollbackPatch.Reset()
+			commitPatch := gomonkey.ApplyFunc((*sql.Tx).Commit, func(*sql.Tx) error { return nil })
+			defer commitPatch.Reset()
 			registry := &skillRegistry{
-				skillRepo:   mockSkillRepo,
-				AuthService: mockAuthService,
-				indexSync:   mockIndexSync,
-				Logger:      logger.DefaultLogger(),
+				skillRepo: mockSkillRepo,
+				releaseRepo: &stubSkillReleaseRepo{
+					selectBySkillID: func(ctx context.Context, tx *sql.Tx, skillID string) (*model.SkillReleaseDB, error) {
+						return &model.SkillReleaseDB{SkillID: skillID, Version: "v1"}, nil
+					},
+				},
+				releaseHistoryRepo: &stubSkillReleaseHistoryRepo{},
+				dbTx:               mockDBTx,
+				AuthService:        mockAuthService,
+				indexSync:          mockIndexSync,
+				Logger:             logger.DefaultLogger(),
 			}
 
 			mockSkillRepo.EXPECT().SelectSkillByID(gomock.Any(), gomock.Nil(), "skill-offline-fail").Return(&model.SkillRepositoryDB{
@@ -129,7 +178,8 @@ func TestSkillRegistryIndexSync(t *testing.T) {
 			}, nil)
 			mockAuthService.EXPECT().GetAccessor(gomock.Any(), "user-1").Return(&interfaces.AuthAccessor{ID: "user-1"}, nil)
 			mockAuthService.EXPECT().CheckUnpublishPermission(gomock.Any(), gomock.Any(), "skill-offline-fail", interfaces.AuthResourceTypeSkill).Return(nil)
-			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), gomock.Nil(), "skill-offline-fail", interfaces.BizStatusOffline.String(), "user-1").Return(nil)
+			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
+			mockSkillRepo.EXPECT().UpdateSkillStatus(gomock.Any(), tx, "skill-offline-fail", interfaces.BizStatusOffline.String(), "user-1").Return(nil)
 			mockIndexSync.EXPECT().DeleteSkill(gomock.Any(), "skill-offline-fail").Return(errors.New("vega delete failed"))
 
 			resp, err := registry.UpdateSkillStatus(context.Background(), &interfaces.UpdateSkillStatusReq{

@@ -30,6 +30,11 @@ data:
       max_timeout: {{ .Values.service.proxyModule.maxTimeout }}
       max_clients: {{ .Values.service.proxyModule.maxClients }}
       client_lifetime: {{ .Values.service.proxyModule.clientLifetime }}
+    skill_index_build:
+      enable_periodic_full_scan: {{ .Values.service.skillIndexBuild.enablePeriodicFullScan }}
+      periodic_full_scan_interval: {{ .Values.service.skillIndexBuild.periodicFullScanInterval | quote }}
+      enable_task_cleanup: {{ .Values.service.skillIndexBuild.enableTaskCleanup }}
+      task_retention: {{ .Values.service.skillIndexBuild.taskRetention | quote }}
     oauth:
       public_host: {{ .Values.depServices.hydra.publicHost | quote }}
       public_port: {{ .Values.depServices.hydra.publicPort }}

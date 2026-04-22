@@ -71,6 +71,11 @@ service:
     maxTimeout: 300 # 单位秒
     maxClients: 50 # 单位秒
     clientLifetime: 600 # 单位秒
+  skillIndexBuild:
+    enablePeriodicFullScan: false
+    periodicFullScanInterval: 168h # 7天
+    enableTaskCleanup: false
+    taskRetention: 720h # 30天
 
 # 认证开关
 auth:

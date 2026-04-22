@@ -149,6 +149,25 @@ func (s *skillIndexSync) UpsertSkill(ctx context.Context, skill *model.SkillRepo
 	return nil
 }
 
+func (s *skillIndexSync) UpdateSkill(ctx context.Context, skill *model.SkillRepositoryDB) error {
+	log := s.logger
+	if !s.isInitialized() {
+		log.WithContext(ctx).Warnf("skip skill index update because dataset is not initialized, skill_id=%s", skill.SkillID)
+		return nil
+	}
+	document, err := s.buildSkillDocument(ctx, skill)
+	if err != nil {
+		log.Errorf("build skill index document failed, skill_id=%s, err=%v", skill.SkillID, err)
+		return err
+	}
+	log.Infof("update skill index document, skill_id=%s, resource_id=%s", skill.SkillID, executionFactorySkillDataset)
+	if err = s.vegaClient.UpdateDatasetDocuments(ctx, executionFactorySkillDataset, []map[string]any{document}); err != nil {
+		log.Errorf("update skill index document failed, skill_id=%s, err=%v", skill.SkillID, err)
+		return err
+	}
+	return nil
+}
+
 func (s *skillIndexSync) DeleteSkill(ctx context.Context, skillID string) error {
 	if !s.isInitialized() {
 		s.logger.WithContext(ctx).Warnf("skip skill index delete because dataset is not initialized, skill_id=%s", skillID)

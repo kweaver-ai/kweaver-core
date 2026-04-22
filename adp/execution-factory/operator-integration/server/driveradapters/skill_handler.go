@@ -66,6 +66,14 @@ func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
 	engine.DELETE("/skills/:skill_id", r.SkillHandler.DeleteSkill)
 	// 更新状态
 	engine.PUT("/skills/:skill_id/status", r.SkillHandler.UpdateSkillStatus)
+	// 更新元数据
+	engine.PUT("/skills/:skill_id/metadata", r.SkillHandler.UpdateSkillMetadata)
+	// 更新技能包
+	engine.PUT("/skills/:skill_id/package", r.SkillHandler.UpdateSkillPackage)
+	// 将历史版本回灌到草稿态
+	engine.POST("/skills/:skill_id/history/republish", r.SkillHandler.RepublishSkillHistory)
+	// 直接发布历史版本
+	engine.POST("/skills/:skill_id/history/publish", r.SkillHandler.PublishSkillHistory)
 	/*市场接口*/
 	// 查询技能市场列表
 	engine.GET("/skills/market", r.SkillHandler.QuerySkillMarketList)
@@ -78,4 +86,12 @@ func (r *skillRestHandler) RegisterPublic(engine *gin.RouterGroup) {
 	engine.POST("/skills/:skill_id/files/read", r.SkillHandler.ReadSkillFile)
 	// 执行技能
 	engine.POST("/skills/:skill_id/execute", r.SkillHandler.ExecuteSkill)
+	// 查询技能发布历史
+	engine.GET("/skills/:skill_id/history", r.SkillHandler.GetSkillReleaseHistory)
+	/*构建接口*/
+	engine.POST("/skills/index/build", r.SkillHandler.CreateSkillIndexBuildTask)
+	engine.GET("/skills/index/build", r.SkillHandler.QuerySkillIndexBuildTaskList)
+	engine.GET("/skills/index/build/:task_id", r.SkillHandler.GetSkillIndexBuildTask)
+	engine.POST("/skills/index/build/:task_id/cancel", r.SkillHandler.CancelSkillIndexBuildTask)
+	engine.POST("/skills/index/build/:task_id/retry", r.SkillHandler.RetrySkillIndexBuildTask)
 }

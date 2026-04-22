@@ -842,6 +842,20 @@ func (mr *MockVegaBackendClientMockRecorder) GetResourceByID(ctx, id any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceByID", reflect.TypeOf((*MockVegaBackendClient)(nil).GetResourceByID), ctx, id)
 }
 
+// UpdateDatasetDocuments mocks base method.
+func (m *MockVegaBackendClient) UpdateDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDatasetDocuments", ctx, datasetID, documents)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDatasetDocuments indicates an expected call of UpdateDatasetDocuments.
+func (mr *MockVegaBackendClientMockRecorder) UpdateDatasetDocuments(ctx, datasetID, documents any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDatasetDocuments", reflect.TypeOf((*MockVegaBackendClient)(nil).UpdateDatasetDocuments), ctx, datasetID, documents)
+}
+
 // WriteDatasetDocuments mocks base method.
 func (m *MockVegaBackendClient) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
 	m.ctrl.T.Helper()

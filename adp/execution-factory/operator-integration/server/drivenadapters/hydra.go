@@ -78,6 +78,11 @@ func NewHydra() interfaces.Hydra {
 func (n *noopHydra) GenerateVisitor(c *gin.Context) (info *interfaces.TokenInfo, err error) {
 	xAccountType := c.GetHeader(string(interfaces.HeaderXAccountType))
 	xAccountID := c.GetHeader(string(interfaces.HeaderXAccountID))
+	if xAccountID == "" {
+		// 如果用户未登录，默认设置为管理员
+		xAccountID = interfaces.ADMIN_ACCOUNT_ID
+		xAccountType = interfaces.ADMIN_ACCOUNT_TYPE
+	}
 	info = &interfaces.TokenInfo{
 		Active:     true,
 		VisitorID:  xAccountID,
@@ -86,11 +91,7 @@ func (n *noopHydra) GenerateVisitor(c *gin.Context) (info *interfaces.TokenInfo,
 		MAC:        c.GetHeader("X-Request-MAC"),
 		UserAgent:  c.GetHeader("User-Agent"),
 	}
-	if info.VisitorID == "" {
-		// 如果用户未登录，默认设置为匿名用户
-		info.VisitorID = interfaces.UnknownUser
-		info.VisitorTyp = interfaces.Anonymous
-	}
+
 	return info, nil
 }
 

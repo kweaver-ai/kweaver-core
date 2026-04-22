@@ -3,10 +3,20 @@ package business_domain
 import (
 	"context"
 
+	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/interfaces"
 )
 
 type noopBusinessDomainService struct{}
+
+func (n *noopBusinessDomainService) GetBusinessDomainFromHeader(c *gin.Context) (businessDomain string) {
+	businessDomain = c.GetHeader(string(interfaces.HeaderXBusinessDomain))
+	if businessDomain == "" {
+		businessDomain = interfaces.DefaultBusinessDomain
+	}
+	c.Request.Header.Set(string(interfaces.HeaderXBusinessDomain), businessDomain)
+	return businessDomain
+}
 
 func (n *noopBusinessDomainService) ValidateBusinessDomain(ctx context.Context) (err error) {
 	return nil
