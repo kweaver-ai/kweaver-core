@@ -257,11 +257,32 @@ kweaver-admin --json call /api/eacp/v1/... -X POST -d '{"...":"..."}'
 - **TLS:** `-k` / `--insecure` (or env var `KWEAVER_TLS_INSECURE=1`) is for development / self-signed certs only — never use in production.
 - **Capabilities not exposed by the Web console — CLI is the primary path:** department writes (`Usrm_AddDepartment` / `Usrm_EditDepartment`), user updates (`Usrm_EditUser` fallback), user-role lookup (`role list` + `role members` fallback), etc. See [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md).
 
+### 🤖 AI Agent Skill
+
+`kweaver-admin` ships a progressive-disclosure skill so AI coding assistants (Cursor, Claude Code, …) can drive admin operations on your behalf:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+After installation, log in once with `kweaver-admin auth login https://<address> -k`, then ask in natural language (or `/kweaver-admin` slash):
+
+```text
+List all roles
+Create user alice and assign every role from role list
+Reset alice's password
+Show alice's login audit for the last 7 days
+Register an embedding model bge-m3 against https://api.siliconflow.cn
+```
+
+Skill source: [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md). It is independent from the `kweaver-core` / `create-bkn` skills (which target the `kweaver` CLI).
+
 ### 📖 Further reading
 
 - [`kweaver-admin` repository README](https://github.com/kweaver-ai/kweaver-admin)
 - [`ARCHITECTURE.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/ARCHITECTURE.md) — command tree and backend API mapping
 - [`docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md) — tokens, TLS, audit and fallback routes
+- [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md) — agent skill entry
 
 ---
 

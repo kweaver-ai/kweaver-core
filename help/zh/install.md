@@ -260,11 +260,32 @@ kweaver-admin --json call /api/eacp/v1/... -X POST -d '{"...":"..."}'
 - **TLS：** `-k` / `--insecure`（或环境变量 `KWEAVER_TLS_INSECURE=1`）仅用于开发/自签名证书场景，生产请使用受信任证书。
 - **Web 控制台未暴露的能力，CLI 是首选路径**：例如部门写入（`Usrm_AddDepartment` / `Usrm_EditDepartment`）、用户更新（`Usrm_EditUser` 回退）、用户角色查询（`role list + role members` 回退）等，详见 [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md)。
 
+### 🤖 AI Agent Skill
+
+`kweaver-admin` 仓库自带渐进式（progressive disclosure）Skill，让 AI 编程助手（Cursor、Claude Code 等）代你执行管理员操作：
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+安装后先用 `kweaver-admin auth login https://<访问地址> -k` 登录一次，然后用自然语言（也支持 `/kweaver-admin` 斜杠命令）指挥助手：
+
+```text
+列出所有角色
+新建用户 alice，并把 role list 中的所有角色都赋给她
+重置 alice 的密码
+查看 alice 最近 7 天的登录审计
+注册一个名为 bge-m3 的 Embedding 模型，base 是 https://api.siliconflow.cn
+```
+
+Skill 源文件：[`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md)。它与 `kweaver` CLI 的 `kweaver-core` / `create-bkn` Skill 互补、相互独立。
+
 ### 📖 进一步阅读
 
 - [`kweaver-admin` 仓库 README](https://github.com/kweaver-ai/kweaver-admin)
 - [`ARCHITECTURE.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/ARCHITECTURE.md) — 命令树与后端 API 映射
 - [`docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md) — Token、TLS、审计与 fallback 路径
+- [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md) — Agent Skill 入口
 
 ---
 

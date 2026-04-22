@@ -353,6 +353,26 @@ kweaver-admin call /api/user-management/v1/management/users -X GET   # raw HTTP 
 
 Full command tree, security notes, and `auth change-password` (EACP `modifypassword`, same `401001017` first-login flow as the `kweaver` CLI): see [kweaver-admin README](https://github.com/kweaver-ai/kweaver-admin) and [help/en/install.md — Administrator tool after a full install](help/en/install.md#-administrator-tool-after-a-full-install-kweaver-admin).
 
+### AI Agent Skill — `kweaver-admin`
+
+`kweaver-admin` ships its own progressive-disclosure skill so AI coding assistants can drive admin tasks (auth, org, user, role, model, audit, raw HTTP) on your behalf. Install with `npx skills`:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+After installing, authenticate once with `kweaver-admin auth login https://your-instance -k`, then ask your assistant in natural language (`/kweaver-admin` slash also works):
+
+```text
+List all roles
+Create user alice and assign every role from role list
+Reset alice's password
+Show login audit for alice in the last 7 days
+Register an embedding model named bge-m3 against https://api.siliconflow.cn
+```
+
+Skill source: [skills/kweaver-admin/SKILL.md](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md). It complements the `kweaver-core` / `create-bkn` skills above (which target the `kweaver` CLI).
+
 <a id="toc-kweaver-core"></a>
 
 ## 🏗️ KWeaver Core

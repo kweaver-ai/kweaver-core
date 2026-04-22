@@ -355,6 +355,26 @@ kweaver-admin call /api/user-management/v1/management/users -X GET   # 自动带
 
 完整命令树、安全说明与 `auth change-password`（EACP `modifypassword`，与 `kweaver` CLI 一致的 `401001017` 首登流程）：见 [kweaver-admin README](https://github.com/kweaver-ai/kweaver-admin) 与 [help/zh/install.md — 完整安装后的管理员工具](help/zh/install.md#-完整安装后的管理员工具kweaver-admin)。
 
+### AI Agent Skill —— `kweaver-admin`
+
+`kweaver-admin` 仓库自带渐进式（progressive disclosure）Skill，可让 AI 编程助手代你执行管理员操作（auth、org、user、role、model、audit、原始 HTTP）。通过 `npx skills` 安装：
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+安装后先用 `kweaver-admin auth login https://<访问地址> -k` 登录一次，然后用自然语言（也支持 `/kweaver-admin` 斜杠命令）指挥助手：
+
+```text
+列出所有角色
+新建用户 alice，并把 role list 中的所有角色都赋给她
+重置 alice 的密码
+查看 alice 最近 7 天的登录审计
+注册一个名为 bge-m3 的 Embedding 模型，base 是 https://api.siliconflow.cn
+```
+
+Skill 源文件：[skills/kweaver-admin/SKILL.md](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md)。它与上文面向 `kweaver` CLI 的 `kweaver-core` / `create-bkn` Skill 互补。
+
 <a id="toc-kweaver-core"></a>
 
 ## 🏗️ KWeaver Core
