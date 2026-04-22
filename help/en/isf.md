@@ -8,6 +8,26 @@ With **`--minimum` install**, many auth components are disabled for a simpler la
 
 **Related modules:** All subsystems that accept `Authorization` headers; [Decision Agent](decision-agent.md) and [VEGA Engine](vega.md) are primary consumers.
 
+## 🛡️ Administrator tool: kweaver-admin
+
+In a **full install** (with `auth.enabled=true` and `businessDomain.enabled=true`), ISF's day-to-day **management surface** — users, organizations, roles, models, audit — is handled via the standalone CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin), complementary to the end-user `kweaver` CLI shown below on this page.
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin           # Node.js 18+
+kweaver-admin auth login https://<access-address> -k
+
+kweaver-admin org tree                              # list departments
+kweaver-admin user create --login alice             # default password 123456, forced change at first sign-in
+kweaver-admin user assign-role <userId> <roleId>
+kweaver-admin user reset-password -u alice          # admin reset
+kweaver-admin role list
+kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
+```
+
+> Full command list, token isolation (`~/.kweaver-admin/`), and `--minimum` install caveats: see [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin).
+>
+> Respect the **separation-of-duties** built-in accounts (`system`, `admin`, `security`, `audit`) — operators should use individual accounts, not the shared `admin`, for traceable audit logs.
+
 ## 💻 CLI
 
 ### Authentication — Login

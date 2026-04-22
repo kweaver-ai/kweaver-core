@@ -12,7 +12,7 @@
 
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliably in complex enterprises.
 
-**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community)
+**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🛡️ KWeaver Admin CLI](#toc-kweaver-admin) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community)
 
 > **Note:** KWeaver Core is a **backend-only framework** — it does not include a web UI. All interactions are through the CLI, SDK, or API. If you need a graphical interface, please install [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver).
 
@@ -21,6 +21,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 ## 📚 Quick Links
 
 - 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Web UI for KWeaver (username: `kweaver`, password: `111111`)
+- 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - Platform administrator CLI (users / orgs / roles / models / audit) for full installs
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
 - 📦 [Examples](examples/README.md) - End-to-end CLI walkthroughs (DB / CSV / actions)
@@ -99,6 +100,8 @@ kweaver <command> --help         # help for a specific command, e.g. kweaver bkn
 ```
 
 For full product documentation, see the [Documentation](help/README.md) ([EN](help/en/README.md) / [中文](help/zh/README.md)).
+
+> **Did a full install (without `--minimum`)?** Also install [`kweaver-admin`](#toc-kweaver-admin) to manage users, organizations, roles, models, and audit logs — see [help/en/install.md — Administrator tool after a full install](help/en/install.md#-administrator-tool-after-a-full-install-kweaver-admin).
 
 > **No deployment yet?** Use the [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) web UI to try KWeaver online (username: `kweaver`, password: `111111`), or connect your CLI/SDK directly to the demo environment (see below).
 
@@ -293,6 +296,62 @@ reply   = kweaver.chat("Summarise the top 3 risks")
 ```
 
 For streaming, `KWeaverClient`, and the full API surface, see the [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) repository docs and examples.
+
+<a id="toc-kweaver-admin"></a>
+
+## 🛡️ KWeaver Admin CLI
+
+[`kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) is a separate npm CLI for **platform administrators**, complementary to the `kweaver` CLI from `kweaver-sdk`:
+
+| CLI | Audience | Scope |
+| --- | --- | --- |
+| `kweaver` (`@kweaver-ai/kweaver-sdk`) | End users / Agents | BKN, Decision Agent, Action, Skill, query |
+| `kweaver-admin` (`@kweaver-ai/kweaver-admin`) | Platform administrators | Users, organizations, roles, models, audit, raw HTTP |
+
+> Most `kweaver-admin` commands target services that come with a **full install** (`auth.enabled=true`, `businessDomain.enabled=true`): `user-management`, `deploy-manager`, `deploy-auth`, `eacp`, `mf-model-manager`, OAuth2 (Hydra). On a `--minimum` install most commands return 401 / 404 — expected.
+
+### Install
+
+Requires Node.js 18+. Credentials are stored under `~/.kweaver-admin/platforms/`, isolated from `~/.kweaver/`.
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin --version
+```
+
+### Login
+
+```bash
+# Browser OAuth2 (skip TLS for self-signed certs)
+kweaver-admin auth login https://<access-address> -k
+
+# Username/password (CI / headless)
+kweaver-admin auth login https://<access-address> -u <user> -p <password> -k
+
+# Or via environment variables
+export KWEAVER_BASE_URL=https://<access-address>
+export KWEAVER_ADMIN_TOKEN=<bearer-token>   # falls back to KWEAVER_TOKEN
+```
+
+### Common admin tasks
+
+```bash
+kweaver-admin org tree                           # list departments
+kweaver-admin user create --login alice          # default password: 123456 (forced change at first login)
+kweaver-admin user reset-password -u alice       # admin reset
+kweaver-admin role list
+kweaver-admin role add-member <roleId> -u alice
+kweaver-admin llm add                            # register an LLM
+kweaver-admin small-model add                    # register an embedding model
+kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
+kweaver-admin call /api/user-management/v1/management/users -X GET   # raw HTTP with auth header
+```
+
+> New users created by `user create` always start with the platform default password **`123456`** and are forced to change it on first sign-in (this is documented upstream behavior of the ISF user store, not a CLI choice). For lost-password flows, prefer `kweaver-admin user reset-password`.
+
+> Respect the **separation-of-duties** built-in accounts (`system`, `admin`, `security`, `audit`) — operators should use individual accounts, not the shared `admin`.
+
+Full command tree, security notes, and `auth change-password` (EACP `modifypassword`, same `401001017` first-login flow as the `kweaver` CLI): see [kweaver-admin README](https://github.com/kweaver-ai/kweaver-admin) and [help/en/install.md — Administrator tool after a full install](help/en/install.md#-administrator-tool-after-a-full-install-kweaver-admin).
 
 <a id="toc-kweaver-core"></a>
 

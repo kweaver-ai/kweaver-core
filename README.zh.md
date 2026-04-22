@@ -12,7 +12,7 @@
 
 KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基础平台。它将分散的数据、知识、工具和策略转化为受治理的上下文、安全的执行和可验证的反馈闭环。通过语义建模、实时访问、运行时管控和 TraceAI，帮助 AI 系统在复杂企业环境中可靠地推理、适应和行动。
 
-**本文目录：** [📚 快速链接](#toc-quick-links) · [🎬 演示视频](#toc-demo) · [🚀 快速开始](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 基准测试](#toc-benchmarks) · [💬 社区](#toc-community)
+**本文目录：** [📚 快速链接](#toc-quick-links) · [🎬 演示视频](#toc-demo) · [🚀 快速开始](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🛡️ KWeaver Admin CLI](#toc-kweaver-admin) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 基准测试](#toc-benchmarks) · [💬 社区](#toc-community)
 
 > **注意：** KWeaver Core 是**纯后台框架**，不提供 Web 界面。所有交互通过 CLI、SDK 或 API 完成。如需界面访问，请安装 [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver)。
 
@@ -21,6 +21,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 ## 📚 快速链接
 
 - 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver Web 界面（用户名：`kweaver`，密码：`111111`）
+- 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - 平台管理员 CLI（用户/组织/角色/模型/审计），完整安装后使用
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
 - 📦 [示例](examples/README.zh.md) - 端到端 CLI 示例（数据库 / CSV / Action）
@@ -100,6 +101,8 @@ kweaver <command> --help         # 查看某命令的帮助，例如 kweaver bkn
 ```
 
 完整产品文档参见[文档中心](help/README.md)（[中文](help/zh/README.md) / [EN](help/en/README.md)）。
+
+> **完整安装（未加 `--minimum`）？** 建议同时安装 [`kweaver-admin`](#toc-kweaver-admin) 进行用户、组织、角色、模型与审计管理 — 详见 [help/zh/install.md — 完整安装后的管理员工具](help/zh/install.md#-完整安装后的管理员工具kweaver-admin)。
 
 > **尚未部署？** 可访问 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) Web 界面在线体验（用户名：`kweaver`，密码：`111111`），或将 CLI/SDK 直接连接到 Demo 环境（见下方说明）。
 
@@ -295,6 +298,62 @@ reply   = kweaver.chat("总结前三大风险")
 ```
 
 流式对话、`KWeaverClient` 与完整 API 等更多用法，请参阅 [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) 仓库文档与示例。
+
+<a id="toc-kweaver-admin"></a>
+
+## 🛡️ KWeaver Admin CLI
+
+[`kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) 是面向**平台管理员**的独立 npm CLI，与面向终端用户/Agent 的 `kweaver`（kweaver-sdk）互补：
+
+| CLI | 受众 | 覆盖范围 |
+| --- | --- | --- |
+| `kweaver`（`@kweaver-ai/kweaver-sdk`） | 业务用户 / Agent | BKN、Decision Agent、Action、Skill、查询 |
+| `kweaver-admin`（`@kweaver-ai/kweaver-admin`） | 平台管理员 | 用户、组织、角色、模型、审计、原始 HTTP |
+
+> `kweaver-admin` 主要操作的服务来自**完整安装**（`auth.enabled=true`、`businessDomain.enabled=true`）：`user-management`、`deploy-manager`、`deploy-auth`、`eacp`、`mf-model-manager`、OAuth2(Hydra)。`--minimum` 安装下大多数命令会返回 401 / 404，属正常裁剪。
+
+### 安装
+
+要求 Node.js 18+。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin --version
+```
+
+### 登录
+
+```bash
+# 浏览器 OAuth2（自签名证书加 -k）
+kweaver-admin auth login https://<访问地址> -k
+
+# 用户名/密码（CI 或无浏览器场景）
+kweaver-admin auth login https://<访问地址> -u <用户名> -p <密码> -k
+
+# 或通过环境变量
+export KWEAVER_BASE_URL=https://<访问地址>
+export KWEAVER_ADMIN_TOKEN=<bearer-token>   # 也可回退到 KWEAVER_TOKEN
+```
+
+### 常用管理命令
+
+```bash
+kweaver-admin org tree                           # 列出部门
+kweaver-admin user create --login alice          # 默认密码 123456，首次登录强制改密
+kweaver-admin user reset-password -u alice       # 管理员重置密码
+kweaver-admin role list
+kweaver-admin role add-member <roleId> -u alice
+kweaver-admin llm add                            # 注册 LLM
+kweaver-admin small-model add                    # 注册 Embedding 模型
+kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
+kweaver-admin call /api/user-management/v1/management/users -X GET   # 自动带认证头的原始 HTTP
+```
+
+> `user create` 新建账号的初始密码固定为 **`123456`**，首次登录强制改密（这是 ISF 用户存储的上游既定行为，并非 CLI 选择）。忘/失密请用 `kweaver-admin user reset-password`。
+
+> 内置「三权分立」账号 `system / admin / security / audit` 不可随意删改；请使用各自的个人账号操作，避免共用 `admin`。
+
+完整命令树、安全说明与 `auth change-password`（EACP `modifypassword`，与 `kweaver` CLI 一致的 `401001017` 首登流程）：见 [kweaver-admin README](https://github.com/kweaver-ai/kweaver-admin) 与 [help/zh/install.md — 完整安装后的管理员工具](help/zh/install.md#-完整安装后的管理员工具kweaver-admin)。
 
 <a id="toc-kweaver-core"></a>
 
