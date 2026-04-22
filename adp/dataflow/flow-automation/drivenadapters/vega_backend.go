@@ -27,7 +27,8 @@ var (
 func NewVegaBackend() VegaBackend {
 	vegaBackendOnce.Do(func() {
 		config := common.NewConfig()
-		baseURL := fmt.Sprintf("http://%s:%d/api/vega-backend",
+		// 使用内部 API 路径 /api/vega-backend/in
+		baseURL := fmt.Sprintf("http://%s:%d/api/vega-backend/in",
 			config.VegaBackendConfig.PrivateHost, config.VegaBackendConfig.PrivatePort)
 		vegaBackendInstance = &vegaBackend{
 			baseURL:    baseURL,
@@ -46,6 +47,7 @@ type vegaBackend struct {
 func (v *vegaBackend) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
 	log := traceLog.WithContext(ctx)
 
+	// 使用内部 API 路径: /api/vega-backend/in/v1/resources/dataset/:id/docs
 	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
 	headers := map[string]string{
 		"Content-Type": "application/json",

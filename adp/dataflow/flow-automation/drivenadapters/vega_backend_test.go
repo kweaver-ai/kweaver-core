@@ -24,6 +24,7 @@ func init() {
 
 func TestVegaBackend_WriteDatasetDocuments(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 内部 API 路径: /v1/resources/dataset/:id/docs
 		assert.Equal(t, "/v1/resources/dataset/test-dataset-id/docs", r.URL.Path)
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
