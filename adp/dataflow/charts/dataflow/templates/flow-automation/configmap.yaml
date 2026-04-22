@@ -273,6 +273,8 @@ data:
   SANDBOX_MEMORY: {{ .Values.depServices.sandbox.memory | quote }}
   SANDBOX_DISK: {{ .Values.depServices.sandbox.disk | quote }}
   SANDBOX_TIMEOUT: {{ .Values.depServices.sandbox.timeout | quote }}
+  VEGABACKEND_HOST: {{ index .Values "depServices" "vegabackend" "host" | quote }}
+  VEGABACKEND_PORT: {{ index .Values "depServices" "vegabackend" "port" | quote }}
 
   flow_o11y_data.yaml: |
     log_level: {{ index .Values "flowAutomation" "flow-o11y-data-log" "log_level"}}

@@ -623,8 +623,8 @@ type FlowFileDownload struct {
 
 // VegaBackendConfig vega-backend 服务配置
 type VegaBackendConfig struct {
-	PrivateHost string `mapstructure:"private_host"`
-	PrivatePort int    `mapstructure:"private_port"`
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 
 // BindEnvs bind envs

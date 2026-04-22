@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/common"
-	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
 	otelHttp "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/http"
+	traceLog "github.com/kweaver-ai/kweaver-core/adp/dataflow/flow-automation/libs/go/telemetry/log"
 )
 
 // VegaBackend 接口定义
@@ -29,7 +29,7 @@ func NewVegaBackend() VegaBackend {
 		config := common.NewConfig()
 		// 使用内部 API 路径 /api/vega-backend/in
 		baseURL := fmt.Sprintf("http://%s:%d/api/vega-backend/in",
-			config.VegaBackendConfig.PrivateHost, config.VegaBackendConfig.PrivatePort)
+			config.VegaBackendConfig.Host, config.VegaBackendConfig.Port)
 		vegaBackendInstance = &vegaBackend{
 			baseURL:    baseURL,
 			httpClient: NewOtelHTTPClient(),
