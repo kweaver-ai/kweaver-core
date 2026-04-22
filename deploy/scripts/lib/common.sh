@@ -711,6 +711,11 @@ should_skip_upgrade_same_chart_version() {
     local chart_name="$3"
     local target_version="$4"
 
+    # Honor explicit override: never skip when caller asked to force re-render.
+    if [[ "${FORCE_UPGRADE:-false}" == "true" ]]; then
+        return 1
+    fi
+
     if [[ -z "${target_version}" ]]; then
         return 1
     fi
@@ -725,7 +730,7 @@ should_skip_upgrade_same_chart_version() {
     local installed_version
     installed_version=$(get_installed_chart_version "${release_name}" "${namespace}" "${chart_name}")
     if [[ -n "${installed_version}" && "${installed_version}" == "${target_version}" ]]; then
-        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}."
+        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}. (Pass --force-upgrade to re-render with updated values.)"
         return 0
     fi
 
