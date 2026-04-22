@@ -468,8 +468,4 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 
 <img src="./help/qrcode.png" width="200" alt="KWeaver WeChat group QR code" />
 
-<img src="./docs/qrcode.png" width="200" alt="KWeaver WeChat group QR code (original docs path)" />
-
-Same image as above — `./docs/qrcode.png` is the path used in earlier READMEs.
-
 Scan to join the KWeaver community group.
