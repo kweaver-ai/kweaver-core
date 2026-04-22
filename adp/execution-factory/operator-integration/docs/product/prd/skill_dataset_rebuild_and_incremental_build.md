@@ -1,10 +1,5 @@
 # 🧩 PRD: Skill DataSet 重建与增量构建
 
-> 状态: In Review
-> 负责人: 待确认
-> 更新时间: 2026-04-17
-
----
 
 ## 📌 1. 背景（Background）
 

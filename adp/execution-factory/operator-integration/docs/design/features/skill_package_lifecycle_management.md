@@ -1,8 +1,5 @@
 # 🏗️ Design Doc: Skill 包级更新与元数据维护
 
-> 状态: Draft
-> 负责人: @待确认
-> Reviewers: @待确认
 > 关联 PRD: ../../product/prd/skill_package_lifecycle_management.md
 
 ---

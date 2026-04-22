@@ -1,9 +1,6 @@
 # 🏗️ Design Doc: Skill DataSet 重建与增量构建
 
-> 状态: In Review  
-> 负责人: 待确认  
-> Reviewers: 待确认  
-> 关联 PRD: ../../product/prd/skill_dataset_rebuild_and_incremental_build.md  
+> 关联 PRD: ../../product/prd/skill_dataset_rebuild_and_incremental_build.md
 
 ---
 
