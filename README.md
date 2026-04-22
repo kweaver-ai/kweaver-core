@@ -28,8 +28,6 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 - 📘 [Documentation](help/README.md) - Product documentation and usage guides ([EN](help/en/README.md) / [中文](help/zh/README.md))
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver-core/) - KWeaver technical articles and updates
 - 🧾 [Release Notes](release-notes/) - All notable changes
-- 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver-core/issues) - Report a bug or issue
-- 💡 [Request Feature](https://github.com/kweaver-ai/kweaver-core/issues) - Suggest a new feature
 
 <a id="toc-demo"></a>
 
