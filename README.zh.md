@@ -21,6 +21,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 ## 📚 快速链接
 
 - 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver Web 界面（用户名：`kweaver`，密码：`111111`）
+- 🛠️ [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) - 终端用户 / Agent 使用的 `kweaver` CLI、TypeScript / Python SDK 与 Agent Skill
 - 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - 平台管理员 CLI（用户/组织/角色/模型/审计），完整安装后使用
 - 🤝 [贡献指南](rules/CONTRIBUTING.zh.md) - 项目贡献指南
 - 🚢 [部署指南](deploy/README.zh.md) - 一键部署到 Kubernetes
