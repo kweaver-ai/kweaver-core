@@ -62,7 +62,6 @@ type AgentConfigConfig struct {
 	Dolphin                   string                                  `json:"dolphin"`                     // Dolphin 语句
 	Mode                      cdaenum.AgentMode                       `json:"mode"`                        // 配置模式
 	IsDolphinMode             cdaenum.DolphinMode                     `json:"is_dolphin_mode"`             // 是否是 dolphin 模式
-	//IsUseToolIDInDolphin      int                                     `json:"is_use_tool_id_in_dolphin"`   // dolphin 中是否使用 tool id
 	PreDolphin                []*daconfvalobj.DolphinTpl              `json:"pre_dolphin"`                 // 在用户自定义 dolphin 之前执行的内置 dolphin 语句
 	PostDolphin               []*daconfvalobj.DolphinTpl              `json:"post_dolphin"`                // 在用户自定义 dolphin 之后执行的内置 dolphin 语句
 	DataSource                *datasourcevalobj.RetrieverDataSource   `json:"data_source"`                 // 数据源

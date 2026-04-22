@@ -122,7 +122,17 @@ class PromptBuilder:
             history_enabled = (
                 not self.agent_config.react_disable_history_in_a_conversation()
             )
-            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled})$query -> answer\n"""
+
+            disable_llm_cache = (
+                Config.features.disable_dolphin_sdk_llm_cache
+                or self.agent_config.react_disable_llm_cache()
+            )
+
+            # no_cache: 是否禁用缓存（布尔值）
+            # no_cache = disable_llm_cache
+
+            # 构造 explore dolphin 语句
+            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled}, no_cache={disable_llm_cache})$query -> answer\n"""
 
             dolphin_prompt = (
                 memory_prompt

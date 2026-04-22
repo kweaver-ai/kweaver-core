@@ -225,12 +225,11 @@ class AgentCoreV2:
             else:
                 flags.set_flag(flags.EXPLORE_BLOCK_V2, False)
 
-            # 全局已禁用缓存，或 Agent 配置要求禁用缓存时，都下发禁用标记。
-            disable_llm_cache = (
-                Config.features.disable_dolphin_sdk_llm_cache
-                or agent_config.react_disable_llm_cache()
-            )
-            flags.set_flag(flags.DISABLE_LLM_CACHE, disable_llm_cache)
+            # 根据配置禁用dolphin sdk的llm cache
+            if Config.features.disable_dolphin_sdk_llm_cache:
+                flags.set_flag(flags.DISABLE_LLM_CACHE, True)
+            else:
+                flags.set_flag(flags.DISABLE_LLM_CACHE, False)
 
             # 认证信息当前仍通过 headers 传递给下游，不再镜像写入
             # context_variables。保留注释便于后续回溯这段兼容逻辑。

@@ -5683,7 +5683,7 @@ const docTemplate = `{
                     }
                 },
                 "pre_dolphin": {
-                    "description": "IsUseToolIDInDolphin      int                                     ` + "`" + `json:\"is_use_tool_id_in_dolphin\"` + "`" + `   // dolphin 中是否使用 tool id",
+                    "description": "在用户自定义 dolphin 之前执行的内置 dolphin 语句",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/daconfvalobj.DolphinTpl"
