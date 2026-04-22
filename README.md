@@ -12,7 +12,7 @@
 
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliably in complex enterprises.
 
-**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community) · [📬 Support](#toc-support)
+**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community)
 
 > **Note:** KWeaver Core is a **backend-only framework** — it does not include a web UI. All interactions are through the CLI, SDK, or API. If you need a graphical interface, please install [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver).
 
@@ -77,7 +77,7 @@ kubectl get nodes
 kubectl get pods -A
 
 # Check service status
-./deploy.sh kweaver status
+./deploy.sh kweaver-core status
 ```
 
 4. **Verify API access**
@@ -108,14 +108,7 @@ For full product documentation, see the [Documentation](help/README.md) ([EN](he
 
 <a id="toc-kweaver-core-and-sdk"></a>
 
-KWeaver is split across two open-source projects: **kweaver-core** (this repository) is the **server platform** you deploy in your environment, and **kweaver-sdk** is the **client CLI and language SDKs** you install on a laptop, bastion, or CI host. The table below is a one-line map; the rest of this section covers the client SDK, and [KWeaver Core](#toc-kweaver-core) documents the server platform in depth.
-
-| Project | Description | Repository |
-| --- | --- | --- |
-| **KWeaver SDK** | CLI and SDK (TypeScript/Python) for AI agents and developers to access KWeaver knowledge networks and Decision Agents programmatically | [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) |
-| **KWeaver Core** | AI-native platform foundation — Decision Agent, AI Data Platform (BKN Engine, VEGA Engine, Context Loader, Execution Factory), Info Security Fabric, Trace AI | [kweaver-core](https://github.com/kweaver-ai/kweaver-core) (this repo) |
-
-### Install the SDK First
+### Install the SDK on the client
 
 After deploying KWeaver Core, we recommend installing [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) as your next step. The SDK provides the `kweaver` CLI and AI Agent Skills — the primary way to interact with the platform.
 
@@ -137,7 +130,7 @@ npx kweaver --help
 
 Install skills from [**kweaver-sdk**](https://github.com/kweaver-ai/kweaver-sdk) with [`npx skills`](https://www.npmjs.com/package/skills).
 
-**Install both skills at once** (recommended):
+**Install both skills** (recommended):
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk \
@@ -147,7 +140,7 @@ npx skills add https://github.com/kweaver-ai/kweaver-sdk \
 - **`kweaver-core`** — full KWeaver APIs and CLI conventions so assistants can operate KWeaver on your behalf. See [skills/kweaver-core/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/kweaver-core/SKILL.md).
 - **`create-bkn`** — guided workflow and tooling to create and manage **Business Knowledge Networks (BKN)** from your AI coding assistant. See [skills/create-bkn/SKILL.md](https://github.com/kweaver-ai/kweaver-sdk/blob/main/skills/create-bkn/SKILL.md).
 
-**Install a single skill only** (optional):
+**Install one skill** (optional):
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk --skill kweaver-core
@@ -205,15 +198,53 @@ Or use `/kweaver-core` slash commands (the skill takes over automatically):
 
 ### Headless / no-browser authentication (SSH, CI, containers)
 
-The **npm** `kweaver` CLI supports authenticating without a local browser or without pasting callback URLs. Three methods are available:
+The `kweaver` CLI supports authenticating without a local browser or without pasting callback URLs.
 
-**Method 1 — `--no-browser` (recommended for interactive headless sessions)**
+**Which option to use**
+
+| Your situation | Use | Notes |
+| --- | --- | --- |
+| **Username and password** sign-in is available | **Method 1** (HTTP, `-u` / `-p`) | One command on the host; no need to copy an OAuth callback from elsewhere. |
+| **[kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) is installed** (the `kweaver` command works) | **Method 2** (`auth export` / replay) | After browser login, run `kweaver auth export` and **replay** the one-line command on the headless target. |
+| kweaver-sdk is **not** installed; you usually run **`npx kweaver`** | **Method 3** (`--no-browser`) | After signing in on another device, an **extra step**: **copy the full callback URL** or **only the authorization code** (*copy code*), then paste at `Paste URL or code` in the headless terminal. |
+
+**Method 1 — Username/password HTTP sign-in (fully non-interactive on the host, no browser required)**
+
+No Node/Chromium needed — the CLI calls the platform's `/oauth2/signin` endpoint over HTTPS and stores the returned tokens. Suitable for CI runners, minimal Linux containers, and any host without a browser:
+
+```bash
+kweaver auth login https://your-instance -u <username> -p <password> -k
+```
+
+`-u` / `-p` together select this path automatically (you can also add `--http-signin` explicitly). If you omit `-u` / `-p`, the CLI prompts for them on stdin (password input is hidden on a TTY). The CLI saves tokens under `~/.kweaver/` including a `refresh_token` when the IdP returns one — same auto-refresh behavior as a normal browser login.
+
+**Method 2 — Export & replay (kweaver-sdk installed; export and replay)**
+
+On a machine that **has** the `kweaver` CLI, sign in with the browser once, then `export` a one-line command for the headless host — you do not need to transcribe the OAuth callback URL or code in the terminal by hand.
+
+1. On a machine **with** a browser, run `kweaver auth login https://your-instance`. After success, export credentials:
+
+```bash
+kweaver auth export              # prints a one-line command you can paste on the headless host
+```
+
+2. On the **headless** host, paste the exported command. It uses `--client-id`, `--client-secret`, and `--refresh-token` to exchange tokens and save credentials under `~/.kweaver/`:
+
+```bash
+kweaver auth login https://your-instance \
+  --client-id <ID> --client-secret <SECRET> --refresh-token <TOKEN>
+```
+
+**Method 3 — `--no-browser` (when kweaver-sdk is not installed; extra copy/paste of URL or code)**
+
+Use this when the CLI is not installed globally and you run via `npx kweaver` (or similar). Compared with **Method 2**, you must **manually copy** the URL or code from the browser after login.
 
 ```bash
 kweaver auth login https://your-instance --no-browser
+# or: npx kweaver auth login https://your-instance --no-browser
 ```
 
-The CLI prints an OAuth URL instead of opening a browser. Copy that URL and open it on **any device** with a browser (phone, laptop, etc.). After login the browser redirects to a `localhost` callback URL — it will show an error page (this is expected). Copy the **full URL** from the address bar and paste it back into the CLI prompt:
+The CLI prints an OAuth URL instead of opening a local browser window. Open that URL on **any device** with a browser (phone, laptop, etc.). After login, the browser redirects to a `localhost` callback — an error page is normal. Copy the **full URL** from the address bar, **or only the authorization code**, and paste it at the prompt below (the extra **Paste URL or code** step):
 
 ```
 Open this URL on any device (use a private/incognito window if you need the full sign-in form):
@@ -226,31 +257,6 @@ Copy the FULL URL from the address bar and paste it here, or paste only the auth
 Paste URL or code>
 ```
 
-**Method 2 — Export & replay credentials (for CI / fully non-interactive)**
-
-1. On a machine **with** a browser, run `kweaver auth login https://your-instance`. After success, export credentials:
-
-```bash
-kweaver auth export              # prints a one-line command you can paste on the headless host
-kweaver auth export --json       # JSON format (useful for CI secrets)
-```
-
-2. On the **headless** host, paste the exported command. It uses `--client-id`, `--client-secret`, and `--refresh-token` to exchange tokens and save credentials under `~/.kweaver/`:
-
-```bash
-kweaver auth login https://your-instance \
-  --client-id <ID> --client-secret <SECRET> --refresh-token <TOKEN>
-```
-
-**Method 3 — Username/password HTTP sign-in (fully non-interactive on the host, no browser required)**
-
-No Node/Chromium needed — the CLI calls the platform's `/oauth2/signin` endpoint over HTTPS and stores the returned tokens. Suitable for CI runners, minimal Linux containers, and any host without a browser:
-
-```bash
-kweaver auth login https://your-instance -u <username> -p <password> -k
-```
-
-`-u` / `-p` together select this path automatically (you can also add `--http-signin` explicitly). If you omit `-u` / `-p`, the CLI prompts for them on stdin (password input is hidden on a TTY). The CLI saves tokens under `~/.kweaver/` including a `refresh_token` when the IdP returns one — same auto-refresh behavior as a normal browser login.
 > With saved `~/.kweaver/` sessions, the CLI automatically exchanges `refresh_token` for a new access token when it expires — no extra flags needed. You can also set environment variables (`KWEAVER_BASE_URL`, `KWEAVER_TOKEN`) instead of persisting credentials to disk.
 
 Full details: [kweaver-sdk — Authentication](https://github.com/kweaver-ai/kweaver-sdk#authentication) and [Headless / Server Authentication](https://github.com/kweaver-ai/kweaver-sdk/blob/main/packages/typescript/README.md#headless--server-authentication). The Python `kweaver` CLI still uses interactive browser login; reuse the `~/.kweaver/` directory from a machine where the Node CLI finished login, or set the environment variables above.
@@ -258,22 +264,16 @@ Full details: [kweaver-sdk — Authentication](https://github.com/kweaver-ai/kwe
 ### CLI
 
 ```bash
-kweaver auth login https://your-kweaver.com     # authenticate (-k for self-signed certs)
-kweaver bkn list                                 # browse knowledge networks
-kweaver bkn search <kn-id> "query"              # semantic search over a BKN
-kweaver bkn build <kn-id> --wait                # rebuild index and wait for completion
-kweaver bkn object-type list <kn-id>            # inspect object types
-kweaver bkn action-type execute <kn-id> <at-id> # execute an action
-kweaver agent list                               # list Decision Agents
-kweaver agent chat <agent-id> -m "Hello"        # chat with an agent
-kweaver ds import-csv <ds-id> --files "*.csv"   # import CSV files into a datasource
-kweaver context-loader kn-search "query"        # semantic search via Context Loader
-kweaver call /api/...                            # raw API call
+kweaver auth login https://your-kweaver.com -k    # authenticate (-k for self-signed TLS)
+kweaver bkn list                                 # list knowledge networks
+kweaver bkn search <kn-id> "query"               # semantic search
+kweaver agent chat <agent-id> -m "Hello"         # chat with a Decision Agent
+kweaver --help                                   # all subcommands
 ```
 
 ### TypeScript & Python SDK
 
-**Simple API (recommended):**
+Minimal example (after CLI login or equivalent credentials):
 
 ```typescript
 import kweaver from "@kweaver-ai/kweaver-sdk/kweaver";
@@ -292,27 +292,7 @@ results = kweaver.search("What risks exist in the supply chain?")
 reply   = kweaver.chat("Summarise the top 3 risks")
 ```
 
-**Full client API (advanced):**
-
-```typescript
-import { KWeaverClient } from "@kweaver-ai/kweaver-sdk";
-const client = new KWeaverClient();   // reads ~/.kweaver/ credentials
-
-const kns   = await client.knowledgeNetworks.list();
-const reply = await client.agents.chat("agent-id", "Hello");
-await client.agents.stream("agent-id", "Hello", {
-  onTextDelta: (chunk) => process.stdout.write(chunk),
-});
-```
-
-```python
-from kweaver import KWeaverClient, ConfigAuth
-client = KWeaverClient(auth=ConfigAuth())
-kns  = client.knowledge_networks.list()
-msg  = client.conversations.send_message("", "Hello", agent_id="agent-id")
-```
-
----
+For streaming, `KWeaverClient`, and the full API surface, see the [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) repository docs and examples.
 
 <a id="toc-kweaver-core"></a>
 
@@ -482,22 +462,14 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 
 <a id="toc-community"></a>
 
-## 💬 Community
+## Community
 
-<div align="center">
-<img src="./help/qrcode.png" alt="KWeaver WeChat Group QR Code" width="30%"/>
+**KWeaver WeChat Group QR Code**
 
-Scan to join the KWeaver community group
-</div>
+<img src="./help/qrcode.png" width="200" alt="KWeaver WeChat group QR code" />
 
-<a id="toc-support"></a>
+<img src="./docs/qrcode.png" width="200" alt="KWeaver WeChat group QR code (original docs path)" />
 
-## 📬 Support & Contact
+Same image as above — `./docs/qrcode.png` is the path used in earlier READMEs.
 
-- **Contributing**: [Contributing Guide](rules/CONTRIBUTING.md)
-- **Issues**: [GitHub Issues](https://github.com/kweaver-ai/kweaver-core/issues)
-- **License**: [Apache License 2.0](LICENSE.txt)
-
----
-
-More components will be open-sourced in the future. Stay tuned!
+Scan to join the KWeaver community group.

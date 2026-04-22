@@ -31,7 +31,9 @@ kweaver auth login <平台地址> -k
 kweaver config show
 ```
 
-> 💡 其它登录方式（无浏览器、CI 自动化、HTTP 用户名密码登录等）和业务域切换见 [安装与部署](install.md) 与 [认证与安全治理](isf.md)。
+<a id="headless-auth"></a>
+
+> 💡 其它登录方式（无浏览器 **`--no-browser`**、CI 凭据 **export/重放**、HTTP 用户名密码等）的**分步说明与方式对照表**见 [en/quick-start.md 中 Step 1: Authenticate / How to sign in](en/quick-start.md#step-1-authenticate)；与安装环境、业务域、ISF 相关见 [安装与部署](install.md) 与 [认证与安全治理](isf.md)。SDK 补充说明见 [kweaver-sdk 认证](https://github.com/kweaver-ai/kweaver-sdk#authentication)。
 
 Core 安装完成后，`deploy.sh` 会尝试导入 Context Loader 工具集 ADP（可用环境变量关闭或覆盖路径，见仓库 `deploy/deploy.sh` 说明）。若要确认是否已在平台注册工具箱，可执行：
 
