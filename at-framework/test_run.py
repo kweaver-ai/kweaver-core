@@ -45,6 +45,53 @@ def _truthy(val):
     return s in ("1", "true", "yes", "on", "y")
 
 
+def _default_bearer_auth():
+    """
+    默认 Bearer：
+    - AT_AUTH_SOURCE=login 时尝试 get_token
+    - 否则使用静态 token（API_ACCESS_TOKEN / test_data.application_token）
+    """
+    source = at_env.auth_token_source(config)
+    if source == "login":
+        try:
+            from src.common.token_provider import get_token, clear_token_cache
+
+            user, pwd = at_env.admin_credentials(config)
+            if user:
+                clear_token_cache(user)
+                tok = at_env.normalize_bearer_token_value(get_token(user, pwd, force_refresh=True) or "")
+                if tok:
+                    return "Bearer %s" % tok
+        except Exception as ex:
+            allure.attach(str(ex), name="get_token 异常")
+
+    static_token = at_env.static_access_token(config)
+    if static_token:
+        return "Bearer %s" % static_token
+    # isf=true 时要求默认都带 Authorization 头，token 缺失时保留 Bearer 空值
+    return "Bearer "
+
+
+def _resolve_authorization(case_info):
+    """
+    按 case token_source 决定是否强制 login 获取 token，否则走默认 Bearer。
+    """
+    src = (case_info.get("_token_source") or "").strip().lower()
+    if src in ("login", "get_token", "token_provider"):
+        try:
+            from src.common.token_provider import get_token, clear_token_cache
+
+            user, pwd = at_env.admin_credentials(config)
+            if user:
+                clear_token_cache(user)
+                tok = at_env.normalize_bearer_token_value(get_token(user, pwd, force_refresh=True) or "")
+                if tok:
+                    return "Bearer %s" % tok
+        except Exception as ex:
+            allure.attach(str(ex), name="get_token 异常")
+    return _default_bearer_auth()
+
+
 def _parse_prepare_models(case_info):
     """
     从单条用例读取前置小模型需求。
@@ -531,8 +578,11 @@ def test_case(feature, story, case_name, case_info):
             **json.loads(case_info.get("headers", "{}")),
             **json.loads(case_info.get("header_params", "{}")),
         }
-        # AT 框架禁用默认鉴权注入：所有 API 请求不自动传 token。
-        case_header_params.pop("Authorization", None)
+        # 双模式：isf=true 默认注入 token，isf=false 强制不带 token。
+        if at_env.isf_enabled(config):
+            case_header_params["Authorization"] = _resolve_authorization(case_info)
+        else:
+            case_header_params.pop("Authorization", None)
         case_cookie_params = json.loads(case_info.get("cookie_params", "{}"))
         case_query_params = json.loads(case_info.get("query_params", "{}"))
         case_body_params = json.loads(case_info.get("body_params", "{}"))

@@ -10,11 +10,24 @@ timeout = 10
 host = <YOUR_API_HOST>
 ; 与 host 同环境的完整基址，用于推导请求协议 https|http（见 common.at_env.request_scheme）
 base_url = https://<YOUR_API_HOST>
-; 登录流程端口（src/auth/login.py）
+; 登录流程端口（src/auth/login.py / token_provider）
+adminUrlPort = 4445
+getnewPort = 9998
 public_port = 443
 ssh_port = 22
 ssh_user = <SSH_USER>
 ssh_password = <SSH_PASSWORD>
+; ISF 鉴权开关：true=默认携带 Authorization，false=不携带 token
+isf_default = true
+
+[test_data]
+; 登录取 token 用（AT_AUTH_SOURCE=login 时）；仅读此处，不走环境变量
+admin_user = <ADMIN_USERNAME>
+admin_password = <ADMIN_PASSWORD>
+; 是否应用账号（按业务使用）
+is_application_account = false
+; 静态 Bearer token（可被环境变量 API_ACCESS_TOKEN 覆盖）；不含「Bearer 」前缀
+application_token = <ACCESS_TOKEN_OR_LEAVE_EMPTY>
 
 [database]
 host = <DB_HOST>

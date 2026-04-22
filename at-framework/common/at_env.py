@@ -33,6 +33,34 @@ def _strip(s: Any) -> str:
     return (s if s is not None else "").strip()
 
 
+def _to_bool(v: Any, default: bool = False) -> bool:
+    s = _strip(v).lower()
+    if not s:
+        return default
+    if s in ("1", "true", "yes", "on", "y"):
+        return True
+    if s in ("0", "false", "no", "off", "n"):
+        return False
+    return default
+
+
+def isf_enabled(ini_config: Dict[str, Dict[str, str]]) -> bool:
+    """
+    是否启用 ISF（是否默认携带 Authorization）。
+    优先读取运行参数 AT_ISF（由 --isf 注入），
+    其次 [server].isf，再次 [server].isf_default；都未配置时默认 True。
+    """
+    env_v = _strip(os.environ.get("AT_ISF"))
+    if env_v:
+        return _to_bool(env_v, default=True)
+    srv = ini_config.get("server") or {}
+    if "isf" in srv:
+        return _to_bool(srv.get("isf"), default=True)
+    if "isf_default" in srv:
+        return _to_bool(srv.get("isf_default"), default=True)
+    return True
+
+
 def normalize_bearer_token_value(raw: str) -> str:
     """去掉首尾空白；若以 Bearer 开头则去掉该前缀，得到 access_token 本体。"""
     s = _strip(raw)

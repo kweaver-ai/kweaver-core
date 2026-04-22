@@ -19,6 +19,7 @@ _case_list_cache = None
 def pytest_addoption(parser):
     """支持运行时覆盖模块与筛选范围，避免频繁改 config.ini。"""
     parser.addoption("--case-file", action="store", default=None, help="模块用例目录，如 ./testcase/vega")
+    parser.addoption("--isf", action="store", default=None, help="是否启用鉴权注入：true|false；不传则走 config.ini")
     parser.addoption("--scope", action="store", default=None, help="scope id")
     parser.addoption("--tags", action="store", default=None, help="逗号分隔 tags")
     parser.addoption("--api-name", action="store", default=None, help="API 名（apis.yaml 中的 name）")
@@ -78,6 +79,7 @@ def pytest_configure(config):
     opt_api_path = config.getoption("--api-path")
     opt_case_names = config.getoption("--case-names")
     opt_suite = config.getoption("--suite")
+    opt_isf = config.getoption("--isf")
 
     if opt_scope is not None:
         os.environ["SCOPE"] = opt_scope.strip()
@@ -91,6 +93,8 @@ def pytest_configure(config):
         os.environ["CASE_NAMES"] = opt_case_names.strip()
     if opt_suite is not None:
         os.environ["SUITE"] = opt_suite.strip()
+    if opt_isf is not None:
+        os.environ["AT_ISF"] = str(opt_isf).strip()
 
 
 @pytest.fixture(scope="session", autouse=True)

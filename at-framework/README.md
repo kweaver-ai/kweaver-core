@@ -94,6 +94,7 @@ pip install -r requirement.txt
 |--------|------|
 | `[server].host` | 被测服务主机（不含协议） |
 | `[server].base_url` | 请求协议来源（无 `AT_REQUEST_SCHEME` 时按此推导） |
+| `[server].isf` / `[server].isf_default` | 是否默认注入 `Authorization`（`true` 带 token，`false` 不带 token） |
 | `CASE_FILE` / `AT_CASE_FILE`（环境变量） | 当前运行的模块目录，如 `./testcase/vega` |
 | `AT_CLEAN_UP`（环境变量） | `1` 且本会话包含 `test_run` 用例时，调用模块 `framework_hooks.session_clean_up` |
 | `AT_CLEAN_UP_MODULE`（环境变量） | 仅当模块名匹配时执行上述清理 |
@@ -107,6 +108,10 @@ pip install -r requirement.txt
 ```bash
 # 运行当前默认模块（未设置 CASE_FILE 时默认 ./testcase/etrino）全部用例
 pytest
+
+# 运行时覆盖鉴权开关（优先于 config.ini）
+pytest --isf true
+pytest --isf false
 
 # 或使用入口脚本（pytest + 生成 Allure 报告）
 python main.py
@@ -157,6 +162,14 @@ CASE_FILE=testcase/vega python scripts/extract_cases.py --globals
 ```
 
 参数与 `get_cases()` 一致：`--scope`、`--tags`、`--suite`、`--name`、`--api-name`、`--api-path`。
+
+说明：`extract_cases.py` 只做提取，不发请求，因此不涉及 `--isf` / token 注入开关。  
+若需按提取结果实际执行并控制鉴权，请在 pytest 命令中带 `--isf`，例如：
+
+```bash
+python -m pytest test_run.py -s --case-file "./testcase/vega" --isf true
+python -m pytest test_run.py -s --case-file "./testcase/vega" --isf false
+```
 
 ---
 
