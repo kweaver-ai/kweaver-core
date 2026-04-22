@@ -67,7 +67,7 @@ type Config struct {
 	Dolphin              string                                `json:"dolphin"`                   // Dolphin语句
 	Mode                 cdaenum.AgentMode                     `json:"mode"`                      // 配置模式
 	IsDolphinMode        cdaenum.DolphinMode                   `json:"is_dolphin_mode"`           // 是否是dolphin模式
-	IsUseToolIDInDolphin int                                   `json:"is_use_tool_id_in_dolphin"` // dolphin 中是否使用 tool id
+	//IsUseToolIDInDolphin int                                   `json:"is_use_tool_id_in_dolphin"` // dolphin 中是否使用 tool id
 	PreDolphin           []*DolphinTpl                         `json:"pre_dolphin"`               // 在用户自定义dolphin之前执行的内置dolphin语句
 	PostDolphin          []*DolphinTpl                         `json:"post_dolphin"`              // 在用户自定义dolphin之后执行的内置dolphin语句
 	DataSource           *datasourcevalobj.RetrieverDataSource `json:"data_source"`               // 数据源
