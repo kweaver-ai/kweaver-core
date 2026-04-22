@@ -213,9 +213,9 @@ func (m *MockHTTPClient) EXPECT() *MockHTTPClientMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockHTTPClient) Delete(ctx context.Context, url string, headers map[string]string) (int, any, error) {
+func (m *MockHTTPClient) Delete(ctx context.Context, arg1 string, headers map[string]string) (int, any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, url, headers)
+	ret := m.ctrl.Call(m, "Delete", ctx, arg1, headers)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(any)
 	ret2, _ := ret[2].(error)
@@ -223,15 +223,15 @@ func (m *MockHTTPClient) Delete(ctx context.Context, url string, headers map[str
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockHTTPClientMockRecorder) Delete(ctx, url, headers any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) Delete(ctx, arg1, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockHTTPClient)(nil).Delete), ctx, url, headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockHTTPClient)(nil).Delete), ctx, arg1, headers)
 }
 
 // DeleteNoUnmarshal mocks base method.
-func (m *MockHTTPClient) DeleteNoUnmarshal(ctx context.Context, url string, headers map[string]string) (int, []byte, error) {
+func (m *MockHTTPClient) DeleteNoUnmarshal(ctx context.Context, arg1 string, headers map[string]string) (int, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNoUnmarshal", ctx, url, headers)
+	ret := m.ctrl.Call(m, "DeleteNoUnmarshal", ctx, arg1, headers)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -239,15 +239,15 @@ func (m *MockHTTPClient) DeleteNoUnmarshal(ctx context.Context, url string, head
 }
 
 // DeleteNoUnmarshal indicates an expected call of DeleteNoUnmarshal.
-func (mr *MockHTTPClientMockRecorder) DeleteNoUnmarshal(ctx, url, headers any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) DeleteNoUnmarshal(ctx, arg1, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).DeleteNoUnmarshal), ctx, url, headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).DeleteNoUnmarshal), ctx, arg1, headers)
 }
 
 // Get mocks base method.
-func (m *MockHTTPClient) Get(ctx context.Context, url string, queryValues url.Values, headers map[string]string) (int, any, error) {
+func (m *MockHTTPClient) Get(ctx context.Context, arg1 string, queryValues url.Values, headers map[string]string) (int, any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, url, queryValues, headers)
+	ret := m.ctrl.Call(m, "Get", ctx, arg1, queryValues, headers)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(any)
 	ret2, _ := ret[2].(error)
@@ -255,15 +255,15 @@ func (m *MockHTTPClient) Get(ctx context.Context, url string, queryValues url.Va
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockHTTPClientMockRecorder) Get(ctx, url, queryValues, headers any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) Get(ctx, arg1, queryValues, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockHTTPClient)(nil).Get), ctx, url, queryValues, headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockHTTPClient)(nil).Get), ctx, arg1, queryValues, headers)
 }
 
 // GetNoUnmarshal mocks base method.
-func (m *MockHTTPClient) GetNoUnmarshal(ctx context.Context, url string, queryValues url.Values, headers map[string]string) (int, []byte, error) {
+func (m *MockHTTPClient) GetNoUnmarshal(ctx context.Context, arg1 string, queryValues url.Values, headers map[string]string) (int, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNoUnmarshal", ctx, url, queryValues, headers)
+	ret := m.ctrl.Call(m, "GetNoUnmarshal", ctx, arg1, queryValues, headers)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -271,15 +271,15 @@ func (m *MockHTTPClient) GetNoUnmarshal(ctx context.Context, url string, queryVa
 }
 
 // GetNoUnmarshal indicates an expected call of GetNoUnmarshal.
-func (mr *MockHTTPClientMockRecorder) GetNoUnmarshal(ctx, url, queryValues, headers any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) GetNoUnmarshal(ctx, arg1, queryValues, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).GetNoUnmarshal), ctx, url, queryValues, headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).GetNoUnmarshal), ctx, arg1, queryValues, headers)
 }
 
 // Patch mocks base method.
-func (m *MockHTTPClient) Patch(ctx context.Context, url string, headers map[string]string, reqParam any) (int, any, error) {
+func (m *MockHTTPClient) Patch(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Patch", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "Patch", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(any)
 	ret2, _ := ret[2].(error)
@@ -287,15 +287,15 @@ func (m *MockHTTPClient) Patch(ctx context.Context, url string, headers map[stri
 }
 
 // Patch indicates an expected call of Patch.
-func (mr *MockHTTPClientMockRecorder) Patch(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) Patch(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Patch", reflect.TypeOf((*MockHTTPClient)(nil).Patch), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Patch", reflect.TypeOf((*MockHTTPClient)(nil).Patch), ctx, arg1, headers, reqParam)
 }
 
 // PatchNoUnmarshal mocks base method.
-func (m *MockHTTPClient) PatchNoUnmarshal(ctx context.Context, url string, headers map[string]string, reqParam any) (int, []byte, error) {
+func (m *MockHTTPClient) PatchNoUnmarshal(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PatchNoUnmarshal", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "PatchNoUnmarshal", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -303,15 +303,15 @@ func (m *MockHTTPClient) PatchNoUnmarshal(ctx context.Context, url string, heade
 }
 
 // PatchNoUnmarshal indicates an expected call of PatchNoUnmarshal.
-func (mr *MockHTTPClientMockRecorder) PatchNoUnmarshal(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) PatchNoUnmarshal(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PatchNoUnmarshal), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PatchNoUnmarshal), ctx, arg1, headers, reqParam)
 }
 
 // Post mocks base method.
-func (m *MockHTTPClient) Post(ctx context.Context, url string, headers map[string]string, reqParam any) (int, any, error) {
+func (m *MockHTTPClient) Post(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Post", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "Post", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(any)
 	ret2, _ := ret[2].(error)
@@ -319,15 +319,15 @@ func (m *MockHTTPClient) Post(ctx context.Context, url string, headers map[strin
 }
 
 // Post indicates an expected call of Post.
-func (mr *MockHTTPClientMockRecorder) Post(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) Post(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Post", reflect.TypeOf((*MockHTTPClient)(nil).Post), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Post", reflect.TypeOf((*MockHTTPClient)(nil).Post), ctx, arg1, headers, reqParam)
 }
 
 // PostNoUnmarshal mocks base method.
-func (m *MockHTTPClient) PostNoUnmarshal(ctx context.Context, url string, headers map[string]string, reqParam any) (int, []byte, error) {
+func (m *MockHTTPClient) PostNoUnmarshal(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PostNoUnmarshal", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "PostNoUnmarshal", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -335,15 +335,15 @@ func (m *MockHTTPClient) PostNoUnmarshal(ctx context.Context, url string, header
 }
 
 // PostNoUnmarshal indicates an expected call of PostNoUnmarshal.
-func (mr *MockHTTPClientMockRecorder) PostNoUnmarshal(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) PostNoUnmarshal(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PostNoUnmarshal), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PostNoUnmarshal), ctx, arg1, headers, reqParam)
 }
 
 // Put mocks base method.
-func (m *MockHTTPClient) Put(ctx context.Context, url string, headers map[string]string, reqParam any) (int, any, error) {
+func (m *MockHTTPClient) Put(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, any, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "Put", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(any)
 	ret2, _ := ret[2].(error)
@@ -351,15 +351,15 @@ func (m *MockHTTPClient) Put(ctx context.Context, url string, headers map[string
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockHTTPClientMockRecorder) Put(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) Put(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockHTTPClient)(nil).Put), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockHTTPClient)(nil).Put), ctx, arg1, headers, reqParam)
 }
 
 // PutNoUnmarshal mocks base method.
-func (m *MockHTTPClient) PutNoUnmarshal(ctx context.Context, url string, headers map[string]string, reqParam any) (int, []byte, error) {
+func (m *MockHTTPClient) PutNoUnmarshal(ctx context.Context, arg1 string, headers map[string]string, reqParam any) (int, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutNoUnmarshal", ctx, url, headers, reqParam)
+	ret := m.ctrl.Call(m, "PutNoUnmarshal", ctx, arg1, headers, reqParam)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -367,7 +367,7 @@ func (m *MockHTTPClient) PutNoUnmarshal(ctx context.Context, url string, headers
 }
 
 // PutNoUnmarshal indicates an expected call of PutNoUnmarshal.
-func (mr *MockHTTPClientMockRecorder) PutNoUnmarshal(ctx, url, headers, reqParam any) *gomock.Call {
+func (mr *MockHTTPClientMockRecorder) PutNoUnmarshal(ctx, arg1, headers, reqParam any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PutNoUnmarshal), ctx, url, headers, reqParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutNoUnmarshal", reflect.TypeOf((*MockHTTPClient)(nil).PutNoUnmarshal), ctx, arg1, headers, reqParam)
 }

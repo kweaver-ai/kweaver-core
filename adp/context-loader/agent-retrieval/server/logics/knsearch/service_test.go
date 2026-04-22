@@ -129,10 +129,10 @@ func TestLocalSearch_Service(t *testing.T) {
 			}
 
 			svc := &localSearchImpl{
-				logger:          &mockLogger{},
-				bknBackend: mockManager,
-				ontologyQuery:   mockQuery,
-				rerankClient:    mockRerank,
+				logger:        &mockLogger{},
+				bknBackend:    mockManager,
+				ontologyQuery: mockQuery,
+				rerankClient:  mockRerank,
 			}
 
 			res, err := svc.Search(context.Background(), tt.req)

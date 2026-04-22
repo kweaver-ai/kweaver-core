@@ -47,10 +47,6 @@ data:
       private_protocol: {{ index .Values "depServices" "agent-operator-integration" "privateProtocol" | quote }}
       private_host: {{ index .Values "depServices" "agent-operator-integration" "privateHost" | quote }}
       private_port: {{ index .Values "depServices" "agent-operator-integration" "privatePort" }}
-    data_retrieval:
-      private_protocol: {{ index .Values "depServices" "data-retrieval" "privateProtocol" | quote }}
-      private_host: {{ index .Values "depServices" "data-retrieval" "privateHost" | quote }}
-      private_port: {{ index .Values "depServices" "data-retrieval" "privatePort" }}
     redis:
       connectType: {{ .Values.depServices.redis.connectType | quote }}
       enableSSL: {{ .Values.depServices.redis.enableSSL }}

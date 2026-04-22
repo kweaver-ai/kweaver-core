@@ -114,10 +114,6 @@ depServices:
     privateHost: agent-operator-integration
     privatePort: 9000
     privateProtocol: http
-  data-retrieval:
-    privateProtocol: "http"
-    privateHost: "data-retrieval"
-    privatePort: 9100
   redis:
     connectType: sentinel
     enableSSL: false
