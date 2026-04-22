@@ -298,6 +298,7 @@ const (
 
 const (
 	OpOpenSearchBulkUpsert = "@opensearch/bulk-upsert"
+	OpDatasetWriteDocs     = "@dataset/write-docs"
 )
 
 const (
@@ -510,6 +511,7 @@ var ActionMap = map[string]string{
 	InternalAssignOpt:      "utils/assign.json",
 	InternalDefineOpt:      "utils/define.json",
 	OpOpenSearchBulkUpsert: "opensearch/bulkupsert.json",
+		OpDatasetWriteDocs:     "dataset/writedocs.json",
 	DatabaseWriteOpt:       "database/write.json", // MySQL数据库写入操作
 
 	OpContentPipelineFullText:         "tools/fulltext.json",
