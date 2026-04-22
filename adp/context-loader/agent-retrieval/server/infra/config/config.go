@@ -41,7 +41,6 @@ type Config struct {
 	Logger              interfaces.Logger     `yaml:"-"`
 	DeployAgent         DeployAgentConfig     `yaml:"deploy_agent"`          // Dependent agent configuration
 	ConceptSearchConfig KnConceptSearchConfig `yaml:"concept_search_config"` // Knowledge network concept search configuration
-	DataRetrieval       PrivateBaseConfig     `yaml:"data_retrieval"`        // Data retrieval configuration
 	Observability       ObservabilityConfig   `yaml:"-"`
 	// 新增配置 - 知识重排和检索相关
 	MFModelAPI PrivateBaseConfig `yaml:"mf_model_api"` // MF-Model API统一服务配置

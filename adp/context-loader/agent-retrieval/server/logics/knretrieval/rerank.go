@@ -49,7 +49,7 @@ func (k *knRetrievalServiceImpl) rerankByConceptType(conceptResults []*interface
 	return result
 }
 
-func (k *knRetrievalServiceImpl) rerankByDataRetrieval(ctx context.Context, queryUnderstandResult *interfaces.QueryUnderstanding, conceptResults []*interfaces.ConceptResult,
+func (k *knRetrievalServiceImpl) rerankConcepts(ctx context.Context, queryUnderstandResult *interfaces.QueryUnderstanding, conceptResults []*interfaces.ConceptResult,
 	action interfaces.KnowledgeRerankActionType, limit int) (rerankResults []*interfaces.ConceptResult, err error) {
 	// 去重
 	conceptResults = k.deduplicateConcepts(conceptResults)
@@ -62,7 +62,7 @@ func (k *knRetrievalServiceImpl) rerankByDataRetrieval(ctx context.Context, quer
 
 	if action == interfaces.KnowledgeRerankActionDefault {
 		rerankResults = conceptResults
-	} else if k.useLocalRerank {
+	} else {
 		// 使用本地Rerank模块
 		k.logger.WithContext(ctx).Info("[knretrieval#rerank] Using local KnowledgeReranker")
 		rerankResults, err = k.knReranker.Rerank(ctx, &interfaces.KnowledgeRerankReq{
@@ -71,21 +71,8 @@ func (k *knRetrievalServiceImpl) rerankByDataRetrieval(ctx context.Context, quer
 			Action:             action,
 		})
 		if err != nil {
-			// 优化2：本地 rerank 失败时，直接返回原始概念列表（降级），不再调用远程服务
+			// 本地 rerank 失败时，直接返回原始概念列表（降级）
 			k.logger.WithContext(ctx).Warnf("[knretrieval#rerank] Local rerank failed: %v, using original concepts as fallback", err)
-			rerankResults = conceptResults
-			err = nil // 清除错误，确保不影响核心功能
-		}
-	} else {
-		// 使用原有远程调用
-		rerankResults, err = k.dataRetrieval.KnowledgeRerank(ctx, &interfaces.KnowledgeRerankReq{
-			QueryUnderstanding: queryUnderstandResult,
-			KnowledgeConcepts:  conceptResults,
-			Action:             action,
-		})
-		if err != nil {
-			// 远程 rerank 失败时，也降级到返回原始概念列表
-			k.logger.WithContext(ctx).Warnf("[knretrieval#rerank] Remote rerank failed: %v, using original concepts as fallback", err)
 			rerankResults = conceptResults
 			err = nil // 清除错误，确保不影响核心功能
 		}

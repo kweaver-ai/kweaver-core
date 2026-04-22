@@ -292,13 +292,6 @@ type KnSearchResp struct {
 	Message       *string `json:"message,omitempty"`
 }
 
-// DataRetrieval Data retrieval interface
-type DataRetrieval interface {
-	KnowledgeRerank(ctx context.Context, req *KnowledgeRerankReq) (results []*ConceptResult, err error)
-	// KnSearch Knowledge network retrieval
-	KnSearch(ctx context.Context, req *KnSearchReq) (resp *KnSearchResp, err error)
-}
-
 // LLMMessage LLM对话消息
 type LLMMessage struct {
 	Role    string `json:"role"`    // "system" | "user" | "assistant"
