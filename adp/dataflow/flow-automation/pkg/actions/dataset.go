@@ -86,6 +86,14 @@ func (d *DatasetWriteDocs) Run(ctx entity.ExecuteContext, params interface{}, to
 		}, nil
 	}
 
+	// 获取用户认证信息
+	userID := ""
+	userType := "user"
+	taskIns := ctx.GetTaskInstance()
+	if taskIns != nil && taskIns.RelatedDagInstance != nil {
+		userID = taskIns.RelatedDagInstance.UserID
+	}
+
 	vegaBackend := drivenadapters.NewVegaBackend()
 
 	result := map[string]any{
@@ -101,7 +109,7 @@ func (d *DatasetWriteDocs) Run(ctx entity.ExecuteContext, params interface{}, to
 		end := min(i+batchSize, len(documents))
 		batch := documents[i:end]
 
-		if err = vegaBackend.WriteDatasetDocuments(ctx.Context(), input.DatasetID, batch); err != nil {
+		if err = vegaBackend.WriteDatasetDocuments(ctx.Context(), input.DatasetID, batch, userID, userType); err != nil {
 			log.Warnf("[DatasetWriteDocs] batch %d-%d failed: %s", i, end, err.Error())
 			reasons = append(reasons, fmt.Sprintf("[%d-%d] %s", i, end, err.Error()))
 			failed += len(batch)

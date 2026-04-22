@@ -28,6 +28,8 @@ func TestVegaBackend_WriteDatasetDocuments(t *testing.T) {
 		assert.Equal(t, "/v1/resources/dataset/test-dataset-id/docs", r.URL.Path)
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "test-user-id", r.Header.Get("X-Account-ID"))
+		assert.Equal(t, "user", r.Header.Get("X-Account-Type"))
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"success": true}`))
 	}))
@@ -37,7 +39,7 @@ func TestVegaBackend_WriteDatasetDocuments(t *testing.T) {
 	client := &vegaBackend{baseURL: server.URL, httpClient: NewOtelHTTPClient()}
 	err := client.WriteDatasetDocuments(context.Background(), "test-dataset-id", []map[string]any{
 		{"id": "doc1", "name": "test"},
-	})
+	}, "test-user-id", "user")
 	assert.Equal(t, nil, err)
 }
 
@@ -49,7 +51,7 @@ func TestVegaBackend_WriteDatasetDocuments_Error(t *testing.T) {
 	defer server.Close()
 
 	client := &vegaBackend{baseURL: server.URL, httpClient: NewOtelHTTPClient()}
-	err := client.WriteDatasetDocuments(context.Background(), "test-dataset-id", []map[string]any{})
+	err := client.WriteDatasetDocuments(context.Background(), "test-dataset-id", []map[string]any{}, "test-user-id", "user")
 	assert.NotEqual(t, nil, err)
 }
 
@@ -63,6 +65,6 @@ func TestVegaBackend_WriteDatasetDocuments_Created(t *testing.T) {
 	client := &vegaBackend{baseURL: server.URL, httpClient: NewOtelHTTPClient()}
 	err := client.WriteDatasetDocuments(context.Background(), "test-dataset-id", []map[string]any{
 		{"id": "doc1", "name": "test"},
-	})
+	}, "test-user-id", "user")
 	assert.Equal(t, nil, err)
 }

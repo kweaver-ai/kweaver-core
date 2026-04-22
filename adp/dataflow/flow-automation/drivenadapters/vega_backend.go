@@ -15,7 +15,7 @@ import (
 
 // VegaBackend 接口定义
 type VegaBackend interface {
-	WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error
+	WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any, userID string, userType string) error
 }
 
 var (
@@ -44,16 +44,18 @@ type vegaBackend struct {
 }
 
 // WriteDatasetDocuments 向指定 dataset 写入文档
-func (v *vegaBackend) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any) error {
+func (v *vegaBackend) WriteDatasetDocuments(ctx context.Context, datasetID string, documents []map[string]any, userID string, userType string) error {
 	log := traceLog.WithContext(ctx)
 
 	// 使用内部 API 路径: /api/vega-backend/in/v1/resources/dataset/:id/docs
 	src := fmt.Sprintf("%s/v1/resources/dataset/%s/docs", v.baseURL, url.PathEscape(datasetID))
 	headers := map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":   "application/json",
+		"X-Account-ID":   userID,
+		"X-Account-Type": userType,
 	}
 
-	log.Infof("WriteDatasetDocuments: dataset_id=%s, documents=%d, url=%s", datasetID, len(documents), src)
+	log.Infof("WriteDatasetDocuments: dataset_id=%s, documents=%d, url=%s, user_id=%s", datasetID, len(documents), src, userID)
 
 	reqBytes, err := json.Marshal(documents)
 	if err != nil {
