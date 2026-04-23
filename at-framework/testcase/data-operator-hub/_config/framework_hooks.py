@@ -12,7 +12,7 @@ def session_setup(session_id, config):
     pass
 
 
-def session_clean_up(session_id, config):
+def session_clean_up(config, allure):
     """
     会话结束后的清理
     1. 获取所有工具箱列表
@@ -53,6 +53,23 @@ def test_teardown(test_id, config):
     pass
 
 
+def _is_builtin_resource(item):
+    """判断资源是否为内置/系统资源，避免误删。"""
+    source = str(item.get("source", "")).strip().lower()
+    is_internal = bool(item.get("is_internal", False))
+    builtin = bool(item.get("builtin", False))
+    return is_internal or builtin or source in {"internal", "system", "builtin"}
+
+
+def _is_builtin_operator(op):
+    """判断算子是否为内置算子（兼容不同返回结构）。"""
+    if _is_builtin_resource(op):
+        return True
+    op_info = op.get("operator_info") or {}
+    source = str(op_info.get("source", "")).strip().lower()
+    return source in {"internal", "system", "builtin"}
+
+
 def _cleanup_toolboxes(base_url, headers):
     """清理工具箱数据"""
     print("--- 清理工具箱 ---")
@@ -73,6 +90,9 @@ def _cleanup_toolboxes(base_url, headers):
             box_id = box.get("box_id")
             box_name = box.get("box_name", "")
             status = box.get("status", "")
+            if _is_builtin_resource(box):
+                print(f"跳过内置工具箱: {box_name} (ID: {box_id})")
+                continue
 
             if not box_id:
                 continue
@@ -139,6 +159,9 @@ def _cleanup_mcp_servers(base_url, headers):
             mcp_id = mcp.get("id") or mcp.get("mcp_id")
             mcp_name = mcp.get("name", "")
             status = mcp.get("status", "")
+            if _is_builtin_resource(mcp):
+                print(f"跳过内置MCP: {mcp_name} (ID: {mcp_id})")
+                continue
 
             if not mcp_id:
                 continue
@@ -205,14 +228,12 @@ def _cleanup_operators(base_url, headers):
             op_id = op.get("operator_id")
             op_name = op.get("name", "") or op.get("operator_info", {}).get("name", "")
             status = op.get("status", "")
-            is_internal = bool(op.get("is_internal", False))
-            source = str(op.get("source", "")).lower()
 
             if not op_id:
                 continue
 
             # 保留内置算子：仅清理非内置（自定义）算子
-            if is_internal or source == "internal":
+            if _is_builtin_operator(op):
                 print(f"跳过内置算子: {op_name} (ID: {op_id})")
                 continue
 
