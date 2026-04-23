@@ -322,7 +322,7 @@ func (ds *datasetService) CreateBuildTask(ctx context.Context, id string, req *i
 	}
 
 	// Check if catalog connector type is mysql
-	if catalog.ConnectorType != "mysql" {
+	if catalog.ConnectorType != interfaces.ConnectorTypeMySQL {
 		span.SetStatus(codes.Error, "Catalog connector type is not mysql")
 		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_ConnectorType).
 			WithErrorDetails("Catalog connector type must be mysql")

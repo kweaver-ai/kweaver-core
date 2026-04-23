@@ -141,12 +141,12 @@ func NewOpenSearchConnector() connectors.IndexConnector {
 
 // GetType returns the data source type.
 func (c *OpenSearchConnector) GetType() string {
-	return "opensearch"
+	return interfaces.ConnectorTypeOpenSearch
 }
 
 // GetName returns the data source name.
 func (c *OpenSearchConnector) GetName() string {
-	return "opensearch"
+	return interfaces.ConnectorTypeOpenSearch
 }
 
 // GetMode returns the connector mode.

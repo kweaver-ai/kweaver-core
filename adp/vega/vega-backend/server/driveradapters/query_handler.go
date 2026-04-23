@@ -123,24 +123,18 @@ func (r *restHandler) sqlQuery(c *gin.Context, ctx context.Context, span trace.S
 		return
 	}
 
-	// 校验resource_type参数，必填，可以是mysql、mariadb、postgresql或opensearch
+	// 校验resource_type参数，必填，必须是当前统一查询接口支持的连接器类型
 	if req.ResourceType == "" {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
-			WithErrorDetails("resource_type is required and must be one of: mysql, mariadb, postgresql, opensearch")
+			WithErrorDetails(fmt.Sprintf("resource_type is required and must be one of: %v", interfaces.GetSupportedConnectorTypesForQuery()))
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	validResourceTypes := map[string]bool{
-		"mysql":      true,
-		"mariadb":    true,
-		"postgresql": true,
-		"opensearch": true,
-	}
-	if !validResourceTypes[req.ResourceType] {
+	if !interfaces.IsConnectorTypeSupportedForQuery(req.ResourceType) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, errors.VegaBackend_InvalidParameter_ResourceType).
-			WithErrorDetails(fmt.Sprintf("resource_type must be one of: mysql, mariadb, postgresql, opensearch, got: %s", req.ResourceType))
+			WithErrorDetails(fmt.Sprintf("resource_type must be one of: %v, got: %s", interfaces.GetSupportedConnectorTypesForQuery(), req.ResourceType))
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return

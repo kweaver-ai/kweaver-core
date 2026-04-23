@@ -53,12 +53,12 @@ func NewPostgresqlConnector() connectors.TableConnector {
 
 // GetType 返回数据源类型键（与 t_connector_type.f_type、factory 注册键一致）。
 func (c *PostgresqlConnector) GetType() string {
-	return "postgresql"
+	return interfaces.ConnectorTypePostgreSQL
 }
 
 // GetName 返回连接器名称。
 func (c *PostgresqlConnector) GetName() string {
-	return "postgresql"
+	return interfaces.ConnectorTypePostgreSQL
 }
 
 // GetMode 返回连接器模式。
