@@ -12,6 +12,8 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 > **注意：** KWeaver Core 是**纯后台框架**，不提供 Web 界面。所有交互通过 CLI、SDK 或 API 完成。如需界面访问，请安装 [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver)。
 
+> 想直观感受 KWeaver DIP 的核心功能？点击下方链接报名，立即开启试用体验，快速解锁产品价值！👉 **申请试用：** <https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf>
+
 <a id="toc-quick-links"></a>
 
 ## 📚 快速链接
@@ -25,9 +27,6 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 - 📦 [示例](examples/README.zh.md) - 端到端 CLI 示例（数据库 / CSV / Action）
 - 📝 [博客](https://kweaver-ai.github.io/kweaver-core/) - KWeaver 技术文章与更新
 - 🧾 [版本发布](release-notes/) - 重要变更记录
-
-> 想直观感受 KWeaver DIP 的核心功能？点击下方链接报名，立即开启试用体验，快速解锁产品价值！
-> 👉 **申请试用：** <https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf>
 
 <a id="toc-demo"></a>
 
