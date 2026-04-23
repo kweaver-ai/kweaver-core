@@ -108,20 +108,20 @@ type SemanticSearchRequest struct {
 
 // ConceptResult Concept result
 type ConceptResult struct {
-	ConceptType   KnConceptType `json:"concept_type"`   // Concept type
-	ConceptID     string        `json:"concept_id"`     // Concept ID
-	ConceptName   string        `json:"concept_name"`   // Concept Name
-	ConceptDetail any           `json:"concept_detail"`            // Concept Detail
-	IntentScore   float64       `json:"intent_score,omitempty"`    // Intent Score
-	MatchScore    float64       `json:"match_score,omitempty"`     // Match Score
-	RerankScore   float64       `json:"rerank_score,omitempty"`    // Rerank Score
-	Samples       []any         `json:"samples,omitempty"`         // Samples
+	ConceptType   KnConceptType `json:"concept_type"`           // Concept type
+	ConceptID     string        `json:"concept_id"`             // Concept ID
+	ConceptName   string        `json:"concept_name"`           // Concept Name
+	ConceptDetail any           `json:"concept_detail"`         // Concept Detail
+	IntentScore   float64       `json:"intent_score,omitempty"` // Intent Score
+	MatchScore    float64       `json:"match_score,omitempty"`  // Match Score
+	RerankScore   float64       `json:"rerank_score,omitempty"` // Rerank Score
+	Samples       []any         `json:"samples,omitempty"`      // Samples
 }
 
 type SemanticSearchResponse struct {
 	QueryUnderstanding *QueryUnderstanding `json:"query_understanding,omitempty" validate:"required"` // Query understanding
 	KnowledgeConcepts  []*ConceptResult    `json:"concepts" validate:"required"`                      // Knowledge network concepts
-	HitsTotal          int                 `json:"hits_total,omitempty"`                               // Total hits
+	HitsTotal          int                 `json:"hits_total,omitempty"`                              // Total hits
 }
 
 // IKnRetrievalService Knowledge network based retrieval service

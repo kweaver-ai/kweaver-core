@@ -80,6 +80,9 @@ func (m *mockBknBackend) GetRelationTypeDetail(ctx context.Context, knID string,
 func (m *mockBknBackend) SearchActionTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (actionTypes *interfaces.ActionTypeConcepts, err error) {
 	return nil, nil
 }
+func (m *mockBknBackend) SearchMetricTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (*interfaces.MetricTypeConcepts, error) {
+	return nil, nil
+}
 func (m *mockBknBackend) GetActionTypeDetail(ctx context.Context, knID string, atIDs []string, includeDetail bool) ([]*interfaces.ActionType, error) {
 	return nil, nil
 }

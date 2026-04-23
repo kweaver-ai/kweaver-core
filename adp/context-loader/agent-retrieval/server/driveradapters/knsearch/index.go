@@ -24,6 +24,7 @@ import (
 // KnSearchHandler kn_search 处理器
 type KnSearchHandler interface {
 	KnSearch(c *gin.Context)
+	SearchSchema(c *gin.Context)
 }
 
 type knSearchHandler struct {
@@ -90,5 +91,35 @@ func (h *knSearchHandler) KnSearch(c *gin.Context) {
 	}
 
 	// 返回成功响应
+	rest.ReplyOK(c, http.StatusOK, resp)
+}
+
+// SearchSchema 标准 Schema Search HTTP 入口。
+func (h *knSearchHandler) SearchSchema(c *gin.Context) {
+	var err error
+	req := &interfaces.SearchSchemaReq{}
+
+	if err = c.ShouldBindHeader(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if err = c.ShouldBindJSON(req); err != nil {
+		rest.ReplyError(c, errors.DefaultHTTPError(c.Request.Context(), http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if err = validator.New().Struct(req); err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+
+	resp, err := h.KnSearchService.SearchSchema(c.Request.Context(), req)
+	if err != nil {
+		h.Logger.Errorf("[KnSearchHandler#SearchSchema] SearchSchema failed, err: %v", err)
+		rest.ReplyError(c, err)
+		return
+	}
+
 	rest.ReplyOK(c, http.StatusOK, resp)
 }

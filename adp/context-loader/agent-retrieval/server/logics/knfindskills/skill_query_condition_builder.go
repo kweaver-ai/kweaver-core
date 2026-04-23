@@ -69,6 +69,23 @@ func buildFieldConditions(fieldName, query string, ops []interfaces.KnOperationT
 			hasMatch = true
 		case interfaces.KnOperationTypeLike:
 			hasLike = true
+		case interfaces.KnOperationTypeAnd,
+			interfaces.KnOperationTypeOr,
+			interfaces.KnOperationTypeEqual,
+			interfaces.KnOperationTypeNotEqual,
+			interfaces.KnOperationTypeGreater,
+			interfaces.KnOperationTypeLess,
+			interfaces.KnOperationTypeGreaterOrEqual,
+			interfaces.KnOperationTypeLessOrEqual,
+			interfaces.KnOperationTypeIn,
+			interfaces.KnOperationTypeNotIn,
+			interfaces.KnOperationTypeNotLike,
+			interfaces.KnOperationTypeRange,
+			interfaces.KnOperationTypeOutRange,
+			interfaces.KnOperationTypeExist,
+			interfaces.KnOperationTypeNotExist,
+			interfaces.KnOperationTypeRegex:
+			// skill_query only maps to knn/match/like; other operators are ignored here.
 		}
 	}
 

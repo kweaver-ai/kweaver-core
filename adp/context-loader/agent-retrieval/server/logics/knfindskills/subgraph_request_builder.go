@@ -50,9 +50,9 @@ func BuildSubgraphRequest(
 	}
 
 	typeEdge := map[string]interface{}{
-		"relation_type_id":       relationType.ID,
-		"source_object_type_id":  sourceOTID,
-		"target_object_type_id":  targetOTID,
+		"relation_type_id":      relationType.ID,
+		"source_object_type_id": sourceOTID,
+		"target_object_type_id": targetOTID,
 	}
 
 	path := map[string]interface{}{

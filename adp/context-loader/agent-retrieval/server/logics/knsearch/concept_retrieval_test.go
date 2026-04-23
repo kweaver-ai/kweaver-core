@@ -110,9 +110,9 @@ func TestConceptRetrieval_MainFlow(t *testing.T) {
 			}
 
 			svc := &localSearchImpl{
-				logger:          &mockLogger{},
-				bknBackend: mockManager,
-				rerankClient:    mockRerank,
+				logger:       &mockLogger{},
+				bknBackend:   mockManager,
+				rerankClient: mockRerank,
 			}
 
 			res, err := svc.conceptRetrieval(context.Background(), tt.req, tt.config)
@@ -136,7 +136,7 @@ func TestConceptRetrieval_NoRelations_ObjectTopByScore(t *testing.T) {
 
 	mockManager := &mockBknBackend{networkDetail: detail}
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 
@@ -178,7 +178,7 @@ func TestConceptRetrieval_ObjectFallback_FillByScore(t *testing.T) {
 
 	mockManager := &mockBknBackend{networkDetail: detail}
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 
@@ -227,7 +227,7 @@ func TestConceptRetrieval_CoarseRecall(t *testing.T) {
 	}
 
 	svc := &localSearchImpl{
-		logger:          &mockLogger{},
+		logger:     &mockLogger{},
 		bknBackend: mockManager,
 	}
 

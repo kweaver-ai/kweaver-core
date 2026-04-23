@@ -35,7 +35,7 @@ type findSkillsServiceImpl struct {
 }
 
 var (
-	fsOnce               sync.Once
+	fsOnce                sync.Once
 	findSkillsServiceInst interfaces.IFindSkillsService
 )
 
@@ -102,7 +102,7 @@ func (s *findSkillsServiceImpl) FindSkills(ctx context.Context, req *interfaces.
 	}
 
 	if req.ObjectTypeID != fsCfg.SkillsObjectTypeID {
-		if err = s.validateObjectTypeExists(ctx, req.KnID, req.ObjectTypeID); err != nil {
+		if err := s.validateObjectTypeExists(ctx, req.KnID, req.ObjectTypeID); err != nil {
 			return nil, err
 		}
 	}

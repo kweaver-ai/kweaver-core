@@ -326,3 +326,128 @@ func TestGetActionTypeDetail_HTTPError(t *testing.T) {
 		convey.So(err, convey.ShouldNotBeNil)
 	})
 }
+
+// TestSearchMetricTypes_Success 测试 SearchMetricTypes 成功场景
+func TestSearchMetricTypes_Success(t *testing.T) {
+	convey.Convey("TestSearchMetricTypes_Success", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockLogger := mocks.NewMockLogger(ctrl)
+		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
+
+		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+
+		client := &bknBackendAccess{
+			logger:     mockLogger,
+			baseURL:    "http://localhost:8080/api/bkn-backend",
+			httpClient: mockHTTPClient,
+		}
+
+		ctx := context.Background()
+		req := &interfaces.QueryConceptsReq{
+			KnID: "kn-001",
+		}
+
+		respBody := []byte(`{
+			"entries": [
+				{
+					"id": "m_001",
+					"name": "cpu_usage",
+					"comment": "CPU usage metric",
+					"unit_type": "percent",
+					"unit": "%",
+					"metric_type": "atomic",
+					"scope_type": "object_type",
+					"scope_ref": "pod",
+					"time_dimension": {
+						"name": "timestamp"
+					},
+					"calculation_formula": {
+						"op": "avg"
+					},
+					"analysis_dimensions": [
+						{
+							"name": "cluster"
+						}
+					]
+				}
+			],
+			"total_count": 1
+		}`)
+		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(200, respBody, nil)
+
+		resp, err := client.SearchMetricTypes(ctx, req)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(resp, convey.ShouldNotBeNil)
+		convey.So(resp.TotalCount, convey.ShouldEqual, 1)
+		convey.So(len(resp.Entries), convey.ShouldEqual, 1)
+		convey.So(resp.Entries[0].ID, convey.ShouldEqual, "m_001")
+		convey.So(resp.Entries[0].Name, convey.ShouldEqual, "cpu_usage")
+		convey.So(resp.Entries[0].ScopeType, convey.ShouldEqual, "object_type")
+		convey.So(resp.Entries[0].ScopeRef, convey.ShouldEqual, "pod")
+	})
+}
+
+// TestSearchMetricTypes_HTTPError 测试 SearchMetricTypes HTTP 错误
+func TestSearchMetricTypes_HTTPError(t *testing.T) {
+	convey.Convey("TestSearchMetricTypes_HTTPError", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockLogger := mocks.NewMockLogger(ctrl)
+		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
+
+		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
+
+		client := &bknBackendAccess{
+			logger:     mockLogger,
+			baseURL:    "http://localhost:8080/api/bkn-backend",
+			httpClient: mockHTTPClient,
+		}
+
+		ctx := context.Background()
+		req := &interfaces.QueryConceptsReq{
+			KnID: "kn-001",
+		}
+
+		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(0, nil, errors.New("connection refused"))
+
+		_, err := client.SearchMetricTypes(ctx, req)
+		convey.So(err, convey.ShouldNotBeNil)
+	})
+}
+
+// TestSearchMetricTypes_NotFound 测试 SearchMetricTypes 404 错误
+func TestSearchMetricTypes_NotFound(t *testing.T) {
+	convey.Convey("TestSearchMetricTypes_NotFound", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockLogger := mocks.NewMockLogger(ctrl)
+		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
+
+		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+		mockLogger.EXPECT().Warnf(gomock.Any(), gomock.Any()).AnyTimes()
+
+		client := &bknBackendAccess{
+			logger:     mockLogger,
+			baseURL:    "http://localhost:8080/api/bkn-backend",
+			httpClient: mockHTTPClient,
+		}
+
+		ctx := context.Background()
+		req := &interfaces.QueryConceptsReq{
+			KnID: "kn-001",
+		}
+
+		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(404, nil, nil)
+
+		_, err := client.SearchMetricTypes(ctx, req)
+		convey.So(err, convey.ShouldNotBeNil)
+	})
+}

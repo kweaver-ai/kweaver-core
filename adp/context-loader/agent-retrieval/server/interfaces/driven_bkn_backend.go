@@ -205,6 +205,27 @@ type ActionTypeConcepts struct {
 	TotalCount int64         `json:"total_count,omitempty"` // Total count
 }
 
+// MetricType Metric type structure definition
+type MetricType struct {
+	ID                 string `json:"id"`                            // Metric ID
+	Name               string `json:"name"`                          // Metric name
+	Comment            string `json:"comment,omitempty"`             // Metric comment
+	UnitType           string `json:"unit_type,omitempty"`           // Unit type
+	Unit               string `json:"unit,omitempty"`                // Unit
+	MetricType         string `json:"metric_type"`                   // Metric type
+	ScopeType          string `json:"scope_type"`                    // Scope type
+	ScopeRef           string `json:"scope_ref"`                     // Scope ref
+	TimeDimension      any    `json:"time_dimension,omitempty"`      // Time dimension
+	CalculationFormula any    `json:"calculation_formula"`           // Calculation formula
+	AnalysisDimensions any    `json:"analysis_dimensions,omitempty"` // Analysis dimensions
+}
+
+// MetricTypeConcepts Metric type concepts list
+type MetricTypeConcepts struct {
+	Entries    []*MetricType `json:"entries"`               // Metric type data
+	TotalCount int64         `json:"total_count,omitempty"` // Total count
+}
+
 // OntologyJobState Ontology job state
 type OntologyJobState string
 
@@ -299,6 +320,9 @@ type BknBackendAccess interface {
 	SearchActionTypes(ctx context.Context, query *QueryConceptsReq) (actionTypes *ActionTypeConcepts, err error)
 	// GetActionTypeDetail Get action type details
 	GetActionTypeDetail(ctx context.Context, knID string, atIDs []string, includeDetail bool) ([]*ActionType, error)
+
+	// SearchMetricTypes Search metric types
+	SearchMetricTypes(ctx context.Context, query *QueryConceptsReq) (metricTypes *MetricTypeConcepts, err error)
 
 	// CreateFullBuildOntologyJob Create a full ontology build job
 	CreateFullBuildOntologyJob(ctx context.Context, knID string, req *CreateFullBuildOntologyJobReq) (resp *CreateJobResp, err error)
