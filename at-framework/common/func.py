@@ -312,7 +312,11 @@ def load_case(path: str):
         raise ValueError(msg)
 
     # 更新api信息
-    case_list = [{**x, **api_params[x["url"]]} for x in case_list if x["url"] in api_params]
+    # 合并 api_params 到 case，但保留 case 的原始 name（存到 _case_name），避免 prev_case 匹配失败
+    case_list = [
+        {**({"_case_name": x["name"]} if "name" in x else {}), **x, **api_params[x["url"]]}
+        for x in case_list if x["url"] in api_params
+    ]
 
     # 替换全局变量
     case_list = [replace_params(x, **global_flat) for x in case_list]

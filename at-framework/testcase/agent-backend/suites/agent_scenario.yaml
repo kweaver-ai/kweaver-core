@@ -48,9 +48,27 @@ cases:
   prev_case: Setup_创建角色指令模式智能体_开启长期记忆
   description: '获取长期记忆智能体详情，验证长期记忆配置已开启'
 
-# 第一轮对话：告诉智能体一些信息（调试接口返回SSE流，只验证请求成功）
+- name: Setup_发布长期记忆智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${memory_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "长期记忆功能测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取长期记忆智能体详情
+  description: '发布长期记忆智能体'
+
+# 第一轮对话：告诉智能体一些信息（非流式输出，验证回复内容）
 - name: Positive_长期记忆智能体_第一轮对话_设置信息
-  url: 调试Completion
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${memory_agent_key}"
@@ -58,20 +76,33 @@ cases:
   body_params: |
     {
       "query": "我叫张三，我最喜欢的颜色是蓝色，我的生日是6月15日。请记住这些信息。",
-      "agent_version": "v0",
-      "agent_id": "${memory_agent_id}"
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${memory_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "exists"
     }
-  prev_case: Setup_获取长期记忆智能体详情
-  description: '长期记忆智能体第一轮对话：设置个人信息，验证流式响应正常返回'
+  resp_values: |
+    {
+      "memory_conversation_id": "$.conversation_id"
+    }
+  prev_case: Setup_发布长期记忆智能体
+  description: '长期记忆智能体第一轮对话：设置个人信息，验证非流式响应内容'
 
-# 第二轮对话：验证智能体能够进行连续对话（验证请求成功）
+# 第二轮对话：验证智能体能够记住第一轮的信息（非流式输出，验证回复包含张三）
 - name: Positive_长期记忆智能体_第二轮对话_验证记忆
-  url: 调试Completion
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${memory_agent_key}"
@@ -79,16 +110,35 @@ cases:
   body_params: |
     {
       "query": "你还记得我叫什么名字吗？我最喜欢的颜色是什么？我的生日是哪一天？",
-      "agent_version": "v0",
-      "agent_id": "${memory_agent_id}"
+      "stream": false,
+      "conversation_id": "${memory_conversation_id}",
+      "agent_id": "${memory_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "contains('张三')"
     }
   prev_case: Positive_长期记忆智能体_第一轮对话_设置信息
-  description: '长期记忆智能体第二轮对话：验证流式响应正常返回'
+  description: '长期记忆智能体第二轮对话：验证回复包含张三（历史记录生效）'
+
+- name: Cleanup_取消发布长期记忆智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${memory_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_长期记忆智能体_第二轮对话_验证记忆
+  description: '清理：取消发布长期记忆智能体'
 
 - name: Cleanup_删除长期记忆智能体
   switch: n
@@ -98,7 +148,7 @@ cases:
       "agent_id": "${memory_agent_id}"
     }
   code_check: '204'
-  prev_case: Positive_长期记忆智能体_第二轮对话_验证记忆
+  prev_case: Cleanup_取消发布长期记忆智能体
   description: '清理：删除长期记忆智能体'
 
 # ==================== 场景2：角色指令模式智能体 - 相关问题 ====================
@@ -147,8 +197,26 @@ cases:
   prev_case: Setup_创建角色指令模式智能体_开启相关问题
   description: '获取相关问题智能体详情，验证相关问题配置已开启'
 
+- name: Setup_发布相关问题智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${related_q_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "相关问题功能测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取相关问题智能体详情
+  description: '发布相关问题智能体'
+
 - name: Positive_相关问题智能体_进行问答
-  url: 调试Completion
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${related_q_agent_key}"
@@ -156,16 +224,29 @@ cases:
   body_params: |
     {
       "query": "什么是人工智能？",
-      "agent_version": "v0",
+      "stream": false,
+      "conversation_id": "",
       "agent_id": "${related_q_agent_id}"
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(人工智能|AI|机器学习|智能).*')"
     }
-  prev_case: Setup_获取相关问题智能体详情
-  description: '相关问题智能体问答：验证流式响应正常返回'
+  prev_case: Setup_发布相关问题智能体
+  description: '相关问题智能体问答：验证回复包含人工智能相关内容'
+
+- name: Cleanup_取消发布相关问题智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${related_q_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_相关问题智能体_进行问答
+  description: '清理：取消发布相关问题智能体'
 
 - name: Cleanup_删除相关问题智能体
   switch: n
@@ -175,7 +256,7 @@ cases:
       "agent_id": "${related_q_agent_id}"
     }
   code_check: '204'
-  prev_case: Positive_相关问题智能体_进行问答
+  prev_case: Cleanup_取消发布相关问题智能体
   description: '清理：删除相关问题智能体'
 
 # ==================== 场景3：角色指令模式智能体 - 任务规划 ====================
@@ -224,8 +305,26 @@ cases:
   prev_case: Setup_创建角色指令模式智能体_开启任务规划
   description: '获取任务规划智能体详情，验证任务规划配置已开启'
 
+- name: Setup_发布任务规划智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${plan_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "任务规划功能测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取任务规划智能体详情
+  description: '发布任务规划智能体'
+
 - name: Positive_任务规划智能体_执行复杂任务
-  url: 调试Completion
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
   path_params: |
     {
       "app_key": "${plan_agent_key}"
@@ -233,16 +332,29 @@ cases:
   body_params: |
     {
       "query": "请帮我规划如何学习Python编程，包括从基础到进阶的完整学习路径。",
-      "agent_version": "v0",
+      "stream": false,
+      "conversation_id": "",
       "agent_id": "${plan_agent_id}"
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(Python|编程|学习|基础|进阶).*')"
     }
-  prev_case: Setup_获取任务规划智能体详情
-  description: '任务规划智能体：验证流式响应正常返回，返回规划结果'
+  prev_case: Setup_发布任务规划智能体
+  description: '任务规划智能体：验证回复包含Python学习规划内容'
+
+- name: Cleanup_取消发布任务规划智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${plan_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_任务规划智能体_执行复杂任务
+  description: '清理：取消发布任务规划智能体'
 
 - name: Cleanup_删除任务规划智能体
   switch: n
@@ -252,7 +364,7 @@ cases:
       "agent_id": "${plan_agent_id}"
     }
   code_check: '204'
-  prev_case: Positive_任务规划智能体_执行复杂任务
+  prev_case: Cleanup_取消发布任务规划智能体
   description: '清理：删除任务规划智能体'
 
 # ==================== 场景4：Dolphin模式智能体 - 内置沙箱工具 ====================
@@ -408,9 +520,27 @@ cases:
   prev_case: Setup_创建Dolphin模式智能体_配置内置沙箱工具
   description: '获取沙箱智能体详情，验证dolphin模式已配置'
 
+# 发布沙箱智能体（用于对话Completion）
+- name: Setup_发布沙箱智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${sandbox_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "发布沙箱智能体用于验证问答功能",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取沙箱智能体详情
+  description: '发布沙箱智能体，使其可以通过对话Completion接口调用'
+
 # 普通问答测试（不使用文件）
 - name: Positive_沙箱智能体_普通问答
-  url: 调试Completion
+  url: 对话Completion
   path_params: |
     {
       "app_key": "${sandbox_agent_key}"
@@ -418,16 +548,18 @@ cases:
   body_params: |
     {
       "query": "请帮我计算1到100的和",
-      "agent_version": "v0",
+      "stream": false,
+      "conversation_id": "",
       "agent_id": "${sandbox_agent_id}"
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer": "regex('.*(5050|和|计算).*')"
     }
-  prev_case: Setup_获取沙箱智能体详情
-  description: '沙箱智能体普通问答：验证流式响应正常返回'
+  prev_case: Setup_发布沙箱智能体
+  description: '沙箱智能体普通问答：验证非流式响应包含正确的计算结果'
 
 # 上传文件到临时区（沙箱会话session_id为sess-agent-default）
 - name: Setup_上传文件到沙箱临时区
@@ -452,7 +584,7 @@ cases:
 
 # 针对上传文件进行问答
 - name: Positive_沙箱智能体_文件问答
-  url: 调试Completion
+  url: 对话Completion
   path_params: |
     {
       "app_key": "${sandbox_agent_key}"
@@ -460,17 +592,30 @@ cases:
   body_params: |
     {
       "query": "请读取上传的文件内容，并告诉我文件里写了什么？",
-      "agent_version": "v0",
+      "stream": false,
+      "conversation_id": "",
       "agent_id": "${sandbox_agent_id}",
       "temp_files": [{"name": "${uploaded_file_path}", "id": "${uploaded_file_path}"}]
     }
   code_check: '200'
   resp_check: |
     {
-      "$._parse_error": "non_json_body"
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer": "regex('.*(测试|文件|上传|内容).*')"
     }
   prev_case: Setup_上传文件到沙箱临时区
-  description: '沙箱智能体文件问答：验证流式响应正常返回，能读取上传文件'
+  description: '沙箱智能体文件问答：验证非流式响应正确读取文件内容'
+
+- name: Cleanup_取消发布沙箱智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${sandbox_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_沙箱智能体_文件问答
+  description: '清理：取消发布沙箱智能体'
 
 - name: Cleanup_删除沙箱智能体
   switch: n
@@ -480,7 +625,7 @@ cases:
       "agent_id": "${sandbox_agent_id}"
     }
   code_check: '204'
-  prev_case: Positive_沙箱智能体_文件问答
+  prev_case: Cleanup_取消发布沙箱智能体
   description: '清理：删除沙箱智能体'
 
 # ==================== 场景5：Agent技能调用场景 ====================
@@ -722,3 +867,463 @@ cases:
   code_check: '204'
   prev_case: Cleanup_删除调用方Agent
   description: '清理：删除技能Agent'
+
+# ==================== 场景6：React模式智能体 - 禁用历史记录 ====================
+# 测试目的：验证React模式设置禁用历史记录后，多轮对话不使用会话中的已有历史记录
+- name: Setup_创建React模式智能体_禁用历史记录
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ 'React禁用历史智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "这是一个测试React模式禁用历史记录功能的智能体",
+      "key": "{{ 'react-disable-history-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "mode": "react",
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "你是一个React模式的助手，能够根据用户的问题进行思考和回答。",
+        "is_dolphin_mode": 0,
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"},
+        "react_config": {
+          "disable_history_in_a_conversation": true,
+          "disable_llm_cache": true
+        }
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "react_disable_history_agent_id": "$.id"
+    }
+  description: '创建React模式智能体，设置禁用历史记录'
+
+- name: Setup_获取React禁用历史智能体详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${react_disable_history_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "react_disable_history_agent_key": "$.key"
+    }
+  resp_check: |
+    {
+      "$.config.mode": "react",
+      "$.config.react_config.disable_history_in_a_conversation": true
+    }
+  prev_case: Setup_创建React模式智能体_禁用历史记录
+  description: '获取React禁用历史智能体详情，验证配置正确'
+
+- name: Setup_发布React禁用历史智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_disable_history_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "React模式禁用历史记录测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取React禁用历史智能体详情
+  description: '发布React禁用历史智能体'
+
+# 第一轮对话：告诉智能体一些信息
+- name: Positive_React禁用历史_第一轮对话_设置信息
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_disable_history_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "我叫李四，我的爱好是打篮球。",
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${react_disable_history_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "react_disable_history_conversation_id": "$.conversation_id"
+    }
+  prev_case: Setup_发布React禁用历史智能体
+  description: 'React禁用历史智能体第一轮对话：设置个人信息'
+
+# 第二轮对话：验证智能体不能记住第一轮的信息（因为禁用了历史记录）
+- name: Positive_React禁用历史_第二轮对话_验证不记住信息
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_disable_history_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "你还记得我叫什么名字吗？我的爱好是什么？",
+      "stream": false,
+      "conversation_id": "${react_disable_history_conversation_id}",
+      "agent_id": "${react_disable_history_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
+    }
+  code_check: '200'
+  resp_check: |
+    {
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(无法|不记得|没有|不知道).*')"
+    }
+  prev_case: Positive_React禁用历史_第一轮对话_设置信息
+  description: 'React禁用历史智能体第二轮对话：验证智能体无法记住第一轮信息（回复应包含无法/不记得等词）'
+
+- name: Cleanup_取消发布React禁用历史智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_disable_history_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_React禁用历史_第二轮对话_验证不记住信息
+  description: '清理：取消发布React禁用历史智能体'
+
+- name: Cleanup_删除React禁用历史智能体
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${react_disable_history_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布React禁用历史智能体
+  description: '清理：删除React禁用历史智能体'
+
+# ==================== 场景7：React模式智能体 - 启用历史记录 ====================
+# 测试目的：验证React模式启用历史记录后，多轮对话会使用会话中的已有历史记录
+- name: Setup_创建React模式智能体_启用历史记录
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ 'React启用历史智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "这是一个测试React模式启用历史记录功能的智能体",
+      "key": "{{ 'react-enable-history-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "mode": "react",
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "你是一个React模式的助手，能够根据用户的问题进行思考和回答，并且能够记住对话历史。",
+        "is_dolphin_mode": 0,
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"},
+        "react_config": {
+          "disable_history_in_a_conversation": false,
+          "disable_llm_cache": true
+        }
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "react_enable_history_agent_id": "$.id"
+    }
+  description: '创建React模式智能体，设置启用历史记录'
+
+- name: Setup_获取React启用历史智能体详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${react_enable_history_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "react_enable_history_agent_key": "$.key"
+    }
+  resp_check: |
+    {
+      "$.config.mode": "react",
+      "$.config.react_config.disable_history_in_a_conversation": false
+    }
+  prev_case: Setup_创建React模式智能体_启用历史记录
+  description: '获取React启用历史智能体详情，验证配置正确'
+
+- name: Setup_发布React启用历史智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_enable_history_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "React模式启用历史记录测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取React启用历史智能体详情
+  description: '发布React启用历史智能体'
+
+# 第一轮对话：告诉智能体一些信息
+- name: Positive_React启用历史_第一轮对话_设置信息
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_enable_history_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "我叫王五，我最喜欢的食物是火锅。",
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${react_enable_history_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "react_enable_history_conversation_id": "$.conversation_id"
+    }
+  prev_case: Setup_发布React启用历史智能体
+  description: 'React启用历史智能体第一轮对话：设置个人信息'
+
+# 第二轮对话：验证智能体能够记住第一轮的信息（因为启用了历史记录）
+- name: Positive_React启用历史_第二轮对话_验证记住信息
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_enable_history_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "你还记得我叫什么名字吗？我最喜欢的食物是什么？",
+      "stream": false,
+      "conversation_id": "${react_enable_history_conversation_id}",
+      "agent_id": "${react_enable_history_agent_id}",
+      "chat_option": {
+        "is_need_history": true,
+        "is_need_doc_retrival_post_process": true,
+        "is_need_progress": true,
+        "enable_dependency_cache": false
+      }
+    }
+  code_check: '200'
+  resp_check: |
+    {
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "contains('王五')"
+    }
+  prev_case: Positive_React启用历史_第一轮对话_设置信息
+  description: 'React启用历史智能体第二轮对话：验证智能体能记住第一轮信息（应包含王五）'
+
+- name: Cleanup_取消发布React启用历史智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_enable_history_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_React启用历史_第二轮对话_验证记住信息
+  description: '清理：取消发布React启用历史智能体'
+
+- name: Cleanup_删除React启用历史智能体
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${react_enable_history_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布React启用历史智能体
+  description: '清理：删除React启用历史智能体'
+
+# ==================== 场景8：React模式智能体 - 禁用LLM缓存 ====================
+# 测试目的：验证React模式禁用LLM缓存后，每次问答都会走LLM重新回答，不会命中缓存
+- name: Setup_创建React模式智能体_禁用LLM缓存
+  url: 创建Agent
+  body_params: |
+    {
+      "name": "{{ 'React禁用缓存智能体_%s' | format(random_string(6, 8)) }}",
+      "profile": "这是一个测试React模式禁用LLM缓存功能的智能体",
+      "key": "{{ 'react-disable-cache-%s' | format(random_string(6, 8)) }}",
+      "avatar_type": ${agent_avatar_type},
+      "avatar": "${agent_avatar}",
+      "product_key": "${agent_product_key}",
+      "config": {
+        "mode": "react",
+        "input": {"fields": [{"name": "query", "type": "string"}]},
+        "system_prompt": "你是一个React模式的助手，请简洁准确地回答用户的问题。",
+        "is_dolphin_mode": 0,
+        "llms": [{"is_default": true, "llm_config": {"id": "${llm_config_id}", "name": "${llm_config_name}", "model_type": "${llm_config_model_type}", "temperature": ${llm_config_temperature}, "top_p": ${llm_config_top_p}, "top_k": ${llm_config_top_k}, "frequency_penalty": ${llm_config_frequency_penalty}, "presence_penalty": ${llm_config_presence_penalty}, "max_tokens": ${llm_config_max_tokens}}}],
+        "output": {"default_format": "${agent_config_output_format}"},
+        "react_config": {
+          "disable_history_in_a_conversation": true,
+          "disable_llm_cache": true
+        }
+      }
+    }
+  code_check: '201'
+  resp_values: |
+    {
+      "react_disable_cache_agent_id": "$.id"
+    }
+  description: '创建React模式智能体，设置禁用LLM缓存'
+
+- name: Setup_获取React禁用缓存智能体详情
+  url: 获取Agent详情
+  path_params: |
+    {
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '200'
+  resp_values: |
+    {
+      "react_disable_cache_agent_key": "$.key"
+    }
+  resp_check: |
+    {
+      "$.config.mode": "react",
+      "$.config.react_config.disable_llm_cache": true
+    }
+  prev_case: Setup_创建React模式智能体_禁用LLM缓存
+  description: '获取React禁用缓存智能体详情，验证配置正确'
+
+- name: Setup_发布React禁用缓存智能体
+  url: 发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  body_params: |
+    {
+      "business_domain_id": "${business_domain_id}",
+      "category_id": [],
+      "description": "React模式禁用LLM缓存测试",
+      "publish_to_where": ${publish_to_where}
+    }
+  code_check: '201'
+  prev_case: Setup_获取React禁用缓存智能体详情
+  description: '发布React禁用缓存智能体'
+
+# 第一次问答：走LLM生成答案
+- name: Positive_React禁用缓存_首次问答_走LLM生成
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_disable_cache_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "请告诉我太阳系的行星有哪些？",
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '200'
+  resp_check: |
+    {
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(水星|金星|地球|火星|木星|土星|天王星|海王星|行星).*')"
+    }
+  prev_case: Setup_发布React禁用缓存智能体
+  description: 'React禁用缓存智能体首次问答：走LLM生成答案，答案应包含行星名称'
+
+# 第二次相同问题问答：验证不命中缓存，仍然走LLM重新回答
+- name: Positive_React禁用缓存_相同问题_验证不命中缓存
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_disable_cache_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "请告诉我太阳系的行星有哪些？",
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '200'
+  resp_check: |
+    {
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(水星|金星|地球|火星|木星|土星|天王星|海王星|行星).*')"
+    }
+  prev_case: Positive_React禁用缓存_首次问答_走LLM生成
+  description: 'React禁用缓存智能体第二次相同问题问答：验证答案包含行星名称（走LLM重新回答）'
+
+# 第三次相同问题问答：再次验证不命中缓存
+- name: Positive_React禁用缓存_第三次相同问题_验证仍不命中缓存
+  url: 对话Completion
+  prepare_models: [embedding, reranker]
+  path_params: |
+    {
+      "app_key": "${react_disable_cache_agent_key}"
+    }
+  body_params: |
+    {
+      "query": "请告诉我太阳系的行星有哪些？",
+      "stream": false,
+      "conversation_id": "",
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '200'
+  resp_check: |
+    {
+      "$.conversation_id": "exists",
+      "$.message.content.final_answer.answer.text": "regex('.*(水星|金星|地球|火星|木星|土星|天王星|海王星|行星).*')"
+    }
+  prev_case: Positive_React禁用缓存_相同问题_验证不命中缓存
+  description: 'React禁用缓存智能体第三次相同问题问答：验证答案包含行星名称（仍走LLM）'
+
+- name: Cleanup_取消发布React禁用缓存智能体
+  switch: n
+  url: 取消发布智能体
+  path_params: |
+    {
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Positive_React禁用缓存_第三次相同问题_验证仍不命中缓存
+  description: '清理：取消发布React禁用缓存智能体'
+
+- name: Cleanup_删除React禁用缓存智能体
+  switch: n
+  url: 删除Agent
+  path_params: |
+    {
+      "agent_id": "${react_disable_cache_agent_id}"
+    }
+  code_check: '204'
+  prev_case: Cleanup_取消发布React禁用缓存智能体
+  description: '清理：删除React禁用缓存智能体'

@@ -542,10 +542,12 @@ def test_case(feature, story, case_name, case_info):
 
     if case_info.get("prev_case", "") != '':
         with allure.step("执行前置用例执行"):
-            for x in compute_case_list():
-                if x["name"] == case_info["prev_case"]:
+             for x in compute_case_list():
+                # 使用 _case_name（case原始name）进行匹配，避免被 api name 覆盖后匹配失败
+                target_name = x.get("_case_name") or x.get("name", "")
+                if target_name == case_info["prev_case"]:
                     try:
-                        test_case(x["feature"], x["story"], x["name"], x)
+                        test_case(x["feature"], x["story"], x.get("_case_name") or x.get("name"), x)
                     except Exception as e:
                         # 前置失败时当前用例跳过，避免根因用例在依赖链中重复计失败。
                         pytest.skip("prev_case '%s' failed: %s" % (case_info["prev_case"], e))
