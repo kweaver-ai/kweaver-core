@@ -72,4 +72,5 @@ func init() {
 	rest.Register(actionExecutionErrCodeList)
 	rest.Register(actionTypeErrCodeList)
 	rest.Register(riskTypeErrCodeList)
+	rest.Register(metricErrCodeList)
 }

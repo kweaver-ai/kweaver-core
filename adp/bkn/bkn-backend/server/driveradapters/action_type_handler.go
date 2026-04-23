@@ -285,6 +285,12 @@ func (r *restHandler) ValidateActionTypesForKN(c *gin.Context, visitor hydra.Vis
 		return
 	}
 
+	// request来的actionTypes的branch都用url里的branch
+	for i := range actionTypes {
+		actionTypes[i].KNID = knID
+		actionTypes[i].Branch = branch
+	}
+
 	if err = ValidateActionTypes(ctx, knID, actionTypes, strictMode); err != nil {
 		rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 		return

@@ -286,6 +286,11 @@ func (r *restHandler) ValidateConceptGroups(c *gin.Context, visitor hydra.Visito
 	}
 
 	for _, cg := range conceptGroups {
+		cg.KNID = knID
+		cg.Branch = branch
+	}
+
+	for _, cg := range conceptGroups {
 		if err = ValidateConceptGroup(ctx, cg); err != nil {
 			rest.ReplyOK(c, http.StatusOK, map[string]any{"valid": false, "detail": err.Error()})
 			return

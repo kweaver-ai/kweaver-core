@@ -2731,6 +2731,100 @@ paths:
           description: 执行记录不存在
       summary: 取消正在执行的任务
 
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/metrics/{metric_id}/data:
+    post:
+      summary: 查询指标数据（BKN 原生指标）
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 业务知识网络ID
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 指标 ID（BKN MetricDefinition.id）
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: 分支，默认 main
+        - name: fill_null
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: 趋势（区间）查询时，将各序列值对齐到 [time.start, time.end] 的完整分桶时间轴，缺失分桶以 null 填充；与 mdl-uniquery 指标数据查询的 fill_null 一致，为 URL 查询参数（非 body）。仅当 instant 为 false 或省略时有效。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricQueryRequestBody"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricData"
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: 指标或对象类不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/metrics/dry-run:
+    post:
+      summary: 指标试算（不落库）
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: query
+          schema:
+            type: string
+        - name: fill_null
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: 与「查询指标数据」接口相同；URL 查询参数，非 body。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricDryRun"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricData"
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+
 components:
   schemas:
     Object:
@@ -5152,3 +5246,188 @@ components:
         completed_count:
           description: 已完成的对象数量（取消前已执行完成的对象）
           type: integer
+
+    MetricQueryOrderBy:
+      description: |
+        指标请求体 `order_by` 单项；与 MetricDefinition.calculation_formula.order_by 同构（DESIGN 附录 B.1），字段名为 `property`（与旧 uniquery `order_by_fields[].name` 区分）。
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          description: 排序属性（数据属性名等）
+          type: string
+        direction:
+          description: 排序方向；未传时由引擎默认
+          type: string
+          enum:
+            - asc
+            - desc
+
+    MetricQueryRequestBody:
+      description: |
+        指标查询请求体（metric_id 在路径）。与 uniquery MetricQuery 对齐的时间/分析等 + BKN Condition；含 limit 截断序列条数；不含 scope_context。
+      type: object
+      properties:
+        time:
+          type: object
+          properties:
+            start:
+              type: integer
+              format: int64
+            end:
+              type: integer
+              format: int64
+            instant:
+              type: boolean
+            step:
+              type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        analysis_dimensions:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricQueryOrderBy"
+        having:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 与 calculation_formula.having 同构（附录 B.1）；对聚合结果过滤
+        metrics:
+          $ref: "#/components/schemas/Metrics"
+          description: 同环比/占比（§3.3.1.1），与 uniquery Metrics 一致
+        limit:
+          type: integer
+          description: 仅返回前 limit 条 Data 序列（MetricData.datas）
+          minimum: 1
+
+    MetricDryRunConfig:
+      description: |
+        试算请求体中的 `metric_config`：与 MetricDefinition 中参与执行的字段 JSON 同构；id、name、kn_id、branch、tags 等可省略。
+        不包含服务端管理字段（creator、create_time、updater、update_time、module_type）。
+      type: object
+      required:
+        - metric_type
+        - scope_type
+        - scope_ref
+        - calculation_formula
+      properties:
+        id:
+          type: string
+        kn_id:
+          type: string
+        branch:
+          type: string
+        name:
+          type: string
+        comment:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        unit_type:
+          type: string
+        unit:
+          type: string
+        metric_type:
+          type: string
+        scope_type:
+          type: string
+        scope_ref:
+          type: string
+        time_dimension:
+          type: object
+          description: 与 MetricDefinition.time_dimension 同构
+        calculation_formula:
+          type: object
+          description: 与 MetricDefinition.calculation_formula 同构（DESIGN 附录 B.1）
+        analysis_dimensions:
+          type: array
+          items:
+            type: object
+
+    MetricDryRun:
+      description: 指标试算：metric_config 与 MetricDefinition 同构；运行时字段与 MetricQueryRequestBody 对齐
+      type: object
+      required:
+        - metric_config
+      properties:
+        metric_config:
+          $ref: "#/components/schemas/MetricDryRunConfig"
+        time:
+          type: object
+          additionalProperties: true
+        condition:
+          $ref: "#/components/schemas/Condition"
+        analysis_dimensions:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricQueryOrderBy"
+        having:
+          $ref: "#/components/schemas/HavingCondition"
+        metrics:
+          $ref: "#/components/schemas/Metrics"
+        limit:
+          type: integer
+          minimum: 1
+
+    MetricData:
+      description: 与 uniquery GetMetricDataByID 返回一致
+      type: object
+      required:
+        - datas
+        - step
+        - is_variable
+        - is_calendar
+      properties:
+        model:
+          type: object
+          properties:
+            unit_type:
+              type: string
+            unit:
+              type: string
+        datas:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDataRow"
+        step:
+          type: string
+        is_variable:
+          type: boolean
+        is_calendar:
+          type: boolean
+
+    MetricDataRow:
+      type: object
+      required:
+        - labels
+        - times
+        - values
+      properties:
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        times:
+          type: array
+          items: {}
+        values:
+          type: array
+          items: {}
+        growth_values:
+          type: array
+          items: {}
+        growth_rates:
+          type: array
+          items: {}
+        proportions:
+          type: array
+          items: {}

@@ -25,6 +25,7 @@ import (
 	"ontology-query/logics/action_type"
 	"ontology-query/logics/auth"
 	"ontology-query/logics/knowledge_network"
+	"ontology-query/logics/metric"
 	"ontology-query/logics/object_type"
 	"ontology-query/version"
 )
@@ -37,22 +38,24 @@ type restHandler struct {
 	appSetting *common.AppSetting
 	as         interfaces.AuthService
 
+	als interfaces.ActionLogsService
+	ass interfaces.ActionSchedulerService
 	ats interfaces.ActionTypeService
 	kns interfaces.KnowledgeNetworkService
+	ms  interfaces.MetricQueryService
 	ots interfaces.ObjectTypeService
-	ass interfaces.ActionSchedulerService
-	als interfaces.ActionLogsService
 }
 
 func NewRestHandler(appSetting *common.AppSetting) RestHandler {
 	r := &restHandler{
 		appSetting: appSetting,
-		as:         auth.NewAuthService(appSetting),
-		kns:        knowledge_network.NewKnowledgeNetworkService(appSetting),
-		ats:        action_type.NewActionTypeService(appSetting),
-		ots:        object_type.NewObjectTypeService(appSetting),
-		ass:        action_scheduler.NewActionSchedulerService(appSetting),
 		als:        action_logs.NewActionLogsService(appSetting),
+		as:         auth.NewAuthService(appSetting),
+		ass:        action_scheduler.NewActionSchedulerService(appSetting),
+		ats:        action_type.NewActionTypeService(appSetting),
+		kns:        knowledge_network.NewKnowledgeNetworkService(appSetting),
+		ms:         metric.NewMetricQueryService(appSetting),
+		ots:        object_type.NewObjectTypeService(appSetting),
 	}
 	return r
 }
@@ -78,6 +81,9 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiV1.GET("/knowledge-networks/:kn_id/action-logs", r.QueryActionLogsByEx)
 		apiV1.GET("/knowledge-networks/:kn_id/action-logs/:log_id", r.GetActionLogByEx)
 		apiV1.POST("/knowledge-networks/:kn_id/action-logs/:log_id/cancel", r.CancelActionLogByEx)
+
+		apiV1.POST("/knowledge-networks/:kn_id/metrics/dry-run", r.verifyJsonContentTypeMiddleWare(), r.PostMetricDryRunByEx)
+		apiV1.POST("/knowledge-networks/:kn_id/metrics/:metric_id/data", r.verifyJsonContentTypeMiddleWare(), r.PostMetricDataByEx)
 	}
 
 	apiInV1 := c.Group("/api/ontology-query/in/v1")
@@ -96,6 +102,9 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 		apiInV1.GET("/knowledge-networks/:kn_id/action-logs", r.QueryActionLogsByIn)
 		apiInV1.GET("/knowledge-networks/:kn_id/action-logs/:log_id", r.GetActionLogByIn)
 		apiInV1.POST("/knowledge-networks/:kn_id/action-logs/:log_id/cancel", r.CancelActionLogByIn)
+
+		apiInV1.POST("/knowledge-networks/:kn_id/metrics/dry-run", r.verifyJsonContentTypeMiddleWare(), r.PostMetricDryRunByIn)
+		apiInV1.POST("/knowledge-networks/:kn_id/metrics/:metric_id/data", r.verifyJsonContentTypeMiddleWare(), r.PostMetricDataByIn)
 	}
 
 	logger.Info("RestHandler RegisterPublic")

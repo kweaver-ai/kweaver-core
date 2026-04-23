@@ -119,6 +119,7 @@ const (
 	MODULE_TYPE_CONCEPT_GROUP_RELATION = "concept_group_relation"
 	MODULE_TYPE_ACTION_SCHEDULE        = "action_schedule"
 	MODULE_TYPE_RISK_TYPE              = "risk_type"
+	MODULE_TYPE_METRIC                 = "metric"
 )
 
 const (
@@ -317,6 +318,14 @@ func GenerateConceptGroupRelationAuditObject(id string, name string) audit.Audit
 func GenerateRiskTypeAuditObject(id string, name string) audit.AuditObject {
 	return audit.AuditObject{
 		Type: MODULE_TYPE_RISK_TYPE,
+		ID:   id,
+		Name: name,
+	}
+}
+
+func GenerateMetricAuditObject(id string, name string) audit.AuditObject {
+	return audit.AuditObject{
+		Type: MODULE_TYPE_METRIC,
 		ID:   id,
 		Name: name,
 	}
@@ -1070,6 +1079,126 @@ func GetBKNConceptSchemaDefinition(vectorDim int, defaultSmallModelEnabled bool)
 			DisplayName:  "schedule",
 			OriginalName: "schedule",
 			Description:  "BKN行动类概念的调度配置",
+			Features:     []PropertyFeature{},
+		},
+		// Metric specific fields
+		{
+			Name:         "unit_type",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "schedule",
+			OriginalName: "unit_type",
+			Description:  "BKN指标的单位类型",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_unit_type",
+					DisplayName: "keyword_unit_type",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN指标的单位类型的关键词特征",
+					RefProperty: "unit_type",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
+			Name:         "unit",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "unit",
+			OriginalName: "unit",
+			Description:  "BKN指标的单位",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_unit",
+					DisplayName: "keyword_unit",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN指标的单位的关键词特征",
+					RefProperty: "unit",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
+			Name:         "metric_type",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "metric_type",
+			OriginalName: "metric_type",
+			Description:  "BKN指标的类型",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_metric_type",
+					DisplayName: "keyword_metric_type",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN指标的类型的关键词特征",
+					RefProperty: "metric_type",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
+			Name:         "scope_type",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "scope_type",
+			OriginalName: "scope_type",
+			Description:  "BKN指标的统计主体类型",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_scope_type",
+					DisplayName: "keyword_scope_type",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN指标的统计主体类型的关键词特征",
+					RefProperty: "scope_type",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
+			Name:         "scope_ref",
+			Type:         data_type.DATATYPE_STRING,
+			DisplayName:  "scope_ref",
+			OriginalName: "scope_ref",
+			Description:  "BKN指标的统计主体ID",
+			Features: []PropertyFeature{
+				{
+					FeatureName: "keyword_scope_ref",
+					DisplayName: "keyword_scope_ref",
+					FeatureType: FieldFeatureType_Keyword,
+					Description: "BKN指标的统计主体ID的关键词特征",
+					RefProperty: "scope_ref",
+					IsDefault:   true,
+					IsNative:    false,
+					Config:      map[string]any{FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE: FIELD_KEYWORD_PROPERTY_IGNORE_ABOVE_VALUE},
+				},
+			},
+		},
+		{
+			Name:         "time_dimension",
+			Type:         data_type.DATATYPE_JSON,
+			DisplayName:  "time_dimension",
+			OriginalName: "time_dimension",
+			Description:  "BKN指标的时间维度",
+			Features:     []PropertyFeature{},
+		},
+		{
+			Name:         "calculation_formula",
+			Type:         data_type.DATATYPE_JSON,
+			DisplayName:  "calculation_formula",
+			OriginalName: "calculation_formula",
+			Description:  "BKN指标的计算公式",
+			Features:     []PropertyFeature{},
+		},
+		{
+			Name:         "analysis_dimensions",
+			Type:         data_type.DATATYPE_JSON,
+			DisplayName:  "analysis_dimensions",
+			OriginalName: "analysis_dimensions",
+			Description:  "BKN指标的分析维度",
 			Features:     []PropertyFeature{},
 		},
 	}
