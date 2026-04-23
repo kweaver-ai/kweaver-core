@@ -132,7 +132,7 @@ async def build_tools(
     # builtin_skill_execute_script).
     # request_headers are forwarded so each Tool instance captures them at
     # construction time, avoiding set_headers() races on the shared singleton.
-    if Config.features.add_skill_usage_rules_in_system_prompt:
+    if Config.features.skill_enabled:
         builtin_skill_tools = build_builtin_skill_tools(request_headers)
         for name in builtin_skill_tools:
             if name in tools:

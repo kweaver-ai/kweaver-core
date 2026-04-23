@@ -132,9 +132,9 @@ async def run_dolphin(
     # 避免后续对 dolphin_global_config_dict 的修改影响到 llm_config。
     dolphin_global_config_dict = copy.deepcopy(llm_config)
 
-    # 8.2 添加自定义配置：是否显示 Skill 使用规则
-    dolphin_global_config_dict["add_skill_usage_rules_in_system_prompt"] = (
-        Config.features.add_skill_usage_rules_in_system_prompt
+    # 8.2 添加自定义配置：是否开启 Skill 功能
+    dolphin_global_config_dict["skill_enabled"] = (
+        Config.features.skill_enabled
     )
     
     # 8.3 从字典创建GlobalConfig对象

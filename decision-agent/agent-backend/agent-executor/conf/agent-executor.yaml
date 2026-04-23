@@ -69,7 +69,7 @@ features:
   enable_dolphin_agent_output_variables_ctrl: false
   is_skill_agent_need_progress: false
   enable_traceai_evidence: false
-  add_skill_usage_rules_in_system_prompt: false  # 是否在系统提示词中添加 Skill 使用规则说明
+  skill_enabled: true  # 是否开启 Skill 功能
 
 # 7. o11y 相关
 o11y:

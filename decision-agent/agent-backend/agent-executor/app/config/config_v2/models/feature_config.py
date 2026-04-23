@@ -24,8 +24,8 @@ class FeaturesConfig:
     # 是否在 API tool proxy 请求中透传 TraceAI evidence 开关
     enable_traceai_evidence: bool = False
 
-    # 是否在系统提示词中添加 Skill 使用规则说明
-    add_skill_usage_rules_in_system_prompt: bool = True
+    # 是否开启 Skill 功能
+    skill_enabled: bool = True
 
     @classmethod
     def from_dict(cls, data: dict) -> "FeaturesConfig":
@@ -42,7 +42,7 @@ class FeaturesConfig:
                 "is_skill_agent_need_progress", False
             ),
             enable_traceai_evidence=data.get("enable_traceai_evidence", False),
-            add_skill_usage_rules_in_system_prompt=data.get(
-                "add_skill_usage_rules_in_system_prompt", True
+            skill_enabled=data.get(
+                "skill_enabled", True
             ),
         )

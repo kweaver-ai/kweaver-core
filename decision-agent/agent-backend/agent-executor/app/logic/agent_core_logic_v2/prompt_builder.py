@@ -1,4 +1,5 @@
 from typing import Optional
+import json
 
 from opentelemetry.trace import Span
 
@@ -14,28 +15,32 @@ from .trace import span_set_attrs
 
 # Skill usage rules injected into every explore prompt so that the model
 # knows how to use the three built-in skill contract tools.
-# 注意：这些规则需要作为 Dolphin 注释格式（以 # 开头）或在块内部
-_SKILL_USAGE_RULES = """
-# == Built-in Skill Capabilities ==
-# You have access to three built-in tools for working with skills:
-#
-# 1. builtin_skill_load(skill_id) — Always call this first when you have a skill_id.
-#    Returns the full SKILL.md content plus lists of available scripts and reference files.
-#
-# 2. builtin_skill_read_file(skill_id, file_path) — Optional. Read a specific file
-#    inside the skill package. Only call after you have obtained a file path from
-#    builtin_skill_load or from SKILL.md. One file per call; cannot batch.
-#
-# 3. builtin_skill_execute_script(skill_id, script_path) — Optional. Execute a script
-#    from the skill package. Only call after reading SKILL.md and deciding that script
-#    execution is needed. Not all skills require script execution.
-#
-# Usage rules:
-# - If you have a skill_id, always start with builtin_skill_load(skill_id).
-# - After reading SKILL.md, decide independently whether to call read_file, execute_script,
-#   both, or neither.
-# - builtin_skill_read_file and builtin_skill_execute_script are both optional steps.
-# ==========================================
+# 注意:这些规则需要作为 Dolphin 注释格式(以 # 开头)或在块内部
+_SKILL_USAGE_RULES = """## Built-in Skill Capabilities
+
+You have access to three built-in tools for working with skills:
+
+### 1. builtin_skill_load(skill_id)
+- **Purpose**: Load a skill package and get its documentation
+- **When to use**: Always call this first when you have a skill_id
+- **Returns**: The full SKILL.md content plus lists of available scripts and reference files
+
+### 2. builtin_skill_read_file(skill_id, file_path)
+- **Purpose**: Read a specific file inside the skill package
+- **When to use**: Optional. Only call after you have obtained a file path from builtin_skill_load or from SKILL.md
+- **Note**: One file per call; cannot batch
+
+### 3. builtin_skill_execute_script(skill_id, script_path)
+- **Purpose**: Execute a script from the skill package
+- **When to use**: Optional. Only call after reading SKILL.md and deciding that script execution is needed
+- **Note**: Not all skills require script execution
+
+### Usage Guidelines
+1. If you have a skill_id, **always start with** `builtin_skill_load(skill_id)`
+2. After reading SKILL.md, decide independently whether to call `read_file`, `execute_script`, both, or neither
+3. Both `builtin_skill_read_file` and `builtin_skill_execute_script` are **optional steps**
+
+---
 """
 
 
@@ -48,10 +53,10 @@ class PromptBuilder:
     def _is_skill_usage_rules_enabled() -> bool:
         """是否将 _SKILL_USAGE_RULES 拼接到系统提示词。
 
-        从配置文件的 features.add_skill_usage_rules_in_system_prompt 读取，
+        从配置文件的 features.skill_enabled 读取，
         默认为 true，仅当配置为 false 时才不拼接。
         """
-        return Config.features.add_skill_usage_rules_in_system_prompt
+        return Config.features.skill_enabled
 
     @internal_span()
     async def build(self, span: Optional[Span] = None) -> str:
@@ -138,7 +143,9 @@ class PromptBuilder:
             # no_cache = disable_llm_cache
 
             # 构造 explore dolphin 语句
-            explore_prompt = f"""/explore/(system_prompt={repr(explore_system_prompt)}, history={history_enabled}, no_cache={disable_llm_cache})$query -> answer\n"""
+            # 使用 json.dumps 转义字符串，Dolphin SDK 会自动反转义 \n 为真正的换行符
+            escaped_system_prompt = json.dumps(explore_system_prompt, ensure_ascii=False)
+            explore_prompt = f"""/explore/(system_prompt={escaped_system_prompt}, history={history_enabled}, no_cache={disable_llm_cache})$query -> answer\n"""
 
             dolphin_prompt = (
                 memory_prompt
