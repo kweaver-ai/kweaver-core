@@ -102,21 +102,6 @@ func (mr *MockISkillIndexBuildTaskDBMockRecorder) SelectByTaskID(ctx, tx, taskID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByTaskID", reflect.TypeOf((*MockISkillIndexBuildTaskDB)(nil).SelectByTaskID), ctx, tx, taskID)
 }
 
-// SelectLatestCompletedIncrementalTask mocks base method.
-func (m *MockISkillIndexBuildTaskDB) SelectLatestCompletedIncrementalTask(ctx context.Context, tx *sql.Tx) (*model.SkillIndexBuildTaskDB, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectLatestCompletedIncrementalTask", ctx, tx)
-	ret0, _ := ret[0].(*model.SkillIndexBuildTaskDB)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SelectLatestCompletedIncrementalTask indicates an expected call of SelectLatestCompletedIncrementalTask.
-func (mr *MockISkillIndexBuildTaskDBMockRecorder) SelectLatestCompletedIncrementalTask(ctx, tx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectLatestCompletedIncrementalTask", reflect.TypeOf((*MockISkillIndexBuildTaskDB)(nil).SelectLatestCompletedIncrementalTask), ctx, tx)
-}
-
 // SelectLatestCompletedFullTask mocks base method.
 func (m *MockISkillIndexBuildTaskDB) SelectLatestCompletedFullTask(ctx context.Context, tx *sql.Tx) (*model.SkillIndexBuildTaskDB, error) {
 	m.ctrl.T.Helper()
@@ -130,6 +115,21 @@ func (m *MockISkillIndexBuildTaskDB) SelectLatestCompletedFullTask(ctx context.C
 func (mr *MockISkillIndexBuildTaskDBMockRecorder) SelectLatestCompletedFullTask(ctx, tx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectLatestCompletedFullTask", reflect.TypeOf((*MockISkillIndexBuildTaskDB)(nil).SelectLatestCompletedFullTask), ctx, tx)
+}
+
+// SelectLatestCompletedIncrementalTask mocks base method.
+func (m *MockISkillIndexBuildTaskDB) SelectLatestCompletedIncrementalTask(ctx context.Context, tx *sql.Tx) (*model.SkillIndexBuildTaskDB, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectLatestCompletedIncrementalTask", ctx, tx)
+	ret0, _ := ret[0].(*model.SkillIndexBuildTaskDB)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectLatestCompletedIncrementalTask indicates an expected call of SelectLatestCompletedIncrementalTask.
+func (mr *MockISkillIndexBuildTaskDBMockRecorder) SelectLatestCompletedIncrementalTask(ctx, tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectLatestCompletedIncrementalTask", reflect.TypeOf((*MockISkillIndexBuildTaskDB)(nil).SelectLatestCompletedIncrementalTask), ctx, tx)
 }
 
 // SelectListPage mocks base method.

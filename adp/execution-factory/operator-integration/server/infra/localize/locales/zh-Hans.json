@@ -177,7 +177,11 @@
         "FunctionAIGenerateModelFailed": "模型生成内容异常，请检查默认模型是否可用，或前往设置配置有效的模型",
         "SandboxControlPlaneFailed": "依赖沙箱服务异常，请查看错误详情",
         "PypiRepoUnavailable": "PyPI仓库不可用，请检查网络连接或稍后重试",
-        "PypiParserFailed": "版本联想功能需镜像源支持 JSON API (如 PyPI 官方、清华源等)，请检查镜像源配置是否正确"
+        "PypiParserFailed": "版本联想功能需镜像源支持 JSON API (如 PyPI 官方、清华源等)，请检查镜像源配置是否正确",
+        "SkillNameDuplicate": "Agent Skill “%s”已存在，请使用其他名称",
+        "SkillStatusInvalid": "Agent Skill 状态无效，请检查状态是否正确",
+        "SkillCategoryNotFound": "Agent Skill 分分类不存在",
+        "SkillUnSupportDelete": "Agent Skill 不支持删除，请联系管理员"
     },
     "sol": {
         "Common": "请联系管理员",
