@@ -50,7 +50,7 @@ class PromptBuilder:
         self.temp_files = temp_files
 
     @staticmethod
-    def _is_skill_usage_rules_enabled() -> bool:
+    def _is_skill_enabled() -> bool:
         """是否将 _SKILL_USAGE_RULES 拼接到系统提示词。
 
         从配置文件的 features.skill_enabled 读取，
@@ -66,7 +66,7 @@ class PromptBuilder:
             agent_id=self.agent_config.agent_id,
         )
 
-        skill_rules_enabled = self._is_skill_usage_rules_enabled()
+        is_skill_enabled = self._is_skill_enabled()
 
         if self.agent_config.is_dolphin_mode:
             # Skill usage rules are placed first so that every /explore/ or
@@ -74,7 +74,7 @@ class PromptBuilder:
             # or post_dolphin — can always see them.  Moving this after
             # pre_dolphin would hide the rules from any explore block that the
             # author placed inside a pre_dolphin section.
-            dolphin_prompt = (_SKILL_USAGE_RULES + "\n") if skill_rules_enabled else ""
+            dolphin_prompt = (_SKILL_USAGE_RULES + "\n") if is_skill_enabled else ""
 
             for pre_dolphin in self.agent_config.pre_dolphin:
                 if not pre_dolphin.get("enabled", False):
@@ -114,7 +114,7 @@ class PromptBuilder:
                 # 确保 system_prompt 不为 None，避免 repr(None) 变成字符串 'None'
                 explore_system_prompt = self.agent_config.system_prompt or ""
 
-            if skill_rules_enabled:
+            if is_skill_enabled:
                 # Dolphin 会将标记符替换为通用的 Tools Usage Guidelines
                 # 最终顺序：_SKILL_USAGE_RULES -> Tools Usage Guidelines -> 用户提示词
                 if explore_system_prompt and explore_system_prompt.strip():
