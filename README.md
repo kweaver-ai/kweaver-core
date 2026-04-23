@@ -12,7 +12,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 
 > **Note:** KWeaver Core is a **backend-only framework** — it does not include a web UI. All interactions are through the CLI, SDK, or API. If you need a graphical interface, please install [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver).
 
-> Want to have an intuitive experience of the core functions of KWeaver DIP? Click the link below to sign up and start your trial experience immediately to quickly unlock the product's value! 👉 **Apply for a trial:** <https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf>
+Want to have an intuitive experience of the core functions of KWeaver DIP? Click the link below to sign up and start your trial experience immediately to quickly unlock the product's value! 👉 Apply for a trial: https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf
 
 <a id="toc-quick-links"></a>
 
