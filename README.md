@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/dark.png" />
-    <source media="(prefers-color-scheme: light)" srcset="./assets/logo/light.png" />
-    <img alt="KWeaver" src="./assets/logo/light.png" width="320" />
-  </picture>
+  <img alt="KWeaver" src="./assets/logo/banner.png" width="800" />
 </p>
 
 [中文](README.zh.md) | English
