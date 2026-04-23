@@ -131,8 +131,7 @@ func (r *restHandler) CreateObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -268,7 +267,7 @@ func (r *restHandler) ValidateObjectTypesForKN(c *gin.Context, visitor hydra.Vis
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -369,8 +368,7 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -414,8 +412,7 @@ func (r *restHandler) UpdateObjectType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ObjectType_ObjectTypeNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound)
 
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -534,8 +531,7 @@ func (r *restHandler) UpdateDataProperties(c *gin.Context) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -556,8 +552,7 @@ func (r *restHandler) UpdateDataProperties(c *gin.Context) {
 		return
 	}
 	if objectType == nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_ObjectType_ObjectTypeNotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -659,8 +654,7 @@ func (r *restHandler) DeleteObjectTypes(c *gin.Context) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -702,8 +696,7 @@ func (r *restHandler) DeleteObjectTypes(c *gin.Context) {
 			return
 		}
 		if !exist {
-			httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-				berrors.BknBackend_ObjectType_ObjectTypeNotFound)
+			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound)
 
 			// 设置 trace 的错误信息的 attributes
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -862,8 +855,7 @@ func (r *restHandler) ListObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -993,8 +985,7 @@ func (r *restHandler) GetObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
@@ -1088,8 +1079,7 @@ func (r *restHandler) SearchObjectTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)

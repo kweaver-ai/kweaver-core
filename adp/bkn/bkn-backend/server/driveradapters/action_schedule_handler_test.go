@@ -91,7 +91,7 @@ func Test_ActionScheduleRestHandler_CreateActionSchedule(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Failed when KN check returns error\n", func() {
@@ -418,7 +418,7 @@ func Test_ActionScheduleRestHandler_ListActionSchedules(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Failed with invalid status filter\n", func() {

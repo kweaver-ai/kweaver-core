@@ -87,7 +87,7 @@ func (r *restHandler) CreateRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -173,7 +173,7 @@ func (r *restHandler) UpdateRiskType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -193,7 +193,7 @@ func (r *restHandler) UpdateRiskType(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_RiskType_RiskTypeNotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound))
 		return
 	}
 
@@ -250,7 +250,7 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -263,7 +263,7 @@ func (r *restHandler) DeleteRiskTypes(c *gin.Context) {
 			return
 		}
 		if !exist {
-			rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_RiskType_RiskTypeNotFound))
+			rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_RiskType_RiskTypeNotFound))
 			return
 		}
 		riskTypes = append(riskTypes, &interfaces.RiskType{RTID: rtID, RTName: rtName})
@@ -312,7 +312,7 @@ func (r *restHandler) ListRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -379,7 +379,7 @@ func (r *restHandler) GetRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusForbidden, berrors.BknBackend_KnowledgeNetwork_NotFound))
+		rest.ReplyError(c, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound))
 		return
 	}
 
@@ -491,8 +491,7 @@ func (r *restHandler) SearchRiskTypes(c *gin.Context, visitor hydra.Visitor) {
 		return
 	}
 	if !exist {
-		httpErr := rest.NewHTTPError(ctx, http.StatusForbidden,
-			berrors.BknBackend_KnowledgeNetwork_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return

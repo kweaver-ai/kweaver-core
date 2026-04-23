@@ -562,8 +562,7 @@ func (kns *knowledgeNetworkService) GetKNByID(ctx context.Context, knID string, 
 		span.SetStatus(codes.Error, errStr)
 		span.End()
 
-		return nil, rest.NewHTTPError(ctx, http.StatusNotFound,
-			berrors.BknBackend_KnowledgeNetwork_NotFound).
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound).
 			WithErrorDetails(errStr)
 	}
 

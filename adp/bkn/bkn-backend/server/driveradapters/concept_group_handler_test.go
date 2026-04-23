@@ -116,7 +116,7 @@ func Test_ConceptGroupRestHandler_CreateConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckKNExistByID failed\n", func() {
@@ -206,7 +206,7 @@ func Test_ConceptGroupRestHandler_UpdateConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ConceptGroup not found\n", func() {
@@ -219,7 +219,7 @@ func Test_ConceptGroupRestHandler_UpdateConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("UpdateConceptGroupByIn - Success\n", func() {
@@ -285,7 +285,7 @@ func Test_ConceptGroupRestHandler_DeleteConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ConceptGroup not found\n", func() {
@@ -296,7 +296,7 @@ func Test_ConceptGroupRestHandler_DeleteConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 	})
 }
@@ -343,7 +343,7 @@ func Test_ConceptGroupRestHandler_ListConceptGroups(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 	})
@@ -392,7 +392,7 @@ func Test_ConceptGroupRestHandler_GetConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Invalid mode\n", func() {
@@ -521,7 +521,7 @@ func Test_ConceptGroupRestHandler_AddObjectTypesToConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ConceptGroup not found\n", func() {
@@ -534,7 +534,7 @@ func Test_ConceptGroupRestHandler_AddObjectTypesToConceptGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckConceptGroupExistByID failed\n", func() {
@@ -673,7 +673,7 @@ func Test_ConceptGroupRestHandler_DeleteObjectTypesFromGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ConceptGroup not found\n", func() {
@@ -684,7 +684,7 @@ func Test_ConceptGroupRestHandler_DeleteObjectTypesFromGroup(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckConceptGroupExistByID failed\n", func() {
