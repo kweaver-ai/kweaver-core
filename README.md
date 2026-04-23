@@ -20,7 +20,7 @@ KWeaver Core is a harness-first foundation for enterprise decision agents. It tu
 
 ## 📚 Quick Links
 
-- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver DIP demo environment [Trial registration](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf)
+- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver DIP demo environment, [Trial registration](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf)
 - 🛠️ [KWeaver SDK](https://github.com/kweaver-ai/kweaver-sdk) - End-user / agent `kweaver` CLI, TypeScript / Python SDK, and AI agent skills
 - 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - Platform administrator CLI (users / orgs / roles / models / audit) for full installs
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
