@@ -71,6 +71,10 @@ service:
     frequency_penalty: 0.5
     presence_penalty: 0.5
     max_tokens: 5000
+  tool_dependency_sync:
+    enabled: true
+    initial_retry_interval_seconds: 5
+    max_retry_interval_seconds: 60
 # 认证开关
 auth:
   enabled: true

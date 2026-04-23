@@ -69,3 +69,7 @@ find_skills:
   recall_timeout_ms: 5000
   total_timeout_ms: 10000
   skills_object_type_id: "skills"
+tool_dependency_sync:
+  enabled: true
+  initial_retry_interval_seconds: 5
+  max_retry_interval_seconds: 60

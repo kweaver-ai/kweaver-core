@@ -86,3 +86,18 @@ func (mr *MockDrivenOperatorIntegrationMockRecorder) GetToolDetail(ctx, req any)
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToolDetail", reflect.TypeOf((*MockDrivenOperatorIntegration)(nil).GetToolDetail), ctx, req)
 }
+
+// SyncToolDependencyPackage mocks base method.
+func (m *MockDrivenOperatorIntegration) SyncToolDependencyPackage(ctx context.Context, req *interfaces.SyncToolDependencyPackageRequest) (*interfaces.SyncToolDependencyPackageResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncToolDependencyPackage", ctx, req)
+	ret0, _ := ret[0].(*interfaces.SyncToolDependencyPackageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SyncToolDependencyPackage indicates an expected call of SyncToolDependencyPackage.
+func (mr *MockDrivenOperatorIntegrationMockRecorder) SyncToolDependencyPackage(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncToolDependencyPackage", reflect.TypeOf((*MockDrivenOperatorIntegration)(nil).SyncToolDependencyPackage), ctx, req)
+}

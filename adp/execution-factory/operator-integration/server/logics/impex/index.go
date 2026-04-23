@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/dbaccess"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/drivenadapters"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/infra/config"
@@ -18,7 +19,6 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/operator"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/toolbox"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (
