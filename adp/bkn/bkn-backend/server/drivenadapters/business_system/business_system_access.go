@@ -11,14 +11,13 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -48,8 +47,7 @@ func NewBusinessSystemAccess(appSetting *common.AppSetting) interfaces.BusinessS
 
 func (bsa *businessSystemAccess) BindResource(ctx context.Context, bd_id string, rid string, rtype string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Bind resource to business system",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Bind resource to business system")
 	defer span.End()
 
 	span.SetAttributes(
@@ -58,7 +56,7 @@ func (bsa *businessSystemAccess) BindResource(ctx context.Context, bd_id string,
 		attr.Key("resource_type").String(rtype))
 
 	httpUrl := fmt.Sprintf("%s/resource", bsa.bsUrl)
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodPost,
 		HttpContentType: rest.ContentTypeJson,
@@ -85,8 +83,8 @@ func (bsa *businessSystemAccess) BindResource(ctx context.Context, bd_id string,
 	if err != nil {
 		errDetails := fmt.Sprintf("BindResource http request failed: %s", err.Error())
 		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http bind resource failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http bind resource failed")
 		return fmt.Errorf("BindResource http request failed: %s", err)
 	}
 
@@ -101,8 +99,7 @@ func (bsa *businessSystemAccess) BindResource(ctx context.Context, bd_id string,
 
 func (bsa *businessSystemAccess) UnbindResource(ctx context.Context, bd_id string, rid string, rtype string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "driven layer: Unbind resource from business system",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "driven layer: Unbind resource from business system")
 	defer span.End()
 
 	span.SetAttributes(
@@ -111,7 +108,7 @@ func (bsa *businessSystemAccess) UnbindResource(ctx context.Context, bd_id strin
 		attr.Key("resource_type").String(rtype))
 
 	httpUrl := fmt.Sprintf("%s/resource?bd_id=%s&id=%s&type=%s", bsa.bsUrl, bd_id, rid, rtype)
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:         httpUrl,
 		HttpMethod:      http.MethodDelete,
 		HttpContentType: rest.ContentTypeJson,
@@ -133,8 +130,8 @@ func (bsa *businessSystemAccess) UnbindResource(ctx context.Context, bd_id strin
 	if err != nil {
 		errDetails := fmt.Sprintf("UnbindResource http request failed: %s", err.Error())
 		logger.Error(errDetails)
-		o11y.Error(ctx, errDetails)
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http unbind resource failed")
+		otellog.LogError(ctx, errDetails, nil)
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http unbind resource failed")
 		return fmt.Errorf("UnbindResource http request failed: %s", err)
 	}
 

@@ -13,18 +13,17 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/drivenadapters/object_type"
 	"bkn-backend/drivenadapters/relation_type"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -55,7 +54,7 @@ func NewKNAccess(appSetting *common.AppSetting) interfaces.KNAccess {
 // 根据ID获取业务知识网络存在性
 func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 	knID string, branch string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query knowledge network", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query knowledge network")
 	defer span.End()
 
 	span.SetAttributes(
@@ -71,13 +70,13 @@ func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get id by f_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get id by f_id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get id by f_id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("获取业务知识网络信息的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("获取业务知识网络信息的 sql 语句: %s", sqlStr))
 
 	var name string
 	err = kna.db.QueryRow(sqlStr, vals...).Scan(&name)
@@ -87,7 +86,7 @@ func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 		return "", false, nil
 	} else if err != nil {
 		logger.Errorf("row scan failed, err: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan failed, err: %v", err))
+		otellog.LogError(ctx, "Row scan failed, err", err)
 		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
@@ -99,7 +98,7 @@ func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 // 根据名称获取业务知识网络存在性
 func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 	knName string, branch string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query knowledge network", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Query knowledge network")
 	defer span.End()
 
 	span.SetAttributes(
@@ -115,13 +114,13 @@ func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get id by name, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get id by name, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get id by name, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("获取业务知识网络信息的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("获取业务知识网络信息的 sql 语句: %s", sqlStr))
 
 	var knID string
 	err = oma.db.QueryRow(sqlStr, vals...).Scan(
@@ -133,7 +132,7 @@ func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 		return "", false, nil
 	} else if err != nil {
 		logger.Errorf("row scan failed, err: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan failed, err: %v", err))
+		otellog.LogError(ctx, "Row scan failed, err", err)
 		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
@@ -144,8 +143,7 @@ func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 
 // 创建业务知识网络
 func (kna *knowledgeNetworkAccess) CreateKN(ctx context.Context, tx *sql.Tx, KN *interfaces.KN) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into knowledge network",
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Insert into knowledge network")
 	defer span.End()
 
 	span.SetAttributes(
@@ -194,19 +192,19 @@ func (kna *knowledgeNetworkAccess) CreateKN(ctx context.Context, tx *sql.Tx, KN 
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of insert knowledge network, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert knowledge network, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of insert knowledge network, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("创建业务知识网络的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建业务知识网络的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("insert data error: %v\n", err)
 		span.SetStatus(codes.Error, "Insert data error")
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		return err
 	}
 
@@ -216,7 +214,7 @@ func (kna *knowledgeNetworkAccess) CreateKN(ctx context.Context, tx *sql.Tx, KN 
 
 // 查询业务知识网络列表。查主线的当前版本为true的业务知识网络
 func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces.KNsQueryParams) ([]*interfaces.KN, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Select knowledge networks", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Select knowledge networks")
 	defer span.End()
 
 	span.SetAttributes(
@@ -252,19 +250,19 @@ func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge networks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.KN{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	rows, err := kna.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
 		span.SetStatus(codes.Error, "List data error")
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.KN{}, err
 	}
 	defer rows.Close()
@@ -296,7 +294,7 @@ func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
 			span.SetStatus(codes.Error, "Row scan error")
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			return []*interfaces.KN{}, err
 		}
 
@@ -310,7 +308,7 @@ func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces
 }
 
 func (kna *knowledgeNetworkAccess) GetKNsTotal(ctx context.Context, query interfaces.KNsQueryParams) (int, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Select knowledge networks total number", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Select knowledge networks total number")
 	defer span.End()
 
 	span.SetAttributes(
@@ -323,20 +321,20 @@ func (kna *knowledgeNetworkAccess) GetKNsTotal(ctx context.Context, query interf
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select knowledge networks total, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge networks total, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks total, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询业务知识网络总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询业务知识网络总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	total := 0
 	err = kna.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
 		logger.Errorf("get knowledge network totals error: %v\n", err)
 		span.SetStatus(codes.Error, "Get knowledge network totals error")
-		o11y.Error(ctx, fmt.Sprintf("Get knowledge network totals error: %v", err))
+		otellog.LogError(ctx, "Get knowledge network totals error", err)
 		return 0, err
 	}
 
@@ -347,9 +345,7 @@ func (kna *knowledgeNetworkAccess) GetKNsTotal(ctx context.Context, query interf
 func (kna *knowledgeNetworkAccess) GetKNByID(ctx context.Context,
 	knID string, branch string) (*interfaces.KN, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx,
-		fmt.Sprintf("Get knowledge network[%s]", knID),
-		trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, fmt.Sprintf("Get knowledge network[%s]", knID))
 	defer span.End()
 
 	span.SetAttributes(
@@ -379,13 +375,13 @@ func (kna *knowledgeNetworkAccess) GetKNByID(ctx context.Context,
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select knowledge network by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge network by id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select knowledge network by id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s.", sqlStr))
 
 	tagsStr := ""
 	KN := interfaces.KN{
@@ -416,7 +412,7 @@ func (kna *knowledgeNetworkAccess) GetKNByID(ctx context.Context,
 	} else if err != nil {
 		logger.Errorf("Get knowledge network by id error: %v\n", err)
 		span.SetStatus(codes.Error, "Get knowledge network by id error")
-		o11y.Error(ctx, fmt.Sprintf("Get knowledge network by id error: %v", err))
+		otellog.LogError(ctx, "Get knowledge network by id error", err)
 		return nil, err
 	}
 
@@ -428,7 +424,7 @@ func (kna *knowledgeNetworkAccess) GetKNByID(ctx context.Context,
 }
 
 func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn *interfaces.KN) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("Update knowledge network[%s]", kn.KNID), trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, fmt.Sprintf("Update knowledge network[%s]", kn.KNID))
 	defer span.End()
 
 	span.SetAttributes(
@@ -456,19 +452,19 @@ func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn 
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of update knowledge network by knowledge network_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update knowledge network by knowledge network_id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of update knowledge network by knowledge network_id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("修改业务知识网络的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改业务知识网络的 sql 语句: %s", sqlStr))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("update knowledge network error: %v\n", err)
 		span.SetStatus(codes.Error, "Update data error")
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "Update data error", err)
 		return err
 	}
 
@@ -476,7 +472,7 @@ func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn 
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 	}
 
 	if RowsAffected != 1 {
@@ -484,7 +480,7 @@ func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn 
 		logger.Errorf("UPDATE %s RowsAffected not equal 1, RowsAffected is %d, KN is %v",
 			kn.KNID, RowsAffected, kn)
 
-		o11y.Warn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, KN is %v",
+		otellog.LogWarn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, KN is %v",
 			kn.KNID, RowsAffected, kn))
 	}
 
@@ -494,7 +490,7 @@ func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn 
 
 func (kna *knowledgeNetworkAccess) UpdateKNDetail(ctx context.Context,
 	knID string, branch string, detail string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("Update knowledge network detail[%s]", knID), trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, fmt.Sprintf("Update knowledge network detail[%s]", knID))
 	defer span.End()
 
 	span.SetAttributes(
@@ -512,18 +508,18 @@ func (kna *knowledgeNetworkAccess) UpdateKNDetail(ctx context.Context,
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of update knowledge network detail by knowledge network_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update knowledge network detail by knowledge network_id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of update knowledge network detail by knowledge network_id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("修改业务知识网络详情的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改业务知识网络详情的 sql 语句: %s", sqlStr))
 
 	ret, err := kna.db.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("update knowledge network detail error: %v\n", err)
 		span.SetStatus(codes.Error, "Update data error")
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "Update data error", err)
 		return err
 	}
 
@@ -531,13 +527,13 @@ func (kna *knowledgeNetworkAccess) UpdateKNDetail(ctx context.Context,
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 	}
 
 	if RowsAffected != 1 {
 		logger.Errorf("UPDATE knowledge network detail %d RowsAffected not equal 1, RowsAffected is %d, KNID is %s",
 			knID, RowsAffected, knID)
-		o11y.Warn(ctx, fmt.Sprintf("Update knowledge network detail %s RowsAffected not equal 1, RowsAffected is %d",
+		otellog.LogWarn(ctx, fmt.Sprintf("Update knowledge network detail %s RowsAffected not equal 1, RowsAffected is %d",
 			knID, RowsAffected))
 	}
 
@@ -547,7 +543,7 @@ func (kna *knowledgeNetworkAccess) UpdateKNDetail(ctx context.Context,
 
 func (kna *knowledgeNetworkAccess) DeleteKN(ctx context.Context,
 	tx *sql.Tx, knID string, branch string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete knowledge networks from db", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Delete knowledge networks from db")
 	defer span.End()
 
 	span.SetAttributes(
@@ -561,18 +557,18 @@ func (kna *knowledgeNetworkAccess) DeleteKN(ctx context.Context,
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of delete knowledge network by knowledge network_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete knowledge network by knowledge network_id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of delete knowledge network by knowledge network_id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除业务知识网络的 sql 语句: %s; 删除的id: %s", sqlStr, knID))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除业务知识网络的 sql 语句: %s; 删除的id: %s", sqlStr, knID))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
+		otellog.LogError(ctx, "Delete data error", err)
 		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
@@ -582,14 +578,14 @@ func (kna *knowledgeNetworkAccess) DeleteKN(ctx context.Context,
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
 		span.SetStatus(codes.Error, "Get RowsAffected error")
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 		return 0, err
 	}
 
 	if RowsAffected != 1 {
 		logger.Errorf("DELETE knowledge network %d RowsAffected not equal 1, RowsAffected is %d, KNID is %s",
 			knID, RowsAffected, knID)
-		o11y.Warn(ctx, fmt.Sprintf("Delete knowledge network %s RowsAffected not equal 1, RowsAffected is %d",
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete knowledge network %s RowsAffected not equal 1, RowsAffected is %d",
 			knID, RowsAffected))
 	}
 
@@ -619,7 +615,7 @@ func processQueryCondition(query interfaces.KNsQueryParams, subBuilder sq.Select
 // 获取邻居对象类
 func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, otIDs []string,
 	query interfaces.RelationTypePathsBaseOnSource) (map[string][]interfaces.RelationTypePath, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Select relation type paths", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Select relation type paths")
 	defer span.End()
 
 	span.SetAttributes(
@@ -684,7 +680,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		if err != nil {
 			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
 
-			o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select model by id, error: %s", err.Error()))
+			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
 			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
@@ -725,7 +721,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		if err != nil {
 			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
 
-			o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select model by id, error: %s", err.Error()))
+			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
 			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
@@ -794,7 +790,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		if err != nil {
 			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
 
-			o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select model by id, error: %s", err.Error()))
+			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
 			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
@@ -803,7 +799,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		if err != nil {
 			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
 
-			o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select model by id, error: %s", err.Error()))
+			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
 			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
@@ -818,7 +814,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
 		span.SetStatus(codes.Error, "List data error")
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -861,7 +857,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		err = sonic.Unmarshal(mappingRulesBytes, &relationType.MappingRules)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 			span.SetStatus(codes.Error, "Unmarshal mappingRules error")
 			return nil, err
 		}
@@ -869,7 +865,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		err = sonic.Unmarshal(dataSourceBytes, &neighbor.DataSource)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal dataSource after getting object type")
 			return nil, err
 		}
@@ -878,7 +874,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		err = sonic.Unmarshal(dataPropertiesBytes, &neighbor.DataProperties)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal dataProperties after getting object type")
 			return nil, err
 		}
@@ -887,7 +883,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		err = sonic.Unmarshal(logicPropertiesBytes, &neighbor.LogicProperties)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal logicProperties after getting object type")
 			return nil, err
 		}
@@ -896,7 +892,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		err = sonic.Unmarshal(primaryKeysBytes, &neighbor.PrimaryKeys)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal primaryKeys after getting object type")
 			return nil, err
 		}
@@ -929,7 +925,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 
 // 查询业务知识网络列表。查主线的当前版本为true的业务知识网络
 func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*interfaces.KN, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Select knowledge networks", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Select knowledge networks")
 	defer span.End()
 
 	span.SetAttributes(
@@ -956,19 +952,19 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge networks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string]*interfaces.KN{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s; queryParams: %v", sqlStr, vals))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询业务知识网络列表的 sql 语句: %s; queryParams: %v", sqlStr, vals))
 
 	rows, err := kna.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
 		span.SetStatus(codes.Error, "List data error")
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.KN{}, err
 	}
 	defer rows.Close()
@@ -999,7 +995,7 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
 			span.SetStatus(codes.Error, "Row scan error")
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			return map[string]*interfaces.KN{}, err
 		}
 
@@ -1014,7 +1010,7 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 
 func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 	query interfaces.KNsQueryParams) ([]interfaces.PermissionResource, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Select knowledge networks", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Select knowledge networks")
 	defer span.End()
 
 	span.SetAttributes(
@@ -1035,19 +1031,19 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select knowledge networks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return []interfaces.PermissionResource{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询业务知识网络资源列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询业务知识网络资源列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	rows, err := kna.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
 		span.SetStatus(codes.Error, "List data error")
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		return []interfaces.PermissionResource{}, err
 	}
 	defer rows.Close()
@@ -1064,7 +1060,7 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
 			span.SetStatus(codes.Error, "Row scan error")
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			return []interfaces.PermissionResource{}, err
 		}
 		srcs = append(srcs, src)

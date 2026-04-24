@@ -12,14 +12,13 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -55,7 +54,7 @@ func NewPermissionAccess(appSetting *common.AppSetting) interfaces.PermissionAcc
 
 // 策略决策
 func (pa *permissionAccess) CheckPermission(ctx context.Context, check interfaces.PermissionCheck) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "请求策略的决策接口", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "请求策略的决策接口")
 	defer span.End()
 
 	span.SetAttributes(
@@ -66,7 +65,7 @@ func (pa *permissionAccess) CheckPermission(ctx context.Context, check interface
 
 	httpUrl := fmt.Sprintf("%s/operation-check", pa.permissionUrl)
 
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:            httpUrl,
 		HttpMethod:         http.MethodPost,
 		HttpContentType:    rest.ContentTypeJson,
@@ -85,9 +84,9 @@ func (pa *permissionAccess) CheckPermission(ctx context.Context, check interface
 		logger.Errorf("Post operation-check request failed: %v", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post operation-check request failed: %v", err))
+		otellog.LogError(ctx, "Post operation-check request failed", err)
 
 		return false, fmt.Errorf("post operation-check request failed: %v", err)
 	}
@@ -98,9 +97,9 @@ func (pa *permissionAccess) CheckPermission(ctx context.Context, check interface
 			logger.Errorf("unmalshal PermissionError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
-			o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Unmalshal PermissionError failed: %v", err))
+			otellog.LogError(ctx, "Unmalshal PermissionError failed", err)
 
 			return false, err
 		}
@@ -119,18 +118,18 @@ func (pa *permissionAccess) CheckPermission(ctx context.Context, check interface
 		logger.Errorf("operation-check error: %v", httpErr.Error())
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post operation-check failed: %v", httpErr))
+		otellog.LogError(ctx, fmt.Sprintf("Post operation-check failed: %v", httpErr), nil)
 
 		return false, httpErr
 	}
 
 	if result == nil {
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Ok(span, respCode)
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		// 记录模型不存在的日志
-		o11y.Warn(ctx, "Http response body is null")
+		otellog.LogWarn(ctx, "Http response body is null")
 
 		return false, nil
 	}
@@ -141,22 +140,22 @@ func (pa *permissionAccess) CheckPermission(ctx context.Context, check interface
 		logger.Errorf("unmalshal operation-check result failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal operation-check result failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal operation-check result failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Unmalshal operation-check result failed: %v", err))
+		otellog.LogError(ctx, "Unmalshal operation-check result failed", err)
 
 		return false, err
 	}
 
 	// 添加成功时的 trace 属性
-	o11y.AddHttpAttrs4Ok(span, respCode)
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 
 	return checkResult.Result, nil
 }
 
 // 创建策略
 func (pa *permissionAccess) CreateResources(ctx context.Context, policies []interfaces.PermissionPolicy) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "请求创建决策接口", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "请求创建决策接口")
 	defer span.End()
 
 	span.SetAttributes(
@@ -167,7 +166,7 @@ func (pa *permissionAccess) CreateResources(ctx context.Context, policies []inte
 
 	httpUrl := fmt.Sprintf("%s/policy", pa.permissionUrl)
 
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:            httpUrl,
 		HttpMethod:         http.MethodPost,
 		HttpContentType:    rest.ContentTypeJson,
@@ -185,9 +184,9 @@ func (pa *permissionAccess) CreateResources(ctx context.Context, policies []inte
 		logger.Errorf("Post create policy request failed: %v", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post create policy request failed: %v", err))
+		otellog.LogError(ctx, "Post create policy request failed", err)
 
 		return fmt.Errorf("post create policy request failed: %v", err)
 	}
@@ -198,9 +197,9 @@ func (pa *permissionAccess) CreateResources(ctx context.Context, policies []inte
 			logger.Errorf("unmalshal PermissionError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
-			o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Unmalshal PermissionError failed: %v", err))
+			otellog.LogError(ctx, "Unmalshal PermissionError failed", err)
 
 			return err
 		}
@@ -218,26 +217,26 @@ func (pa *permissionAccess) CreateResources(ctx context.Context, policies []inte
 		logger.Errorf("create policy error: %v", httpErr.Error())
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post create policy failed: %v", httpErr))
+		otellog.LogError(ctx, fmt.Sprintf("Post create policy failed: %v", httpErr), nil)
 
 		return httpErr
 	}
 
 	// 添加成功时的 trace 属性
-	o11y.AddHttpAttrs4Ok(span, respCode)
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
 // 删除资源策略
 func (pa *permissionAccess) DeleteResources(ctx context.Context, res []interfaces.PermissionResource) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "请求删除决策接口", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "请求删除决策接口")
 	defer span.End()
 
 	createUrl := fmt.Sprintf("%s/policy-delete", pa.permissionUrl)
 
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:            createUrl,
 		HttpMethod:         http.MethodPost,
 		HttpContentType:    rest.ContentTypeJson,
@@ -260,9 +259,9 @@ func (pa *permissionAccess) DeleteResources(ctx context.Context, res []interface
 		logger.Errorf("Post delete policy request failed: %v", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post delete policy request failed: %v", err))
+		otellog.LogError(ctx, "Post delete policy request failed", err)
 
 		return fmt.Errorf("post delete policy request failed: %v", err)
 	}
@@ -273,9 +272,9 @@ func (pa *permissionAccess) DeleteResources(ctx context.Context, res []interface
 			logger.Errorf("unmalshal PermissionError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
-			o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Unmalshal PermissionError failed: %v", err))
+			otellog.LogError(ctx, "Unmalshal PermissionError failed", err)
 
 			return err
 		}
@@ -293,15 +292,15 @@ func (pa *permissionAccess) DeleteResources(ctx context.Context, res []interface
 		logger.Errorf("delete policy error: %v", httpErr.Error())
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post delete policy failed: %v", httpErr))
+		otellog.LogError(ctx, fmt.Sprintf("Post delete policy failed: %v", httpErr), nil)
 
 		return httpErr
 	}
 
 	// 添加成功时的 trace 属性
-	o11y.AddHttpAttrs4Ok(span, respCode)
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 	return nil
 }
 
@@ -309,7 +308,7 @@ func (pa *permissionAccess) DeleteResources(ctx context.Context, res []interface
 func (pa *permissionAccess) FilterResources(ctx context.Context,
 	filter interfaces.PermissionResourcesFilter) (map[string]interfaces.PermissionResourceOps, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "请求资源过滤接口", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "请求资源过滤接口")
 	defer span.End()
 
 	span.SetAttributes(
@@ -319,7 +318,7 @@ func (pa *permissionAccess) FilterResources(ctx context.Context,
 
 	httpUrl := fmt.Sprintf("%s/resource-filter", pa.permissionUrl)
 
-	o11y.AddAttrs4InternalHttp(span, o11y.TraceAttrs{
+	oteltrace.AddAttrs4InternalHttp(span, oteltrace.TraceAttrs{
 		HttpUrl:            httpUrl,
 		HttpMethod:         http.MethodPost,
 		HttpContentType:    rest.ContentTypeJson,
@@ -338,9 +337,9 @@ func (pa *permissionAccess) FilterResources(ctx context.Context,
 		logger.Errorf("Post resource-filter request failed: %v", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http Post Failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post resource-filter request failed: %v", err))
+		otellog.LogError(ctx, "Post resource-filter request failed", err)
 
 		return map[string]interfaces.PermissionResourceOps{}, fmt.Errorf("post resource-filter request failed: %v", err)
 	}
@@ -351,9 +350,9 @@ func (pa *permissionAccess) FilterResources(ctx context.Context,
 			logger.Errorf("unmalshal PermissionError failed: %v\n", err)
 
 			// 添加异常时的 trace 属性
-			o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
+			oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal PermissionError failed")
 			// 记录异常日志
-			o11y.Error(ctx, fmt.Sprintf("Unmalshal PermissionError failed: %v", err))
+			otellog.LogError(ctx, "Unmalshal PermissionError failed", err)
 
 			return map[string]interfaces.PermissionResourceOps{}, err
 		}
@@ -372,18 +371,18 @@ func (pa *permissionAccess) FilterResources(ctx context.Context,
 		logger.Errorf("resource-filter error: %v", httpErr.Error())
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Http status is not 200")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Post resource-filter failed: %v", httpErr))
+		otellog.LogError(ctx, fmt.Sprintf("Post resource-filter failed: %v", httpErr), nil)
 
 		return map[string]interfaces.PermissionResourceOps{}, httpErr
 	}
 
 	if result == nil {
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Ok(span, respCode)
+		oteltrace.AddHttpAttrs4Ok(span, respCode)
 		// 记录模型不存在的日志
-		o11y.Warn(ctx, "Http response body is null")
+		otellog.LogWarn(ctx, "Http response body is null")
 
 		return map[string]interfaces.PermissionResourceOps{}, nil
 	}
@@ -397,15 +396,15 @@ func (pa *permissionAccess) FilterResources(ctx context.Context,
 		logger.Errorf("unmalshal resource-filter result failed: %v\n", err)
 
 		// 添加异常时的 trace 属性
-		o11y.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal resource-filter result failed")
+		oteltrace.AddHttpAttrs4Error(span, respCode, "InternalError", "Unmalshal resource-filter result failed")
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Unmalshal resource-filter result failed: %v", err))
+		otellog.LogError(ctx, "Unmalshal resource-filter result failed", err)
 
 		return map[string]interfaces.PermissionResourceOps{}, err
 	}
 
 	// 添加成功时的 trace 属性
-	o11y.AddHttpAttrs4Ok(span, respCode)
+	oteltrace.AddHttpAttrs4Ok(span, respCode)
 
 	ops := map[string]interfaces.PermissionResourceOps{}
 	for _, op := range allowOps {

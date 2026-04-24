@@ -16,7 +16,6 @@ import (
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/middleware"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 
 	"bkn-backend/common"
@@ -76,6 +75,7 @@ func NewRestHandler(appSetting *common.AppSetting) RestHandler {
 func (r *restHandler) RegisterPublic(c *gin.Engine) {
 	c.Use(r.AccessLog())
 	c.Use(middleware.TracingMiddleware())
+	c.Use(r.LanguageMiddleware())
 
 	c.GET("/health", r.HealthCheck)
 
@@ -242,14 +242,13 @@ func (r *restHandler) RegisterPublic(c *gin.Engine) {
 // HealthCheck 健康检查
 func (r *restHandler) HealthCheck(c *gin.Context) {
 	// 返回服务信息
-	serverInfo := o11y.ServerInfo{
-		ServerName:    version.ServerName,
-		ServerVersion: version.ServerVersion,
-		Language:      version.LanguageGo,
-		GoVersion:     version.GoVersion,
-		GoArch:        version.GoArch,
-	}
-	rest.ReplyOK(c, http.StatusOK, serverInfo)
+	rest.ReplyOK(c, http.StatusOK, gin.H{
+		"ServerName":    version.ServerName,
+		"ServerVersion": version.ServerVersion,
+		"Language":      version.LanguageGo,
+		"GoVersion":     version.GoVersion,
+		"GoArch":        version.GoArch,
+	})
 }
 
 // gin中间件 校验content type
@@ -265,6 +264,15 @@ func (r *restHandler) verifyJsonContentTypeMiddleWare() gin.HandlerFunc {
 		}
 
 		//执行后续操作
+		c.Next()
+	}
+}
+
+// gin中间件 把 X-Language 头解析结果挂到 request ctx。
+// 注册顺序必须在 TracingMiddleware 之后，这样 language ctx 叠加在 trace ctx 上。
+func (r *restHandler) LanguageMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request = c.Request.WithContext(rest.GetLanguageCtx(c))
 		c.Next()
 	}
 }

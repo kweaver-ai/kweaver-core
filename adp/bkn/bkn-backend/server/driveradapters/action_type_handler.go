@@ -13,18 +13,17 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
 	"bkn-backend/common/visitor"
 	berrors "bkn-backend/errors"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -66,8 +65,7 @@ func (r *restHandler) CreateActionTypesByIn(c *gin.Context) {
 // 创建行动类（外部）
 func (r *restHandler) CreateActionTypesByEx(c *gin.Context) {
 	logger.Debug("Handler CreateActionTypesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -81,8 +79,7 @@ func (r *restHandler) CreateActionTypesByEx(c *gin.Context) {
 // 创建行动类
 func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler CreateActionTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -93,13 +90,13 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 查询参数
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	httpErr := validateImportMode(ctx, mode)
 	if httpErr != nil {
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -110,7 +107,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -128,14 +125,14 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -150,10 +147,10 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -164,13 +161,13 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_RequestBody).
 			WithErrorDetails("No action type was passed in")
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("创建行动类请求参数: [%s,%v]", c.Request.RequestURI, actionTypes))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建行动类请求参数: [%s,%v]", c.Request.RequestURI, actionTypes))
 
 	// request来的actionTypes的branch都用url里的branch
 	for i := range actionTypes {
@@ -182,7 +179,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	err = ValidateActionTypes(ctx, knID, actionTypes, strictMode)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -192,7 +189,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -210,7 +207,7 @@ func (r *restHandler) CreateActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	}
 
 	logger.Debug("Handler CreateActionTypes Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -224,8 +221,7 @@ func (r *restHandler) ValidateActionTypesByIn(c *gin.Context) {
 // ValidateActionTypesByEx 仅校验行动类依赖存在性，不写库（外部）
 func (r *restHandler) ValidateActionTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ValidateActionTypesByEx Start")
-	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"校验行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, _ := oteltrace.StartServerSpan(c)
 
 	visitor, err := r.verifyOAuth(ctx, c)
 	if err != nil {
@@ -237,8 +233,7 @@ func (r *restHandler) ValidateActionTypesByEx(c *gin.Context) {
 // ValidateActionTypesForKN 仅校验行动类依赖存在性，不写库
 func (r *restHandler) ValidateActionTypesForKN(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler ValidateActionTypesForKN Start")
-	ctx, _ := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"校验行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, _ := oteltrace.StartServerSpan(c)
 
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
@@ -314,8 +309,7 @@ func (r *restHandler) UpdateActionTypeByIn(c *gin.Context) {
 // 更新行动类（外部）
 func (r *restHandler) UpdateActionTypeByEx(c *gin.Context) {
 	logger.Debug("Handler UpdateActionTypeByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"修改行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -329,8 +323,7 @@ func (r *restHandler) UpdateActionTypeByEx(c *gin.Context) {
 // 更新行动类
 func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler UpdateActionType Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"修改行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -341,7 +334,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -357,7 +350,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -368,14 +361,14 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -392,10 +385,10 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 			WithErrorDetails("Binding Paramter Failed:" + err.Error())
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -404,7 +397,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 	actionType.Branch = branch
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("修改行动类请求参数: [%s, %v]", c.Request.RequestURI, actionType))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改行动类请求参数: [%s, %v]", c.Request.RequestURI, actionType))
 
 	// 先按id获取原对象
 	oldATName, exist, err := r.ats.CheckActionTypeExistByID(ctx, knID, branch, atID)
@@ -412,7 +405,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -420,7 +413,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionType_ActionTypeNotFound)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -431,12 +424,12 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("Validate action type[%s] failed: %s. %v", actionType.ATName,
-			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("Validate action type[%s] failed: %s. %v", actionType.ATName,
+			httpErr.BaseError.Description, httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
 		span.SetAttributes(attr.Key("at_name").String(actionType.ATName))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -450,7 +443,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 			httpErr := err.(*rest.HTTPError)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -459,7 +452,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 				berrors.BknBackend_ActionType_ActionTypeNameExisted)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -472,7 +465,7 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -481,15 +474,14 @@ func (r *restHandler) UpdateActionType(c *gin.Context, visitor hydra.Visitor) {
 		interfaces.GenerateActionTypeAuditObject(atID, actionType.ATName), "")
 
 	logger.Debug("Handler UpdateActionType Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 // 批量删除行动类
 func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 	logger.Debug("Handler DeleteActionTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"删除行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -505,10 +497,10 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("删除行动类请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除行动类请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -523,14 +515,14 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -550,7 +542,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 			httpErr := err.(*rest.HTTPError)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 
 			rest.ReplyError(c, httpErr)
 			return
@@ -559,7 +551,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionType_ActionTypeNotFound)
 
 			// 设置 trace 的错误信息的 attributes
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -572,7 +564,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -584,7 +576,7 @@ func (r *restHandler) DeleteActionTypes(c *gin.Context) {
 	}
 
 	logger.Debug("Handler DeleteActionTypes Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -600,8 +592,7 @@ func (r *restHandler) ListActionTypesByIn(c *gin.Context) {
 // 分页获取行动类列表（外部）
 func (r *restHandler) ListActionTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ListActionTypesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取行动类列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -615,8 +606,7 @@ func (r *restHandler) ListActionTypesByEx(c *gin.Context) {
 // 分页获取行动类列表
 func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("ListActionTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取行动类列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -627,10 +617,10 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("分页获取行动类列表请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("分页获取行动类列表请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -645,14 +635,14 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -678,11 +668,11 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -713,17 +703,17 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 记录异常日志
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	logger.Debug("Handler ListActionTypes Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
 
@@ -739,8 +729,7 @@ func (r *restHandler) GetActionTypesByIn(c *gin.Context) {
 // 按 id 获取行动类对象信息（外部）
 func (r *restHandler) GetActionTypesByEx(c *gin.Context) {
 	logger.Debug("Handler ListActionTypesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"分页获取行动类列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -754,8 +743,7 @@ func (r *restHandler) GetActionTypesByEx(c *gin.Context) {
 // 按 id 获取行动类对象信息
 func (r *restHandler) GetActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("Handler GetActionTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"driver layer: Get action type", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -766,7 +754,7 @@ func (r *restHandler) GetActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -781,14 +769,14 @@ func (r *restHandler) GetActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -806,14 +794,14 @@ func (r *restHandler) GetActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
 	httpResult := map[string]any{"entries": actionTypes}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debug("Handler GetActionTypes Success")
 	rest.ReplyOK(c, http.StatusOK, httpResult)
 }
@@ -830,8 +818,7 @@ func (r *restHandler) SearchActionTypesByIn(c *gin.Context) {
 // 检索关系类（外部）
 func (r *restHandler) SearchActionTypesByEx(c *gin.Context) {
 	logger.Debug("Handler SearchActionTypesByEx Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"检索关系类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	// 校验token
@@ -845,8 +832,7 @@ func (r *restHandler) SearchActionTypesByEx(c *gin.Context) {
 // 检索行动类
 func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	logger.Debug("SearchActionTypes Start")
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"检索行动类", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{
@@ -857,10 +843,10 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 
 	// 设置 trace 的相关 api 的属性
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	// 记录接口调用参数： c.Request.RequestURI, body
-	o11y.Info(ctx, fmt.Sprintf("检索行动类请求参数: [%s]", c.Request.RequestURI))
+	otellog.LogInfo(ctx, fmt.Sprintf("检索行动类请求参数: [%s]", c.Request.RequestURI))
 
 	// 1. 接受 kn_id 参数
 	knID := c.Param("kn_id")
@@ -875,14 +861,14 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if !exist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_KnowledgeNetwork_NotFound)
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -894,9 +880,9 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionType_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Binding Concept Query Paramter Failed:%s", err.Error()))
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		rest.ReplyError(c, httpErr)
 
@@ -928,9 +914,9 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		o11y.Error(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
-			httpErr.BaseError.ErrorDetails))
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+		otellog.LogError(ctx, fmt.Sprintf("%s. %v", httpErr.BaseError.Description,
+			httpErr.BaseError.ErrorDetails), nil)
 
 		rest.ReplyError(c, httpErr)
 
@@ -943,12 +929,12 @@ func (r *restHandler) SearchActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		httpErr := err.(*rest.HTTPError)
 
 		// 设置 trace 的错误信息的 attributes
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	logger.Debug("Handler SearchActionTypes Success")
 	rest.ReplyOK(c, http.StatusOK, result)
 }

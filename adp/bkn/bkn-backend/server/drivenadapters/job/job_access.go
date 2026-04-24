@@ -13,15 +13,14 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -54,7 +53,7 @@ func NewJobAccess(appSetting *common.AppSetting) interfaces.JobAccess {
 
 // 创建job
 func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfaces.JobInfo) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateJob", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateJob")
 	defer span.End()
 
 	span.SetAttributes(
@@ -65,7 +64,7 @@ func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfa
 	jobConceptConfigStr, err := sonic.MarshalString(jobInfo.JobConceptConfig)
 	if err != nil {
 		logger.Errorf("Failed to marshal job concept config, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal job concept config, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to marshal job concept config, error", err)
 		span.SetStatus(codes.Error, "Marshal job concept config failed ")
 		return err
 	}
@@ -99,19 +98,19 @@ func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfa
 		).ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of insert job, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert job, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of insert job, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("创建job的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建job的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("insert data error: %v\n", err)
 		span.SetStatus(codes.Error, "Insert data error")
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		return err
 	}
 
@@ -121,7 +120,7 @@ func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfa
 
 // 删除jobs
 func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteJobsByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteJobsByIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -138,19 +137,19 @@ func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []s
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of delete jobs, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete jobs, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of delete jobs, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除job的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除job的 sql 语句: %s", sqlStr))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("delete data error: %v\n", err)
 		span.SetStatus(codes.Error, "Delete data error")
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
@@ -158,7 +157,7 @@ func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []s
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 		span.SetStatus(codes.Error, "Get RowsAffected error")
 		return 0, err
 	}
@@ -168,7 +167,7 @@ func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []s
 }
 
 func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs []string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteTasksByJobIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteTasksByJobIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -185,19 +184,19 @@ func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of delete tasks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete tasks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of delete tasks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除task的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除task的 sql 语句: %s", sqlStr))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("delete data error: %v\n", err)
 		span.SetStatus(codes.Error, "Delete data error")
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
+		otellog.LogError(ctx, "Delete data error", err)
 		return 0, err
 	}
 
@@ -205,7 +204,7 @@ func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 		span.SetStatus(codes.Error, "Get RowsAffected error")
 		return 0, err
 	}
@@ -216,7 +215,7 @@ func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs
 
 // 更新job状态
 func (ja *jobAccess) UpdateJobState(ctx context.Context, tx *sql.Tx, jobID string, stateInfo interfaces.JobStateInfo) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateJobState", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "UpdateJobState")
 	defer span.End()
 
 	span.SetAttributes(
@@ -242,13 +241,13 @@ func (ja *jobAccess) UpdateJobState(ctx context.Context, tx *sql.Tx, jobID strin
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of update job status, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update job status, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of update job status, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("更新job状态的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("更新job状态的 sql 语句: %s", sqlStr))
 
 	if tx != nil {
 		_, err = tx.ExecContext(ctx, sqlStr, vals...)
@@ -258,7 +257,7 @@ func (ja *jobAccess) UpdateJobState(ctx context.Context, tx *sql.Tx, jobID strin
 	if err != nil {
 		logger.Errorf("update data error: %v\n", err)
 		span.SetStatus(codes.Error, "Update data error")
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "Update data error", err)
 		return err
 	}
 
@@ -268,7 +267,7 @@ func (ja *jobAccess) UpdateJobState(ctx context.Context, tx *sql.Tx, jobID strin
 
 // 根据ID查询job
 func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.JobInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetJobByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetJobByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -300,13 +299,13 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get job, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get jobs, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
 
 	row := ja.db.QueryRowContext(ctx, sqlStr, vals...)
 
@@ -332,7 +331,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 	} else if err != nil {
 		logger.Errorf("scan data error: %v\n", err)
 		span.SetStatus(codes.Error, "Scan data error")
-		o11y.Error(ctx, fmt.Sprintf("Scan data error: %v ", err))
+		otellog.LogError(ctx, "Scan data error", err)
 		return nil, err
 	}
 
@@ -340,7 +339,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 	if err != nil {
 		logger.Errorf("unmarshal job concept config error: %v\n", err)
 		span.SetStatus(codes.Error, "Unmarshal job concept config error")
-		o11y.Error(ctx, fmt.Sprintf("Unmarshal job concept config error: %v ", err))
+		otellog.LogError(ctx, "Unmarshal job concept config error", err)
 		return nil, err
 	}
 
@@ -350,7 +349,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 
 // 根据ID查询job
 func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[string]*interfaces.JobInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetJobsByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetJobsByIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -382,19 +381,19 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get jobs, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get jobs, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
 
 	rows, err := ja.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -421,7 +420,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 		if err != nil {
 			logger.Errorf("scan data error: %v\n", err)
 			span.SetStatus(codes.Error, "Scan data error")
-			o11y.Error(ctx, fmt.Sprintf("Scan data error: %v ", err))
+			otellog.LogError(ctx, "Scan data error", err)
 			return nil, err
 		}
 
@@ -429,7 +428,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 		if err != nil {
 			logger.Errorf("unmarshal job concept config error: %v\n", err)
 			span.SetStatus(codes.Error, "Unmarshal job concept config error")
-			o11y.Error(ctx, fmt.Sprintf("Unmarshal job concept config error: %v ", err))
+			otellog.LogError(ctx, "Unmarshal job concept config error", err)
 			return nil, err
 		}
 		jobInfos[jobInfo.ID] = &jobInfo
@@ -441,7 +440,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 
 // 根据ID查询job
 func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetJobIDsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetJobIDsByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -458,19 +457,19 @@ func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID strin
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get jobs, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get jobs, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("根据ID查询job的 sql 语句: %s", sqlStr))
 
 	rows, err := ja.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -484,7 +483,7 @@ func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID strin
 		if err != nil {
 			logger.Errorf("scan data error: %v\n", err)
 			span.SetStatus(codes.Error, "Scan data error")
-			o11y.Error(ctx, fmt.Sprintf("Scan data error: %v ", err))
+			otellog.LogError(ctx, "Scan data error", err)
 			return nil, err
 		}
 		jobIDs = append(jobIDs, jobID)
@@ -496,7 +495,7 @@ func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID strin
 
 // 更新task状态
 func (ja *jobAccess) UpdateTaskState(ctx context.Context, taskID string, stateInfo interfaces.TaskStateInfo) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateTaskState", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "UpdateTaskState")
 	defer span.End()
 
 	span.SetAttributes(
@@ -534,19 +533,19 @@ func (ja *jobAccess) UpdateTaskState(ctx context.Context, taskID string, stateIn
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of update task status, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update task status, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of update task status, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("更新task状态的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("更新task状态的 sql 语句: %s", sqlStr))
 
 	_, err = ja.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("update data error: %v\n", err)
 		span.SetStatus(codes.Error, "Update data error")
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "Update data error", err)
 		return err
 	}
 
@@ -556,7 +555,7 @@ func (ja *jobAccess) UpdateTaskState(ctx context.Context, taskID string, stateIn
 
 // 查询job列表
 func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryParams) ([]*interfaces.JobInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListJobs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListJobs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -609,20 +608,20 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of list jobs, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of list jobs, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of list jobs, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询job列表的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询job列表的 sql 语句: %s", sqlStr))
 	logger.Debugf("查询job列表的 sql 语句: %s", sqlStr)
 
 	rows, err := ja.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -649,7 +648,7 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 		if err != nil {
 			logger.Errorf("scan data error: %v\n", err)
 			span.SetStatus(codes.Error, "Scan data error")
-			o11y.Error(ctx, fmt.Sprintf("Scan data error: %v ", err))
+			otellog.LogError(ctx, "Scan data error", err)
 			return nil, err
 		}
 
@@ -657,7 +656,7 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 		if err != nil {
 			logger.Errorf("unmarshal job concept config error: %v\n", err)
 			span.SetStatus(codes.Error, "Unmarshal job concept config error")
-			o11y.Error(ctx, fmt.Sprintf("Unmarshal job concept config error: %v ", err))
+			otellog.LogError(ctx, "Unmarshal job concept config error", err)
 			return nil, err
 		}
 		jobInfos = append(jobInfos, &jobInfo)
@@ -669,7 +668,7 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 
 // 查询job总数
 func (ja *jobAccess) GetJobsTotal(ctx context.Context, queryParams interfaces.JobsQueryParams) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetJobsTotal", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetJobsTotal")
 	defer span.End()
 
 	span.SetAttributes(
@@ -691,20 +690,20 @@ func (ja *jobAccess) GetJobsTotal(ctx context.Context, queryParams interfaces.Jo
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get jobs total, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get jobs total, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get jobs total, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询job总数的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询job总数的 sql 语句: %s", sqlStr))
 
 	var total int64
 	err = ja.db.QueryRowContext(ctx, sqlStr, vals...).Scan(&total)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return 0, err
 	}
 
@@ -714,7 +713,7 @@ func (ja *jobAccess) GetJobsTotal(ctx context.Context, queryParams interfaces.Jo
 
 // 批量创建tasks
 func (ja *jobAccess) CreateTasks(ctx context.Context, tx *sql.Tx, taskInfos map[string]*interfaces.TaskInfo) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateTasks", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateTasks")
 	defer span.End()
 
 	span.SetAttributes(
@@ -752,19 +751,19 @@ func (ja *jobAccess) CreateTasks(ctx context.Context, tx *sql.Tx, taskInfos map[
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of insert tasks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert tasks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of insert tasks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("批量创建tasks的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("批量创建tasks的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("insert data error: %v\n", err)
 		span.SetStatus(codes.Error, "Insert data error")
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		return err
 	}
 
@@ -774,7 +773,7 @@ func (ja *jobAccess) CreateTasks(ctx context.Context, tx *sql.Tx, taskInfos map[
 
 // 查询task列表
 func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryParams) ([]*interfaces.TaskInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListTasks", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListTasks")
 	defer span.End()
 
 	span.SetAttributes(
@@ -825,20 +824,20 @@ func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryP
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of list tasks, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of list tasks, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of list tasks, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询task列表的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询task列表的 sql 语句: %s", sqlStr))
 	logger.Debugf("查询task列表的 sql 语句: %s", sqlStr)
 
 	rows, err := ja.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -863,7 +862,7 @@ func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryP
 		if err != nil {
 			logger.Errorf("scan data error: %v\n", err)
 			span.SetStatus(codes.Error, "Scan data error")
-			o11y.Error(ctx, fmt.Sprintf("Scan data error: %v ", err))
+			otellog.LogError(ctx, "Scan data error", err)
 			return nil, err
 		}
 		taskInfos = append(taskInfos, &taskInfo)
@@ -875,7 +874,7 @@ func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryP
 
 // 查询task总数
 func (ja *jobAccess) GetTasksTotal(ctx context.Context, queryParams interfaces.TasksQueryParams) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetTasksTotal", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetTasksTotal")
 	defer span.End()
 
 	span.SetAttributes(
@@ -901,20 +900,20 @@ func (ja *jobAccess) GetTasksTotal(ctx context.Context, queryParams interfaces.T
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get tasks total, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get tasks total, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get tasks total, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询task总数的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询task总数的 sql 语句: %s", sqlStr))
 
 	var total int64
 	err = ja.db.QueryRowContext(ctx, sqlStr, vals...).Scan(&total)
 	if err != nil {
 		logger.Errorf("query data error: %v\n", err)
 		span.SetStatus(codes.Error, "Query data error")
-		o11y.Error(ctx, fmt.Sprintf("Query data error: %v ", err))
+		otellog.LogError(ctx, "Query data error", err)
 		return 0, err
 	}
 

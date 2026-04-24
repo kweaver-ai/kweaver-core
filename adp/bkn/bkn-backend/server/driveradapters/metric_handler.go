@@ -14,15 +14,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/audit"
 	"github.com/kweaver-ai/kweaver-go-lib/hydra"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/common/visitor"
 	berrors "bkn-backend/errors"
 	"bkn-backend/interfaces"
@@ -60,8 +58,7 @@ func (r *restHandler) CreateMetricsByIn(c *gin.Context) {
 }
 
 func (r *restHandler) CreateMetricsByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -72,17 +69,16 @@ func (r *restHandler) CreateMetricsByEx(c *gin.Context) {
 }
 
 func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"创建指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -92,7 +88,7 @@ func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -117,7 +113,7 @@ func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 			WithErrorDetails("Binding Parameter Failed: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -132,7 +128,7 @@ func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err := ValidateMetricRequests(ctx, metrics, strictMode, mode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -161,7 +157,7 @@ func (r *restHandler) CreateMetrics(c *gin.Context, vis hydra.Visitor) {
 	for _, id := range ids {
 		result = append(result, map[string]any{"id": id})
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusCreated, result)
 }
 
@@ -178,17 +174,16 @@ func (r *restHandler) ValidateMetricsByEx(c *gin.Context) {
 }
 
 func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"校验指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	mode := c.DefaultQuery(interfaces.QueryParam_ImportMode, interfaces.ImportMode_Normal)
 	if httpErr := validateImportMode(ctx, mode); httpErr != nil {
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -198,7 +193,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("Invalid strict_mode parameter: %s", strictModeStr))
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -223,7 +218,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
 			WithErrorDetails("Binding Parameter Failed: " + err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -244,7 +239,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 	if err := ValidateMetricRequests(ctx, metrics, strictMode, mode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -255,7 +250,7 @@ func (r *restHandler) ValidateMetrics(c *gin.Context, vis hydra.Visitor) {
 		rest.ReplyError(c, err.(*rest.HTTPError))
 		return
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, nil)
 }
 
@@ -272,12 +267,12 @@ func (r *restHandler) ListMetricsByEx(c *gin.Context) {
 }
 
 func (r *restHandler) ListMetrics(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "分页获取指标列表", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -342,7 +337,7 @@ func (r *restHandler) GetMetricsByIDsByIn(c *gin.Context) {
 }
 
 func (r *restHandler) GetMetricsByIDs(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "批量获取指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
@@ -384,7 +379,7 @@ func (r *restHandler) GetMetricsByIDs(c *gin.Context, vis hydra.Visitor) {
 			WithErrorDetails(fmt.Sprintf("metrics not found: %v", missing)))
 		return
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, map[string]any{"entries": list})
 }
 
@@ -401,12 +396,12 @@ func (r *restHandler) UpdateMetricByEx(c *gin.Context) {
 }
 
 func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "更新指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	metricID := c.Param("metric_ids")
@@ -434,7 +429,7 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 	if err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -444,7 +439,7 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 	if !metricExist {
 		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
 			berrors.BknBackend_Metric_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
@@ -475,14 +470,14 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 		existID, nameExist, err := r.ms.CheckMetricExistByName(ctx, knID, branch, newName)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
 		if nameExist && existID != metricID {
 			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_Duplicated_Name).
 				WithErrorDetails(fmt.Sprintf("metric name %q already exists", newName))
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
@@ -495,7 +490,7 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 
 	audit.NewInfoLog(audit.OPERATION, audit.UPDATE, audit.TransforOperator(vis),
 		interfaces.GenerateMetricAuditObject(metricID, ""), "")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -512,7 +507,7 @@ func (r *restHandler) DeleteMetricsByIDsByIn(c *gin.Context) {
 }
 
 func (r *restHandler) DeleteMetricsByIDs(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "删除指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
@@ -541,7 +536,7 @@ func (r *restHandler) DeleteMetricsByIDs(c *gin.Context, vis hydra.Visitor) {
 		audit.NewInfoLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(vis),
 			interfaces.GenerateMetricAuditObject(id, ""), "")
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
@@ -550,7 +545,7 @@ func (r *restHandler) SearchMetricsByIn(c *gin.Context) {
 }
 
 func (r *restHandler) SearchMetricsByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "检索指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	vis, err := r.verifyOAuth(ctx, c)
@@ -561,12 +556,12 @@ func (r *restHandler) SearchMetricsByEx(c *gin.Context) {
 }
 
 func (r *restHandler) SearchMetrics(c *gin.Context, vis hydra.Visitor) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c), "检索指标", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartServerSpan(c)
 	defer span.End()
 
 	accountInfo := interfaces.AccountInfo{ID: vis.ID, Type: string(vis.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+	oteltrace.AddHttpAttrs4API(span, oteltrace.GetAttrsByGinCtx(c))
 
 	knID := c.Param("kn_id")
 	branch := c.DefaultQuery("branch", interfaces.MAIN_BRANCH)
@@ -612,6 +607,6 @@ func (r *restHandler) SearchMetrics(c *gin.Context, vis hydra.Visitor) {
 		rest.ReplyError(c, err.(*rest.HTTPError))
 		return
 	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	oteltrace.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }

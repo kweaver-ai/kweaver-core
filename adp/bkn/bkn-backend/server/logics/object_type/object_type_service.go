@@ -17,10 +17,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
@@ -28,6 +26,8 @@ import (
 	"bkn-backend/common"
 	cond "bkn-backend/common/condition"
 	berrors "bkn-backend/errors"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
 	"bkn-backend/logics/batchindex"
@@ -171,14 +171,14 @@ func (ots *objectTypeService) validateObjectTypeStrictExternalDeps(ctx context.C
 func (ots *objectTypeService) CheckObjectTypeExistByID(ctx context.Context,
 	knID string, branch string, otID string) (string, bool, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验对象类[%s]的存在性", otID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验对象类[%s]的存在性", otID))
 	defer span.End()
 
 	otName, exist, err := ots.ota.CheckObjectTypeExistByID(ctx, knID, branch, otID)
 	if err != nil {
 		logger.Errorf("CheckObjectTypeExistByID error: %s", err.Error())
 		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("在业务知识网络[%s]下按ID[%s]获取对象类失败: %v", knID, otID, err))
+		otellog.LogError(ctx, fmt.Sprintf("在业务知识网络[%s]下按ID[%s]获取对象类失败", knID, otID), err)
 		span.SetStatus(codes.Error, fmt.Sprintf("在业务知识网络[%s]下按ID[%s]获取对象类失败", knID, otID))
 		return "", exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_CheckObjectTypeIfExistFailed).
@@ -192,14 +192,14 @@ func (ots *objectTypeService) CheckObjectTypeExistByID(ctx context.Context,
 func (ots *objectTypeService) CheckObjectTypeExistByName(ctx context.Context,
 	knID string, branch string, otName string) (string, bool, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("校验对象类[%s]的存在性", otName))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("校验对象类[%s]的存在性", otName))
 	defer span.End()
 
 	otID, exist, err := ots.ota.CheckObjectTypeExistByName(ctx, knID, branch, otName)
 	if err != nil {
 		logger.Errorf("CheckObjectTypeExistByName error: %s", err.Error())
 		// 记录处理的 sql 字符串
-		o11y.Error(ctx, fmt.Sprintf("在业务知识网络[%s]下按名称[%s]获取对象类失败: %v", knID, otName, err))
+		otellog.LogError(ctx, fmt.Sprintf("在业务知识网络[%s]下按名称[%s]获取对象类失败", knID, otName), err)
 		span.SetStatus(codes.Error, fmt.Sprintf("在业务知识网络[%s]下按名称[%s]获取对象类失败", knID, otName))
 		return otID, exist, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_CheckObjectTypeIfExistFailed).
@@ -213,7 +213,7 @@ func (ots *objectTypeService) CheckObjectTypeExistByName(ctx context.Context,
 func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 	objectTypes []*interfaces.ObjectType, mode string, needCreateConceptGroupRelation bool, strictMode bool) ([]string, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create object type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -258,7 +258,7 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -272,17 +272,17 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 				if err != nil {
 					logger.Errorf("CreateObjectType Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateObjectType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "CreateObjectType Transaction Commit Failed", err)
 					return
 				}
 				logger.Infof("CreateObjectType Transaction Commit Success")
-				o11y.Debug(ctx, "CreateObjectType Transaction Commit Success")
+				otellog.LogDebug(ctx, "CreateObjectType Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("CreateObjectType Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateObjectType Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "CreateObjectType Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -358,7 +358,7 @@ func (ots *objectTypeService) CreateObjectTypes(ctx context.Context, tx *sql.Tx,
 func (ots *objectTypeService) ValidateObjectTypes(ctx context.Context, knID string, branch string,
 	objectTypes []*interfaces.ObjectType, strictMode bool, batch *interfaces.BatchIDIndex, mode string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "ValidateObjectTypes")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "ValidateObjectTypes")
 	defer span.End()
 
 	if len(objectTypes) == 0 {
@@ -435,7 +435,7 @@ func (ots *objectTypeService) ValidateObjectTypes(ctx context.Context, knID stri
 func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 	query interfaces.ObjectTypesQueryParams) ([]*interfaces.ObjectType, int, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "查询对象类列表")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "查询对象类列表")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -453,7 +453,7 @@ func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []*interfaces.ObjectType{}, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -467,17 +467,17 @@ func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 				if err != nil {
 					logger.Errorf("ListObjectTypes Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("ListObjectTypes Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "ListObjectTypes Transaction Commit Failed", err)
 					return
 				}
 				logger.Infof("ListObjectTypes Transaction Commit Success")
-				o11y.Debug(ctx, "ListObjectTypes Transaction Commit Success")
+				otellog.LogDebug(ctx, "ListObjectTypes Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("ListObjectTypes Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("ListObjectTypes Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "ListObjectTypes Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -552,7 +552,7 @@ func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 	// 				WithErrorDetails(err.Error())
 	// 		}
 	// 		if dataView == nil {
-	// 			o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found", objectType.OTID, objectType.DataSource.ID))
+	// 			otellog.LogWarn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found", objectType.OTID, objectType.DataSource.ID))
 	// 		} else {
 	// 			objectType.DataSource.Name = dataView.ViewName
 	// 			// 翻译数据属性映射的字段显示名
@@ -581,7 +581,7 @@ func (ots *objectTypeService) ListObjectTypes(ctx context.Context, tx *sql.Tx,
 func (ots *objectTypeService) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx,
 	knID string, branch string, otIDs []string) ([]*interfaces.ObjectType, error) {
 	// 获取对象类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询对象类[%s]信息", otIDs))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询对象类[%s]信息", otIDs))
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -599,7 +599,7 @@ func (ots *objectTypeService) GetObjectTypesByIDs(ctx context.Context, tx *sql.T
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return []*interfaces.ObjectType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -613,17 +613,17 @@ func (ots *objectTypeService) GetObjectTypesByIDs(ctx context.Context, tx *sql.T
 				if err != nil {
 					logger.Errorf("GetObjectTypes Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("GetObjectTypes Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "GetObjectTypes Transaction Commit Failed", err)
 					return
 				}
 				logger.Infof("GetObjectTypes Transaction Commit Success")
-				o11y.Debug(ctx, "GetObjectTypes Transaction Commit Success")
+				otellog.LogDebug(ctx, "GetObjectTypes Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("GetObjectTypes Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("GetObjectTypes Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "GetObjectTypes Transaction Rollback Error", err)
 				}
 			}
 		}()
@@ -809,7 +809,7 @@ func hasAnyDataPropertyIndexAffectingChanges(oldProps, newProps []*interfaces.Da
 // 更新对象类
 func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, objectType *interfaces.ObjectType, strictMode bool) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update object type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -845,7 +845,7 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
@@ -860,16 +860,16 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 				if err != nil {
 					logger.Errorf("UpdateObjectType Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "UpdateObjectType Transaction Commit Failed", err)
 				}
 				logger.Infof("UpdateObjectType Transaction Commit Success:%v", objectType.OTName)
-				o11y.Debug(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Success: %s", objectType.OTName))
+				otellog.LogDebug(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Success: %s", objectType.OTName))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("UpdateObjectType Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("UpdateObjectType Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "UpdateObjectType Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -880,7 +880,7 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 	if err != nil {
 		logger.Errorf("GetObjectTypeByID error: %s", err.Error())
 		span.SetStatus(codes.Error, "获取旧对象类数据失败")
-		o11y.Error(ctx, fmt.Sprintf("GetObjectTypeByID error: %s", err.Error()))
+		otellog.LogError(ctx, "GetObjectTypeByID error", err)
 
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_GetObjectTypeByIDFailed).
@@ -897,14 +897,14 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 		if err != nil {
 			logger.Errorf("UpdateObjectTypeStatus error: %s", err.Error())
 			span.SetStatus(codes.Error, "更新对象类索引状态失败")
-			o11y.Error(ctx, fmt.Sprintf("UpdateObjectTypeStatus error: %s", err.Error()))
+			otellog.LogError(ctx, "UpdateObjectTypeStatus error", err)
 
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError).
 				WithErrorDetails(fmt.Sprintf("更新对象类索引状态失败: %s", err.Error()))
 		}
 		logger.Infof("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID)
-		o11y.Info(ctx, fmt.Sprintf("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID))
+		otellog.LogInfo(ctx, fmt.Sprintf("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID))
 	}
 
 	// 更新模型信息
@@ -941,7 +941,7 @@ func (ots *objectTypeService) UpdateObjectType(ctx context.Context, tx *sql.Tx, 
 func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 	objectType *interfaces.ObjectType, dataProperties []*interfaces.DataProperty, strictMode bool) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update object type")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Update object type")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -995,7 +995,7 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 	if err != nil {
 		logger.Errorf("Failed to marshal old DataProperties, err: %v", err.Error())
 		span.SetStatus(codes.Error, "序列化旧数据属性失败")
-		o11y.Error(ctx, fmt.Sprintf("Failed to marshal old DataProperties, err: %v", err.Error()))
+		otellog.LogError(ctx, "Failed to marshal old DataProperties, err", err)
 
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError).
@@ -1007,7 +1007,7 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 	if err != nil {
 		logger.Errorf("Failed to unmarshal old DataProperties, err: %v", err.Error())
 		span.SetStatus(codes.Error, "反序列化旧数据属性失败")
-		o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal old DataProperties, err: %v", err.Error()))
+		otellog.LogError(ctx, "Failed to unmarshal old DataProperties, err", err)
 
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError).
@@ -1035,7 +1035,7 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 	if err != nil {
 		logger.Errorf("Begin transaction error: %s", err.Error())
 		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+		otellog.LogError(ctx, "Begin transaction error", err)
 
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
@@ -1050,16 +1050,16 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 			if err != nil {
 				logger.Errorf("UpdateObjectType Transaction Commit Failed:%v", err)
 				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "UpdateObjectType Transaction Commit Failed", err)
 			}
 			logger.Infof("UpdateObjectType Transaction Commit Success:%v", objectType.OTName)
-			o11y.Debug(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Success: %s", objectType.OTName))
+			otellog.LogDebug(ctx, fmt.Sprintf("UpdateObjectType Transaction Commit Success: %s", objectType.OTName))
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
 				logger.Errorf("UpdateObjectType Transaction Rollback Error:%v", rollbackErr)
 				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("UpdateObjectType Transaction Rollback Error: %s", rollbackErr.Error()))
+				otellog.LogError(ctx, "UpdateObjectType Transaction Rollback Error", rollbackErr)
 			}
 		}
 	}()
@@ -1077,14 +1077,14 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 			if err != nil {
 				logger.Errorf("UpdateObjectTypeStatus error: %s", err.Error())
 				span.SetStatus(codes.Error, "更新对象类索引状态失败")
-				o11y.Error(ctx, fmt.Sprintf("UpdateObjectTypeStatus error: %s", err.Error()))
+				otellog.LogError(ctx, "UpdateObjectTypeStatus error", err)
 
 				return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 					berrors.BknBackend_ObjectType_InternalError).
 					WithErrorDetails(fmt.Sprintf("更新对象类索引状态失败: %s", err.Error()))
 			}
 			logger.Infof("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID)
-			o11y.Info(ctx, fmt.Sprintf("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID))
+			otellog.LogInfo(ctx, fmt.Sprintf("数据属性变化影响索引，已将对象类[%s]的索引状态设置为不可用", objectType.OTID))
 		}
 	}
 
@@ -1114,7 +1114,7 @@ func (ots *objectTypeService) UpdateDataProperties(ctx context.Context,
 }
 
 func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, otIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete object types")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete object types")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -1132,7 +1132,7 @@ func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sq
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 
 			return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
@@ -1147,16 +1147,16 @@ func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sq
 				if err != nil {
 					logger.Errorf("DeleteObjectTypes Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteObjectTypes Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "DeleteObjectTypes Transaction Commit Failed", err)
 				}
 				logger.Infof("DeleteObjectTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, otIDs)
-				o11y.Debug(ctx, fmt.Sprintf("DeleteObjectTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, otIDs))
+				otellog.LogDebug(ctx, fmt.Sprintf("DeleteObjectTypes Transaction Commit Success: kn_id:%s,ot_ids:%v", knID, otIDs))
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("DeleteObjectTypes Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("DeleteObjectTypes Transaction Rollback Error: %s", rollbackErr.Error()))
+					otellog.LogError(ctx, "DeleteObjectTypes Transaction Rollback Error", rollbackErr)
 				}
 			}
 		}()
@@ -1175,7 +1175,7 @@ func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sq
 	logger.Infof("DeleteObjectTypes: Rows affected is %v, request delete ObjectTypeIDs is %v!", rowsAffect, len(otIDs))
 	if rowsAffect != int64(len(otIDs)) {
 		logger.Warnf("Delete object types number %v not equal requerst object types number %v!", rowsAffect, len(otIDs))
-		o11y.Warn(ctx, fmt.Sprintf("Delete object types number %v not equal requerst object types number %v!", rowsAffect, len(otIDs)))
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete object types number %v not equal requerst object types number %v!", rowsAffect, len(otIDs)))
 	}
 
 	rowsAffect, err = ots.ota.DeleteObjectTypeStatusByIDs(ctx, tx, knID, branch, otIDs)
@@ -1228,12 +1228,12 @@ func (ots *objectTypeService) DeleteObjectTypesByIDs(ctx context.Context, tx *sq
 
 // 内部方法，删除对象类与状态，不检查权限，tx必须传入
 func (ots *objectTypeService) DeleteObjectTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete object types")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete object types")
 	defer span.End()
 
 	if tx == nil {
 		logger.Errorf("missing transaction")
-		o11y.Error(ctx, "missing transaction")
+		otellog.LogError(ctx, "missing transaction", nil)
 		span.SetStatus(codes.Error, "缺少事务")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
@@ -1268,7 +1268,7 @@ func (ots *objectTypeService) DeleteObjectTypesByKnID(ctx context.Context, tx *s
 func (ots *objectTypeService) handleObjectTypeImportMode(ctx context.Context, mode string,
 	objectTypes []*interfaces.ObjectType) ([]*interfaces.ObjectType, []*interfaces.ObjectType, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "object type import mode logic")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "object type import mode logic")
 	defer span.End()
 
 	creates := []*interfaces.ObjectType{}
@@ -1366,7 +1366,7 @@ func (ots *objectTypeService) handleObjectTypeImportMode(ctx context.Context, mo
 func (ots *objectTypeService) GetObjectTypesMapByIDs(ctx context.Context, knID string,
 	branch string, otIDs []string, needPropMap bool) (map[string]*interfaces.ObjectType, error) {
 	// 获取对象类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询对象类[%v]信息", otIDs))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询对象类[%v]信息", otIDs))
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -1408,7 +1408,7 @@ func (ots *objectTypeService) GetObjectTypesMapByIDs(ctx context.Context, knID s
 }
 
 func (ots *objectTypeService) InsertDatasetData(ctx context.Context, objectTypes []*interfaces.ObjectType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "对象类索引写入")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "对象类索引写入")
 	defer span.End()
 
 	if len(objectTypes) == 0 {
@@ -1507,7 +1507,7 @@ func (ots *objectTypeService) InsertDatasetData(ctx context.Context, objectTypes
 func (ots *objectTypeService) SearchObjectTypes(ctx context.Context,
 	query *interfaces.ConceptsQuery) (interfaces.ObjectTypes, error) {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "业务知识网络对象类检索")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "业务知识网络对象类检索")
 	defer span.End()
 
 	response := interfaces.ObjectTypes{}
@@ -1768,7 +1768,7 @@ func (ots *objectTypeService) processObjectTypeDetails(ctx context.Context, obje
 		case interfaces.DATA_SOURCE_TYPE_RESOURCE:
 			res, err := ots.vba.GetResourceByID(ctx, objectType.DataSource.ID)
 			if err != nil || res == nil {
-				o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s vega Resource %s not found, error: %v",
+				otellog.LogWarn(ctx, fmt.Sprintf("Object type [%s]'s vega Resource %s not found, error: %v",
 					objectType.OTID, objectType.DataSource.ID, err))
 			} else {
 				objectType.DataSource.Name = res.Name
@@ -1787,7 +1787,7 @@ func (ots *objectTypeService) processObjectTypeDetails(ctx context.Context, obje
 		default:
 			dataView, err := ots.dva.GetDataViewByID(ctx, objectType.DataSource.ID)
 			if err != nil || dataView == nil {
-				o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found, error: %v",
+				otellog.LogWarn(ctx, fmt.Sprintf("Object type [%s]'s Data view %s not found, error: %v",
 					objectType.OTID, objectType.DataSource.ID, err))
 			} else {
 				objectType.DataSource.Name = dataView.ViewName
@@ -1816,7 +1816,7 @@ func (ots *objectTypeService) processObjectTypeDetails(ctx context.Context, obje
 						model, err := ots.dda.GetMetricModelByID(ctx, logicProp.DataSource.ID)
 						if err != nil || model == nil {
 							// 依赖不存在或者请求报错，不报错，跳过
-							o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s logic property [%s] metric model [%s] not found, error: %v",
+							otellog.LogWarn(ctx, fmt.Sprintf("Object type [%s]'s logic property [%s] metric model [%s] not found, error: %v",
 								objectType.OTID, logicProp.Name, objectType.DataSource.ID, err))
 						} else {
 							// 依赖存在时才做相关操作
@@ -1852,7 +1852,7 @@ func processMetricPropertyParamComment(ctx context.Context, logicProp *interface
 				continue
 			} else {
 				// 字段不存在，记录warn日志
-				o11y.Warn(ctx, fmt.Sprintf("Object type [%s]'s logic property [%s]'s parameter[%s] not found in metric model[%s]",
+				otellog.LogWarn(ctx, fmt.Sprintf("Object type [%s]'s logic property [%s]'s parameter[%s] not found in metric model[%s]",
 					objectType.OTID, logicProp.Name, param.Name, objectType.DataSource.ID))
 			}
 		}
@@ -1876,7 +1876,7 @@ func processMetricPropertyParamComment(ctx context.Context, logicProp *interface
 }
 
 func (ots *objectTypeService) GetTotal(ctx context.Context, filterCondition map[string]any) (total int64, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "logic layer: search object type total ")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "logic layer: search object type total ")
 	defer span.End()
 
 	params := &interfaces.ResourceDataQueryParams{
@@ -1903,7 +1903,7 @@ func (ots *objectTypeService) GetTotal(ctx context.Context, filterCondition map[
 func (ots *objectTypeService) GetObjectTypeIDsByKnID(ctx context.Context,
 	knID string, branch string) ([]string, error) {
 	// 获取对象类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("按kn_id[%s]获取对象类IDs", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("按kn_id[%s]获取对象类IDs", knID))
 	defer span.End()
 
 	// 获取对象类基本信息
@@ -1923,7 +1923,7 @@ func (ots *objectTypeService) GetObjectTypeIDsByKnID(ctx context.Context,
 func (ots *objectTypeService) GetAllObjectTypesByKnID(ctx context.Context,
 	knID string, branch string) (map[string]*interfaces.ObjectType, error) {
 	// 获取对象类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("按kn_id[%s]获取对象类基本信息", knID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("按kn_id[%s]获取对象类基本信息", knID))
 	defer span.End()
 
 	// 获取对象类基本信息
@@ -1944,7 +1944,7 @@ func (ots *objectTypeService) GetAllObjectTypesByKnID(ctx context.Context,
 func (ots *objectTypeService) GetObjectTypeByID(ctx context.Context, tx *sql.Tx,
 	knID string, branch string, otID string) (*interfaces.ObjectType, error) {
 	// 获取对象类
-	ctx, span := ar_trace.Tracer.Start(ctx, fmt.Sprintf("查询对象类[%s]信息", otID))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, fmt.Sprintf("查询对象类[%s]信息", otID))
 	defer span.End()
 
 	var err error
@@ -1954,7 +1954,7 @@ func (ots *objectTypeService) GetObjectTypeByID(ctx context.Context, tx *sql.Tx,
 		if err != nil {
 			logger.Errorf("Begin transaction error: %s", err.Error())
 			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+			otellog.LogError(ctx, "Begin transaction error", err)
 			return &interfaces.ObjectType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 				berrors.BknBackend_ObjectType_InternalError_BeginTransactionFailed).
 				WithErrorDetails(err.Error())
@@ -1968,17 +1968,17 @@ func (ots *objectTypeService) GetObjectTypeByID(ctx context.Context, tx *sql.Tx,
 				if err != nil {
 					logger.Errorf("GetObjectTypeByID Transaction Commit Failed:%v", err)
 					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("GetObjectTypeByID Transaction Commit Failed: %s", err.Error()))
+					otellog.LogError(ctx, "GetObjectTypeByID Transaction Commit Failed", err)
 					return
 				}
 				logger.Infof("GetObjectTypeByID Transaction Commit Success")
-				o11y.Debug(ctx, "GetObjectTypeByID Transaction Commit Success")
+				otellog.LogDebug(ctx, "GetObjectTypeByID Transaction Commit Success")
 			default:
 				rollbackErr := tx.Rollback()
 				if rollbackErr != nil {
 					logger.Errorf("GetObjectTypeByID Transaction Rollback Error:%v", rollbackErr)
 					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("GetObjectTypeByID Transaction Rollback Error: %s", err.Error()))
+					otellog.LogError(ctx, "GetObjectTypeByID Transaction Rollback Error", err)
 				}
 			}
 		}()

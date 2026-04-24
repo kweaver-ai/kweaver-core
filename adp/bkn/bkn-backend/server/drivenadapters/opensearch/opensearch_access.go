@@ -15,15 +15,14 @@ import (
 	"sync"
 
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	attr "go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -50,7 +49,7 @@ func NewOpenSearchAccess(appSetting *common.AppSetting) interfaces.OpenSearchAcc
 }
 
 func (o *openSearchAccess) PutIndexTemplate(ctx context.Context, indexTemplateName string, body any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "PutIndexTemplate", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "PutIndexTemplate")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_template_name").String(indexTemplateName))
@@ -91,7 +90,7 @@ func (o *openSearchAccess) PutIndexTemplate(ctx context.Context, indexTemplateNa
 //
 // 返回：创建成功返回nil，失败返回具体错误信息
 func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, body any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateIndex", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateIndex")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -142,7 +141,7 @@ func (o *openSearchAccess) CreateIndex(ctx context.Context, indexName string, bo
 //	    // 索引不存在，需要创建
 //	}
 func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "IndexExists", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "IndexExists")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -174,7 +173,7 @@ func (o *openSearchAccess) IndexExists(ctx context.Context, indexName string) (b
 }
 
 func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteIndex", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteIndex")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -211,7 +210,7 @@ func (o *openSearchAccess) DeleteIndex(ctx context.Context, indexName string) er
 // 注意：数据插入后会立即刷新索引，使数据立即可搜索
 func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, docID string, data any) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "InsertData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "InsertData")
 	defer span.End()
 
 	span.SetAttributes(
@@ -264,7 +263,7 @@ func (o *openSearchAccess) InsertData(ctx context.Context, indexName string, doc
 //	  map[string]any{"id": "doc2", "title": "文档2"},
 //	}
 func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string, dataList []any) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BulkInsertData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "BulkInsertData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -357,7 +356,7 @@ func (o *openSearchAccess) BulkInsertData(ctx context.Context, indexName string,
 //	  },
 //	}
 func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, query any) ([]interfaces.Hit, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "SearchData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "SearchData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -422,7 +421,7 @@ func (o *openSearchAccess) SearchData(ctx context.Context, indexName string, que
 // 注意：删除操作会立即刷新索引，使删除结果立即可见
 func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, docID string) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteData")
 	defer span.End()
 
 	span.SetAttributes(
@@ -465,7 +464,7 @@ func (o *openSearchAccess) DeleteData(ctx context.Context, indexName string, doc
 // 性能：建议单次批量删除的文档数量控制在合理范围内（如1000-5000条）
 // 容错：如果某个ID对应的文档不存在，不会影响其他文档的删除
 func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string, docIDs []string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BulkDeleteData", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "BulkDeleteData")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -517,7 +516,7 @@ func (o *openSearchAccess) BulkDeleteData(ctx context.Context, indexName string,
 }
 
 func (o *openSearchAccess) Count(ctx context.Context, indexName string, query any) ([]byte, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Count", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Count")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -556,7 +555,7 @@ func (o *openSearchAccess) Count(ctx context.Context, indexName string, query an
 }
 
 func (o *openSearchAccess) GetIndexStats(ctx context.Context, indexName string) (*interfaces.IndexStats, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetIndexStats", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetIndexStats")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -612,7 +611,7 @@ func (o *openSearchAccess) GetIndexStats(ctx context.Context, indexName string) 
 }
 
 func (o *openSearchAccess) Refresh(ctx context.Context, indexName string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Refresh", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "Refresh")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
@@ -636,7 +635,7 @@ func (o *openSearchAccess) Refresh(ctx context.Context, indexName string) error 
 
 func (o *openSearchAccess) DeleteByQuery(ctx context.Context, indexName string, query any) error {
 
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteByQuery", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteByQuery")
 	defer span.End()
 
 	span.SetAttributes(attr.Key("index_name").String(indexName))
