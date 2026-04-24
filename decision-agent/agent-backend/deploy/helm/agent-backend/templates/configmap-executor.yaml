@@ -117,6 +117,7 @@ data:
       enable_dolphin_agent_output_variables_ctrl: {{ .Values.agentExecutor.enableDolphinAgentOutputVariablesCtrl }}
       is_skill_agent_need_progress: {{ .Values.agentExecutor.isSkillAgentNeedProgress }}
       enable_traceai_evidence: {{ .Values.agentExecutor.enableTraceAiEvidence }}
+      skill_enabled: {{ .Values.agentExecutor.skillEnabled | default true }}
 
     # 10. o11y 相关
     o11y:
