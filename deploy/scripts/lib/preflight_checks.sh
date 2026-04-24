@@ -1178,7 +1178,7 @@ preflight_check_target_tools() {
 
 preflight_check_admin_tools() {
     preflight_skip "admin-tools" && return 0
-    log_info "Checking admin / optional tools (kweaver, node)..."
+    log_info "Checking admin / optional tools (kweaver, node, npm)..."
     if command -v kweaver &>/dev/null; then
         preflight_ok "kweaver: $(kweaver --version 2>/dev/null | head -1 || echo ok)"
     else
@@ -1189,6 +1189,12 @@ preflight_check_admin_tools() {
         preflight_ok "node: $(node -v 2>/dev/null)"
     else
         preflight_warn "node not in PATH (use npx kweaver on admin machine as alternative)"
+    fi
+
+    if command -v npm &>/dev/null; then
+        preflight_ok "npm: $(npm -v 2>/dev/null) ($(command -v npm))"
+    else
+        preflight_warn "npm not in PATH (needed for 'preflight --fix' kweaver-sdk / kweaver-admin; install Node.js LTS or your distro's nodejs+npm package)"
     fi
 }
 
