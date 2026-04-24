@@ -222,6 +222,34 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
     else
         log_info "Preflight passed."
     fi
+
+    echo ""
+    echo "========== Conclusion =========="
+    _pf_total="${PREFLIGHT_KWEAVER_RELEASE_TOTAL:-0}"
+    _pf_bad="${PREFLIGHT_KWEAVER_RELEASE_BAD:-0}"
+    if [[ "${_pf_total}" -gt 0 ]]; then
+        if [[ "${_pf_bad}" -eq 0 ]]; then
+            echo "  KWeaver appears INSTALLED on this cluster (${_pf_total} helm release(s), all 'deployed')."
+            echo "  Suggested next step:"
+            echo "    - Re-run install only if you intend to upgrade:  ./deploy.sh kweaver-core install --force-upgrade"
+            echo "    - Configure models / BKN search:                 ./onboard.sh"
+            echo "    - Check status:                                  ./deploy.sh kweaver-core status"
+        else
+            echo "  KWeaver is INSTALLED but ${_pf_bad}/${_pf_total} release(s) are not in 'deployed' state."
+            echo "  Suggested next step: inspect with 'helm list -A | grep -iE kweaver|isf|dip'"
+            echo "                       and re-run:  ./deploy.sh kweaver-core install --force-upgrade"
+        fi
+    else
+        if [[ ${exit_code} -eq 0 ]]; then
+            echo "  No KWeaver releases detected. Environment is READY for a fresh install:"
+        else
+            echo "  No KWeaver releases detected. After resolving the items above, install with:"
+        fi
+        echo "    sudo ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
+        echo "    sudo ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
+        echo "  Then run ./onboard.sh to register models and enable BKN semantic search."
+    fi
+    echo "================================"
 fi
 
 exit "${exit_code}"

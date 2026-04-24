@@ -811,20 +811,27 @@ preflight_check_existing_release() {
     local r total bad bad_names bad_count
     r="$(helm list -A 2>/dev/null | awk 'NR>1 && tolower($0) ~ /kweaver|isf|dip/' || true)"
     if [[ -z "${r}" ]]; then
+        PREFLIGHT_KWEAVER_RELEASE_TOTAL=0
+        PREFLIGHT_KWEAVER_RELEASE_BAD=0
+        export PREFLIGHT_KWEAVER_RELEASE_TOTAL PREFLIGHT_KWEAVER_RELEASE_BAD
         preflight_ok "No obvious kweaver/isf/dip Helm release names in helm list -A"
         return 0
     fi
 
     total="$(echo "${r}" | grep -c . || true)"
+    PREFLIGHT_KWEAVER_RELEASE_TOTAL="${total}"
     # Anything other than the healthy steady state "deployed" is worth flagging.
     bad="$(echo "${r}" | awk '$8!="deployed" && $0!~/[Dd]eployed/' || true)"
     if [[ -z "${bad}" ]]; then
+        PREFLIGHT_KWEAVER_RELEASE_BAD=0
         preflight_ok "Helm has ${total} kweaver/isf/dip release(s), all in 'deployed' state — reusing"
     else
         bad_names="$(echo "${bad}" | awk '{print $1"("$8")"}' | paste -sd ',' -)"
         bad_count="$(echo "${bad}" | grep -c . || true)"
+        PREFLIGHT_KWEAVER_RELEASE_BAD="${bad_count}"
         preflight_warn "Helm: ${bad_count}/${total} kweaver/isf/dip release(s) not in 'deployed' state: ${bad_names} (others are healthy and will be reused)"
     fi
+    export PREFLIGHT_KWEAVER_RELEASE_TOTAL PREFLIGHT_KWEAVER_RELEASE_BAD
     if [[ -n "${PREFLIGHT_REPORT_FILE:-}" ]]; then
         {
             echo "--- existing helm releases (kweaver/isf/dip) ---"
