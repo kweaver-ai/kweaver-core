@@ -21,7 +21,7 @@ func runGenerate(args []string) error {
 	outHTMLPath := fs.String("out-html", defaultOutHTMLPath, "Final Scalar HTML output path")
 	outRedocHTMLPath := fs.String("out-redoc-html", defaultOutRedocHTMLPath, "Final Redoc HTML output path")
 	outFaviconPath := fs.String("out-favicon", defaultPublicFaviconPath, "Public favicon output path")
-	outUIDirPath := fs.String("out-ui-dir", defaultPublicUIDirPath, "Public UI assets output path")
+	outUIDirPath := fs.String("out-ui-dir", defaultPublicUIDirPath, "Public UI assets output path (optional; public HTML uses CDN by default)")
 	runtimeJSONPath := fs.String("runtime-json", defaultRuntimeJSONPath, "Runtime OpenAPI JSON output path")
 	runtimeYAMLPath := fs.String("runtime-yaml", defaultRuntimeYAMLPath, "Runtime OpenAPI YAML output path")
 	runtimeHTMLPath := fs.String("runtime-html", defaultRuntimeHTMLPath, "Runtime Scalar HTML output path")
@@ -78,7 +78,11 @@ func runGenerate(args []string) error {
 	fmt.Printf("generated final spec: %d paths / %d operations\n", finalPaths, finalOps)
 	fmt.Printf("wrote %s\nwrote %s\nwrote %s\nwrote %s\n", *outJSONPath, *outYAMLPath, *outHTMLPath, *outRedocHTMLPath)
 	fmt.Printf("wrote %s\nwrote %s\nwrote %s\nwrote %s\n", *runtimeJSONPath, *runtimeYAMLPath, *runtimeHTMLPath, *runtimeRedocHTMLPath)
-	fmt.Printf("mirrored UI assets to %s and %s\n", *outUIDirPath, *runtimeUIDirPath)
+	if optionalPath(*outUIDirPath) != "" && optionalPath(*runtimeUIDirPath) != "" {
+		fmt.Printf("mirrored UI assets to %s and %s\n", *outUIDirPath, *runtimeUIDirPath)
+	} else if optionalPath(*runtimeUIDirPath) != "" {
+		fmt.Printf("wrote runtime UI assets to %s\n", *runtimeUIDirPath)
+	}
 
 	if optionalPath(*reportPath) != "" && strings.TrimSpace(artifacts.CompareReport) != "" {
 		fmt.Printf("wrote %s\n", *reportPath)

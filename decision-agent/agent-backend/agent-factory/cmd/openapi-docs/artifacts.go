@@ -54,11 +54,19 @@ func writeGeneratedArtifacts(paths docOutputPaths, artifacts *openapidoc.BuildAr
 		return err
 	}
 
-	if err := writeMirroredArtifact("html", paths.PublicHTMLPath, paths.RuntimeHTMLPath, artifacts.HTML); err != nil {
+	if err := writeArtifact("public html", paths.PublicHTMLPath, artifacts.PublicHTML); err != nil {
 		return err
 	}
 
-	if err := writeMirroredArtifact("redoc html", paths.PublicRedocHTMLPath, paths.RuntimeRedocHTMLPath, artifacts.RedocHTML); err != nil {
+	if err := writeArtifact("runtime html", paths.RuntimeHTMLPath, artifacts.RuntimeHTML); err != nil {
+		return err
+	}
+
+	if err := writeArtifact("public redoc html", paths.PublicRedocHTMLPath, artifacts.PublicRedocHTML); err != nil {
+		return err
+	}
+
+	if err := writeArtifact("runtime redoc html", paths.RuntimeRedocHTMLPath, artifacts.RuntimeRedocHTML); err != nil {
 		return err
 	}
 
@@ -77,6 +85,18 @@ func writeGeneratedArtifacts(paths docOutputPaths, artifacts *openapidoc.BuildAr
 		if err := writeMirroredDirectory("ui", paths.UISourceDirPath, paths.PublicUIDirPath, paths.RuntimeUIDirPath); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func writeArtifact(label string, path string, data []byte) error {
+	if optionalPath(path) == "" {
+		return nil
+	}
+
+	if err := openapidoc.WriteFile(path, data); err != nil {
+		return pkgerrors.Wrapf(err, "write %s", label)
 	}
 
 	return nil
@@ -122,8 +142,6 @@ func validateMirroredArtifacts(paths mirroredArtifactPaths) error {
 	}{
 		{label: "json", publicPath: paths.PublicJSONPath, runtimePath: paths.RuntimeJSONPath},
 		{label: "yaml", publicPath: paths.PublicYAMLPath, runtimePath: paths.RuntimeYAMLPath},
-		{label: "html", publicPath: paths.PublicHTMLPath, runtimePath: paths.RuntimeHTMLPath},
-		{label: "redoc html", publicPath: paths.PublicRedocHTMLPath, runtimePath: paths.RuntimeRedocHTMLPath},
 		{label: "favicon", publicPath: paths.PublicFaviconPath, runtimePath: paths.RuntimeFaviconPath},
 	}
 

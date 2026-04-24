@@ -21,9 +21,9 @@ flowchart TD
     G["src/infra/server/apidocs/assets/favicon.png"] --> D
     M["src/infra/server/apidocs/assets/ui/*"] --> D
     D --> H["OpenAPI 3 JSON / YAML / Scalar HTML / Redoc HTML"]
-    H --> I["docs/api/*"]
-    H --> J["src/infra/server/apidocs/assets/*"]
-    I --> K["用户直接查看"]
+    H --> I["docs/api/*<br/>HTML -> cdn.jsdmirror.com"]
+    H --> J["src/infra/server/apidocs/assets/*<br/>HTML -> 本地 ui/*"]
+    I --> K["用户直接查看 / 对外分发"]
     J --> L["go:embed -> /scalar/* /redoc/* /apidocs-ui/*"]
 ```
 
@@ -72,7 +72,6 @@ go run ./cmd/openapi-docs generate
 - `../../docs/api/agent-factory.html`
 - `../../docs/api/agent-factory-redoc.html`
 - `../../docs/api/favicon.png`
-- `../../docs/api/ui/*`
 - `../../src/infra/server/apidocs/assets/*`
 
 ## 运行时怎么用
@@ -101,11 +100,13 @@ go run ./cmd/openapi-docs generate
 
 给运行时 `go:embed` 使用，避免把 Go 源文件放进 `docs/` 目录。
 
-`favicon.png` 和 `ui/*` 资源也遵循同样规则，所以当前最少保留 2 份，而不是 1 份：
+`favicon.png` 仍然保留两份：
 
 - `docs/api/favicon.png`
 - `src/infra/server/apidocs/assets/favicon.png`
-- `docs/api/ui/*`
+
+`ui/*` 只保留运行时这一份：
+
 - `src/infra/server/apidocs/assets/ui/*`
 
 ## 校验点
@@ -114,8 +115,9 @@ go run ./cmd/openapi-docs generate
 
 1. OpenAPI JSON 能否通过 `kin-openapi` 校验
 2. 路径数和 operation 数是否符合预期
-3. Scalar / Redoc HTML 是否都包含预期标记，且不依赖外部 CDN
-4. `docs/api/*` 与 `src/infra/server/apidocs/assets/*` 是否完全一致
+3. `docs/api/*.html` 是否包含预期的 CDN 引用
+4. `src/infra/server/apidocs/assets/*.html` 是否仍然只依赖本地 `ui/*`
+5. `docs/api/*.json`、`*.yaml`、`favicon.png` 是否与运行时副本一致
 
 ## 相关文档
 
