@@ -101,6 +101,11 @@ func (s *actionSchedulerService) ExecuteAction(ctx context.Context, req *interfa
 			WithErrorDetails(fmt.Sprintf("Action type not found: %s", req.ActionTypeID))
 	}
 
+	if missing := logics.MissingActionInputDynamicParamNames(&actionType, req.DynamicParams); len(missing) > 0 {
+		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, oerrors.OntologyQuery_ActionExecution_InvalidParameter).
+			WithErrorDetails(fmt.Sprintf("当前请求执行的行动类[%s]所需的动态参数未完整传入，缺少参数 %v，请在请求的 dynamic_params 中填充", actionType.ATName, missing))
+	}
+
 	// Get instances based on action type configuration and request parameters
 	instances, objDatas, err := s.getInstancesForAction(ctx, &actionType, req.KNID, req.Branch, req.InstanceIdentities)
 	if err != nil {
@@ -678,7 +683,7 @@ func (s *actionSchedulerService) buildExecutionParams(actionType *interfaces.Act
 		case interfaces.LOGIC_PARAMS_VALUE_FROM_CONST:
 			setNestedValue(params, param.Name, param.Value)
 		case interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT:
-			if val := getNestedValue(dynamicParams, param.Name); val != nil {
+			if val := logics.ActionDynamicParamGetValue(dynamicParams, param.Name); val != nil {
 				setNestedValue(params, param.Name, val)
 			}
 		}

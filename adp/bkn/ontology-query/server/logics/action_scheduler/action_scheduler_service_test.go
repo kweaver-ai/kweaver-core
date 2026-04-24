@@ -499,6 +499,99 @@ func Test_ActionExecution_Snapshot(t *testing.T) {
 	})
 }
 
+func Test_ExecuteAction_InputDynamicParamsValidation(t *testing.T) {
+	Convey("行动执行：行动类含 input 参数时，dynamic_params 未给齐则返回 400", t, func() {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		appSetting := &common.AppSetting{}
+		omAccess := omock.NewMockOntologyManagerAccess(mockCtrl)
+
+		logics.OMA = omAccess
+
+		service := &actionSchedulerService{
+			appSetting: appSetting,
+			omAccess:   omAccess,
+		}
+
+		ctx := context.Background()
+		baseActionType := func(extraParams ...interfaces.Parameter) interfaces.ActionType {
+			p := []interfaces.Parameter{{Name: "token", ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT}}
+			p = append(p, extraParams...)
+			return interfaces.ActionType{
+				ATID:       "at_001",
+				ATName:     "needs_input",
+				Parameters: p,
+			}
+		}
+
+		Convey("未提供 dynamic_params", func() {
+			actionType := baseActionType()
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(actionType, map[string]any{}, true, nil)
+
+			req := &interfaces.ActionExecutionRequest{
+				KNID:               "kn_001",
+				ActionTypeID:       "at_001",
+				InstanceIdentities: []map[string]any{{"id": "1"}},
+			}
+
+			_, err := service.ExecuteAction(ctx, req)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionExecution_InvalidParameter)
+		})
+
+		Convey("仅提供部分 input（缺少另一个参数）", func() {
+			actionType := baseActionType(interfaces.Parameter{
+				Name: "other", ValueFrom: interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT,
+			})
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(actionType, map[string]any{}, true, nil)
+
+			req := &interfaces.ActionExecutionRequest{
+				KNID:               "kn_001",
+				ActionTypeID:       "at_001",
+				InstanceIdentities: []map[string]any{{"id": "1"}},
+				DynamicParams: map[string]any{
+					"token": "ok",
+				},
+			}
+
+			_, err := service.ExecuteAction(ctx, req)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionExecution_InvalidParameter)
+		})
+
+		Convey("dynamic_params 中某 key 为 null，视为未提供", func() {
+			actionType := baseActionType()
+			omAccess.EXPECT().GetActionType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(actionType, map[string]any{}, true, nil)
+
+			req := &interfaces.ActionExecutionRequest{
+				KNID:               "kn_001",
+				ActionTypeID:       "at_001",
+				InstanceIdentities: []map[string]any{{"id": "1"}},
+				DynamicParams: map[string]any{
+					"token": nil,
+				},
+			}
+
+			_, err := service.ExecuteAction(ctx, req)
+			So(err, ShouldNotBeNil)
+			httpErr, ok := err.(*rest.HTTPError)
+			So(ok, ShouldBeTrue)
+			So(httpErr.HTTPCode, ShouldEqual, http.StatusBadRequest)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, oerrors.OntologyQuery_ActionExecution_InvalidParameter)
+		})
+	})
+}
+
 func Test_ExecuteAction_ScanMode(t *testing.T) {
 	Convey("Test ExecuteAction with scan mode (empty _instance_identities)", t, func() {
 		mockCtrl := gomock.NewController(t)

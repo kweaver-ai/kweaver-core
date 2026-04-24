@@ -30,6 +30,7 @@ env/
 *.swp
 *.swo
 .claude
+.cursor
 *~
 
 # Testing
