@@ -310,6 +310,17 @@ preflight_check_hardware() {
     done
 }
 
+# --- effective user: root is expected on the install / K8s node for full preflight
+preflight_check_effective_user() {
+    preflight_skip "euid" && return 0
+    log_info "Checking runtime user (root recommended on install target host)..."
+    if [[ "${EUID}" -eq 0 ]]; then
+        preflight_ok "Running as root: full checks, can read /etc/kubernetes/admin.conf, and --fix are available"
+    else
+        preflight_warn "Not running as root: some checks are incomplete (unreadable /etc/kubernetes/admin.conf is common; sysctl/port introspection) and --fix is disabled. On the K8s install node run: sudo ./preflight.sh [--fix]"
+    fi
+}
+
 # --- OS / kernel ---------------------------------------------------------------
 preflight_check_os() {
     preflight_skip "os" && return 0
@@ -1126,7 +1137,9 @@ preflight_check_residue() {
     fi
 
     if [[ -f /etc/kubernetes/admin.conf ]]; then
-        if command -v kubectl &>/dev/null \
+        if [[ ! -r /etc/kubernetes/admin.conf ]]; then
+            preflight_warn "Found /etc/kubernetes/admin.conf but it is not readable (often root:root 0600). Re-run with sudo to verify the API; without read access, a cluster-health FAIL would be a false positive"
+        elif command -v kubectl &>/dev/null \
             && KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes &>/dev/null; then
             preflight_ok "Existing Kubernetes cluster is healthy at /etc/kubernetes/admin.conf; deploy will reuse it (no reset needed). To force a clean install run: ./deploy.sh k8s reset"
         else
@@ -1759,6 +1772,7 @@ preflight_apply_safe_fixes() {
 
 # --- run all checks in order ---------------------------------------------------
 preflight_run_all_checks() {
+    preflight_check_effective_user
     preflight_check_os
     preflight_check_arch
     preflight_check_hardware

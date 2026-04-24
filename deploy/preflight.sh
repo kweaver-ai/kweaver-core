@@ -31,6 +31,7 @@ usage() {
     echo "  -h, --help           Show this help"
     echo "  --check-only         Only run checks, do not modify the system (default; no root required for partial checks)"
     echo "  --fix                Check + interactively apply fixes (requires root)"
+    echo "                       On the install/K8s node use sudo for accurate checks (admin.conf, sysctl) and fixes"
     echo "  -y, --yes            Auto-approve every fix (skip per-fix y/N prompt)"
     echo "  -n, --no             Auto-decline every fix (preview risk text, change nothing)"
     echo "  --fix-allow=LIST     Comma-separated fix names to auto-approve (others are skipped)."
@@ -141,7 +142,7 @@ fi
 
 if [[ "${PREFLIGHT_CHECK_ONLY}" != "true" && "${PREFLIGHT_LIST_FIXES_ONLY}" != "true" ]]; then
     if [[ "${EUID}" -ne 0 ]]; then
-        log_error "For automatic fixes, run as root: sudo $0 --fix (or omit --fix for the default check-only run)"
+        log_warn "Automatic fixes require root. Re-run as: sudo $0 --fix (or use default check-only without --fix)"
         log_info "Falling back to read-only check (--check-only) …"
         PREFLIGHT_CHECK_ONLY="true"
     fi
