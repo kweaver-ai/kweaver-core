@@ -1,19 +1,18 @@
 package v3agentconfighandler
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/auditconstant"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/valueobject/daconfvalobj"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capimiddleware"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
-	"github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil/crest"
-	"github.com/kweaver-ai/kweaver-go-lib/audit"
-	"github.com/kweaver-ai/kweaver-go-lib/rest"
+    "github.com/gin-gonic/gin"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/domain/constant/auditconstant"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/driveradapter/api/rdto/agent_config/agentconfigreq"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capierr"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/capimiddleware"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/chelper/cenvhelper"
+    "github.com/kweaver-ai/kweaver-core/decision-agent/agent-backend/agent-factory/src/infra/common/cutil/crest"
+    "github.com/kweaver-ai/kweaver-go-lib/audit"
+    "github.com/kweaver-ai/kweaver-go-lib/rest"
 )
 
 // @Summary      编辑agent
@@ -101,11 +100,11 @@ func (h *daConfHTTPHandler) Update(c *gin.Context) {
 
 	if cenvhelper.IsLocalDev(cenvhelper.RunScenario_Aaron_Local_Dev) {
 		req.ProductKey = "dip"
-		if req.Name == "open_plan_mode_v1" && !req.Config.IsDolphinMode.Bool() {
-			req.Config.PlanMode = daconfvalobj.NewPlanMode(true)
-		} else {
-			req.Config.PlanMode = daconfvalobj.NewPlanMode(false)
-		}
+		//if req.Name == "open_plan_mode_v1" && !req.Config.IsDolphinMode.Bool() {
+		//	req.Config.PlanMode = daconfvalobj.NewPlanMode(true)
+		//} else {
+		//	req.Config.PlanMode = daconfvalobj.NewPlanMode(false)
+		//}
 	}
 
 	// 4. 更新

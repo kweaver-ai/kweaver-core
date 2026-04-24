@@ -322,6 +322,7 @@ agentExecutor:
   enableDolphinAgentOutputVariablesCtrl: false
   isSkillAgentNeedProgress: false
   enableTraceAiEvidence: false
+  skillEnabled: true  # 是否开启 Skill 功能
   rps:
     limit: 100
 
