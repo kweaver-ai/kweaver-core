@@ -188,10 +188,25 @@ else
     if [[ -n "${PREFLIGHT_FAIL_COUNT_INITIAL}" ]]; then
         echo "  (initial [FAIL] before fix phase: ${PREFLIGHT_FAIL_COUNT_INITIAL})"
     fi
+    if [[ "${PREFLIGHT_FAIL_COUNT}" -gt 0 && ${#PREFLIGHT_FAIL_SNAPSHOT[@]} -gt 0 ]]; then
+        echo ""
+        echo "  Outstanding [FAIL] items:"
+        _pfi=1
+        for _pfl in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
+            echo "    ${_pfi}. ${_pfl}"
+            _pfi=$((_pfi + 1))
+        done
+    fi
     if [[ -n "${PREFLIGHT_REPORT_FILE}" ]]; then
         {
             echo "--- summary ---"
             echo "OK=${PREFLIGHT_OK_COUNT} WARN=${PREFLIGHT_WARN_COUNT} FAIL=${PREFLIGHT_FAIL_COUNT} FIXED=${PREFLIGHT_FIXED_COUNT} FAIL_INITIAL=${PREFLIGHT_FAIL_COUNT_INITIAL:-0}"
+            if [[ "${PREFLIGHT_FAIL_COUNT}" -gt 0 && ${#PREFLIGHT_FAIL_SNAPSHOT[@]} -gt 0 ]]; then
+                echo "--- outstanding fails ---"
+                for _pfl in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
+                    echo "[FAIL] ${_pfl}"
+                done
+            fi
         } >> "${PREFLIGHT_REPORT_FILE}"
     fi
 fi

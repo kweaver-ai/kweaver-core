@@ -1101,7 +1101,12 @@ preflight_check_residue() {
     fi
 
     if [[ -f /etc/kubernetes/admin.conf ]]; then
-        preflight_fail "Found /etc/kubernetes/admin.conf; existing cluster state. For clean install: ./deploy.sh k8s reset (or preflight fix: kubeadm-reset)"
+        if command -v kubectl &>/dev/null \
+            && KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes &>/dev/null; then
+            preflight_ok "Existing Kubernetes cluster is healthy at /etc/kubernetes/admin.conf; deploy will reuse it (no reset needed). To force a clean install run: ./deploy.sh k8s reset"
+        else
+            preflight_fail "Found /etc/kubernetes/admin.conf but cluster is not responding (kubectl get nodes failed). For clean install: ./deploy.sh k8s reset (or preflight fix: kubeadm-reset)"
+        fi
     else
         preflight_ok "No /etc/kubernetes/admin.conf (fresh for kubeadm, if target)"
     fi
@@ -1452,8 +1457,13 @@ preflight_apply_safe_fixes() {
     fi
 
     # --- 2) kubeadm reset (existing cluster) ---------------------------------
+    # Only offer reset when the cluster is actually broken; healthy clusters
+    # are intended to be reused by deploy.sh (ensure_k8s skips re-install).
     if [[ -f /etc/kubernetes/admin.conf ]]; then
-        if preflight_confirm_fix "kubeadm-reset" \
+        if command -v kubectl &>/dev/null \
+            && KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes &>/dev/null; then
+            log_info "  -> skipping kubeadm-reset: existing cluster is healthy and will be reused"
+        elif preflight_confirm_fix "kubeadm-reset" \
             "cd PREFLIGHT_ROOT && ASSUME_YES=true ./deploy.sh k8s reset" \
             "Destroys the local Kubernetes control plane, certs, and kubeconfig. Irreversible."; then
             preflight_fix_kubeadm_reset
