@@ -599,10 +599,10 @@ preflight_check_kernel_limits() {
     else
         preflight_warn "fs.inotify.max_user_watches=${inow} (recommended >= 524288 on busy nodes)"
     fi
-    if [[ "${inoinst}" -ge 512 ]]; then
+    if [[ "${inoinst}" -ge 8192 ]]; then
         preflight_ok "fs.inotify.max_user_instances=${inoinst}"
     else
-        preflight_warn "fs.inotify.max_user_instances=${inoinst} (recommended >= 512)"
+        preflight_warn "fs.inotify.max_user_instances=${inoinst} (recommended >= 8192 for K8s nodes; default 128 causes 'Too many open files' for systemd/journalctl/kubelet/containerd)"
     fi
     if [[ "${pidm}" -ge 4194304 ]]; then
         preflight_ok "kernel.pid_max=${pidm}"
@@ -1378,7 +1378,7 @@ preflight_fix_kernel_limits_sysctl() {
 # Added by KWeaver preflight
 vm.max_map_count = 262144
 fs.inotify.max_user_watches = 524288
-fs.inotify.max_user_instances = 512
+fs.inotify.max_user_instances = 8192
 kernel.pid_max = 4194304
 EOF
     timeout 10 sysctl --system 2>/dev/null || true
