@@ -13,16 +13,15 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/bytedance/sonic"
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	attr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 )
 
@@ -52,7 +51,7 @@ func NewRelationTypeAccess(appSetting *common.AppSetting) interfaces.RelationTyp
 
 // 根据ID获取关系类存在性
 func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, knID string, branch string, rtID string) (string, bool, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CheckRelationTypeExistByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CheckRelationTypeExistByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -70,13 +69,13 @@ func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, k
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of get relation type id by f_id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of get relation type id by f_id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of get relation type id by f_id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("获取关系类信息的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("获取关系类信息的 sql 语句: %s", sqlStr))
 
 	var name string
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&name)
@@ -86,7 +85,7 @@ func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, k
 		return "", false, nil
 	} else if err != nil {
 		logger.Errorf("row scan failed, err: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan failed, err: %v", err))
+		otellog.LogError(ctx, "Row scan failed, err", err)
 		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
@@ -97,7 +96,7 @@ func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, k
 
 // 创建关系类
 func (rta *relationTypeAccess) CreateRelationType(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "CreateRelationType", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "CreateRelationType")
 	defer span.End()
 
 	span.SetAttributes(
@@ -160,18 +159,18 @@ func (rta *relationTypeAccess) CreateRelationType(ctx context.Context, tx *sql.T
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of insert relation type, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of insert relation type, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of insert relation type, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("创建关系类的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("创建关系类的 sql 语句: %s", sqlStr))
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("insert data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert data error: %v ", err))
+		otellog.LogError(ctx, "Insert data error", err)
 		span.SetStatus(codes.Error, "Insert data error")
 		return err
 	}
@@ -182,7 +181,7 @@ func (rta *relationTypeAccess) CreateRelationType(ctx context.Context, tx *sql.T
 
 // 查询关系类列表。查主线的当前版本为true的关系类
 func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query interfaces.RelationTypesQueryParams) ([]*interfaces.RelationType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ListRelationTypes", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "ListRelationTypes")
 	defer span.End()
 
 	span.SetAttributes(
@@ -222,19 +221,19 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation types, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation types, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation types, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.RelationType{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
 	logger.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.RelationType{}, err
 	}
@@ -270,7 +269,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 		)
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.RelationType{}, err
 		}
@@ -284,7 +283,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -295,7 +294,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -306,7 +305,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -321,7 +320,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 }
 
 func (rta *relationTypeAccess) GetRelationTypesTotal(ctx context.Context, query interfaces.RelationTypesQueryParams) (int, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRelationTypesTotal", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetRelationTypesTotal")
 	defer span.End()
 
 	span.SetAttributes(
@@ -335,19 +334,19 @@ func (rta *relationTypeAccess) GetRelationTypesTotal(ctx context.Context, query 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation types total, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation types total, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation types total, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类总数的 sql 语句: %s; queryParams: %v", sqlStr, query))
 
 	total := 0
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
 		logger.Errorf("get relation type total error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Get relation type total error: %v", err))
+		otellog.LogError(ctx, "Get relation type total error", err)
 		span.SetStatus(codes.Error, "Get relation type total error")
 		return 0, err
 	}
@@ -357,7 +356,7 @@ func (rta *relationTypeAccess) GetRelationTypesTotal(ctx context.Context, query 
 }
 
 func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID string, branch string, rtID string) (*interfaces.RelationType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRelationTypeByID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetRelationTypeByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -392,13 +391,13 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation type by id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
 
 	relationType := interfaces.RelationType{
 		ModuleType: interfaces.MODULE_TYPE_RELATION_TYPE,
@@ -430,7 +429,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 	)
 	if err != nil {
 		logger.Errorf("row scan failed, err: %v \n", err)
-		o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+		otellog.LogError(ctx, "Row scan error", err)
 		span.SetStatus(codes.Error, "Row scan error")
 		return nil, err
 	}
@@ -444,7 +443,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
@@ -455,7 +454,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
@@ -466,7 +465,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 		if err != nil {
 			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-			o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
@@ -478,7 +477,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 }
 
 func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID string, branch string, rtIDs []string) ([]*interfaces.RelationType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRelationTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetRelationTypesByIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -513,18 +512,18 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation type by id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.RelationType{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.RelationType{}, err
 	}
@@ -562,7 +561,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.RelationType{}, err
 		}
@@ -576,7 +575,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -587,7 +586,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -598,7 +597,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
@@ -613,7 +612,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 }
 
 func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.Tx, relationType *interfaces.RelationType) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "UpdateRelationType", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "UpdateRelationType")
 	defer span.End()
 
 	span.SetAttributes(
@@ -652,18 +651,18 @@ func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.T
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of update relation type by relation type id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of update relation type by relation type id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of update relation type by relation type id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("修改关系类的 sql 语句: %s", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("修改关系类的 sql 语句: %s", sqlStr))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("update relation type error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Update data error: %v ", err))
+		otellog.LogError(ctx, "Update data error", err)
 		span.SetStatus(codes.Error, "Update data error")
 		return err
 	}
@@ -672,14 +671,14 @@ func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.T
 	RowsAffected, err := ret.RowsAffected()
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 	}
 
 	if RowsAffected != 1 {
 		// 影响行数不等于1不报错，更新操作已经发生
 		logger.Errorf("UPDATE %d RowsAffected not equal 1, RowsAffected is %d, RelationType is %v",
 			relationType.RTID, RowsAffected, relationType)
-		o11y.Warn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, RelationType is %v",
+		otellog.LogWarn(ctx, fmt.Sprintf("Update %s RowsAffected not equal 1, RowsAffected is %d, RelationType is %v",
 			relationType.RTID, RowsAffected, relationType))
 	}
 
@@ -688,7 +687,7 @@ func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.T
 }
 
 func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx *sql.Tx, knID string, branch string, rtIDs []string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteRelationTypesByIDs", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRelationTypesByIDs")
 	defer span.End()
 
 	span.SetAttributes(
@@ -707,18 +706,18 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of delete relation type by relation type id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除关系类的 sql 语句: %s; 删除的关系类ids: %v", sqlStr, rtIDs))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除关系类的 sql 语句: %s; 删除的关系类ids: %v", sqlStr, rtIDs))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
+		otellog.LogError(ctx, "Delete data error", err)
 		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
@@ -728,13 +727,13 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
 		span.SetStatus(codes.Error, "Get RowsAffected error")
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 	}
 
 	if RowsAffected != int64(len(rtIDs)) {
 		logger.Errorf("DELETE %d RowsAffected not equal %d, rtIDs is %v",
 			len(rtIDs), RowsAffected, rtIDs)
-		o11y.Warn(ctx, fmt.Sprintf("Delete %d RowsAffected not equal %d, rtIDs is %v",
+		otellog.LogWarn(ctx, fmt.Sprintf("Delete %d RowsAffected not equal %d, rtIDs is %v",
 			len(rtIDs), RowsAffected, rtIDs))
 	}
 
@@ -744,7 +743,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 }
 
 func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DeleteRelationTypesByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "DeleteRelationTypesByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -758,18 +757,18 @@ func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of delete relation type by relation type id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("删除关系类的 sql 语句: %s; 删除的关系类kn_id: %s, branch: %s", sqlStr, knID, branch))
+	otellog.LogInfo(ctx, fmt.Sprintf("删除关系类的 sql 语句: %s; 删除的关系类kn_id: %s, branch: %s", sqlStr, knID, branch))
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("delete data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete data error: %v ", err))
+		otellog.LogError(ctx, "Delete data error", err)
 		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
@@ -779,7 +778,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx
 	if err != nil {
 		logger.Errorf("Get RowsAffected error: %v\n", err)
 		span.SetStatus(codes.Error, "Get RowsAffected error")
-		o11y.Warn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
+		otellog.LogWarn(ctx, fmt.Sprintf("Get RowsAffected error: %v ", err))
 	}
 
 	logger.Infof("RowsAffected: %d", RowsAffected)
@@ -788,7 +787,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx
 }
 
 func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knID string, branch string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetRelationTypeIDsByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetRelationTypeIDsByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -804,18 +803,18 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 		ToSql()
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation type by id, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s.", sqlStr))
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		span.SetStatus(codes.Error, "List data error")
 		return nil, err
 	}
@@ -832,7 +831,7 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			span.SetStatus(codes.Error, "Row scan error")
 			return nil, err
 		}
@@ -885,7 +884,7 @@ func processQueryCondition(query interfaces.RelationTypesQueryParams, subBuilder
 }
 
 func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, knID string, branch string) (map[string]*interfaces.RelationType, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "GetAllRelationTypesByKnID", trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := oteltrace.StartNamedClientSpan(ctx, "GetAllRelationTypesByKnID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -920,18 +919,18 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 
 	if err != nil {
 		logger.Errorf("Failed to build the sql of select relation types, error: %s", err.Error())
-		o11y.Error(ctx, fmt.Sprintf("Failed to build the sql of select relation types, error: %s", err.Error()))
+		otellog.LogError(ctx, "Failed to build the sql of select relation types, error", err)
 		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string]*interfaces.RelationType{}, err
 	}
 
 	// 记录处理的 sql 字符串
-	o11y.Info(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s; knID: %s", sqlStr, knID))
+	otellog.LogInfo(ctx, fmt.Sprintf("查询关系类列表的 sql 语句: %s; knID: %s", sqlStr, knID))
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("list data error: %v\n", err)
-		o11y.Error(ctx, fmt.Sprintf("List data error: %v", err))
+		otellog.LogError(ctx, "List data error", err)
 		span.SetStatus(codes.Error, "List data error")
 		return map[string]*interfaces.RelationType{}, err
 	}
@@ -967,7 +966,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 		)
 		if err != nil {
 			logger.Errorf("row scan failed, err: %v \n", err)
-			o11y.Error(ctx, fmt.Sprintf("Row scan error: %v", err))
+			otellog.LogError(ctx, "Row scan error", err)
 			span.SetStatus(codes.Error, "Row scan error")
 			return map[string]*interfaces.RelationType{}, err
 		}
@@ -981,7 +980,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
@@ -992,7 +991,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
@@ -1003,7 +1002,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
 				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
-				o11y.Error(ctx, fmt.Sprintf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error()))
+				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
 				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}

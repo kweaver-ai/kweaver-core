@@ -13,15 +13,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/codes"
 
 	"bkn-backend/common"
 	berrors "bkn-backend/errors"
+	"bkn-backend/infra/otel/otellog"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
 	"bkn-backend/logics/object_type"
@@ -61,7 +61,7 @@ func NewJobService(appSetting *common.AppSetting) interfaces.JobService {
 }
 
 func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo) (jobID string, err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Create job")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Create job")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -222,7 +222,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 	if err != nil {
 		logger.Errorf("Begin transaction error: %s", err.Error())
 		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+		otellog.LogError(ctx, "Begin transaction error", err)
 
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_Job_InternalError_BeginTransactionFailed).
@@ -235,7 +235,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 			if rollbackErr != nil {
 				logger.Errorf("CreateJob Transaction Rollback Error:%v", rollbackErr)
 				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("CreateJob Transaction Rollback Error: %s", err.Error()))
+				otellog.LogError(ctx, "CreateJob Transaction Rollback Error", err)
 			}
 		}
 	}()
@@ -264,7 +264,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 	if err != nil {
 		logger.Errorf("CreateJob Transaction Commit Failed:%v", err)
 		span.SetStatus(codes.Error, "提交事务失败")
-		o11y.Error(ctx, fmt.Sprintf("CreateJob Transaction Commit Failed: %s", err.Error()))
+		otellog.LogError(ctx, "CreateJob Transaction Commit Failed", err)
 		return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_Job_InternalError_CommitTransactionFailed).
 			WithErrorDetails(err.Error())
@@ -277,7 +277,7 @@ func (js *jobService) CreateJob(ctx context.Context, jobInfo *interfaces.JobInfo
 }
 
 func (js *jobService) DeleteJobsByIDs(ctx context.Context, knID string, branch string, jobIDs []string) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete jobs by ids")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete jobs by ids")
 	defer span.End()
 
 	// 判断userid是否有修改业务知识网络的权限
@@ -293,7 +293,7 @@ func (js *jobService) DeleteJobsByIDs(ctx context.Context, knID string, branch s
 	if err != nil {
 		logger.Errorf("Begin transaction error: %s", err.Error())
 		span.SetStatus(codes.Error, "事务开启失败")
-		o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+		otellog.LogError(ctx, "Begin transaction error", err)
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_Job_InternalError_BeginTransactionFailed).
 			WithErrorDetails(err.Error())
@@ -306,17 +306,17 @@ func (js *jobService) DeleteJobsByIDs(ctx context.Context, knID string, branch s
 			if err != nil {
 				logger.Errorf("DeleteJobs Transaction Commit Failed:%v", err)
 				span.SetStatus(codes.Error, "提交事务失败")
-				o11y.Error(ctx, fmt.Sprintf("DeleteJobs Transaction Commit Failed: %s", err.Error()))
+				otellog.LogError(ctx, "DeleteJobs Transaction Commit Failed", err)
 				return
 			}
 			logger.Infof("DeleteJobs Transaction Commit Success")
-			o11y.Debug(ctx, "DeleteJobs Transaction Commit Success")
+			otellog.LogDebug(ctx, "DeleteJobs Transaction Commit Success")
 		default:
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
 				logger.Errorf("DeleteJobs Transaction Rollback Error:%v", rollbackErr)
 				span.SetStatus(codes.Error, "事务回滚失败")
-				o11y.Error(ctx, fmt.Sprintf("DeleteJobs Transaction Rollback Error: %s", err.Error()))
+				otellog.LogError(ctx, "DeleteJobs Transaction Rollback Error", err)
 			}
 		}
 	}()
@@ -343,12 +343,12 @@ func (js *jobService) DeleteJobsByIDs(ctx context.Context, knID string, branch s
 }
 
 func (js *jobService) DeleteJobsByKnID(ctx context.Context, tx *sql.Tx, knID string, branch string) (err error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete jobs by kn id")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Delete jobs by kn id")
 	defer span.End()
 
 	if tx == nil {
 		logger.Errorf("missing transaction")
-		o11y.Error(ctx, "missing transaction")
+		otellog.LogError(ctx, "missing transaction", nil)
 		span.SetStatus(codes.Error, "缺少事务")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_Job_InternalError_MissingTransaction).
@@ -384,7 +384,7 @@ func (js *jobService) DeleteJobsByKnID(ctx context.Context, tx *sql.Tx, knID str
 }
 
 func (js *jobService) ListJobs(ctx context.Context, queryParams interfaces.JobsQueryParams) ([]*interfaces.JobInfo, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List jobs")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List jobs")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -431,7 +431,7 @@ func (js *jobService) ListJobs(ctx context.Context, queryParams interfaces.JobsQ
 }
 
 func (js *jobService) ListTasks(ctx context.Context, queryParams interfaces.TasksQueryParams) ([]*interfaces.TaskInfo, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "List tasks")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "List tasks")
 	defer span.End()
 
 	// 判断userid是否有查看业务知识网络的权限
@@ -466,7 +466,7 @@ func (js *jobService) ListTasks(ctx context.Context, queryParams interfaces.Task
 }
 
 func (js *jobService) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[string]*interfaces.JobInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get jobs by ids")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get jobs by ids")
 	defer span.End()
 
 	// 查询
@@ -483,7 +483,7 @@ func (js *jobService) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[st
 }
 
 func (js *jobService) GetJobByID(ctx context.Context, jobID string) (*interfaces.JobInfo, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get job by id")
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "Get job by id")
 	defer span.End()
 
 	// 查询

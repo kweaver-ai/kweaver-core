@@ -10,12 +10,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	bknsdk "github.com/kweaver-ai/bkn-specification/sdk/golang/bkn"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
-	"go.opentelemetry.io/otel/trace"
 
 	"bkn-backend/common"
+	"bkn-backend/infra/otel/oteltrace"
 	"bkn-backend/interfaces"
 	"bkn-backend/logics"
 	"bkn-backend/logics/knowledge_network"
@@ -44,7 +43,7 @@ func NewBKNService(appSetting *common.AppSetting) interfaces.BKNService {
 
 // ExportToTar 将知识网络导出为 tar 包
 func (bs *bknService) ExportToTar(ctx context.Context, knID string, branch string) ([]byte, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "BKN导出为Tar", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := oteltrace.StartNamedInternalSpan(ctx, "BKN导出为Tar")
 	defer span.End()
 
 	logger.Debugf("BKN ExportToTar Start: kn_id=%s", knID)
