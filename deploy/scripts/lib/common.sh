@@ -244,13 +244,42 @@ ensure_helm_repo() {
     helm repo update "${repo_name}" || true
 }
 
-# Ensure helm is available before running chart download logic.
+# Ensure helm is available AND is Helm v3 before running chart download / install.
+# All deploy charts use v3-only flags (e.g. --timeout=600s, duration syntax).
+# A pre-existing Helm v2 on the host will explode with confusing errors like
+#   invalid argument "600s" for "--timeout" flag: strconv.ParseInt: parsing "600s": invalid syntax
+# So we explicitly upgrade out-of-spec installs (v2 or missing) to ${HELM_VERSION}.
 ensure_helm_available() {
+    local existing=""
     if type -P helm >/dev/null 2>&1; then
-        return 0
+        existing="$(helm version --short 2>/dev/null | awk '{print $1}' | cut -d'+' -f1 || true)"
+        # Helm v2 prints "Client: v2.x.x" instead — guard both shapes.
+        if [[ -z "${existing}" ]]; then
+            existing="$(helm version --short --client 2>/dev/null | awk -F': ' 'NR==1{print $2}' | awk '{print $1}' | cut -d'+' -f1 || true)"
+        fi
+        case "${existing}" in
+            v3.*)
+                return 0
+                ;;
+            v2.*)
+                log_warn "Helm ${existing} detected; this deploy requires Helm v3 (charts use v3-only --timeout duration syntax). Re-installing ${HELM_VERSION}..."
+                install_helm
+                return $?
+                ;;
+            "")
+                log_warn "Could not parse 'helm version --short'; re-installing ${HELM_VERSION} to be safe..."
+                install_helm
+                return $?
+                ;;
+            *)
+                log_warn "Unexpected helm version '${existing}'; re-installing ${HELM_VERSION}..."
+                install_helm
+                return $?
+                ;;
+        esac
     fi
 
-    log_info "Helm not found; installing it before continuing..."
+    log_info "Helm not found; installing ${HELM_VERSION} before continuing..."
     install_helm
 }
 
