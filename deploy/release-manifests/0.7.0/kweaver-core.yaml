@@ -7,7 +7,7 @@ source:
   helmRepoUrl: https://kweaver-ai.github.io/helm-repo/
 dependencies:
 - product: isf
-  version: 0.6.0
+  version: 0.7.0
   manifest: ./isf.yaml
   optional: true
   defaultEnabled: true
