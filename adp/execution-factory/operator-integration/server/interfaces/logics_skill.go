@@ -56,7 +56,7 @@ type QuerySkillListReq struct {
 	BusinessDomainID string      `header:"x-business-domain" validate:"required"`
 	UserID           string      `header:"user_id"`
 	Name             string      `form:"name"`
-	Status           BizStatus   `form:"status" validate:"omitempty,oneof=unpublish published offline"`
+	Status           BizStatus   `form:"status" validate:"omitempty,oneof=unpublish published offline editing"`
 	Category         BizCategory `form:"category"`
 	CreateUser       string      `form:"create_user"`
 	CommonPageParams `json:",inline"`
@@ -189,7 +189,7 @@ type UpdateSkillStatusReq struct {
 	BusinessDomainID string    `header:"x-business-domain" validate:"required"`
 	UserID           string    `header:"user_id"`
 	SkillID          string    `uri:"skill_id" validate:"required"`
-	Status           BizStatus `json:"status" validate:"required,oneof=unpublish published offline"`
+	Status           BizStatus `json:"status" validate:"required,oneof=published offline"`
 }
 
 // UpdateSkillStatusResp 更新 Skill 状态响应
