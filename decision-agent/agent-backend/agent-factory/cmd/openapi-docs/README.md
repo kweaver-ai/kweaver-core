@@ -22,6 +22,7 @@
 - `../../docs/api/agent-factory.json`
 - `../../docs/api/agent-factory.yaml`
 - `../../docs/api/agent-factory.html`
+- `../../docs/api/agent-factory-redoc.html`
 - `../../docs/api/favicon.png`
 - `../../src/infra/server/apidocs/assets/*`
 - `../../test_out/openapi_compare_report.md`
@@ -83,7 +84,8 @@ go run ./cmd/openapi-docs compare
 1. 校验最终 OpenAPI JSON 结构是否合法
 2. 检查路径数、接口数
 3. 检查公共 HTML 标记
-4. 检查 `docs/api` 与 `src/infra/server/apidocs/assets` 的 JSON/YAML/HTML/favicon 是否一致
+4. 检查 `docs/api/*.html` 是否使用公共 CDN、`src/infra/server/apidocs/assets/*.html` 是否继续使用本地资源
+5. 检查 `docs/api` 与 `src/infra/server/apidocs/assets` 的 JSON/YAML/favicon 是否一致
 
 常用命令：
 
