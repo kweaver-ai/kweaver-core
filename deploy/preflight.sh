@@ -36,7 +36,7 @@ usage() {
     echo "  --fix-allow=LIST     Comma-separated fix names to auto-approve (others are skipped)."
     echo "                       Names: k3s-uninstall,kubeadm-reset,k8s-apt-source,containerd-install,helm-v3,"
     echo "                       chrony,firewalld,ufw,selinux,system-tuning,bridge-sysctl,kernel-limits,iptables-legacy,etc-hosts,"
-    echo "                       nodejs-npm,kweaver-sdk,kweaver-admin"
+    echo "                       nodejs-npm,node-22,kweaver-sdk,kweaver-admin"
     echo "  --list-fixes         Run checks then list fixes that would be offered (no changes; requires root)"
     echo "  --output=json        Emit JSON summary to stdout (human logs to stderr); requires python3"
     echo "  --role=target|admin|both  Target = kubectl/helm only; admin = kweaver/node/npm; both = all (default)"
