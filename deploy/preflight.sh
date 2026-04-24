@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # KWeaver Core — pre-install environment check and safe fixes
-# See help/zh/install.md. Run on the target Linux host (often as root for fixes).
+# See help/zh/install.md. Must run on the target Linux host as root (sudo), except -h/--help.
 
 set -euo pipefail
 
@@ -29,16 +29,15 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help"
-    echo "  --check-only         Only run checks, do not modify the system (default; no root required for partial checks)"
-    echo "  --fix                Check + interactively apply fixes (requires root)"
-    echo "                       On the install/K8s node use sudo for accurate checks (admin.conf, sysctl) and fixes"
+    echo "  --check-only         Only run checks, do not modify the system (default; still requires root)"
+    echo "  --fix                Check + interactively apply safe fixes (interactive; use -y to auto-approve)"
     echo "  -y, --yes            Auto-approve every fix (skip per-fix y/N prompt)"
     echo "  -n, --no             Auto-decline every fix (preview risk text, change nothing)"
     echo "  --fix-allow=LIST     Comma-separated fix names to auto-approve (others are skipped)."
     echo "                       Names: k3s-uninstall,kubeadm-reset,k8s-apt-source,containerd-install,helm-v3,"
     echo "                       chrony,firewalld,ufw,selinux,system-tuning,bridge-sysctl,kernel-limits,iptables-legacy,etc-hosts,"
     echo "                       nodejs-npm,kweaver-sdk,kweaver-admin"
-    echo "  --list-fixes         Run checks then list fixes that would be offered (no changes; non-root OK)"
+    echo "  --list-fixes         Run checks then list fixes that would be offered (no changes; requires root)"
     echo "  --output=json        Emit JSON summary to stdout (human logs to stderr); requires python3"
     echo "  --role=target|admin|both  Target = kubectl/helm only; admin = kweaver/node/npm; both = all (default)"
     echo "                              kweaver CLIs need Node.js 22+ (kweaver-sdk engines; help/zh/install.md)"
@@ -51,10 +50,10 @@ usage() {
     echo "Exit codes: 0 = OK, 1 = FAIL present, 2 = only WARN (no FAIL)"
     echo ""
     echo "Examples:"
-    echo "  $0                                # check-only (default)"
-    echo "  sudo $0 --fix                     # check + interactive fixes"
-    echo "  $0 --list-fixes"
-    echo "  $0 --skip=network --report=/tmp/preflight.txt"
+    echo "  sudo $0                            # check-only (default)"
+    echo "  sudo $0 --fix                      # check + interactive fixes"
+    echo "  sudo $0 --list-fixes"
+    echo "  sudo $0 --skip=network --report=/tmp/preflight.txt"
 }
 
 # Parse args
@@ -140,16 +139,9 @@ if [[ -n "${PREFLIGHT_REPORT_FILE}" ]]; then
     } > "${PREFLIGHT_REPORT_FILE}"
 fi
 
-if [[ "${PREFLIGHT_CHECK_ONLY}" != "true" && "${PREFLIGHT_LIST_FIXES_ONLY}" != "true" ]]; then
-    if [[ "${EUID}" -ne 0 ]]; then
-        log_warn "Automatic fixes require root. Re-run as: sudo $0 --fix (or use default check-only without --fix)"
-        log_info "Falling back to read-only check (--check-only) …"
-        PREFLIGHT_CHECK_ONLY="true"
-    fi
-fi
-
-if [[ "${PREFLIGHT_CHECK_ONLY}" != "true" && "${PREFLIGHT_LIST_FIXES_ONLY}" != "true" ]]; then
-    check_root
+if [[ "${EUID}" -ne 0 ]]; then
+    log_error "Preflight must be run as root: sudo $0 [options]  (only -h / --help works without root)"
+    exit 1
 fi
 
 preflight_reset_counters
