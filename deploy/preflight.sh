@@ -13,7 +13,7 @@ source "${SCRIPT_DIR}/scripts/services/k8s.sh"
 # shellcheck source=scripts/lib/preflight_checks.sh
 source "${SCRIPT_DIR}/scripts/lib/preflight_checks.sh"
 
-PREFLIGHT_CHECK_ONLY="false"
+PREFLIGHT_CHECK_ONLY="true"
 PREFLIGHT_REPORT_FILE=""
 PREFLIGHT_SKIP_SET="|"
 PREFLIGHT_ASSUME_YES="false"
@@ -29,8 +29,8 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help           Show this help"
-    echo "  --check-only         Only run checks, do not modify the system (no root required for partial checks)"
-    echo "  --fix                Check + interactively apply fixes (default; requires root for fixes)"
+    echo "  --check-only         Only run checks, do not modify the system (default; no root required for partial checks)"
+    echo "  --fix                Check + interactively apply fixes (requires root)"
     echo "  -y, --yes            Auto-approve every fix (skip per-fix y/N prompt)"
     echo "  -n, --no             Auto-decline every fix (preview risk text, change nothing)"
     echo "  --fix-allow=LIST     Comma-separated fix names to auto-approve (others are skipped)."
@@ -48,8 +48,8 @@ usage() {
     echo "Exit codes: 0 = OK, 1 = FAIL present, 2 = only WARN (no FAIL)"
     echo ""
     echo "Examples:"
-    echo "  sudo $0"
-    echo "  $0 --check-only"
+    echo "  $0                                # check-only (default)"
+    echo "  sudo $0 --fix                     # check + interactive fixes"
     echo "  $0 --list-fixes"
     echo "  $0 --skip=network --report=/tmp/preflight.txt"
 }
@@ -139,7 +139,7 @@ fi
 
 if [[ "${PREFLIGHT_CHECK_ONLY}" != "true" && "${PREFLIGHT_LIST_FIXES_ONLY}" != "true" ]]; then
     if [[ "${EUID}" -ne 0 ]]; then
-        log_error "For automatic fixes, run as root: sudo $0 (or use --check-only / --list-fixes)"
+        log_error "For automatic fixes, run as root: sudo $0 --fix (or omit --fix for the default check-only run)"
         log_info "Falling back to read-only check (--check-only) …"
         PREFLIGHT_CHECK_ONLY="true"
     fi
