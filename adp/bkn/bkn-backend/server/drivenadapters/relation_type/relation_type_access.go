@@ -68,9 +68,7 @@ func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, k
 		Where(sq.Eq{"f_id": rtID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get relation type id by f_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get relation type id by f_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -84,9 +82,7 @@ func (rta *relationTypeAccess) CheckRelationTypeExistByID(ctx context.Context, k
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -158,9 +154,7 @@ func (rta *relationTypeAccess) CreateRelationType(ctx context.Context, tx *sql.T
 			relationType.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert relation type, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert relation type, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -169,9 +163,7 @@ func (rta *relationTypeAccess) CreateRelationType(ctx context.Context, tx *sql.T
 
 	_, err = tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("insert data error: %v\n", err)
 		otellog.LogError(ctx, "Insert data error", err)
-		span.SetStatus(codes.Error, "Insert data error")
 		return err
 	}
 
@@ -220,9 +212,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation types, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation types, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.RelationType{}, err
 	}
 
@@ -232,9 +222,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.RelationType{}, err
 	}
 	defer rows.Close()
@@ -268,9 +256,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			&relationType.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.RelationType{}, err
 		}
 
@@ -282,9 +268,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			var mappings []interfaces.Mapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = mappings
@@ -293,9 +277,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			var mappings interfaces.InDirectMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &mappings
@@ -304,9 +286,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 			var fcj interfaces.FilteredCrossJoinMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &fcj
@@ -333,9 +313,7 @@ func (rta *relationTypeAccess) GetRelationTypesTotal(ctx context.Context, query 
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation types total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation types total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -345,9 +323,7 @@ func (rta *relationTypeAccess) GetRelationTypesTotal(ctx context.Context, query 
 	total := 0
 	err = rta.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
-		logger.Errorf("get relation type total error: %v\n", err)
 		otellog.LogError(ctx, "Get relation type total error", err)
-		span.SetStatus(codes.Error, "Get relation type total error")
 		return 0, err
 	}
 
@@ -390,9 +366,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		Where(sq.Eq{"f_id": rtID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -428,9 +402,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		&relationType.UpdateTime,
 	)
 	if err != nil {
-		logger.Errorf("row scan failed, err: %v \n", err)
 		otellog.LogError(ctx, "Row scan error", err)
-		span.SetStatus(codes.Error, "Row scan error")
 		return nil, err
 	}
 
@@ -442,9 +414,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		var mappings []interfaces.Mapping
 		err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
 		relationType.MappingRules = mappings
@@ -453,9 +423,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		var mappings interfaces.InDirectMapping
 		err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
 		relationType.MappingRules = &mappings
@@ -464,9 +432,7 @@ func (rta *relationTypeAccess) GetRelationTypeByID(ctx context.Context, knID str
 		var fcj interfaces.FilteredCrossJoinMapping
 		err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 			return nil, err
 		}
 		relationType.MappingRules = &fcj
@@ -511,9 +477,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.RelationType{}, err
 	}
 
@@ -522,9 +486,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.RelationType{}, err
 	}
 	defer rows.Close()
@@ -560,9 +522,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 		)
 
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.RelationType{}, err
 		}
 
@@ -574,9 +534,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			var mappings []interfaces.Mapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = mappings
@@ -585,9 +543,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			var mappings interfaces.InDirectMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &mappings
@@ -596,9 +552,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 			var fcj interfaces.FilteredCrossJoinMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return []*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &fcj
@@ -650,9 +604,7 @@ func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.T
 		Where(sq.Eq{"f_kn_id": relationType.KNID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update relation type by relation type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update relation type by relation type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -663,7 +615,6 @@ func (rta *relationTypeAccess) UpdateRelationType(ctx context.Context, tx *sql.T
 	if err != nil {
 		logger.Errorf("update relation type error: %v\n", err)
 		otellog.LogError(ctx, "Update data error", err)
-		span.SetStatus(codes.Error, "Update data error")
 		return err
 	}
 
@@ -705,9 +656,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 		Where(sq.Eq{"f_id": rtIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete relation type by relation type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -716,9 +665,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByIDs(ctx context.Context, tx 
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -756,9 +703,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete relation type by relation type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete relation type by relation type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -767,9 +712,7 @@ func (rta *relationTypeAccess) DeleteRelationTypesByKnID(ctx context.Context, tx
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -802,9 +745,7 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation type by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation type by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -813,9 +754,7 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return nil, err
 	}
 	defer rows.Close()
@@ -830,9 +769,7 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 		)
 
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return nil, err
 		}
 
@@ -918,9 +855,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 		ToSql()
 
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation types, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation types, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string]*interfaces.RelationType{}, err
 	}
 
@@ -929,9 +864,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 
 	rows, err := rta.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return map[string]*interfaces.RelationType{}, err
 	}
 	defer rows.Close()
@@ -965,9 +898,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			&relationType.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return map[string]*interfaces.RelationType{}, err
 		}
 
@@ -979,9 +910,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			var mappings []interfaces.Mapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = mappings
@@ -990,9 +919,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			var mappings interfaces.InDirectMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &mappings)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &mappings
@@ -1001,9 +928,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 			var fcj interfaces.FilteredCrossJoinMapping
 			err = sonic.Unmarshal(mappingRulesBytes, &fcj)
 			if err != nil {
-				logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 				otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-				span.SetStatus(codes.Error, "Failed to unmarshal mappingRules after getting relation type")
 				return map[string]*interfaces.RelationType{}, err
 			}
 			relationType.MappingRules = &fcj

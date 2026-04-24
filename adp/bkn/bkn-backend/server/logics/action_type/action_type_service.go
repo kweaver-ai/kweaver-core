@@ -662,9 +662,7 @@ func (ats *actionTypeService) DeleteActionTypesByKnID(ctx context.Context, tx *s
 	defer span.End()
 
 	if tx == nil {
-		logger.Errorf("missing transaction")
 		otellog.LogError(ctx, "missing transaction", nil)
-		span.SetStatus(codes.Error, "缺少事务")
 		return rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			berrors.BknBackend_ActionType_InternalError_MissingTransaction).
 			WithErrorDetails("missing transaction")

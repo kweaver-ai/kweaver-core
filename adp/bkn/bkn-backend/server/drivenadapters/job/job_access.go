@@ -63,9 +63,7 @@ func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfa
 
 	jobConceptConfigStr, err := sonic.MarshalString(jobInfo.JobConceptConfig)
 	if err != nil {
-		logger.Errorf("Failed to marshal job concept config, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to marshal job concept config, error", err)
-		span.SetStatus(codes.Error, "Marshal job concept config failed ")
 		return err
 	}
 
@@ -97,9 +95,7 @@ func (ja *jobAccess) CreateJob(ctx context.Context, tx *sql.Tx, jobInfo *interfa
 			jobInfo.CreateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert job, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert job, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -136,9 +132,7 @@ func (ja *jobAccess) DeleteJobsByIDs(ctx context.Context, tx *sql.Tx, jobIDs []s
 		Where(sq.Eq{"f_id": jobIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete jobs, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete jobs, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -183,9 +177,7 @@ func (ja *jobAccess) DeleteTasksByJobIDs(ctx context.Context, tx *sql.Tx, jobIDs
 		Where(sq.Eq{"f_job_id": jobIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete tasks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete tasks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -240,9 +232,7 @@ func (ja *jobAccess) UpdateJobState(ctx context.Context, tx *sql.Tx, jobID strin
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update job status, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update job status, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -298,9 +288,7 @@ func (ja *jobAccess) GetJobByID(ctx context.Context, jobID string) (*interfaces.
 
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get job, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -380,9 +368,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get jobs, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -456,9 +442,7 @@ func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID strin
 
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get jobs, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get jobs, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -532,9 +516,7 @@ func (ja *jobAccess) UpdateTaskState(ctx context.Context, taskID string, stateIn
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update task status, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update task status, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -607,9 +589,7 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of list jobs, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of list jobs, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -689,9 +669,7 @@ func (ja *jobAccess) GetJobsTotal(ctx context.Context, queryParams interfaces.Jo
 
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get jobs total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get jobs total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -750,9 +728,7 @@ func (ja *jobAccess) CreateTasks(ctx context.Context, tx *sql.Tx, taskInfos map[
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert tasks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert tasks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -823,9 +799,7 @@ func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryP
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of list tasks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of list tasks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -899,9 +873,7 @@ func (ja *jobAccess) GetTasksTotal(ctx context.Context, queryParams interfaces.T
 
 	sqlStr, vals, err := query.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get tasks total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get tasks total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 

@@ -69,9 +69,7 @@ func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get id by f_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get id by f_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -85,9 +83,7 @@ func (kna *knowledgeNetworkAccess) CheckKNExistByID(ctx context.Context,
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -113,9 +109,7 @@ func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get id by name, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get id by name, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -131,9 +125,7 @@ func (oma *knowledgeNetworkAccess) CheckKNExistByName(ctx context.Context,
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -191,9 +183,7 @@ func (kna *knowledgeNetworkAccess) CreateKN(ctx context.Context, tx *sql.Tx, KN 
 			KN.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert knowledge network, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert knowledge network, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -249,9 +239,7 @@ func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.KN{}, err
 	}
 
@@ -320,9 +308,7 @@ func (kna *knowledgeNetworkAccess) GetKNsTotal(ctx context.Context, query interf
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select knowledge networks total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -374,9 +360,7 @@ func (kna *knowledgeNetworkAccess) GetKNByID(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select knowledge network by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select knowledge network by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -451,9 +435,7 @@ func (kna *knowledgeNetworkAccess) UpdateKN(ctx context.Context, tx *sql.Tx, kn 
 		Where(sq.Eq{"f_id": kn.KNID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update knowledge network by knowledge network_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update knowledge network by knowledge network_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -507,9 +489,7 @@ func (kna *knowledgeNetworkAccess) UpdateKNDetail(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update knowledge network detail by knowledge network_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update knowledge network detail by knowledge network_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 	// 记录处理的 sql 字符串
@@ -556,9 +536,7 @@ func (kna *knowledgeNetworkAccess) DeleteKN(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete knowledge network by knowledge network_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete knowledge network by knowledge network_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -567,9 +545,7 @@ func (kna *knowledgeNetworkAccess) DeleteKN(ctx context.Context,
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -678,10 +654,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 
 		sqlStr, vals, err = subBuilder.ToSql()
 		if err != nil {
-			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
-
 			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
-			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
 		}
@@ -719,10 +692,7 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 
 		sqlStr, vals, err = subBuilder.ToSql()
 		if err != nil {
-			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
-
 			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
-			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
 		}
@@ -788,19 +758,13 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 
 		sqlStr1, vals1, err := subBuilder1.ToSql()
 		if err != nil {
-			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
-
 			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
-			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
 		}
 		sqlStr2, vals2, err := subBuilder2.ToSql()
 		if err != nil {
-			logger.Errorf("Failed to build the sql of select model by id, error: %s", err.Error())
-
 			otellog.LogError(ctx, "Failed to build the sql of select model by id, error", err)
-			span.SetStatus(codes.Error, "Build sql failed ")
 
 			return nil, err
 		}
@@ -856,44 +820,34 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		// 2.0 反序列化dMappingRules
 		err = sonic.Unmarshal(mappingRulesBytes, &relationType.MappingRules)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal mappingRules after getting relation type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal mappingRules after getting relation type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal mappingRules error")
 			return nil, err
 		}
 		// 2.0 反序列化datasource
 		err = sonic.Unmarshal(dataSourceBytes, &neighbor.DataSource)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal dataSource after getting object type")
 			return nil, err
 		}
 
 		// 2.1 反序列化DataProperties
 		err = sonic.Unmarshal(dataPropertiesBytes, &neighbor.DataProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal dataProperties after getting object type")
 			return nil, err
 		}
 
 		// 2.2 反序列化LogicProperties
 		err = sonic.Unmarshal(logicPropertiesBytes, &neighbor.LogicProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal logicProperties after getting object type")
 			return nil, err
 		}
 
 		// 2.3 反序列化主键
 		err = sonic.Unmarshal(primaryKeysBytes, &neighbor.PrimaryKeys)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal primaryKeys after getting object type")
 			return nil, err
 		}
 
@@ -951,9 +905,7 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 		From(KN_TABLE_NAME).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string]*interfaces.KN{}, err
 	}
 
@@ -1030,9 +982,7 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 	}
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select knowledge networks, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select knowledge networks, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []interfaces.PermissionResource{}, err
 	}
 
