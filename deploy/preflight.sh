@@ -212,8 +212,8 @@ else
     fi
 fi
 
-preflight_compute_exit_code
-exit_code=$?
+exit_code=0
+preflight_compute_exit_code || exit_code=$?
 
 if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
     if [[ ${exit_code} -eq 1 ]]; then
