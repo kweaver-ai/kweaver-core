@@ -313,7 +313,7 @@ confirm_access_address_before_install() {
     echo "  Current detected values:"
     echo "    Host     : ${host}"
     echo "    Port     : ${port}"
-    echo "    Path     : ${path}"
+    echo "    URL Root : ${path}"
     echo "    Protocol : ${scheme}  (http or https)"
     echo "    URL      : ${url}"
     echo "============================================"
@@ -327,7 +327,7 @@ confirm_access_address_before_install() {
         local input_host input_port input_path input_scheme
         read -r -p "  Host     [${host}]: " input_host
         read -r -p "  Port     [${port}]: " input_port
-        read -r -p "  Path     [${path}]: " input_path
+        read -r -p "  URL Root [${path}]: " input_path
         read -r -p "  Protocol [${scheme}]: " input_scheme
 
         host="${input_host:-${host}}"

@@ -1,104 +1,118 @@
-# Agent Factory API 文档
+# Agent Factory API Documentation
 
-这个目录只保留对外可查看的最终 OpenAPI 文档产物。
+This directory contains the final OpenAPI documentation artifacts for external viewing.
 
-## 目录里的文件
+**Language versions:**
+- [中文](README.zh.md)
+
+## Files in This Directory
 
 - `agent-factory.json`
-  - OpenAPI 3 JSON 版本，适合工具接入
+  - OpenAPI 3 JSON version, suitable for tool integration
 - `agent-factory.yaml`
-  - OpenAPI 3 YAML 版本，适合人工阅读和分发
+  - OpenAPI 3 YAML version, suitable for manual reading and distribution
 - `agent-factory.html`
-  - Scalar 风格的静态文档页面，适合 Try it Out
+  - Scalar-style static documentation page, suitable for Try it Out
 - `agent-factory-redoc.html`
-  - Redoc 风格的静态文档页面，适合只读展示
+  - Redoc-style static documentation page, suitable for read-only display
 - `favicon.png`
-  - 静态文档页面图标
-- `ui/`
-  - 本地化后的 JS 资源目录，供静态 HTML 离线加载
+  - Icon for static documentation pages
 
-## 如何生成
+## How to Generate
 
-在 `agent-backend/agent-factory` 目录下执行：
+Execute in the `agent-backend/agent-factory` directory:
 
 ```bash
 make gen-api-docs
 ```
 
-## 如何校验
+## How to Validate
 
 ```bash
 make validate-api-docs
 ```
 
-这个命令会同时检查：
+This command will simultaneously check:
 
-- OpenAPI 结构是否合法
-- 路径数、接口数是否符合预期
-- 这里的公共文档是否与运行时副本一致
+- Whether the OpenAPI structure is valid
+- Whether the number of paths and endpoints meets expectations
+- Whether runtime HTML still only depends on local embed resources
+- Whether JSON / YAML / favicon are consistent with runtime copies
 
-## APIChat 路径说明
+## APIChat Path Description
 
-- 推荐使用 `/api/agent-factory/v1/api/chat/completion`
-  - 通过 body 中的 `agent_key` 指定目标 agent
+- Recommended to use `/api/agent-factory/v1/api/chat/completion`
+  - Specify the target agent via `agent_key` in the body
 - `/api/agent-factory/v1/app/{app_key}/api/chat/completion`
-  - 已废弃，仅保留兼容旧调用
-  - 新接入请迁移到无 `app_key` 的主入口
+  - Deprecated, retained only for backward compatibility
+  - New integrations should migrate to the main entry without `app_key`
 
-`GetAPIDoc` 使用的静态模板也按上述推荐路径维护在 `src/static/agent-api.json` 和 `src/static/agent-api.yaml` 中。
+The static templates used by `GetAPIDoc` are also maintained in `src/static/agent-api.json` and `src/static/agent-api.yaml` following the recommended paths above.
 
-## v3 Agent Config 模式说明
+## v3 Agent Config Mode Description
 
-`/api/agent-factory/v3/agent` 的 `config` 现在以 `mode` 作为主模式字段：
+The `config` of `/api/agent-factory/v3/agent` now uses `mode` as the primary mode field:
 
 - `default`
-  - 使用 `system_prompt`、`plan_mode`
+  - Uses `system_prompt`, `plan_mode`
 - `dolphin`
-  - 使用 `dolphin`
-  - `is_dolphin_mode` 仍保留，用于兼容旧请求
-  - 新增 `is_use_tool_id_in_dolphin`
+  - Uses `dolphin`
+  - `is_dolphin_mode` is retained for backward compatibility with old requests
+  - Added `is_use_tool_id_in_dolphin`
 - `react`
-  - 使用 `system_prompt`、`react_config`、`plan_mode`
+  - Uses `system_prompt`, `react_config`, `plan_mode`
 
-对外文档与详情响应统一使用 `react_config`。
+External documentation and detail responses uniformly use `react_config`.
 
-## React Agent 专用创建接口
+## React Agent Dedicated Creation Endpoint
 
-新增了 React Agent 专用创建接口：
+Added a React Agent dedicated creation endpoint:
 
 - `/api/agent-factory/v3/agent/react`
-  - request body 与 `/api/agent-factory/v3/agent` 保持一致
-  - 仅用于创建 ReAct 模式 agent
-  - Handler 层会额外校验 `config.mode`，如果不为 `react`，则返回 `400`
+  - Request body is consistent with `/api/agent-factory/v3/agent`
+  - Only used for creating ReAct mode agents
+  - Handler layer will additionally validate `config.mode`, returning `400` if it's not `react`
 
-## 如何查看
+## How to View
 
-### 直接查看静态页面
+### View Static Pages Directly
 
-直接打开当前目录下的任一页面：
+Open any page directly in the current directory:
 
 - `agent-factory.html`
 - `agent-factory-redoc.html`
 
-这两个页面都会加载当前目录下的 `ui/` 本地资源，不依赖外部 CDN。
+These pages load frontend documentation JS resources from `https://cdn.jsdmirror.com/`.
 
-### 启动服务后查看
+Applicable scenarios:
 
-启动 Agent Factory 后访问：
+- Need to distribute a single HTML file directly to others for viewing
+- Want to avoid including the `ui/` local resource directory
+
+Note:
+
+- Network access to the CDN is required on first open
+- The OpenAPI documentation content within the page is still embedded in the HTML file itself
+
+### View After Starting Service
+
+After starting Agent Factory, visit:
 
 - `http://127.0.0.1:30777/scalar`
 - `http://127.0.0.1:30777/redoc`
 - `http://127.0.0.1:30777/scalar/doc.json`
 - `http://127.0.0.1:30777/scalar/doc.yaml`
 
-推荐方式：
+This set of runtime pages continues to use service-embedded local UI resources and does not depend on external CDNs.
 
-- 需要发起请求、Try it Out：使用 Scalar 页面
-- 需要更好的只读文档展示：使用 Redoc 页面
+Recommended approach:
 
-## 深入维护说明
+- Need to send requests, Try it Out: Use Scalar page
+- Need better read-only documentation display: Use Redoc page
 
-如果你需要了解生成链路、overlay、baseline 或 Swagger 中间产物，请查看：
+## In-Depth Maintenance Guide
+
+If you need to understand the generation pipeline, overlay, baseline, or Swagger intermediate artifacts, please refer to:
 
 - `../../cmd/openapi-docs/README.simple.md`
 - `../../cmd/openapi-docs/docs/OPENAPI_AUTOMATION_GUIDE.md`

@@ -17,7 +17,7 @@ func TestDefaultDocPathsUseNewLayout(t *testing.T) {
 	require.Equal(t, "cmd/openapi-docs/assets/baseline/agent-factory.json", defaultBaselinePath)
 	require.Equal(t, "docs/api/favicon.png", defaultPublicFaviconPath)
 	require.Equal(t, "docs/api/agent-factory-redoc.html", defaultOutRedocHTMLPath)
-	require.Equal(t, "docs/api/ui", defaultPublicUIDirPath)
+	require.Equal(t, "", defaultPublicUIDirPath)
 	require.Equal(t, "src/infra/server/apidocs/assets/agent-factory.json", defaultRuntimeJSONPath)
 	require.Equal(t, "src/infra/server/apidocs/assets/favicon.png", defaultRuntimeFaviconPath)
 	require.Equal(t, "src/infra/server/apidocs/assets/agent-factory-redoc.html", defaultRuntimeRedocHTMLPath)
@@ -44,7 +44,6 @@ func TestWriteGeneratedArtifactsWritesPublicAndRuntimeCopies(t *testing.T) {
 		PublicHTMLPath:      filepath.Join(rootDir, "docs", "api", "agent-factory.html"),
 		PublicRedocHTMLPath: filepath.Join(rootDir, "docs", "api", "agent-factory-redoc.html"),
 		PublicFaviconPath:   filepath.Join(rootDir, "docs", "api", "favicon.png"),
-		PublicUIDirPath:     filepath.Join(rootDir, "docs", "api", "ui"),
 		RuntimeJSONPath:     filepath.Join(rootDir, "runtime", "assets", "agent-factory.json"),
 		RuntimeYAMLPath:     filepath.Join(rootDir, "runtime", "assets", "agent-factory.yaml"),
 		RuntimeHTMLPath:     filepath.Join(rootDir, "runtime", "assets", "agent-factory.html"),
@@ -60,31 +59,34 @@ func TestWriteGeneratedArtifactsWritesPublicAndRuntimeCopies(t *testing.T) {
 	}
 
 	artifacts := &openapidoc.BuildArtifacts{
-		JSON:      []byte("{\"openapi\":\"3.0.2\"}\n"),
-		YAML:      []byte("openapi: 3.0.2\n"),
-		HTML:      []byte("<html>scalar</html>\n"),
-		RedocHTML: []byte("<html>redoc</html>\n"),
+		JSON:             []byte("{\"openapi\":\"3.0.2\"}\n"),
+		YAML:             []byte("openapi: 3.0.2\n"),
+		PublicHTML:       []byte("<html>public-scalar</html>\n"),
+		PublicRedocHTML:  []byte("<html>public-redoc</html>\n"),
+		RuntimeHTML:      []byte("<html>runtime-scalar</html>\n"),
+		RuntimeRedocHTML: []byte("<html>runtime-redoc</html>\n"),
 	}
 
 	require.NoError(t, writeGeneratedArtifacts(outputs, artifacts))
 
 	requireFileContent(t, outputs.PublicJSONPath, artifacts.JSON)
 	requireFileContent(t, outputs.PublicYAMLPath, artifacts.YAML)
-	requireFileContent(t, outputs.PublicHTMLPath, artifacts.HTML)
-	requireFileContent(t, outputs.PublicRedocHTMLPath, artifacts.RedocHTML)
+	requireFileContent(t, outputs.PublicHTMLPath, artifacts.PublicHTML)
+	requireFileContent(t, outputs.PublicRedocHTMLPath, artifacts.PublicRedocHTML)
 	requireFileContent(t, outputs.PublicFaviconPath, []byte("favicon"))
-	requireFileContent(t, filepath.Join(outputs.PublicUIDirPath, "scalar-api-reference.js"), []byte("scalar-ui"))
-	requireFileContent(t, filepath.Join(outputs.PublicUIDirPath, "redoc.standalone.js"), []byte("redoc-ui"))
 	requireFileContent(t, outputs.RuntimeJSONPath, artifacts.JSON)
 	requireFileContent(t, outputs.RuntimeYAMLPath, artifacts.YAML)
-	requireFileContent(t, outputs.RuntimeHTMLPath, artifacts.HTML)
-	requireFileContent(t, outputs.RuntimeRedocHTMLPath, artifacts.RedocHTML)
+	requireFileContent(t, outputs.RuntimeHTMLPath, artifacts.RuntimeHTML)
+	requireFileContent(t, outputs.RuntimeRedocHTMLPath, artifacts.RuntimeRedocHTML)
 	requireFileContent(t, outputs.RuntimeFaviconPath, []byte("favicon"))
 	requireFileContent(t, filepath.Join(outputs.RuntimeUIDirPath, "scalar-api-reference.js"), []byte("scalar-ui"))
 	requireFileContent(t, filepath.Join(outputs.RuntimeUIDirPath, "redoc.standalone.js"), []byte("redoc-ui"))
+	_, err := os.Stat(filepath.Join(rootDir, "docs", "api", "ui"))
+	require.Error(t, err)
+	require.True(t, os.IsNotExist(err))
 }
 
-func TestValidateMirroredArtifactsRejectsDifferentCopies(t *testing.T) {
+func TestValidateMirroredArtifactsRejectsDifferentJSONCopies(t *testing.T) {
 	t.Parallel()
 
 	rootDir := t.TempDir()
@@ -108,14 +110,14 @@ func TestValidateMirroredArtifactsRejectsDifferentCopies(t *testing.T) {
 	}
 
 	writeMirroredFixture(t, paths, "same-json", "same-yaml", "same-html", "same-redoc-html", "same-favicon")
-	require.NoError(t, os.WriteFile(paths.RuntimeHTMLPath, []byte("different-html"), 0o644))
+	require.NoError(t, os.WriteFile(paths.RuntimeJSONPath, []byte("different-json"), 0o644))
 
 	err := validateMirroredArtifacts(paths)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "html")
+	require.ErrorContains(t, err, "json")
 }
 
-func TestValidateMirroredArtifactsAcceptsMatchingCopies(t *testing.T) {
+func TestValidateMirroredArtifactsAllowsDifferentHTMLCopies(t *testing.T) {
 	t.Parallel()
 
 	rootDir := t.TempDir()
@@ -139,6 +141,10 @@ func TestValidateMirroredArtifactsAcceptsMatchingCopies(t *testing.T) {
 	}
 
 	writeMirroredFixture(t, paths, "same-json", "same-yaml", "same-html", "same-redoc-html", "same-favicon")
+	require.NoError(t, os.WriteFile(paths.PublicHTMLPath, []byte("public-html"), 0o644))
+	require.NoError(t, os.WriteFile(paths.RuntimeHTMLPath, []byte("runtime-html"), 0o644))
+	require.NoError(t, os.WriteFile(paths.PublicRedocHTMLPath, []byte("public-redoc-html"), 0o644))
+	require.NoError(t, os.WriteFile(paths.RuntimeRedocHTMLPath, []byte("runtime-redoc-html"), 0o644))
 
 	require.NoError(t, validateMirroredArtifacts(paths))
 }

@@ -9,7 +9,7 @@ const (
 	defaultOutHTMLPath          = "docs/api/agent-factory.html"
 	defaultOutRedocHTMLPath     = "docs/api/agent-factory-redoc.html"
 	defaultPublicFaviconPath    = "docs/api/favicon.png"
-	defaultPublicUIDirPath      = "docs/api/ui"
+	defaultPublicUIDirPath      = ""
 	defaultRuntimeJSONPath      = "src/infra/server/apidocs/assets/agent-factory.json"
 	defaultRuntimeYAMLPath      = "src/infra/server/apidocs/assets/agent-factory.yaml"
 	defaultRuntimeHTMLPath      = "src/infra/server/apidocs/assets/agent-factory.html"

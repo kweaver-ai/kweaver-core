@@ -1,6 +1,34 @@
 # Post-install: import Context Loader toolset (agent-retrieval ADP) via operator-integration impex.
 # Sourced from deploy.sh after common.sh. Requires deploy.sh's _read_access_address_field for ingress import.
 
+_context_loader_log_manual_import_instructions() {
+    log_info "  Please import manually after install:"
+    log_info "    kweaver auth login"
+    log_info "    kweaver toolbox import --file <repo>/adp/context-loader/agent-retrieval/docs/release/toolset/context_loader_toolset.adp --mode upsert"
+}
+
+# v1 impex 在开启 OAuth / Hydra 或 auth.enabled=true 时需要管理员 Bearer；不要走无 Token 的 port-forward（必然 401）。
+_context_loader_impex_requires_bearer() {
+    local namespace="$1"
+    local auth_env
+    if kubectl get deploy agent-operator-integration -n "${namespace}" &>/dev/null; then
+        auth_env="$(kubectl get deploy agent-operator-integration -n "${namespace}" -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="AUTH_ENABLED")].value}' 2>/dev/null || true)"
+        if [[ "${auth_env}" == "true" ]]; then
+            return 0
+        fi
+    fi
+    if kubectl get deploy hydra -n "${namespace}" &>/dev/null; then
+        return 0
+    fi
+    if kubectl get deploy -n "${namespace}" --no-headers 2>/dev/null | awk '{print tolower($1)}' | grep -qE '^hydra'; then
+        return 0
+    fi
+    if helm status hydra -n "${namespace}" &>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
 _import_context_loader_toolset_via_port_forward() {
     local namespace="$1"
     local adp="$2"
@@ -91,16 +119,17 @@ maybe_import_context_loader_toolset_post_core() {
         return 0
     fi
 
-    # ISF (Hydra/EACP) 在场时，impex API 会强校验 Bearer + admin 权限。
-    # 当前部署脚本无法自动获取 admin token（参见 README / TODO config 子命令），
-    # 强行调用必然 401/403。改为提示用户手工导入，避免误导。
-    if kubectl get deploy hydra -n "${namespace}" &>/dev/null; then
-        log_info "Context Loader toolset auto-import skipped: ISF (Hydra) detected in namespace ${namespace}."
-        log_info "  In auth-enabled environments the impex API requires an admin Bearer token."
-        log_info "  Please import manually after install:"
-        log_info "    kweaver auth login"
-        log_info "    kweaver toolbox import --file <repo>/adp/context-loader/agent-retrieval/docs/release/toolset/context_loader_toolset.adp --mode upsert"
-        return 0
+    # ISF（Hydra）或 Core auth.enabled=true 时，impex 会强校验 Bearer + admin 权限。
+    # 仅匹配 deploy/hydra 会漏掉 chart 生成的 hydra-* 等名称；以集群内 AUTH_ENABLED + Hydra 迹象为准。
+    if _context_loader_impex_requires_bearer "${namespace}"; then
+        if [[ -n "${DEPLOY_PLATFORM_ACCESS_TOKEN:-}" ]]; then
+            log_info "Context Loader toolset: authenticated cluster detected; will use DEPLOY_PLATFORM_ACCESS_TOKEN for impex."
+        else
+            log_info "Context Loader toolset auto-import skipped: authenticated API (Hydra/ISF or auth.enabled=true) in namespace ${namespace}."
+            log_info "  Set DEPLOY_PLATFORM_ACCESS_TOKEN for automated import, or import manually:"
+            _context_loader_log_manual_import_instructions
+            return 0
+        fi
     fi
 
     local _lib_dir
@@ -156,6 +185,11 @@ maybe_import_context_loader_toolset_post_core() {
         fi
 
         log_warn "Context Loader toolset import via access address failed (HTTP ${http_code}). Response: ${body:0:500}"
+        if _context_loader_impex_requires_bearer "${namespace}"; then
+            log_info "Context Loader toolset: not retrying port-forward (impex requires Bearer in this cluster)."
+            _context_loader_log_manual_import_instructions
+            return 0
+        fi
         log_info "Context Loader toolset: retrying via kubectl port-forward..."
     else
         log_info "Context Loader toolset: no DEPLOY_PLATFORM_ACCESS_TOKEN; trying kubectl port-forward (typical for auth.enabled=false / --minimum)."
