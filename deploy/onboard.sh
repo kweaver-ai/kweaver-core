@@ -41,8 +41,8 @@ done
 # preflight.sh only *checks* the host — it does not install/upgrade Node; we enforce and explain here.
 onboard_require_node_22() {
     if ! command -v node &>/dev/null; then
-        log_error "node is not in PATH. Install Node.js 22+ first (e.g. nvm install 22, or https://nodejs.org/ LTS 22+)."
-        log_error "Note: preflight is check-only; it will not install Node for you. Upgrade the machine, then re-run this script."
+        log_error "node is not in PATH. Install Node.js 22+ first, or: sudo preflight --fix and opt in to nodejs-npm + node-22 (per-prompt approval)"
+        log_error "Default preflight (without --fix) only checks; use --fix if you want guided installs."
         exit 1
     fi
     local _mj
@@ -54,8 +54,8 @@ onboard_require_node_22() {
     fi
     if [[ $(( 10#${_mj} )) -lt 22 ]]; then
         log_error "Your Node is $(node -v); kweaver (onboard) needs Node 22+ (@kweaver-ai/kweaver-sdk engines on npm)."
-        log_error "Preflight only reports this — it does not upgrade Node. You must install Node 22+ on this host before onboard can run."
-        log_error "Typical fix:  nvm install 22 && nvm use 22  &&  npm i -g @kweaver-ai/kweaver-sdk"
+        log_error "To get help on this host (only if you agree at each prompt):  sudo preflight --fix  and confirm the node-22 step (nvm, then NodeSource if needed)"
+        log_error "Or install manually, e.g.:  nvm install 22 && nvm use 22  &&  npm i -g @kweaver-ai/kweaver-sdk"
         log_error "On older Node you may see: SyntaxError: Invalid regular expression flags (e.g. in string-width)."
         exit 1
     fi
@@ -63,7 +63,7 @@ onboard_require_node_22() {
 onboard_require_node_22
 
 if ! command -v kweaver &>/dev/null; then
-    log_error "kweaver not in PATH. Install: npm i -g @kweaver-ai/kweaver-sdk  (Node 22+ must be active, see above; preflight does not install the CLI.)"
+    log_error "kweaver not in PATH. Install: npm i -g @kweaver-ai/kweaver-sdk  (Node 22+ active; or: sudo preflight --fix and approve kweaver-sdk)"
     log_error "  sudo: on many Linux hosts global install needs: sudo npm i -g @kweaver-ai/kweaver-sdk (or EACCES)"
     log_error "  no sudo: nvm + user prefix, or: npm config set prefix \"\$HOME/.local\" and add ~/.local/bin to PATH"
     exit 1
