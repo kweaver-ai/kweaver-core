@@ -32,6 +32,7 @@ type logicViewSQLGenerator struct {
 	sqls          map[string]cachedSql
 	nodeFieldsMap map[string]map[string]*interfaces.ViewProperty
 	RefResources  map[string]*interfaces.Resource
+	viewFieldMap  map[string]*interfaces.Property
 }
 
 // NewlogicViewSQLGenerator 创建SQL生成器
@@ -45,12 +46,19 @@ func NewlogicDefinitionSQLGenerator(view *interfaces.LogicView) *logicViewSQLGen
 			outputNode = nodes[i]
 		}
 	}
+
+	viewFieldMap := make(map[string]*interfaces.Property)
+	for _, field := range view.SchemaDefinition {
+		viewFieldMap[field.Name] = field
+	}
+
 	return &logicViewSQLGenerator{
 		nodes:         nodeMap,
 		outputNode:    outputNode,
 		sqls:          make(map[string]cachedSql),
 		nodeFieldsMap: make(map[string]map[string]*interfaces.ViewProperty),
 		RefResources:  view.RefResources,
+		viewFieldMap:  viewFieldMap,
 	}
 }
 
@@ -298,7 +306,7 @@ func (g *logicViewSQLGenerator) buildJoinNodeSQL(ctx context.Context, node *inte
 	allArgs = append(allArgs, leftArgs...)
 	allArgs = append(allArgs, rightArgs...)
 
-	sqlStr := fmt.Sprintf("SELECT %s FROM (%s) AS l %s JOIN (%s) AS r ON %s",
+	sqlStr := fmt.Sprintf("SELECT %s FROM ((%s) AS l %s JOIN (%s) AS r ON %s)",
 		strings.Join(fields, ", "), leftSQL, joinType, rightSQL, joinOn)
 
 	// 处理 Join 节点自身的过滤条件
@@ -587,15 +595,35 @@ func (g *logicViewSQLGenerator) buildOutputNodeSQL(ctx context.Context, node *in
 		return "", nil, fmt.Errorf("output node %s requires exactly one input node", node.ID)
 	}
 
-	// 维护状态
+	// 构建 SELECT 字段列表
+	var fields []string
 	outputFieldsMap := make(map[string]*interfaces.ViewProperty)
-	for _, field := range node.OutputFields {
-		outputFieldsMap[field.Name] = field
+	if len(node.OutputFields) > 0 {
+		fields = make([]string, 0, len(node.OutputFields))
+		for _, f := range node.OutputFields {
+			outputFieldsMap[f.Name] = f // 维护状态
+
+			sourceProp, ok := g.viewFieldMap[f.Name]
+			if !ok {
+				fields = append(fields, QuotationMark(f.Name))
+			} else {
+				if sourceProp.OriginalName != "" && sourceProp.OriginalName != f.Name {
+					// 使用 QuotationMark 替代硬编码引号，支持多数据库
+					fields = append(fields, fmt.Sprintf("%s AS %s",
+						QuotationMark(sourceProp.OriginalName),
+						QuotationMark(f.Name)))
+				} else {
+					fields = append(fields, QuotationMark(f.Name))
+				}
+			}
+		}
+	} else {
+		fields = []string{"*"}
 	}
 	g.nodeFieldsMap[node.ID] = outputFieldsMap
 
-	inputNodeID := node.Inputs[0]
-	return g.buildNodeSQL(ctx, inputNodeID, depth)
+	sql, args, err := g.buildNodeSQL(ctx, node.Inputs[0], depth)
+	return "SELECT " + strings.Join(fields, ", ") + " FROM (" + sql + ") AS " + sanitizeAlias(node.ID), args, err
 }
 
 // 构建sort

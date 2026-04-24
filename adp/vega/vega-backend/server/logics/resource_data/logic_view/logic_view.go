@@ -247,7 +247,7 @@ func (lvs *logicViewService) executeCompositeViewByDSL(ctx context.Context, view
 		return nil, 0, nil
 	}
 
-	generator := lvdsl.NewlogicViewDSLGenerator(view.LogicDefinition)
+	generator := lvdsl.NewlogicViewDSLGenerator(view)
 	dsl, httpErr := generator.BuildDSL(ctx, *params, view, viewIndicesMap)
 	if httpErr != nil {
 		span.SetStatus(codes.Error, "Convert to DSL failed")
@@ -350,23 +350,24 @@ func (lvs *logicViewService) executeCompositeViewBySQL(ctx context.Context, view
 	logger.Infof("executeCompositeViewBySQL Final SQL: [%s]", finalSql)
 
 	if view.IsSingleSource {
-		// var resourceType string
-		// for _, ref := range view.RefResources {
-		// 	catalog, err := lvs.cs.GetByID(ctx, ref.CatalogID, true)
-		// 	if err != nil {
-		// 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
-		// 			WithErrorDetails(fmt.Sprintf("failed to get catalog: %v", err))
-		// 	}
-		// 	if catalog == nil {
-		// 		return nil, 0, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
-		// 			WithErrorDetails(fmt.Sprintf("catalog %s not found", ref.CatalogID))
-		// 	}
-		// 	resourceType = catalog.ConnectorType
-		// 	break
-		// }
+		var resourceType string
+		for _, ref := range view.RefResources {
+			catalog, err := lvs.cs.GetByID(ctx, ref.CatalogID, true)
+			if err != nil {
+				return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
+					WithErrorDetails(fmt.Sprintf("failed to get catalog: %v", err))
+			}
+			if catalog == nil {
+				return nil, 0, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_CatalogNotFound).
+					WithErrorDetails(fmt.Sprintf("catalog %s not found", ref.CatalogID))
+			}
+			resourceType = catalog.ConnectorType
+			break
+		}
 
 		req := interfaces.SQLQueryRequest{
 			Query:        finalSql,
+			ResourceType: resourceType,
 			QueryType:    params.QueryType,
 			StreamSize:   params.Limit,
 			QueryTimeout: int(params.Timeout),
