@@ -1431,7 +1431,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-apt-source, containerd-install, helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, iptables-legacy, etc-hosts (only applicable steps run)"
+    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-apt-source, containerd-install, helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, iptables-legacy, etc-hosts, kweaver-sdk, kweaver-admin (only applicable steps run)"
     log_info "------------------------------------------------------------------"
 }
 
@@ -1631,6 +1631,40 @@ preflight_apply_safe_fixes() {
             preflight_backup_file /etc/hosts
             echo "127.0.0.1 ${hn}" >> /etc/hosts
             preflight_fixed "Appended 127.0.0.1 ${hn} to /etc/hosts"
+        fi
+    fi
+
+    # --- npm-installed CLIs (kweaver-sdk, kweaver-admin) --------------------
+    # Only attempt when npm is present; offer kweaver-admin only when ISF is detected.
+    if command -v npm &>/dev/null; then
+        if ! command -v kweaver &>/dev/null; then
+            if preflight_confirm_fix "kweaver-sdk" \
+                "npm install -g @kweaver-ai/kweaver-sdk" \
+                "Installs the kweaver CLI used by onboard.sh and day-to-day API calls."; then
+                if npm install -g @kweaver-ai/kweaver-sdk; then
+                    preflight_fixed "Installed @kweaver-ai/kweaver-sdk ($(kweaver --version 2>/dev/null | head -n1 || echo ok))"
+                else
+                    preflight_warn "npm install -g @kweaver-ai/kweaver-sdk failed (check npm registry / proxy)"
+                fi
+            fi
+        fi
+
+        if [[ "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *authentication* \
+            || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *hydra* \
+            || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *user-management* \
+            || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *eacp* \
+            || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *isfweb* ]]; then
+            if ! command -v kweaver-admin &>/dev/null; then
+                if preflight_confirm_fix "kweaver-admin" \
+                    "npm install -g @kweaver-ai/kweaver-admin" \
+                    "Full install detected (ISF). Admin CLI handles users / orgs / roles / models / audit. Token store is ~/.kweaver-admin/, isolated from kweaver-sdk."; then
+                    if npm install -g @kweaver-ai/kweaver-admin; then
+                        preflight_fixed "Installed @kweaver-ai/kweaver-admin ($(kweaver-admin --version 2>/dev/null | head -n1 || echo ok))"
+                    else
+                        preflight_warn "npm install -g @kweaver-ai/kweaver-admin failed (check npm registry / proxy)"
+                    fi
+                fi
+            fi
         fi
     fi
 }
