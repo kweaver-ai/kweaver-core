@@ -72,9 +72,7 @@ func (ota *objectTypeAccess) CheckObjectTypeExistByID(ctx context.Context, knID 
 		Where(sq.Eq{"f_id": otID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get object type id by f_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get object type id by f_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -88,9 +86,7 @@ func (ota *objectTypeAccess) CheckObjectTypeExistByID(ctx context.Context, knID 
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -116,9 +112,7 @@ func (ota *objectTypeAccess) CheckObjectTypeExistByName(ctx context.Context, knI
 		Where(sq.Eq{"f_name": name}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get id by name, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get id by name, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -134,9 +128,7 @@ func (ota *objectTypeAccess) CheckObjectTypeExistByName(ctx context.Context, knI
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -160,33 +152,25 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 	// 2.0 序列化数据来源
 	dataSourceBytes, err := sonic.Marshal(objectType.DataSource)
 	if err != nil {
-		logger.Errorf("Failed to marshal DataSource, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to marshal DataSource, err", err)
-		span.SetStatus(codes.Error, "Marshal DataSource failed ")
 		return err
 	}
 	// 2.1 序列化数据属性
 	dataPropertiesBytes, err := sonic.Marshal(objectType.DataProperties)
 	if err != nil {
-		logger.Errorf("Failed to marshal DataProperties, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to marshal DataProperties, err", err)
-		span.SetStatus(codes.Error, "Marshal DataProperties failed ")
 		return err
 	}
 	// 2.2 序列化逻辑属性
 	logicPropertiesBytes, err := sonic.Marshal(objectType.LogicProperties)
 	if err != nil {
-		logger.Errorf("Failed to marshal LogicProperties, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to marshal LogicProperties, err", err)
-		span.SetStatus(codes.Error, "Marshal LogicProperties failed ")
 		return err
 	}
 	// 2.3 序列化主键数组
 	primaryKeysBytes, err := sonic.Marshal(objectType.PrimaryKeys)
 	if err != nil {
-		logger.Errorf("Failed to marshal PrimaryKeys, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to marshal PrimaryKeys, err", err)
-		span.SetStatus(codes.Error, "Marshal PrimaryKeys failed ")
 		return err
 	}
 
@@ -238,9 +222,7 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 			objectType.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert object type, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert object type, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -253,9 +235,7 @@ func (ota *objectTypeAccess) CreateObjectType(ctx context.Context, tx *sql.Tx, o
 		_, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("insert data error: %v\n", err)
 		otellog.LogError(ctx, "Insert data error", err)
-		span.SetStatus(codes.Error, "Insert data error")
 		return err
 	}
 
@@ -289,9 +269,7 @@ func (ota *objectTypeAccess) CreateObjectTypeStatus(ctx context.Context, tx *sql
 			objectType.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert object type status, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert object type status, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -304,9 +282,7 @@ func (ota *objectTypeAccess) CreateObjectTypeStatus(ctx context.Context, tx *sql
 		_, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("insert data error: %v\n", err)
 		otellog.LogError(ctx, "Insert data error", err)
-		span.SetStatus(codes.Error, "Insert data error")
 		return err
 	}
 
@@ -366,9 +342,7 @@ func (ota *objectTypeAccess) ListObjectTypes(ctx context.Context, tx *sql.Tx, qu
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object types, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object types, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.ObjectType{}, err
 	}
 
@@ -382,9 +356,7 @@ func (ota *objectTypeAccess) ListObjectTypes(ctx context.Context, tx *sql.Tx, qu
 		rows, err = ota.db.Query(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.ObjectType{}, err
 	}
 	defer rows.Close()
@@ -434,9 +406,7 @@ func (ota *objectTypeAccess) ListObjectTypes(ctx context.Context, tx *sql.Tx, qu
 			&objectType.Status.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.ObjectType{}, err
 		}
 
@@ -446,36 +416,28 @@ func (ota *objectTypeAccess) ListObjectTypes(ctx context.Context, tx *sql.Tx, qu
 		// 2.0 反序列化datasource
 		err = sonic.Unmarshal(dataSourceBytes, &objectType.DataSource)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal dataSource error")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.1 反序列化DataProperties
 		err = sonic.Unmarshal(dataPropertiesBytes, &objectType.DataProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal dataProperties error")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.2 反序列化LogicProperties
 		err = sonic.Unmarshal(logicPropertiesBytes, &objectType.LogicProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal logicProperties error")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.3 反序列化主键
 		err = sonic.Unmarshal(primaryKeysBytes, &objectType.PrimaryKeys)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal primaryKeys error")
 			return []*interfaces.ObjectType{}, err
 		}
 
@@ -501,9 +463,7 @@ func (ota *objectTypeAccess) GetObjectTypesTotal(ctx context.Context, query inte
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object types total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object types total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -513,9 +473,7 @@ func (ota *objectTypeAccess) GetObjectTypesTotal(ctx context.Context, query inte
 	total := 0
 	err = ota.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
-		logger.Errorf("get object type totals error: %v\n", err)
 		otellog.LogError(ctx, "Get object type totals error", err)
-		span.SetStatus(codes.Error, "Get object type totals error")
 		return 0, err
 	}
 
@@ -570,9 +528,7 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		Where(sq.Eq{"ot.f_id": otID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object type by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object type by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -632,9 +588,7 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ObjectType_ObjectTypeNotFound).
 			WithErrorDetails(fmt.Sprintf("对象类[%s]不存在: %v", otID, err))
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v \n", err)
 		otellog.LogError(ctx, "Row scan error", err)
-		span.SetStatus(codes.Error, "Row scan error")
 		return nil, err
 	}
 
@@ -644,36 +598,28 @@ func (ota *objectTypeAccess) GetObjectTypeByID(ctx context.Context, tx *sql.Tx, 
 	// 2.0 反序列化datasource
 	err = sonic.Unmarshal(dataSourceBytes, &objectType.DataSource)
 	if err != nil {
-		logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
-		span.SetStatus(codes.Error, "Failed to unmarshal dataSource after getting object type")
 		return nil, err
 	}
 
 	// 2.1 反序列化DataProperties
 	err = sonic.Unmarshal(dataPropertiesBytes, &objectType.DataProperties)
 	if err != nil {
-		logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
-		span.SetStatus(codes.Error, "Failed to unmarshal dataProperties after getting object type")
 		return nil, err
 	}
 
 	// 2.2 反序列化LogicProperties
 	err = sonic.Unmarshal(logicPropertiesBytes, &objectType.LogicProperties)
 	if err != nil {
-		logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
-		span.SetStatus(codes.Error, "Failed to unmarshal logicProperties after getting object type")
 		return nil, err
 	}
 
 	// 2.3 反序列化主键
 	err = sonic.Unmarshal(primaryKeysBytes, &objectType.PrimaryKeys)
 	if err != nil {
-		logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
 		otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
-		span.SetStatus(codes.Error, "Failed to unmarshal primaryKeys after getting object type")
 		return nil, err
 	}
 
@@ -749,9 +695,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 		// }
 
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object type by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object type by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.ObjectType{}, err
 	}
 
@@ -765,9 +709,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 		rows, err = ota.db.Query(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.ObjectType{}, err
 	}
 	defer rows.Close()
@@ -818,9 +760,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 			&objectType.Status.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.ObjectType{}, err
 		}
 
@@ -830,36 +770,28 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 		// 2.0 反序列化datasource
 		err = sonic.Unmarshal(dataSourceBytes, &objectType.DataSource)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal dataSource after getting object type")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.1 反序列化DataProperties
 		err = sonic.Unmarshal(dataPropertiesBytes, &objectType.DataProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal dataProperties after getting object type")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.2 反序列化LogicProperties
 		err = sonic.Unmarshal(logicPropertiesBytes, &objectType.LogicProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal logicProperties after getting object type")
 			return []*interfaces.ObjectType{}, err
 		}
 
 		// 2.3 反序列化主键
 		err = sonic.Unmarshal(primaryKeysBytes, &objectType.PrimaryKeys)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
-			span.SetStatus(codes.Error, "Failed to unmarshal primaryKeys after getting object type")
 			return []*interfaces.ObjectType{}, err
 		}
 
@@ -929,9 +861,7 @@ func (ota *objectTypeAccess) UpdateObjectType(ctx context.Context, tx *sql.Tx, o
 		Where(sq.Eq{"f_kn_id": objectType.KNID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update object type by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update object type by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -947,7 +877,6 @@ func (ota *objectTypeAccess) UpdateObjectType(ctx context.Context, tx *sql.Tx, o
 	if err != nil {
 		logger.Errorf("update object type error: %v\n", err)
 		otellog.LogError(ctx, "Update data error", err)
-		span.SetStatus(codes.Error, "Update data error")
 		return err
 	}
 
@@ -1001,9 +930,7 @@ func (ota *objectTypeAccess) UpdateDataProperties(ctx context.Context, tx *sql.T
 		Where(sq.Eq{"f_kn_id": objectType.KNID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update object type by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update object type by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -1014,7 +941,6 @@ func (ota *objectTypeAccess) UpdateDataProperties(ctx context.Context, tx *sql.T
 	if err != nil {
 		logger.Errorf("update object type error: %v\n", err)
 		otellog.LogError(ctx, "Update data error", err)
-		span.SetStatus(codes.Error, "Update data error")
 		return err
 	}
 
@@ -1058,9 +984,7 @@ func (ota *objectTypeAccess) DeleteObjectTypesByIDs(ctx context.Context, tx *sql
 		Where(sq.Eq{"f_id": otIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete object type by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete object type by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -1074,9 +998,7 @@ func (ota *objectTypeAccess) DeleteObjectTypesByIDs(ctx context.Context, tx *sql
 		ret, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -1120,9 +1042,7 @@ func (ota *objectTypeAccess) DeleteObjectTypeStatusByIDs(ctx context.Context, tx
 		Where(sq.Eq{"f_id": otIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete object type status by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete object type status by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -1136,9 +1056,7 @@ func (ota *objectTypeAccess) DeleteObjectTypeStatusByIDs(ctx context.Context, tx
 		ret, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -1177,9 +1095,7 @@ func (ota *objectTypeAccess) DeleteObjectTypesByKnID(ctx context.Context, tx *sq
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete object type by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete object type by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -1193,9 +1109,7 @@ func (ota *objectTypeAccess) DeleteObjectTypesByKnID(ctx context.Context, tx *sq
 		ret, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -1226,9 +1140,7 @@ func (ota *objectTypeAccess) DeleteObjectTypeStatusByKnID(ctx context.Context, t
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete object type status by object type id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete object type status by object type id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -1242,9 +1154,7 @@ func (ota *objectTypeAccess) DeleteObjectTypeStatusByKnID(ctx context.Context, t
 		ret, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -1278,9 +1188,7 @@ func (ota *objectTypeAccess) GetObjectTypeIDsByKnID(ctx context.Context, knID st
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object type ids by kn_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object type ids by kn_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -1289,9 +1197,7 @@ func (ota *objectTypeAccess) GetObjectTypeIDsByKnID(ctx context.Context, knID st
 
 	rows, err := ota.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return nil, err
 	}
 	defer rows.Close()
@@ -1303,9 +1209,7 @@ func (ota *objectTypeAccess) GetObjectTypeIDsByKnID(ctx context.Context, knID st
 			&otID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return nil, err
 		}
 
@@ -1339,9 +1243,7 @@ func (ota *objectTypeAccess) UpdateObjectTypeStatus(ctx context.Context, tx *sql
 		Where(sq.Eq{"f_id": otID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update object type index, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update object type index, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -1352,9 +1254,7 @@ func (ota *objectTypeAccess) UpdateObjectTypeStatus(ctx context.Context, tx *sql
 		_, err = ota.db.Exec(sqlStr, vals...)
 	}
 	if err != nil {
-		logger.Errorf("Failed to exec the sql of update object type index, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to exec the sql of update object type index, error", err)
-		span.SetStatus(codes.Error, "Exec sql failed ")
 		return err
 	}
 
@@ -1428,9 +1328,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select object types by kn_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select object types by kn_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -1439,9 +1337,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 
 	rows, err := ota.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return map[string]*interfaces.ObjectType{}, err
 	}
 	defer rows.Close()
@@ -1482,9 +1378,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 			&objectType.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return map[string]*interfaces.ObjectType{}, err
 		}
 
@@ -1494,36 +1388,28 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 		// 2.0 反序列化datasource
 		err = sonic.Unmarshal(dataSourceBytes, &objectType.DataSource)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataSource after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataSource after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal dataSource error")
 			return map[string]*interfaces.ObjectType{}, err
 		}
 
 		// 2.1 反序列化DataProperties
 		err = sonic.Unmarshal(dataPropertiesBytes, &objectType.DataProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal dataProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal dataProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal dataProperties error")
 			return map[string]*interfaces.ObjectType{}, err
 		}
 
 		// 2.2 反序列化LogicProperties
 		err = sonic.Unmarshal(logicPropertiesBytes, &objectType.LogicProperties)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal logicProperties after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal logicProperties after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal logicProperties error")
 			return map[string]*interfaces.ObjectType{}, err
 		}
 
 		// 2.3 反序列化主键
 		err = sonic.Unmarshal(primaryKeysBytes, &objectType.PrimaryKeys)
 		if err != nil {
-			logger.Errorf("Failed to unmarshal primaryKeys after getting object type, err: %v", err.Error())
 			otellog.LogError(ctx, "Failed to unmarshal primaryKeys after getting object type, err", err)
-			span.SetStatus(codes.Error, "Unmarshal primaryKeys error")
 			return map[string]*interfaces.ObjectType{}, err
 		}
 

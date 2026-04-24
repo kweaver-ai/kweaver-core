@@ -71,9 +71,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, k
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get concept group id by f_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get concept group id by f_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -87,9 +85,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByID(ctx context.Context, k
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -115,9 +111,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context,
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of get id by name, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of get id by name, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return "", false, err
 	}
 
@@ -133,9 +127,7 @@ func (cga *conceptGroupAccess) CheckConceptGroupExistByName(ctx context.Context,
 		span.SetStatus(codes.Ok, "")
 		return "", false, nil
 	} else if err != nil {
-		logger.Errorf("row scan failed, err: %v\n", err)
 		otellog.LogError(ctx, "Row scan failed, err", err)
-		span.SetStatus(codes.Error, "Row scan failed ")
 		return "", false, err
 	}
 
@@ -192,9 +184,7 @@ func (cga *conceptGroupAccess) CreateConceptGroup(ctx context.Context, tx *sql.T
 			conceptGroup.UpdateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert concept group, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert concept group, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 	// 记录处理的 sql 字符串
@@ -249,9 +239,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept groups, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.ConceptGroup{}, err
 	}
 
@@ -260,9 +248,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.ConceptGroup{}, err
 	}
 	defer rows.Close()
@@ -292,9 +278,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.ConceptGroup{}, err
 		}
 
@@ -341,9 +325,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []*interfaces.ConceptGroup{}, err
 	}
 
@@ -351,9 +333,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 	otellog.LogInfo(ctx, fmt.Sprintf("批量查询概念分组信息的 sql 语句: %s.", sqlStr))
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []*interfaces.ConceptGroup{}, err
 	}
 	defer rows.Close()
@@ -382,9 +362,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []*interfaces.ConceptGroup{}, err
 		}
 
@@ -412,9 +390,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsTotal(ctx context.Context, query 
 	builder := processQueryCondition(query, subBuilder)
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups total, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept groups total, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -424,9 +400,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsTotal(ctx context.Context, query 
 	total := 0
 	err = cga.db.QueryRow(sqlStr, vals...).Scan(&total)
 	if err != nil {
-		logger.Errorf("get concept group total error: %v\n", err)
 		otellog.LogError(ctx, "Get concept group total error", err)
-		span.SetStatus(codes.Error, "Get concept group total error")
 		return 0, err
 	}
 
@@ -466,9 +440,7 @@ func (cga *conceptGroupAccess) GetConceptGroupByID(ctx context.Context, knID str
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return &interfaces.ConceptGroup{}, err
 	}
 
@@ -543,9 +515,7 @@ func (cga *conceptGroupAccess) UpdateConceptGroup(ctx context.Context, tx *sql.T
 		Where(sq.Eq{"f_branch": conceptGroup.Branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update concept group by concept group id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update concept group by concept group id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 
@@ -556,7 +526,6 @@ func (cga *conceptGroupAccess) UpdateConceptGroup(ctx context.Context, tx *sql.T
 	if err != nil {
 		logger.Errorf("update concept group error: %v\n", err)
 		otellog.LogError(ctx, "Update data error", err)
-		span.SetStatus(codes.Error, "Update data error")
 		return err
 	}
 
@@ -600,9 +569,7 @@ func (cga *conceptGroupAccess) UpdateConceptGroupDetail(ctx context.Context, knI
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of update concept group detail by concept group id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of update concept group detail by concept group id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 	// 记录处理的 sql 字符串
@@ -653,9 +620,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -664,9 +629,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupByID(ctx context.Context, tx *s
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -697,9 +660,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupsByKnID(ctx context.Context, tx
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -708,9 +669,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupsByKnID(ctx context.Context, tx
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -741,9 +700,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupRelationsByKnID(ctx context.Con
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group relation by kn_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete concept group relation by kn_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -752,9 +709,7 @@ func (cga *conceptGroupAccess) DeleteConceptGroupRelationsByKnID(ctx context.Con
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -788,9 +743,7 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 		Where(sq.Eq{"f_branch": branch}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group ids by kn_id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept group ids by kn_id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return nil, err
 	}
 
@@ -798,9 +751,7 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 	otellog.LogInfo(ctx, fmt.Sprintf("查询概念分组的 sql 语句: %s.", sqlStr))
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return nil, err
 	}
 	defer rows.Close()
@@ -813,9 +764,7 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 			&atID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return nil, err
 		}
 
@@ -887,9 +836,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 		ToSql()
 
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept groups, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept groups, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
 
@@ -898,9 +845,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
 	defer rows.Close()
@@ -930,9 +875,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 			&conceptGroup.UpdateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return map[string]*interfaces.ConceptGroup{}, err
 		}
 
@@ -973,9 +916,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept group by id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []interfaces.ConceptGroupRelation{}, err
 	}
 
@@ -984,9 +925,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []interfaces.ConceptGroupRelation{}, err
 	}
 	defer rows.Close()
@@ -1007,9 +946,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 			&conceptGroupRelation.CreateTime,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []interfaces.ConceptGroupRelation{}, err
 		}
 
@@ -1048,9 +985,7 @@ func (cga *conceptGroupAccess) CreateConceptGroupRelation(ctx context.Context, t
 			conceptGroupRelation.CreateTime).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of insert concept group relation, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of insert concept group relation, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return err
 	}
 	// 记录处理的 sql 字符串
@@ -1122,9 +1057,7 @@ func (cga *conceptGroupAccess) DeleteObjectTypesFromGroup(ctx context.Context, t
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of delete concept group by concept group id, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of delete concept group by concept group id, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return 0, err
 	}
 
@@ -1134,9 +1067,7 @@ func (cga *conceptGroupAccess) DeleteObjectTypesFromGroup(ctx context.Context, t
 
 	ret, err := tx.Exec(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("delete data error: %v\n", err)
 		otellog.LogError(ctx, "Delete data error", err)
-		span.SetStatus(codes.Error, "Delete data error")
 		return 0, err
 	}
 
@@ -1172,9 +1103,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 		Where(sq.Eq{"f_group_id": cgIDs}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept ids by concept group, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept ids by concept group, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []string{}, err
 	}
 
@@ -1183,9 +1112,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []string{}, err
 	}
 	defer rows.Close()
@@ -1197,9 +1124,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 			&conceptID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []string{}, err
 		}
 
@@ -1248,9 +1173,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select relation type ids by concept group, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select relation type ids by concept group, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []string{}, err
 	}
 
@@ -1259,9 +1182,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []string{}, err
 	}
 	defer rows.Close()
@@ -1274,9 +1195,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 			&rtID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []string{}, err
 		}
 
@@ -1324,9 +1243,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select action type ids by concept group, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select action type ids by concept group, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return []string{}, err
 	}
 
@@ -1335,9 +1252,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 
 	rows, err := cga.db.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return []string{}, err
 	}
 	defer rows.Close()
@@ -1350,9 +1265,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 			&atID,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return []string{}, err
 		}
 
@@ -1398,9 +1311,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 
 	sqlStr, vals, err := builder.ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build the sql of select concept group by object type ids, error: %s", err.Error())
 		otellog.LogError(ctx, "Failed to build the sql of select concept group by object type ids, error", err)
-		span.SetStatus(codes.Error, "Build sql failed ")
 		return map[string][]*interfaces.ConceptGroup{}, err
 	}
 
@@ -1409,9 +1320,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 
 	rows, err := tx.Query(sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("list data error: %v\n", err)
 		otellog.LogError(ctx, "List data error", err)
-		span.SetStatus(codes.Error, "List data error")
 		return map[string][]*interfaces.ConceptGroup{}, err
 	}
 	defer rows.Close()
@@ -1436,9 +1345,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 			&conceptGroup.Branch,
 		)
 		if err != nil {
-			logger.Errorf("row scan failed, err: %v \n", err)
 			otellog.LogError(ctx, "Row scan error", err)
-			span.SetStatus(codes.Error, "Row scan error")
 			return map[string][]*interfaces.ConceptGroup{}, err
 		}
 
