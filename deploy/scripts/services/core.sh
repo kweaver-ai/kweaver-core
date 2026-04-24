@@ -417,10 +417,20 @@ _install_core_release_repo() {
     fi
 }
 
+# Inject default --set values for kweaver-core if user did not override them.
+# Currently: businessDomain.enabled defaults to false at install time.
+_core_apply_default_set_values() {
+    if ! get_set_value "businessDomain.enabled" "${CORE_SET_VALUES[@]}" >/dev/null 2>&1; then
+        CORE_SET_VALUES+=("businessDomain.enabled=false")
+        log_info "Default applied: --set businessDomain.enabled=false (override with --set businessDomain.enabled=true)"
+    fi
+}
+
 # Install KWeaver Core services via Helm
 install_core() {
     log_info "Installing KWeaver Core services via Helm..."
     _core_require_version_manifest || return 1
+    _core_apply_default_set_values
 
     if ! ensure_platform_prerequisites; then
         log_error "Failed to ensure platform prerequisites for KWeaver Core"

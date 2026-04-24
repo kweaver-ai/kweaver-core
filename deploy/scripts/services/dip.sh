@@ -7,6 +7,10 @@ DIP_LOCAL_CHARTS_DIR="${DIP_LOCAL_CHARTS_DIR:-}"
 DIP_VERSION_MANIFEST_FILE="${DIP_VERSION_MANIFEST_FILE:-}"
 DIP_CONFIRM_MISSING_OPENCLAW_PATHS="${DIP_CONFIRM_MISSING_OPENCLAW_PATHS:-false}"
 
+# --set values forwarded to DIP helm releases (and used to seed core defaults
+# when dip auto-installs missing core releases).
+declare -a DIP_SET_VALUES=()
+
 # Parse dip command arguments
 parse_dip_args() {
     local action="$1"
@@ -78,6 +82,14 @@ parse_dip_args() {
             --confirm-missing-openclaw-paths)
                 DIP_CONFIRM_MISSING_OPENCLAW_PATHS="true"
                 shift
+                ;;
+            --set=*)
+                DIP_SET_VALUES+=("${1#*=}")
+                shift
+                ;;
+            --set)
+                DIP_SET_VALUES+=("$2")
+                shift 2
                 ;;
             -y|--yes)
                 ASSUME_YES="true"
@@ -736,10 +748,28 @@ init_dip_database() {
     init_module_database_if_present "kweaver-dip" "${sql_dir}" "KWeaver DIP"
 }
 
+# Inject DIP-side defaults: businessDomain.enabled=true unless overridden by user.
+# Also propagate the same default into core (CORE_SET_VALUES) so that when DIP
+# triggers install_core for missing releases, core gets businessDomain.enabled=true
+# instead of core's own default (false).
+_dip_apply_default_set_values() {
+    if ! get_set_value "businessDomain.enabled" "${DIP_SET_VALUES[@]}" >/dev/null 2>&1; then
+        DIP_SET_VALUES+=("businessDomain.enabled=true")
+        log_info "Default applied for DIP: --set businessDomain.enabled=true (override with --set businessDomain.enabled=false)"
+    fi
+    if ! get_set_value "businessDomain.enabled" "${CORE_SET_VALUES[@]}" >/dev/null 2>&1; then
+        local dip_bd
+        dip_bd="$(get_set_value "businessDomain.enabled" "${DIP_SET_VALUES[@]}")"
+        CORE_SET_VALUES+=("businessDomain.enabled=${dip_bd}")
+        log_info "Propagated to core for DIP install: --set businessDomain.enabled=${dip_bd}"
+    fi
+}
+
 # Install DIP services via Helm
 install_dip() {
     log_info "Installing KWeaver DIP services via Helm..."
     _dip_require_version_manifest || return 1
+    _dip_apply_default_set_values
 
     local charts_dir
     charts_dir="$(_dip_resolve_charts_dir)"
@@ -909,6 +939,11 @@ _install_dip_release_local() {
         "--wait" "--timeout=600s"
     )
 
+    local set_value
+    for set_value in "${DIP_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
+
     _dip_append_release_extra_helm_args "${release_name}" helm_args || return 1
 
     if helm "${helm_args[@]}"; then
@@ -954,6 +989,11 @@ _install_dip_release_repo() {
         "--namespace" "${namespace}"
         "-f" "${CONFIG_YAML_PATH}"
     )
+
+    local set_value
+    for set_value in "${DIP_SET_VALUES[@]}"; do
+        helm_args+=("--set" "${set_value}")
+    done
 
     _dip_append_release_extra_helm_args "${release_name}" helm_args || return 1
 
