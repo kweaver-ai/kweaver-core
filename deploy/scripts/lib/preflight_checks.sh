@@ -808,10 +808,22 @@ preflight_check_existing_release() {
         return 0
     fi
     log_info "Checking for existing kweaver/isf/dip-related Helm releases..."
-    local r
-    r="$(helm list -A 2>/dev/null | grep -iE 'kweaver|isf|dip' || true)"
+    local r names count preview
+    r="$(helm list -A 2>/dev/null | awk 'NR>1 && tolower($0) ~ /kweaver|isf|dip/' || true)"
     if [[ -n "${r}" ]]; then
-        preflight_warn "Helm may already have related releases (reuse ok only if intended):\n${r}"
+        names="$(echo "${r}" | awk '{print $1}')"
+        count="$(echo "${names}" | grep -c . || true)"
+        preview="$(echo "${names}" | head -n 5 | paste -sd ',' -)"
+        if [[ "${count}" -gt 5 ]]; then
+            preview="${preview}, … (+$((count - 5)) more)"
+        fi
+        preflight_warn "Helm has ${count} existing kweaver/isf/dip release(s): ${preview} (reuse ok if intended; full list: helm list -A | grep -iE 'kweaver|isf|dip')"
+        if [[ -n "${PREFLIGHT_REPORT_FILE:-}" ]]; then
+            {
+                echo "--- existing helm releases (kweaver/isf/dip) ---"
+                echo "${r}"
+            } >> "${PREFLIGHT_REPORT_FILE}" 2>/dev/null || true
+        fi
     else
         preflight_ok "No obvious kweaver/isf/dip Helm release names in helm list -A"
     fi
