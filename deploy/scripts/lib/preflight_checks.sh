@@ -1176,7 +1176,7 @@ preflight_check_target_tools() {
     fi
 }
 
-# Node major from `node -v` (0 if missing or unparseable). KWeaver CLIs need 18+ (help/zh/install.md).
+# Node major from `node -v` (0 if missing or unparseable). kweaver-sdk declares engines node >=22; preflight enforces 22+.
 preflight_node_major() {
     if ! command -v node &>/dev/null; then
         echo 0
@@ -1205,13 +1205,13 @@ preflight_check_admin_tools() {
     if command -v node &>/dev/null; then
         local _nmj
         _nmj="$(preflight_node_major)"
-        if [[ -n "${_nmj}" && $(( 10#${_nmj} )) -ge 18 ]]; then
-            preflight_ok "node: $(node -v 2>/dev/null) (>= 18; kweaver-sdk / kweaver-admin)"
+        if [[ -n "${_nmj}" && $(( 10#${_nmj} )) -ge 22 ]]; then
+            preflight_ok "node: $(node -v 2>/dev/null) (>= 22; kweaver-sdk / kweaver-admin per npm engines)"
         else
-            preflight_warn "node: $(node -v 2>/dev/null) (KWeaver CLIs require Node.js 18+; use Node LTS, NodeSource, or nvm — distro 'nodejs' is often too old)"
+            preflight_warn "node: $(node -v 2>/dev/null) (KWeaver CLIs require Node.js 22+ — @kweaver-ai/kweaver-sdk uses engines node>=22; use Node 22 LTS, nvm, or NodeSource; distro 'nodejs' is often too old)"
         fi
     else
-        preflight_warn "node not in PATH (on Linux admin host: sudo ./preflight.sh --fix --fix-allow=nodejs-npm, or use npx / a dev machine with Node 18+ LTS)"
+        preflight_warn "node not in PATH (on Linux admin host: sudo ./preflight.sh --fix --fix-allow=nodejs-npm, or use npx / a dev machine with Node 22+ LTS)"
     fi
 
     if command -v npm &>/dev/null; then
@@ -1419,15 +1419,15 @@ preflight_fix_helm_v3() {
 
 # Install distro nodejs + npm (needed before npm -g kweaver-* fixes).
 # Uses apt/dnf/yum; does not add NodeSource/nvm (keeps preflight self-contained).
-# KWeaver CLIs need Node 18+; if the distro only provides older, user must use LTS/NodeSource/nvm.
+# KWeaver CLIs need Node 22+ (kweaver-sdk engines); if the distro only provides older, use LTS/NodeSource/nvm.
 preflight_fix_node_npm() {
     local _ok=true _mj
     _mj="$(preflight_node_major)"
     if command -v npm &>/dev/null && command -v node &>/dev/null; then
-        if [[ -n "${_mj}" && $(( 10#${_mj} )) -ge 18 ]]; then
+        if [[ -n "${_mj}" && $(( 10#${_mj} )) -ge 22 ]]; then
             return 0
         fi
-        preflight_warn "Node is $(node -v 2>/dev/null) but kweaver CLIs need 18+; 'nodejs-npm' only adds distro packages and will not replace an old Node. Install Node 18+ LTS (nodejs.org, NodeSource, nvm), then re-run preflight."
+        preflight_warn "Node is $(node -v 2>/dev/null) but kweaver CLIs need 22+; 'nodejs-npm' only adds distro packages and will not replace an old Node. Install Node 22 LTS (nodejs.org, NodeSource, nvm), then re-run preflight."
         return 0
     fi
     if command -v apt-get &>/dev/null; then
@@ -1456,8 +1456,8 @@ preflight_fix_node_npm() {
         fi
     fi
     _mj="$(preflight_node_major)"
-    if command -v node &>/dev/null && [[ -n "${_mj}" && $(( 10#${_mj} )) -lt 18 ]]; then
-        preflight_warn "node after install: $(node -v 2>/dev/null) (still < 18; kweaver-sdk / kweaver-admin need Node 18+ — use official LTS, NodeSource, or nvm)"
+    if command -v node &>/dev/null && [[ -n "${_mj}" && $(( 10#${_mj} )) -lt 22 ]]; then
+        preflight_warn "node after install: $(node -v 2>/dev/null) (still < 22; kweaver-sdk / kweaver-admin need Node 22+ — use official LTS, NodeSource, or nvm)"
     fi
 }
 
@@ -1711,18 +1711,18 @@ preflight_apply_safe_fixes() {
     if ! command -v node &>/dev/null || ! command -v npm &>/dev/null; then
         if preflight_confirm_fix "nodejs-npm" \
             "apt/dnf/yum install nodejs and npm" \
-            "KWeaver CLIs need Node.js 18+; verify with node -v. Distro packages may be older than 18 — then use LTS from nodejs.org, NodeSource, or nvm."; then
+            "KWeaver CLIs need Node.js 22+ (kweaver-sdk engines). Distro nodejs is often <22 — use Node 22 LTS, NodeSource, or nvm if needed."; then
             preflight_fix_node_npm
         fi
     fi
 
     # --- npm-installed CLIs (kweaver-sdk, kweaver-admin) --------------------
-    # Only when npm is present; packages require Node.js 18+ (same as help/zh/install.md).
+    # Only when npm is present; kweaver-sdk declares engines node >=22.
     if command -v npm &>/dev/null; then
         local _npmj
         _npmj="$(preflight_node_major)"
-        if [[ -z "${_npmj}" || $(( 10#${_npmj} )) -lt 18 ]]; then
-            preflight_warn "Skipping kweaver-sdk / kweaver-admin npm installs: need Node.js 18+ (current: $(node -v 2>/dev/null || echo 'no node')). Upgrade Node, then re-run with --fix or install CLIs by hand."
+        if [[ -z "${_npmj}" || $(( 10#${_npmj} )) -lt 22 ]]; then
+            preflight_warn "Skipping kweaver-sdk / kweaver-admin npm installs: need Node.js 22+ (current: $(node -v 2>/dev/null || echo 'no node')). Upgrade Node, then re-run with --fix or install CLIs by hand."
         else
         if ! command -v kweaver &>/dev/null; then
             if preflight_confirm_fix "kweaver-sdk" \

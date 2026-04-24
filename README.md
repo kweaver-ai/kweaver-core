@@ -408,7 +408,7 @@ For streaming, `KWeaverClient`, and the full API surface, see the [kweaver-sdk](
 
 ### Install
 
-Requires Node.js 18+. Credentials are stored under `~/.kweaver-admin/platforms/`, isolated from `~/.kweaver/`.
+Requires Node.js 22+ (kweaver CLIs; matches `@kweaver-ai/kweaver-sdk` `engines` on npm). Credentials are stored under `~/.kweaver-admin/platforms/`, isolated from `~/.kweaver/`.
 
 ```bash
 npm install -g @kweaver-ai/kweaver-admin

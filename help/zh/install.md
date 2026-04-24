@@ -65,6 +65,8 @@ npm install -g @kweaver-ai/kweaver-sdk
 npx kweaver --help
 ```
 
+> 需要 **Node.js 22+**（npm 上 `kweaver-sdk` 的 `engines` 为 `node >= 22`；在 v18 上安装会报 `EBADENGINE` 警告。）
+
 - 🌐 **curl** — 直接调用 HTTP API
 
 ---
@@ -162,7 +164,7 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ### 📥 安装
 
-要求 **Node.js 18+**。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
+要求 **Node.js 22+**（与 npm 上 `@kweaver-ai/kweaver-sdk` 的 `engines` 一致；仅部分依赖可能标 `>=20`）。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
 
 ```bash
 npm install -g @kweaver-ai/kweaver-admin

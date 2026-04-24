@@ -29,7 +29,7 @@ usage() {
 }
 
 if ! command -v kweaver &>/dev/null; then
-    log_error "kweaver not found. Install: npm i -g @kweaver-ai/kweaver-sdk (needs Node 18+)"
+    log_error "kweaver not found. Install: npm i -g @kweaver-ai/kweaver-sdk (needs Node 22+; npm may warn on older Node)"
     log_error "  sudo: on many Linux hosts the global prefix is under /usr → use sudo npm i -g @kweaver-ai/kweaver-sdk, or get EACCES without it."
     log_error "  no sudo: use nvm/fnm, or npm config set prefix \"\$HOME/.local\" and put ~/.local/bin on PATH, then npm i -g without sudo."
     exit 1

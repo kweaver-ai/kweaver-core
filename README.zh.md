@@ -406,7 +406,7 @@ reply   = kweaver.chat("总结前三大风险")
 
 ### 安装
 
-要求 Node.js 18+。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
+要求 Node.js 22+（与 npm 上 kweaver-sdk 的 `engines` 一致）。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
 
 ```bash
 npm install -g @kweaver-ai/kweaver-admin

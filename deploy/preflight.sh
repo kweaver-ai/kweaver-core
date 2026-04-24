@@ -40,7 +40,7 @@ usage() {
     echo "  --list-fixes         Run checks then list fixes that would be offered (no changes; non-root OK)"
     echo "  --output=json        Emit JSON summary to stdout (human logs to stderr); requires python3"
     echo "  --role=target|admin|both  Target = kubectl/helm only; admin = kweaver/node/npm; both = all (default)"
-    echo "                              kweaver CLIs need Node.js 18+ (help/zh/install.md)"
+    echo "                              kweaver CLIs need Node.js 22+ (kweaver-sdk engines; help/zh/install.md)"
     echo "  --no-recheck         Do not re-run full checks after applying fixes"
     echo "  --report=PATH        Append full log to a file"
     echo "  --skip=LIST          Comma-separated check names to skip (see source: preflight_checks.sh preflight_skip)"
