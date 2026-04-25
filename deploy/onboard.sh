@@ -18,6 +18,7 @@ ENABLE_BKN_ONLY="false"
 SKIP_BKN="false"
 INTERACTIVE="true"
 ONBOARD_ASSUME_YES="false"
+ONBOARD_SKIP_ISF_TEST_USER="${ONBOARD_SKIP_ISF_TEST_USER:-false}"
 
 # Same requirement as @kweaver-ai/kweaver-sdk on npm (node >= 22). https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk
 ONBOARD_MIN_NODE_MAJOR="${ONBOARD_MIN_NODE_MAJOR:-22}"
@@ -27,12 +28,16 @@ onboard_is_bootstrap_tty() {
     [[ -t 0 && -t 1 ]]
 }
 
+# shellcheck source=scripts/lib/onboard_isf_test_user.sh
+source "${SCRIPT_DIR}/scripts/lib/onboard_isf_test_user.sh"
+
 usage() {
     echo "Usage: $0 [options]"
     echo "  Requires: Node 22+ (see @kweaver-ai/kweaver-sdk on npm), kweaver, kubectl, python3; run from deploy/"
     echo "  (no flags)                Interactive: nvm+Node 22 and npm -g (Y/n) in your terminal, then models/BKN"
-    echo "  -y, --yes                 Auto nvm+Node 22 and npm -g (no Y/n) — for CI, pipes, or scripts"
+    echo "  -y, --yes                 Auto nvm+Node 22 and npm -g; on full ISF + kweaver-admin, also create user [test] with all roles (no Y/n)"
     echo "  --config=PATH            YAML: deploy/conf/models.yaml.example; model prompts off, but nvm/kweaver still Y/n in a TTY (use -y to skip those asks)"
+    echo "  --skip-isf-test-user     Do not offer: kweaver-admin user test + all roles (full install only; same as env ONBOARD_SKIP_ISF_TEST_USER=true)"
     echo "  --namespace=NS           (default: kweaver; or key 'namespace' in yaml)"
     echo "  --enable-bkn-search      Only patch bkn/ontology ConfigMaps and rollout"
     echo "  --bkn-embedding-name=X   Required with --enable-bkn-search (registered model_name)"
@@ -41,6 +46,7 @@ usage() {
     echo ""
     echo "  Environment: ONBOARD_SKIP_NODE_INSTALL=true  skip nvm in onboard (fail if Node < ${ONBOARD_MIN_NODE_MAJOR})"
     echo "                ONBOARD_SKIP_KWEAVER_INSTALL=true  never run npm -g for kweaver in onboard"
+    echo "                ONBOARD_SKIP_ISF_TEST_USER=true  same as --skip-isf-test-user (no [test] user offer / -y create)"
     echo "  (preflight on the server: sudo preflight --fix still optional; this script can install Node in your *user* account via nvm.)"
 }
 
@@ -49,6 +55,7 @@ for _ob_arg in "$@"; do
         -h | --help) usage; exit 0 ;;
         --config=*) INTERACTIVE="false" ;;
         -y | --yes) ONBOARD_ASSUME_YES="true" ;;
+        --skip-isf-test-user) ONBOARD_SKIP_ISF_TEST_USER="true" ;;
     esac
 done
 
@@ -198,6 +205,10 @@ while [[ $# -gt 0 ]]; do
             ONBOARD_ASSUME_YES="true"
             shift
             ;;
+        --skip-isf-test-user)
+            ONBOARD_SKIP_ISF_TEST_USER="true"
+            shift
+            ;;
         --config=*)
             CONFIG_FILE="${1#*=}"
             INTERACTIVE="false"
@@ -277,6 +288,7 @@ onboard_probe() {
         onboard_log_info "OK: kweaver + kubectl (ns=${NAMESPACE})"
     fi
     onboard_recommend_admin_cli
+    onboard_offer_isf_test_user
 }
 
 # Detect ISF (full install) and recommend kweaver-admin when present.
