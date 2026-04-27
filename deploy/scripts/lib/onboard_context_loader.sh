@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Context Loader toolset (ADP) import — run from onboard.sh with kweaver CLI (kweaver-sdk) auth.
 # Replaces deploy-time curl/port-forward; uses: kweaver call ... -F (multipart), same as manual impex.
+#
+# Who can import (token from  kweaver auth login  , stored under ~/.kweaver):
+#   - Full install (ISF present): use a platform admin. Default admin login is often
+#     admin@eisoo.com / eisoo.com (same as deploy/auto_cofig/README.md console: admin / eisoo.com).
+#   - Minimum (no ISF, kweaver-core --minimum): only kweaver-sdk is needed;  kweaver auth login
+#     then  kweaver call  impex; kweaver-admin is not required.
 # shellcheck source=/dev/null
 
 # Resolve path to default ADP in repo (override: CONTEXT_LOADER_TOOLSET_ADP_PATH).
@@ -16,6 +22,11 @@ onboard_context_loader_import_via_kweaver() {
     ns="${NAMESPACE:-kweaver}"
     adp="$(onboard_context_loader_adp_path)"
     bd="${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
+    if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
+        log_info "Context Loader: full/ISF — ensure  kweaver auth login  uses a platform admin (e.g. admin@eisoo.com / eisoo.com; see deploy/auto_cofig/README.md)."
+    else
+        log_info "Context Loader: minimum (no ISF) —  kweaver auth login  is enough; kweaver-admin not required."
+    fi
     if [[ ! -f "${adp}" ]]; then
         log_warn "Context Loader: ADP not found: ${adp}"
         return 1
@@ -34,7 +45,13 @@ onboard_context_loader_import_via_kweaver() {
         log_info "Context Loader toolset import finished (check output above for HTTP errors in body)."
         return 0
     fi
-    log_warn "Context Loader: kweaver call failed. Use kweaver auth with a user that may call impex (often platform admin), or import manually. ADP: ${adp}"
+    log_warn "Context Loader: kweaver call failed. Re-login:  kweaver auth login <url> -k"
+    if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
+        log_warn "  (ISF/full) use a platform admin token, e.g. admin@eisoo.com / eisoo.com (see deploy/auto_cofig/README.md)."
+    else
+        log_warn "  (minimum) ensure a valid  kweaver auth login  for this cluster."
+    fi
+    log_warn "  Or import manually. ADP: ${adp}"
     return 1
 }
 

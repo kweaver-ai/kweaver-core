@@ -21,6 +21,10 @@ ONBOARD_ASSUME_YES="false"
 ONBOARD_SKIP_ISF_TEST_USER="${ONBOARD_SKIP_ISF_TEST_USER:-false}"
 ONBOARD_SKIP_CONTEXT_LOADER="${ONBOARD_SKIP_CONTEXT_LOADER:-false}"
 
+# kweaver auth: HTTP sign-in defaults (ISF / full install). Override in CI. Not hard-coded in CLI — only used when you confirm / press Enter.
+: "${ONBOARD_DEFAULT_KWEAVER_USER:=admin@eisoo.com}"
+: "${ONBOARD_DEFAULT_KWEAVER_PASSWORD:=eisoo.com}"
+
 # Same requirement as @kweaver-ai/kweaver-sdk on npm (node >= 22). https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk
 ONBOARD_MIN_NODE_MAJOR="${ONBOARD_MIN_NODE_MAJOR:-22}"
 
@@ -34,6 +38,73 @@ source "${SCRIPT_DIR}/scripts/lib/onboard_isf_test_user.sh"
 # shellcheck source=scripts/lib/onboard_context_loader.sh
 source "${SCRIPT_DIR}/scripts/lib/onboard_context_loader.sh"
 
+# Primary IPv4 of this host (for default KWeaver access URL). Override: ONBOARD_DEFAULT_ACCESS_IP=...
+onboard_default_local_ipv4() {
+    if [[ -n "${ONBOARD_DEFAULT_ACCESS_IP:-}" ]]; then
+        echo "${ONBOARD_DEFAULT_ACCESS_IP}"
+        return
+    fi
+    python3 -c "
+import re
+import socket
+import subprocess
+import sys
+
+def main() -> None:
+    for remote in ('8.8.8.8', '1.1.1.1'):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0.4)
+            s.connect((remote, 80))
+            print(s.getsockname()[0])
+            s.close()
+            return
+        except Exception:
+            pass
+    try:
+        out = subprocess.check_output(
+            ['ip', '-4', 'route', 'get', '1.1.1.1'], text=True, stderr=subprocess.DEVNULL, timeout=2
+        )
+        m = re.search(r'\\bsrc (\\d+\\.\\d+\\.\\d+\\.\\d+)', out)
+        if m:
+            print(m.group(1))
+            return
+    except Exception:
+        pass
+    try:
+        out = subprocess.check_output(
+            ['ipconfig', 'getifaddr', 'en0'], text=True, stderr=subprocess.DEVNULL, timeout=2
+        ).strip()
+        if out and out != '0.0.0.0':
+            print(out)
+            return
+    except Exception:
+        pass
+    print('127.0.0.1')
+
+if __name__ == '__main__':
+    main()
+" 2>/dev/null || echo "127.0.0.1"
+}
+
+# Default access base for  kweaver auth login  (this machine, HTTPS + primary IPv4 unless overridden).
+# Set ONBOARD_DEFAULT_ACCESS_BASE to a full URL to skip auto IP.
+onboard_default_access_base_url() {
+    if [[ -n "${ONBOARD_DEFAULT_ACCESS_BASE:-}" ]]; then
+        echo "${ONBOARD_DEFAULT_ACCESS_BASE%/}"
+        return
+    fi
+    local ip _scheme _port
+    ip="$(onboard_default_local_ipv4)"
+    _scheme="${ONBOARD_DEFAULT_ACCESS_SCHEME:-https}"
+    _port="${ONBOARD_DEFAULT_ACCESS_PORT:-}"
+    if [[ -n "${_port}" ]]; then
+        echo "${_scheme}://${ip}:${_port}"
+    else
+        echo "${_scheme}://${ip}"
+    fi
+}
+
 usage() {
     echo "Usage: $0 [options]"
     echo "  Requires: Node 22+ (see @kweaver-ai/kweaver-sdk on npm), kweaver, kubectl, python3; run from deploy/"
@@ -42,6 +113,11 @@ usage() {
     echo "  --config=PATH            YAML: deploy/conf/models.yaml.example; model prompts off, but nvm/kweaver still Y/n in a TTY (use -y to skip those asks)"
     echo "  --skip-isf-test-user     Do not offer: kweaver-admin user test + all roles (full install only)"
     echo "  --skip-context-loader   Do not offer Context Loader ADP import (kweaver call impex); same as ONBOARD_SKIP_CONTEXT_LOADER=true"
+    echo ""
+    echo "  Context Loader (impex) auth:  kweaver call uses ~/.kweaver from  kweaver auth login  (not kweaver-admin)."
+    echo "    - Full install (ISF on cluster): use a platform admin token. Default console admin:  admin@eisoo.com  / password  eisoo.com"
+    echo "      (same as deploy/auto_cofig/README.md:  admin  /  eisoo.com  on the console)."
+    echo "    - Minimum / no ISF:  kweaver-sdk  only — log in with  kweaver auth login  then import; kweaver-admin not required."
     echo "  --namespace=NS           (default: kweaver; or key 'namespace' in yaml)"
     echo "  --enable-bkn-search      Only patch bkn/ontology ConfigMaps and rollout"
     echo "  --bkn-embedding-name=X   Required with --enable-bkn-search (registered model_name)"
@@ -54,6 +130,9 @@ usage() {
     echo "                ONBOARD_SKIP_CONTEXT_LOADER=true  same as --skip-context-loader"
     echo "                IMPORT_CONTEXT_LOADER_TOOLSET=false  skip Context Loader (legacy name; same effect)"
     echo "                CONTEXT_LOADER_TOOLSET_ADP_PATH=...  default ADP under repo adp/context-loader/.../context_loader_toolset.adp"
+    echo "  Default KWeaver access URL (kweaver auth): this host’s primary IPv4, e.g.  https://\$(local-ip)  (set ONBOARD_DEFAULT_ACCESS_BASE=... to override; ONBOARD_DEFAULT_ACCESS_PORT e.g. 8443; ONBOARD_DEFAULT_ACCESS_SCHEME=http)"
+    echo "  kweaver auth: not auto-filled before — you always confirm URL. ISF+full: default HTTP user/pass = ONBOARD_DEFAULT_KWEAVER_USER / ONBOARD_DEFAULT_KWEAVER_PASSWORD (admin@eisoo.com / eisoo.com); Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
+    echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."
     echo "  (preflight on the server: sudo preflight --fix still optional; this script can install Node in your *user* account via nvm.)"
 }
 
@@ -81,6 +160,44 @@ onboard_node_major() {
     else
         echo 0
     fi
+}
+
+# This script is not a login shell: ~/.zshrc / .bashrc are not sourced, so nvm's node is often missing
+# from PATH even when the user already "configured" it in a terminal. Load common version managers
+# and standard locations before we decide to prompt for nvm install.
+onboard_bootstrap_node_path() {
+    if [[ "${ONBOARD_SKIP_NVM_INIT:-false}" == "true" ]]; then
+        return 0
+    fi
+    # Volta
+    if [[ -d "${HOME}/.volta/bin" ]]; then
+        case ":${PATH}:" in *":${HOME}/.volta/bin:"*) ;; *) export PATH="${HOME}/.volta/bin:${PATH}" ;; esac
+    fi
+    # asdf
+    if [[ -f "${HOME}/.asdf/asdf.sh" ]]; then
+        # shellcheck source=/dev/null
+        . "${HOME}/.asdf/asdf.sh" 2>/dev/null && hash -r 2>/dev/null || true
+    fi
+    # fnm
+    if command -v fnm &>/dev/null; then
+        # shellcheck disable=SC1091
+        eval "$(fnm env 2>/dev/null)" && hash -r 2>/dev/null || true
+    fi
+    # nvm (most common)
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    if [[ -s "${NVM_DIR}/nvm.sh" ]]; then
+        # shellcheck source=/dev/null
+        if . "${NVM_DIR}/nvm.sh" 2>/dev/null; then
+            nvm use "${ONBOARD_NVM_VERSION:-22}" 2>/dev/null || nvm use default 2>/dev/null || nvm use node 2>/dev/null || true
+            hash -r 2>/dev/null || true
+        fi
+    fi
+    # Homebrew (macOS): node@22 is often in PATH once these dirs are prepended
+    for _nd in /opt/homebrew/bin /usr/local/bin; do
+        if [[ -x "${_nd}/node" ]]; then
+            case ":${PATH}:" in *":${_nd}:"*) ;; *) export PATH="${_nd}:${PATH}" ;; esac
+        fi
+    done
 }
 
 # Install nvm + Node 22 in the current user (no sudo; same idea as preflight's node-22 fix, user-local).
@@ -119,8 +236,10 @@ onboard_install_node22_nvm() {
 # If not sudo preflight --fix, still help: offer (or with -y, run) nvm+Node 22 in this user.
 onboard_ensure_node_22() {
     local mj
+    onboard_bootstrap_node_path
     mj="$(onboard_node_major)"
     if command -v node &>/dev/null && [[ -n "${mj}" && $(( 10#${mj} )) -ge ${ONBOARD_MIN_NODE_MAJOR} ]]; then
+        log_info "Using $(node -v) ($(command -v node))"
         return 0
     fi
 
@@ -152,7 +271,10 @@ onboard_ensure_node_22() {
         log_error "Node is still < ${ONBOARD_MIN_NODE_MAJOR} in this process. In a new terminal run:  source \"\$NVM_DIR/nvm.sh\" && nvm use 22  then:  $0  again."
         exit 1
     fi
-    log_info "Using Node $(node -v) ($(command -v node))"
+    # After a fresh nvm install in this function, the success message is similar
+    if command -v node &>/dev/null; then
+        log_info "Using Node $(node -v) ($(command -v node))"
+    fi
 }
 
 onboard_ensure_kweaver_cli() {
@@ -244,6 +366,68 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# After access URL is chosen: ISF → HTTP sign-in (defaults admin@eisoo.com / eisoo.com, Enter=accept) or browser -k; no ISF → --no-auth (Enter) or HTTP.
+# Env: ONBOARD_DEFAULT_KWEAVER_USER, ONBOARD_DEFAULT_KWEAVER_PASSWORD, ONBOARD_ASSUME_YES (non-interactive: ISF=HTTP+defaults, min=--no-auth).
+onboard_kweaver_auth_login_for_url() {
+    local _kurl="$1"
+    local _u _p _duser _dpass
+    _duser="${ONBOARD_DEFAULT_KWEAVER_USER:-admin@eisoo.com}"
+    _dpass="${ONBOARD_DEFAULT_KWEAVER_PASSWORD:-eisoo.com}"
+
+    if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
+        if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
+            onboard_log_info "kweaver auth: ISF detected — HTTP sign-in (defaults, -y): ${_duser}"
+            if ! kweaver auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" --http-signin -k; then
+                return 1
+            fi
+            return 0
+        fi
+        echo ""
+        read -r -p "ISF (full) install: HTTP sign-in (user/password; recommended) [Y/n] (Enter = Y): " _htt
+        if [[ -z "${_htt}" || ! "${_htt}" =~ ^[Nn] ]]; then
+            read -r -p "  Username [Enter = ${_duser}]: " _u
+            _u="${_u:-${_duser}}"
+            read -r -s -p "  Password [Enter = default from ONBOARD_DEFAULT_KWEAVER_PASSWORD] " _p
+            echo
+            _p="${_p:-${_dpass}}"
+            if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin -k; then
+                return 1
+            fi
+            return 0
+        fi
+        onboard_log_info "Using browser / device flow: kweaver auth login \"${_kurl}\" -k"
+        if ! kweaver auth login "${_kurl}" -k; then
+            return 1
+        fi
+        return 0
+    fi
+
+    if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
+        onboard_log_info "kweaver auth: no ISF — --no-auth (default, -y)"
+        if ! kweaver auth login "${_kurl}" --no-auth -k; then
+            return 1
+        fi
+        return 0
+    fi
+    echo ""
+    read -r -p "No ISF (minimum install): use --no-auth (typical) [Y/n] (Enter = Y): " _mna
+    if [[ -z "${_mna}" || ! "${_mna}" =~ ^[Nn] ]]; then
+        if ! kweaver auth login "${_kurl}" --no-auth -k; then
+            return 1
+        fi
+        return 0
+    fi
+    read -r -p "  Username [Enter = ${_duser}]: " _u
+    _u="${_u:-${_duser}}"
+    read -r -s -p "  Password [Enter = default] " _p
+    echo
+    _p="${_p:-${_dpass}}"
+    if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin -k; then
+        return 1
+    fi
+    return 0
+}
+
 # When kweaver bkn list fails, interactively let the user log in or retry; non-interactive exits.
 onboard_ensure_kweaver_auth() {
     while true; do
@@ -251,27 +435,26 @@ onboard_ensure_kweaver_auth() {
             return 0
         fi
         if [[ "${INTERACTIVE}" != "true" ]]; then
-            onboard_log_err "kweaver bkn list failed. Run: kweaver auth login <https://access-url> -k"
+            _durl="$(onboard_default_access_base_url)"
+            onboard_log_err "kweaver bkn list failed. Run: kweaver auth login ${_durl} -k  (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
             exit 1
         fi
         onboard_log_warn "kweaver bkn list failed (not logged in or platform unreachable)."
         echo ""
         echo "Choose:"
-        echo "  1) Enter KWeaver access URL and run login (kweaver auth login <url> -k)"
+        echo "  1) Run login: URL (Enter = this host IP), then ISF/HTTP or minimum/--no-auth — see -h for defaults"
         echo "  2) Retry (after you ran login in another terminal)"
         echo "  3) Quit"
         read -r -p "Select [1-3] (default: 1): " _kwa
         _kwa="${_kwa:-1}"
         case "${_kwa}" in
             1)
-                read -r -p "Access base URL (e.g. https://your-host:port): " _kurl
-                if [[ -n "${_kurl}" ]]; then
-                    if ! kweaver auth login "${_kurl}" -k; then
-                        onboard_log_warn "kweaver auth login failed. If you saw engine, SyntaxError, or RegExp issues under node_modules, upgrade Node (see npm @kweaver-ai/kweaver-sdk engines), then reinstall the CLI."
-                        onboard_log_warn "Otherwise: fix the URL, or run \"kweaver auth login <url> -k\" elsewhere, then choose 2 to retry."
-                    fi
-                else
-                    onboard_log_warn "No URL. Enter a URL, or run login yourself and then choose 2."
+                _def_url="$(onboard_default_access_base_url)"
+                read -r -p "Access base URL [Enter = ${_def_url}]: " _kurl
+                _kurl="${_kurl:-${_def_url}}"
+                if ! onboard_kweaver_auth_login_for_url "${_kurl}"; then
+                    onboard_log_warn "kweaver auth login failed. If you saw engine, SyntaxError, or RegExp issues under node_modules, upgrade Node (see npm @kweaver-ai/kweaver-sdk engines), then reinstall the CLI."
+                    onboard_log_warn "Otherwise: set ONBOARD_DEFAULT_ACCESS_* or run login manually, then choose 2 to retry."
                 fi
                 ;;
             2) : ;;
