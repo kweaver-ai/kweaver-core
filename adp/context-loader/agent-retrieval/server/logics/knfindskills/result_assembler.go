@@ -7,7 +7,6 @@ package knfindskills
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
@@ -28,7 +27,7 @@ func Assemble(matches []interfaces.SkillMatch, topK int) *interfaces.FindSkillsR
 		if deduped[i].Score != deduped[j].Score {
 			return deduped[i].Score > deduped[j].Score
 		}
-		return strings.Compare(deduped[i].SkillID, deduped[j].SkillID) < 0
+		return deduped[i].SkillID < deduped[j].SkillID
 	})
 
 	if topK > 0 && len(deduped) > topK {

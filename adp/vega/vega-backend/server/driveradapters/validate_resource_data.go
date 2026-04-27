@@ -48,6 +48,14 @@ func ValidateResourceDataQueryParams(ctx context.Context, params *interfaces.Res
 		return err
 	}
 
+	// 聚合模式下的参数校验：当Aggregation、GroupBy或Having任一参数存在时执行
+	if isAggregateQuery(params) {
+		err = validateAggregateParams(ctx, params)
+		if err != nil {
+			return err
+		}
+	}
+
 	// 过滤条件用map接，然后再decode到condCfg中
 	var actualCond *interfaces.FilterCondCfg
 	err = mapstructure.Decode(params.FilterCondition, &actualCond)
@@ -191,6 +199,71 @@ func validateFilterCondCfg(ctx context.Context, cfg *interfaces.FilterCondCfg) e
 						WithErrorDetails(fmt.Sprintf("[%s] operation's value should contains at least 1 value", cfg.Operation))
 				}
 			}
+		}
+	}
+
+	return nil
+}
+
+// isAggregateQuery 判断是否为聚合查询
+func isAggregateQuery(params *interfaces.ResourceDataQueryParams) bool {
+	// 根据聚合相关字段推断
+	return params.Aggregation != nil || len(params.GroupBy) > 0 || params.Having != nil
+}
+
+// validateAggregateParams 校验聚合查询参数
+func validateAggregateParams(ctx context.Context, params *interfaces.ResourceDataQueryParams) error {
+	// 校验aggregation
+	if params.Aggregation != nil {
+		if params.Aggregation.Property == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Aggregation).
+				WithErrorDetails("Aggregation property cannot be empty")
+		}
+		// 校验聚合函数类型
+		validAggr := map[string]bool{
+			"count": true, "count_distinct": true, "sum": true,
+			"max": true, "min": true, "avg": true,
+		}
+		if !validAggr[params.Aggregation.Aggr] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Aggregation).
+				WithErrorDetails(fmt.Sprintf("Unsupported aggregation function: %s", params.Aggregation.Aggr))
+		}
+	}
+
+	// 校验group_by
+	for _, groupByItem := range params.GroupBy {
+		if groupByItem.Property == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_GroupBy).
+				WithErrorDetails("GroupBy property cannot be empty")
+		}
+	}
+
+	// 校验having
+	if params.Having != nil {
+		// having依赖aggregation或count(*)
+		if params.Aggregation == nil && params.Having.Field != "count(*)" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having clause requires aggregation or count(*)")
+		}
+		// 校验field字段
+		if params.Having.Field != "__value" && params.Having.Field != "count(*)" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having field must be '__value' or 'count(*)'")
+		}
+		// 校验operation
+		validOps := map[string]bool{
+			"==": true, "!=": true, ">": true, ">=": true,
+			"<": true, "<=": true, "in": true, "not_in": true,
+			"range": true, "out_range": true,
+		}
+		if !validOps[params.Having.Operation] {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails(fmt.Sprintf("Unsupported having operation: %s", params.Having.Operation))
+		}
+		// 校验value
+		if params.Having.Value == nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_Having).
+				WithErrorDetails("Having value cannot be empty")
 		}
 	}
 

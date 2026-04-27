@@ -50,6 +50,7 @@ type Resource struct {
 	SourceIdentifier string         `json:"source_identifier"`           // 源端标识（原始表名/路径）
 	SourceMetadata   map[string]any `json:"source_metadata,omitempty"`   // 源端配置（JSON）
 	SchemaDefinition []*Property    `json:"schema_definition,omitempty"` // Schema定义
+	LocalIndexName   string         `json:"index_name,omitempty"`        // 索引名称，由构建任务填充
 
 	// 逻辑视图特有的字段
 	LogicType       string                 `json:"logic_type,omitempty"`       // 逻辑类型: derived(衍生), composite(复合)

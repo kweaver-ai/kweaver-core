@@ -27,6 +27,7 @@ KWeaver Core is a **backend-only** platform. Use the CLI, SDKs, or HTTP APIs to 
 | [Decision Agent](decision-agent.md) | Goal-oriented agents, runtime, and observability |
 | [Trace AI](trace-ai.md) | Traces, metrics, and evidence-chain style observability |
 | [Info Security Fabric](isf.md) | Identity, permissions, policies, and audit (when enabled) |
+| [Platform admin tool](install.md#-administrator-tool-after-a-full-install-kweaver-admin) | `kweaver-admin` — users / orgs / roles / models / audit (after a full install) |
 
 ---
 
@@ -34,4 +35,4 @@ KWeaver Core is a **backend-only** platform. Use the CLI, SDKs, or HTTP APIs to 
 
 <img src="../qrcode.png" width="200" alt="KWeaver community QR code" />
 
-> Install the CLI with `npm install -g @kweaver-ai/kweaver-sdk`. For cluster operations beyond this help set, follow the deployment guide bundled with your release.
+> End users install the CLI with `npm install -g @kweaver-ai/kweaver-sdk`; platform administrators additionally install `npm install -g @kweaver-ai/kweaver-admin`. For cluster operations beyond this help set, follow the deployment guide bundled with your release.

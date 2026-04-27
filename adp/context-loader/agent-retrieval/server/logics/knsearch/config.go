@@ -14,7 +14,7 @@ func DefaultConceptRetrievalConfig() *interfaces.KnSearchConceptRetrievalConfig 
 	return &interfaces.KnSearchConceptRetrievalConfig{
 		TopK:                   10,
 		IncludeSampleData:      boolPtr(false),
-		SchemaBrief:            boolPtr(true),
+		SchemaBrief:            boolPtr(false),
 		EnableCoarseRecall:     boolPtr(true),
 		CoarseObjectLimit:      2000,
 		CoarseRelationLimit:    300,

@@ -525,8 +525,7 @@ func (cgs *conceptGroupService) GetConceptGroupByID(ctx context.Context, knID st
 		span.SetStatus(codes.Error, errStr)
 		span.End()
 
-		return nil, rest.NewHTTPError(ctx, http.StatusNotFound,
-			berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
+		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ConceptGroup_ConceptGroupNotFound).
 			WithErrorDetails(errStr)
 	}
 

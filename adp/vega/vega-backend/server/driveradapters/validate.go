@@ -25,7 +25,7 @@ func validateID(ctx context.Context, ID string) error {
 		return nil
 	}
 
-	// 非内置视图校验数据视图 id，只包含小写英文字母和数字和下划线(_)和连字符(-)，且不能以下划线开头，不能超过40个字符
+	// 非内置视图校验逻辑视图 id，只包含小写英文字母和数字和下划线(_)和连字符(-)，且不能以下划线开头，不能超过40个字符
 	re := regexp2.MustCompile(interfaces.RegexPattern_NonBuiltin_ViewID, regexp2.RE2)
 	match, err := re.MatchString(ID)
 	if err != nil || !match {

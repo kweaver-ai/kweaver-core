@@ -10,8 +10,10 @@ const (
 	agentFactoryBasePath = "/api/agent-factory"
 	apiKeySecurityName   = "ApiKeyAuth"
 	bearerSecurityName   = "BearerAuth"
-	staticScalarJSPath   = "ui/scalar-api-reference.js"
-	staticRedocJSPath    = "ui/redoc.standalone.js"
+	runtimeScalarJSPath  = "ui/scalar-api-reference.js"
+	runtimeRedocJSPath   = "ui/redoc.standalone.js"
+	publicScalarJSURL    = "https://cdn.jsdmirror.com/npm/@scalar/api-reference@1.34.6/dist/browser/standalone.js"
+	publicRedocJSURL     = "https://cdn.jsdmirror.com/npm/redoc@2.5.1/bundles/redoc.standalone.js"
 	staticScalarPagePath = "agent-factory.html"
 	staticRedocPagePath  = "agent-factory-redoc.html"
 )
@@ -28,11 +30,13 @@ type BuildOptions struct {
 
 // BuildArtifacts 汇总构建过程中产生的中间文档、最终文档与可落盘产物。
 type BuildArtifacts struct {
-	GeneratedDoc  *openapi3.T
-	FinalDoc      *openapi3.T
-	CompareReport string
-	JSON          []byte
-	YAML          []byte
-	HTML          []byte
-	RedocHTML     []byte
+	GeneratedDoc     *openapi3.T
+	FinalDoc         *openapi3.T
+	CompareReport    string
+	JSON             []byte
+	YAML             []byte
+	PublicHTML       []byte
+	PublicRedocHTML  []byte
+	RuntimeHTML      []byte
+	RuntimeRedocHTML []byte
 }

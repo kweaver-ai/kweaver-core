@@ -56,8 +56,8 @@ func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.Bu
 	query := `
 		INSERT INTO ` + BUILD_TASK_TABLE_NAME + ` (
 			f_id, f_resource_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := bta.db.ExecContext(
@@ -78,6 +78,10 @@ func (bta *buildTaskAccess) Create(ctx context.Context, buildTask *interfaces.Bu
 		buildTask.Updater.ID,
 		buildTask.Updater.Type,
 		buildTask.UpdateTime,
+		buildTask.EmbeddingFields,
+		buildTask.BuildKeyFields,
+		buildTask.EmbeddingModel,
+		buildTask.ModelDimensions,
 	)
 
 	if err != nil {
@@ -99,7 +103,7 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time
+			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		WHERE f_id = ?
 	`
@@ -125,6 +129,10 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 		&updaterID,
 		&updaterType,
 		&buildTask.UpdateTime,
+		&buildTask.EmbeddingFields,
+		&buildTask.BuildKeyFields,
+		&buildTask.EmbeddingModel,
+		&buildTask.ModelDimensions,
 	)
 
 	if err == sql.ErrNoRows {
@@ -153,81 +161,72 @@ func (bta *buildTaskAccess) GetByID(ctx context.Context, id string) (*interfaces
 	return buildTask, nil
 }
 
-// GetByResourceID retrieves build tasks by resource ID.
-func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID string) ([]*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get build tasks by resource ID", trace.WithSpanKind(trace.SpanKindClient))
+// GetByResourceID retrieves a build task by resource ID.
+func (bta *buildTaskAccess) GetByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task by resource ID", trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time
+			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		WHERE f_resource_id = ?
 		ORDER BY f_create_time DESC
+		LIMIT 1
 	`
 
-	rows, err := bta.db.QueryContext(ctx, query, resourceID)
+	row := bta.db.QueryRowContext(ctx, query, resourceID)
+
+	buildTask := &interfaces.BuildTask{}
+	var creatorID, creatorType, updaterID, updaterType string
+
+	err := row.Scan(
+		&buildTask.ID,
+		&buildTask.ResourceID,
+		&buildTask.Status,
+		&buildTask.Mode,
+		&buildTask.TotalCount,
+		&buildTask.SyncedCount,
+		&buildTask.VectorizedCount,
+		&buildTask.SyncedMark,
+		&buildTask.ErrorMsg,
+		&creatorID,
+		&creatorType,
+		&buildTask.CreateTime,
+		&updaterID,
+		&updaterType,
+		&buildTask.UpdateTime,
+		&buildTask.EmbeddingFields,
+		&buildTask.BuildKeyFields,
+		&buildTask.EmbeddingModel,
+		&buildTask.ModelDimensions,
+	)
+
+	if err == sql.ErrNoRows {
+		span.SetStatus(codes.Ok, "Build task not found")
+		return nil, nil
+	}
+
 	if err != nil {
-		logger.Errorf("Get build tasks by resource ID failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get build tasks by resource ID failed: %v", err))
-		span.SetStatus(codes.Error, "Get build tasks by resource ID failed")
+		logger.Errorf("Scan build task row failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
+		span.SetStatus(codes.Error, "Scan build task row failed")
 		return nil, err
 	}
-	defer rows.Close()
 
-	buildTasks := []*interfaces.BuildTask{}
-	for rows.Next() {
-		buildTask := &interfaces.BuildTask{}
-		var creatorID, creatorType, updaterID, updaterType string
-
-		err := rows.Scan(
-			&buildTask.ID,
-			&buildTask.ResourceID,
-			&buildTask.Status,
-			&buildTask.Mode,
-			&buildTask.TotalCount,
-			&buildTask.SyncedCount,
-			&buildTask.VectorizedCount,
-			&buildTask.SyncedMark,
-			&buildTask.ErrorMsg,
-			&creatorID,
-			&creatorType,
-			&buildTask.CreateTime,
-			&updaterID,
-			&updaterType,
-			&buildTask.UpdateTime,
-		)
-
-		if err != nil {
-			logger.Errorf("Scan build task row failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
-			span.SetStatus(codes.Error, "Scan build task row failed")
-			return nil, err
-		}
-
-		buildTask.Creator = interfaces.AccountInfo{
-			ID:   creatorID,
-			Type: creatorType,
-		}
-
-		buildTask.Updater = interfaces.AccountInfo{
-			ID:   updaterID,
-			Type: updaterType,
-		}
-
-		buildTasks = append(buildTasks, buildTask)
+	buildTask.Creator = interfaces.AccountInfo{
+		ID:   creatorID,
+		Type: creatorType,
 	}
 
-	if err = rows.Err(); err != nil {
-		logger.Errorf("Rows iteration failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Rows iteration failed: %v", err))
-		span.SetStatus(codes.Error, "Rows iteration failed")
-		return nil, err
+	buildTask.Updater = interfaces.AccountInfo{
+		ID:   updaterID,
+		Type: updaterType,
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return buildTasks, nil
+	return buildTask, nil
 }
 
 // UpdateStatus updates a build task's status and other fields.
@@ -289,84 +288,6 @@ func (bta *buildTaskAccess) UpdateStatus(ctx context.Context, id string, updates
 	return nil
 }
 
-// GetUncompletedTasks retrieves uncompleted build tasks (pending and running) with limit.
-func (bta *buildTaskAccess) GetUncompletedTasks(ctx context.Context, limit int) ([]*interfaces.BuildTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Get uncompleted build tasks", trace.WithSpanKind(trace.SpanKindClient))
-	defer span.End()
-
-	query := `
-		SELECT 
-			f_id, f_resource_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time
-		FROM ` + BUILD_TASK_TABLE_NAME + `
-		WHERE f_status IN (?, ?)
-		ORDER BY f_create_time ASC
-		LIMIT ?
-	`
-
-	rows, err := bta.db.QueryContext(ctx, query, interfaces.BuildTaskStatusPending, interfaces.BuildTaskStatusRunning, limit)
-	if err != nil {
-		logger.Errorf("Get uncompleted build tasks failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Get uncompleted build tasks failed: %v", err))
-		span.SetStatus(codes.Error, "Get uncompleted build tasks failed")
-		return nil, err
-	}
-	defer rows.Close()
-
-	buildTasks := []*interfaces.BuildTask{}
-	for rows.Next() {
-		buildTask := &interfaces.BuildTask{}
-		var creatorID, creatorType, updaterID, updaterType string
-
-		err := rows.Scan(
-			&buildTask.ID,
-			&buildTask.ResourceID,
-			&buildTask.Status,
-			&buildTask.Mode,
-			&buildTask.TotalCount,
-			&buildTask.SyncedCount,
-			&buildTask.VectorizedCount,
-			&buildTask.SyncedMark,
-			&buildTask.ErrorMsg,
-			&creatorID,
-			&creatorType,
-			&buildTask.CreateTime,
-			&updaterID,
-			&updaterType,
-			&buildTask.UpdateTime,
-		)
-
-		if err != nil {
-			logger.Errorf("Scan build task row failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
-			span.SetStatus(codes.Error, "Scan build task row failed")
-			return nil, err
-		}
-
-		buildTask.Creator = interfaces.AccountInfo{
-			ID:   creatorID,
-			Type: creatorType,
-		}
-
-		buildTask.Updater = interfaces.AccountInfo{
-			ID:   updaterID,
-			Type: updaterType,
-		}
-
-		buildTasks = append(buildTasks, buildTask)
-	}
-
-	if err = rows.Err(); err != nil {
-		logger.Errorf("Rows iteration failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Rows iteration failed: %v", err))
-		span.SetStatus(codes.Error, "Rows iteration failed")
-		return nil, err
-	}
-
-	span.SetStatus(codes.Ok, "")
-	return buildTasks, nil
-}
-
 // GetStatus retrieves the status of a build task by ID.
 func (bta *buildTaskAccess) GetStatus(ctx context.Context, id string) (string, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Get build task status", trace.WithSpanKind(trace.SpanKindClient))
@@ -416,7 +337,7 @@ func (bta *buildTaskAccess) GetAll(ctx context.Context, offset, limit int) ([]*i
 	query := `
 		SELECT 
 			f_id, f_resource_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
-			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time
+			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
 		FROM ` + BUILD_TASK_TABLE_NAME + `
 		ORDER BY f_create_time DESC
 		LIMIT ? OFFSET ?
@@ -452,6 +373,10 @@ func (bta *buildTaskAccess) GetAll(ctx context.Context, offset, limit int) ([]*i
 			&updaterID,
 			&updaterType,
 			&buildTask.UpdateTime,
+			&buildTask.EmbeddingFields,
+			&buildTask.BuildKeyFields,
+			&buildTask.EmbeddingModel,
+			&buildTask.ModelDimensions,
 		)
 
 		if err != nil {

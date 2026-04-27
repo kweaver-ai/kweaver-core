@@ -124,11 +124,12 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
-			resources.POST("/dataset/:id/build", r.BuildDataByEx)
-			resources.GET("/dataset/:id/build/:taskid", r.GetBuildTaskByEx)
-			resources.PUT("/dataset/:id/build/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByEx)
-			resources.GET("/dataset/build", r.ListBuildTasksByEx)
-			resources.DELETE("/dataset/build/:taskids", r.DeleteBuildTasksByEx)
+
+			resources.POST("/buildtask/:id", r.CreateBuildTaskByEx)
+			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByEx)
+			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByEx)
+			resources.GET("/buildtask", r.ListBuildTasksByEx)
+			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByEx)
 		}
 
 		// ConnectorType APIs - External
@@ -197,11 +198,12 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
-			resources.POST("/dataset/:id/build", r.BuildDataByIn)
-			resources.GET("/dataset/:id/build/:taskid", r.GetBuildTaskByIn)
-			resources.PUT("/dataset/:id/build/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
-			resources.GET("/dataset/build", r.ListBuildTasksByIn)
-			resources.DELETE("/dataset/build/:taskids", r.DeleteBuildTasksByIn)
+
+			resources.POST("/buildtask/:id", r.CreateBuildTaskByIn)
+			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByIn)
+			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
+			resources.GET("/buildtask", r.ListBuildTasksByIn)
+			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByIn)
 		}
 
 		// Query APIs - Internal

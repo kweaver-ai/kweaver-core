@@ -72,7 +72,7 @@ func (s *actionScheduleService) CreateSchedule(ctx context.Context, schedule *in
 			WithErrorDetails(err.Error())
 	}
 	if len(actionTypes) == 0 {
-		return "", rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_ActionTypeNotFound).
+		return "", rest.NewHTTPError(ctx, http.StatusNotFound, berrors.BknBackend_ActionSchedule_ActionTypeNotFound).
 			WithErrorDetails(fmt.Sprintf("Action type not found: %s", schedule.ActionTypeID))
 	}
 
@@ -238,7 +238,7 @@ func (s *actionScheduleService) DeleteSchedules(ctx context.Context, knID, branc
 				WithErrorDetails(fmt.Sprintf("Schedule not found: %s", id))
 		}
 		if schedule.KNID != knID || schedule.Branch != branch {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_NotFound).
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_ActionSchedule_InvalidParameter).
 				WithErrorDetails(fmt.Sprintf("Schedule %s does not belong to kn %s branch %s", id, knID, branch))
 		}
 	}

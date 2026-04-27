@@ -16,6 +16,12 @@ func TestDefaultConceptRetrievalConfig(t *testing.T) {
 	if config.TopK != 10 {
 		t.Errorf("Expected TopK 10, got %d", config.TopK)
 	}
+	if config.SchemaBrief == nil {
+		t.Fatal("Expected SchemaBrief default to be non-nil")
+	}
+	if boolValue(config.SchemaBrief) {
+		t.Error("Expected SchemaBrief false")
+	}
 	if !boolValue(config.EnableCoarseRecall) {
 		t.Error("Expected EnableCoarseRecall true")
 	}
@@ -213,5 +219,28 @@ func TestDefaultConfigsReturnNewInstances(t *testing.T) {
 	c2 := DefaultConceptRetrievalConfig()
 	if reflect.ValueOf(c1).Pointer() == reflect.ValueOf(c2).Pointer() {
 		t.Error("DefaultConceptRetrievalConfig should return new instance")
+	}
+}
+
+func TestNormalizeSearchSchemaReq_DefaultSchemaBriefFalse(t *testing.T) {
+	req := &interfaces.SearchSchemaReq{
+		Query: "test query",
+		KnID:  "kn-1",
+	}
+
+	normalized, _, err := NormalizeSearchSchemaReq(req)
+	if err != nil {
+		t.Fatalf("NormalizeSearchSchemaReq returned error: %v", err)
+	}
+
+	if normalized == nil || normalized.RetrievalConfig == nil {
+		t.Fatal("expected normalized retrieval config")
+	}
+	cfg, ok := normalized.RetrievalConfig.(*interfaces.RetrievalConfig)
+	if !ok || cfg == nil || cfg.ConceptRetrieval == nil {
+		t.Fatal("expected normalized retrieval config to be *interfaces.RetrievalConfig")
+	}
+	if cfg.ConceptRetrieval.SchemaBrief {
+		t.Fatal("expected default schema_brief to be false")
 	}
 }

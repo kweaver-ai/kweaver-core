@@ -16,6 +16,30 @@ npm install -g @kweaver-ai/kweaver-sdk
 
 需要 Node.js 22+。也可用 `npx kweaver --help` 免安装试用。
 
+### 🛡️ 完整安装：先用 kweaver-admin 创建可登录用户
+
+若你使用 **完整安装**（`./deploy.sh kweaver-core install`，未加 `--minimum`，已启用 `auth` 与 `businessDomain`），平台**必须鉴权**后才能使用业务能力。下文的 `kweaver` 登录需要**可登录的账号**；在多数部署中，**需要先用 `kweaver-admin` 创建业务用户**（并分配组织、角色等），再以该用户身份用 `kweaver` 完成后续「快速开始」。
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin auth login <平台地址> -k
+kweaver-admin org tree
+kweaver-admin user list
+kweaver-admin role list                        # 先查看平台内全部角色及 roleId（名称如 super_admin、normal_user 等，以输出为准）
+kweaver-admin user create --login <新用户名>
+# 默认初始密码为 123456，首次用 kweaver 登录时会被要求改密；见下方「登录平台」
+# 快速开始/验证：对 role list 中列出的每个 roleId 各执行一次 assign-role，为该用户挂齐全部角色，避免后续 API 因缺角色被拒
+kweaver-admin user assign-role <userId> <roleId>
+# … 对 role list 中每个角色重复上一行
+kweaver-admin user roles <userId>              # 确认已挂角色
+```
+
+- **角色与权限**（`super_admin` / `sys_admin` / `sec_admin` / `audit_admin` / `org_manager` / `org_audit` / `normal_user` 等）以 `kweaver-admin role list` 的部署侧输出为准，赋权时一律使用其中的 **roleId**。
+- 命令详情、与 `--minimum` 的区别、三权分立内置账号、默认密码与重置方式见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin) 与 [ISF](isf.md#-管理员工具kweaver-admin)。生产环境请按最小权限**只赋必要角色**；上文「对 role list 中每个 roleId 挂齐」适用于本地/POC 与快速开始。
+- **最小化安装**（`--minimum`）下鉴权与业务域服务被裁剪，往往可用 `kweaver auth login <平台地址> --no-auth` 等路径快速试用，**不需要**本小节；以你的部署说明为准。
+
+若你已从运维处获得**可登录的现有账号**（或安装文档给出的初始用户），可跳过本小节，直接进入下节「登录平台」。
+
 ### 🔑 登录平台
 
 ```bash

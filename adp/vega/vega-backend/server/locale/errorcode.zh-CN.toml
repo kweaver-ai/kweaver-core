@@ -43,6 +43,26 @@ Description = "无效的排序参数"
 Solution = "请检查参数"
 ErrorLink = "暂无"
 
+[VegaBackend.InvalidParameter.Aggregation]
+Description = "无效的聚合参数"
+Solution = "请检查聚合参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.GroupBy]
+Description = "无效的分组参数"
+Solution = "请检查分组参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.OrderBy]
+Description = "无效的聚合排序参数"
+Solution = "请检查排序参数"
+ErrorLink = "暂无"
+
+[VegaBackend.InvalidParameter.Having]
+Description = "无效的Having参数"
+Solution = "请检查Having参数"
+ErrorLink = "暂无"
+
 [VegaBackend.InvalidParameter.Direction]
 Description = "无效的排序方向参数"
 Solution = "请检查参数"

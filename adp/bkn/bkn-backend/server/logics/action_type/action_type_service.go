@@ -150,6 +150,43 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 		return []string{}, err
 	}
 
+	// 0. 开始事务
+	if tx == nil {
+		tx, err = ats.db.Begin()
+		if err != nil {
+			logger.Errorf("Begin transaction error: %s", err.Error())
+			span.SetStatus(codes.Error, "事务开启失败")
+			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
+
+			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
+				WithErrorDetails(err.Error())
+		}
+		// 0.1 异常时
+		defer func() {
+			switch err {
+			case nil:
+				// 提交事务
+				err = tx.Commit()
+				if err != nil {
+					logger.Errorf("CreateActionType Transaction Commit Failed:%v", err)
+					span.SetStatus(codes.Error, "提交事务失败")
+					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Commit Failed: %s", err.Error()))
+					return
+				}
+				logger.Infof("CreateActionType Transaction Commit Success")
+				o11y.Debug(ctx, "CreateActionType Transaction Commit Success")
+			default:
+				rollbackErr := tx.Rollback()
+				if rollbackErr != nil {
+					logger.Errorf("CreateActionType Transaction Rollback Error:%v", rollbackErr)
+					span.SetStatus(codes.Error, "事务回滚失败")
+					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Rollback Error: %s", err.Error()))
+				}
+			}
+		}()
+	}
+
 	currentTime := time.Now().UnixMilli()
 	for _, actionType := range actionTypes {
 		// 若提交的模型id为空，生成分布式ID
@@ -190,43 +227,6 @@ func (ats *actionTypeService) CreateActionTypes(ctx context.Context, tx *sql.Tx,
 
 		bknAction := logics.ToBKNActionType(actionType)
 		actionType.BKNRawContent = bknsdk.SerializeActionType(bknAction)
-	}
-
-	// 0. 开始事务
-	if tx == nil {
-		tx, err = ats.db.Begin()
-		if err != nil {
-			logger.Errorf("Begin transaction error: %s", err.Error())
-			span.SetStatus(codes.Error, "事务开启失败")
-			o11y.Error(ctx, fmt.Sprintf("Begin transaction error: %s", err.Error()))
-
-			return []string{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-				berrors.BknBackend_ActionType_InternalError_BeginTransactionFailed).
-				WithErrorDetails(err.Error())
-		}
-		// 0.1 异常时
-		defer func() {
-			switch err {
-			case nil:
-				// 提交事务
-				err = tx.Commit()
-				if err != nil {
-					logger.Errorf("CreateActionType Transaction Commit Failed:%v", err)
-					span.SetStatus(codes.Error, "提交事务失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Commit Failed: %s", err.Error()))
-					return
-				}
-				logger.Infof("CreateActionType Transaction Commit Success")
-				o11y.Debug(ctx, "CreateActionType Transaction Commit Success")
-			default:
-				rollbackErr := tx.Rollback()
-				if rollbackErr != nil {
-					logger.Errorf("CreateActionType Transaction Rollback Error:%v", rollbackErr)
-					span.SetStatus(codes.Error, "事务回滚失败")
-					o11y.Error(ctx, fmt.Sprintf("CreateActionType Transaction Rollback Error: %s", err.Error()))
-				}
-			}
-		}()
 	}
 
 	createActionTypes, updateActionTypes, err := ats.handleActionTypeImportMode(ctx, mode, actionTypes)

@@ -98,12 +98,12 @@ func NewOracleConnector() connectors.TableConnector {
 
 // GetType returns the data source type.
 func (c *OracleConnector) GetType() string {
-	return "oracle"
+	return interfaces.ConnectorTypeOracle
 }
 
 // GetName returns the connector name.
 func (c *OracleConnector) GetName() string {
-	return "oracle"
+	return interfaces.ConnectorTypeOracle
 }
 
 // GetMode returns the connector mode.

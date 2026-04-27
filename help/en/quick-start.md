@@ -12,6 +12,23 @@ This walkthrough assumes KWeaver Core is already [installed and deployed](instal
 
 ### Step 1: Authenticate
 
+**Full install (not `--minimum`)** — The platform enforces auth. The `kweaver` login below needs a **user that can sign in** to use product features. In many deployments you must **create that business user with `kweaver-admin` first**, **inspect roles**, then **assign every role** from `role list` in this quick start (or your least-privilege set in production), then use `kweaver` with that user for this quick start.
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin auth login <platform-url> -k
+kweaver-admin role list                          # all roles and roleIds (e.g. super_admin, normal_user — trust CLI output)
+kweaver-admin user create --login <new-username>   # default initial password 123456; first kweaver login will force a change
+# Quick start / lab: run user assign-role once per roleId from role list so the user has the full role set; avoids API 403s from missing roles
+kweaver-admin user assign-role <userId> <roleId>
+# … repeat for each role in role list
+kweaver-admin user roles <userId>                 # verify
+```
+
+Use **roleId** values from `kweaver-admin role list` (see [Roles and permissions in kweaver-admin](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/product-specs/role-permission.md)). **Assigning every role** matches a “full product” trial path; in production, grant only the roles your policy requires.
+
+Details: [Install — Administrator tool after a full install (kweaver-admin)](install.md#-administrator-tool-after-a-full-install-kweaver-admin) and [ISF](isf.md#-administrator-tool-kweaver-admin). **Minimum install** can often use `kweaver auth login <platform-url> --no-auth` and typically **does not** need this step — follow your deployment guide. Skip the block above if you **already have** credentials from ops.
+
 > If the `kweaver` CLI is not yet installed, run `npm install -g @kweaver-ai/kweaver-sdk` first (or `npx kweaver --help` to try without a global install).
 
 ```bash

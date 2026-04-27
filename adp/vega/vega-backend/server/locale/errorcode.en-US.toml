@@ -43,6 +43,26 @@ Description = "Invalid sort parameter"
 Solution = "Please check the parameter"
 ErrorLink = "None"
 
+[VegaBackend.InvalidParameter.Aggregation]
+Description = "Invalid aggregation parameter"
+Solution = "Please check the aggregation parameter"
+ErrorLink = "None"
+
+[VegaBackend.InvalidParameter.GroupBy]
+Description = "Invalid group by parameter"
+Solution = "Please check the group by parameter"
+ErrorLink = "None"
+
+[VegaBackend.InvalidParameter.OrderBy]
+Description = "Invalid order by parameter"
+Solution = "Please check the order by parameter"
+ErrorLink = "None"
+
+[VegaBackend.InvalidParameter.Having]
+Description = "Invalid having parameter"
+Solution = "Please check the having parameter"
+ErrorLink = "None"
+
 [VegaBackend.InvalidParameter.Direction]
 Description = "Invalid direction parameter"
 Solution = "Please check the parameter"

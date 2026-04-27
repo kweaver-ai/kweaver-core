@@ -133,12 +133,12 @@ func NewAnyShareConnector() connectors.FilesetConnector {
 
 // GetType returns the data source type.
 func (c *AnyShareConnector) GetType() string {
-	return "anyshare"
+	return interfaces.ConnectorTypeAnyShare
 }
 
 // GetName returns the connector name.
 func (c *AnyShareConnector) GetName() string {
-	return "anyshare"
+	return interfaces.ConnectorTypeAnyShare
 }
 
 // GetMode returns the connector mode.
@@ -405,7 +405,7 @@ func (c *AnyShareConnector) GetMetadata(ctx context.Context) (map[string]any, er
 		return nil, err
 	}
 	return map[string]any{
-		"connector":        "anyshare",
+		"connector":        interfaces.ConnectorTypeAnyShare,
 		"host":             c.config.Host,
 		"port":             c.config.Port,
 		"doc_lib_type":     c.config.DocLibType,

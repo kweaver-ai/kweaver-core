@@ -1,0 +1,127 @@
+// Copyright The kweaver.ai Authors.
+//
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file in the project root for details.
+
+// Package worker provides background workers for VEGA Manager.
+package worker
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"strings"
+	"time"
+
+	"vega-backend/interfaces"
+
+	"github.com/bytedance/sonic"
+	"github.com/hibiken/asynq"
+)
+
+func getIndexName(resourceID, buildTaskID string) string {
+	return interfaces.BUILD_PREFIX + "-" + resourceID + "-" + buildTaskID
+}
+
+func getOldDocID(primaryKeyValues []interfaces.KeyValue) string {
+	// 将primaryKeyValues中的所有值拼接成id
+	var idBuilder strings.Builder
+	for _, item := range primaryKeyValues {
+		idBuilder.WriteString(fmt.Sprintf("%v", item.Value))
+		idBuilder.WriteString("-")
+	}
+	return idBuilder.String()
+}
+
+func getNewDocID(primaryKeyValues []interfaces.KeyValue, document map[string]any) string {
+	// 构造新的文档ID，确保与oldDocID的拼接顺序相同
+	var newDocIDBuilder strings.Builder
+	for _, item := range primaryKeyValues {
+		if value, ok := document[item.Key]; ok {
+			newDocIDBuilder.WriteString(fmt.Sprintf("%v", value))
+			newDocIDBuilder.WriteString("-")
+		}
+	}
+	return newDocIDBuilder.String()
+}
+
+// updateResourceIndexName updates the index name of a resource
+func updateResourceIndexName(ctx context.Context, resource *interfaces.Resource, ra interfaces.ResourceAccess, ds interfaces.DatasetService, indexName string) error {
+	if resource.LocalIndexName == "" {
+		resource.LocalIndexName = indexName
+		return ra.Update(ctx, resource)
+	}
+
+	if resource.LocalIndexName != indexName {
+		err := ds.Delete(ctx, resource)
+		if err != nil {
+			return fmt.Errorf("delete local index failed: %w", err)
+		}
+		resource.LocalIndexName = indexName
+		return ra.Update(ctx, resource)
+	}
+	return nil
+}
+
+// createLocalIndex creates a local index with vector fields for embedding
+func createLocalIndex(ctx context.Context, ds interfaces.DatasetService, buildTask *interfaces.BuildTask, resource *interfaces.Resource) error {
+	newResource := *resource
+	newResource.ID = getIndexName(resource.ID, buildTask.ID)
+	if buildTask.EmbeddingFields != "" {
+		embeddingFields := strings.Split(buildTask.EmbeddingFields, ",")
+		var newSchema []*interfaces.Property
+		if resource.SchemaDefinition != nil {
+			newSchema = append(newSchema, resource.SchemaDefinition...)
+		}
+		for _, field := range embeddingFields {
+			field = strings.TrimSpace(field)
+			if field != "" {
+				vectorProperty := &interfaces.Property{
+					Name: field + "_vector",
+					Type: interfaces.DataType_Vector,
+					Features: []interfaces.PropertyFeature{
+						{
+							FeatureType: interfaces.DataType_Vector,
+							Config: map[string]any{
+								"dimension": buildTask.ModelDimensions,
+								"method": map[string]any{
+									"name":   "hnsw",
+									"engine": "lucene",
+									"parameters": map[string]any{
+										"ef_construction": 256,
+									},
+								},
+							},
+						},
+					},
+				}
+				newSchema = append(newSchema, vectorProperty)
+			}
+		}
+		newResource.SchemaDefinition = newSchema
+	}
+	return ds.Create(ctx, &newResource)
+}
+
+// sendEmbeddingTask sends a embedding task to the queue
+func sendEmbeddingTask(client *asynq.Client, taskID string) error {
+	embeddingTaskMsg := interfaces.EmbeddingBuildTaskMessage{
+		TaskID: taskID,
+	}
+	payload, err := sonic.Marshal(embeddingTaskMsg)
+	if err != nil {
+		return err
+	} else {
+		embeddingTask := asynq.NewTask(interfaces.BuildTaskTypeEmbedding, payload)
+		_, err = client.Enqueue(embeddingTask,
+			asynq.Queue(interfaces.DefaultQueue),
+			asynq.MaxRetry(interfaces.BUILD_TASK_MAX_RETRY_COUNT),
+			asynq.Timeout(math.MaxInt64),                                                  // 永不超时
+			asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)), // 永不过期
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -37,20 +37,76 @@ func KnSearchReqToLocal(req *interfaces.KnSearchReq) *interfaces.KnSearchLocalRe
 	return local
 }
 
-// retrievalConfigToLocal 将 any 形式的 retrieval_config 转为 *KnSearchRetrievalConfig
+// retrievalConfigToLocal 将 any 形式的 retrieval_config 转为 *KnSearchRetrievalConfig。
+// 当 cfg 为 *RetrievalConfig 时走显式拷贝：避免 JSON 往返时 bool 字段带 omitempty 导致 false 被省略，
+// 进而 Unmarshal 到 *bool 时变成 nil（与显式 false 语义不同）。
 func retrievalConfigToLocal(cfg any) *interfaces.KnSearchRetrievalConfig {
 	if cfg == nil {
 		return nil
 	}
-	data, err := json.Marshal(cfg)
-	if err != nil {
+	switch v := cfg.(type) {
+	case *interfaces.RetrievalConfig:
+		return retrievalConfigStructToLocal(v)
+	case interfaces.RetrievalConfig:
+		return retrievalConfigStructToLocal(&v)
+	default:
+		data, err := json.Marshal(cfg)
+		if err != nil {
+			return nil
+		}
+		var local interfaces.KnSearchRetrievalConfig
+		if err := json.Unmarshal(data, &local); err != nil {
+			return nil
+		}
+		return &local
+	}
+}
+
+func retrievalConfigStructToLocal(rc *interfaces.RetrievalConfig) *interfaces.KnSearchRetrievalConfig {
+	if rc == nil {
 		return nil
 	}
-	var local interfaces.KnSearchRetrievalConfig
-	if err := json.Unmarshal(data, &local); err != nil {
-		return nil
+	out := &interfaces.KnSearchRetrievalConfig{}
+	if rc.ConceptRetrieval != nil {
+		cr := rc.ConceptRetrieval
+		out.ConceptRetrieval = &interfaces.KnSearchConceptRetrievalConfig{
+			TopK:                   cr.TopK,
+			IncludeSampleData:      boolPtr(cr.IncludeSampleData),
+			SchemaBrief:            boolPtr(cr.SchemaBrief),
+			EnableCoarseRecall:     boolPtr(cr.EnableCoarseRecall),
+			CoarseObjectLimit:      cr.CoarseObjectLimit,
+			CoarseRelationLimit:    cr.CoarseRelationLimit,
+			CoarseMinRelationCount: cr.CoarseMinRelationCount,
+			EnablePropertyBrief:    boolPtr(cr.EnablePropertyBrief),
+			PerObjectPropertyTopK:  cr.PerObjectPropertyTopK,
+			GlobalPropertyTopK:     cr.GlobalPropertyTopK,
+		}
 	}
-	return &local
+	if rc.SemanticInstanceRetrieval != nil {
+		s := rc.SemanticInstanceRetrieval
+		out.SemanticInstanceRetrieval = &interfaces.KnSearchSemanticInstanceRetrievalConfig{
+			InitialCandidateCount:             s.InitialCandidateCount,
+			PerTypeInstanceLimit:              s.PerTypeInstanceLimit,
+			MaxSemanticSubConditions:          s.MaxSemanticSubConditions,
+			SemanticFieldKeepRatio:            s.SemanticFieldKeepRatio,
+			SemanticFieldKeepMin:              s.SemanticFieldKeepMin,
+			SemanticFieldKeepMax:              s.SemanticFieldKeepMax,
+			SemanticFieldRerankBatchSize:      s.SemanticFieldRerankBatchSize,
+			MinDirectRelevance:                s.MinDirectRelevance,
+			EnableGlobalFinalScoreRatioFilter: boolPtr(s.EnableGlobalFinalScoreRatioFilter),
+			GlobalFinalScoreRatio:             s.GlobalFinalScoreRatio,
+			ExactNameMatchScore:               s.ExactNameMatchScore,
+		}
+	}
+	if rc.PropertyFilter != nil {
+		p := rc.PropertyFilter
+		out.PropertyFilter = &interfaces.KnSearchPropertyFilterConfig{
+			MaxPropertiesPerInstance: p.MaxPropertiesPerInstance,
+			MaxPropertyValueLength:   p.MaxPropertyValueLength,
+			EnablePropertyFilter:     boolPtr(p.EnablePropertyFilter),
+		}
+	}
+	return out
 }
 
 // KnSearchLocalResponseToResp 将 KnSearchLocalResponse 转为 KnSearchResp
@@ -58,14 +114,9 @@ func KnSearchLocalResponseToResp(local *interfaces.KnSearchLocalResponse) *inter
 	if local == nil {
 		return nil
 	}
-	resp := &interfaces.KnSearchResp{
+	return &interfaces.KnSearchResp{
 		ObjectTypes:   local.ObjectTypes,
 		RelationTypes: local.RelationTypes,
 		ActionTypes:   local.ActionTypes,
-		Nodes:         local.Nodes,
 	}
-	if local.Message != "" {
-		resp.Message = &local.Message
-	}
-	return resp
 }

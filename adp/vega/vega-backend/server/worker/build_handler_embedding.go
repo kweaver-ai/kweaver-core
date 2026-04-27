@@ -8,7 +8,9 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -18,6 +20,7 @@ import (
 	"vega-backend/common"
 	taskAccess "vega-backend/drivenadapters/build_task"
 	kafkaAccess "vega-backend/drivenadapters/kafka"
+	"vega-backend/drivenadapters/model_factory"
 	resourceAccess "vega-backend/drivenadapters/resource"
 	"vega-backend/interfaces"
 	"vega-backend/logics/connectors"
@@ -33,6 +36,7 @@ type embeddingHandler struct {
 	ds          interfaces.DatasetService
 	connector   connectors.IndexConnector
 	kafkaAccess interfaces.KafkaAccess
+	mfa         interfaces.ModelFactoryAccess
 }
 
 // NewEmbeddingBuildHandler creates a new embedding handler.
@@ -59,6 +63,7 @@ func NewEmbeddingBuildHandler(appSetting *common.AppSetting) *embeddingHandler {
 		ds:          dataset.NewDatasetService(appSetting),
 		connector:   connector.(connectors.IndexConnector),
 		kafkaAccess: kafkaAccess.NewKafkaAccess(appSetting),
+		mfa:         model_factory.NewModelFactoryAccess(appSetting),
 	}
 }
 
@@ -125,22 +130,14 @@ func (eh *embeddingHandler) HandleTask(ctx context.Context, task *asynq.Task) er
 func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask) error {
 	// get vector fields from resource.schema_definition
 	fieldsMap := make(map[string]*interfaces.Property)
-	embeddingFields := []string{}
-	sourceFieldsMap := make(map[string]string)
+	embeddingFields := strings.Split(buildTaskInfo.EmbeddingFields, ",")
 	for _, prop := range resource.SchemaDefinition {
 		fieldsMap[prop.Name] = prop
-		if prop.Type == interfaces.DataType_Vector {
-			embeddingFields = append(embeddingFields, prop.Name)
-			if len(prop.Features) > 0 {
-				sourceField := prop.Features[0].RefProperty
-				sourceFieldsMap[prop.Name] = sourceField
-			}
-		}
 	}
 
 	// Use the connector name as the Kafka topic prefix
-	topic := fmt.Sprintf("%s-%s-embedding", KafkaTopicPrefix, resource.ID)
-	groupID := fmt.Sprintf("%s-embedding-%s", KafkaTopicPrefix, resource.ID)
+	topic := fmt.Sprintf("%s-%s-embedding", interfaces.BUILD_PREFIX, resource.ID)
+	groupID := fmt.Sprintf("%s-embedding-%s", interfaces.BUILD_PREFIX, resource.ID)
 
 	// Create Kafka reader
 	reader, err := eh.kafkaAccess.NewReader(ctx, topic, groupID)
@@ -150,21 +147,59 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 	defer eh.kafkaAccess.CloseReader(reader)
 
 	logger.Infof("Started Kafka subscription for embedding topic %s with group ID %s", topic, groupID)
+	indexName := getIndexName(resource.ID, buildTaskInfo.ID)
 
 	// Message processing loop
-	retryInterval := interfaces.DATASET_BUILD_RETRY_INTERVAL * time.Second
+	retryInterval := interfaces.BUILD_TASK_RETRY_INTERVAL * time.Second
 	totalProcessed := buildTaskInfo.VectorizedCount
+	const batchUpdateThreshold = 1000 // 每处理1000条消息更新一次
+	lastUpdateTime := time.Now()
+	updateInterval := 30 * time.Second // embedding速度慢，至少每30秒更新一次
 	for {
+		// Check task status before each iteration
+		taskStatus, err := eh.taskAccess.GetStatus(ctx, buildTaskInfo.ID)
+		if err != nil {
+			logger.Errorf("Failed to get task status: %v", err)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		// Handle stopping status
+		if taskStatus == interfaces.BuildTaskStatusStopping {
+			// Task is stopping, exit the loop
+			logger.Infof("Task %s is stopping, exiting...", buildTaskInfo.ID)
+			// Update task status to stopped
+			err := eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusStopped, "vectorizedCount": totalProcessed})
+			if err != nil {
+				return fmt.Errorf("update build task status failed: %w", err)
+			}
+			return nil
+		}
+
 		select {
 		case <-ctx.Done():
 			logger.Infof("Kafka subscription context canceled, exiting")
+			// 最后一次更新任务状态
+			_ = eh.taskAccess.UpdateStatus(context.Background(), buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
 			return nil
 		default:
+			// 创建带超时的上下文，避免ReadMessage一直阻塞
+			timeoutCtx, cancel := context.WithTimeout(context.Background(), updateInterval)
+			defer cancel()
+
 			// Read message from Kafka
-			msg, err := eh.kafkaAccess.ReadMessage(ctx, reader)
+			msg, err := eh.kafkaAccess.ReadMessage(timeoutCtx, reader)
 			if err != nil {
-				logger.Errorf("Failed to read message from Kafka: %v", err)
-				// Continue to next message
+				if errors.Is(err, context.DeadlineExceeded) {
+					// 超时，检查是否需要更新任务状态
+					if totalProcessed > buildTaskInfo.VectorizedCount && time.Since(lastUpdateTime) > updateInterval {
+						_ = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
+						lastUpdateTime = time.Now()
+					}
+				} else {
+					logger.Errorf("Embedding task Failed to read message from Kafka: %v", err)
+				}
+				time.Sleep(retryInterval)
 				continue
 			}
 
@@ -185,11 +220,21 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 			}
 
 			// Get document from dataset
-			document, err := eh.ds.GetDocument(ctx, resource.ID, docID)
+			document, err := eh.ds.GetDocument(ctx, indexName, docID)
 			if err != nil {
 				// Check if document ID is EmptyDocumentID
 				if docID == interfaces.EmptyDocumentID {
 					logger.Infof("Empty document ID detected, skipping: %s", docID)
+
+					// Update resource index name
+					indexName := getIndexName(resource.ID, buildTaskInfo.ID)
+					err = updateResourceIndexName(ctx, resource, eh.resAccess, eh.ds, indexName)
+					if err != nil {
+						logger.Errorf("Failed to update resource index name: %v", err)
+						time.Sleep(retryInterval)
+						continue
+					}
+
 					// Commit the message to avoid reprocessing
 					_ = eh.kafkaAccess.CommitMessages(ctx, reader, msg)
 					logger.Infof("CommitMessages")
@@ -202,23 +247,25 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 
 			// 处理结果并进行嵌入
 			updateDoc := make(map[string]any)
+			fields := []string{}
+			words := []string{}
 			for _, field := range embeddingFields {
-				// 从映射中获取对应的源字段
-				if sourceField, ok := sourceFieldsMap[field]; ok {
-					if value, exists := document[sourceField]; exists {
-						//if text, ok := value.(string); ok {
-						if _, ok := value.(string); ok {
-							// 这里应该调用嵌入服务生成向量
-							// 示例：vector := embeddingService.Embed(text)
-							// 为了演示，我们使用一个模拟的向量
-							// 256-dimensional vector
-							vector := make([]float64, 256)
-							for i := range vector {
-								vector[i] = 0.1 + float64(i%10)/10.0
-							}
-							updateDoc[field] = vector
-						}
+				if value, exists := document[field]; exists {
+					if text, ok := value.(string); ok && text != "" {
+						fields = append(fields, field)
+						words = append(words, text)
 					}
+				}
+			}
+			vectorResp, err := eh.mfa.GetVector(ctx, buildTaskInfo.EmbeddingModel, words)
+			if err != nil || len(vectorResp) != len(words) {
+				logger.Errorf("GetVector failed: %v", err)
+				time.Sleep(retryInterval)
+				continue
+			}
+			for i, field := range fields {
+				if resp := vectorResp[i]; resp.Vector != nil {
+					updateDoc[field+"_vector"] = resp.Vector
 				}
 			}
 
@@ -228,7 +275,7 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 					"id":       docID,
 					"document": updateDoc,
 				}
-				err = eh.ds.UpdateDocuments(ctx, resource.ID, []map[string]any{updateReq})
+				_, err := eh.ds.UpsertDocuments(ctx, indexName, []map[string]any{updateReq})
 				if err != nil {
 					logger.Errorf("Update document failed: %v", err)
 					time.Sleep(retryInterval)
@@ -236,8 +283,11 @@ func (eh *embeddingHandler) executeEmbedding(ctx context.Context, resource *inte
 				}
 				totalProcessed++
 
-				// 更新任务状态
-				_ = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
+				// 批量更新任务状态
+				if totalProcessed%batchUpdateThreshold == 0 || time.Since(lastUpdateTime) > updateInterval {
+					_ = eh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"vectorizedCount": totalProcessed})
+					lastUpdateTime = time.Now()
+				}
 			}
 
 			// Commit the message to avoid reprocessing

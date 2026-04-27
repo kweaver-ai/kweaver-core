@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"vega-backend/interfaces"
 
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 )
@@ -94,11 +95,11 @@ except Exception as e:
 // MapDataSourceTypeToDialect 将数据源类型映射到sqlglot方言
 func MapDataSourceTypeToDialect(dataSourceType string) (string, error) {
 	switch strings.ToLower(dataSourceType) {
-	case "mysql":
+	case interfaces.ConnectorTypeMySQL:
 		return "mysql", nil
 	case "postgres":
 		return "postgres", nil
-	case "maria", "mariadb":
+	case "maria", interfaces.ConnectorTypeMariaDB:
 		return "mysql", nil // MariaDB使用mysql方言
 	default:
 		logger.Errorf("unsupported dataSourceType: %s", dataSourceType)

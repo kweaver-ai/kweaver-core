@@ -418,6 +418,11 @@ CREATE TABLE IF NOT EXISTS t_build_task (
     f_updater_type            VARCHAR(20 CHAR) NOT NULL,
     f_update_time             BIGINT NOT NULL,
 
+    f_embedding_fields        VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+    f_build_key_fields        VARCHAR(255 CHAR) NOT NULL DEFAULT '',
+    f_embedding_model         VARCHAR(40 CHAR) NOT NULL DEFAULT '',
+    f_model_dimensions        INT NOT NULL DEFAULT 0,
+
     -- 索引
     CLUSTER PRIMARY KEY (f_id)
 );

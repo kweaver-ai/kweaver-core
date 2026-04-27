@@ -23,6 +23,12 @@ type recallCoordinator struct {
 	bknBackend    interfaces.BknBackendAccess
 }
 
+const (
+	networkRecallPriority        = 10
+	objectTypeRecallPriority     = 50
+	objectSelectorRecallPriority = 100
+)
+
 // recallNetwork handles Mode 1: network-level recall.
 // Returns skills only when the skills ObjectType has NO relation to any other ObjectType.
 func (rc *recallCoordinator) recallNetwork(
@@ -56,7 +62,7 @@ func (rc *recallCoordinator) recallNetwork(
 		return nil, interfaces.HintNone, fmt.Errorf("QueryObjectInstances(skills): %w", err)
 	}
 
-	return extractSkillMatchesFromInstances(resp.Data, "network", 10), interfaces.HintNone, nil
+	return extractSkillMatchesFromInstances(resp.Data, "network", networkRecallPriority), interfaces.HintNone, nil
 }
 
 // recallObjectType handles Mode 2: object-type-level recall.
@@ -70,7 +76,11 @@ func (rc *recallCoordinator) recallObjectType(
 	defer o11y.EndSpan(ctx, err)
 
 	if req.ObjectTypeID == rc.config.SkillsObjectTypeID {
-		return rc.recallSkillsDirect(ctx, req, skillQueryCond, "object_type", 50)
+		matches, err := rc.recallSkillsDirect(ctx, req, skillQueryCond, "object_type", objectTypeRecallPriority)
+		if err != nil {
+			return nil, interfaces.HintNone, err
+		}
+		return matches, interfaces.HintNone, nil
 	}
 
 	rt, err := rc.findRelationType(ctx, req.KnID, req.ObjectTypeID)
@@ -88,7 +98,12 @@ func (rc *recallCoordinator) recallObjectType(
 		return nil, interfaces.HintNone, fmt.Errorf("QueryInstanceSubgraph(object_type): %w", err)
 	}
 
-	return extractSkillMatchesFromSubgraph(resp, rc.config.SkillsObjectTypeID, "object_type", 50), interfaces.HintNone, nil
+	return extractSkillMatchesFromSubgraph(
+		resp,
+		rc.config.SkillsObjectTypeID,
+		"object_type",
+		objectTypeRecallPriority,
+	), interfaces.HintNone, nil
 }
 
 // recallInstance handles Mode 3: instance-level recall.
@@ -103,7 +118,17 @@ func (rc *recallCoordinator) recallInstance(
 	defer o11y.EndSpan(ctx, err)
 
 	if req.ObjectTypeID == rc.config.SkillsObjectTypeID {
-		return rc.recallSkillsDirect(ctx, req, skillQueryCond, "object_selector", 100)
+		matches, err := rc.recallSkillsDirect(
+			ctx,
+			req,
+			skillQueryCond,
+			"object_selector",
+			objectSelectorRecallPriority,
+		)
+		if err != nil {
+			return nil, interfaces.HintNone, err
+		}
+		return matches, interfaces.HintNone, nil
 	}
 
 	rt, err := rc.findRelationType(ctx, req.KnID, req.ObjectTypeID)
@@ -122,7 +147,12 @@ func (rc *recallCoordinator) recallInstance(
 		return nil, interfaces.HintNone, fmt.Errorf("QueryInstanceSubgraph(instance): %w", err)
 	}
 
-	return extractSkillMatchesFromSubgraph(resp, rc.config.SkillsObjectTypeID, "object_selector", 100), interfaces.HintNone, nil
+	return extractSkillMatchesFromSubgraph(
+		resp,
+		rc.config.SkillsObjectTypeID,
+		"object_selector",
+		objectSelectorRecallPriority,
+	), interfaces.HintNone, nil
 }
 
 // recallSkillsDirect handles queries where object_type_id is the skills ObjectType itself.
@@ -134,7 +164,7 @@ func (rc *recallCoordinator) recallSkillsDirect(
 	skillQueryCond *interfaces.KnCondition,
 	scope string,
 	priority int,
-) ([]interfaces.SkillMatch, interfaces.EmptyResultHint, error) {
+) ([]interfaces.SkillMatch, error) {
 	cond := mergeConditions(
 		skillQueryCond,
 		buildInstanceFilterCondition(req.InstanceIdentities),
@@ -150,10 +180,10 @@ func (rc *recallCoordinator) recallSkillsDirect(
 
 	resp, err := rc.ontologyQuery.QueryObjectInstances(ctx, oqReq)
 	if err != nil {
-		return nil, interfaces.HintNone, fmt.Errorf("QueryObjectInstances(skills direct): %w", err)
+		return nil, fmt.Errorf("QueryObjectInstances(skills direct): %w", err)
 	}
 
-	return extractSkillMatchesFromInstances(resp.Data, scope, priority), interfaces.HintNone, nil
+	return extractSkillMatchesFromInstances(resp.Data, scope, priority), nil
 }
 
 // mergeConditions combines two optional KnConditions with AND.

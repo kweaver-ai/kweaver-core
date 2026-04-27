@@ -73,7 +73,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 	// 如果是流式查询，调用executeStreamQuery方法
 	if req.QueryType == "stream" {
 		// OpenSearch流式查询直接调用executeOpenSearchQuery
-		if req.ResourceType == "opensearch" {
+		if req.ResourceType == interfaces.ConnectorTypeOpenSearch {
 			// 从query中获取resource_id
 			queryMap, ok := req.Query.(map[string]any)
 			if !ok {
@@ -120,7 +120,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 	}
 
 	// 优先检查resource_type，因为OpenSearch查询的query是JSON对象，不包含resource_id占位符
-	if req.ResourceType == "opensearch" {
+	if req.ResourceType == interfaces.ConnectorTypeOpenSearch {
 		// OpenSearch查询，跳过resource_id提取
 		// 从query中获取resource_id
 		queryMap, ok := req.Query.(map[string]any)
@@ -210,12 +210,12 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 		}
 
 		// 根据catalog的ConnectorType来决定调用哪个方法
-		if catalog.ConnectorType == "opensearch" {
+		if catalog.ConnectorType == interfaces.ConnectorTypeOpenSearch {
 			return s.executeOpenSearchQuery(ctx, req, resourceIds, catalog)
 		}
 
 		// 如果指定了resource_type为mysql/mariadb/postgresql，则不进行SQL转换，直接执行
-		if req.ResourceType == "mysql" || req.ResourceType == "mariadb" || req.ResourceType == "postgresql" {
+		if req.ResourceType == interfaces.ConnectorTypeMySQL || req.ResourceType == interfaces.ConnectorTypeMariaDB || req.ResourceType == interfaces.ConnectorTypePostgreSQL {
 			// 将resource_id替换为catalog.schema.table格式
 			replacedSQL, err := s.replaceResourceIdWithSchemaTable(ctx, req.Query, resourceIds, catalog)
 			if err != nil {
@@ -263,9 +263,9 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 	// 8. 根据catalog的ConnectorType决定目标SQL方言
 	var targetDialect string
 	switch dataSource.ConnectorType {
-	case "mariadb", "mysql":
+	case interfaces.ConnectorTypeMariaDB, interfaces.ConnectorTypeMySQL:
 		targetDialect = "mysql"
-	case "postgresql":
+	case interfaces.ConnectorTypePostgreSQL:
 		targetDialect = "postgres"
 	default:
 		span.SetStatus(codes.Error, "unsupported connector type")
@@ -330,7 +330,7 @@ func (s *sqlQueryService) validateRequest(ctx context.Context, req *interfaces.S
 	// 如果提供了query参数，需要进行类型校验
 	if req.Query != nil {
 		// 如果是OpenSearch查询，query应该是map类型
-		if req.ResourceType == "opensearch" {
+		if req.ResourceType == interfaces.ConnectorTypeOpenSearch {
 			if _, ok := req.Query.(map[string]any); !ok {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 					WithErrorDetails("query must be a JSON object for opensearch queries")
@@ -365,7 +365,7 @@ func (s *sqlQueryService) validateRequest(ctx context.Context, req *interfaces.S
 	}
 
 	// 流式查询时，stream_size必填（OpenSearch流式查询除外，使用size参数）
-	if req.QueryType == "stream" && req.ResourceType != "opensearch" && req.StreamSize <= 0 {
+	if req.QueryType == "stream" && req.ResourceType != interfaces.ConnectorTypeOpenSearch && req.StreamSize <= 0 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 			WithErrorDetails("stream_size is required for stream query and must be greater than 0")
 	}
@@ -501,10 +501,10 @@ func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *
 	// 根据connector类型执行SQL
 	var result *interfaces.SQLQueryResponse
 	switch catalog.ConnectorType {
-	case "mariadb", "mysql":
+	case interfaces.ConnectorTypeMariaDB, interfaces.ConnectorTypeMySQL:
 		mariadbConnector := connector.(*mariadb.MariaDBConnector)
 		result, err = mariadbConnector.ExecuteRawSQL(ctx, sql)
-	case "postgresql":
+	case interfaces.ConnectorTypePostgreSQL:
 		postgresqlConnector := connector.(*postgresql.PostgresqlConnector)
 		result, err = postgresqlConnector.ExecuteRawSQL(ctx, sql)
 	default:
@@ -534,10 +534,10 @@ func (s *sqlQueryService) executeNativeSQL(ctx context.Context, req *interfaces.
 	// 根据resource_type确定connector类型
 	var connectorType string
 	switch req.ResourceType {
-	case "mysql", "mariadb":
-		connectorType = "mariadb"
-	case "postgresql":
-		connectorType = "postgresql"
+	case interfaces.ConnectorTypeMySQL, interfaces.ConnectorTypeMariaDB:
+		connectorType = interfaces.ConnectorTypeMariaDB
+	case interfaces.ConnectorTypePostgreSQL:
+		connectorType = interfaces.ConnectorTypePostgreSQL
 	default:
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("unsupported resource_type: %s", req.ResourceType))
@@ -720,7 +720,7 @@ func (s *sqlQueryService) executeStreamQueryNewSession(ctx context.Context, req 
 	}
 
 	// 4. 检查是否支持流式查询
-	if catalog.ConnectorType != "mariadb" && catalog.ConnectorType != "mysql" && catalog.ConnectorType != "postgresql" {
+	if catalog.ConnectorType != interfaces.ConnectorTypeMariaDB && catalog.ConnectorType != interfaces.ConnectorTypeMySQL && catalog.ConnectorType != interfaces.ConnectorTypePostgreSQL {
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
 			WithErrorDetails(fmt.Sprintf("stream query is not supported for connector type: %s", catalog.ConnectorType))
 	}
@@ -810,9 +810,9 @@ func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interf
 	// 3. 根据catalog的ConnectorType决定目标SQL方言
 	var targetDialect string
 	switch catalog.ConnectorType {
-	case "mariadb", "mysql":
+	case interfaces.ConnectorTypeMariaDB, interfaces.ConnectorTypeMySQL:
 		targetDialect = "mysql"
-	case "postgresql":
+	case interfaces.ConnectorTypePostgreSQL:
 		targetDialect = "postgres"
 	default:
 		return nil, rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).

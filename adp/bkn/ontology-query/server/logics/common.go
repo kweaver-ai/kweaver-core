@@ -1312,3 +1312,44 @@ func CondCfgToFilterMap(c *cond.CondCfg) map[string]any {
 	}
 	return m
 }
+
+// ActionDynamicParamGetValue returns a value from a dynamic-params map using dot-separated keys for nested access.
+// Same semantics as action_scheduler.getNestedValue.
+func ActionDynamicParamGetValue(data map[string]any, key string) any {
+	if data == nil {
+		return nil
+	}
+
+	if strings.Contains(key, ".") {
+		parts := strings.Split(key, ".")
+		current := data
+
+		for i, part := range parts {
+			if i == len(parts)-1 {
+				return current[part]
+			}
+			next, ok := current[part].(map[string]any)
+			if !ok {
+				return nil
+			}
+			current = next
+		}
+	}
+
+	return data[key]
+}
+
+// MissingActionInputDynamicParamNames lists action-type parameter names with value_from=input
+// that are missing from dynamicParams (nil map or absent/nil value per ActionDynamicParamGetValue).
+func MissingActionInputDynamicParamNames(actionType *interfaces.ActionType, dynamicParams map[string]any) []string {
+	var missing []string
+	for _, param := range actionType.Parameters {
+		if param.ValueFrom != interfaces.LOGIC_PARAMS_VALUE_FROM_INPUT {
+			continue
+		}
+		if ActionDynamicParamGetValue(dynamicParams, param.Name) == nil {
+			missing = append(missing, param.Name)
+		}
+	}
+	return missing
+}

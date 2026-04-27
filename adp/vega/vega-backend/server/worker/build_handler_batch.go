@@ -9,7 +9,8 @@ package worker
 import (
 	"context"
 	"fmt"
-	"time"
+	"sort"
+	"strings"
 
 	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
@@ -81,7 +82,11 @@ func (bh *batchBuildHandler) HandleTask(ctx context.Context, task *asynq.Task) e
 	}
 	if resource == nil {
 		logger.Errorf("Resource not found for task %s, resourceID: %s", taskID, resourceID)
-		// Resource not found, return nil to  stop the task
+		err = bh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "resource not found"})
+		if err != nil {
+			return fmt.Errorf("update build task status failed: %w", err)
+		}
+		// Resource not found, return nil to stop the task
 		return nil
 	}
 
@@ -90,8 +95,11 @@ func (bh *batchBuildHandler) HandleTask(ctx context.Context, task *asynq.Task) e
 	if err != nil {
 		// Update task status to failed
 		logger.Errorf("Build failed for task %s: %w", taskID, err)
-		_ = bh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"errorMsg": err.Error()})
-		return err
+		err = bh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": err.Error()})
+		if err != nil {
+			return fmt.Errorf("update build task status failed: %w", err)
+		}
+		return nil
 	}
 
 	logger.Infof("Build completed for task: %s, resource: %s", taskID, resourceID)
@@ -100,6 +108,16 @@ func (bh *batchBuildHandler) HandleTask(ctx context.Context, task *asynq.Task) e
 
 // executeBuild executes the build logic
 func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask, executeType string) error {
+	firstExecute := false
+	if buildTaskInfo.Status == interfaces.BuildTaskStatusInit {
+		firstExecute = true
+		err := createLocalIndex(ctx, bh.ds, buildTaskInfo, resource)
+		if err != nil {
+			return fmt.Errorf("create local index failed: %w", err)
+		}
+	}
+	indexName := getIndexName(resource.ID, buildTaskInfo.ID)
+
 	// Update task status to running
 	err := bh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusRunning})
 	if err != nil {
@@ -111,8 +129,10 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		lastSyncedMark = ""
 	}
 
-	var batchFields []string
-	var lastBatchFieldValues []any
+	batchFields := strings.Split(buildTaskInfo.BuildKeyFields, ",")
+	keys := batchFields
+	sort.Strings(keys)
+	var lastBatchKeyValues []interfaces.KeyValue
 	if lastSyncedMark != "" {
 		// syncMark format : {"filed1_name":field1_value,"filed2_name":field2_value}
 		var syncedMark map[string]interface{}
@@ -120,38 +140,11 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 			return fmt.Errorf("failed to unmarshal synced mark: %w", err)
 		}
 		// Extract field names from synced mark
-		batchFields = make([]string, 0, len(syncedMark))
-		for field := range syncedMark {
-			batchFields = append(batchFields, field)
-			lastBatchFieldValues = append(lastBatchFieldValues, syncedMark[field])
-		}
-	}
-
-	if len(batchFields) == 0 {
-		sourceMetadata := resource.SourceMetadata
-		if sourceMetadata == nil {
-			return fmt.Errorf("source metadata is nil")
-		}
-		// Extract ordered keys
-		orderedKeys := []string{}
-		if orderedKeysInterface, ok := sourceMetadata["ordered_keys"]; ok {
-			if keysInterface, ok := orderedKeysInterface.([]interface{}); ok {
-				// Handle []interface{} type
-				for _, key := range keysInterface {
-					if keyStr, ok := key.(string); ok {
-						orderedKeys = append(orderedKeys, keyStr)
-					}
-				}
-			}
-		}
-
-		// Find suitable fields for batch reading
-		// In a real implementation, these fields would be used for batch reading
-		if len(orderedKeys) > 0 {
-			// Use all ordered keys as batch fields
-			batchFields = orderedKeys
-		} else {
-			return fmt.Errorf("no ordered key found")
+		for _, key := range keys {
+			lastBatchKeyValues = append(lastBatchKeyValues, interfaces.KeyValue{
+				Key:   key,
+				Value: syncedMark[key],
+			})
 		}
 	}
 
@@ -162,7 +155,11 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 	}
 	if catalog == nil {
 		logger.Errorf("Catalog not found for task %s, catalogID: %s", buildTaskInfo.ID, resource.CatalogID)
-		// Catalog not found, return nil to  stop the task
+		err = bh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "catalog not found"})
+		if err != nil {
+			return fmt.Errorf("update build task status failed: %w", err)
+		}
+		// Catalog not found, return nil to stop the task
 		return nil
 	}
 
@@ -183,39 +180,18 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 	if !ok {
 		return fmt.Errorf("connector is not a table connector")
 	}
-	// Construct OutputFields from SchemaDefinition
-	outputFields := make([]string, 0)
-	batchFieldExistsMap := make(map[string]bool)
-	hasVectorField := false
 
-	// Extract fields from SchemaDefinition
-	if resource.SchemaDefinition != nil {
-		for _, prop := range resource.SchemaDefinition {
-			// vector need to be processed separately
-			if prop.Type == "vector" {
-				hasVectorField = true
-				continue
-			}
-			outputFields = append(outputFields, prop.Name)
-			batchFieldExistsMap[prop.Name] = true
-		}
-	}
-
-	// Add batch fields that are not in outputFields
 	// Build sort fields
 	sortFields := make([]*interfaces.SortField, len(batchFields))
 	for i, field := range batchFields {
-		if !batchFieldExistsMap[field] {
-			outputFields = append(outputFields, field)
-		}
 		sortFields[i] = &interfaces.SortField{
 			Field: field,
 		}
 	}
 
 	var writer *kafka.Writer
-	if hasVectorField {
-		topic := fmt.Sprintf("%s-%s-embedding", KafkaTopicPrefix, resource.ID)
+	if buildTaskInfo.EmbeddingFields != "" {
+		topic := fmt.Sprintf("%s-%s-embedding", interfaces.BUILD_PREFIX, resource.ID)
 		// Create Kafka writer
 		writer, err = bh.kafkaAccess.NewWriter(ctx, topic)
 		if err != nil {
@@ -250,21 +226,20 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		}
 
 		params := &interfaces.ResourceDataQueryParams{
-			Limit:        batchSize,
-			Sort:         sortFields,
-			OutputFields: outputFields,
-			NeedTotal:    firstQuery,
+			Limit:     batchSize,
+			Sort:      sortFields,
+			NeedTotal: firstQuery,
 		}
 
 		// Add filter condition for batch fields if we have last values
-		if len(lastBatchFieldValues) > 0 {
+		if len(lastBatchKeyValues) > 0 {
 			// Build AND condition for multiple batch fields
 			subConditions := make([]*interfaces.FilterCondCfg, len(batchFields))
 			for i, field := range batchFields {
 				subConditions[i] = &interfaces.FilterCondCfg{
 					Name:        field,
 					Operation:   "gt",
-					ValueOptCfg: interfaces.ValueOptCfg{Value: lastBatchFieldValues[i], ValueFrom: interfaces.ValueFrom_Const},
+					ValueOptCfg: interfaces.ValueOptCfg{Value: lastBatchKeyValues[i].Value, ValueFrom: interfaces.ValueFrom_Const},
 				}
 			}
 			params.FilterCondCfg = &interfaces.FilterCondCfg{
@@ -293,30 +268,35 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		totalRows := result.Total
 		readRows := len(result.Rows)
 
-		documents := make([]map[string]any, 0, readRows)
-		for _, item := range result.Rows {
-			// If batch fields are not in SchemaDefinition, remove them from item
-			for _, field := range batchFields {
-				if !batchFieldExistsMap[field] {
-					delete(item, field)
-				}
-			}
-			documents = append(documents, item)
-		}
-
 		if readRows > 0 {
-			// Update lastBatchFieldValues with the last values in this batch
+			// Update lastBatchKeyValues with the last values in this batch
 			newSyncedMark := map[string]any{}
 			lastItem := result.Rows[readRows-1]
-			lastBatchFieldValues = make([]any, len(batchFields))
-			for i, field := range batchFields {
-				if value, exists := lastItem[field]; exists {
-					lastBatchFieldValues[i] = value
-					newSyncedMark[field] = value
+			if len(lastBatchKeyValues) == 0 {
+				for _, key := range keys {
+					lastBatchKeyValues = append(lastBatchKeyValues, interfaces.KeyValue{
+						Key:   key,
+						Value: lastItem[key],
+					})
+				}
+			} else {
+				for _, kv := range lastBatchKeyValues {
+					kv.Value = lastItem[kv.Key]
 				}
 			}
+			for _, field := range batchFields {
+				newSyncedMark[field] = lastItem[field]
+			}
 
-			docIDs, err := bh.ds.CreateDocuments(ctx, resource.ID, documents)
+			// Convert documents to upsert format
+			upsertRequests := make([]map[string]any, 0, readRows)
+			for _, doc := range result.Rows {
+				// Create document ID using getNewDocID function
+				docID := getNewDocID(lastBatchKeyValues, doc)
+				upsertRequests = append(upsertRequests, map[string]any{"id": docID, "document": doc})
+			}
+
+			docIDs, err := bh.ds.UpsertDocuments(ctx, indexName, upsertRequests)
 			if err != nil {
 				return fmt.Errorf("create documents failed: %w", err)
 			}
@@ -342,7 +322,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 			}
 
 			// Send document IDs to Kafka for embedding
-			if len(docIDs) > 0 {
+			if len(docIDs) > 0 && buildTaskInfo.EmbeddingFields != "" {
 				// Create messages
 				var messages []kafka.Message
 				for _, docID := range docIDs {
@@ -370,7 +350,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		}
 
 		if readRows < batchSize {
-			if hasVectorField {
+			if buildTaskInfo.EmbeddingFields != "" {
 				// sync complete, push a empty document to trigger embedding
 				messageData := map[string]any{
 					"document_id": interfaces.EmptyDocumentID,
@@ -394,29 +374,22 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		}
 	}
 
-	if hasVectorField {
-		// put embedding task to queue
-		embeddingTaskMsg := interfaces.EmbeddingBuildTaskMessage{
-			TaskID: buildTaskInfo.ID,
-		}
-		payload, err := sonic.Marshal(embeddingTaskMsg)
-		if err != nil {
-			return fmt.Errorf("failed to marshal embedding task message: %w", err)
-		} else {
-			asynqTask := asynq.NewTask(interfaces.BuildTaskTypeEmbedding, payload)
-			_, err := bh.client.Enqueue(asynqTask,
-				asynq.Queue(interfaces.DefaultQueue),
-				asynq.MaxRetry(interfaces.DATASET_BUILD_MAX_RETRY_COUNT),
-				asynq.Timeout(0),                // 永不超时
-				asynq.Deadline(time.Unix(0, 0)), // 永不过期
-			)
+	if buildTaskInfo.EmbeddingFields != "" {
+		if firstExecute {
+			// send embedding task to queue
+			err = sendEmbeddingTask(bh.client, buildTaskInfo.ID)
 			if err != nil {
-				return fmt.Errorf("failed to enqueue embedding task: %w", err)
-			} else {
-				logger.Infof("Embedding task queued for resource: %s", resource.Name)
+				return fmt.Errorf("send embedding task failed: %w", err)
 			}
+			logger.Infof("Embedding task sent for task %s", buildTaskInfo.ID)
 		}
 	} else {
+		// Update resource index name
+		err = updateResourceIndexName(ctx, resource, bh.resAccess, bh.ds, indexName)
+		if err != nil {
+			return fmt.Errorf("Failed to update resource index name: %v", err)
+		}
+
 		// Update task status to completed
 		err = bh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusCompleted})
 		if err != nil {

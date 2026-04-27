@@ -144,6 +144,148 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ---
 
+## 🛡️ Administrator tool after a full install (kweaver-admin)
+
+After a full install (with `auth.enabled=true` and `businessDomain.enabled=true`), platform-level operations — **users, organizations, roles, models, audit** — are managed via the standalone npm CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin). It is complementary to the `kweaver` CLI from `kweaver-sdk`:
+
+| CLI | Audience | Scope |
+| --- | --- | --- |
+| `kweaver` (`@kweaver-ai/kweaver-sdk`) | End users / Agents | BKN, Decision Agent, Action, Skill, query |
+| `kweaver-admin` (`@kweaver-ai/kweaver-admin`) | Platform administrators | Users, organizations, roles, models, audit, raw HTTP |
+
+**When to install:** after a full install (`./deploy.sh kweaver-core install` without `--minimum`). **On a `--minimum` install most `kweaver-admin` commands return 401 / 404 — that is expected, the relevant services are not deployed.**
+
+**Backend services it talks to (from the kweaver-admin architecture doc):** `user-management` / `deploy-manager` / `deploy-auth` / `eacp` / `mf-model-manager` / OAuth2 (Hydra) — exactly the set enabled by a full install.
+
+### 📥 Install
+
+Requires **Node.js 18+**. Credentials are stored under `~/.kweaver-admin/platforms/`, isolated from `~/.kweaver/`.
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin --version
+kweaver-admin --help
+```
+
+### 🔑 Login
+
+```bash
+# Browser OAuth2 (skip TLS for self-signed certs)
+kweaver-admin auth login https://<access-address> -k
+
+# Username/password (CI / headless)
+kweaver-admin auth login https://<access-address> -u <user> -p <password> -k
+
+# Or via environment variables (CI / headless)
+export KWEAVER_BASE_URL=https://<access-address>
+export KWEAVER_ADMIN_TOKEN=<bearer-token>   # preferred; falls back to KWEAVER_TOKEN
+
+# Inspect session and identity
+kweaver-admin auth status
+kweaver-admin auth whoami
+kweaver-admin auth list
+```
+
+> The token stores of `kweaver-admin` and `kweaver` are independent — both can coexist on the same machine for separate admin / user identities.
+
+### 🧰 Common admin tasks
+
+#### Organizations (departments)
+
+```bash
+kweaver-admin org tree                # tree view of departments
+kweaver-admin org list                # paginated list
+kweaver-admin org create              # create a department
+kweaver-admin org members <orgId>     # list members
+```
+
+#### Users
+
+```bash
+kweaver-admin user list
+kweaver-admin user create --login alice            # default password 123456, forced change at first sign-in
+kweaver-admin user reset-password -u alice         # admin reset
+kweaver-admin user roles <userId>
+kweaver-admin user assign-role <userId> <roleId>
+kweaver-admin user revoke-role <userId> <roleId>
+```
+
+#### Roles
+
+```bash
+kweaver-admin role list
+kweaver-admin role get <roleId>
+kweaver-admin role add-member <roleId> -u alice
+kweaver-admin role remove-member <roleId> -u alice
+```
+
+Always run **`role list` first** and use the **roleId** values from the output (role name strings such as `super_admin` / `normal_user` are described in [kweaver-admin role reference](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/product-specs/role-permission.md)). For **quick start or POC**, to avoid 403s from missing roles, often assign **every** role in `role list` to a new user with one `kweaver-admin user assign-role <userId> <roleId>` per entry. In **production**, grant least privilege; verify with `kweaver-admin user roles <userId>`.
+
+#### Models (LLM / Embedding)
+
+```bash
+kweaver-admin llm list
+kweaver-admin llm add
+kweaver-admin llm test <modelId>
+
+kweaver-admin small-model list
+kweaver-admin small-model add
+kweaver-admin small-model test <modelId>
+```
+
+> Equivalent to invoking `kweaver call /api/mf-model-manager/...` (see [Model management](model.md)); for day-to-day admin work the `kweaver-admin llm` / `small-model` subcommands offer better validation and output.
+
+#### Audit
+
+```bash
+kweaver-admin audit list \
+  --user alice --start 2026-04-01 --end 2026-04-30
+```
+
+#### Raw HTTP (with auth header)
+
+```bash
+kweaver-admin call /api/user-management/v1/management/users -X GET
+kweaver-admin --json call /api/eacp/v1/... -X POST -d '{"...":"..."}'
+```
+
+### ⚠️ Things you must know
+
+- **New users created via `user create` always start with the platform default password `123456`** and are forced to change it at first sign-in. This is documented upstream behavior of the ISF user store (`Usrm_AddUser` thrift does not accept a password parameter). Hand the account to the user over a secure channel; for lost-password rotation use `kweaver-admin user reset-password`.
+- **Separation-of-duties built-in accounts** — `system / admin / security / audit` must not be casually modified; operators should use **individual accounts** rather than the shared `admin` for traceable audit logs.
+- **First-login forced password change (error `401001017`)**: when `kweaver-admin auth login` hits this code, on a TTY the CLI guides you to set a new password and retries the login; in non-TTY contexts pass `--new-password '<new>'` to do it in one shot (same flow as the `kweaver` CLI; see also [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md)).
+- **TLS:** `-k` / `--insecure` (or env var `KWEAVER_TLS_INSECURE=1`) is for development / self-signed certs only — never use in production.
+- **Capabilities not exposed by the Web console — CLI is the primary path:** department writes (`Usrm_AddDepartment` / `Usrm_EditDepartment`), user updates (`Usrm_EditUser` fallback), user-role lookup (`role list` + `role members` fallback), etc. See [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md).
+
+### 🤖 AI Agent Skill
+
+`kweaver-admin` ships a progressive-disclosure skill so AI coding assistants (Cursor, Claude Code, …) can drive admin operations on your behalf:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+After installation, log in once with `kweaver-admin auth login https://<address> -k`, then ask in natural language (or `/kweaver-admin` slash):
+
+```text
+List all roles
+Create user alice and assign every role from role list
+Reset alice's password
+Show alice's login audit for the last 7 days
+Register an embedding model bge-m3 against https://api.siliconflow.cn
+```
+
+Skill source: [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md). It is independent from the `kweaver-core` / `create-bkn` skills (which target the `kweaver` CLI).
+
+### 📖 Further reading
+
+- [`kweaver-admin` repository README](https://github.com/kweaver-ai/kweaver-admin)
+- [`ARCHITECTURE.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/ARCHITECTURE.md) — command tree and backend API mapping
+- [`docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md) — tokens, TLS, audit and fallback routes
+- [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md) — agent skill entry
+
+---
+
 ## ✅ After install (check cluster and API)
 
 When `deploy.sh kweaver-core install` finishes, confirm the cluster and that you can reach the platform.

@@ -2,15 +2,36 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file in the project root for details.
 
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/confluentinc/cp-kafka:7.9.1
+# amd64: docker buildx build -t swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/kafka-connect:3.5.0-amd64 -f Dockerfile --platform=linux/amd64 .
+# arm64: docker buildx build -t swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip/kafka-connect:3.5.0-arm64 -f Dockerfile --platform=linux/arm64 .
+FROM swr.cn-east-3.myhuaweicloud.com/kweaver-ai/bitnami/kafka:3.9.0-debian-12-r10
+
+USER root
 
 RUN set -ex; \
-    wget https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/3.4.2.Final/debezium-connector-mysql-3.4.2.Final-plugin.tar.gz; \
-    tar -zxvf debezium-connector-mysql-3.4.2.Final-plugin.tar.gz -C /usr/share/java/; \
-    rm -f debezium-connector-mysql-3.4.2.Final-plugin.tar.gz;
+    mkdir -p /usr/share/java; \
+    cd /tmp; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/3.5.0.Final/debezium-connector-mysql-3.5.0.Final-plugin.tar.gz; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-mariadb/3.5.0.Final/debezium-connector-mariadb-3.5.0.Final-plugin.tar.gz; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-oracle/3.5.0.Final/debezium-connector-oracle-3.5.0.Final-plugin.tar.gz; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.5.0.Final/debezium-connector-postgres-3.5.0.Final-plugin.tar.gz; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-sqlserver/3.5.0.Final/debezium-connector-sqlserver-3.5.0.Final-plugin.tar.gz; \
+    curl -O https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/3.5.0.Final/debezium-connector-mongodb-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-mysql-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-mysql-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-mariadb-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-mariadb-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-oracle-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-oracle-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-postgres-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-postgres-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-sqlserver-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-sqlserver-3.5.0.Final-plugin.tar.gz; \
+    tar -zxvf debezium-connector-mongodb-3.5.0.Final-plugin.tar.gz -C /usr/share/java/; \
+    rm -f debezium-connector-mongodb-3.5.0.Final-plugin.tar.gz;
 
 # Expose port
 EXPOSE 8083
 
 # 指定启动命令
-ENTRYPOINT [ "connect-distributed", "/opt/kafka-connect/kafka-connect.properties" ]
+ENTRYPOINT [ "connect-distributed.sh", "/opt/kafka-connect/kafka-connect.properties" ]

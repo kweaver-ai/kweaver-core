@@ -27,6 +27,7 @@ KWeaver Core 为**纯后台**平台，请通过 CLI、各语言 SDK 或 HTTP API
 | 🤖 [Decision Agent](decision-agent.md) | 目标驱动智能体、运行时与可观测 |
 | 🔭 [Trace AI](trace-ai.md) | 链路追踪、指标与证据链式可观测 |
 | 🔐 [Info Security Fabric](isf.md) | 身份、权限、策略与审计（启用时） |
+| 🛡️ [平台管理员工具](install.md#-完整安装后的管理员工具kweaver-admin) | `kweaver-admin` — 用户/组织/角色/模型/审计（完整安装后） |
 
 ---
 
@@ -34,4 +35,4 @@ KWeaver Core 为**纯后台**平台，请通过 CLI、各语言 SDK 或 HTTP API
 
 <img src="../qrcode.png" width="200" alt="KWeaver 交流群二维码" />
 
-> 💡 CLI 安装：`npm install -g @kweaver-ai/kweaver-sdk`。更详细的集群运维说明以随产品提供的部署文档为准。
+> 💡 CLI 安装：业务用户用 `npm install -g @kweaver-ai/kweaver-sdk`；平台管理员另装 `npm install -g @kweaver-ai/kweaver-admin`。更详细的集群运维说明以随产品提供的部署文档为准。

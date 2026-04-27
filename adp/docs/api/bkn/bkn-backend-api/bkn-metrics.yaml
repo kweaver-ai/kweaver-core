@@ -1,0 +1,636 @@
+---
+# BKN 原生指标 CRUD（与 object-type 同一套 API 框架：列表 entries/total_count、POST override 批量创建与概念检索、validation）
+openapi: 3.0.2
+info:
+  title: BKN Metrics
+  version: 0.1.0
+paths:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/metrics:
+    get:
+      summary: 获取指标列表
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: name_pattern
+          description: 根据名称模糊查询，默认为空
+          schema:
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，默认是 update_time
+          schema:
+            enum:
+              - update_time
+              - name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选 asc、desc。
+            默认 desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: tag
+          description: 根据标签精准查询，默认为空
+          schema:
+            type: string
+          in: query
+        - name: group_id
+          description: 按概念分组过滤
+          schema:
+            type: string
+          in: query
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMetrics"
+    post:
+      summary: 批量创建或概念检索指标
+      description: |
+        与对象类 `POST .../object-types` 一致：通过请求头 `x-http-method-override` 区分语义。
+        - `POST`：批量创建，请求体为 `ReqMetrics`（`entries` 数组）。
+        - `GET`：概念/条件检索（search_after 分页），请求体与对象类检索相同，复用 `FirstQueryWithSearchAfter` / `PageTurnQueryWithSearchAfter`（见 `object-type.yaml` 中 `override--get`）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/override"
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: x-http-method-override
+          description: 重载请求头
+          schema:
+            enum:
+              - POST
+              - GET
+            type: string
+          in: header
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 批量创建时是否严格校验依赖（scope、概念分组等），默认 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+      responses:
+        "201":
+          description: 批量新增成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "./object-type.yaml#/components/schemas/ID"
+        "200":
+          description: 概念检索成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricSearchResponse"
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/metrics/validation:
+    post:
+      summary: 校验指标
+      description: |
+        仅校验依赖存在性，不写库。语义与 `POST .../object-types/validation` 一致，用于导入前预检、批处理前自检。
+        **响应**：HTTP 200 时 body 中 `valid` 为 `true` 表示通过；为 `false` 时带 `detail`。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与批量创建语义一致；用于指标 ID/名称与落库冲突的校验语义（normal / ignore / overwrite）
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  description: 待校验的指标列表，结构与创建接口一致
+                  items:
+                    $ref: "#/components/schemas/CreateMetricRequest"
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时的说明
+        "400":
+          description: 请求参数错误等；业务校验「不通过」由 200 + valid:false + detail 表达
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/metrics/{metric_id}:
+    get:
+      summary: 获取指标详情
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 业务知识网络ID
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 指标ID
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: 分支，不填则使用 main 分支
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricDefinition"
+    put:
+      summary: 更新指标
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: 分支，不填则使用 main 分支
+        - name: strict_mode
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: 是否严格校验依赖，默认为 true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMetricRequest"
+      responses:
+        "204":
+          description: ok
+    delete:
+      summary: 删除指标
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: 分支，不填则使用 main 分支
+      responses:
+        "204":
+          description: ok
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/metrics/{metric_ids}:
+    get:
+      summary: 批量获取指标详情
+      parameters:
+        - name: metric_ids
+          description: 指标ID列表
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricDefinitions"
+    delete:
+      summary: 批量删除指标
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: metric_ids
+          description: 指标ID列表
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+      responses:
+        "204":
+          description: ok
+
+components:
+  schemas:
+    ListMetrics:
+      description: 指标列表（与 ListObjectTypes 同构）
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDefinition"
+        total_count:
+          description: 总条数
+          type: integer
+    MetricDefinitions:
+      description: 指标详情批量返回（与 ObjectTypeDetails 同构）
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 指标数组
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDefinition"
+    ReqMetrics:
+      description: 批量创建指标请求体（与 ReqObjectTypes 同构）
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 待创建的指标
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateMetricRequest"
+    metric-override--get:
+      description: 指标概念检索请求体（与 override--get 同构，复用对象类检索 schema）
+      oneOf:
+        - $ref: "./object-type.yaml#/components/schemas/FirstQueryWithSearchAfter"
+        - $ref: "./object-type.yaml#/components/schemas/PageTurnQueryWithSearchAfter"
+      type: object
+    override:
+      description: post 重载批量创建、指标概念检索（与 object-types 的 override 同构）
+      oneOf:
+        - type: object
+        - $ref: "#/components/schemas/ReqMetrics"
+        - $ref: "#/components/schemas/metric-override--get"
+      discriminator:
+        mapping:
+          x-http-method-override:POST: "#/components/schemas/ReqMetrics"
+          x-http-method-override:GET: "#/components/schemas/metric-override--get"
+        propertyName: x-http-method-override
+      type: object
+    MetricSearchResponse:
+      description: 指标概念检索返回结果（与 ObjectTypeSearchResponse 同构）
+      required:
+        - groups
+        - type
+        - entries
+        - search_after
+      type: object
+      properties:
+        entries:
+          description: 指标条目
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDefinition"
+        total_count:
+          description: 总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个文档的排序值，用于下一次 search_after 分页
+          type: array
+          items: {}
+        groups:
+          description: 概念分组信息（与对象类检索一致）
+          type: array
+          items: {}
+        type:
+          description: 资源类型标识
+          type: string
+    MetricTimeDimension:
+      description: 时间维度（DESIGN 附录 B.2）
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          type: string
+          description: 时间列或事件时间字段名（语义字段）
+        default_range_policy:
+          type: string
+          description: 未传入 dynamic 时间时的默认策略；none 表示必须由请求显式给时间窗
+          enum:
+            - last_1h
+            - last_24h
+            - calendar_day
+            - none
+      additionalProperties: false
+    MetricAggregation:
+      description: 单一聚合（DESIGN 附录 B.1）
+      type: object
+      required:
+        - property
+        - aggr
+      properties:
+        property:
+          type: string
+        aggr:
+          type: string
+          enum:
+            - count_distinct
+            - sum
+            - max
+            - min
+            - avg
+            - count
+      additionalProperties: false
+    MetricGroupBy:
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          type: string
+        description:
+          type: string
+      additionalProperties: false
+    MetricOrderBy:
+      type: object
+      required:
+        - property
+        - direction
+      properties:
+        property:
+          type: string
+        direction:
+          type: string
+          enum:
+            - asc
+            - desc
+      additionalProperties: false
+    MetricHaving:
+      description: 对聚合结果的过滤（DESIGN 附录 B.1）
+      type: object
+      properties:
+        field:
+          type: string
+          enum:
+            - __value
+        operation:
+          type: string
+          enum:
+            - ==
+            - "!="
+            - ">"
+            - ">="
+            - "<"
+            - "<="
+            - in
+            - not_in
+            - range
+            - out_range
+        value: {}
+      additionalProperties: false
+    MetricCalculationFormula:
+      description: 指标计算公式，与 ontology-query Condition 同构的 condition（DESIGN 附录 B.1）
+      type: object
+      required:
+        - aggregation
+      properties:
+        condition:
+          $ref: "../ontology-query-ai/ontology-query.yaml#/components/schemas/Condition"
+        aggregation:
+          $ref: "#/components/schemas/MetricAggregation"
+        group_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricGroupBy"
+        order_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricOrderBy"
+        having:
+          $ref: "#/components/schemas/MetricHaving"
+      additionalProperties: false
+    MetricAnalysisDimension:
+      description: 分析维度条目（DESIGN 附录 B.2）
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+      additionalProperties: false
+    MetricDefinition:
+      type: object
+      required:
+        - id
+        - kn_id
+        - branch
+        - name
+        - metric_type
+        - scope_type
+        - scope_ref
+        - calculation_formula
+      properties:
+        id:
+          type: string
+        kn_id:
+          type: string
+        branch:
+          type: string
+        name:
+          type: string
+        comment:
+          type: string
+        unit_type:
+          type: string
+        unit:
+          type: string
+        metric_type:
+          type: string
+          description: 指标类型；当前仅 atomic 允许写入
+          enum:
+            - atomic
+            - derived
+            - composite
+        scope_type:
+          type: string
+          enum:
+            - object_type
+            - subgraph
+        scope_ref:
+          type: string
+        time_dimension:
+          $ref: "#/components/schemas/MetricTimeDimension"
+        calculation_formula:
+          $ref: "#/components/schemas/MetricCalculationFormula"
+        analysis_dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricAnalysisDimension"
+    CreateMetricRequest:
+      type: object
+      required:
+        - name
+        - metric_type
+        - scope_type
+        - scope_ref
+        - calculation_formula
+      properties:
+        name:
+          type: string
+        comment:
+          type: string
+        unit_type:
+          type: string
+        unit:
+          type: string
+        metric_type:
+          type: string
+          enum:
+            - atomic
+            - derived
+            - composite
+        scope_type:
+          type: string
+        scope_ref:
+          type: string
+        time_dimension:
+          $ref: "#/components/schemas/MetricTimeDimension"
+        calculation_formula:
+          $ref: "#/components/schemas/MetricCalculationFormula"
+        analysis_dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricAnalysisDimension"
+    UpdateMetricRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        unit_type:
+          type: string
+        unit:
+          type: string
+        metric_type:
+          type: string
+          enum:
+            - atomic
+            - derived
+            - composite
+        time_dimension:
+          $ref: "#/components/schemas/MetricTimeDimension"
+        calculation_formula:
+          $ref: "#/components/schemas/MetricCalculationFormula"
+        analysis_dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricAnalysisDimension"

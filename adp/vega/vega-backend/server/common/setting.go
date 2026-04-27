@@ -83,8 +83,10 @@ type AppSetting struct {
 	RedisSetting        RedisSetting
 	KafkaConnectSetting KafkaConnectSetting
 
-	PermissionUrl string
-	UserMgmtUrl   string
+	PermissionUrl     string
+	UserMgmtUrl       string
+	MfModelManagerUrl string
+	MfModelApiUrl     string
 }
 
 const (
@@ -92,14 +94,16 @@ const (
 	configName string = "vega-backend-config"
 	configType string = "yaml"
 
-	rdsServiceName          string = "rds"
-	mqServiceName           string = "mq"
-	opensearchServiceName   string = "opensearch"
-	redisServiceName        string = "redis"
-	permissionServiceName   string = "authorization-private"
-	userMgmtServiceName     string = "user-management"
-	hydraAdminServiceName   string = "hydra-admin"
-	kafkaConnectServiceName string = "kafka-connect"
+	rdsServiceName            string = "rds"
+	mqServiceName             string = "mq"
+	opensearchServiceName     string = "opensearch"
+	redisServiceName          string = "redis"
+	permissionServiceName     string = "authorization-private"
+	userMgmtServiceName       string = "user-management"
+	hydraAdminServiceName     string = "hydra-admin"
+	kafkaConnectServiceName   string = "kafka-connect"
+	mfModelManagerServiceName string = "mf-model-manager"
+	mfModelApiServiceName     string = "mf-model-api"
 
 	DATA_BASE_NAME string = "kweaver"
 )
@@ -181,6 +185,9 @@ func loadSetting(vp *viper.Viper) {
 		SetPermissionSetting()
 		SetUserMgmtSetting()
 	}
+
+	SetMfModelManagerSetting()
+	SetMfModelApiSetting()
 
 	serverInfo := o11y.ServerInfo{
 		ServerName:    version.ServerName,
@@ -411,4 +418,30 @@ func SetKafkaConnectSetting() {
 		Port:     setting["port"].(int),
 		Protocol: setting["protocol"].(string),
 	}
+}
+
+func SetMfModelManagerSetting() {
+	setting, ok := appSetting.DepServices[mfModelManagerServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", mfModelManagerServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.MfModelManagerUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
+}
+
+func SetMfModelApiSetting() {
+	setting, ok := appSetting.DepServices[mfModelApiServiceName]
+	if !ok {
+		logger.Fatalf("service %s not found in depServices", mfModelApiServiceName)
+	}
+
+	protocol := setting["protocol"].(string)
+	host := setting["host"].(string)
+	port := setting["port"].(int)
+
+	appSetting.MfModelApiUrl = fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }

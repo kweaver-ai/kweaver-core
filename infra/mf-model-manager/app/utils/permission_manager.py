@@ -163,7 +163,7 @@ class PermissionManager:
             "method": "GET",
             "accessor": {
                 "id": user_id,
-                "type": "user"
+                "type": role
             },
             "resources": resources,
             "operation": [

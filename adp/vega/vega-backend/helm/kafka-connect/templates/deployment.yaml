@@ -91,6 +91,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          - name: KAFKA_HEAP_OPTS
+            value: {{ .Values.service.kafkaHeapOpts }}
         resources: {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
           - name: {{ .Values.moduleName }}-cm

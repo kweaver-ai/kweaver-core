@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/dark.png" />
-    <source media="(prefers-color-scheme: light)" srcset="./assets/logo/light.png" />
-    <img alt="KWeaver" src="./assets/logo/light.png" width="320" />
-  </picture>
+  <img alt="KWeaver" src="./assets/logo/banner.png" width="800" />
 </p>
 
 [中文](README.zh.md) | English
@@ -12,26 +8,25 @@
 
 KWeaver Core is a harness-first foundation for enterprise decision agents. It turns fragmented data, knowledge, tools, and policies into governed context, safe execution, and verifiable feedback loops. With semantic modeling, real-time access, runtime control, and TraceAI, it helps AI systems reason, adapt, and act reliably in complex enterprises.
 
-**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community)
+**On this page:** [📚 Quick links](#toc-quick-links) · [🎬 Demo video](#toc-demo) · [🚀 Quick start](#toc-quick-start) · [🛠️ KWeaver SDK](#toc-kweaver-sdk) · [🛡️ KWeaver Admin CLI](#toc-kweaver-admin) · [🏗️ KWeaver Core](#toc-kweaver-core) · [📐 BKN Lang](#toc-bkn-lang) · [📊 Benchmarks](#toc-benchmarks) · [💬 Community](#toc-community)
 
 > **Note:** KWeaver Core is a **backend-only framework** — it does not include a web UI. All interactions are through the CLI, SDK, or API. If you need a graphical interface, please install [**KWeaver DIP**](https://github.com/kweaver-ai/kweaver).
+
+Want to have an intuitive experience of the core functions of KWeaver DIP? Click the link below to sign up and start your trial experience immediately to quickly unlock the product's value! 👉 Apply for a trial: https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf
 
 <a id="toc-quick-links"></a>
 
 ## 📚 Quick Links
 
-- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - Web UI for KWeaver (username: `kweaver`, password: `111111`)
+- 🌐 [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) - KWeaver DIP demo environment, [Apply for a trial](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf)
+- 🛠️ [KWeaver SDK](https://github.com/kweaver-ai/kweaver-sdk) - End-user / agent `kweaver` CLI, TypeScript / Python SDK, and AI agent skills
+- 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - Platform administrator CLI (users / orgs / roles / models / audit) for full installs
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
-- 📦 [Examples](examples/README.md) - End-to-end CLI walkthroughs (DB / CSV / actions)
 - 📘 [Documentation](help/README.md) - Product documentation and usage guides ([EN](help/en/README.md) / [中文](help/zh/README.md))
+- 📦 [Examples](examples/README.md) - End-to-end CLI walkthroughs (DB / CSV / actions)
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver-core/) - KWeaver technical articles and updates
-- 🚀 [Release Guidelines](rules/RELEASE.md) - Version management and release process
-- 🏗️ [Architecture](rules/ARCHITECTURE.md) - Architecture design specification
 - 🧾 [Release Notes](release-notes/) - All notable changes
-- 📄 [License](LICENSE.txt) - Apache License 2.0
-- 🐛 [Report Bug](https://github.com/kweaver-ai/kweaver-core/issues) - Report a bug or issue
-- 💡 [Request Feature](https://github.com/kweaver-ai/kweaver-core/issues) - Suggest a new feature
 
 <a id="toc-demo"></a>
 
@@ -100,7 +95,111 @@ kweaver <command> --help         # help for a specific command, e.g. kweaver bkn
 
 For full product documentation, see the [Documentation](help/README.md) ([EN](help/en/README.md) / [中文](help/zh/README.md)).
 
-> **No deployment yet?** Use the [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) web UI to try KWeaver online (username: `kweaver`, password: `111111`), or connect your CLI/SDK directly to the demo environment (see below).
+> **Did a full install (without `--minimum`)?** Also install [`kweaver-admin`](#toc-kweaver-admin) to manage users, organizations, roles, models, and audit logs — see [help/en/install.md — Administrator tool after a full install](help/en/install.md#-administrator-tool-after-a-full-install-kweaver-admin).
+
+> **No deployment yet?** KWeaver DIP / public demo access may require prior signup — [Apply for a trial](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf). After you have access, open the [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list) web UI or connect your CLI/SDK to the demo environment (see below).
+
+<a id="toc-kweaver-core"></a>
+
+## 🏗️ KWeaver Core
+
+**KWeaver Core** is the AI-native platform foundation for autonomous decision-making. It sits between AI Agents (above) and AI/Data infrastructure (below), with the **Business Knowledge Network (BKN)** at its center, providing unified data access, execution, and security governance for Agents.
+
+```text
+            ┌─────────────────────────────────┐
+            │     AI Agents (Decision Agent,   │
+            │     Data Agent, HiAgent, ...)    │
+            └───────────────┬─────────────────┘
+                            │
+            ┌───────────────▼─────────────────┐
+            │     Business Knowledge Network   │
+            │         KWeaver Core             │
+            └───────────────┬─────────────────┘
+                            │
+            ┌───────────────▼─────────────────┐
+            │   AI Infrastructure & Data       │
+            │   Infrastructure                 │
+            └─────────────────────────────────┘
+```
+
+KWeaver Core solves two critical pain points when connecting proprietary data with autonomous AI Agents:
+
+### Context Engineering — High-Quality Context for Agents
+
+In long-running agent scenarios, context inevitably faces explosion, decay, pollution, and high token costs. KWeaver Core addresses these through the Business Knowledge Network:
+
+- **Context explosion containment** — Multi-source candidates are first organized and aggregated via the BKN semantic network, then unified by Context Loader (recall → coarse ranking → fine ranking) to retain only key evidence and constraints, avoiding massive prompt fragments that cause decision drift. Overall accuracy reaches **93%+**.
+- **Context decay mitigation** — Replaces long-text stacking with "real-time facts + evidence citations", keeping reasoning grounded around specific objects and reducing forgetting and hallucination risks in long inputs. Accuracy improves **15%+** over baselines across scenario types.
+- **Context pollution isolation** — Builds precise enterprise digital twins through the BKN network, blocking unreliable content and potential injection risks outside the knowledge and execution boundary, ensuring a clean and controllable reasoning chain.
+- **Token cost compression** — Converts multi-source materials into structured object information fetched on demand (not full-text concatenation), improving information density within the same budget. Token consumption reduced **30%+** while improving accuracy.
+
+### Harness Engineering — Safe & Controllable Execution
+
+Beyond "seeing more", Agents must "do it right". KWeaver Core provides constraint engineering capabilities for enterprise-grade safe execution:
+
+- **Explainable decisions** — Uses "Object → Action → Rule → Constraint" knowledge structures to express business intent graphs, grounding tool invocation and parameter selection to explicit semantic boundaries and rule dependencies, making it clear "why this action was taken".
+- **Traceable evidence chain** — From action intent → knowledge node → data source → mapping/operator → final invocation, full-chain tracing is supported. Entities and relationships can be traced back to source data and active rules, enabling audit and review.
+- **Controllable execution loop** — Unifies identity and access control down to knowledge network object/action permissions, with pre-execution validation, mid-execution policy interception, and post-execution audit logging, achieving "authorizable, approvable, revocable" security loops.
+- **Risk prevention mechanism** — Models risks as "Risk Types" linked to Action Types; performs risk assessment and simulation before execution, with automatic downgrade/blocking/secondary confirmation when thresholds are hit, blocking high-risk actions before they execute.
+
+### Core Architecture
+
+```text
+┌──────────────────────── KWeaver Core ────────────────────────┐
+│         │                                          │         │
+│         │  Decision Agent                          │         │
+│  Info   │  (Dolphin Runtime / Agent Executor)       │  Trace │
+│  Secu-  │──────────────────────────────────────────│         │
+│  rity   │                                          │   AI    │
+│         │  AI Data Platform                        │         │
+│ Fabric  │  ┌────────────────────────────────────┐  │  Obse-  │
+│         │  │ Context Loader                     │  │  rvab-  │
+│ (ISF)   │  │  ┌───────────┐   ┌─────────────┐  │  │  ility  │
+│         │  │  │ Retrieval │ → │   Ranker    │  │  │    /    │
+│ Access  │  │  └───────────┘   └─────────────┘  │  │  Evid-  │
+│ Control │  ├────────────────────────────────────┤  │  ence   │
+│    /    │  │ Business Knowledge Network         │  │         │
+│ Secu-   │  │  ┌────────────────────────────┐    │  │         │
+│  rity   │  │  │ BKN Engine                 │    │  │         │
+│         │  │  │ (Data/Logic/Risk/Action)    │    │  │         │
+│         │  │  └──────┬─────────────┬───────┘    │  │         │
+│         │  │         ↓ mapping     ↓ mapping    │  │         │
+│         │  │  ┌────────┐ ┌───────────┐ ┌──────┐ │  │         │
+│         │  │  │  VEGA  │ │ Execution │ │ Data │ │  │         │
+│         │  │  │ Engine │ │  Factory  │ │ flow │ │  │         │
+│         │  │  └────────┘ └───────────┘ └──────┘ │  │         │
+│         │  └────────────────────────────────────┘  │         │
+│         │                                          │         │
+└─────────┴──────────────────────────────────────────┴─────────┘
+               ↕                ↕                ↕
+       Multi-source & Multi-modal Data (30+ data sources)
+```
+
+| Component | Description |
+| --- | --- |
+| **AI Data Platform** | Non-intrusive access architecture — unified data access, unified execution, and unified security governance through the Business Knowledge Network |
+| **Decision Agent** | Goal-oriented autonomous task planning — acquires high-quality context from AI Data Platform, manages runtime effectively, suppresses hallucination and context decay, invokes tools and skills under permission control, forming a safe "reason → risk-assess → execute → feedback" business loop |
+| **Info Security Fabric** | Unified identity, permissions, and policies as a single entry point — end-to-end control and audit over data access, model output, and tool invocation, reducing privilege escalation, leakage, and prompt injection risks |
+| **Trace AI** | Full-chain observability and evidence chain tracing — supports issue localization and automatic optimization recommendations, enabling explainable and auditable AI applications |
+
+<a id="toc-bkn-lang"></a>
+
+### 📐 BKN Lang
+
+BKN Lang is a Markdown-based business knowledge modeling language, designed for human-machine bidirectional friendliness:
+
+- **Easy to develop** — Based on standard Markdown syntax, eliminating code barriers entirely. Business experts write, read, and modify definitions via WYSIWYG editors, with rapid version diff and collaborative review — modifying system rules is like editing a document.
+- **Easy to understand** — "Object-Relationship-Risk-Action" four-in-one model perfectly maps enterprise business models. Humans read business semantics; Agents parse precise context constraints in real-time. Logic is made explicit, rejecting black boxes, fundamentally reducing LLM reasoning hallucination and logical deviation.
+- **Easy to integrate** — Definitions stored as full-text in specific database fields with no complex underlying table coupling. Context Loader dynamically loads on demand, discarding static hardcoding. Plug-and-play across systems and Agents, flowing as lightweight assets through AI Data Platform.
+
+### Key Value Summary
+
+| Metric | Value |
+| --- | --- |
+| **Scenario Coverage** | Q&A, workflow execution, intelligence analysis, decision judgment, exploration |
+| **TCO Reduction** | 70% lower with integrated platform |
+| **BKN Build Efficiency** | 300% improvement in knowledge network construction |
+| **Token Cost Savings** | 50% reduction through context optimization and compression |
 
 <a id="toc-kweaver-sdk"></a>
 
@@ -162,7 +261,7 @@ kweaver auth login https://your-kweaver-instance.com
 
 ### Try with Demo Environment
 
-No deployment needed — connect your AI agent to the demo environment and start exploring immediately (for the web UI, visit [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)):
+No deployment needed — [Apply for a trial](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf) first, then connect your AI agent to the demo environment (for the web UI, visit [KWeaver DIP](https://dip-poc.aishu.cn/studio/agent/development/my-agent-list)).
 
 ```bash
 npx skills add https://github.com/kweaver-ai/kweaver-sdk \
@@ -194,7 +293,7 @@ Or use `/kweaver-core` slash commands (the skill takes over automatically):
 /kweaver-core Chat with Agent <agent-id>, ask "What is the current inventory status?"
 ```
 
-> **Demo credentials**: username `kweaver`, password `111111`
+> **Demo access:** [Apply for a trial](https://kweaver-ai.feishu.cn/share/base/form/shrcni732cNDY4x3A5SYTncrguf) if needed.
 
 ### Headless / no-browser authentication (SSH, CI, containers)
 
@@ -294,106 +393,89 @@ reply   = kweaver.chat("Summarise the top 3 risks")
 
 For streaming, `KWeaverClient`, and the full API surface, see the [kweaver-sdk](https://github.com/kweaver-ai/kweaver-sdk) repository docs and examples.
 
-<a id="toc-kweaver-core"></a>
+<a id="toc-kweaver-admin"></a>
 
-## 🏗️ KWeaver Core
+## 🛡️ KWeaver Admin CLI
 
-**KWeaver Core** is the AI-native platform foundation for autonomous decision-making. It sits between AI Agents (above) and AI/Data infrastructure (below), with the **Business Knowledge Network (BKN)** at its center, providing unified data access, execution, and security governance for Agents.
+[`kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) is a separate npm CLI for **platform administrators**, complementary to the `kweaver` CLI from `kweaver-sdk`:
 
-```text
-            ┌─────────────────────────────────┐
-            │     AI Agents (Decision Agent,   │
-            │     Data Agent, HiAgent, ...)    │
-            └───────────────┬─────────────────┘
-                            │
-            ┌───────────────▼─────────────────┐
-            │     Business Knowledge Network   │
-            │         KWeaver Core             │
-            └───────────────┬─────────────────┘
-                            │
-            ┌───────────────▼─────────────────┐
-            │   AI Infrastructure & Data       │
-            │   Infrastructure                 │
-            └─────────────────────────────────┘
+| CLI | Audience | Scope |
+| --- | --- | --- |
+| `kweaver` (`@kweaver-ai/kweaver-sdk`) | End users / Agents | BKN, Decision Agent, Action, Skill, query |
+| `kweaver-admin` (`@kweaver-ai/kweaver-admin`) | Platform administrators | Users, organizations, roles, models, audit, raw HTTP |
+
+> Most `kweaver-admin` commands target services that come with a **full install** (`auth.enabled=true`, `businessDomain.enabled=true`): `user-management`, `deploy-manager`, `deploy-auth`, `eacp`, `mf-model-manager`, OAuth2 (Hydra). On a `--minimum` install most commands return 401 / 404 — expected.
+
+### Install
+
+Requires Node.js 18+. Credentials are stored under `~/.kweaver-admin/platforms/`, isolated from `~/.kweaver/`.
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin --version
 ```
 
-KWeaver Core solves two critical pain points when connecting proprietary data with autonomous AI Agents:
+### Login
 
-### Context Engineering — High-Quality Context for Agents
+```bash
+# Browser OAuth2 (skip TLS for self-signed certs)
+kweaver-admin auth login https://<access-address> -k
 
-In long-running agent scenarios, context inevitably faces explosion, decay, pollution, and high token costs. KWeaver Core addresses these through the Business Knowledge Network:
+# Username/password (CI / headless)
+kweaver-admin auth login https://<access-address> -u <user> -p <password> -k
 
-- **Context explosion containment** — Multi-source candidates are first organized and aggregated via the BKN semantic network, then unified by Context Loader (recall → coarse ranking → fine ranking) to retain only key evidence and constraints, avoiding massive prompt fragments that cause decision drift. Overall accuracy reaches **93%+**.
-- **Context decay mitigation** — Replaces long-text stacking with "real-time facts + evidence citations", keeping reasoning grounded around specific objects and reducing forgetting and hallucination risks in long inputs. Accuracy improves **15%+** over baselines across scenario types.
-- **Context pollution isolation** — Builds precise enterprise digital twins through the BKN network, blocking unreliable content and potential injection risks outside the knowledge and execution boundary, ensuring a clean and controllable reasoning chain.
-- **Token cost compression** — Converts multi-source materials into structured object information fetched on demand (not full-text concatenation), improving information density within the same budget. Token consumption reduced **30%+** while improving accuracy.
-
-### Harness Engineering — Safe & Controllable Execution
-
-Beyond "seeing more", Agents must "do it right". KWeaver Core provides constraint engineering capabilities for enterprise-grade safe execution:
-
-- **Explainable decisions** — Uses "Object → Action → Rule → Constraint" knowledge structures to express business intent graphs, grounding tool invocation and parameter selection to explicit semantic boundaries and rule dependencies, making it clear "why this action was taken".
-- **Traceable evidence chain** — From action intent → knowledge node → data source → mapping/operator → final invocation, full-chain tracing is supported. Entities and relationships can be traced back to source data and active rules, enabling audit and review.
-- **Controllable execution loop** — Unifies identity and access control down to knowledge network object/action permissions, with pre-execution validation, mid-execution policy interception, and post-execution audit logging, achieving "authorizable, approvable, revocable" security loops.
-- **Risk prevention mechanism** — Models risks as "Risk Types" linked to Action Types; performs risk assessment and simulation before execution, with automatic downgrade/blocking/secondary confirmation when thresholds are hit, blocking high-risk actions before they execute.
-
-### Core Architecture
-
-```text
-┌──────────────────────── KWeaver Core ────────────────────────┐
-│         │                                          │         │
-│         │  Decision Agent                          │         │
-│  Info   │  (Dolphin Runtime / Agent Executor)       │  Trace │
-│  Secu-  │──────────────────────────────────────────│         │
-│  rity   │                                          │   AI    │
-│         │  AI Data Platform                        │         │
-│ Fabric  │  ┌────────────────────────────────────┐  │  Obse-  │
-│         │  │ Context Loader                     │  │  rvab-  │
-│ (ISF)   │  │  ┌───────────┐   ┌─────────────┐  │  │  ility  │
-│         │  │  │ Retrieval │ → │   Ranker    │  │  │    /    │
-│ Access  │  │  └───────────┘   └─────────────┘  │  │  Evid-  │
-│ Control │  ├────────────────────────────────────┤  │  ence   │
-│    /    │  │ Business Knowledge Network         │  │         │
-│ Secu-   │  │  ┌────────────────────────────┐    │  │         │
-│  rity   │  │  │ BKN Engine                 │    │  │         │
-│         │  │  │ (Data/Logic/Risk/Action)    │    │  │         │
-│         │  │  └──────┬─────────────┬───────┘    │  │         │
-│         │  │         ↓ mapping     ↓ mapping    │  │         │
-│         │  │  ┌────────┐ ┌───────────┐ ┌──────┐ │  │         │
-│         │  │  │  VEGA  │ │ Execution │ │ Data │ │  │         │
-│         │  │  │ Engine │ │  Factory  │ │ flow │ │  │         │
-│         │  │  └────────┘ └───────────┘ └──────┘ │  │         │
-│         │  └────────────────────────────────────┘  │         │
-│         │                                          │         │
-└─────────┴──────────────────────────────────────────┴─────────┘
-               ↕                ↕                ↕
-       Multi-source & Multi-modal Data (30+ data sources)
+# Or via environment variables
+export KWEAVER_BASE_URL=https://<access-address>
+export KWEAVER_ADMIN_TOKEN=<bearer-token>   # falls back to KWEAVER_TOKEN
 ```
 
-| Component | Description |
-| --- | --- |
-| **AI Data Platform** | Non-intrusive access architecture — unified data access, unified execution, and unified security governance through the Business Knowledge Network |
-| **Decision Agent** | Goal-oriented autonomous task planning — acquires high-quality context from AI Data Platform, manages runtime effectively, suppresses hallucination and context decay, invokes tools and skills under permission control, forming a safe "reason → risk-assess → execute → feedback" business loop |
-| **Info Security Fabric** | Unified identity, permissions, and policies as a single entry point — end-to-end control and audit over data access, model output, and tool invocation, reducing privilege escalation, leakage, and prompt injection risks |
-| **Trace AI** | Full-chain observability and evidence chain tracing — supports issue localization and automatic optimization recommendations, enabling explainable and auditable AI applications |
+### Common admin tasks
 
-<a id="toc-bkn-lang"></a>
+```bash
+kweaver-admin org tree                           # list departments
+kweaver-admin user create --login alice          # default password: 123456 (forced change at first login)
+kweaver-admin user reset-password -u alice       # admin reset
+kweaver-admin role list
+kweaver-admin role add-member <roleId> -u alice
+kweaver-admin llm add                            # register an LLM
+kweaver-admin small-model add                    # register an embedding model
+kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
+kweaver-admin call /api/user-management/v1/management/users -X GET   # raw HTTP with auth header
+```
 
-### 📐 BKN Lang
+> New users created by `user create` always start with the platform default password **`123456`** and are forced to change it on first sign-in (this is documented upstream behavior of the ISF user store, not a CLI choice). For lost-password flows, prefer `kweaver-admin user reset-password`.
 
-BKN Lang is a Markdown-based business knowledge modeling language, designed for human-machine bidirectional friendliness:
+> Respect the **separation-of-duties** built-in accounts (`system`, `admin`, `security`, `audit`) — operators should use individual accounts, not the shared `admin`.
 
-- **Easy to develop** — Based on standard Markdown syntax, eliminating code barriers entirely. Business experts write, read, and modify definitions via WYSIWYG editors, with rapid version diff and collaborative review — modifying system rules is like editing a document.
-- **Easy to understand** — "Object-Relationship-Risk-Action" four-in-one model perfectly maps enterprise business models. Humans read business semantics; Agents parse precise context constraints in real-time. Logic is made explicit, rejecting black boxes, fundamentally reducing LLM reasoning hallucination and logical deviation.
-- **Easy to integrate** — Definitions stored as full-text in specific database fields with no complex underlying table coupling. Context Loader dynamically loads on demand, discarding static hardcoding. Plug-and-play across systems and Agents, flowing as lightweight assets through AI Data Platform.
+Full command tree, security notes, and `auth change-password` (EACP `modifypassword`, same `401001017` first-login flow as the `kweaver` CLI): see [kweaver-admin README](https://github.com/kweaver-ai/kweaver-admin) and [help/en/install.md — Administrator tool after a full install](help/en/install.md#-administrator-tool-after-a-full-install-kweaver-admin).
+
+### AI Agent Skill — `kweaver-admin`
+
+`kweaver-admin` ships its own progressive-disclosure skill so AI coding assistants can drive admin tasks (auth, org, user, role, model, audit, raw HTTP) on your behalf. Install with `npx skills`:
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+After installing, authenticate once with `kweaver-admin auth login https://your-instance -k`, then ask your assistant in natural language (`/kweaver-admin` slash also works):
+
+```text
+List all roles
+Create user alice and assign every role from role list
+Reset alice's password
+Show login audit for alice in the last 7 days
+Register an embedding model named bge-m3 against https://api.siliconflow.cn
+```
+
+Skill source: [skills/kweaver-admin/SKILL.md](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md). It complements the `kweaver-core` / `create-bkn` skills above (which target the `kweaver` CLI).
 
 <a id="toc-benchmarks"></a>
 
-### 📊 Benchmarks & Experiments
+## 📊 Benchmarks & Experiments
 
 See more details: [KWeaver Blog](https://kweaver-ai.github.io/kweaver-core/)
 
-#### Unstructured Data Q&A — Cross-Platform Comparison
+### Unstructured Data Q&A — Cross-Platform Comparison
 
 Based on 145 HR scenario samples (resume corpus with 118 multi-format PDFs), covering simple information lookup, cross-section experience analysis, and multi-hop comprehensive reasoning. All platforms used DeepSeek V3.2 + BGE M3-Embedding with identical data sources, tested in Agentic mode.
 
@@ -406,7 +488,7 @@ Based on 145 HR scenario samples (resume corpus with 118 multi-format PDFs), cov
 
 KWeaver Core is the only platform that breaks the traditional RAG "performance impossible triangle" — achieving >99% accuracy while keeping inference cost and latency at production-ready levels. Dify trades high token consumption (1.7x) for decent accuracy; BiSheng sacrifices reasoning depth for speed; RAGFlow falls behind on both accuracy and latency.
 
-#### Ablation Studies — Key Technical Levers
+### Ablation Studies — Key Technical Levers
 
 The following ablation experiments identify the contribution of each KWeaver Core component:
 
@@ -440,7 +522,7 @@ With excessive tools, Agents favor "seemingly powerful" broad-search tools whose
 
 Path guidance tells Agents "how to walk" for efficiency; tool curation "reduces wrong turns" for stability. Combined, they deliver optimal production performance.
 
-#### Heterogeneous Data Reasoning — F1 Bench
+### Heterogeneous Data Reasoning — F1 Bench
 
 F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30 unstructured documents, testing Agent capabilities in structured + unstructured heterogeneous data reasoning.
 
@@ -451,18 +533,9 @@ F1 Bench is based on the BIRD test set with the Formula-1 database mixed with 30
 | **SQL Hit Efficiency** | **0.226** | 0.137 |
 | **Total SQL Calls** | **292** | 408 |
 
-### Key Value Summary
-
-| Metric | Value |
-| --- | --- |
-| **Scenario Coverage** | Q&A, workflow execution, intelligence analysis, decision judgment, exploration |
-| **TCO Reduction** | 70% lower with integrated platform |
-| **BKN Build Efficiency** | 300% improvement in knowledge network construction |
-| **Token Cost Savings** | 50% reduction through context optimization and compression |
-
 <a id="toc-community"></a>
 
-## Community
+## 🤝 Community
 
 **KWeaver WeChat Group QR Code**
 

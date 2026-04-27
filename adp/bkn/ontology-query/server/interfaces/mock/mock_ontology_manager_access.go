@@ -134,3 +134,19 @@ func (mr *MockOntologyManagerAccessMockRecorder) ListRelationTypes(ctx, knID, br
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRelationTypes", reflect.TypeOf((*MockOntologyManagerAccess)(nil).ListRelationTypes), ctx, knID, branch, query)
 }
+
+// GetMetricDefinition mocks base method.
+func (m *MockOntologyManagerAccess) GetMetricDefinition(ctx context.Context, knID, branch, metricID string) (*interfaces.MetricDefinition, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricDefinition", ctx, knID, branch, metricID)
+	ret0, _ := ret[0].(*interfaces.MetricDefinition)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetMetricDefinition indicates an expected call of GetMetricDefinition.
+func (mr *MockOntologyManagerAccessMockRecorder) GetMetricDefinition(ctx, knID, branch, metricID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricDefinition", reflect.TypeOf((*MockOntologyManagerAccess)(nil).GetMetricDefinition), ctx, knID, branch, metricID)
+}

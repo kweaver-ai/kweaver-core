@@ -35,7 +35,7 @@ type KnSearchRetrievalConfig struct {
 type KnSearchConceptRetrievalConfig struct {
 	TopK                   int   `json:"top_k" default:"10"`
 	IncludeSampleData      *bool `json:"include_sample_data" default:"false"`
-	SchemaBrief            *bool `json:"schema_brief" default:"true"`
+	SchemaBrief            *bool `json:"schema_brief" default:"false"`
 	EnableCoarseRecall     *bool `json:"enable_coarse_recall" default:"true"`
 	CoarseObjectLimit      int   `json:"coarse_object_limit" default:"2000"`
 	CoarseRelationLimit    int   `json:"coarse_relation_limit" default:"300"`

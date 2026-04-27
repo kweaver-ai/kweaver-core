@@ -6,11 +6,12 @@
 package interfaces
 
 const (
-	BuildTaskStatusPending   string = "pending"
+	BuildTaskStatusInit      string = "init"
 	BuildTaskStatusRunning   string = "running"
 	BuildTaskStatusCompleted string = "completed"
 	BuildTaskStatusStopping  string = "stopping"
 	BuildTaskStatusStopped   string = "stopped"
+	BuildTaskStatusFailed    string = "failed"
 
 	BuildTaskTypeBatch     string = "batch:execute"
 	BuildTaskTypeStreaming string = "streaming:execute"
@@ -24,8 +25,10 @@ const (
 
 	EmptyDocumentID string = "empty_document"
 
-	DATASET_BUILD_MAX_RETRY_COUNT = 50 // 最大重试次数
-	DATASET_BUILD_RETRY_INTERVAL  = 5  // 重试间隔，单位秒
+	BUILD_TASK_MAX_RETRY_COUNT = 50 // 最大重试次数
+	BUILD_TASK_RETRY_INTERVAL  = 5  // 重试间隔，单位秒
+
+	BUILD_PREFIX = "vega-build"
 )
 
 // BuildTask represents a build task entity.
@@ -33,7 +36,7 @@ type BuildTask struct {
 	ID              string      `json:"id"`
 	ResourceID      string      `json:"resource_id"`
 	Status          string      `json:"status"`
-	Mode            string      `json:"mode"`             // 任务模式：full/incremental/realtime
+	Mode            string      `json:"mode"`             // 任务模式：streaming/batch
 	TotalCount      int64       `json:"total_count"`      // 总数
 	SyncedCount     int64       `json:"synced_count"`     // 已同步数
 	VectorizedCount int64       `json:"vectorized_count"` // 已做向量数
@@ -43,15 +46,28 @@ type BuildTask struct {
 	CreateTime      int64       `json:"create_time"`
 	Updater         AccountInfo `json:"updater"`
 	UpdateTime      int64       `json:"update_time"`
+	EmbeddingFields string      `json:"embedding_fields,omitempty"` // 需向量化嵌入字段
+	BuildKeyFields  string      `json:"build_key_fields"`           // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
+	EmbeddingModel  string      `json:"embedding_model,omitempty"`  // 嵌入模型
+	ModelDimensions int         `json:"model_dimensions,omitempty"` // 模型维度
 }
 
 // BuildTaskRequest represents create build task request.
 type BuildTaskRequest struct {
-	Mode string `json:"mode" binding:"required,oneof=streaming batch"` // 任务模式：streaming/batch
+	Mode            string `json:"mode" binding:"required,oneof=streaming batch"` // 任务模式：streaming/batch
+	EmbeddingFields string `json:"embedding_fields,omitempty"`                    // 需向量化嵌入字段
+	BuildKeyFields  string `json:"build_key_fields"`                              // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
+	EmbeddingModel  string `json:"embedding_model,omitempty"`                     // 嵌入模型
+	ModelDimensions int    `json:"model_dimensions,omitempty"`                    // 模型维度
 }
 
 // UpdateBuildTaskStatusRequest represents update build task status request.
 type UpdateBuildTaskStatusRequest struct {
-	Status      string `json:"status" binding:"required,oneof=pending running completed stopping stopped"` // 任务状态
-	ExecuteType string `json:"execute_type,omitempty"`                                                     // 执行类型,for batch mode, default is "incremental"
+	Status      string `json:"status" binding:"required,oneof=running stopped"` // 修改任务状态，只允许 running 和 stopped
+	ExecuteType string `json:"execute_type,omitempty"`                          // 执行类型,for batch mode, default is "incremental"
+}
+
+type KeyValue struct {
+	Key   string
+	Value any
 }

@@ -406,6 +406,11 @@ CREATE TABLE IF NOT EXISTS t_build_task (
     f_updater_type            VARCHAR(20) NOT NULL COMMENT '更新人类型',
     f_update_time             BIGINT NOT NULL COMMENT '更新时间',
 
+    f_embedding_fields        VARCHAR(255) NOT NULL DEFAULT '' COMMENT '需要向量化嵌入字段',
+    f_build_key_fields        VARCHAR(255) NOT NULL DEFAULT '' COMMENT '构建中依赖的特殊键字段',
+    f_embedding_model         VARCHAR(40) NOT NULL DEFAULT '' COMMENT '嵌入模型',
+    f_model_dimensions        INT NOT NULL DEFAULT 0 COMMENT '模型维度',
+
     -- 索引
     PRIMARY KEY (f_id),
     INDEX idx_resource_id (f_resource_id),

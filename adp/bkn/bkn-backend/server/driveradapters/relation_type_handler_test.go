@@ -139,7 +139,7 @@ func Test_RelationTypeRestHandler_CreateRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckKNExistByID failed\n", func() {
@@ -266,7 +266,7 @@ func Test_RelationTypeRestHandler_UpdateRelationType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("RelationType not found\n", func() {
@@ -279,7 +279,7 @@ func Test_RelationTypeRestHandler_UpdateRelationType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("Update to existing name succeeds (no name uniqueness check)\n", func() {
@@ -381,7 +381,7 @@ func Test_RelationTypeRestHandler_DeleteRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("RelationType not found\n", func() {
@@ -392,7 +392,7 @@ func Test_RelationTypeRestHandler_DeleteRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("DeleteRelationTypes failed\n", func() {
@@ -460,7 +460,7 @@ func Test_RelationTypeRestHandler_ListRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ListRelationTypes failed\n", func() {
@@ -527,7 +527,7 @@ func Test_RelationTypeRestHandler_GetRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("GetRelationTypes failed\n", func() {
@@ -618,7 +618,7 @@ func Test_RelationTypeRestHandler_SearchRelationTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("SearchRelationTypes failed\n", func() {

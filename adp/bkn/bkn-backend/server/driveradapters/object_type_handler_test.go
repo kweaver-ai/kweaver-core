@@ -140,7 +140,7 @@ func Test_ObjectTypeRestHandler_CreateObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("CheckKNExistByID failed\n", func() {
@@ -264,7 +264,7 @@ func Test_ObjectTypeRestHandler_UpdateObjectType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ObjectType not found\n", func() {
@@ -277,7 +277,7 @@ func Test_ObjectTypeRestHandler_UpdateObjectType(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ObjectType name already exists\n", func() {
@@ -367,7 +367,7 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ObjectType not found\n", func() {
@@ -378,7 +378,7 @@ func Test_ObjectTypeRestHandler_DeleteObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("DeleteObjectTypes failed\n", func() {
@@ -509,7 +509,7 @@ func Test_ObjectTypeRestHandler_UpdateDataProperties(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ObjectType not found\n", func() {
@@ -522,7 +522,7 @@ func Test_ObjectTypeRestHandler_UpdateDataProperties(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 	})
 }
@@ -571,7 +571,7 @@ func Test_ObjectTypeRestHandler_ListObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("ListObjectTypes failed\n", func() {
@@ -641,7 +641,7 @@ func Test_ObjectTypeRestHandler_GetObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("GetObjectTypes failed\n", func() {
@@ -732,7 +732,7 @@ func Test_ObjectTypeRestHandler_SearchObjectTypes(t *testing.T) {
 			w := httptest.NewRecorder()
 			engine.ServeHTTP(w, req)
 
-			So(w.Result().StatusCode, ShouldEqual, http.StatusForbidden)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusNotFound)
 		})
 
 		Convey("SearchObjectTypes failed\n", func() {

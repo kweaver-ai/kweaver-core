@@ -32,9 +32,18 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 			WithErrorDetails("Logic definition is empty")
 	}
 
+	// 校验节点ID的唯一性
 	nodeMap := make(map[string]struct{})
-	for _, ds := range view.LogicDefinition {
-		nodeMap[ds.ID] = struct{}{}
+	for _, node := range view.LogicDefinition {
+		if node.ID == "" {
+			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails("Node ID cannot be empty")
+		}
+		if _, exists := nodeMap[node.ID]; exists {
+			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_Duplicated_NodeID).
+				WithErrorDetails(fmt.Sprintf("Duplicate node ID found: %s", node.ID))
+		}
+		nodeMap[node.ID] = struct{}{}
 	}
 
 	resourceNodeCount := 0
@@ -214,10 +223,10 @@ func validateJoinNode(ctx context.Context, node *interfaces.LogicDefinitionNode,
 			WithErrorDetails("The logic definition join config is invalid")
 	}
 
-	// join_type 只能为 inner, left, right, full outer
+	// join_type 只能为 inner, left, right
 	if _, ok := interfaces.JoinTypeMap[cfg.JoinType]; !ok {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
-			WithErrorDetails("The logic definition join config is invalid, join_type must be inner, left, right, full outer")
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_JoinType).
+			WithErrorDetails("The logic definition join config is invalid, join_type must be inner, left, right")
 	}
 
 	// join_on 校验

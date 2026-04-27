@@ -867,8 +867,8 @@ func (s *knActionRecallServiceImpl) wrapActionDriverParameters(dynamicParamsSche
 				"type":        "array",
 				"description": "目标实例列表；为空时由行动驱动按条件扫描。如果需要指定实例，请根据上下文提取实例的动态属性作为键值对填入（例如 [{\"id\": \"123\"}, {\"name\": \"test_instance\"}]）",
 				"items": map[string]any{
-					"type": "object",
-					"description": "实例标识对象，包含动态的属性键值对",
+					"type":                 "object",
+					"description":          "实例标识对象，包含动态的属性键值对",
 					"additionalProperties": map[string]any{},
 				},
 			},

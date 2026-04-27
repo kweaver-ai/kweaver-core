@@ -147,6 +147,148 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ---
 
+## 🛡️ 完整安装后的管理员工具（kweaver-admin）
+
+完整安装（启用 `auth.enabled=true` 与 `businessDomain.enabled=true`）后，平台的**用户、组织、角色、模型、审计**等管理操作通过独立的 npm CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) 完成。它与面向终端用户/Agent 的 `kweaver`（kweaver-sdk）互补：
+
+| CLI | 受众 | 覆盖范围 |
+| --- | --- | --- |
+| `kweaver`（`@kweaver-ai/kweaver-sdk`） | 业务用户 / Agent | BKN、Decision Agent、Action、Skill、查询 |
+| `kweaver-admin`（`@kweaver-ai/kweaver-admin`） | 平台管理员 | 用户、组织、角色、模型、审计、原始 HTTP |
+
+**何时安装：** 完整安装之后（`./deploy.sh kweaver-core install` 不带 `--minimum`）。**最小化安装下大多数 `kweaver-admin` 命令会返回 401 / 404 — 属于部署裁剪，并非 CLI 故障。**
+
+**后端依赖（来自 `kweaver-admin` 架构文档）：** `user-management` / `deploy-manager` / `deploy-auth` / `eacp` / `mf-model-manager` / OAuth2(Hydra) — 正好是完整安装才会启用的服务集合。
+
+### 📥 安装
+
+要求 **Node.js 18+**。凭据保存在 `~/.kweaver-admin/platforms/`，与 `~/.kweaver/` 隔离。
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin
+kweaver-admin --version
+kweaver-admin --help
+```
+
+### 🔑 登录
+
+```bash
+# 浏览器 OAuth2（自签名证书加 -k）
+kweaver-admin auth login https://<访问地址> -k
+
+# 用户名/密码（CI 或无浏览器场景）
+kweaver-admin auth login https://<访问地址> -u <用户名> -p <密码> -k
+
+# 通过环境变量（CI / Headless）
+export KWEAVER_BASE_URL=https://<访问地址>
+export KWEAVER_ADMIN_TOKEN=<bearer-token>   # 优先；也可回退到 KWEAVER_TOKEN
+
+# 查看会话状态与当前身份
+kweaver-admin auth status
+kweaver-admin auth whoami
+kweaver-admin auth list
+```
+
+> `kweaver-admin` 与 `kweaver` 的 token 存储互不影响，可在同一台机器上同时持有管理员与业务身份。
+
+### 🧰 常用管理任务
+
+#### 组织（部门）
+
+```bash
+kweaver-admin org tree                # 树形列出部门
+kweaver-admin org list                # 分页列出
+kweaver-admin org create              # 新建部门
+kweaver-admin org members <orgId>     # 查看成员
+```
+
+#### 用户
+
+```bash
+kweaver-admin user list
+kweaver-admin user create --login alice            # 默认密码 123456，首次登录强制改密
+kweaver-admin user reset-password -u alice         # 管理员重置密码
+kweaver-admin user roles <userId>
+kweaver-admin user assign-role <userId> <roleId>
+kweaver-admin user revoke-role <userId> <roleId>
+```
+
+#### 角色
+
+```bash
+kweaver-admin role list
+kweaver-admin role get <roleId>
+kweaver-admin role add-member <roleId> -u alice
+kweaver-admin role remove-member <roleId> -u alice
+```
+
+**赋权前务必先看 `role list`**，记下每条角色的 **roleId**（与名称如 `super_admin`、`normal_user` 等对应关系以你环境输出为准；参考 [kweaver-admin 角色说明](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/product-specs/role-permission.md)）。**快速开始/POC** 为减少「缺角色导致接口 403」，常对新用户**依次**执行 `kweaver-admin user assign-role <userId> <roleId>`，把 `role list` 中的角色**全部**挂到该用户上；**生产**请按最小权限只赋业务所需角色，并用 `kweaver-admin user roles <userId>` 复查。
+
+#### 模型（LLM / Embedding）
+
+```bash
+kweaver-admin llm list
+kweaver-admin llm add
+kweaver-admin llm test <modelId>
+
+kweaver-admin small-model list
+kweaver-admin small-model add
+kweaver-admin small-model test <modelId>
+```
+
+> 与 [`模型管理`](model.md) 中通过 `kweaver call /api/mf-model-manager/...` 的方式等价；推荐管理员日常用 `kweaver-admin llm` / `small-model` 子命令，参数校验与回显更友好。
+
+#### 审计
+
+```bash
+kweaver-admin audit list \
+  --user alice --start 2026-04-01 --end 2026-04-30
+```
+
+#### 原始 HTTP（带认证头）
+
+```bash
+kweaver-admin call /api/user-management/v1/management/users -X GET
+kweaver-admin --json call /api/eacp/v1/... -X POST -d '{"...":"..."}'
+```
+
+### ⚠️ 必须知道
+
+- **新建用户的默认密码固定为 `123456`**，首次登录强制改密 — 这是 ISF 用户存储的上游既定行为（`Usrm_AddUser` thrift 不接收密码参数）。请通过安全渠道把账号交给本人，由其首登时改密；后续忘/失密用 `kweaver-admin user reset-password`。
+- **三权分立内置账号**：`system / admin / security / audit` 不可随意删改；操作员请使用**个人账号**而非共享 `admin`，便于审计追溯。
+- **首次登录改密（错误码 401001017）**：`kweaver-admin auth login` 触发该错误时，TTY 下会引导改密并自动重试登录；非 TTY 下显式补充 `--new-password '<新密码>'` 一次性完成（与 `kweaver` CLI 行为一致，参见 [Info Security Fabric — 修改密码](isf.md#-修改密码)）。
+- **TLS：** `-k` / `--insecure`（或环境变量 `KWEAVER_TLS_INSECURE=1`）仅用于开发/自签名证书场景，生产请使用受信任证书。
+- **Web 控制台未暴露的能力，CLI 是首选路径**：例如部门写入（`Usrm_AddDepartment` / `Usrm_EditDepartment`）、用户更新（`Usrm_EditUser` 回退）、用户角色查询（`role list + role members` 回退）等，详见 [`kweaver-admin/docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md)。
+
+### 🤖 AI Agent Skill
+
+`kweaver-admin` 仓库自带渐进式（progressive disclosure）Skill，让 AI 编程助手（Cursor、Claude Code 等）代你执行管理员操作：
+
+```bash
+npx skills add https://github.com/kweaver-ai/kweaver-admin --skill kweaver-admin
+```
+
+安装后先用 `kweaver-admin auth login https://<访问地址> -k` 登录一次，然后用自然语言（也支持 `/kweaver-admin` 斜杠命令）指挥助手：
+
+```text
+列出所有角色
+新建用户 alice，并把 role list 中的所有角色都赋给她
+重置 alice 的密码
+查看 alice 最近 7 天的登录审计
+注册一个名为 bge-m3 的 Embedding 模型，base 是 https://api.siliconflow.cn
+```
+
+Skill 源文件：[`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md)。它与 `kweaver` CLI 的 `kweaver-core` / `create-bkn` Skill 互补、相互独立。
+
+### 📖 进一步阅读
+
+- [`kweaver-admin` 仓库 README](https://github.com/kweaver-ai/kweaver-admin)
+- [`ARCHITECTURE.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/ARCHITECTURE.md) — 命令树与后端 API 映射
+- [`docs/SECURITY.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/docs/SECURITY.md) — Token、TLS、审计与 fallback 路径
+- [`skills/kweaver-admin/SKILL.md`](https://github.com/kweaver-ai/kweaver-admin/blob/main/skills/kweaver-admin/SKILL.md) — Agent Skill 入口
+
+---
+
 ## ✅ 安装完成后（检查集群与 API）
 
 `deploy.sh kweaver-core install` 结束后，请确认集群正常且能访问平台。

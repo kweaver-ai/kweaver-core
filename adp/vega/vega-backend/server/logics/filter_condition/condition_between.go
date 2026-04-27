@@ -37,9 +37,16 @@ func (c *BetweenCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	}
 	field, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition [between] left field '%s' not found", cfg.Name)
+		// 如果字段未在Schema中定义，创建一个临时的Property对象
+		// 默认设置为datetime类型，以支持时间戳转换
+		field = &interfaces.Property{
+			Name:         cfg.Name,
+			OriginalName: cfg.Name,
+			Type:         interfaces.DataType_Datetime,
+		}
 	}
-	if !interfaces.DataType_IsDate(field.Type) && !interfaces.DataType_IsNumber(field.Type) {
+	// 对于未在Schema中定义的字段，跳过类型检查
+	if ok && !interfaces.DataType_IsDate(field.Type) && !interfaces.DataType_IsNumber(field.Type) {
 		return nil, fmt.Errorf("condition [between] left field is not a date or number field: %s:%s", cfg.Name, field.Type)
 	}
 

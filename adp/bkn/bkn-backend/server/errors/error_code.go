@@ -103,4 +103,5 @@ func init() {
 	rest.Register(JobErrCodeList)
 	rest.Register(ConceptGroupErrCodeList)
 	rest.Register(RiskTypeErrCodeList)
+	rest.Register(MetricErrCodeList)
 }

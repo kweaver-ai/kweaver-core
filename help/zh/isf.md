@@ -8,6 +8,26 @@
 
 **相关模块：** 所有接受 `Authorization` 的子系统；主要消费者包括 [Decision Agent](decision-agent.md)、[VEGA 引擎](vega.md)。
 
+### 🛡️ 管理员工具：kweaver-admin
+
+ISF 在**完整安装**下（启用 `auth.enabled=true` 与 `businessDomain.enabled=true`）的日常**管理面**（用户、组织、角色、模型、审计）通过独立 CLI [`@kweaver-ai/kweaver-admin`](https://github.com/kweaver-ai/kweaver-admin) 操作 — 与本页下文面向终端用户的 `kweaver` CLI 互补。
+
+```bash
+npm install -g @kweaver-ai/kweaver-admin           # Node.js 18+
+kweaver-admin auth login https://<访问地址> -k
+
+kweaver-admin org tree                              # 查看部门
+kweaver-admin user create --login alice             # 默认密码 123456，首次登录强制改密
+kweaver-admin user assign-role <userId> <roleId>
+kweaver-admin user reset-password -u alice          # 管理员重置
+kweaver-admin role list
+kweaver-admin audit list --user alice --start 2026-04-01 --end 2026-04-30
+```
+
+> 命令清单、token 隔离（`~/.kweaver-admin/`）、与最小化安装的兼容说明等详见 [安装与部署 — 完整安装后的管理员工具（kweaver-admin）](install.md#-完整安装后的管理员工具kweaver-admin)。
+>
+> 内置「三权分立」账号 `system / admin / security / audit` 不可随意删改；操作员请使用**个人账号**而非共享 `admin`，便于审计追溯。
+
 ### 💻 CLI
 
 #### 登录

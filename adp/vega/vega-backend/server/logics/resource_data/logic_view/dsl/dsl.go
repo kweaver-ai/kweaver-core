@@ -42,20 +42,6 @@ func NewlogicViewDSLGenerator(nodes []*interfaces.LogicDefinitionNode) *logicVie
 	}
 }
 
-// func marshalDSL(dsl interfaces.DSLCfg) (bytes.Buffer, error) {
-// 	// 序列化为JSON
-// 	dslBytes, err := sonic.Marshal(dsl)
-// 	if err != nil {
-// 		return bytes.Buffer{}, fmt.Errorf("data view marshal interfaces.DSLCfg error: %s", err.Error())
-// 	}
-
-// 	var queryBuffer bytes.Buffer
-// 	queryBuffer.Write(dslBytes)
-
-// 	// fmt.Println(queryBuffer.String())
-// 	return queryBuffer, nil
-// }
-
 // DSL生成器
 func (g *logicViewDSLGenerator) BuildDSL(ctx context.Context, query interfaces.ResourceDataQueryParams, view *interfaces.LogicView,
 	viewIndicesMap map[string][]string) (interfaces.DSLCfg, error) {

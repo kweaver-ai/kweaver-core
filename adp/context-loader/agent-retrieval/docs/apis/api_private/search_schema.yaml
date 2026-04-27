@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: Schema Search 标准接口
+  version: 1.0.0
+  description: |
+    `search_schema` 是新版本标准 Schema Search HTTP 契约。
+
+    该接口用于根据自然语言 query 探索知识网络中的：
+    - `object_types`
+    - `relation_types`
+    - `action_types`
+    - `metric_types`
+
+    该接口固定为 Schema-only，不返回实例数据，也不承担实例检索。
+servers:
+  - url: http://agent-retrieval:30779
+    description: agent-retrieval 服务
+paths:
+  /api/agent-retrieval/in/v1/kn/search_schema:
+    post:
+      tags:
+        - SchemaSearch
+      summary: search_schema
+      description: |
+        统一的 Schema 探索入口。适用于还不确定应该继续调用哪个
+        `query_*`、`find_*`、`get_*` 工具时，先通过该接口探索相关 schema 概念。
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [user, app, anonymous]
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, toon]
+            default: json
+          description: 响应格式：json 或 toon，默认 json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchSchemaRequest'
+      responses:
+        '200':
+          description: 成功返回 Schema 探索结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchSchemaResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SearchSchemaRequest:
+      type: object
+      required:
+        - query
+        - kn_id
+      properties:
+        query:
+          type: string
+          description: 用户查询问题或关键词
+        kn_id:
+          type: string
+          description: 知识网络ID。HTTP 接口通过 request body 传入。
+        search_scope:
+          $ref: '#/components/schemas/SearchScope'
+        max_concepts:
+          type: integer
+          minimum: 1
+          default: 10
+          description: Schema 候选规模上限
+        schema_brief:
+          type: boolean
+          default: false
+          description: 是否返回精简 Schema，默认返回相对完整的 Schema
+        enable_rerank:
+          type: boolean
+          default: true
+          description: 是否启用关系类型 Rerank
+
+    SearchScope:
+      type: object
+      description: |
+        Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。
+        `search_scope` 仅约束响应输出，不阻断系统内部使用相关线索辅助召回。
+        四个资源开关不能同时为 `false`；若同时为 `false`，接口返回参数错误。
+      properties:
+        include_object_types:
+          type: boolean
+          default: true
+          description: 是否包含对象类
+        include_relation_types:
+          type: boolean
+          default: true
+          description: 是否包含关系类
+        include_action_types:
+          type: boolean
+          default: true
+          description: 是否包含动作类
+        include_metric_types:
+          type: boolean
+          default: true
+          description: 是否包含指标类
+
+    SearchSchemaResponse:
+      type: object
+      properties:
+        object_types:
+          type: array
+          description: 对象类型列表
+          items:
+            type: object
+            additionalProperties: true
+        relation_types:
+          type: array
+          description: 关系类型列表
+          items:
+            type: object
+            additionalProperties: true
+        action_types:
+          type: array
+          description: 动作类型列表
+          items:
+            type: object
+            additionalProperties: true
+        metric_types:
+          type: array
+          description: 指标类型列表
+          items:
+            type: object
+            additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        details:
+          description: 错误详情
+          additionalProperties: true
+        solution:
+          type: string
+        link:
+          type: string

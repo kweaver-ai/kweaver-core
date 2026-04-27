@@ -28,8 +28,8 @@ type KnOntologyJobHandler interface {
 }
 
 type knOntologyJobHandler struct {
-	Logger                interfaces.Logger
-	BknBackendAccess      interfaces.BknBackendAccess
+	Logger           interfaces.Logger
+	BknBackendAccess interfaces.BknBackendAccess
 }
 
 // DefaultJobListLimit 默认查询任务列表的数量限制

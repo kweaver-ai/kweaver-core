@@ -71,12 +71,12 @@ func NewMariaDBConnector() connectors.TableConnector {
 
 // GetType returns the data source type.
 func (c *MariaDBConnector) GetType() string {
-	return "mariadb"
+	return interfaces.ConnectorTypeMariaDB
 }
 
 // GetName returns the connector name.
 func (c *MariaDBConnector) GetName() string {
-	return "mariadb"
+	return interfaces.ConnectorTypeMariaDB
 }
 
 // GetMode returns the connector mode.

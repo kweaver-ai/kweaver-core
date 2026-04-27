@@ -332,8 +332,11 @@ func TestSkillHandler(t *testing.T) {
 							PageSize:   5,
 							TotalCount: 1,
 						},
-						Data: []*interfaces.SkillSummary{
-							{SkillID: "skill-market-1", Name: "market-demo"},
+						Data: []*interfaces.SkillInfo{
+							{
+								SkillID: "skill-market-1",
+								Name:    "market-demo",
+							},
 						},
 					}, nil
 				},

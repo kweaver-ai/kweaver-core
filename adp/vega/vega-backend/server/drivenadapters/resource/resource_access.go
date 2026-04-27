@@ -200,6 +200,7 @@ func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.R
 		"f_updater",
 		"f_updater_type",
 		"f_update_time",
+		"f_local_index_name",
 	).From(RESOURCE_TABLE_NAME).
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
@@ -235,6 +236,7 @@ func (ra *resourceAccess) GetByID(ctx context.Context, id string) (*interfaces.R
 		&resource.Updater.ID,
 		&resource.Updater.Type,
 		&resource.UpdateTime,
+		&resource.LocalIndexName,
 	)
 	if err == sql.ErrNoRows {
 		span.SetStatus(codes.Ok, "")
@@ -293,6 +295,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 		"f_updater",
 		"f_updater_type",
 		"f_update_time",
+		"f_local_index_name",
 	).From(RESOURCE_TABLE_NAME).
 		Where(sq.Eq{"f_id": ids}).
 		ToSql()
@@ -337,6 +340,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 			&resource.Updater.ID,
 			&resource.Updater.Type,
 			&resource.UpdateTime,
+			&resource.LocalIndexName,
 		)
 
 		if err != nil {
@@ -756,6 +760,7 @@ func (ra *resourceAccess) Update(ctx context.Context, resource *interfaces.Resou
 		Set("f_updater", resource.Updater.ID).
 		Set("f_updater_type", resource.Updater.Type).
 		Set("f_update_time", resource.UpdateTime).
+		Set("f_local_index_name", resource.LocalIndexName).
 		Where(sq.Eq{"f_id": resource.ID}).
 		ToSql()
 	if err != nil {

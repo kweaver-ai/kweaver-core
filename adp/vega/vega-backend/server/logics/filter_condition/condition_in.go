@@ -37,7 +37,11 @@ func (c *InCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	}
 	field, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition [in] left field '%s' not found", cfg.Name)
+		// 如果字段未在Schema中定义，创建一个临时的Property对象
+		field = &interfaces.Property{
+			Name:         cfg.Name,
+			OriginalName: cfg.Name,
+		}
 	}
 
 	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {

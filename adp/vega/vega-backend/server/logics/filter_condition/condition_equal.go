@@ -38,7 +38,7 @@ func (c *EqualCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	}
 	field, ok := fieldsMap[cfg.Name]
 	if !ok {
-		return nil, fmt.Errorf("condition [eq] left field '%s' not found", cfg.Name)
+		return nil, fmt.Errorf("condition [eq] field '%s' not found in schema", cfg.Name)
 	}
 
 	if IsSlice(cfg.ValueOptCfg.Value) {

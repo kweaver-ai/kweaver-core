@@ -394,7 +394,7 @@ func Test_actionScheduleService_DeleteSchedules(t *testing.T) {
 			err := svc.DeleteSchedules(ctx, knID, branch, []string{"s1"})
 			So(err, ShouldNotBeNil)
 			httpErr := err.(*rest.HTTPError)
-			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ActionSchedule_NotFound)
+			So(httpErr.BaseError.ErrorCode, ShouldEqual, berrors.BknBackend_ActionSchedule_InvalidParameter)
 		})
 
 		Convey("Failed when DeleteSchedules access returns error\n", func() {

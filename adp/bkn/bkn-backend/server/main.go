@@ -36,6 +36,7 @@ import (
 	"bkn-backend/drivenadapters/data_view"
 	"bkn-backend/drivenadapters/job"
 	"bkn-backend/drivenadapters/knowledge_network"
+	"bkn-backend/drivenadapters/metric"
 	"bkn-backend/drivenadapters/model_factory"
 	"bkn-backend/drivenadapters/object_type"
 	"bkn-backend/drivenadapters/opensearch"
@@ -159,6 +160,7 @@ func main() {
 	logics.SetDataViewAccess(data_view.NewDataViewAccess(appSetting))
 	logics.SetJobAccess(job.NewJobAccess(appSetting))
 	logics.SetKNAccess(knowledge_network.NewKNAccess(appSetting))
+	logics.SetMetricAccess(metric.NewMetricAccess(appSetting))
 	logics.SetModelFactoryAccess(model_factory.NewModelFactoryAccess(appSetting))
 	logics.SetOpenSearchAccess(opensearch.NewOpenSearchAccess(appSetting))
 	logics.SetObjectTypeAccess(object_type.NewObjectTypeAccess(appSetting))

@@ -801,6 +801,8 @@ paths:
                   _instance_identities:
                   - c_commentid: "32485"
                   - c_commentid: "32696"
+                  dynamic_params:
+                    Authorization: "Bearer xxx"
         required: true
       parameters:
       - name: kn_id
@@ -815,6 +817,12 @@ paths:
           type: string
         in: path
         required: true
+      - name: branch
+        description: 分支名称，默认 main
+        schema:
+          type: string
+        in: query
+        required: false
       - name: include_type_info
         description: "是否包含行动类信息, 默认false，不包含"
         schema:
@@ -895,6 +903,12 @@ paths:
                     total_count: 1
                     overall_ms: 1163
           description: ok
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: 请求参数错误。例如行动类存在 value_from 为 input 的参数时，须在请求体 dynamic_params 中传入全部对应取值，否则返回 400（如 OntologyQuery.ActionType.InvalidParameter.DynamicParams）。
       summary: 行动查询
     parameters:
     - name: kn_id
@@ -909,6 +923,12 @@ paths:
         type: string
       in: path
       required: true
+    - name: branch
+      description: 分支名称，默认 main
+      schema:
+        type: string
+      in: query
+      required: false
     - name: include_type_info
       description: "是否包含行动类信息, 默认false，不包含"
       schema:
@@ -993,8 +1013,17 @@ paths:
         required: true
       parameters:
       - name: kn_id
+        description: 业务知识网络ID
         in: path
         required: true
+        schema:
+          type: string
+      - name: branch
+        description: 分支名称，默认 main（与实现 DefaultQuery branch 一致）
+        schema:
+          type: string
+        in: query
+        required: false
       - name: include_logic_params
         description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
         schema:
@@ -1026,6 +1055,14 @@ paths:
           type: boolean
         in: query
         required: false
+      - name: x-http-method-override
+        description: 重载 POST，须为 GET（与对象实例查询等接口一致，实现中强制校验）
+        schema:
+          enum:
+          - GET
+          type: string
+        in: header
+        required: true
       responses:
         "200":
           content:
@@ -2191,7 +2228,8 @@ paths:
                       length: 1
                     overall_ms: 150
       summary: 基于一组对象实例组织关系子图
-      description: 给定一组对象实例，按概念定义的关系，组织这些对象实例的关系子图
+      description: |
+        给定一组对象实例，按概念定义的关系，组织这些对象实例的关系子图。
   /api/ontology-query/v1/knowledge-networks/{kn_id}/object-types/{ot_id}/properties:
     post:
       requestBody:
@@ -2253,6 +2291,18 @@ paths:
           type: string
         in: path
         required: true
+      - name: branch
+        description: 分支名称，默认 main
+        schema:
+          type: string
+        in: query
+        required: false
+      - name: include_type_info
+        description: 是否包含对象类信息，默认 false
+        schema:
+          type: boolean
+        in: query
+        required: false
       - name: exclude_system_properties
         description: 需要排除的系统字段列表。可选值：_instance_id（实例ID）、_instance_identity（实例唯一标识）、_display（显示值）。如果指定了某个字段，则在返回的对象数据中不包含该字段。可以传递多个值，例如：?exclude_system_properties=_instance_id&exclude_system_properties=_display
         schema:
@@ -2440,6 +2490,12 @@ paths:
             type: string
           in: path
           required: true
+        - name: branch
+          description: 分支名称，默认 main
+          schema:
+            type: string
+          in: query
+          required: false
       responses:
         "202":
           content:
@@ -2730,6 +2786,100 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
           description: 执行记录不存在
       summary: 取消正在执行的任务
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/metrics/{metric_id}/data:
+    post:
+      summary: 查询指标数据（BKN 原生指标）
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 业务知识网络ID
+        - name: metric_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 指标 ID（BKN MetricDefinition.id）
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: 分支，默认 main
+        - name: fill_null
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: 趋势（区间）查询时，将各序列值对齐到 [time.start, time.end] 的完整分桶时间轴，缺失分桶以 null 填充；与 mdl-uniquery 指标数据查询的 fill_null 一致，为 URL 查询参数（非 body）。仅当 instant 为 false 或省略时有效。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricQueryRequestBody"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricData"
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: 指标或对象类不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+
+  /api/ontology-query/v1/knowledge-networks/{kn_id}/metrics/dry-run:
+    post:
+      summary: 指标试算（不落库）
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: branch
+          in: query
+          schema:
+            type: string
+        - name: fill_null
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: 与「查询指标数据」接口相同；URL 查询参数，非 body。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricDryRun"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricData"
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
 
 components:
   schemas:
@@ -3939,11 +4089,11 @@ components:
       description: 属性查询请求体
       required:
       - properties
-      - __instance_identities
+      - _instance_identities
       type: object
       properties:
-        __instance_identities:
-          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+        _instance_identities:
+          description: 对象主键的数组，代表多个对象。每项为 map，key 为主键属性名，value 为对应的属性值
           type: array
           items:
             $ref: '#/components/schemas/InstanceIdentity'
@@ -3954,11 +4104,10 @@ components:
             type: string
         dynamic_params:
           description: |
-            各个逻辑属性所需的动态参数。是个map，key为属性名称，value为map，其key为参数名，值为赋予的参数值。
-            当属性是指标属性时，dynamic_params 的结构应遵循 MetricPropertyDynamicParams schema，包含：
-            - 时间参数：start（开始时间戳，毫秒）、end（结束时间戳，毫秒）、instant（是否即时查询）、step（步长，如"1m"、"1h"等）
-            - 分析参数：analysis_dimensions（分析维度数组）、order_by_fields（排序字段数组）、having_condition（having值过滤条件）、metrics（同环比、占比分析配置）
-            - 配置的动态参数：指标属性配置中定义的其他动态参数（如 pod_ip、pod_name 等）
+            各逻辑属性所需的动态参数：外层 key 为**逻辑属性名**，内层为参数名到取值的 map。
+            当属性是指标属性时，内层结构可遵循 MetricPropertyDynamicParams（时间、分析维度等）；
+            算子属性则为参数名到标量或嵌套对象的映射。未传或某属性无动态需求时可省略该 key。
+          type: object
           additionalProperties:
             oneOf:
             - type: string
@@ -4892,18 +5041,35 @@ components:
         - type: string
         - type: integer
     InstanceIdentities:
-      description: 对象唯一标识
+      description: 行动查询请求体。除实例唯一标识外，当行动类 parameters 中存在 value_from 为 input 的项时，须在本对象的 dynamic_params 中按参数名传入非空取值；缺失或值为 null 时返回 400。
       required:
-      - __instance_identities
+      - _instance_identities
       type: object
       properties:
-        __instance_identities:
-          description: 对象主键的数组，代表多个对象。map，key为主键属性名，value为对应的属性值
+        _instance_identities:
+          description: 对象主键的数组，代表多个对象。每项为 map，key 为主键属性名，value 为对应的属性值
           type: array
           items:
             $ref: '#/components/schemas/InstanceIdentity'
         dynamic_params:
-          description: 动态参数，用于填充行动参数
+          description: |
+            行动类「动态输入」参数取值（与行动类 parameters 中 value_from=input 的 name 对应，支持点分路径表示嵌套键）。
+            当行动类定义了此类参数时必填且取值不能为 null；否则接口返回 400（错误码 OntologyQuery.ActionType.InvalidParameter.DynamicParams）。
+          type: object
+          additionalProperties: true
+
+    ActionExecutionRequest:
+      description: |
+        行动执行请求体。当行动类 parameters 中存在 value_from 为 input 的项时，须在 dynamic_params 中传入全部对应非空取值，否则返回 400（错误码 OntologyQuery.ActionExecution.InvalidParameter）。
+      type: object
+      properties:
+        _instance_identities:
+          description: 目标对象唯一标识列表；扫描模式下可传空数组，由服务端按行动条件拉取实例
+          type: array
+          items:
+            $ref: '#/components/schemas/InstanceIdentity'
+        dynamic_params:
+          description: 与行动类 input 参数名对应的取值（支持点分路径）。有 input 参数时必填且不能为 null。
           type: object
           additionalProperties: true
 
@@ -5152,3 +5318,188 @@ components:
         completed_count:
           description: 已完成的对象数量（取消前已执行完成的对象）
           type: integer
+
+    MetricQueryOrderBy:
+      description: |
+        指标请求体 `order_by` 单项；与 MetricDefinition.calculation_formula.order_by 同构（DESIGN 附录 B.1），字段名为 `property`（与旧 uniquery `order_by_fields[].name` 区分）。
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          description: 排序属性（数据属性名等）
+          type: string
+        direction:
+          description: 排序方向；未传时由引擎默认
+          type: string
+          enum:
+            - asc
+            - desc
+
+    MetricQueryRequestBody:
+      description: |
+        指标查询请求体（metric_id 在路径）。与 uniquery MetricQuery 对齐的时间/分析等 + BKN Condition；含 limit 截断序列条数；不含 scope_context。
+      type: object
+      properties:
+        time:
+          type: object
+          properties:
+            start:
+              type: integer
+              format: int64
+            end:
+              type: integer
+              format: int64
+            instant:
+              type: boolean
+            step:
+              type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        analysis_dimensions:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricQueryOrderBy"
+        having:
+          $ref: "#/components/schemas/HavingCondition"
+          description: 与 calculation_formula.having 同构（附录 B.1）；对聚合结果过滤
+        metrics:
+          $ref: "#/components/schemas/Metrics"
+          description: 同环比/占比（§3.3.1.1），与 uniquery Metrics 一致
+        limit:
+          type: integer
+          description: 仅返回前 limit 条 Data 序列（MetricData.datas）
+          minimum: 1
+
+    MetricDryRunConfig:
+      description: |
+        试算请求体中的 `metric_config`：与 MetricDefinition 中参与执行的字段 JSON 同构；id、name、kn_id、branch、tags 等可省略。
+        不包含服务端管理字段（creator、create_time、updater、update_time、module_type）。
+      type: object
+      required:
+        - metric_type
+        - scope_type
+        - scope_ref
+        - calculation_formula
+      properties:
+        id:
+          type: string
+        kn_id:
+          type: string
+        branch:
+          type: string
+        name:
+          type: string
+        comment:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        unit_type:
+          type: string
+        unit:
+          type: string
+        metric_type:
+          type: string
+        scope_type:
+          type: string
+        scope_ref:
+          type: string
+        time_dimension:
+          type: object
+          description: 与 MetricDefinition.time_dimension 同构
+        calculation_formula:
+          type: object
+          description: 与 MetricDefinition.calculation_formula 同构（DESIGN 附录 B.1）
+        analysis_dimensions:
+          type: array
+          items:
+            type: object
+
+    MetricDryRun:
+      description: 指标试算：metric_config 与 MetricDefinition 同构；运行时字段与 MetricQueryRequestBody 对齐
+      type: object
+      required:
+        - metric_config
+      properties:
+        metric_config:
+          $ref: "#/components/schemas/MetricDryRunConfig"
+        time:
+          type: object
+          additionalProperties: true
+        condition:
+          $ref: "#/components/schemas/Condition"
+        analysis_dimensions:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricQueryOrderBy"
+        having:
+          $ref: "#/components/schemas/HavingCondition"
+        metrics:
+          $ref: "#/components/schemas/Metrics"
+        limit:
+          type: integer
+          minimum: 1
+
+    MetricData:
+      description: 与 uniquery GetMetricDataByID 返回一致
+      type: object
+      required:
+        - datas
+        - step
+        - is_variable
+        - is_calendar
+      properties:
+        model:
+          type: object
+          properties:
+            unit_type:
+              type: string
+            unit:
+              type: string
+        datas:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDataRow"
+        step:
+          type: string
+        is_variable:
+          type: boolean
+        is_calendar:
+          type: boolean
+
+    MetricDataRow:
+      type: object
+      required:
+        - labels
+        - times
+        - values
+      properties:
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        times:
+          type: array
+          items: {}
+        values:
+          type: array
+          items: {}
+        growth_values:
+          type: array
+          items: {}
+        growth_rates:
+          type: array
+          items: {}
+        proportions:
+          type: array
+          items: {}

@@ -8,74 +8,36 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/creasty/defaults"
 	validator "github.com/go-playground/validator/v10"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/common"
-	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/errors"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/rest"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 	logicsKqs "github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knquerysubgraph"
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/logics/knsearch"
 )
 
-// handleKnSearch returns a tool handler for kn_search.
-func handleKnSearch(knSearchService knsearch.KnSearchService) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+const (
+	defaultResolveMaxRepairRounds = 1
+	defaultResolveMaxConcurrency  = 4
+)
+
+// handleSearchSchema returns a tool handler for search_schema.
+func handleSearchSchema(knSearchService knsearch.KnSearchService) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		// 1. Get auth context
-		authCtx, ok := common.GetAccountAuthContextFromCtx(ctx)
-		if !ok {
-			return mcp.NewToolResultError("authentication required"), nil
-		}
+		authCtx, _ := common.GetAccountAuthContextFromCtx(ctx)
 
-		// 2. Get kn_id: Header X-Kn-ID first, then arguments
-		knID := ""
-		if req.Header != nil {
-			knID = req.Header.Get("X-Kn-ID")
-		}
-		if knID == "" {
-			knID = req.GetString("kn_id", "")
-		}
-		if knID == "" {
-			return mcp.NewToolResultError(
-				"kn_id is required (configure X-Kn-ID header or pass kn_id in arguments)",
-			), nil
-		}
-
-		// 3. Get query
-		query := req.GetString("query", "")
-		if query == "" {
-			return mcp.NewToolResultError("query is required"), nil
-		}
-
-		// 4. Parse response_format early to avoid wasting a service call on bad input
 		format, err := GetResponseFormatFromRequest(req)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		// 5. Build KnSearchReq
-		onlySchema := req.GetBool("only_schema", false)
-		enableRerank := req.GetBool("enable_rerank", true)
-		searchReq := &interfaces.KnSearchReq{
-			XAccountID:   authCtx.AccountID,
-			XAccountType: string(authCtx.AccountType),
-			KnID:         knID,
-			Query:        query,
-			OnlySchema:   &onlySchema,
-			EnableRerank: &enableRerank,
-		}
-		if raw, _ := req.GetRawArguments().(map[string]any); raw != nil {
-			if rc, ok := raw["retrieval_config"]; ok && rc != nil {
-				searchReq.RetrievalConfig = rc
-			}
-		}
+		schemaReq := buildSearchSchemaReqFromMCP(req, authCtx)
 
-		// 6. Call KnSearchService
-		resp, err := knSearchService.KnSearch(ctx, searchReq)
+		resp, err := knSearchService.SearchSchema(ctx, schemaReq)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
@@ -88,66 +50,17 @@ func handleKnSearch(knSearchService knsearch.KnSearchService) func(ctx context.C
 	}
 }
 
-// handleKnSchemaSearch handles kn_schema_search tool calls.
-func handleKnSchemaSearch(service interfaces.IKnRetrievalService) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		format, err := GetResponseFormatFromRequest(req)
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
+// buildSearchSchemaReqFromMCP populates SearchSchemaReq from MCP transport.
+func buildSearchSchemaReqFromMCP(req mcp.CallToolRequest, authCtx *interfaces.AccountAuthContext) *interfaces.SearchSchemaReq {
+	schemaReq := &interfaces.SearchSchemaReq{}
+	_ = bindArguments(req, schemaReq)
 
-		searchReq := &interfaces.SemanticSearchRequest{
-			SearchScope: &interfaces.SearchScopeConfig{},
-		}
-
-		if err := bindArguments(req, searchReq); err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		searchReq.Mode = interfaces.KeywordVectorRetrieval
-		searchReq.PreviousQueries = nil
-		returnQueryUnderstanding := false
-		searchReq.ReturnQueryUnderstanding = &returnQueryUnderstanding
-		if searchReq.KnID == "" {
-			searchReq.KnID = getKnIDFromHeader(req)
-		}
-
-		if err := defaults.Set(searchReq); err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-		if err := validator.New().Struct(searchReq); err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		var resp *interfaces.SemanticSearchResponse
-		switch searchReq.Mode {
-		case interfaces.AgentIntentRetrieval:
-			resp, err = service.AgentIntentRetrieval(ctx, searchReq)
-		case interfaces.AgentIntentPlanning:
-			resp, err = service.AgentIntentPlanning(ctx, searchReq)
-		case interfaces.KeywordVectorRetrieval:
-			resp, err = service.KeywordVectorRetrieval(ctx, searchReq)
-		default:
-			err = errors.DefaultHTTPError(ctx, http.StatusBadRequest, "mode not support")
-		}
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		resp.QueryUnderstanding = nil
-		resp.HitsTotal = 0
-		for i := range resp.KnowledgeConcepts {
-			resp.KnowledgeConcepts[i].IntentScore = 0
-			resp.KnowledgeConcepts[i].MatchScore = 0
-			resp.KnowledgeConcepts[i].RerankScore = 0
-			resp.KnowledgeConcepts[i].Samples = nil
-		}
-		result, err := BuildMCPToolResult(resp, format)
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-		return result, nil
+	schemaReq.XKnID = getKnIDFromHeader(req)
+	if authCtx != nil {
+		schemaReq.XAccountID = authCtx.AccountID
+		schemaReq.XAccountType = string(authCtx.AccountType)
 	}
+	return schemaReq
 }
 
 // handleQueryObjectInstance handles query_object_instance tool calls.
@@ -255,8 +168,8 @@ func handleGetLogicPropertiesValues(service interfaces.IKnLogicPropertyResolverS
 
 		resolveReq.Options = &interfaces.ResolveOptions{
 			ReturnDebug:     false,
-			MaxRepairRounds: 1,
-			MaxConcurrency:  4,
+			MaxRepairRounds: defaultResolveMaxRepairRounds,
+			MaxConcurrency:  defaultResolveMaxConcurrency,
 		}
 		if err := validator.New().Struct(resolveReq); err != nil {
 			return mcp.NewToolResultError(err.Error()), nil

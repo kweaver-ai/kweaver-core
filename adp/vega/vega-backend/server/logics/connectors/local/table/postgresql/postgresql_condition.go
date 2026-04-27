@@ -485,6 +485,42 @@ func (c *PostgresqlConnector) ConvertFilterConditionBetween(ctx context.Context,
 		return nil, fmt.Errorf("between condition requires exactly 2 values")
 	}
 
+	// 检查字段是否为时间类型，如果是则转换long类型值为时间戳
+	fieldType := cond.Lfield.Type
+	isDateType := interfaces.DataType_IsDate(fieldType)
+
+	if isDateType {
+		// 时间类型字段，使用原始SQL表达式构建BETWEEN条件
+		var lowerTs, upperTs string
+		if v0, ok := values[0].(float64); ok {
+			lowerTs = fmt.Sprintf("%d", int64(v0))
+		} else if v0, ok := values[0].(int64); ok {
+			lowerTs = fmt.Sprintf("%d", v0)
+		} else if v0, ok := values[0].(int); ok {
+			lowerTs = fmt.Sprintf("%d", int64(v0))
+		} else {
+			lowerTs = fmt.Sprintf("%v", values[0])
+		}
+
+		if v1, ok := values[1].(float64); ok {
+			upperTs = fmt.Sprintf("%d", int64(v1))
+		} else if v1, ok := values[1].(int64); ok {
+			upperTs = fmt.Sprintf("%d", v1)
+		} else if v1, ok := values[1].(int); ok {
+			upperTs = fmt.Sprintf("%d", int64(v1))
+		} else {
+			upperTs = fmt.Sprintf("%v", values[1])
+		}
+
+		// 使用SqlExpr构建完整的WHERE条件表达式
+		return sq.Expr(
+			quoteColumnName(cond.Lfield.OriginalName)+" >= to_timestamp(?/1000000) AND "+
+				quoteColumnName(cond.Lfield.OriginalName)+" <= to_timestamp(?/1000000)",
+			lowerTs, upperTs,
+		), nil
+	}
+
+	// 非时间类型字段，直接使用参数化查询
 	return sq.And{
 		sq.GtOrEq{quoteColumnName(cond.Lfield.OriginalName): values[0]},
 		sq.LtOrEq{quoteColumnName(cond.Lfield.OriginalName): values[1]},

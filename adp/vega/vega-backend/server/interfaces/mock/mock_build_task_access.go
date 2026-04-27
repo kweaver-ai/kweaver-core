@@ -101,10 +101,10 @@ func (mr *MockBuildTaskAccessMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // GetByResourceID mocks base method.
-func (m *MockBuildTaskAccess) GetByResourceID(ctx context.Context, resourceID string) ([]*interfaces.BuildTask, error) {
+func (m *MockBuildTaskAccess) GetByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByResourceID", ctx, resourceID)
-	ret0, _ := ret[0].([]*interfaces.BuildTask)
+	ret0, _ := ret[0].(*interfaces.BuildTask)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

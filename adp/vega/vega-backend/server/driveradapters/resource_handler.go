@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"vega-backend/common"
 
@@ -574,4 +575,389 @@ func (r *restHandler) ListResources(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 	}
 
+}
+
+// ========== Resource Build ==========
+
+// CreateBuildTaskByEx handles POST /api/vega-backend/v1/resources/:id/build (External)
+func (r *restHandler) CreateBuildTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"CreateBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 外网接口：校验token
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.createBuildTask(c, ctx, span, visitor)
+}
+
+// CreateBuildTaskByIn handles POST /api/vega-backend/in/v1/resources/:id/build (Internal)
+func (r *restHandler) CreateBuildTaskByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"CreateBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.createBuildTask(c, ctx, span, visitor)
+}
+
+// createBuildTask is the shared implementation
+func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	id := c.Param("id")
+
+	resource, err := r.rs.GetByID(ctx, id)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Parse request body to get task mode
+	var req interfaces.BuildTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// check req.BuildKeyFields and req.EmbeddingFields
+	if req.BuildKeyFields == "" && req.Mode == interfaces.BuildTaskModeBatch {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("build_key_fields is required")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Create a map of schema fields for quick lookup
+	schemaFields := make(map[string]bool)
+	if resource.SchemaDefinition != nil {
+		for _, prop := range resource.SchemaDefinition {
+			schemaFields[prop.Name] = true
+		}
+	}
+
+	// Check build key fields
+	buildKeys := strings.Split(req.BuildKeyFields, ",")
+	for _, key := range buildKeys {
+		key = strings.TrimSpace(key)
+		if key != "" && !schemaFields[key] {
+			httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+				WithErrorDetails(fmt.Sprintf("build_key_field '%s' not found in resource schema", key))
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+
+	// Check embedding fields if provided
+	if req.EmbeddingFields != "" {
+		embeddingFields := strings.Split(req.EmbeddingFields, ",")
+		for _, field := range embeddingFields {
+			field = strings.TrimSpace(field)
+			if field != "" && !schemaFields[field] {
+				httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+					WithErrorDetails(fmt.Sprintf("embedding_field '%s' not found in resource schema", field))
+				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				rest.ReplyError(c, httpErr)
+				return
+			}
+		}
+	}
+
+	taskID, err := r.rs.CreateBuildTask(ctx, id, &req)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	audit.NewInfoLog(audit.OPERATION, "build", audit.TransforOperator(visitor),
+		interfaces.GenerateResourceAuditObject(id, ""), "")
+
+	logger.Debug("Handler CreateBuildTaskset Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
+	rest.ReplyOK(c, http.StatusCreated, gin.H{"task_id": taskID})
+}
+
+// GetBuildTaskByEx handles get build task request (External)
+func (r *restHandler) GetBuildTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"GetBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+
+	r.getBuildTask(c, ctx, span, visitor)
+}
+
+// GetBuildTaskByIn handles get build task request (Internal)
+func (r *restHandler) GetBuildTaskByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"GetBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.getBuildTask(c, ctx, span, visitor)
+}
+
+// getBuildTask is the shared implementation for getting build task
+func (r *restHandler) getBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	// Get task ID from path parameter
+	id := c.Param("id")
+	taskID := c.Param("taskid")
+	if taskID == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, "VegaBackend.InvalidRequestParameter.TaskID")
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Check if resource exists
+	exists, err := r.rs.CheckExistByID(ctx, id)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if !exists {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
+			verrors.VegaBackend_Resource_NotFound).WithErrorDetails(fmt.Sprintf("resource id %s not found", id))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Get build task
+	buildTask, err := r.rs.GetBuildTaskByID(ctx, taskID)
+	if err != nil {
+		rest.ReplyError(c, err)
+		return
+	}
+
+	rest.ReplyOK(c, http.StatusOK, buildTask)
+}
+
+// UpdateBuildTaskStatusByEx handles update build task status request (External)
+func (r *restHandler) UpdateBuildTaskStatusByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"UpdateBuildTaskStatusByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+
+	r.updateBuildTaskStatus(c, ctx, span, visitor)
+}
+
+// UpdateBuildTaskStatusByIn handles update build task status request (Internal)
+func (r *restHandler) UpdateBuildTaskStatusByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"UpdateBuildTaskStatusByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.updateBuildTaskStatus(c, ctx, span, visitor)
+}
+
+// updateBuildTaskStatus is the shared implementation for updating build task status
+func (r *restHandler) updateBuildTaskStatus(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	// Get task ID from path parameter
+	id := c.Param("id")
+	taskID := c.Param("taskid")
+	if taskID == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, "VegaBackend.InvalidRequestParameter.TaskID")
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Check if resource exists
+	exists, err := r.rs.CheckExistByID(ctx, id)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if !exists {
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
+			verrors.VegaBackend_Resource_NotFound).WithErrorDetails(fmt.Sprintf("resource id %s not found", id))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Parse request body
+	var req interfaces.UpdateBuildTaskStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Update build task status
+	if err := r.rs.UpdateBuildTaskStatus(ctx, taskID, &req); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	logger.Debug("Handler UpdateBuildTaskStatus Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, nil)
+}
+
+// ListBuildTasksByEx handles list build tasks request (External)
+func (r *restHandler) ListBuildTasksByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ListBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+
+	r.listBuildTasks(c, ctx, span, visitor)
+}
+
+// ListBuildTasksByIn handles list build tasks request (Internal)
+func (r *restHandler) ListBuildTasksByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"ListBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.listBuildTasks(c, ctx, span, visitor)
+}
+
+// listBuildTasks is the shared implementation for listing build tasks
+func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	// 解析分页参数
+	offset := 0
+	limit := 100
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if val, err := strconv.Atoi(offsetStr); err == nil {
+			offset = val
+		}
+	}
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if val, err := strconv.Atoi(limitStr); err == nil {
+			limit = val
+		}
+	}
+
+	// Get build tasks with pagination
+	buildTasks, totalCount, err := r.rs.GetBuildTasks(ctx, offset, limit)
+	if err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// 返回包含 entries 和 total_count 字段的对象
+	rest.ReplyOK(c, http.StatusOK, map[string]any{
+		"entries":     buildTasks,
+		"total_count": totalCount,
+	})
+}
+
+// DeleteBuildTasksByEx handles delete build tasks request (External)
+func (r *restHandler) DeleteBuildTasksByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"DeleteBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+
+	r.deleteBuildTasks(c, ctx, span, visitor)
+}
+
+// DeleteBuildTasksByIn handles delete build tasks request (Internal)
+func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"DeleteBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	// 内网接口：user_id从header中取
+	visitor := GenerateVisitor(c)
+	r.deleteBuildTasks(c, ctx, span, visitor)
+}
+
+// deleteBuildTasks is the shared implementation for deleting build tasks
+func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+
+	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
+
+	// Get task IDs from path parameter
+	taskIDs := c.Param("taskids")
+	if taskIDs == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, "VegaBackend.InvalidRequestParameter.TaskIDs")
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	// Split task IDs
+	taskIDList := strings.Split(taskIDs, ",")
+
+	// Delete build tasks
+	for _, taskID := range taskIDList {
+		if taskID != "" {
+			if err := r.rs.DeleteBuildTask(ctx, taskID); err != nil {
+				httpErr := err.(*rest.HTTPError)
+				o11y.AddHttpAttrs4HttpError(span, httpErr)
+				rest.ReplyError(c, httpErr)
+				return
+			}
+		}
+	}
+
+	logger.Debug("Handler DeleteBuildTasks Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
+	rest.ReplyOK(c, http.StatusOK, nil)
 }

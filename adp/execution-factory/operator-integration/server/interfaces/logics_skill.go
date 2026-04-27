@@ -56,7 +56,7 @@ type QuerySkillListReq struct {
 	BusinessDomainID string      `header:"x-business-domain" validate:"required"`
 	UserID           string      `header:"user_id"`
 	Name             string      `form:"name"`
-	Status           BizStatus   `form:"status" validate:"omitempty,oneof=unpublish published offline"`
+	Status           BizStatus   `form:"status" validate:"omitempty,oneof=unpublish published offline editing"`
 	Category         BizCategory `form:"category"`
 	CreateUser       string      `form:"create_user"`
 	CommonPageParams `json:",inline"`
@@ -79,23 +79,8 @@ type SkillInfo struct {
 	Category         BizCategory    `json:"category,omitempty"`
 	CategoryName     string         `json:"category_name,omitempty"`
 	BusinessDomainID string         `json:"business_domain_id"`
-}
-
-// SkillSummary Skill 列表摘要
-type SkillSummary struct {
-	SkillID          string      `json:"skill_id"`
-	Name             string      `json:"name"`
-	Description      string      `json:"description"`
-	Version          string      `json:"version"`
-	Status           BizStatus   `json:"status"`
-	Source           string      `json:"source"`
-	CreateUser       string      `json:"create_user"`
-	CreateTime       int64       `json:"create_time"`
-	UpdateUser       string      `json:"update_user"`
-	UpdateTime       int64       `json:"update_time"`
-	BusinessDomainID string      `json:"business_domain_id"`
-	Category         BizCategory `json:"category,omitempty"`
-	CategoryName     string      `json:"category_name,omitempty"`
+	ReleaseUser      string         `json:"release_user,omitempty"`
+	ReleaseTime      int64          `json:"release_time,omitempty"`
 }
 
 // SkillFileSummary Skill 文件摘要
@@ -109,7 +94,7 @@ type SkillFileSummary struct {
 // QuerySkillListResp Skill 列表响应
 type QuerySkillListResp struct {
 	CommonPageResult `json:",inline"`
-	Data             []*SkillSummary `json:"data"`
+	Data             []*SkillInfo `json:"data"`
 }
 
 // QuerySkillMarketListReq Skill 市场列表查询
@@ -125,7 +110,7 @@ type QuerySkillMarketListReq struct {
 // QuerySkillMarketListResp Skill 市场列表响应
 type QuerySkillMarketListResp struct {
 	CommonPageResult `json:",inline"`
-	Data             []*SkillSummary `json:"data"`
+	Data             []*SkillInfo `json:"data"`
 }
 
 // GetSkillDetailReq Skill 详情查询
@@ -204,7 +189,7 @@ type UpdateSkillStatusReq struct {
 	BusinessDomainID string    `header:"x-business-domain" validate:"required"`
 	UserID           string    `header:"user_id"`
 	SkillID          string    `uri:"skill_id" validate:"required"`
-	Status           BizStatus `json:"status" validate:"required,oneof=unpublish published offline"`
+	Status           BizStatus `json:"status" validate:"required,oneof=published offline"`
 }
 
 // UpdateSkillStatusResp 更新 Skill 状态响应

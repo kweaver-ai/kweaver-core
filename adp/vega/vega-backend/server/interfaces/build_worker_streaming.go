@@ -12,7 +12,8 @@ import (
 )
 
 var ConnectorClassMapping = map[string]string{
-	"mysql": "io.debezium.connector.mysql.MySqlConnector",
+	"mysql":      "io.debezium.connector.mysql.MySqlConnector",
+	"postgresql": "io.debezium.connector.postgresql.PostgresConnector",
 }
 
 // StreamingBuildWorker interface defines streaming execution functionality.
