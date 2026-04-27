@@ -82,36 +82,39 @@ for e in d.get('entries', []):
     return 0
 }
 
-# Set kweaver-usable password for test (ISF: create uses 123456 until reset). Fills __ONBOARD_TEST_USER_KWEAVER_PASSWORD.
+# Set kweaver-usable password for user  test  (ISF:  user create  leaves platform 123456 until  reset-password ).
+# Default password for onboard: ONBOARD_DEFAULT_TEST_USER_PASSWORD (default 111111). Fills __ONBOARD_TEST_USER_KWEAVER_PASSWORD.
 onboard_set_test_user_password() {
+    local _defp
+    _defp="${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}"
     if [[ -n "${ONBOARD_TEST_USER_PASSWORD:-}" ]]; then
         if ! kweaver-admin user reset-password -u test -p "${ONBOARD_TEST_USER_PASSWORD}" -y 2>/dev/null; then
-            log_warn "kweaver-admin user reset-password (ONBOARD_TEST_USER_PASSWORD) failed; try: kweaver-admin user reset-password -u test --prompt-password -y"
+            log_warn "kweaver-admin user reset-password (ONBOARD_TEST_USER_PASSWORD) failed; try: kweaver-admin user reset-password -u test -p '...' -y"
             return 1
         fi
         __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${ONBOARD_TEST_USER_PASSWORD}"
         return 0
     fi
     if [[ "${ONBOARD_ASSUME_YES:-false}" == "true" ]]; then
-        # Non-interactive: no reset unless env is set; create left password at 123456
-        __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${ONBOARD_TEST_USER_PASSWORD:-123456}"
-        if [[ -z "${ONBOARD_TEST_USER_PASSWORD:-}" ]]; then
-            log_warn "ONBOARD_TEST_USER_PASSWORD not set (-y); kweaver will use default 123456; set env and re-run or use reset-password if login fails (401001017, etc.)"
+        if ! kweaver-admin user reset-password -u test -p "${_defp}" -y 2>/dev/null; then
+            log_warn "kweaver-admin user reset-password (default ${_defp}) failed; set ONBOARD_TEST_USER_PASSWORD and re-run, or: kweaver-admin user reset-password -u test -p '...' -y"
+            return 1
         fi
+        __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${_defp}"
+        log_info "User test: password set to default ${_defp} (-y, non-interactive). Override: ONBOARD_TEST_USER_PASSWORD=..."
         return 0
     fi
     if ! (type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty); then
-        log_warn "Not a TTY: set ONBOARD_TEST_USER_PASSWORD or: kweaver-admin user reset-password -u test -p '...' -y"
+        log_warn "Not a TTY: set ONBOARD_TEST_USER_PASSWORD=... or use  $0 -y  (default password ${_defp} for  test )"
         return 1
     fi
-    log_info "Set password for user test (kweaver will use the same for ADP impex)…"
-    if ! kweaver-admin user reset-password -u test --prompt-password -y; then
-        return 1
-    fi
-    read -r -s -p "  Same password for kweaver auth as user 'test' (hidden): " __ONBOARD_TEST_USER_KWEAVER_PASSWORD
+    log_info "Set password for user test (default ${_defp} if you press Enter; same for kweaver impex)…"
+    read -r -s -p "  Password for user test (empty = ${_defp}): " __ONBOARD_TEST_USER_KWEAVER_PASSWORD
     echo
-    if [[ -z "${__ONBOARD_TEST_USER_KWEAVER_PASSWORD}" ]]; then
-        log_warn "Empty password: set ONBOARD_TEST_USER_PASSWORD or re-enter at the Context Loader step"
+    __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${__ONBOARD_TEST_USER_KWEAVER_PASSWORD:-${_defp}}"
+    if ! kweaver-admin user reset-password -u test -p "${__ONBOARD_TEST_USER_KWEAVER_PASSWORD}" -y 2>/dev/null; then
+        log_warn "kweaver-admin user reset-password failed; set ONBOARD_TEST_USER_PASSWORD=... or: kweaver-admin user reset-password -u test -p '...' -y"
+        return 1
     fi
     return 0
 }
@@ -132,8 +135,8 @@ onboard_create_test_user_with_all_roles() {
     fi
     rm -f "${uerr}" 2>/dev/null || true
     if ! onboard_set_test_user_password; then
-        log_warn "Password not set; kweaver re-login for impex may fail until you: kweaver-admin user reset-password -u test --prompt-password -y"
-        __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${__ONBOARD_TEST_USER_KWEAVER_PASSWORD:-${ONBOARD_TEST_USER_PASSWORD:-123456}}"
+        log_warn "Password not set; kweaver re-login for impex may fail until you: kweaver-admin user reset-password -u test -p '...' -y"
+        __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${__ONBOARD_TEST_USER_KWEAVER_PASSWORD:-${ONBOARD_TEST_USER_PASSWORD:-${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}}}"
     fi
     if ! onboard_assign_all_listed_roles_to_user test; then
         return 1
@@ -156,16 +159,14 @@ onboard_kweaver_relogin_isf_test() {
         log_info "ONBOARD_KWEAVER_IMPEX_NO_RELLOGIN set; skipping kweaver auth as test (using existing ~/.kweaver session)"
         return 0
     fi
-    local _pw
+    local _pw _defp
+    _defp="${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}"
     _pw="${__ONBOARD_TEST_USER_KWEAVER_PASSWORD:-${ONBOARD_TEST_USER_PASSWORD:-}}"
     if [[ -z "${_pw}" && -t 0 && -t 1 ]] && (type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty); then
-        read -r -s -p "kweaver: password for user 'test' (ADP impex; hidden) [Enter=skip]: " _pw
+        read -r -s -p "kweaver: password for user 'test' (ADP impex; empty = ${_defp}): " _pw
         echo
     fi
-    if [[ -z "${_pw}" ]]; then
-        log_warn "No password for test — cannot kweaver auth. Set ONBOARD_TEST_USER_PASSWORD or run: kweaver auth login ${kurl} -u test -p '...' --http-signin -k"
-        return 1
-    fi
+    _pw="${_pw:-${_defp}}"
     log_info "kweaver auth: signing in as test (HTTP) for impex (token in ~/.kweaver)…"
     if ! kweaver auth login "${kurl}" -u test -p "${_pw}" --http-signin -k; then
         log_warn "kweaver auth as test failed; fix password/URL or re-run: kweaver auth login ${kurl} -k"
@@ -206,7 +207,7 @@ onboard_offer_isf_test_user() {
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         log_info "ONBOARD: creating user test, password/roles (-y)…"
         onboard_create_test_user_with_all_roles
-        ONBOARD_REPORT_ISF_TEST_USER="已创建 test 并赋权 ( -y ；需 ONBOARD_TEST_USER_PASSWORD 时见上文)"
+        ONBOARD_REPORT_ISF_TEST_USER="已创建 test 并赋权 (-y: 密码默认 ${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}，可设 ONBOARD_TEST_USER_PASSWORD=...)"
         return 0
     fi
     if ! (type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty); then

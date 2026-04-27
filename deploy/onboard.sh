@@ -26,6 +26,10 @@ ONBOARD_SKIP_CONTEXT_LOADER="${ONBOARD_SKIP_CONTEXT_LOADER:-false}"
 : "${ONBOARD_DEFAULT_KWEAVER_USER:=admin}"
 : "${ONBOARD_DEFAULT_KWEAVER_PASSWORD:=eisoo.com}"
 
+# ISF: first business user  test  (after  kweaver-admin user create ) — platform default is 123456 until  reset-password;
+# we set this for onboard default /  -y  / empty Enter. Override: ONBOARD_TEST_USER_PASSWORD; rename default: ONBOARD_DEFAULT_TEST_USER_PASSWORD
+: "${ONBOARD_DEFAULT_TEST_USER_PASSWORD:=111111}"
+
 # Same requirement as @kweaver-ai/kweaver-sdk on npm (node >= 22). https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk
 ONBOARD_MIN_NODE_MAJOR="${ONBOARD_MIN_NODE_MAJOR:-22}"
 
@@ -119,7 +123,7 @@ usage() {
     echo ""
     echo "  Context Loader (impex):  kweaver call  uses ~/.kweaver from  kweaver auth login ."
     echo "    - ISF (full):  kweaver-admin  / console  admin  for user ops. ADP impex uses user  test  with all  role list"
-    echo "      roles (typically three business admins), then  kweaver auth  as  test . Set ONBOARD_TEST_USER_PASSWORD=... with  -y ."
+    echo "      roles (typically three business admins), then  kweaver auth  as  test .  -y  uses password  ${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}  (override: ONBOARD_TEST_USER_PASSWORD) ."
     echo "    - Minimum (no ISF):  kweaver auth login  only; kweaver-admin is not required."
     echo "  --namespace=NS           (default: kweaver; or key 'namespace' in yaml)"
     echo "  --enable-bkn-search      Only patch bkn/ontology ConfigMaps and rollout"
@@ -133,7 +137,8 @@ usage() {
     echo "                ONBOARD_SKIP_CONTEXT_LOADER=true  same as --skip-context-loader"
     echo "                IMPORT_CONTEXT_LOADER_TOOLSET=false  skip Context Loader (legacy name; same effect)"
     echo "                CONTEXT_LOADER_TOOLSET_ADP_PATH=...  default ADP under repo adp/context-loader/.../context_loader_toolset.adp"
-    echo "                ONBOARD_TEST_USER_PASSWORD=...  test  user’s password (ISF: kweaver impex after  kweaver-admin  create; use with -y)"
+    echo "                ONBOARD_TEST_USER_PASSWORD=...  override default password for  test  (ISF; default: ONBOARD_DEFAULT_TEST_USER_PASSWORD, built-in 111111)"
+    echo "                ONBOARD_DEFAULT_TEST_USER_PASSWORD=...  first-user  test  password (default 111111;  -y  non-interactive)"
     echo "                ONBOARD_KWEAVER_IMPEX_NO_RELLOGIN=1  skip  kweaver auth  as  test  before impex (use current kweaver session)"
     echo "                ONBOARD_NO_COMPLETION_REPORT=1  不在结束时打印  Onboard 完成报告"
     echo "  Default KWeaver access URL (kweaver auth): this host’s primary IPv4, e.g.  https://\$(local-ip)  (set ONBOARD_DEFAULT_ACCESS_BASE=... to override; ONBOARD_DEFAULT_ACCESS_PORT e.g. 8443; ONBOARD_DEFAULT_ACCESS_SCHEME=http)"
