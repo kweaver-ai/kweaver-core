@@ -141,7 +141,7 @@ usage() {
     echo "                ONBOARD_TEST_USER_PASSWORD=...  override default password for  test  (ISF; default: ONBOARD_DEFAULT_TEST_USER_PASSWORD, built-in 111111)"
     echo "                ONBOARD_DEFAULT_TEST_USER_PASSWORD=...  first-user  test  password (default 111111;  -y  non-interactive)"
     echo "                ONBOARD_KWEAVER_IMPEX_NO_RELLOGIN=1  skip  kweaver auth  as  test  before impex (use current kweaver session)"
-    echo "                ONBOARD_NO_COMPLETION_REPORT=1  不在结束时打印  Onboard 完成报告"
+    echo "                ONBOARD_NO_COMPLETION_REPORT=1  do not print the English completion report at the end"
     echo "  Default KWeaver access URL (kweaver auth): this host’s primary IPv4, e.g.  https://\$(local-ip)  (set ONBOARD_DEFAULT_ACCESS_BASE=... to override; ONBOARD_DEFAULT_ACCESS_PORT e.g. 8443; ONBOARD_DEFAULT_ACCESS_SCHEME=http)"
     echo "  kweaver auth: you confirm URL. ISF+full: HTTP defaults user=admin pass=eisoo.com (if still default); override with ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD. Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
     echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."

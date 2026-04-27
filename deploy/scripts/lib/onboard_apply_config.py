@@ -63,8 +63,12 @@ def print_completion_report_config_yaml(namespace: str) -> None:
     env = os.environ.copy()
     env["NAMESPACE"] = namespace
     env["ONBOARD_REPORT_MAIN_MODE"] = "config-yaml"
-    env["ONBOARD_REPORT_ISF_TEST_USER"] = "未执行: --config 模式无 ISF test 用户向导"
-    env["ONBOARD_REPORT_CONTEXT_LOADER"] = "未执行: 无 probe；可另运行 deploy/onboard.sh 做 ADP 工具集导入"
+    env["ONBOARD_REPORT_ISF_TEST_USER"] = (
+        "not run: --config mode has no ISF test-user wizard"
+    )
+    env["ONBOARD_REPORT_CONTEXT_LOADER"] = (
+        "not run: no probe step; run deploy/onboard.sh separately for ADP toolbox import"
+    )
     subprocess.run(
         [
             "bash",

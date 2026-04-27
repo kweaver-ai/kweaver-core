@@ -8,7 +8,7 @@
 #     This script syncs role list to  test  and re-runs  kweaver auth login  as  test  before impex.
 #   - Minimum (no ISF):  kweaver auth login  only; kweaver-admin is not required.
 # shellcheck source=/dev/null
-# 完成报告用: ONBOARD_REPORT_CONTEXT_LOADER（onboard_report.sh）
+# Report: ONBOARD_REPORT_CONTEXT_LOADER (onboard_report.sh)
 
 # Resolve path to default ADP in repo (override: CONTEXT_LOADER_TOOLSET_ADP_PATH).
 onboard_context_loader_adp_path() {
@@ -27,12 +27,12 @@ onboard_context_loader_import_via_kweaver() {
         log_info "Context Loader: minimum (no ISF) —  kweaver auth login  is enough; kweaver-admin not required."
     fi
     if [[ ! -f "${adp}" ]]; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: ADP 文件不存在"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: ADP file missing"
         log_warn "Context Loader: ADP not found: ${adp}"
         return 1
     fi
     if ! kubectl get deploy agent-operator-integration -n "${ns}" &>/dev/null; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: 无 agent-operator-integration (${ns})"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: no agent-operator-integration deployment (${ns})"
         log_warn "Context Loader: no deploy/agent-operator-integration in ${ns}; skip import."
         return 1
     fi
@@ -41,7 +41,7 @@ onboard_context_loader_import_via_kweaver() {
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
         if type onboard_ensure_isf_test_for_kweaver_impex &>/dev/null; then
             if ! onboard_ensure_isf_test_for_kweaver_impex; then
-                ONBOARD_REPORT_CONTEXT_LOADER="import_failed: ISF 切到 test / kweaver auth 失败 (见上)"
+                ONBOARD_REPORT_CONTEXT_LOADER="import_failed: ISF relogin as test / kweaver auth failed (see logs above)"
                 return 1
             fi
         else
@@ -53,11 +53,11 @@ onboard_context_loader_import_via_kweaver() {
         -F "data=@${adp}" \
         -F "mode=upsert" \
         -bd "${bd}" --pretty; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已导入 (imported_ok，请确认上方 HTTP 为 2xx / body 无 error)"
+        ONBOARD_REPORT_CONTEXT_LOADER="Imported: imported_ok — confirm above HTTP 2xx and no error in body"
         log_info "Context Loader toolset import finished (check output above for HTTP errors in body)."
         return 0
     fi
-    ONBOARD_REPORT_CONTEXT_LOADER="导入失败 (kweaver call 非 0 或见上方 HTTP 4xx/5xx)"
+    ONBOARD_REPORT_CONTEXT_LOADER="Import failed: kweaver call non-zero or HTTP 4xx/5xx in logs above"
     log_warn "Context Loader: kweaver call failed. Re-login:  kweaver auth login <url> -k"
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
         log_warn "  (ISF) ensure user  test  has all  role list  roles and: kweaver auth login <url> -u test -p ... --http-signin -k"
@@ -72,27 +72,27 @@ onboard_context_loader_import_via_kweaver() {
 # After kweaver auth; optional Y/n; -y to auto-run. Skips if no operator or ADP.
 onboard_offer_context_loader_toolset() {
     if [[ "${ONBOARD_SKIP_CONTEXT_LOADER:-false}" == "true" ]]; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: ONBOARD_SKIP_CONTEXT_LOADER"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: ONBOARD_SKIP_CONTEXT_LOADER"
         return 0
     fi
     if [[ "${IMPORT_CONTEXT_LOADER_TOOLSET:-true}" == "false" ]]; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: IMPORT_CONTEXT_LOADER_TOOLSET=false"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: IMPORT_CONTEXT_LOADER_TOOLSET=false"
         return 0
     fi
     if ! command -v kweaver &>/dev/null; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: 无 kweaver CLI"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: kweaver CLI not found"
         return 0
     fi
     local ns
     ns="${NAMESPACE:-kweaver}"
     if ! kubectl get deploy agent-operator-integration -n "${ns}" &>/dev/null; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: 无 agent-operator 部署 (namespace=${ns})"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: no agent-operator deployment (namespace=${ns})"
         return 0
     fi
     local adp
     adp="$(onboard_context_loader_adp_path)"
     if [[ ! -f "${adp}" ]]; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: ADP 未找到（克隆仓库或设 CONTEXT_LOADER_TOOLSET_ADP_PATH）"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: ADP not found (clone repo or set CONTEXT_LOADER_TOOLSET_ADP_PATH)"
         log_warn "Context Loader: ADP missing (${adp}). Clone repo or set CONTEXT_LOADER_TOOLSET_ADP_PATH."
         return 0
     fi
@@ -103,14 +103,14 @@ onboard_offer_context_loader_toolset() {
         return 0
     fi
     if ! (type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty); then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: 非 TTY，未自动导入 (可用 -y 或手动手册)"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: not a TTY, no auto-import (use -y or import manually)"
         log_info "Context Loader: not a TTY — skipping import. Re-run: ./onboard.sh -y  or run manually (see help)."
         return 0
     fi
     echo ""
     read -r -p "Import Context Loader (ADP) now (ISF: will re-login  kweaver  as user test for impex) [Y/n]: " _clm
     if [[ "${_clm}" =~ ^[Nn] ]]; then
-        ONBOARD_REPORT_CONTEXT_LOADER="已跳过: 用户选择不导入 (可稍后 kweaver call impex)"
+        ONBOARD_REPORT_CONTEXT_LOADER="skipped: user declined import (run kweaver call impex later)"
         log_info "Skipped. Manual: kweaver call '/api/agent-operator-integration/v1/impex/import/toolbox' -X POST -F data=@'${adp}' -F mode=upsert -bd ${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
         return 0
     fi
