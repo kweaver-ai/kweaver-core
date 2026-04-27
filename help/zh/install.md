@@ -193,23 +193,26 @@ flowchart TB
   mode -->|默认交互；可选 -y| p3[onboard_probe] --> ui["命名空间 + LLM + 向量 + 可选 BKN 补丁"] --> r2[完成报告] --> e3([exit 0])
 ```
 
-- **三种模式都会先跑 `onboard_probe`**，再进入「仅 BKN」、YAML 或交互式注册。
-- **`-y`** 不会自动等价于 `--config`；主要自动确认 **Node / npm -g** 安装，以及在 **ISF 全量** 下对 `kweaver` / `kweaver-admin` 登录的默认行为。
+- **三种模式都会先跑 `onboard_probe`**，再进入「仅 BKN」、YAML 或交互式注册。**全量 ISF** 时 probe 内含：**与 kweaver 同默认的 `kweaver-admin` HTTP 登录**、**用户 `test`**、**`kweaver` 以 `test` 重登**、再 **Context Loader**（条件满足时）。
+- **`-y`** 不会自动等价于 `--config`；主要自动确认 **Node / npm -g**，以及在 **ISF 全量** 下 `kweaver` / `kweaver-admin` 的 **HTTP** 登录默认行为。
 
-**2）`onboard_probe` 内部（与脚本一致）**
+**2）`onboard_probe` 执行顺序（非 ISF 时相关步骤会快速跳过或空操作）**
 
 ```mermaid
 flowchart TB
   subgraph probe["onboard_probe"]
-    A["onboard_ensure_kweaver_auth"] --> B["kubectl：列命名空间或检查目标 namespace"]
+    A["onboard_ensure_kweaver_auth\n（kweaver：HTTP 默认 admin / eisoo 或浏览器）"] --> B["kubectl：命名空间或目标 namespace"]
     B --> C["onboard_prepend_npm_global_bin_to_path"]
-    C --> D["onboard_recommend_admin_cli（Helm/命名空间判断是否 ISF）"]
-    D --> E["onboard_ensure_kweaver_admin_for_isf"]
-    E --> F["onboard_ensure_kweaver_admin_auth_for_isf"]
-    F --> G["onboard_offer_isf_test_user"]
-    G --> H["onboard_offer_context_loader_toolset"]
+    C --> D["onboard_recommend_admin_cli（Helm/命名空间 → 是否 ISF）"]
+    D --> E["onboard_ensure_kweaver_admin_for_isf\n（ISF 时按需 npm -g 安装 kweaver-admin）"]
+    E --> F["onboard_ensure_kweaver_admin_auth_for_isf\n（HTTP 与 kweaver 同默认；或 -k 浏览器；-y 自动 HTTP）"]
+    F --> G1["onboard_offer_isf_test_user\n创建或同步 test 与角色"]
+    G1 --> G2["onboard_isf_relogin…\nkweaver 以 test 登录（HTTP）"]
+    G2 --> H["onboard_offer_context_loader_toolset\n（kweaver impex）"]
   end
 ```
+
+**非全量 / 最小化**：通常不需要 `kweaver-admin` 的建用户与 **test 重登** 门禁；若集群仍有 operator，Context Loader 仍可能按条件执行。
 
 **3）ISF 全量：双 CLI 与 impex 会话（序列图）**
 
@@ -221,14 +224,17 @@ sequenceDiagram
   participant K as kweaver
   participant A as kweaver-admin
   U->>O: 在 deploy/ 下执行
-  O->>K: kweaver auth — HTTP（admin / eisoo.com 默认）或浏览器
-  O->>A: 确保 PATH 有 kweaver-admin；同样推荐 HTTP 账密或浏览器
-  A-->>O: user list / 创建 test 与角色
-  O->>K: 以 test 做 kweaver 登录（HTTP，test 的密码）
-  O->>K: kweaver call impex / 后续模型等
+  O->>K: kweaver auth — HTTP（admin / eisoo）或浏览器
+  O->>A: kweaver-admin auth — HTTP（同默认）或 -k 浏览器
+  A->>A: 创建 user、设密、挂载角色
+  A-->>O: user list 成功
+  O->>K: kweaver 以 test 登录 — HTTP（test 的密码）
+  O->>K: kweaver call impex / 后续 kweaver 操作
 ```
 
-`kweaver` 与 `kweaver-admin` **会话文件独立**；**ISF 下默认仍用与 kweaver 相同的一套 HTTP 控制台账密**。**impex 需 `kweaver` 的 `test` 会话**，与仅 **admin** 的 kweaver 常见 **403** 不同。
+**probe 之后**，默认模式会继续 **命名空间 + 模型 + BKN** 交互；在 ISF 上此时 **`~/.kweaver` 宜已为 `test`**，后续注册走业务用户。
+
+`kweaver` 与 `kweaver-admin` **会话文件独立**；**ISF 下 HTTP 控制台默认与 kweaver 相同**。**impex 需 `kweaver` 的 `test` 会话**；仅 **admin** 的 kweaver 对 impex 常见 **403**。
 
 ---
 

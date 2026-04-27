@@ -190,23 +190,26 @@ flowchart TB
   mode -->|default: interactive; optional -y| p3[onboard_probe] --> ui["Namespace + LLM + embedding + optional BKN patch"] --> r2[Completion report] --> e3([exit 0])
 ```
 
-- **`onboard_probe` runs in all three modes** before BKN-only, YAML, or interactive model registration.
-- **`-y`** does not set `--config`; it mainly auto-accepts **Node / npm -g** bootstrap and **ISF** `kweaver` / `kweaver-admin` auth defaults where applicable.
+- **`onboard_probe` runs in all three modes** before BKN-only, YAML, or interactive model registration. On **ISF**, it includes **`kweaver-admin` HTTP auth (defaults like kweaver)**, **user `test`**, **`kweaver` relogin as `test`**, then **Context Loader** when applicable.
+- **`-y`** does not set `--config`; it mainly auto-accepts **Node / npm -g** bootstrap and **ISF** `kweaver` / `kweaver-admin` **HTTP** auth defaults where applicable.
 
-**2) What `onboard_probe` does (shared path)**
+**2) What `onboard_probe` does (linear order; non-ISF steps are no-ops or skip quickly)**
 
 ```mermaid
 flowchart TB
   subgraph probe["onboard_probe"]
-    A["onboard_ensure_kweaver_auth"] --> B["kubectl: ns list or target namespace"]
+    A["onboard_ensure_kweaver_auth\n(kweaver: HTTP default admin / eisoo or browser)"] --> B["kubectl: ns or target namespace"]
     B --> C["onboard_prepend_npm_global_bin_to_path"]
-    C --> D["onboard_recommend_admin_cli (Helm / ns: ISF?)"]
-    D --> E["onboard_ensure_kweaver_admin_for_isf"]
-    E --> F["onboard_ensure_kweaver_admin_auth_for_isf"]
-    F --> G["onboard_offer_isf_test_user"]
-    G --> H["onboard_offer_context_loader_toolset"]
+    C --> D["onboard_recommend_admin_cli (Helm / ns → ISF?)"]
+    D --> E["onboard_ensure_kweaver_admin_for_isf\n(npm -g kweaver-admin on ISF if needed)"]
+    E --> F["onboard_ensure_kweaver_admin_auth_for_isf\n(HTTP: same defaults as kweaver, or -k browser; -y: auto HTTP)"]
+    F --> G1["onboard_offer_isf_test_user\ncreate or sync test + roles"]
+    G1 --> G2["onboard_isf_relogin…\nkweaver auth as test (HTTP)"]
+    G2 --> H["onboard_offer_context_loader_toolset\n(kweaver impex)"]
   end
 ```
+
+On **minimum (non-ISF)** installs, the ISF-only steps do not require `kweaver-admin` and typically skip the **test** / **relogin** / impex gating; Context Loader may still run if the operator deployment exists.
 
 **3) ISF full install: who talks to whom (user `test` + Context Loader impex)**
 
@@ -218,12 +221,15 @@ sequenceDiagram
   participant K as kweaver
   participant A as kweaver-admin
   U->>O: run from deploy/
-  O->>K: kweaver auth login — HTTP (admin / eisoo.com defaults) or browser
-  O->>A: kweaver-admin on PATH; same HTTP sign-in (admin / eisoo.com) or browser
-  A-->>O: user list / create test + roles
-  O->>K: kweaver auth as test — HTTP (password set for test)
-  O->>K: kweaver call … impex (Context Loader) / model registration
+  O->>K: kweaver auth — HTTP (admin / eisoo) or browser
+  O->>A: kweaver-admin auth — HTTP (same defaults) or -k browser
+  A->>A: user create, password, assign roles
+  A-->>O: user list OK
+  O->>K: kweaver auth as test — HTTP (test password)
+  O->>K: kweaver call impex / later kweaver steps
 ```
+
+After **probe**, the default path continues with **Namespace + models + BKN** in this shell: **~/.kweaver** should already be **test** on ISF so those calls use the business user.
 
 The admin CLI and the SDK use **separate** token files; both **default to the same HTTP account** for ISF. For impex, **`kweaver` must be signed in as `test`**, not the initial console `admin` session when the API returns 403.
 
