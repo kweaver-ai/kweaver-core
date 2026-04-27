@@ -10,7 +10,6 @@ Three business endpoints (called by Skills):
 One admin endpoint (called by Bonus):
   POST /admin/supplier-capability  - simulate "業務系統 update SUP-X.capability"
 """
-import json
 import os
 import re
 import sys
@@ -93,5 +92,5 @@ def healthz():
 
 
 if __name__ == "__main__":
-    print(f"[tool_backend] listening on :{PORT}", file=sys.stderr)
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    print(f"[tool_backend] listening on 127.0.0.1:{PORT}", file=sys.stderr)
+    app.run(host="127.0.0.1", port=PORT, debug=False)

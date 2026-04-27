@@ -61,23 +61,23 @@ cleanup() {
     echo "=== Cleanup ==="
     [ -n "$AGENT_ID" ] && {
         kweaver agent unpublish "$AGENT_ID" 2>/dev/null || true
-        kweaver agent delete "$AGENT_ID" -y 2>/dev/null && echo "  ✓ agent $AGENT_ID"
+        kweaver agent delete "$AGENT_ID" -y 2>/dev/null && echo "  ✓ agent $AGENT_ID" || true
     }
     [ -n "$MCP_ID" ] && {
         kweaver call "/api/agent-operator-integration/v1/mcp/$MCP_ID/status" -X POST \
             -H "x-business-domain: bd_public" -d '{"status":"offline"}' >/dev/null 2>&1 || true
         kweaver call "/api/agent-operator-integration/v1/mcp/$MCP_ID" -X DELETE \
-            -H "x-business-domain: bd_public" >/dev/null 2>&1 && echo "  ✓ mcp $MCP_ID"
+            -H "x-business-domain: bd_public" >/dev/null 2>&1 && echo "  ✓ mcp $MCP_ID" || true
     }
     for sid in "${SKILL_IDS[@]:-}"; do
         [ -z "$sid" ] && continue
         kweaver skill status "$sid" offline >/dev/null 2>&1 || true
-        echo y | kweaver skill delete "$sid" >/dev/null 2>&1 && echo "  ✓ skill $sid"
+        echo y | kweaver skill delete "$sid" >/dev/null 2>&1 && echo "  ✓ skill $sid" || true
     done
     kweaver bkn delete "$KN_ID" -y >/dev/null 2>&1 && echo "  ✓ kn $KN_ID" || true
     [ -n "$TMP_KN_ID" ] && kweaver bkn delete "$TMP_KN_ID" -y >/dev/null 2>&1 && echo "  ✓ tmp kn $TMP_KN_ID" || true
-    [ -n "$DS_ID" ] && kweaver ds delete "$DS_ID" -y >/dev/null 2>&1 && echo "  ✓ ds $DS_ID"
-    [ -n "$TOOL_BACKEND_PID" ] && kill "$TOOL_BACKEND_PID" 2>/dev/null && echo "  ✓ mock backend pid $TOOL_BACKEND_PID"
+    [ -n "$DS_ID" ] && kweaver ds delete "$DS_ID" -y >/dev/null 2>&1 && echo "  ✓ ds $DS_ID" || true
+    [ -n "$TOOL_BACKEND_PID" ] && kill "$TOOL_BACKEND_PID" 2>/dev/null && echo "  ✓ mock backend pid $TOOL_BACKEND_PID" || true
 }
 trap cleanup EXIT
 
@@ -213,8 +213,11 @@ TOOL_BACKEND_PORT="$TOOL_BACKEND_PORT" \
 SUPPLIERS_TABLE="${TABLE_PREFIX}suppliers" \
 python3 "$SCRIPT_DIR/tool_backend/server.py" >"$SCRIPT_DIR/.tool_backend.log" 2>&1 &
 TOOL_BACKEND_PID=$!
-sleep 2
-curl -s "$TOOL_BACKEND_URL/healthz" | grep -q '"ok"' \
+for i in $(seq 1 15); do
+    curl -sf "$TOOL_BACKEND_URL/healthz" >/dev/null 2>&1 && break
+    sleep 1
+done
+curl -sf "$TOOL_BACKEND_URL/healthz" | grep -qE '"status"[[:space:]]*:[[:space:]]*"ok"' \
     || { echo "ERROR: mock backend failed; see .tool_backend.log" >&2; exit 1; }
 echo "  ✓ mock backend pid $TOOL_BACKEND_PID"
 

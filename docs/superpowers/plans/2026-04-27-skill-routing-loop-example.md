@@ -1219,6 +1219,9 @@ kweaver agent publish "$AGENT_ID" >/dev/null
 echo "  ✓ agent $AGENT_ID (published)"
 
 # ── Step 11: Trigger 3 critical-stock alerts; show DA's decisions ────────────
+# Use --stream (not --no-stream): nginx proxy in front of the platform returns
+# 504 Gateway Timeout on long-running buffered responses; example 02 also uses
+# --stream for the same reason.
 echo ""
 echo "=== Step 11: Trigger 3 alerts (one per material) ==="
 for sku in MAT-001 MAT-002 MAT-003; do
@@ -1226,9 +1229,9 @@ for sku in MAT-001 MAT-002 MAT-003; do
     echo "--- $sku ---"
     kweaver agent chat "$AGENT_ID" \
         -m "Material $sku hit critical stock level. Use find_skills to identify applicable skills, query the BKN for evidence (supplier capability, etc.), pick the best skill, and report what you would execute." \
-        --no-stream 2>&1 \
+        --stream 2>&1 \
         | sed '/^(node:.*Warning:/d; /trace-warnings/d; /To continue this conversation/,$d' \
-        | tail -25
+        | tail -40
 done
 
 EOF
@@ -1281,9 +1284,9 @@ if [ "$BONUS" = "1" ]; then
     echo "--- MAT-002 (re-trigger after capability change) ---"
     kweaver agent chat "$AGENT_ID" \
         -m "Material MAT-002 hit critical stock level again. Decide and report." \
-        --no-stream 2>&1 \
+        --stream 2>&1 \
         | sed '/^(node:.*Warning:/d; /trace-warnings/d; /To continue this conversation/,$d' \
-        | tail -25
+        | tail -40
 
     echo ""
     echo ">>> Compare with the MAT-002 result above (Step 11)."
