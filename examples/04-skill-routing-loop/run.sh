@@ -167,3 +167,39 @@ echo "  Dataview IDs: materials=$MATERIALS_DV_ID, suppliers=$SUPPLIERS_DV_ID, sk
 kweaver bkn delete "$TMP_KN_ID" -y >/dev/null
 TMP_KN_ID=""
 
+# ── Step 3: Render BKN templates with dataview IDs ───────────────────────────
+echo ""
+echo "=== Step 3: Render BKN templates with dataview IDs ==="
+RENDERED_BKN="$SCRIPT_DIR/.rendered-bkn"
+rm -rf "$RENDERED_BKN"
+cp -r "$SCRIPT_DIR/bkn" "$RENDERED_BKN"
+sed -i.bak \
+    -e "s|{{MATERIALS_DV_ID}}|$MATERIALS_DV_ID|" \
+    -e "s|{{MATERIALS_DV_NAME}}|${TABLE_PREFIX}materials|" \
+    "$RENDERED_BKN/object_types/material.bkn"
+sed -i.bak \
+    -e "s|{{SUPPLIERS_DV_ID}}|$SUPPLIERS_DV_ID|" \
+    -e "s|{{SUPPLIERS_DV_NAME}}|${TABLE_PREFIX}suppliers|" \
+    "$RENDERED_BKN/object_types/supplier.bkn"
+sed -i.bak \
+    -e "s|{{SKILLS_DV_ID}}|$SKILLS_DV_ID|" \
+    -e "s|{{SKILLS_DV_NAME}}|${TABLE_PREFIX}skills|" \
+    "$RENDERED_BKN/object_types/skills.bkn"
+find "$RENDERED_BKN" -name '*.bak' -delete
+echo "  ✓ rendered .bkn files"
+
+# ── Step 4: Push BKN ─────────────────────────────────────────────────────────
+echo ""
+echo "=== Step 4: bkn push (deploy schema + relations) ==="
+kweaver bkn validate "$RENDERED_BKN" 2>&1 | tail -1
+PUSH_RAW=$(kweaver bkn push "$RENDERED_BKN" 2>&1)
+echo "$PUSH_RAW" | tail -3
+# kn_id is fixed (network.bkn frontmatter id) — just confirm push succeeded
+echo "$PUSH_RAW" | grep -q "\"kn_id\"" || { echo "ERROR: bkn push failed" >&2; exit 1; }
+echo "  ✓ KN: $KN_ID"
+
+# ── Step 5: Build KN ─────────────────────────────────────────────────────────
+echo ""
+echo "=== Step 5: Build KN (sync) ==="
+kweaver bkn build "$KN_ID" --wait --timeout 60 2>&1 | tail -2
+
