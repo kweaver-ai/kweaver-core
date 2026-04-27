@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: 知识网络检索接口
+  description: |
+    代理 data-retrieval 服务的 kn_search 接口，统一对外提供服务，便于 Agent/大模型调用。
+    基于知识网络的智能检索工具，支持传入完整的问题或一个或多个关键词，能够检索问题或关键词的属性信息和上下文信息。
+  version: 1.0.0
+servers:
+  - url: http://agent-retrieval:30779
+    description: agent-retrieval 服务
+paths:
+  /api/agent-retrieval/in/v1/kn/kn_search:
+    post:
+      summary: kn_search
+      description: |
+        基于知识网络的智能检索工具，支持传入完整的问题或一个或多个关键词，能够检索问题或关键词的属性信息和上下文信息。
+        支持概念召回、语义实例召回、多轮对话等功能。
+      tags:
+        - kn-search
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+            default: user
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+            default: application/json
+          description: 内容类型
+      requestBody:
+        required: true
+        description: kn_search 请求体
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnSearchRequest'
+      responses:
+        '200':
+          description: 成功返回检索结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnSearchResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    KnSearchRequest:
+      type: object
+      required:
+        - query
+        - kn_ids
+      properties:
+        query:
+          type: string
+          description: 用户查询问题或关键词，多个关键词之间用空格隔开
+        kn_ids:
+          type: array
+          description: 指定的知识网络配置列表，必须传递，每个配置包含knowledge_network_id字段
+          items:
+            $ref: '#/components/schemas/KnIDConfig'
+        session_id:
+          type: string
+          nullable: true
+          description: 会话ID，用于维护多轮对话存储的历史召回记录
+        additional_context:
+          type: string
+          nullable: true
+          description: 额外的上下文信息，用于二次检索时提供更精确的检索信息
+        retrieval_config:
+          type: object
+          nullable: true
+          description: 召回配置参数，用于控制不同类型的召回场景（概念召回、语义实例召回、属性过滤）。如果不提供，将使用系统默认配置。
+          properties:
+            concept_retrieval:
+              $ref: '#/components/schemas/ConceptRetrievalConfig'
+            semantic_instance_retrieval:
+              $ref: '#/components/schemas/SemanticInstanceRetrievalConfig'
+            property_filter:
+              $ref: '#/components/schemas/PropertyFilterConfig'
+        only_schema:
+          type: boolean
+          default: false
+          description: 是否只召回概念（schema），不召回语义实例。如果为True，则只返回object_types、relation_types和action_types，不返回nodes。
+
+    KnIDConfig:
+      type: object
+      required:
+        - knowledge_network_id
+      properties:
+        knowledge_network_id:
+          type: string
+          description: 知识网络ID
+
+    ConceptRetrievalConfig:
+      type: object
+      nullable: true
+      description: 概念召回/概念流程配置参数（原最外层参数已收敛到此处）
+      properties:
+        top_k:
+          type: integer
+          minimum: 1
+          default: 10
+          description: 概念召回返回最相关关系类型数量（对象类型会随关系类型自动过滤）。
+        skip_llm:
+          type: boolean
+          default: true
+          description: 是否跳过LLM筛选相关关系类型，直接使用前top_k个关系类型（高召回/低成本）。
+        return_union:
+          type: boolean
+          default: false
+          description: 概念召回多轮检索时是否返回并集。True返回所有轮次并集；False仅返回当前轮次增量（默认False）。
+        include_sample_data:
+          type: boolean
+          default: false
+          description: 是否获取对象类型的样例数据。True会为每个召回对象类型获取一条样例数据。
+        schema_brief:
+          type: boolean
+          default: true
+          description: 概念召回时是否返回精简schema。True仅返回必要字段（概念ID/名称/关系source&target），不返回大字段。
+        enable_coarse_recall:
+          type: boolean
+          default: true
+          description: 是否在概念召回前启用对象/关系粗召回，用于在大规模知识网络中先裁剪候选集合。
+        coarse_object_limit:
+          type: integer
+          minimum: 1
+          default: 2000
+          description: 对象类型粗召回的最大返回数量，用于限制候选对象规模。
+        coarse_relation_limit:
+          type: integer
+          minimum: 1
+          default: 300
+          description: 关系类型粗召回的最大返回数量，用于限制候选关系规模。
+        coarse_min_relation_count:
+          type: integer
+          minimum: 1
+          default: 5000
+          description: 仅当知识网络内关系类型总数达到该阈值时才启用粗召回；小规模网络直接走精排流程。
+        enable_property_brief:
+          type: boolean
+          default: true
+          description: 在 schema_brief=True 时，是否对返回的对象属性做相关性裁剪（每对象TopK，全局TopK）。
+        per_object_property_top_k:
+          type: integer
+          minimum: 1
+          default: 8
+          description: 属性裁剪时，每个对象类型最多保留的属性数量。生产环境建议值：8-10，适配表多、字段多的场景。
+        global_property_top_k:
+          type: integer
+          minimum: 1
+          default: 30
+          description: 属性裁剪时，全局最多保留的属性总数量。生产环境建议值：30-50，确保在多对象类型场景下保留足够的全局属性信息。
+
+    SemanticInstanceRetrievalConfig:
+      type: object
+      nullable: true
+      description: 语义实例召回配置参数
+      properties:
+        initial_candidate_count:
+          type: integer
+          minimum: 1
+          default: 50
+          description: 语义实例召回的初始召回数量上限（重排序前的候选数量）。建议值：一般设置为per_type_instance_limit的3-5倍。
+        per_type_instance_limit:
+          type: integer
+          minimum: 1
+          default: 5
+          description: 每个对象类型最终返回的实例数量上限（重排序后的数量）。每个对象类型单独控制。
+        max_semantic_sub_conditions:
+          type: integer
+          minimum: 1
+          default: 10
+          description: 语义实例召回构造查询条件时 sub_conditions 的最大数量上限（用于适配后端限制与控成本）。默认10。
+        semantic_field_keep_ratio:
+          type: number
+          minimum: 0.01
+          maximum: 1.0
+          default: 0.2
+          description: 语义字段筛选保留比例（按重排序分数Top-K保留）。例如0.2表示保留前20%的字段。
+        semantic_field_keep_min:
+          type: integer
+          minimum: 1
+          default: 5
+          description: 语义字段筛选最少保留字段数（字段较少时兜底）。
+        semantic_field_keep_max:
+          type: integer
+          minimum: 1
+          default: 15
+          description: 语义字段筛选最多保留字段数（字段很多时强力限流）。
+        semantic_field_rerank_batch_size:
+          type: integer
+          minimum: 1
+          default: 128
+          description: 字段语义打分（rerank）时的批处理大小，字段数很大时会分批调用重排序服务。
+        min_direct_relevance:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.3
+          description: 直接相关性最低阈值（0-1之间）。过滤掉直接相关性分数低于此阈值的实例。
+        enable_global_final_score_ratio_filter:
+          type: boolean
+          default: true
+          description: 是否启用全局 final_score 相对阈值过滤。启用后仅保留 final_score >= max_final_score * global_final_score_ratio 的实例。
+        global_final_score_ratio:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.25
+          description: 全局 final_score 相对阈值比例 r（0~1）。当 enable_global_final_score_ratio_filter=True 时，仅保留 final_score >= max_final_score * r 的实例。
+        exact_name_match_score:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.85
+          description: 多关键词检索场景下的实例名完全相等保底分（0~1）。当 query 被拆分为多个关键词时，只要任一关键词与 instance_name 完全相等，则会将该实例的基础语义分提升到该值，避免被其他关键词（如症状词）稀释后丢失。
+
+    PropertyFilterConfig:
+      type: object
+      nullable: true
+      description: 实例属性过滤配置（通用，适用于所有实例召回）
+      properties:
+        max_properties_per_instance:
+          type: integer
+          minimum: 1
+          default: 20
+          description: 每个实例最多返回的属性字段数量。用于过滤实例属性，减少返回结果大小。
+        max_property_value_length:
+          type: integer
+          minimum: 1
+          default: 500
+          description: 属性值的最大长度（字符数），超过此长度的字段值会被过滤。
+        enable_property_filter:
+          type: boolean
+          default: true
+          description: 是否启用实例属性过滤。如果为False，返回所有属性字段。
+
+    KnSearchResponse:
+      type: object
+      description: |
+        检索结果，返回object_types/relation_types/action_types，并返回语义实例nodes/message。
+        多轮时由concept_retrieval.return_union控制 nodes 的并集/增量。
+      properties:
+        object_types:
+          type: array
+          nullable: true
+          description: |
+            对象类型列表（概念召回时返回）。
+            当schema_brief=True时，仅包含：concept_id, concept_name, comment, data_properties（仅name和display_name）, logic_properties（仅name和display_name）, sample_data（当include_sample_data=True时）。
+            当schema_brief=False时，包含完整字段（包括primary_keys, display_key, sample_data等）
+          items:
+            $ref: '#/components/schemas/ObjectType'
+        relation_types:
+          type: array
+          nullable: true
+          description: |
+            关系类型列表（概念召回时返回）。
+            精简模式和完整模式均包含：concept_id, concept_name, source_object_type_id, target_object_type_id
+          items:
+            $ref: '#/components/schemas/RelationType'
+        action_types:
+          type: array
+          nullable: true
+          description: |
+            操作类型列表（概念召回时返回）。
+            当schema_brief=True时，每个action_type仅包含以下字段：id, name, action_type, object_type_id, object_type_name, comment, tags, kn_id
+          items:
+            $ref: '#/components/schemas/ActionType'
+        nodes:
+          type: array
+          nullable: true
+          description: |
+            语义实例召回结果（当不提供conditions且召回到实例时返回），与条件召回节点风格对齐的扁平列表。
+            每个节点至少包含 object_type_id、<object_type_id>_name、unique_identities
+          items:
+            $ref: '#/components/schemas/Node'
+        message:
+          type: string
+          nullable: true
+          description: 提示信息（例如未召回到实例数据时返回原因说明）
+
+    ObjectType:
+      type: object
+      required:
+        - concept_id
+        - concept_name
+      properties:
+        concept_type:
+          type: string
+          nullable: true
+          description: "概念类型: object_type"
+        concept_id:
+          type: string
+          description: 概念ID
+        concept_name:
+          type: string
+          description: 概念名称
+        comment:
+          type: string
+          nullable: true
+          description: 概念描述
+        data_properties:
+          type: array
+          nullable: true
+          description: 对象属性列表。精简模式下仅包含name和display_name字段（数量不截断）
+          items:
+            $ref: '#/components/schemas/DataProperty'
+        logic_properties:
+          type: array
+          nullable: true
+          description: 逻辑属性列表（指标等）。精简模式下仅包含name和display_name字段（数量不截断）
+          items:
+            $ref: '#/components/schemas/LogicProperty'
+        primary_keys:
+          type: array
+          nullable: true
+          description: 主键字段列表（支持多个主键）。仅当schema_brief=False时返回
+          items:
+            type: string
+        display_key:
+          type: string
+          nullable: true
+          description: 显示字段名（用于获取instance_name）。仅当schema_brief=False时返回
+        sample_data:
+          type: object
+          nullable: true
+          description: 样例数据（当include_sample_data=True时返回，无论schema_brief是否为True）
+
+    DataProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: 属性名称
+        display_name:
+          type: string
+          nullable: true
+          description: 属性显示名称
+        comment:
+          type: string
+          nullable: true
+          description: 属性描述（非精简模式）
+
+    LogicProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: 属性名称
+        display_name:
+          type: string
+          nullable: true
+          description: 属性显示名称
+
+    RelationType:
+      type: object
+      required:
+        - concept_id
+        - concept_name
+        - source_object_type_id
+        - target_object_type_id
+      properties:
+        concept_type:
+          type: string
+          nullable: true
+          description: "概念类型: relation_type"
+        concept_id:
+          type: string
+          description: 概念ID
+        concept_name:
+          type: string
+          description: 概念名称
+        source_object_type_id:
+          type: string
+          description: 源对象类型ID
+        target_object_type_id:
+          type: string
+          description: 目标对象类型ID
+
+    ActionType:
+      type: object
+      description: 操作类型信息。精简模式（schema_brief=True）下仅包含：id, name, action_type, object_type_id, object_type_name, comment, tags, kn_id
+      properties:
+        id:
+          type: string
+          description: 操作类型ID
+        name:
+          type: string
+          description: 操作类型名称
+        action_type:
+          type: string
+          description: 操作类型（如：add, modify等）
+        object_type_id:
+          type: string
+          description: 对象类型ID
+        object_type_name:
+          type: string
+          description: 对象类型名称
+        comment:
+          type: string
+          nullable: true
+          description: 注释说明
+        tags:
+          type: array
+          nullable: true
+          description: 标签列表
+          items:
+            type: string
+        kn_id:
+          type: string
+          description: 知识网络ID
+
+    Node:
+      type: object
+      description: 节点数据，至少包含 object_type_id、<object_type_id>_name、unique_identities
+      properties:
+        object_type_id:
+          type: string
+        unique_identities:
+          type: object
+          description: 对象的唯一标识信息
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误信息
+        message:
+          type: string
+          description: 错误详情
+

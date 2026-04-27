@@ -1,0 +1,5 @@
+# BKN Backend 集成测试配置
+# 支持环境变量覆盖 (BKN_TEST_前缀)
+
+bkn_backend:
+  base_url: "http://localhost:13014"  # BKN Backend HTTP服务地址

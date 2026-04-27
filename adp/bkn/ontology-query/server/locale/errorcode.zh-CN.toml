@@ -1,0 +1,70 @@
+# 公共错误码
+[OntologyQuery.InvalidParameter.Condition]
+Description = "过滤条件无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.InvalidParameter.OverrideMethod]
+Description = "重载方法无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.NullParameter.OverrideMethod]
+Description = "重载方法为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.InvalidRequestHeader.ContentType]
+Description = "无效的ContentType"
+Solution = "请检查Http请求头"
+ErrorLink = "暂无"
+
+[OntologyQuery.InternalError]
+Description = "服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.MarshalDataFailed]
+Description = "序列化数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.UnMarshalDataFailed]
+Description = "反序列化数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.InternalError.SearchDataFromOpensearchFailed]
+Description = "从opensearch中获取数据时，服务器内部发生错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无" 
+
+[OntologyQuery.Metric.InvalidParameter]
+Description = "指标请求参数无效"
+Solution = "请检查请求体与路径参数。"
+ErrorLink = "暂无"
+
+[OntologyQuery.Metric.InvalidDataSource]
+Description = "BKN 原生指标执行要求对象类 data_source 为 resource"
+Solution = "请将对象类 data_source.type 配置为 resource 并填写有效资源 ID。"
+ErrorLink = "暂无"
+
+[OntologyQuery.Metric.UnsupportedScope]
+Description = "当前不支持该指标作用域的执行"
+Solution = "本版本仅支持 object_type 作用域。"
+ErrorLink = "暂无"
+
+[OntologyQuery.Metric.NotFound]
+Description = "未找到指标定义"
+Solution = "请核对 metric_id、kn_id 与 branch。"
+ErrorLink = "暂无"
+
+[OntologyQuery.Metric.ObjectTypeNotFound]
+Description = "未找到指标作用域对应的对象类"
+Solution = "请核对 scope_ref 与知识网络内对象类是否存在。"
+ErrorLink = "暂无"
+
+[OntologyQuery.Metric.InternalError.QueryFailed]
+Description = "指标查询执行失败"
+Solution = "请重试或联系支持。"
+ErrorLink = "暂无"

@@ -1,0 +1,168 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建任务",
+    "description": "post /api/automation/v1/operators/config/import",
+    "type": "object",
+    "properties": {
+        "configs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "dagid",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "任务名称,名称不能包含 /:*?\"<>| 特殊字符，长度不能超过50个字符",
+                        "type": "string",
+                        "pattern": "^[^/:\\*?\"<>\\|]+$",
+                        "maxLength": 50
+                    },
+                    "description": {
+                        "description": "详情描述,不允许换行输入,不允许超过255个字符",
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 255
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "steps": {
+                        "description": "自动化流程定义",
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "operator": {
+                                            "description": "算子名称",
+                                            "const": "@trigger/form"
+                                        },
+                                        "parameters": {
+                                            "type": "object",
+                                            "properties": {
+                                                "fields": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string",
+                                                                "pattern": "^[a-zA-Z]+(_?[a-zA-Z]+)*$",
+                                                                "maxLength": 50
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "key",
+                                                            "type"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "operator": {
+                                            "description": "算子名称",
+                                            "type": "string",
+                                            "not": {
+                                                "const": "@trigger/form"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "minItems": 2,
+                        "uniqueItems": true
+                    },
+                    "category": {
+                        "description": "组合算子分类",
+                        "type": "string",
+                        "pattern": "[a-zA-Z0-9_-]*"
+                    },
+                    "outputs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-zA-Z]+(_?[a-zA-Z]+)*$",
+                                    "maxLength": 50
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "enum": [
+                                        "string",
+                                        "number",
+                                        "object",
+                                        "array"
+                                    ]
+                                },
+                                "description": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "enum": [
+                                                "text"
+                                            ]
+                                        },
+                                        "additionalProperties": false
+                                    }
+                                }
+                            },
+                            "required": [
+                                "key",
+                                "type"
+                            ],
+                            "additionalProperties": false
+                        },
+                        "uniqueItems": true
+                    },
+                    "operator_id": {
+                        "description": "算子id",
+                        "type": "string"
+                    },
+                    "is_root": {
+                        "description": "是否为根节点",
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "steps",
+                    "category",
+                    "operator_id"
+                ],
+                "additionalProperties": false
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        },
+        "mode": {
+            "type": "string",
+            "enum": ["create", "upsert"]
+        }
+    },
+    "required": [
+        "configs",
+        "mode"
+    ],
+    "additionalProperties": false
+}

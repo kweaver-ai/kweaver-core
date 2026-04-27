@@ -1,0 +1,28 @@
+{{- if .Values.service.ontologyQuery.ingress.enabled -}}
+{{ if .Values.service.ontologyQuery.ingress.interface }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.moduleName }}-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "500M"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+{{- if index .Values.depServices "class-443" "ingressClass" }}
+  ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" }}
+{{- end }}
+  rules:
+  - http:
+      paths:
+        {{- range .Values.service.ontologyQuery.ingress.interface.path }}
+        - path: {{ . }}
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: {{ $.Values.moduleName }}-svc
+              port:
+                number: {{ $.Values.service.ontologyQuery.port }}
+        {{- end }}
+{{ end }}
+{{- end }}

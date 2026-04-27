@@ -1,0 +1,9 @@
+id,name,department_id,status,start_date,end_date,budget_cny,owner_id
+proj_01,AI Platform v2,dept_01,active,2024-01-10,2024-12-31,2000000,emp_001
+proj_02,Data Pipeline Refactor,dept_01,active,2024-03-01,2024-09-30,800000,emp_002
+proj_03,Mobile App Redesign,dept_02,active,2024-02-15,2024-08-31,1200000,emp_007
+proj_04,CRM Integration,dept_03,completed,2023-06-01,2024-03-31,600000,emp_010
+proj_05,Supply Chain Dashboard,dept_04,active,2024-04-01,2024-11-30,900000,emp_013
+proj_06,Annual Budget Planning,dept_05,completed,2023-10-01,2024-01-31,200000,emp_015
+proj_07,Search Engine Upgrade,dept_01,planning,2024-07-01,2025-02-28,1500000,emp_005
+proj_08,Enterprise Sales Expansion,dept_03,active,2024-05-01,2024-12-31,1800000,emp_009

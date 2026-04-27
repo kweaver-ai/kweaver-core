@@ -1,0 +1,49 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Dataflow Doc Trigger Request",
+    "description": "POST /api/automation/v2/dataflow-doc/trigger/:dagId",
+    "type": "object",
+    "properties": {
+        "source_from": {
+            "type": "string",
+            "enum": ["local", "remote"],
+            "description": "文件来源: local=先触发后上传, remote=URL下载触发"
+        },
+        "name": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "文件名"
+        },
+        "size": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "文件大小(字节)"
+        },
+        "content_type": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "MIME类型"
+        },
+        "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "description": "源文件URL(仅remote模式)"
+        },
+        "data": {
+            "type": "object",
+            "description": "触发器扩展字段"
+        }
+    },
+    "required": ["source_from", "name"],
+    "allOf": [
+        {
+            "if": {
+                "properties": { "source_from": { "const": "remote" } }
+            },
+            "then": {
+                "required": ["url"]
+            }
+        }
+    ]
+}

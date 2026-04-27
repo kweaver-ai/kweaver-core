@@ -1,0 +1,1084 @@
+openapi: 3.0.2
+info:
+  title: DATA AGNET（数据智能体） API
+  version: 1.0.0
+servers:
+  - url: http://agent-factory:13020/api
+tags:
+  - name: 配置页面
+  - name: data agent市场
+  - name: 使用页面
+  - name: 其他
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=261242083)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/744857)
+paths:
+  /agent-factory/internal/v3/agent/by-key/{key}:
+    get:
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Agent Key
+      summary: 获取agent详情
+      deprecated: false
+      description: 获取agent详情
+      tags:
+        - 配置页面
+      responses:
+        '200':
+          description: 请求成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_item'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  parameters:
+    pageOffset:
+      name: page
+      description: 分页页码
+      in: query
+      schema:
+        type: integer
+        default: 1
+      required: false
+    pageLimit:
+      name: size
+      description: 每页返回条数
+      in: query
+      schema:
+        type: integer
+        default: 10
+      required: false
+    ID:
+      name: id
+      description: ID
+      in: path
+      schema:
+        type: string
+      required: true
+    KEY:
+      name: key
+      description: 对象的标识（key）
+      in: path
+      schema:
+        type: string
+      required: true
+  schemas:
+    field:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 参数（字段）名
+          example: query
+        type:
+          type: string
+          description: |
+            - 类型
+              - string: 字符串
+              - file: 文件
+              - object: json对象
+          enum:
+            - string
+            - file
+            - object
+          default: string
+          example: string
+      required:
+        - name
+      description: agent参数（字段）
+    kg_source:
+      type: object
+      properties:
+        kg_id:
+          type: string
+          description: 图谱id
+        fields:
+          type: array
+          items:
+            type: string
+          description: 实体类范围
+        field_properties:
+          type: object
+          description: 实体属性列表
+          example:
+            regions:
+              - ※vid
+              - regions
+            comments:
+              - ※vid
+              - content
+              - votes
+              - comment_time
+        output_fields:
+          type: array
+          items:
+            type: string
+          description: 结果范围，非必填
+      required:
+        - kg_id
+        - fields
+      description: 图谱类型数据源
+    llm_config:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 模型id
+        name:
+          type: string
+          description: 模型名
+          example: deepseek-v3
+        model_type:
+          type: string
+          description: |
+            - 模型类型
+              - llm: 非推理模型
+              - rlm: 推理模型（可能是reasoning model）
+          default: llm
+          enum:
+            - llm
+            - rlm
+          example: llm
+        temperature:
+          type: number
+          description: 随机性
+          minimum: 0
+          maximum: 2
+        top_p:
+          type: number
+          description: 核采样
+          minimum: 0
+          maximum: 1
+        top_k:
+          type: integer
+          description: 前k采样
+          minimum: 0
+        frequency_penalty:
+          type: number
+          description: 频率惩罚度
+          minimum: -2
+          maximum: 2
+        presence_penalty:
+          type: number
+          description: 话题新鲜度
+          minimum: -2
+          maximum: 2
+        max_tokens:
+          type: integer
+          description: 单次回复限制
+          default: 500
+          minimum: 0
+      required:
+        - name
+      description: 大模型配置
+    input:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/field'
+          description: 参数列表
+        augment:
+          type: object
+          nullable: true
+          properties:
+            enable:
+              type: boolean
+              description: 是否启用
+            data_source:
+              type: object
+              properties:
+                kg:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/kg_source'
+                  description: 图谱类型数据源
+                  maxItems: 1
+              description: 图谱数据源配置
+          required:
+            - enable
+            - data_source
+          description: query增强
+        rewrite:
+          type: object
+          nullable: true
+          properties:
+            enable:
+              type: boolean
+              description: 是否启用
+            llm_config:
+              $ref: '#/components/schemas/llm_config'
+          required:
+            - enable
+            - llm_config
+          description: query重写
+        is_temp_zone_enabled:
+          type: integer
+          description: |
+            - 是否启用临时区
+              - 配置时，前端不需要传此字段。后端根据fields中是否包含file类型字段自动判断
+          enum:
+            - 0
+            - 1
+          example: 0
+        temp_zone_config:
+          type: object
+          description: |
+            - 临时区配置
+              - 当使用临时区时（fields中包含file类型字段），此配置必需
+          required:
+            - tmp_file_use_type
+            - single_file_size_limit
+            - single_file_size_limit_unit
+            - support_data_type
+            - allowed_file_categories
+          properties:
+            name:
+              type: string
+              description: |
+                - 区域名称
+                  - 默认：临时区
+              example: 临时区
+            tmp_file_use_type:
+              type: string
+              description: |
+                - 临时文件使用类型
+                  - upload: 直接上传
+                  - select_from_temp_zone: 从临时区选择
+              example: select_from_temp_zone
+            max_file_count:
+              type: integer
+              description: |
+                - 临时区最大文件数量（目前最多50个文件）
+                - 默认：50
+              example: 50
+            single_chat_max_select_file_count:
+              type: integer
+              description: |
+                - 单次对话中支持选择的文件个数（目前最多5个文件）
+                - 默认：5
+              example: 5
+            single_file_size_limit:
+              type: integer
+              description: |
+                - 单文件大小限制
+                - 目前的限制是最大100MB
+              example: 100
+            single_file_size_limit_unit:
+              type: string
+              description: 单文件大小限制单位
+              enum:
+                - KB
+                - MB
+                - GB
+              example: MB
+            support_data_type:
+              type: array
+              description: |
+                - 支持的数据类型
+                  - file: 文件 （目前支持文件，后面可能会增加新的类型，比如af的相关数据等）
+                - 默认：["file"]
+              items:
+                type: string
+                example: file
+                enum:
+                  - file
+            allowed_file_categories:
+              type: array
+              description: |
+                - 允许的文件大类型，如：["video", "image"]
+                - 当support_data_type包含file时，此配置有效
+                - 目前有：
+                  - document: 文档
+                  - spreadsheet: 工作表
+                  - presentation: 演示文稿
+                  - pdf: PDF
+                  - text: 文本
+                  - audio: 音频
+                  - video: 视频
+                  - wikidoc: wikidoc
+                  - faq:   faq
+                  - other: 其他
+              items:
+                type: string
+                example: video
+                enum:
+                  - document
+                  - spreadsheet
+                  - presentation
+                  - pdf
+                  - text
+                  - audio
+                  - other
+                  - video
+                  - wikidoc
+                  - faq
+            allowed_file_types:
+              type: array
+              description: |
+                - 允许的文件类型，如：["mp4", "jpg"]
+                - 当support_data_type包含file时，此配置有效
+                - 在创建和编辑时，不需要传递此字段。会根据allowed_file_categories自动生成
+              items:
+                type: string
+                example: mp4
+      required:
+        - fields
+      description: 输入参数
+    doc_source:
+      type: object
+      properties:
+        ds_id:
+          type: string
+          description: 数据源id
+          example: "xxx"
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: dir2
+              path:
+                type: string
+                example: dir1/dir2
+              source:
+                type: string
+                example: gns://92EE2D87255142B78A6F1DFB6BBB836B/90B7F2F079824711886F317955008C5F
+            required:
+              - name
+              - path
+              - source
+          description: 数据源范围列表
+        datasets:
+          type: array
+          items:
+            type: string
+          description: |
+            - 数据集合id
+            - 【注意】：此字段不需要通过接口传递，后端会根据fields字段自动生成
+      required:
+        - ds_id
+        - fields
+      description: 图谱类型数据源
+    retriever_data_source:
+      type: object
+      properties:
+        kg:
+          type: array
+          items:
+            $ref: '#/components/schemas/kg_source'
+          description: 图谱类型数据源
+          maxItems: 1
+        doc:
+          type: array
+          items:
+            $ref: '#/components/schemas/doc_source'
+          description: 文档类型数据源
+          maxItems: 1
+        advanced_config:
+          type: object
+          nullable: true
+          description: 召回高级配置
+          properties:
+            kg:
+              type: object
+              nullable: true
+              description: 图谱召回高级配置（当数据源类型为“图谱”类型时必需）
+              properties:
+                text_match_entity_nums:
+                  type: integer
+                  description: 文本匹配召回实体数量
+                  example: 60
+                vector_match_entity_nums:
+                  type: integer
+                  description: 向量匹配召回实体数量
+                  example: 60
+                graph_rag_topk:
+                  type: integer
+                  description: 重排序后保留参考信息数量
+                  example: 25
+                long_text_length:
+                  type: integer
+                  description: 长文本长度
+                  example: 256
+                reranker_sim_threshold:
+                  type: number
+                  description: 图谱rerank bge相似度过滤阈值
+                  example: -5.5
+                retrieval_max_length:
+                  type: integer
+                  description: 召回最大长度
+                  example: 20480
+              required:
+                - text_match_entity_nums
+                - vector_match_entity_nums
+                - graph_rag_topk
+                - long_text_length
+                - reranker_sim_threshold
+                - retrieval_max_length
+            doc:
+              type: object
+              nullable: true
+              description: 文档召回高级配置（当数据源类型为“文档”类型时必需）
+              properties:
+                retrieval_slices_num:
+                  type: integer
+                  description: 召回切片数
+                  example: 150
+                max_slice_per_cite:
+                  type: integer
+                  description: 每篇文档最大保留切片数
+                  example: 16
+                rerank_topk:
+                  type: integer
+                  description: 重排序后保留切片数
+                  example: 15
+                slice_head_num:
+                  type: integer
+                  description: 获取上文切片数
+                  example: 2
+                slice_tail_num:
+                  type: integer
+                  description: 获取下文切片数
+                  example: 0
+                documents_num:
+                  type: integer
+                  description: 来源文档数量
+                  example: 8
+                document_threshold:
+                  type: number
+                  description: 文档ranker bge相似度阈值
+                  example: -5.5
+                retrieval_max_length:
+                  type: integer
+                  description: 召回最大长度
+                  example: 20480
+              required:
+                - retrieval_slices_num
+                - max_slice_per_cite
+                - rerank_topk
+                - slice_head_num
+                - slice_tail_num
+                - documents_num
+                - document_threshold
+                - retrieval_max_length
+    output:
+      type: object
+      required:
+        - default_format
+      properties:
+        variables:
+          type: object
+          properties:
+            answer_var:
+              type: string
+              description: |
+                - 包含最终回答的变量名
+                  - 非dolphin模式下，此字段的值固定为“answer”
+                  - dolphin模式下，此字段必填
+            doc_retrieval_var:
+              type: string
+              description: |
+                - 包含文档检索结果的变量名
+                  - 非dolphin模式下，此字段的值固定为“doc_retrieval_res”
+            graph_retrieval_var:
+              type: string
+              description: |
+                - 包含图谱检索结果的变量名
+                  - 非dolphin模式下，此字段的值固定为“graph_retrieval_res”
+            related_questions_var:
+              type: string
+              description: |
+                - 包含相关问题的变量名
+                  - 非dolphin模式下，此字段的值固定为“related_questions”
+            other_vars:
+              type: array
+              nullable: true
+              items:
+                type: string
+                description: 变量名
+              description: 其他变量数组
+            middle_output_vars:
+              type: array
+              nullable: true
+              items:
+                type: string
+                description: 变量名
+              description: |
+                - 中间输出变量数组
+                  - 指整体开始后，到最终结果输出前，需要输出的中间变量
+                  - 用于在dolphin模式下输出中间结果
+          description: |
+            - 输出变量（从dolphin中的所有输出变量中进行选择）
+        default_format:
+          type: string
+          description: 默认输出格式
+          enum:
+            - json
+            - markdown
+          example: markdown
+      description: 输出变量配置
+    config_show:
+      type: object
+      properties:
+        input:
+          $ref: '#/components/schemas/input'
+        system_prompt:
+          type: string
+          description: 系统提示词
+        dolphin:
+          type: string
+          description: dolphin语句
+        is_dolphin_mode:
+          type: integer
+          description: 是否是dolphin模式
+          enum:
+            - 0
+            - 1
+          default: 0
+        data_source:
+          description: 数据源
+          $ref: '#/components/schemas/retriever_data_source'
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_type:
+                type: string
+                description: |
+                  - 技能类型
+                    - tool: 工具
+                    - agent: agent
+                example: agent
+                enum:
+                  - tool
+                  - agent
+              tool_id:
+                type: string
+                description: 工具id
+              tool_name:
+                type: string
+                description: 工具名称
+              tool_box_id:
+                type: string
+                description: 工具箱id
+              tool_use_description:
+                type: string
+                description: 工具说明，会拼接到提示词中发给大模型
+              tool_input:
+                type: array
+                description: 输入参数配置
+                items:
+                  type: object
+                  description: |
+                    - 输入参数
+                      - 详细内容可以参考AD中的实现
+              intervention:
+                type: boolean
+                description: 是否启用干预
+            required:
+              - tool_type
+              - tool_id
+              - tool_use_description
+              - tool_box_id
+          description: 工具（技能） 可选
+        llms:
+          type: array
+          items:
+            type: object
+            properties:
+              is_default:
+                type: boolean
+                description: 是否默认（从选择的所有llm中选择一个为默认llm）
+              llm_config:
+                $ref: '#/components/schemas/llm_config'
+        is_data_flow_set_enabled:
+          type: integer
+          description: 是否启用数据流设置
+          enum:
+            - 0
+            - 1
+          example: 0
+        opening_remark_config:
+          type: object
+          required:
+            - type
+          description: 开场白配置
+          properties:
+            type:
+              type: string
+              description: 开场白类型（固定/动态）
+              enum:
+                - fixed
+                - dynamic
+              example: fixed
+            fixed_opening_remark:
+              type: string
+              description: 固定开场白
+              example: ''
+            dynamic_opening_remark_prompt:
+              type: string
+              description: 动态开场白提示语
+              example: ''
+        preset_questions:
+          type: array
+          description: |
+            - 预设问题列表
+          items:
+            type: object
+            required:
+              - question
+            properties:
+              question:
+                type: string
+                description: 问题内容
+        output:
+          $ref: '#/components/schemas/output'
+      required:
+        - input
+        - llms
+        - output
+      description: data agent配置
+    AgentListResp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: agent id
+          example: xxx
+        key:
+          type: string
+          description: agent 标识
+          example: xxx
+        is_built_in:
+          type: integer
+          enum:
+            - 0
+            - 1
+          description: |
+            - 是否内置
+              - 0: 否
+              - 1: 是
+          example: 0
+        name:
+          type: string
+          description: 名字
+          example: agent1
+        profile:
+          type: string
+          description: agent 简介
+          example: agent1 profile
+        avatar_type:
+          type: integer
+          description: |
+            - 头像类型
+              - 1: 内置头像
+              - 2: 用户上传头像
+              - 3: AI生成头像
+          example: 1
+        avatar:
+          type: string
+          description: |
+            - 头像信息
+              - 当头像类型为1时，为内置头像标识(如1-10等)
+              - 当头像类型为2时，为头像存储信息
+              - 当头像类型为3时，为头像存储信息
+          example: "1"
+        config:
+          $ref: '#/components/schemas/config_show'
+          title: agent配置
+        product_id:
+          type: integer
+          description: 所属产品id
+          example: 1
+        product_name:
+          type: string
+          description: 所属产品名称
+          example: DIP
+    Error:
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      type: object
+      description: 错误信息（统一格式）
+      properties:
+        error_code:
+          type: string
+          description: 业务错误码
+        description:
+          type: string
+          description: 错误描述
+        solution:
+          type: string
+          description: 解决方法
+        error_link:
+          type: string
+          description: 错误链接
+        error_details:
+          description: |
+            - 错误详情（比如当某些数据不存在时，这里可以包含不存在的id）
+            - 任意类型
+          type: string
+
+          nullable: true
+    config:
+      type: object
+      properties:
+        input:
+          $ref: '#/components/schemas/input'
+        system_prompt:
+          type: string
+          description: 系统提示词
+        dolphin:
+          type: string
+          description: dolphin语句
+        is_dolphin_mode:
+          type: integer
+          description: 是否是dolphin模式
+          enum:
+            - 0
+            - 1
+          default: 0
+        data_source:
+          description: 数据源
+          $ref: '#/components/schemas/retriever_data_source'
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_type:
+                type: string
+                description: |
+                  - 技能类型
+                    - tool: 工具
+                    - agent: agent
+                example: agent
+                enum:
+                  - tool
+                  - agent
+              tool_id:
+                type: string
+                description: 工具id
+              tool_name:
+                type: string
+                description: 工具名称
+              tool_box_id:
+                type: string
+                description: 工具箱id
+              tool_use_description:
+                type: string
+                description: 工具说明，会拼接到提示词中发给大模型
+              tool_input:
+                type: array
+                description: 输入参数配置
+                items:
+                  type: object
+                  description: |
+                    - 输入参数
+                      - 详细内容可以参考AD中的实现
+              intervention:
+                type: boolean
+                description: 是否启用干预
+            required:
+              - tool_type
+              - tool_id
+              - tool_use_description
+              - tool_box_id
+          description: 工具（技能） 可选
+        llms:
+          type: array
+          items:
+            type: object
+            properties:
+              is_default:
+                type: boolean
+                description: 是否默认（从选择的所有llm中选择一个为默认llm）
+              llm_config:
+                $ref: '#/components/schemas/llm_config'
+        is_data_flow_set_enabled:
+          type: integer
+          description: 是否启用数据流设置
+          enum:
+            - 0
+            - 1
+          example: 0
+        opening_remark_config:
+          type: object
+          required:
+            - type
+          description: 开场白配置
+          properties:
+            type:
+              type: string
+              description: 开场白类型（固定/动态）
+              enum:
+                - fixed
+                - dynamic
+              example: fixed
+            fixed_opening_remark:
+              type: string
+              description: 固定开场白
+              example: ''
+            dynamic_opening_remark_prompt:
+              type: string
+              description: 动态开场白提示语
+              example: ''
+        preset_questions:
+          type: array
+          description: |
+            - 预设问题列表
+          items:
+            type: object
+            required:
+              - question
+            properties:
+              question:
+                type: string
+                description: 问题内容
+                example: ''
+        output:
+          $ref: '#/components/schemas/output'
+      required:
+        - input
+        - llms
+        - output
+      description: data agent配置
+    create_req:
+      type: object
+      properties:
+        key:
+          type: string
+          description: agent标识
+        is_built_in:
+          type: integer
+          description: |
+            - 是否内置（内部接口有效）
+              - 0: 否
+              - 1: 是
+          example: 0
+        name:
+          type: string
+          description: 名字
+          example: agent1
+        profile:
+          type: string
+          description: 简介
+        avatar_type:
+          type: integer
+          description: |
+            - 头像类型
+              - 1: 内置头像
+              - 2: 用户上传头像
+              - 3: AI生成头像
+          example: 1
+        avatar:
+          type: string
+          description: |
+            - 头像信息
+              - 当头像类型为1时，为内置头像标识
+              - 当头像类型为2时，为头像存储信息
+              - 当头像类型为3时，为头像存储信息
+          example: "1"
+        product_id:
+          type: integer
+          description: 所属产品id
+          example: 1
+        config:
+          $ref: '#/components/schemas/config'
+          title: agent配置
+        create_by:
+          type: string
+          description: 创建人uid（内部接口有效）
+          example: xxx
+      required:
+        - name
+        - avatar_type
+        - avatar
+        - product_id
+        - config
+    list_item:
+      type: object
+      properties:
+        id:
+          type: string
+          description: agent id
+          example: xxx
+        key:
+          type: string
+          description: agent 标识
+          example: xxx
+        is_built_in:
+          type: integer
+          enum:
+            - 0
+            - 1
+          description: |
+            - 是否内置
+              - 0: 否
+              - 1: 是
+          example: 0
+        name:
+          type: string
+          description: 名字
+          example: agent1
+        profile:
+          type: string
+          description: 简介
+          example: agent1 description
+        avatar_type:
+          type: integer
+          description: |
+            - 头像类型
+              - 1: 内置头像
+              - 2: 用户上传头像
+              - 3: AI生成头像
+          example: 1
+        avatar:
+          type: string
+          description: |
+            - 头像信息
+              - 当头像类型为1时，为内置头像标识(如1-10等)
+              - 当头像类型为2时，为头像存储信息
+              - 当头像类型为3时，为头像存储信息
+          example: "1"
+        product_id:
+          type: integer
+          description: 所属产品id
+          example: 1
+        product_name:
+          type: string
+          description: 所属产品名称
+          example: DIP
+        config:
+          $ref: '#/components/schemas/config_show'
+          title: agent配置
+        index_key:
+          type: string
+          description: |
+            - 索引key
+              - 用于标识某个唯一的索引对象
+              - 如果没有配置数据源，或数据源的索引不是data agent这边来维护的，此值为空
+              - 不同data agent的索引key可以相同
+          example: xxx
+        status:
+          type: string
+          enum:
+            - unpublished
+            - published
+          description: |
+            - 状态
+              - unpublished: 未发布
+              - published: 已发布
+          example: unpublished
+    update_req:
+      type: object
+      properties:
+        is_built_in:
+          type: integer
+          description: |
+            - 是否内置（内部接口有效）
+              - 0: 否
+              - 1: 是
+          example: 0
+        name:
+          type: string
+          description: 名字
+          example: agent1
+        profile:
+          type: string
+          description: 描述
+          example: agent1 profile
+        avatar_type:
+          type: integer
+          description: |
+            - 头像类型
+              - 1: 内置头像
+              - 2: 用户上传头像
+              - 3: AI生成头像
+          example: 1
+        avatar:
+          type: string
+          description: |
+            - 头像信息
+              - 当头像类型为1时，为内置头像标识
+              - 当头像类型为2时，为头像存储信息
+              - 当头像类型为3时，为头像存储信息
+          example: "1"
+        config:
+          $ref: '#/components/schemas/config'
+          title: agent配置
+        update_by:
+          type: string
+          description: 更新人uid（内部接口有效）
+          example: xxx
+      required:
+        - name
+        - avatar_type
+        - avatar
+        - config
+  responses:
+    '400':
+      description: 错误的请求
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '403':
+      description: 请求被拒绝
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '500':
+      description: 内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+x-tagGroups:
+  - name: DATA AGENT
+    tags:
+      - 配置页面
+      - 使用页面
+      - data agent市场
+      - 其他
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+
+
+
+security:
+  - ApiKeyAuth: []

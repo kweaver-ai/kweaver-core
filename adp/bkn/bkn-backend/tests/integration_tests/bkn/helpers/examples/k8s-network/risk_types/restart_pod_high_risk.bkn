@@ -1,0 +1,38 @@
+---
+type: risk_type
+id: restart_pod_high_risk
+name: Pod重启高风险管控
+tags: [risk, pod, restart]
+---
+
+## RiskType: Pod重启高风险管控
+
+对Pod重启操作的高风险管控策略
+
+### Control Scope
+
+生产环境中的Pod重启操作，特别是涉及核心服务的Pod。
+
+### Control Policy
+
+- 工作时间（9:00-18:00）内需主管审批
+- 非工作时间需VP级别审批
+- 单次重启不超过集群总Pod数的10%
+
+### Pre-checks
+
+| Object | Check | Condition | Message |
+|--------|-------|-----------|---------|
+| pod | replica_count | > 1 | 单副本Pod不允许直接重启 |
+| pod | health_check | passing | 目标Pod健康检查必须通过 |
+
+### Rollback Plan
+
+1. 自动回滚：若重启后健康检查在60秒内未通过，自动恢复原Pod
+2. 手动回滚：通过kubectl回滚到上一个ReplicaSet版本
+
+### Audit Requirements
+
+- 记录操作人、操作时间、审批链
+- 保留重启前后的Pod状态快照
+- 异常情况触发告警通知

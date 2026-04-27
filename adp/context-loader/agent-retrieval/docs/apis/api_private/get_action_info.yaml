@@ -1,0 +1,154 @@
+openapi: 3.0.2
+info:
+  title: 行动召回接口
+  version: 1.0.0
+  description: 根据对象实例标识召回关联行动，返回符合 Function Call 规范的工具定义。支持多个对象实例标识。
+
+servers:
+  - url: http://agent-retrieval:30779
+    description: 行动召回服务
+
+tags:
+  - name: action-recall
+    description: 行动召回相关接口
+
+paths:
+  /api/agent-retrieval/in/v1/kn/get_action_info:
+    post:
+      summary: get_action_info
+      description: 根据对象实例标识召回关联行动，返回 _dynamic_tools。
+      operationId: getActionInfo
+      tags:
+        - action-recall
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRecallRequest'
+            examples:
+              multi_instance_example:
+                summary: 多对象实例示例
+                value:
+                  kn_id: kn_medical
+                  at_id: generate_treatment_plan
+                  _instance_identities:
+                    - disease_id: disease_000001
+                    - disease_id: disease_000002
+              single_instance_example:
+                summary: 单对象实例示例
+                value:
+                  kn_id: kn_medical
+                  at_id: generate_treatment_plan
+                  _instance_identities:
+                    - disease_id: disease_000001
+      responses:
+        '200':
+          description: 成功返回动态工具列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionRecallResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    code: INVALID_REQUEST
+                    description: _instance_identities 格式错误
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 上游服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ActionRecallRequest:
+      type: object
+      required:
+        - kn_id
+        - at_id
+      properties:
+        kn_id:
+          type: string
+          description: 知识网络ID
+        at_id:
+          type: string
+          description: 行动类ID（从 Schema 获取）
+        _instance_identities:
+          type: array
+          description: 对象实例标识列表（可选）。每个元素为主键键值对，必须从 query_object_instance 或 query_instance_subgraph 返回的 _instance_identity 字段提取，不可臆造。
+          items:
+            type: object
+            additionalProperties:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+                - type: integer
+          example:
+            - disease_id: disease_000001
+            - disease_id: disease_000002
+
+    ActionRecallResponse:
+      type: object
+      required:
+        - _dynamic_tools
+      properties:
+        headers:
+          type: object
+          additionalProperties: true
+        _dynamic_tools:
+          type: array
+          description: Function Call 格式的工具列表
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              parameters:
+                type: object
+              api_url:
+                type: string
+              fixed_params:
+                type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+

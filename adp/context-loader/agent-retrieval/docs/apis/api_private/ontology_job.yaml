@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: 知识网络构建任务管理接口
+  version: 1.0.0
+  description: 业务知识网络构建任务管理接口
+servers:
+  - url: http://agent-retrieval:30779
+security:
+  - BearerAuth: []
+paths:
+  /api/agent-retrieval/in/v1/kn/full_build_ontology:
+    post:
+      tags:
+        - OntologyJob
+      summary: create_kn_index_build_job
+      description: 创建一个全量构建业务知识网络的任务
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+            example:
+              kn_id: "kn_1234567890"
+              name: "全量构建任务"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateJobResponse"
+              example:
+                id: "job_1234567890"
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/agent-retrieval/in/v1/kn/full_ontology_building_status:
+    get:
+      tags:
+        - OntologyJob
+      summary: get_kn_index_build_status
+      description: 查询最新50个构建任务的整体状态（按创建时间倒排）。如果所有任务都已完成则返回completed，如果有任务正在运行则返回running
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: kn_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 业务知识网络ID
+      responses:
+        "200":
+          description: 成功返回构建状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildStatusSimpleResponse"
+              example:
+                kn_id: "d5levlh818p1vl2slp60"
+                state: "completed"
+                state_detail: "All latest 50 jobs are completed"
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    CreateJobRequest:
+      type: object
+      required:
+        - kn_id
+        - name
+      properties:
+        kn_id:
+          type: string
+          description: 业务知识网络ID
+          example: "kn_1234567890"
+        name:
+          type: string
+          description: 任务名称
+          example: "全量构建任务"
+    CreateJobResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 任务ID
+          example: "job_1234567890"
+    BuildStatusSimpleResponse:
+      type: object
+      description: 构建状态响应
+      required:
+        - kn_id
+        - state
+        - state_detail
+      properties:
+        kn_id:
+          type: string
+          description: 业务知识网络ID
+          example: "d5levlh818p1vl2slp60"
+        state:
+          type: string
+          enum: [running, completed]
+          description: 构建状态（running表示有任务正在运行，completed表示所有任务都已完成）
+          example: "completed"
+        state_detail:
+          type: string
+          description: 状态详情
+          example: "All latest 50 jobs are completed"
+    JobState:
+      type: string
+      enum: [pending, running, completed, canceled, failed]
+      description: 任务状态
+    JobType:
+      type: string
+      enum: [full]
+      description: 任务类型
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误描述
+        detail:
+          type: object
+          description: 错误详情
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接
+      example:
+        code: "INVALID_KN_ID"
+        description: "业务知识网络ID无效"
+        detail: {}
+        solution: "请检查kn_id参数是否正确"
+        link: ""

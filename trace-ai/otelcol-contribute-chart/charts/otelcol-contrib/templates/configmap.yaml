@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "otelcol-contrib.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "otelcol-contrib.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- $config := mustDeepCopy .Values.config }}
+{{- if .Values.opensearchExporter.enabled }}
+{{- if not (hasKey $config "exporters") }}
+{{- $_ := set $config "exporters" (dict) }}
+{{- end }}
+{{- $opensearch := dict "http" (dict "endpoint" .Values.opensearchExporter.http.endpoint) "bulk_action" .Values.opensearchExporter.bulkAction "dataset" .Values.opensearchExporter.dataset "namespace" .Values.opensearchExporter.namespace }}
+{{- if hasKey .Values.opensearchExporter.http "tls" }}
+{{- $tls := dict }}
+{{- if hasKey .Values.opensearchExporter.http.tls "insecure" }}
+{{- $_ := set $tls "insecure" .Values.opensearchExporter.http.tls.insecure }}
+{{- end }}
+{{- if gt (len $tls) 0 }}
+{{- $_ := set (get $opensearch "http") "tls" $tls }}
+{{- end }}
+{{- end }}
+{{- if .Values.opensearchExporter.logsIndex }}
+{{- $_ := set $opensearch "logs_index" .Values.opensearchExporter.logsIndex }}
+{{- end }}
+{{- if .Values.opensearchExporter.logsIndexFallback }}
+{{- $_ := set $opensearch "logs_index_fallback" .Values.opensearchExporter.logsIndexFallback }}
+{{- end }}
+{{- if .Values.opensearchExporter.logsIndexTimeFormat }}
+{{- $_ := set $opensearch "logs_index_time_format" .Values.opensearchExporter.logsIndexTimeFormat }}
+{{- end }}
+{{- if .Values.opensearchExporter.tracesIndex }}
+{{- $_ := set $opensearch "traces_index" .Values.opensearchExporter.tracesIndex }}
+{{- end }}
+{{- if .Values.opensearchExporter.tracesIndexFallback }}
+{{- $_ := set $opensearch "traces_index_fallback" .Values.opensearchExporter.tracesIndexFallback }}
+{{- end }}
+{{- if .Values.opensearchExporter.tracesIndexTimeFormat }}
+{{- $_ := set $opensearch "traces_index_time_format" .Values.opensearchExporter.tracesIndexTimeFormat }}
+{{- end }}
+{{- $mapping := dict "mode" .Values.opensearchExporter.mapping.mode }}
+{{- if .Values.opensearchExporter.mapping.timestampField }}
+{{- $_ := set $mapping "timestamp_field" .Values.opensearchExporter.mapping.timestampField }}
+{{- end }}
+{{- if .Values.opensearchExporter.mapping.unixTimestamp }}
+{{- $_ := set $mapping "unix_timestamp" .Values.opensearchExporter.mapping.unixTimestamp }}
+{{- end }}
+{{- if .Values.opensearchExporter.mapping.dedup }}
+{{- $_ := set $mapping "dedup" .Values.opensearchExporter.mapping.dedup }}
+{{- end }}
+{{- if .Values.opensearchExporter.mapping.dedot }}
+{{- $_ := set $mapping "dedot" .Values.opensearchExporter.mapping.dedot }}
+{{- end }}
+{{- $_ := set $opensearch "mapping" $mapping }}
+{{- if .Values.opensearchExporter.auth.enabled }}
+{{- if not (hasKey $config "extensions") }}
+{{- $_ := set $config "extensions" (dict) }}
+{{- end }}
+{{- $_ := set (get $config "extensions") "basicauth/client" (dict "client_auth" (dict "username" .Values.opensearchExporter.auth.username "password" .Values.opensearchExporter.auth.password)) }}
+{{- $_ := set (get $opensearch "http") "auth" (dict "authenticator" "basicauth/client") }}
+{{- if not (hasKey $config "service") }}
+{{- $_ := set $config "service" (dict) }}
+{{- end }}
+{{- $service := get $config "service" }}
+{{- $extensions := default (list) (get $service "extensions") }}
+{{- if not (has "basicauth/client" $extensions) }}
+{{- $_ := set $service "extensions" (append $extensions "basicauth/client") }}
+{{- end }}
+{{- end }}
+{{- $_ := set (get $config "exporters") "opensearch" $opensearch }}
+{{- end }}
+{{- if .Values.debugExporter.enabled }}
+{{- if not (hasKey $config "exporters") }}
+{{- $_ := set $config "exporters" (dict) }}
+{{- end }}
+{{- $_ := set (get $config "exporters") "debug" (dict "verbosity" .Values.debugExporter.verbosity) }}
+{{- if not (hasKey $config "service") }}
+{{- $_ := set $config "service" (dict) }}
+{{- end }}
+{{- $service := get $config "service" }}
+{{- if not (hasKey $service "pipelines") }}
+{{- $_ := set $service "pipelines" (dict) }}
+{{- end }}
+{{- $pipelines := get $service "pipelines" }}
+{{- range $pipelineName := list "traces" "metrics" "logs" }}
+{{- $pipeline := get $pipelines $pipelineName }}
+{{- if $pipeline }}
+{{- $exporters := default (list) (get $pipeline "exporters") }}
+{{- if not (has "debug" $exporters) }}
+{{- $_ := set $pipeline "exporters" (append $exporters "debug") }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+data:
+  collector-config.yaml: |
+    {{- toYaml $config | nindent 4 }}

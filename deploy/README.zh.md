@@ -1,39 +1,18 @@
-# KWeaver Deploy
+# KWeaver Core Deploy
 
 中文 | [English](README.md)
 
-一键部署 KWeaver AI 平台到单节点 Kubernetes 集群。
+一键将 **KWeaver Core** 部署到单节点 Kubernetes 集群。
+
+这个 `deploy` 目录提供脚本安装 KWeaver Core 及其依赖，包括 Kubernetes、基础设施服务和数据服务。
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
 ## 🚀 Quick Start
 
-```bash
-# 1. 克隆仓库
-git clone https://github.com/kweaver-ai/kweaver.git
-cd kweaver/deploy
+### 主机前置条件
 
-# 2. 编辑配置文件（可选，使用默认配置可跳过）
-# vim conf/config.yaml
-
-# 3. 一键部署所有组件，默认安装最新版本
-bash ./deploy.sh full init
-```
-
-部署完成后，访问 `https://<节点IP>/studio` 即可使用,账号admin，初始密码eisoo.com
-
-## 📋 Prerequisites
-
-### 系统要求
-
-| 项目 | 最低配置 | 推荐配置 |
-|------|---------|---------|
-| OS | CentOS 7/8+, RHEL 8 | CentOS 7 |
-| CPU | 16 核 | 24 核 |
-| 内存 | 48 GB | 64 GB |
-| 磁盘 | 200 GB | 500 GB |
-
-### 前置条件（必须）
+安装命令需要以 `root` 用户执行，或通过 `sudo` 执行。
 
 ```bash
 # 1. 关闭防火墙
@@ -42,116 +21,127 @@ systemctl stop firewalld && systemctl disable firewalld
 # 2. 关闭 Swap
 swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab
 
-# 3. 关闭 SELinux（可选，脚本会自动处理）
+# 3. 调整 SELinux（脚本可处理，但建议预先设为宽松）
 setenforce 0
 
-# 4. 手动安装  container-selinux
+# 4. 安装 containerd.io
+dnf install containerd.io
 ```
+
+### 安装 KWeaver Core
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/kweaver-ai/kweaver-core.git
+cd kweaver-core/deploy
+
+# 2. 安装 KWeaver Core
+# 最小化安装 — 首次体验推荐
+bash ./deploy.sh kweaver-core install --minimum
+# 等价于:
+# bash ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# 完整安装（包含 auth 和 business-domain 模块）
+bash ./deploy.sh kweaver-core install
+
+# 脚本会交互式提示输入访问地址，并自动检测 API Server 地址。
+
+# 或显式指定地址（跳过交互提示）：
+#   --access_address       客户端访问 KWeaver 服务的地址（可以是 IP 或域名）
+#   --api_server_address   K8s API Server 绑定的本机网卡 IP（必须是真实的网卡地址）
+bash ./deploy.sh kweaver-core install \
+  --access_address=<你的IP> \
+  --api_server_address=<你的IP>
+
+# （可选）自定义 ingress 端口（默认 80/443）：
+export INGRESS_NGINX_HTTP_PORT=8080
+export INGRESS_NGINX_HTTPS_PORT=8443
+```
+
+## 📋 Prerequisites
+
+### 系统要求
+
+| 项目 | 最低配置 | 推荐配置 |
+| --- | --- | --- |
+| OS | CentOS 8+, OpenEuler 23+ | CentOS 8+ |
+| CPU | 16 核 | 16 核 |
+| 内存 | 48 GB | 64 GB |
+| 磁盘 | 200 GB | 500 GB |
 
 ### 网络要求
 
 部署脚本需要访问以下域名：
 
 | 域名 | 用途 |
-|------|------|
+| --- | --- |
 | `mirrors.aliyun.com` | RPM 软件包源 |
-| `mirrors.tuna.tsinghua.edu.cn` | 清华大学containerd.io RPM源  |
+| `mirrors.tuna.tsinghua.edu.cn` | `containerd.io` RPM 源 |
 | `registry.aliyuncs.com` | Kubernetes 组件镜像 |
-| `swr.cn-east-3.myhuaweicloud.com` | 应用镜像仓库 |
-| `repo.huaweicloud.com` | Helm 二进制文件 |
-| `kweaver-ai.github.io` | Kweaver 服务Helm Chart 仓库 |
+| `swr.cn-east-3.myhuaweicloud.com` | KWeaver 应用镜像仓库 |
+| `repo.huaweicloud.com` | Helm 二进制下载 |
+| `kweaver-ai.github.io` | KWeaver Helm Chart 仓库 |
 
-## 📦 Components
+## 📦 部署模型
 
-### 基础设施
+`kweaver-core` 是这个 `deploy` 目录里的产品入口，安装链路如下：
 
-- **Kubernetes** v1.28 (单节点)
-- **containerd** v1.6+
-- **Flannel CNI** v0.25.5
-- **ingress-nginx** v1.14.1
+1. 安装或补齐单节点 Kubernetes、local-path storage、ingress-nginx。
+2. 安装或补齐数据服务：MariaDB、Redis、Kafka、ZooKeeper、OpenSearch。
+3. 部署 KWeaver Core 应用层 chart。
 
-### 数据服务
+Core 应用层包括数据服务管理、应用部署和任务编排相关的 chart。
 
-- **MariaDB** v11.4.7
-- **MongoDB** v4.4.30
-- **Redis** v7.4.6 (Sentinel)
-- **Kafka** v3.9.0
-- **OpenSearch** v2.19.4
-- **ZooKeeper** v3.9.3
+
 
 ## 🔧 Usage
 
-### 部署命令
+### 推荐命令
 
 ```bash
-# 完整一键部署（推荐）
-./deploy.sh full init     # 基础设施 + KWeaver 应用服务
+# 安装 KWeaver Core（推荐入口）
+./deploy.sh kweaver-core install
 
-# 分层部署
-./deploy.sh infra init    # 仅基础设施：K8s + 数据服务
-./deploy.sh kweaver init  # 仅应用服务：ISF/Studio/Ontology 等
+# 查看 Core 状态
+./deploy.sh kweaver-core status
 
-# 部署单个基础设施组件
-./deploy.sh k8s init      # Kubernetes 集群
-./deploy.sh mariadb init  # MariaDB
-./deploy.sh mongodb init  # MongoDB
-./deploy.sh redis init    # Redis
-./deploy.sh kafka init    # Kafka
-./deploy.sh opensearch init  # OpenSearch
+# 卸载 Core
+./deploy.sh kweaver-core uninstall
 
-# 部署单个应用服务
-./deploy.sh isf init      # ISF 服务
-./deploy.sh studio init   # Studio 服务
-
-# 指定 Helm 仓库和版本
-./deploy.sh kweaver init --helm_repo=https://kweaver-ai.github.io/helm-repo/ --version=0.1.0
-
-# 支持多种版本类型
-./deploy.sh kweaver init --version=0.1.0                    # 稳定版
-./deploy.sh kweaver init --version=0.0.0-feature-xxx        # 分支/开发版
-./deploy.sh kweaver init                                     # 最新版
-
-# 查看帮助
-./deploy.sh --help
-```
-
-### 验证部署
-
-```bash
-# 检查集群状态
+# 集群与 Pod 状态
 kubectl get nodes
 kubectl get pods -A
-
-# 检查服务状态
-./deploy.sh kweaver status
 ```
 
-## ⚙️ Configuration
+## 📁 Project Structure
 
-配置文件：`conf/config.yaml`
-
-关键配置项：
-
-```yaml
-namespace: kweaver          # 部署命名空间
-image:
-  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai  # 镜像仓库
-
-depServices:
-  rds:
-    source_type: internal   # internal=内置MariaDB, external=外部数据库
-    host: 'mariadb.resource.svc.cluster.local'
-    user: 'adp'
-    password: ''            # 自动生成
+```text
+deploy/
+├── deploy.sh                 # 主入口脚本
+├── conf/                     # 内置配置与静态清单
+├── release-manifests/        # 按版本组织的发布物料
+├── scripts/
+│   ├── lib/                  # 公共函数
+│   ├── services/             # 各产品与依赖服务安装脚本
+│   └── sql/                  # 按版本组织的 SQL 初始化脚本
+└── .tmp/charts/              # download 命令生成的本地 chart 缓存
 ```
 
-### 使用外部数据库
+## 🗑️ Uninstall
 
-如果使用外部数据库，需要：
+`bash deploy.sh kweaver-core uninstall` 只卸载 Core 应用层。
 
-1. 将 `source_type` 改为 `external`
-2. 配置外部数据库连接信息
-3. 手动执行 SQL 初始化脚本（位于 `scripts/sql/` 目录）
+```bash
+# 1. 卸载 Core 应用层
+./deploy.sh kweaver-core uninstall
+
+```
+`bash deploy.sh k8s reset` 重置 Kubernetes 集群，包括数据服务和core。
+
+```bash
+# 重置 Kubernetes 集群
+./deploy.sh k8s reset
+```
 
 ## 🔍 Troubleshooting
 
@@ -161,7 +151,7 @@ depServices:
 # 检查防火墙是否关闭
 systemctl status firewalld
 
-# 手动重启 CoreDNS
+# 重启 CoreDNS
 kubectl -n kube-system delete pod -l k8s-app=kube-dns
 ```
 
@@ -175,50 +165,41 @@ curl -I https://swr.cn-east-3.myhuaweicloud.com
 cat /etc/containerd/config.toml
 ```
 
+### Kubernetes apt 源 404（Ubuntu/Debian）
+
+如果 `apt update` 报错，提示旧的 `packages.cloud.google.com` 仓库 404：
+
+```text
+Err:7 https://packages.cloud.google.com/apt kubernetes-xenial Release
+  404  Not Found
+```
+
+旧版 Google 托管 apt 源已废弃，需要迁移到 `pkgs.k8s.io`：
+
+```bash
+sudo apt-mark unhold kubeadm kubelet kubectl || true
+sudo apt remove -y kubeadm kubelet kubectl
+sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo mkdir -p /etc/apt/keyrings
+
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
 ### 查看组件日志
 
 ```bash
 kubectl logs -n <namespace> <pod-name>
 ```
 
-## 📁 Project Structure
-
-```
-deploy/
-├── deploy.sh           # 主入口脚本
-├── conf/
-│   ├── config.yaml         # 部署配置文件
-│   ├── kube-flannel.yml    # Flannel 网络配置
-│   └── local-path-storage.yaml  # 本地存储配置
-└── scripts/
-    ├── lib/
-    │   └── common.sh       # 公共函数库
-    ├── services/           # 各组件安装脚本
-    │   ├── k8s.sh
-    │   ├── mariadb.sh
-    │   ├── mongodb.sh
-    │   └── ...
-    └── sql/                # SQL 初始化脚本
-        ├── isf/
-        ├── studio/
-        └── ...
-```
-
-## 🗑️ Uninstall
-
-```bash
-# 完整卸载
-./deploy.sh full reset     # 卸载全部（应用服务 + 基础设施）
-
-# 分层卸载
-./deploy.sh kweaver uninstall  # 仅卸载应用服务
-./deploy.sh infra reset        # 仅卸载基础设施
-
-# 卸载单个组件
-./deploy.sh mariadb uninstall
-./deploy.sh k8s reset
-```
-
 ## 📄 License
 
-[Apache License 2.0](../LICENSE.txt)
+[Apache License 2.0](../LICENSE)

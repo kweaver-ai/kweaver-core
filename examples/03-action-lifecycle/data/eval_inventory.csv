@@ -1,0 +1,7 @@
+material_code,material_name,available_qty,safety_stock,material_risk
+MAT-001,铝合金壳体,320,800,critical
+MAT-002,电源模块,1200,600,normal
+MAT-003,控制电路板,65,200,critical
+MAT-004,散热片,3100,1000,normal
+MAT-005,密封胶圈,110,400,critical
+MAT-006,紧固螺栓,8200,2000,normal

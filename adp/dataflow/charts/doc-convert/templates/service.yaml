@@ -1,0 +1,32 @@
+{{- if or .Values.gotenberg.enabled .Values.tika.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: doc-convert-private
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "doc-convert.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.enableDualStack }}
+  ipFamilies:
+  - IPv6
+  - IPv4
+  ipFamilyPolicy: PreferDualStack
+  {{- end }}
+  type: {{ .Values.type }}
+  ports:
+    {{- if .Values.gotenberg.enabled }}
+    - port: {{ .Values.gotenberg.service.port | default 3000 }}
+      targetPort: 3000
+      protocol: TCP
+      name: gotenberg
+    {{- end }}
+    {{- if .Values.tika.enabled }}
+    - port: {{ .Values.tika.service.port | default 9998 }}
+      targetPort: 9998
+      protocol: TCP
+      name: tika
+    {{- end }}
+  selector:
+    {{- include "doc-convert.selectorLabels" . | nindent 4 }}
+{{- end }}

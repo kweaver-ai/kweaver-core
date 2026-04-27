@@ -1,0 +1,16 @@
+ARG BASE_IMAGE=acr.aishu.cn/public/ubuntu:22.04.20251014
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /opt \
+    && groupadd -g 5000 -f autoflow \
+    && useradd autoflow -u 5000 -g 5000 -m -s /bin/bash \
+    && chown -R autoflow:autoflow /opt
+
+COPY --chown=autoflow:autoflow flow-automation/ /opt/flow-automation/
+COPY --chown=autoflow:autoflow pipeline/ /opt/pipeline/
+
+USER autoflow
+
+WORKDIR /opt/
+
+CMD ["sleep", "infinity"]

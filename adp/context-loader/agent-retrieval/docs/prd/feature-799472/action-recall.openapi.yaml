@@ -1,0 +1,425 @@
+openapi: 3.0.2
+info:
+  title: 行动召回接口
+  version: 1.0.0
+  description: |
+    行动召回功能是对现有"行动查询接口"的封装和增强，旨在为 Agent 系统提供动态工具发现和调用能力。
+    通过语义化的对象标识，自动检索相关的行动，并将这些行动转换为符合 OpenAI Function Call 规范的工具定义。
+
+    **核心特性：**
+    - 动态工具发现：运行时根据对象实例动态发现可用工具
+    - 语义化召回：基于对象的语义标识进行行动召回
+    - 标准化输出：符合 OpenAI Function Call 规范的工具定义
+
+    **当前版本限制：**
+    - 仅支持 type=tool 的行动源（MCP 类型下个版本支持）
+    - 仅处理 actions[0]（单个 action）
+    - 不处理 dynamic_params（由 LLM 动态生成）
+
+servers:
+  - url: http://agent-retrieval-svc:8000
+    description: 行动召回服务
+
+tags:
+  - name: action-recall
+    description: 行动召回相关接口
+
+paths:
+  /api/agent-retrieval/in/v1/kn/get_action_info:
+    post:
+      summary: 行动信息召回接口
+      description: |
+        根据对象的唯一标识，召回与该对象关联的行动信息。
+
+        **重要说明：**
+        1. 只接收 unique_identity（单个对象标识）
+      operationId: getActionInfo
+      tags:
+        - action-recall
+      parameters:
+        - name: x-account-id
+          in: header
+          description: 账户 ID
+          required: true
+          schema:
+            type: string
+          example: bdb78b62-6c48-11f0-af96-fa8dcc0a06b2
+        - name: x-account-type
+          in: header
+          description: 账户类型
+          required: true
+          schema:
+            type: string
+            enum:
+              - user
+              - system
+          example: user
+      requestBody:
+        required: true
+        description: 对象的唯一标识
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRecallRequest'
+            examples:
+              disease_example:
+                summary: 疾病对象示例
+                value:
+                  kn_id: kn_medical
+                  at_id: generate_treatment_plan
+                  unique_identity:
+                    disease_id: disease_000001
+      responses:
+        '200':
+          description: 成功返回动态工具列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionRecallResponse'
+              examples:
+                success_example:
+                  summary: 成功返回示例
+                  value:
+                    headers:
+                      x-account-id: test
+                      x-account-type: user
+                    _dynamic_tools:
+                      - name: 根据单个对象类查询对象实例
+                        description: 该接口基于业务知识网络语义检索接口返回的对象类定义，查询具体的对象实例数据。
+                        parameters:
+                          type: object
+                          properties:
+                            kn_id:
+                              type: string
+                              description: 业务知识网络ID
+                            ot_id:
+                              type: string
+                              description: 对象类ID
+                            condition:
+                              type: object
+                              description: 过滤条件
+                            limit:
+                              type: integer
+                              description: 返回的数量，默认值 10。范围 1-10000
+                          required:
+                            - kn_id
+                            - ot_id
+                        api_url: http://agent-operator-integration:9000/api/agent-operator-integration/internal-v1/tool-box/e59f35f8-65f3-46bb-b5f1-a428380b3edc/proxy/7acb8add-ecd0-45cf-bd4d-57674c3c69b0
+                        original_schema:
+                          parameters: []
+                          request_body: {}
+                          components: {}
+                        fixed_params:
+                          header:
+                            x-account-id: test
+                            x-account-type: user
+                            X-HTTP-Method-Override: GET
+                          path: {}
+                          query: {}
+                          body: {}
+                empty_result:
+                  summary: 无可用行动（空结果）
+                  value:
+                    _dynamic_tools: []
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  summary: 参数格式错误
+                  value:
+                    code: INVALID_REQUEST
+                    description: unique_identity 格式错误
+                    detail:
+                      error: unique_identity must be an object with at least one property
+                    solution: 请确保 unique_identity 是一个包含至少一个属性的 JSON 对象
+                unsupported_action_type:
+                  summary: 不支持的行动源类型
+                  value:
+                    code: UNSUPPORTED_ACTION_TYPE
+                    description: 当前仅支持 type=tool 的行动源，MCP 类型将在下个版本支持
+                    detail:
+                      action_source:
+                        type: mcp
+                        box_id: xxx-xxx-xxx
+                        tool_id: yyy-yyy-yyy
+                    solution: 请使用 type=tool 的行动源，或等待下个版本的 MCP 支持
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                schema_conversion_error:
+                  summary: Schema 转换失败
+                  value:
+                    code: SCHEMA_CONVERSION_ERROR
+                    description: 无法转换工具的 OpenAPI Schema 为 Function Call Schema
+                    detail:
+                      tool_id: xxx-xxx-xxx
+                      error: Failed to resolve $ref
+                    solution: 请检查工具定义的 OpenAPI Schema 是否符合规范，特别是 $ref 引用是否正确
+        '502':
+          description: 上游服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ontology_query_error:
+                  summary: 行动查询服务不可用
+                  value:
+                    code: SERVICE_UNAVAILABLE
+                    description: 行动查询接口调用失败
+                    detail:
+                      service: ontology-query
+                      error: Connection timeout
+                    solution: 请检查 ontology-query 服务是否正常运行，或稍后重试
+                toolbox_error:
+                  summary: 工具箱服务不可用
+                  value:
+                    code: SERVICE_UNAVAILABLE
+                    description: 工具详情接口调用失败
+                    detail:
+                      service: agent-operator-integration
+                      error: 404 Not Found
+                    solution: 请检查 agent-operator-integration 服务是否正常运行，以及工具是否存在
+
+components:
+  schemas:
+    ActionRecallRequest:
+      type: object
+      required:
+        - kn_id
+        - at_id
+        - unique_identity
+      properties:
+        kn_id:
+          type: string
+          description: 业务知识网络ID
+          example: kn_medical
+        at_id:
+          type: string
+          description: 行动类型ID
+          example: generate_treatment_plan
+        unique_identity:
+          type: object
+          description: |
+            对象的唯一标识，键值对形式。
+            - key: 主键属性名
+            - value: 属性值（支持 string, number, boolean 类型）
+
+            **注意：** 当前版本仅支持单个对象标识（unique_identity），不支持多个对象（unique_identities）
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: integer
+          example:
+            disease_id: disease_000001
+          minProperties: 1
+
+    ActionRecallResponse:
+      type: object
+      required:
+        - _dynamic_tools
+      properties:
+        headers:
+          type: object
+          description: HTTP Header 参数
+          additionalProperties: true
+          example:
+            x-account-id: test
+            x-account-type: user
+        _dynamic_tools:
+          type: array
+          description: 动态工具列表，每个元素代表一个可用的行动工具
+          items:
+            $ref: '#/components/schemas/DynamicTool'
+
+    DynamicTool:
+      type: object
+      required:
+        - name
+        - description
+        - parameters
+        - api_url
+        - original_schema
+        - fixed_params
+      properties:
+        name:
+          type: string
+          description: 工具名称，来自工具详情的 name 字段
+          example: 根据单个对象类查询对象实例
+        description:
+          type: string
+          description: 工具描述，来自工具详情的 description 字段
+          example: 该接口基于业务知识网络语义检索接口返回的对象类定义，查询具体的对象实例数据。
+        parameters:
+          type: object
+          description: |
+            符合 OpenAI Function Call 规范的参数 Schema。
+
+            **转换规则：**
+            - 扁平化所有 path/query/header/body 参数到一个 properties 对象
+            - 不保留参数位置信息（in: path/query/header/body）
+            - 合并所有位置的 required 参数到顶层 required 数组
+            - 基本的 $ref 解析（MVP 版本不处理复杂嵌套）
+          properties:
+            type:
+              type: string
+              enum:
+                - object
+              example: object
+            properties:
+              type: object
+              description: 参数定义，key 为参数名，value 为参数 schema
+              additionalProperties: true
+            required:
+              type: array
+              description: 必填参数列表
+              items:
+                type: string
+          example:
+            type: object
+            properties:
+              kn_id:
+                type: string
+                description: 业务知识网络ID
+              ot_id:
+                type: string
+                description: 对象类ID
+              condition:
+                type: object
+                description: 过滤条件
+            required:
+              - kn_id
+              - ot_id
+        api_url:
+          type: string
+          format: uri
+          description: |
+            工具执行的请求URL，用于实际调用工具。
+          example: http://127.0.0.1:9000/api/agent-operator-integration/internal-v1/tool-box/e59f35f8/proxy/7acb8add
+        original_schema:
+          type: object
+          description: |
+            工具的原始 OpenAPI 定义（api_spec），保留完整的工具元数据。
+
+            **用途：**
+            - 供调用方判断参数位置（path/query/header/body）
+            - 供调用方组装实际的 HTTP 请求
+            - 提供完整的 schema 定义（包括 $ref 引用）
+          properties:
+            parameters:
+              type: array
+              description: API 参数定义
+              items:
+                type: object
+            request_body:
+              type: object
+              description: 请求体定义
+            responses:
+              type: array
+              description: 响应定义
+              items:
+                type: object
+            components:
+              type: object
+              description: 组件定义（包括 schemas）
+          additionalProperties: true
+        fixed_params:
+          $ref: '#/components/schemas/FixedParams'
+        api_call_strategy:
+          type: string
+          description: 结果处理策略， 固定值为 kn_action_recall
+          example: kn_action_recall
+    FixedParams:
+      type: object
+      required:
+        - header
+        - path
+        - query
+        - body
+      description: |
+        已实例化的固定参数，来自行动查询的 actions[0].parameters。
+
+        **重要说明：**
+        - 这些参数已经根据对象实例进行了实例化
+        - 调用方需要将这些参数与 LLM 生成的动态参数合并
+        - 参数位置（header/path/query/body）的判断可以参考 original_schema
+
+        **参数来源：**
+        - 行动查询接口返回的 actions[0].parameters
+        - 不包括 dynamic_params（由 LLM 动态生成）
+      properties:
+        header:
+          type: object
+          description: HTTP Header 参数
+          additionalProperties: true
+          example:
+            x-account-id: test
+            x-account-type: user
+        path:
+          type: object
+          description: URL Path 参数
+          additionalProperties: true
+          example:
+            kn_id: kn_medical
+        query:
+          type: object
+          description: URL Query 参数
+          additionalProperties: true
+          example:
+            limit: 10
+        body:
+          type: object
+          description: Request Body 参数
+          additionalProperties: true
+          example:
+            condition:
+              field: status
+              operation: "=="
+              value: active
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+          example: INVALID_REQUEST
+        description:
+          type: string
+          description: 错误描述
+          example: unique_identity 格式错误
+        detail:
+          type: object
+          description: 错误详情
+          example:
+            field: unique_identity
+            error: must be an object
+        solution:
+          type: string
+          description: 解决方案
+          example: 请确保 unique_identity 是一个包含至少一个属性的对象
+        link:
+          type: string
+          description: 错误链接
+          example: https://docs.example.com/errors/invalid-request
+
+  securitySchemes:
+    AccountAuth:
+      type: apiKey
+      in: header
+      name: x-account-id
+      description: 账户 ID 认证
+
+security:
+  - AccountAuth: []
+

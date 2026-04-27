@@ -1,0 +1,8 @@
+kweaver:
+  name: KWeaver Team
+  title: Open-Source Decision Intelligence AI Ecosystem
+  url: https://github.com/kweaver-ai/kweaver-core
+  image_url: https://github.com/kweaver-ai.png
+  page: true
+  socials:
+    github: kweaver-ai

@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.moduleName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    module: {{ .Values.moduleName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      module: {{ .Values.moduleName }}
+  template:
+    metadata:
+      labels:
+        module: {{ .Values.moduleName }}
+    spec:
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      dnsConfig:
+        options:
+          - name: single-request-reopen
+          - name: use-vc
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      {{- if .Values.antiAffinity.enabled }}
+      affinity:
+        {{- if eq .Values.antiAffinity.rule "soft" }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: module
+                      operator: In
+                      values:
+                        - {{ .Values.moduleName }}
+        {{- else if eq .Values.antiAffinity.rule "hard" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                  - key: module
+                    operator: In
+                    values:
+                      - {{ .Values.moduleName }}
+        {{- end }}
+      {{- end }}
+      containers:
+      - name: vega-backend
+        image: {{ template "vega-backend.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - name: manager
+            containerPort: {{ .Values.service.vegaBackend.port }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.vegaBackend.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 30
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.vegaBackend.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 30
+          failureThreshold: 3
+        env:
+          - name: TZ
+            value: {{ .Values.env.timezone }}
+          - name: LANG
+            value: {{ .Values.env.language }}
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          {{- if .Values.depServices.rds.type }}
+          - name: DB_TYPE
+            value: {{ .Values.depServices.rds.type | quote }}
+          {{- end }}
+          {{- if .Values.depServices.mq.mqType }}
+          - name: MQ_TYPE
+            value: {{ .Values.depServices.mq.mqType | quote }}
+          {{- end }}
+          - name: AUTH_ENABLED
+            value: {{ .Values.auth.enabled | quote }}
+          - name: DM_SVC_PATH
+            value: /opt/vega-backend/config
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+          - name: {{ .Values.moduleName }}-cm
+            mountPath: /opt/vega-backend/config
+          {{- if .Values.config.crypto.enabled }}
+          - name: {{ .Values.moduleName }}-secret
+            mountPath: /opt/vega-backend/secret-config
+            readOnly: true
+          {{- end }}
+      restartPolicy: Always
+      volumes:
+      - name: {{ .Values.moduleName }}-cm
+        configMap:
+          name: {{ .Values.moduleName }}-cm
+      {{- if .Values.config.crypto.enabled }}
+      - name: {{ .Values.moduleName }}-secret
+        secret:
+          secretName: {{ .Values.moduleName }}-secret
+          items:
+            - key: rsa_public_key.pem
+              path: rsa_public_key.pem
+            - key: rsa_private_key_pkcs8.pem
+              path: rsa_private_key_pkcs8.pem
+      {{- end }}

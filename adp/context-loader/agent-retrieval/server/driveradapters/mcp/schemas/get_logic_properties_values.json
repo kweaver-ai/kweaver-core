@@ -1,0 +1,46 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "ot_id": {
+        "type": "string",
+        "description": "对象类型ID"
+      },
+      "query": {
+        "type": "string",
+        "description": "用户查询，需含时间、统计维度、业务上下文"
+      },
+      "_instance_identities": {
+        "type": "array",
+        "description": "对象实例标识数组。必须从 query_object_instance 或 query_instance_subgraph 的 _instance_identity 字段提取，不可臆造。按原顺序组成数组。",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "properties": {
+        "type": "array",
+        "description": "逻辑属性名列表（metric/operator）。必须为 Schema 中存在的逻辑属性",
+        "items": { "type": "string" }
+      },
+      "additional_context": {
+        "type": "string",
+        "description": "可选。补充 timezone、instant、step 等上下文"
+      }
+    },
+    "required": ["ot_id", "query", "_instance_identities", "properties"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "datas": {
+        "type": "array",
+        "description": "逻辑属性结果列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

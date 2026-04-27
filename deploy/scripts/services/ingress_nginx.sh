@@ -91,6 +91,13 @@ install_ingress_nginx() {
             --set controller.hostNetwork=true
             --set controller.dnsPolicy=ClusterFirstWithHostNet
             --set controller.service.type=ClusterIP
+            --set controller.containerPort.http="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.containerPort.https="${INGRESS_NGINX_HTTPS_PORT:-443}"
+            --set controller.hostPort.enabled=true
+            --set controller.hostPort.ports.http="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.hostPort.ports.https="${INGRESS_NGINX_HTTPS_PORT:-443}"
+            --set controller.extraArgs."http-port"="${INGRESS_NGINX_HTTP_PORT:-80}"
+            --set controller.extraArgs."https-port"="${INGRESS_NGINX_HTTPS_PORT:-443}"
         )
     else
         helm_args+=(
@@ -137,11 +144,11 @@ install_ingress_nginx() {
     log_info "  Namespace: ingress-nginx"
     log_info "  IngressClass: ${INGRESS_NGINX_CLASS}"
     if [[ "${INGRESS_NGINX_HOSTNETWORK}" == "true" ]]; then
-        log_info "  Mode: hostNetwork (ports 80/443 on node)"
+        log_info "  Mode: hostNetwork (ports ${INGRESS_NGINX_HTTP_PORT:-80}/${INGRESS_NGINX_HTTPS_PORT:-443} on node)"
         log_info ""
         log_info "To access the ingress controller:"
-        log_info "  http://<node-ip>:80"
-        log_info "  https://<node-ip>:443"
+        log_info "  http://<node-ip>:${INGRESS_NGINX_HTTP_PORT:-80}"
+        log_info "  https://<node-ip>:${INGRESS_NGINX_HTTPS_PORT:-443}"
     else
         log_info "  Service type: NodePort"
         log_info "  HTTP NodePort: ${INGRESS_NGINX_HTTP_PORT}"
@@ -165,20 +172,37 @@ install_ingress_nginx() {
 uninstall_ingress_nginx() {
     log_info "Uninstalling ingress-nginx-controller from namespace ingress-nginx..."
 
-    # Uninstall Helm release
+    # 1. Uninstall Helm release
     if helm status ingress-nginx -n ingress-nginx >/dev/null 2>&1; then
         log_info "Removing Helm release: ingress-nginx"
-        helm uninstall ingress-nginx -n ingress-nginx
+        helm uninstall ingress-nginx -n ingress-nginx --timeout=120s || true
     else
         log_info "Helm release ingress-nginx not found, skipping Helm uninstall"
     fi
 
-    # Delete namespace
-    kubectl delete namespace ingress-nginx 2>/dev/null || true
-
-    # Clean up any lingering resources
+    # 2. Clean up cluster-scoped resources (not removed by namespace deletion)
     kubectl delete validatingwebhookconfiguration ingress-nginx-admission 2>/dev/null || true
     kubectl delete mutatingwebhookconfiguration ingress-nginx-admission 2>/dev/null || true
+    kubectl delete ingressclass "${INGRESS_NGINX_CLASS:-class-443}" 2>/dev/null || true
+
+    # 3. If namespace still exists, clean up remaining resources
+    if kubectl get namespace ingress-nginx >/dev/null 2>&1; then
+        log_info "Cleaning up remaining resources in ingress-nginx namespace..."
+        kubectl -n ingress-nginx delete deploy,daemonset,replicaset,statefulset --all --timeout=30s 2>/dev/null || true
+        kubectl -n ingress-nginx delete svc,endpoints,configmap,secret,sa,role,rolebinding --all --timeout=30s 2>/dev/null || true
+        kubectl -n ingress-nginx delete job --all --timeout=30s 2>/dev/null || true
+
+        # Force-delete any pods stuck in Terminating
+        local stuck_pods
+        stuck_pods=$(kubectl -n ingress-nginx get pods -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+        if [[ -n "${stuck_pods}" ]]; then
+            log_warn "Force-deleting stuck pods: ${stuck_pods}"
+            kubectl -n ingress-nginx delete pods --all --force --grace-period=0 2>/dev/null || true
+        fi
+
+        # Delete namespace
+        kubectl delete namespace ingress-nginx --timeout=60s 2>/dev/null || true
+    fi
 
     log_info "ingress-nginx-controller uninstall done"
 }

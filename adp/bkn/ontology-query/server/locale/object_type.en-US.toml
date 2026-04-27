@@ -1,0 +1,80 @@
+# ObjectType
+[OntologyQuery.ObjectType.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InvalidParameter.DynamicParams]
+Description = "Invalid DynamicParams"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None" 
+
+[OntologyQuery.ObjectType.InvalidParameter.IgnoringStoreCache]
+Description = "Invalid Ignoring Store Cache"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InvalidParameter.IncludeTypeInfo]
+Description = "Invalid IncludeTypeInfo"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None" 
+
+[OntologyQuery.ObjectType.InvalidParameter.SmallModel]
+Description = "Invalid Small Model Parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.UnsupportLogicPropertyParameterSource]
+Description = "Unsupported Logic Property Parameter Source"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None" 
+
+[OntologyQuery.ObjectType.ObjectTypeNotFound]
+Description = "The Object Type Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.SmallModelNotFound]
+Description = "The Small Model Does Not Exist"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.ExecuteOperatorFailed]
+Description = "Execute Operator Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.GetAgentOperatorByIDFailed]
+Description = "Get Agent Operator By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.GetMetricDataByIDFailed]
+Description = "Get Metric Data By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.GetViewDataByIDFailed]
+Description = "Get View Data By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.GetObjectTypesByIDFailed]
+Description = "Get Object Types By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.ObjectType.InternalError.GetSmallModelByIDFailed]
+Description = "Get Small Model By ID Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+ 
+[OntologyQuery.ObjectType.InternalError.ProcessLogicPropertiesFailed]
+Description = "Process Logic Properties Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

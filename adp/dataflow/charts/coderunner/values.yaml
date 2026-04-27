@@ -1,0 +1,135 @@
+# Default values for collectapp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+namespace: anyshare
+
+image:
+  registry: acr.aishu.cn
+  repository: dip/coderunner
+  tag: 1.6.2-feature-680406
+  dataflowtools:
+    repository: dip/dataflowtools
+    tag: 1.6.2-feature-680406
+  pullPolicy: IfNotPresent
+
+auth:
+  enabled: true
+
+service:
+  type: ClusterIP
+  port: 8680
+  publicPort: 8682
+  privatePort: 8683
+  coderunnerPrefix: /api/coderunner
+  coderunnerLogLevel: INFO
+  debug: "false"
+  language: zh_CN
+  logger: stdout
+  name: coderunner
+  pythonMaxWorkers: 300
+
+telemetry:
+  log_level: "error"
+  log_enabled: false
+  trace_enabled: false
+
+depServices:
+  ocr-engine:
+    t4th:
+      switch: false
+      host: 127.0.0.1
+      port: 100
+      protocol: http
+      connectType: ocr
+  rds:
+    host: mariadb-mariadb-master.resource
+    database: kweaver
+    password: xxxxxx
+    port: 3330
+    type: MariaDB
+    user: anyshare
+    system_id: ""
+  hydra:
+    administrativeHost: hydra-admin
+    administrativePort: "4445"
+  user-management:
+    privateHost: user-management-private
+    privatePort: "30980"
+  ossgatewaymanager:
+    privateHost: ossgatewaymanager-private
+    privatePort: "9002"
+  open-doc:
+    publicHost: open-doc-public
+    publicPort: "30998"
+  docset:
+    privateHost: docset-private
+    privatePort: 32597
+  mq:
+    auth: {}
+    connectorType: nsq
+    mqHost: proton-mq-nsq-nsqd.resource
+    mqLookupdHost: proton-mq-nsq-nsqlookupd.resource
+    mqLookupdPort: 4161
+    mqPort: 4151
+    mqType: nsq
+  redis:
+    certName: cert.pem
+    connectInfo:
+      host: ""
+      port: 26379
+      masterHost: ""
+      masterPort: 26379
+      slaveHost: ""
+      slavePort: 26379
+      masterGroupName: mymaster
+      password: xxxxxx
+      sentinelHost: proton-redis-proton-redis-sentinel.resource
+      sentinelPassword: xxxxxx
+      sentinelPort: 26379
+      sentinelUsername: root
+      username: root
+    connectType: sentinel
+    enableSSL: false
+    secretName: redis-ssl-secret
+    keyName: key.pem
+
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+
+nameOverride: ""
+fullnameOverride: ""
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  runAsGroup: 5000
+  runAsUser: 5000
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 100Mi
+  limits:
+    cpu: 4
+    memory: 8192Mi
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

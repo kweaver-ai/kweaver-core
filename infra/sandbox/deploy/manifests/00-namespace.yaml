@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sandbox-system
+  labels:
+    name: sandbox-system
+    app: sandbox-control-plane

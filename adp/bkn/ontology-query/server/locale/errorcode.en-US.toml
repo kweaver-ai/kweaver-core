@@ -1,0 +1,71 @@
+# Common
+[OntologyQuery.InvalidParameter.Condition]
+Description = "Invalid Condition"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.InvalidParameter.OverrideMethod]
+Description = "Invalid Override Method"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.NullParameter.OverrideMethod]
+Description = "Override Method Is Empty"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[OntologyQuery.InvalidRequestHeader.ContentType]
+Description = "Invalid ContentType"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.MarshalDataFailed]
+Description = "An internal server error occurred while marshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.UnMarshalDataFailed]
+Description = "An internal server error occurred while unMarshaling data"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[OntologyQuery.InternalError.SearchDataFromOpensearchFailed]
+Description = "An internal server error occurred while search data from opensearch"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.InvalidParameter]
+Description = "Invalid metric request parameter"
+Solution = "Please check the request body and path parameters."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.InvalidDataSource]
+Description = "Object type data source must be resource for BKN native metric execution"
+Solution = "Configure object type data_source.type to resource and a valid resource id."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.UnsupportedScope]
+Description = "Metric scope is not supported for query execution"
+Solution = "Only object_type scope is supported in this release."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.NotFound]
+Description = "Metric definition was not found"
+Solution = "Verify metric_id, kn_id, and branch."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.ObjectTypeNotFound]
+Description = "Object type for metric scope was not found"
+Solution = "Verify scope_ref and object type exists in the knowledge network."
+ErrorLink = "None"
+
+[OntologyQuery.Metric.InternalError.QueryFailed]
+Description = "Metric query execution failed"
+Solution = "Please try again or contact support if the error persists."
+ErrorLink = "None"
+

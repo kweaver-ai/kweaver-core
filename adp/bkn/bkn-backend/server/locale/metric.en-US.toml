@@ -1,0 +1,50 @@
+# Metric
+[BknBackend.Metric.InvalidParameter]
+Description = "Invalid metric request parameter"
+Solution = "Please check the request body and query parameters."
+ErrorLink = "None"
+
+[BknBackend.Metric.NullParameter.Name]
+Description = "Metric name is required"
+Solution = "Provide a non-empty metric name."
+ErrorLink = "None"
+
+[BknBackend.Metric.LengthExceeded.Name]
+Description = "Metric name is too long"
+Solution = "Shorten the name within the allowed length."
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError]
+Description = "Internal error while processing metrics"
+Solution = "Please retry or contact support."
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError.BeginTransactionFailed]
+Description = "Failed to begin database transaction"
+Solution = "Please retry. If the error persists, contact support."
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError.CheckMetricIfExistFailed]
+Description = "Failed to check whether the metric exists"
+Solution = "Please retry or contact support."
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError.GetMetricsByIDsFailed]
+Description = "Failed to load metrics by IDs"
+Solution = "Please retry or contact support."
+ErrorLink = "None"
+
+[BknBackend.Metric.NotFound]
+Description = "Metric not found"
+Solution = "Verify metric ID and branch."
+ErrorLink = "None"
+
+[BknBackend.Metric.Duplicated.Name]
+Description = "A metric with the same name already exists"
+Solution = "Use another name or update the existing metric."
+ErrorLink = "None"
+
+[BknBackend.Metric.InvalidMetricType]
+Description = "Metric type is not allowed"
+Solution = "Only atomic metrics are supported in strict mode."
+ErrorLink = "None"

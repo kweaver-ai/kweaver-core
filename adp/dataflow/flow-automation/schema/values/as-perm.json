@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "权限信息",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "allow": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "display",
+                    "preview",
+                    "cache",
+                    "download",
+                    "create",
+                    "modify",
+                    "delete"
+                ]
+            }
+        },
+        "deny": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "display",
+                    "preview",
+                    "cache",
+                    "download",
+                    "create",
+                    "modify",
+                    "delete"
+                ]
+            }
+        }
+    }
+}

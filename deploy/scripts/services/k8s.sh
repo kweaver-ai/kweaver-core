@@ -113,7 +113,9 @@ init_k8s_master() {
     disable_selinux
     configure_system
     
-    # Get the default network interface IP if not specified
+    # Resolve API server advertise address
+    # This must be a real IP bound to a local network interface (not a domain
+    # or NAT public IP), because kubeadm binds the API server to it.
     if [[ -z "${API_SERVER_ADVERTISE_ADDRESS}" ]]; then
         API_SERVER_ADVERTISE_ADDRESS=$(hostname -I | awk '{print $1}')
     fi
@@ -260,7 +262,7 @@ install_cni() {
     
     # Install Flannel CNI (ensure network CIDR matches POD_CIDR)
     # Note: Image addresses are already configured in the YAML file
-    read_or_fetch "${FLANNEL_MANIFEST_PATH}" "${FLANNEL_MANIFEST_URL}" | \
+    cat "${FLANNEL_MANIFEST_PATH}" | \
         sed "s|10.244.0.0/16|${POD_CIDR}|g" | \
         kubectl apply -f -
     
@@ -895,6 +897,13 @@ configure_system() {
     log_info "Loading kernel modules..."
     modprobe overlay 2>/dev/null || true
     modprobe br_netfilter 2>/dev/null || true
+
+    # Ensure required kernel modules load on boot
+    log_info "Configuring kernel modules to load on boot..."
+    mkdir -p /etc/modules-load.d 2>/dev/null || true
+    cat > /etc/modules-load.d/kubernetes.conf <<EOF
+br_netfilter
+EOF
     
     # Configure kernel parameters
     log_info "Configuring kernel parameters..."
@@ -934,24 +943,34 @@ reset_k8s() {
     
     # Confirmation prompt
     echo ""
-    echo "WARNING: This will reset Kubernetes and clean up CNI/kubeconfig files."
+    echo "WARNING: This will completely reset Kubernetes and clean up all certificates, containers, and configurations."
     echo "This action cannot be undone."
-    read -p "Type 'Y' or 'y' to confirm: " -r confirm
-    
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        log_info "Reset cancelled by user"
-        return 0
+
+    if [[ "${ASSUME_YES}" != "true" ]]; then
+        read -p "Type 'Y' or 'y' to confirm: " -r confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            log_info "Reset cancelled by user"
+            return 0
+        fi
+    else
+        log_info "Auto-confirmed (-y)."
     fi
     
     systemctl stop kubelet 2>/dev/null || true
     kubeadm reset -f 2>/dev/null || true
     
+    # 清理 kubelet 证书目录（关键！避免证书不匹配问题）
+    rm -rf /var/lib/kubelet/pki/* 2>/dev/null || true
+    
+    # 清理容器运行时相关（只清理容器，保留镜像）
+    crictl rm --all 2>/dev/null || true
+    
     rm -rf /etc/cni/net.d 2>/dev/null || true
     rm -rf /var/lib/cni 2>/dev/null || true
     rm -rf /root/.kube 2>/dev/null || true
     rm -f /etc/kubernetes/admin.conf 2>/dev/null || true
+    rm -f "${HOME}/.kweaver-ai/config.yaml" 2>/dev/null || true
     
     log_warn "Reset completed. iptables/IPVS rules are not automatically cleaned by this script."
     log_info "Kubernetes reset done"
 }
-

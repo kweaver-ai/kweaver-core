@@ -1,0 +1,38 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "at_id": {
+        "type": "string",
+        "description": "行动类型ID"
+      },
+      "_instance_identities": {
+        "type": "array",
+        "description": "对象实例标识列表（可选）。每个元素必须从 query_object_instance 或 query_instance_subgraph 的 _instance_identity 字段提取，不可臆造。",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "required": ["at_id"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "headers": {
+        "type": "object",
+        "description": "返回的 Header 信息",
+        "additionalProperties": true
+      },
+      "_dynamic_tools": {
+        "type": "array",
+        "description": "动态工具定义列表",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

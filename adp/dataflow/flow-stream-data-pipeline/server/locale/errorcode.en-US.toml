@@ -1,0 +1,204 @@
+[StreamDataPipeline.CountExceeded.Tags]
+Description = "The Number Of Tags Exceeds The Limit"
+Solution = "Please check whether the parameter is correct"
+ErrorLink = "None"
+
+[StreamDataPipeline.CountExceeded.Pipelines]
+Description = "The Number Of Pipelines Exceeds The Limit"
+Solution = "Please check whether the parameter is correct"
+ErrorLink = "None"
+
+[StreamDataPipeline.Duplicated.PipelineID]
+Description = "Pipeline ID Already Exists"
+Solution = "Please use a different Pipeline ID"
+ErrorLink = "None"
+
+[StreamDataPipeline.Duplicated.PipelineName]
+Description = "Pipeline Name Already Exists"
+Solution = "Please use a different Pipeline name"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Builtin]
+Description = "Invalid Built-in Parameter"
+Solution = "Please check the built-in parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Direction]
+Description = "Invalid Direction Parameter"
+Solution = "Please check the direction parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.IndexBase]
+Description = "Invalid Index Base Parameter"
+Solution = "Please check the index base parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Limit]
+Description = "Invalid Limit Parameter"
+Solution = "Please check the limit parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Offset]
+Description = "Invalid Offset Parameter"
+Solution = "Please check the offset parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.OutputType]
+Description = "Invalid Output Type"
+Solution = "Please check the output type parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.PipelineID]
+Description = "Invalid Pipeline ID"
+Solution = "Please check the Pipeline ID format"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.PipelineStatus]
+Description = "Invalid Pipeline Status"
+Solution = "Please check the Pipeline status"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.RequestBody]
+Description = "Invalid Request Body"
+Solution = "Please check the request body format"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Sort]
+Description = "Invalid Sort Parameter"
+Solution = "Please check the sort parameter"
+ErrorLink = "None"
+
+[StreamDataPipeline.InvalidParameter.Tag]
+Description = "Invalid Tag Parameter"
+Solution = "Please check the tag format"
+ErrorLink = "None"
+
+[StreamDataPipeline.LengthExceeded.Comment]
+Description = "Comment Length Exceeds Limit"
+Solution = "Please shorten the comment"
+ErrorLink = "None"
+
+[StreamDataPipeline.LengthExceeded.PipelineName]
+Description = "Pipeline Name Length Exceeds Limit"
+Solution = "Please shorten the Pipeline name"
+ErrorLink = "None"
+
+[StreamDataPipeline.LengthExceeded.Tag]
+Description = "Tag Length Exceeds Limit"
+Solution = "Please shorten the tag"
+ErrorLink = "None"
+
+[StreamDataPipeline.NullParameter.PipelineID]
+Description = "Pipeline ID Cannot Be Empty"
+Solution = "Please provide a Pipeline ID"
+ErrorLink = "None"
+
+[StreamDataPipeline.NullParameter.PipelineName]
+Description = "Pipeline Name Cannot Be Empty"
+Solution = "Please provide a Pipeline name"
+ErrorLink = "None"
+
+[StreamDataPipeline.NullParameter.IndexBaseType]
+Description = "Index Base Type Cannot Be Empty"
+Solution = "Please provide a base type value"
+ErrorLink = "None"
+
+[StreamDataPipeline.NullParameter.Tag]
+Description = "Tag Cannot Be Empty"
+Solution = "Please provide a tag value"
+ErrorLink = "None"
+
+[StreamDataPipeline.OutOfRange.CpuLimit]
+Description = "CPU Limit Out Of Range"
+Solution = "Please check the CPU limit value"
+ErrorLink = "None"
+
+[StreamDataPipeline.OutOfRange.MemoryLimit]
+Description = "Memory Limit Out Of Range"
+Solution = "Please check the memory limit value"
+ErrorLink = "None"
+
+[StreamDataPipeline.UnSupported.ResourceType]
+Description = "UnSupported Resource Type"
+Solution = "Please check the resource type"
+ErrorLink = "None"
+
+[StreamDataPipeline.NotFound.Pipeline]
+Description = "Pipeline Not Found"
+Solution = "Please check if the Pipeline exists"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.CheckPipelineIfExistFailed]
+Description = "Failed To Check If Pipeline Exists"
+Solution = "Please try again or contact administrator"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.CreatePipelineFailed]
+Description = "Failed To Create Pipeline"
+Solution = "Please try again or contact administrator"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.CreateTopicsFailed]
+Description = "Failed To Create Topics"
+Solution = "Please try again or contact administrator"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.DataBase]
+Description = "Database Error"
+Solution = "Please try again or contact administrator"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.DeleteTopicsFailed]
+Description = "Failed To Delete Topics"
+Solution = "Please try again or contact administrator"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.PauseNotRunningPipelineFailed]
+Description = "Failed To Pause Not Running Pipeline"
+Solution = "Please check the Pipeline status"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.GetIndexBaseByTypeFailed]
+Description = "Failed To Get Index Base Type"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[StreamDataPipeline.NotReady.Pipeline]
+Description = "Pipeline Not Ready"
+Solution = "Please wait for the Pipeline to be ready"
+ErrorLink = "None"
+
+[StreamDataPipeline.Unmarshall.Data]
+Description = "Failed To Unmarshal Data"
+Solution = "Please check the data format"
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.CheckPermissionFailed]
+Description = "An internal server error occurred while check permission"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.CreateResourcesFailed]
+Description = "An internal server error occurred while create resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.DeleteResourcesFailed]
+Description = "An internal server error occurred while delete resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.FilterResourcesFailed]
+Description = "An internal server error occurred while filter resources"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.UpdateResourceFailed]
+Description = "An internal server error occurred while update resource name"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[StreamDataPipeline.InternalError.MQPublishMsgFailed]
+Description = "An internal server error occurred while mq publish message"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"

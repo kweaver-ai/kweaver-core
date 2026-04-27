@@ -1,0 +1,138 @@
+# Agent Executor ConfigMap V2 (yaml配置文件)
+# 从老Chart复制，修改name为固定值
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-executor-yaml
+  namespace: {{ .Values.namespace }}
+data:
+  agent-executor.yaml: |
+    # agent-executor v2版本配置文件
+    # K8s部署时通过configmap-executor-v2.yaml挂载到 /sysvol/conf/ 目录
+    #
+    # 重要提示：
+    # 1. 请勿将包含敏感信息的配置文件提交到版本控制系统
+    # 2. 生产环境请使用强密码并定期更换
+    # 3. 建议使用密钥管理系统（Kubernetes Secrets, Vault等）存储敏感信息
+
+    # 1. app相关
+    app:
+      debug: {{ .Values.agentExecutor.debugMode }}
+      host_ip: "0.0.0.0"
+      port: {{ .Values.agentExecutor.port }}
+      host_prefix: "/api/agent-executor/v1"
+      host_prefix_v2: "/api/agent-executor/v2"
+      rps_limit: {{ .Values.agentExecutor.rps.limit }}
+      enable_system_log: {{ .Values.agentExecutor.enableSystemLog }}
+      log_level: "{{ .Values.agentExecutor.logLevel }}"
+      enable_dolphin_agent_verbose: {{ .Values.agentExecutor.enableDolphinAgentVerbose }}
+      log_conversation_session_init: {{ .Values.agentExecutor.logConversationSessionInit }}
+      is_write_exception_log_to_file: {{ .Values.agentExecutor.isWriteExceptionLogToFile }}
+
+    # 2. 结构化数据库相关
+    rds:
+      host: {{ .Values.depServices.rds.host | quote }}
+      port: {{ .Values.depServices.rds.port }}
+      dbname: {{ .Values.depServices.rds.database | quote }}
+      user: {{ .Values.depServices.rds.user | quote }}
+      password: {{ .Values.depServices.rds.password | quote }}
+      db_type: {{ .Values.depServices.rds.type | quote }}
+
+    # 3. redis数据库相关
+    redis:
+      # 连接类型: standalone, sentinel, master-slave
+      cluster_mode: {{ .Values.depServices.redis.connectType | quote }}
+      {{- if eq .Values.depServices.redis.connectType "sentinel" }}
+      # sentinel模式配置
+      host: {{ .Values.depServices.redis.connectInfo.sentinelHost | quote }}
+      port: {{ .Values.depServices.redis.connectInfo.sentinelPort | quote }}
+      user: {{ .Values.depServices.redis.connectInfo.username | quote }}
+      password: {{ .Values.depServices.redis.connectInfo.password | quote }}
+      sentinel_master: {{ .Values.depServices.redis.connectInfo.masterGroupName | quote }}
+      sentinel_user: {{ .Values.depServices.redis.connectInfo.sentinelUsername | quote }}
+      sentinel_password: {{ .Values.depServices.redis.connectInfo.sentinelPassword | quote }}
+      {{- else if eq .Values.depServices.redis.connectType "standalone" }}
+      # standalone模式配置
+      host: {{ .Values.depServices.redis.connectInfo.host | quote }}
+      port: {{ .Values.depServices.redis.connectInfo.port | quote }}
+      user: {{ .Values.depServices.redis.connectInfo.username | quote }}
+      password: {{ .Values.depServices.redis.connectInfo.password | quote }}
+      {{- else if eq .Values.depServices.redis.connectType "master-slave" }}
+      # master-slave模式配置
+      read_host: {{ .Values.depServices.redis.connectInfo.slaveHost | quote }}
+      read_port: {{ .Values.depServices.redis.connectInfo.slavePort | quote }}
+      read_user: {{ .Values.depServices.redis.connectInfo.username | quote }}
+      read_password: {{ .Values.depServices.redis.connectInfo.password | quote }}
+      write_host: {{ .Values.depServices.redis.connectInfo.masterHost | quote }}
+      write_port: {{ .Values.depServices.redis.connectInfo.masterPort | quote }}
+      write_user: {{ .Values.depServices.redis.connectInfo.username | quote }}
+      write_password: {{ .Values.depServices.redis.connectInfo.password | quote }}
+      {{- end }}
+
+    # 4. 图数据库相关
+    graphdb:
+      host: {{ .Values.depServices.graphDatabase.host | quote }}
+      port: {{ .Values.depServices.graphDatabase.port | quote }}
+      type: {{ .Values.depServices.graphDatabase.type | quote }}
+      {{- if eq .Values.depServices.graphDatabase.type "nebulaGraph" }}
+      read_only_user: {{ .Values.depServices.graphDatabase.readonlyuser | quote }}
+      read_only_password: {{ .Values.depServices.graphDatabase.readonlypassword | quote }}
+      {{- end }}
+
+    # 5. opensearch
+    opensearch:
+      host: {{ .Values.depServices.opensearch.host | quote }}
+      port: {{ .Values.depServices.opensearch.port | quote }}
+      user: {{ .Values.depServices.opensearch.user | quote }}
+      password: {{ .Values.depServices.opensearch.password | quote }}
+
+    # 6. 依赖的服务地址
+    services:
+      mf_model_api:
+        host: "mf-model-api"
+        port: "9898"
+      agent_executor:
+        host: "localhost"
+        port: "30778"
+      agent_factory:
+        host: "localhost"
+        port: "13020"
+      agent_operator_integration:
+        host: "agent-operator-integration"
+        port: "9000"
+      agent_memory:
+        host: "localhost"
+        port: "30790"
+
+    # 7. 记忆相关
+    memory:
+      limit: 50
+      threshold: 0.5
+      rerank_threshold: 0.1
+
+    # 9. 一些特性控制
+    features:
+      use_explore_block_v2: {{ not .Values.agentExecutor.doNotUseExploreBlockV2 }}
+      disable_dolphin_sdk_llm_cache: {{ .Values.agentExecutor.disableDolphinSdkLLMCache }}
+      enable_dolphin_agent_output_variables_ctrl: {{ .Values.agentExecutor.enableDolphinAgentOutputVariablesCtrl }}
+      is_skill_agent_need_progress: {{ .Values.agentExecutor.isSkillAgentNeedProgress }}
+      enable_traceai_evidence: {{ .Values.agentExecutor.enableTraceAiEvidence }}
+      skill_enabled: {{ .Values.agentExecutor.skillEnabled | default true }}
+
+    # 10. o11y 相关
+    o11y:
+      service_name: "agent-executor"
+      service_version: "1.0.0"
+      environment: {{ .Values.otel.environment | quote }}
+      log_enabled: {{ .Values.otel.log.enabled }}
+      log_level: {{ .Values.otel.log.level | quote }}
+      trace_enabled: {{ .Values.otel.trace.enabled }}
+      trace_endpoint: {{ .Values.otel.otlp_endpoint | quote }}
+      trace_sampling_rate: {{ .Values.otel.trace.sampling_rate }}
+
+    # 11. 对话日志相关配置
+    dialog_logging:
+      enable_dialog_logging: false
+      use_single_log_file: false
+      single_profile_file_path: "./data/dialog_single_file_logs/profile.log"
+      single_trajectory_file_path: "./data/dialog_single_file_logs/trajectory.log"

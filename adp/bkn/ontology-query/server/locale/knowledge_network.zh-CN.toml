@@ -1,0 +1,69 @@
+[OntologyQuery.KnowledgeNetwork.NullParameter.Direction]
+Description = "方向为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.SourceObjectTypeId]
+Description = "起点对象类为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.TypePathObjectTypes]
+Description = "关系类路径中的节点对象类为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.NullParameter.TypePathRelationTypes]
+Description = "关系类路径中的边（关系类）为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter]
+Description = "请求参数不合法"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.Direction]
+Description = "路径方向参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.IncludeTypeInfo]
+Description = "是否包含类信息参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.PathLength]
+Description = "探索路径长度的参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InvalidParameter.TypePath]
+Description = "关系类路径参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.KnowledgeNetworkNotFound]
+Description = "业务知识网络不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.RelationTypeNotFound]
+Description = "关系类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetViewDataByIDFailed]
+Description = "获取视图数据失败错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetKnowledgeNetworksByIDFailed]
+Description = "获取业务知识网络信息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.KnowledgeNetwork.InternalError.GetRelationTypeFailed]
+Description = "获取关系类信息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

@@ -1,0 +1,107 @@
+{
+  "conponentDefineType": "helm/service",
+  "name": "mf-model-manager",
+  "version": "1.0.0",
+  "configSchema": {
+    "title": "mf-model-manager",
+    "description": "组件配置定义",
+    "type": "object",
+    "properties": {
+      "resources": {
+        "type": "object",
+        "title": "容器资源控制",
+        "properties": {
+          "requests": {
+            "type": "object",
+            "description": "容器运行需要的最小资源分配",
+            "properties": {
+              "memory": {
+                "type": "string",
+                "title": "内存"
+              },
+              "cpu": {
+                "type": "string",
+                "title": "cpu"
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "description": "容器运行最大资源限制",
+            "properties": {
+              "memory": {
+                "type": "string",
+                "title": "内存"
+              },
+              "cpu": {
+                "type": "string",
+                "title": "cpu"
+              }
+            }
+          },
+        "text_vector_mapping": {
+            "type": "object",
+            "description": "文本向量映射",
+            "properties": {
+              "content": {
+                "type": "string",
+                "title": "映射规则"
+              }
+            }
+          },
+        "vlm_vector_mapping": {
+            "type": "object",
+            "description": "多模态向量映射",
+            "properties": {
+              "content": {
+                "type": "string",
+                "title": "映射规则"
+              }
+            }
+          },
+        "text_reranker_mapping": {
+            "type": "object",
+            "description": "文本语义相似度重排序映射",
+            "properties": {
+              "content": {
+                "type": "string",
+                "title": "映射规则"
+              }
+            }
+          }
+        }
+      },
+      "observability": {
+        "type": "object",
+        "title": "可观测配置",
+        "properties": {
+            "logEnabled" : {
+                "type": "string",
+                "title": "是否将日志上报到数据平台,只接受true或者false"
+            }
+        }
+    },
+      "replicaCount": {
+        "type": "number",
+        "title": "服务副本数"
+      }
+    }
+  },
+  "dependence": [
+    {
+      "name": "rds"
+    },
+    {
+      "name": "opensearch"
+    },
+    {
+      "name": "model-management-dm-pre"
+    },
+    {
+      "name": "redis"
+    },
+    {
+      "name": "mq"
+    }
+  ]
+}

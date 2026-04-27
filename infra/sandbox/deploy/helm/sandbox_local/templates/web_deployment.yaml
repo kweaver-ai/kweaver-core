@@ -1,0 +1,137 @@
+{{- if .Values.web.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sandbox.webName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: web
+  {{- with .Values.web.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.web.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.web.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: {{ include "sandbox.fullname" . }}
+    component: web
+
+---
+{{- if .Values.web.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "sandbox.webName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: web
+  {{- with .Values.web.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" | default "nginx" | quote }}
+  rules:
+  - http:
+      paths:
+        {{- range .Values.web.ingress.paths }}
+        - path: {{ .path }}
+          pathType: {{ .pathType }}
+          backend:
+            service:
+              name: {{ include "sandbox.webName" $ }}
+              port:
+                number: {{ $.Values.web.service.port }}
+        {{- end }}
+{{- end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sandbox.webName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "sandbox.fullname" . }}
+      component: web
+  template:
+    metadata:
+      labels:
+        app: {{ include "sandbox.fullname" . }}
+        component: web
+    spec:
+      {{- with .Values.web.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-control-plane
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "sandbox.controlPlaneName" . }}.{{ .Values.namespace }}.svc.cluster.local {{ .Values.controlPlane.service.port }}; do
+                echo "Waiting for Control Plane..."
+                sleep 2
+              done
+              echo "Control Plane is ready!"
+      containers:
+        - name: web
+          image: "{{- if .Values.web.image.registry }}{{ .Values.web.image.registry }}/{{ else if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          # NOTE: DO NOT add VITE_API_BASE_URL environment variable here.
+          # The frontend uses runtime URL detection via getApiBaseUrl()
+          # which dynamically infers the API URL from the browser's location.
+          # This ensures compatibility with Ingress, NodePort, LoadBalancer,
+          # and port-forwarding access methods.
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+      {{- with .Values.web.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

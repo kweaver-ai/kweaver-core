@@ -1,0 +1,313 @@
+{{- if semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: apps/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: agent-factory
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: agent-factory
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap-factory.yaml") . | sha256sum }}
+      labels:
+        app: agent-factory
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - agent-factory
+            topologyKey: "kubernetes.io/hostname"
+      {{- if ne .Values.runMode "dev" }}
+      {{- if eq .Values.enableSecurityContext true }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: agent-factory
+          {{- if ne .Values.runMode "dev" }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.service.repository }}:{{ .Values.image.service.tag }}"
+          imagePullPolicy: {{ .Values.image.service.pullPolicy }}
+          {{- else}}
+          image: "acr.aishu.cn/client/godevenv:1.16.2"
+          {{- end}}
+
+          env:
+              - name: AGENT_FACTORY_DISABLE_PMS_CHECK
+                value: {{ .Values.env.disable_pms_check | quote }}
+              - name: SERVICE_NAME
+                value: agent-factory
+              - name: DB_TYPE
+                value: {{ .Values.depServices.rds.type | quote }}
+            {{- if .Values.service.loggerOutput}}
+              - name: LOGOUT
+                value: {{ .Values.service.loggerOutput }}
+            {{- end}}
+            {{- if .Values.env.language}}
+              - name: LANG
+                value: {{ .Values.env.language }}
+              - name: LC_ALL
+                value: {{ .Values.env.language }}
+            {{- end}}
+            {{- if .Values.env.timezone}}
+              - name: TZ
+                value: {{ .Values.env.timezone }}
+            {{- end}}
+
+              # ========== Memory特有环境变量 (从agent-memory-yaml ConfigMap获取) ==========
+              - name: HOST_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.hostIP
+              - name: RDSHOST
+                valueFrom:
+                  configMapKeyRef:
+                    key: RDSHOST
+                    name: agent-memory-yaml
+              - name: RDSPORT
+                valueFrom:
+                  configMapKeyRef:
+                    key: RDSPORT
+                    name: agent-memory-yaml
+              - name: RDSUSER
+                valueFrom:
+                  configMapKeyRef:
+                    key: RDSUSER
+                    name: agent-memory-yaml
+              - name: RDSPASS
+                valueFrom:
+                  configMapKeyRef:
+                    key: RDSPASS
+                    name: agent-memory-yaml
+              - name: RDSDBNAME
+                valueFrom:
+                  configMapKeyRef:
+                    key: RDSDBNAME
+                    name: agent-memory-yaml
+              - name: GRAPHDB_TYPE
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_TYPE
+                    name: agent-memory-yaml
+              - name: GRAPHDB_HOST
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_HOST
+                    name: agent-memory-yaml
+              - name: GRAPHDB_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_PORT
+                    name: agent-memory-yaml
+              - name: GRAPHDB_USER
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_USER
+                    name: agent-memory-yaml
+              - name: GRAPHDB_PASSWORD
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_PASSWORD
+                    name: agent-memory-yaml
+              - name: OPENSEARCH_HOST
+                valueFrom:
+                  configMapKeyRef:
+                    key: OPENSEARCH_HOST
+                    name: agent-memory-yaml
+              - name: OPENSEARCH_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    key: OPENSEARCH_PORT
+                    name: agent-memory-yaml
+              - name: OPENSEARCH_USER
+                valueFrom:
+                  configMapKeyRef:
+                    key: OPENSEARCH_USER
+                    name: agent-memory-yaml
+              - name: OPENSEARCH_PASS
+                valueFrom:
+                  configMapKeyRef:
+                    key: OPENSEARCH_PASS
+                    name: agent-memory-yaml
+              {{- if eq .Values.depServices.graphDatabase.type "nebulaGraph" }}
+              - name: GRAPHDB_READ_ONLY_USER
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_READ_ONLY_USER
+                    name: agent-memory-yaml
+              - name: GRAPHDB_READ_ONLY_PASSWORD
+                valueFrom:
+                  configMapKeyRef:
+                    key: GRAPHDB_READ_ONLY_PASSWORD
+                    name: agent-memory-yaml
+              {{- end }}
+              - name: EMBEDDING_MODEL
+                valueFrom:
+                  configMapKeyRef:
+                    key: EMBEDDING_MODEL
+                    name: agent-memory-yaml
+              - name: EMB_URL
+                valueFrom:
+                  configMapKeyRef:
+                    key: EMB_URL
+                    name: agent-memory-yaml
+              - name: EMBEDDING_DIMENSION
+                valueFrom:
+                  configMapKeyRef:
+                    key: EMBEDDING_DIMENSION
+                    name: agent-memory-yaml
+              - name: LLM_BASE_URL
+                valueFrom:
+                  configMapKeyRef:
+                    key: LLM_BASE_URL
+                    name: agent-memory-yaml
+              - name: LLM_MODEL
+                valueFrom:
+                  configMapKeyRef:
+                    key: LLM_MODEL
+                    name: agent-memory-yaml
+              - name: EMBEDDING_MODEL_BASE_URL
+                valueFrom:
+                  configMapKeyRef:
+                    key: EMBEDDING_MODEL_BASE_URL
+                    name: agent-memory-yaml
+              - name: EMBEDDING_MODEL_DIMS
+                valueFrom:
+                  configMapKeyRef:
+                    key: EMBEDDING_MODEL_DIMS
+                    name: agent-memory-yaml
+              - name: RERANK_MODEL
+                valueFrom:
+                  configMapKeyRef:
+                    key: RERANK_MODEL
+                    name: agent-memory-yaml
+              - name: RERANK_URL
+                valueFrom:
+                  configMapKeyRef:
+                    key: RERANK_URL
+                    name: agent-memory-yaml
+              # ========== Memory环境变量结束 ==========
+
+
+              - name: DM_SVC_PATH
+                value: /tmp/rds_conf/
+          ports:
+            - name: public-port
+              containerPort: {{ .Values.service.port }}
+            # ========== Executor端口 ==========
+            - name: executor-port
+              containerPort: {{ .Values.agentExecutor.port }}
+            # ========== Memory端口 ==========
+            - name: memory-port
+              containerPort: {{ .Values.agentMemory.port }}
+          {{- if ne .Values.runMode "dev"}}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: public-port
+            initialDelaySeconds: {{ .Values.service.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.service.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.service.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.service.readinessProbe.failureThreshold }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "curl -sf http://localhost:{{ .Values.service.port }}/health/ready"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- end}}
+          volumeMounts:
+            # ========== ConfigMap文件使用subPath精确挂载 ==========
+            - name: agent-factory-yaml
+              mountPath: /sysvol/conf/agent-factory.yaml
+              subPath: agent-factory.yaml
+            - name: agent-factory-yaml
+              mountPath: /sysvol/conf/dm_svc.conf
+              subPath: dm_svc.conf
+            - name: agent-factory-yaml
+              mountPath: /sysvol/conf/mq_config.yaml
+              subPath: mq_config.yaml
+            # ========== Secret使用目录级挂载 ==========
+            - name: agent-factory-secret-yaml
+              mountPath: /sysvol/conf/secret
+            # ========== Executor配置文件挂载 ==========
+            - name: executor-yaml
+              mountPath: /sysvol/conf/agent-executor.yaml
+              subPath: agent-executor.yaml
+            # ========== 时间同步 ==========
+            - name: host-time
+              mountPath: /etc/localtime
+            # ========== DM配置 ==========
+            - name: rds-conf
+              mountPath: /tmp/rds_conf
+            {{- if eq .Values.runMode "dev" }}
+            - name: home-path
+              mountPath: /root
+            {{- end }}
+          {{- if ne .Values.runMode "dev" }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          {{ end }}
+      volumes:
+        - name: agent-factory-yaml
+          configMap:
+            name: agent-factory-yaml
+        - name: agent-factory-secret-yaml
+          secret:
+            secretName: agent-factory-secret-yaml
+        # ========== Executor配置Volume ==========
+        - name: executor-yaml
+          configMap:
+            name: agent-executor-yaml
+        # ========== 时间同步Volume ==========
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+        # ========== DM配置Volume ==========
+        - name: rds-conf
+          configMap:
+            name: agent-factory-yaml
+            items:
+            - key: dm_svc.conf
+              path: dm_svc.conf
+        {{ if eq .Values.runMode "dev" }}
+        - name: home-path
+          hostPath:
+            path: /root
+        {{ end }}
+      dnsConfig:
+         options:
+           - name: single-request-reopen
+           - name: use-vc

@@ -1,0 +1,50 @@
+# 行动执行
+[OntologyQuery.ActionExecution.InvalidParameter]
+Description = "请求参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.ActionTypeNotFound]
+Description = "行动类不存在"
+Solution = "请检查行动类ID是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.ExecutionNotFound]
+Description = "执行记录不存在"
+Solution = "请检查执行ID是否正确。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.DuplicateExecution]
+Description = "检测到重复执行"
+Solution = "该行动已有正在进行的执行，请等待完成。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.GetActionTypeFailed]
+Description = "获取行动类失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.CreateExecutionFailed]
+Description = "创建执行记录失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.ExecuteToolFailed]
+Description = "工具执行失败"
+Solution = "请检查工具配置并重试。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.ExecuteMCPFailed]
+Description = "MCP执行失败"
+Solution = "请检查MCP配置并重试。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.QueryExecutionsFailed]
+Description = "查询执行日志失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[OntologyQuery.ActionExecution.CancelExecutionFailed]
+Description = "取消执行失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

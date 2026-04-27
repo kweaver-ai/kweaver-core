@@ -3,8 +3,8 @@
 #############################################
 # Auto environment setup script
 # Usage:
-#   ./auto_config.sh [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]  # run all steps
-#   ./auto_config.sh --step [step_number] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]  # run a single step
+#   ./auto_config.sh [agent_json_file] [knowledge_network_json_file] [dataflow_json_file] [operator_file] [toolbox_file] [mcp_file]  # run all steps
+#   ./auto_config.sh --step [step_number] [file]  # run a single step (file depends on step)
 # Notes: Load settings from config.env or environment variables and build datasource requests dynamically.
 #        Decide whether to include the "schema" field based on datasource type.
 # Steps:
@@ -13,6 +13,9 @@
 #   3: Import business knowledge network
 #   4: Import DataAgent
 #   5: Import data flow
+#   6: Import operator
+#   7: Import toolbox
+#   8: Import MCP
 #############################################
 
 set -e
@@ -29,17 +32,20 @@ show_help() {
 自动配置环境脚本
 
 用法:
-  $0 [选项] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]  # 执行全部步骤
-  $0 --step [step_number] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]  # 执行单步
+  $0 [选项] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file] [operator_file] [toolbox_file] [mcp_file]  # 执行全部步骤
+  $0 --step [step_number] [file]  # 执行单步（不同步骤需要的 file 不同）
 
 选项:
   -h, --help                    显示此帮助信息
-  --step [step_number]          执行单个步骤 (1-5)
+  --step [step_number]          执行单个步骤 (1-8)
 
 参数:
   agent_json_file              Agent配置文件
   knowledge_network_json_file  业务知识网络JSON文件
   dataflow_json_file           数据流JSON文件
+  operator_file                算子文件（.adp 或 .json/.yaml/.yml）
+  toolbox_file                 工具文件（.adp 或 .json/.yaml/.yml）
+  mcp_file                     MCP 文件（.adp）
 
 步骤说明:
   1: 获取token
@@ -47,6 +53,9 @@ show_help() {
   3: 导入业务知识网络
   4: 导入DataAgent
   5: 导入数据流
+  6: 导入算子
+  7: 导入工具
+  8: 导入MCP
 
 示例:
   $0 my_agent.json my_knowledge.json my_dataflow.json    # 执行全部步骤，使用自定义文件
@@ -55,6 +64,9 @@ show_help() {
   $0 --step 3 my_knowledge.json         # 仅执行步骤3：导入业务知识网络
   $0 --step 4 my_agent.json             # 仅执行步骤4：导入DataAgent
   $0 --step 5 my_dataflow.json          # 仅执行步骤5：导入数据流
+  $0 --step 6 operator.adp              # 仅执行步骤6：导入算子（.adp 或 .json/.yaml/.yml）
+  $0 --step 7 toolbox.adp               # 仅执行步骤7：导入工具（.adp 或 .json/.yaml/.yml）
+  $0 --step 8 mcp.adp                   # 仅执行步骤8：导入MCP（.adp）
 
 注意:
   - 脚本会读取 config.env 或环境变量中的设置
@@ -80,19 +92,19 @@ if [ "$1" = "--step" ]; then
 fi
 
 # Argument validation
-if [ $# -gt 3 ]; then
+if [ $# -gt 6 ]; then
   echo -e "${RED}错误: 参数过多${NC}"
-  echo "用法: $0 [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]"
-  echo "或: $0 --step [step_number] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]"
-  echo "步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流"
+  echo "用法: $0 [agent_json_file] [knowledge_network_json_file] [dataflow_json_file] [operator_file] [toolbox_file] [mcp_file]"
+  echo "或: $0 --step [step_number] [file]"
+  echo "步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流, 6-导入算子, 7-导入工具, 8-导入MCP"
   echo ""
   echo "使用 -h 或 --help 参数查看详细帮助信息"
   exit 1
 elif [ $# -lt 3 ] && [ "$STEP_MODE" = false ]; then
   echo -e "${RED}错误: 参数不足${NC}"
   echo "用法: $0 [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]"
-  echo "或: $0 --step [step_number] [agent_json_file] [knowledge_network_json_file] [dataflow_json_file]"
-  echo "步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流"
+  echo "或: $0 --step [step_number] [file]"
+  echo "步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流, 6-导入算子, 7-导入工具, 8-导入MCP"
   echo ""
   echo "使用 -h 或 --help 参数查看详细帮助信息"
   exit 1
@@ -102,11 +114,17 @@ if [ "$STEP_MODE" = false ]; then
   AGENT_FILE=$1
   KNOWLEDGE_NETWORK_FILE=$2
   DATAFLOW_FILE=$3
+  OPERATOR_FILE=${4:-""}
+  TOOLBOX_FILE=${5:-""}
+  MCP_FILE=${6:-""}
 else
   # In step mode, after `--step N` is shifted out, $1 is the first file argument
   AGENT_FILE=${1:-"agent.json"}
   KNOWLEDGE_NETWORK_FILE=${2:-"业务知识网络.json"}
   DATAFLOW_FILE=${3:-"dataflow.json"}
+  OPERATOR_FILE=${1:-""}
+  TOOLBOX_FILE=${1:-""}
+  MCP_FILE=${1:-""}
 fi
 
 # Load datasource config (prefer config.env; otherwise use env/defaults)
@@ -222,6 +240,27 @@ else
     fi
     # Read data flow content
     DATAFLOW_FILE_JSON_CONTENT=$(cat "$DATAFLOW_FILE")
+  elif [ "$STEP_NUMBER" -eq 6 ]; then
+    # Step 6 requires the operator file
+    OPERATOR_FILE=${1:-""}
+    if [ -z "$OPERATOR_FILE" ] || [ ! -f "$OPERATOR_FILE" ]; then
+      echo -e "${RED}错误: 算子文件不存在或未指定: $OPERATOR_FILE${NC}"
+      exit 1
+    fi
+  elif [ "$STEP_NUMBER" -eq 7 ]; then
+    # Step 7 requires the toolbox file
+    TOOLBOX_FILE=${1:-""}
+    if [ -z "$TOOLBOX_FILE" ] || [ ! -f "$TOOLBOX_FILE" ]; then
+      echo -e "${RED}错误: 工具文件不存在或未指定: $TOOLBOX_FILE${NC}"
+      exit 1
+    fi
+  elif [ "$STEP_NUMBER" -eq 8 ]; then
+    # Step 8 requires the MCP file
+    MCP_FILE=${1:-""}
+    if [ -z "$MCP_FILE" ] || [ ! -f "$MCP_FILE" ]; then
+      echo -e "${RED}错误: MCP文件不存在或未指定: $MCP_FILE${NC}"
+      exit 1
+    fi
   fi
 fi
 
@@ -238,7 +277,7 @@ echo ""
 # Get token
 get_token() {
   local temp_suffix=$$
-  echo -e "${YELLOW}[1/5] 自动获取登录token...${NC}"
+  echo -e "${YELLOW}[1/8] 自动获取登录token...${NC}"
 
   # Create temp public key files for openssl
   LOGIN_PUBKEY_FILE="/tmp/login_public_key_${temp_suffix}"
@@ -415,7 +454,7 @@ ensure_token_exists() {
 # Create datasource
 create_datasource() {
   local temp_suffix=$$
-  echo -e "${YELLOW}[2/5] 根据配置创建数据源...${NC}"
+  echo -e "${YELLOW}[2/8] 根据配置创建数据源...${NC}"
 
   # Ensure token exists
   ensure_token_exists || return 1
@@ -504,7 +543,7 @@ scan_datasource_by_id() {
   local datasource_id=$1
   local datasource_name=$2
   local temp_suffix=$$
-  echo -e "${YELLOW}[3/5] 扫描数据源...${NC}"
+  echo -e "${YELLOW}  扫描数据源...${NC}"
 
   # Ensure token exists
   ensure_token_exists || return 1
@@ -558,7 +597,7 @@ EOF
 # Import business knowledge network
 import_knowledge_network() {
   local temp_suffix=$$
-  echo -e "${YELLOW}[4/5] 导入业务知识网络...${NC}"
+  echo -e "${YELLOW}[3/8] 导入业务知识网络...${NC}"
 
   # Ensure knowledge network file exists
   if [ ! -f "$KNOWLEDGE_NETWORK_FILE" ]; then
@@ -571,7 +610,7 @@ import_knowledge_network() {
 
   # Import knowledge network (submit the JSON payload directly via API)
   local KN_RESPONSE=$(curl -s -k -X POST \
-    "${BASE_URL}/api/ontology-manager/v1/knowledge-networks" \
+    "${BASE_URL}/api/bkn-backend/v1/knowledge-networks?validate_dependency=false" \
     -H "Content-Type: application/json" \
     -H "x-business-domain: ${BUSINESS_DOMAIN}" \
     -H "Authorization: Bearer ${TOKEN}" \
@@ -595,7 +634,7 @@ import_knowledge_network() {
 # Import DataAgent
 import_agent() {
   local temp_suffix=$$
-  echo -e "${YELLOW}[5/6] 导入DataAgent...${NC}"
+  echo -e "${YELLOW}[4/8] 导入DataAgent...${NC}"
 
   # Ensure agent file exists
   if [ ! -f "$AGENT_FILE" ]; then
@@ -627,7 +666,7 @@ import_agent() {
 # Import data flow
 import_data_flow() {
   local temp_suffix=$$
-  echo -e "${YELLOW}[6/6] 导入数据流...${NC}"
+  echo -e "${YELLOW}[5/8] 导入数据流...${NC}"
 
   # Ensure data flow file exists
   if [ ! -f "$DATAFLOW_FILE" ]; then
@@ -665,6 +704,141 @@ import_data_flow() {
   fi
 }
 
+# Import operator (adp/openapi)
+import_operator() {
+  local temp_suffix=$$
+  echo -e "${YELLOW}[6/8] 导入算子...${NC}"
+
+  if [ -z "$OPERATOR_FILE" ] || [ ! -f "$OPERATOR_FILE" ]; then
+    echo -e "${RED}错误: 算子文件不存在或未指定: $OPERATOR_FILE${NC}"
+    return 1
+  fi
+
+  ensure_token_exists || return 1
+
+  local FILE_LOWER
+  FILE_LOWER=$(echo "$OPERATOR_FILE" | tr '[:upper:]' '[:lower:]')
+
+  local RESULT=""
+  if [[ "$FILE_LOWER" == *.adp ]]; then
+    RESULT=$(curl -s -k -w "\n%{http_code}" -X POST \
+      "${BASE_URL}/api/agent-operator-integration/v1/impex/import/operator" \
+      -H "x-business-domain: ${BUSINESS_DOMAIN}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -F "data=@${OPERATOR_FILE}" \
+      -F "mode=upsert")
+  else
+    RESULT=$(curl -s -k -w "\n%{http_code}" -X POST \
+      "${BASE_URL}/api/agent-operator-integration/v1/operator/register" \
+      -H "x-business-domain: ${BUSINESS_DOMAIN}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -F "data=@${OPERATOR_FILE}" \
+      -F "operator_metadata_type=openapi")
+  fi
+
+  local HTTP_CODE
+  HTTP_CODE=$(echo "$RESULT" | tail -n 1)
+  local BODY
+  BODY=$(echo "$RESULT" | sed '$d')
+
+  if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+    echo -e "${GREEN}✓ 算子导入成功${NC}"
+    return 0
+  else
+    echo -e "${RED}错误: 算子导入失败 (HTTP $HTTP_CODE)${NC}"
+    echo "响应内容: $BODY"
+    return 1
+  fi
+}
+
+# Import toolbox (adp/openapi)
+import_toolbox() {
+  local temp_suffix=$$
+  echo -e "${YELLOW}[7/8] 导入工具...${NC}"
+
+  if [ -z "$TOOLBOX_FILE" ] || [ ! -f "$TOOLBOX_FILE" ]; then
+    echo -e "${RED}错误: 工具文件不存在或未指定: $TOOLBOX_FILE${NC}"
+    return 1
+  fi
+
+  ensure_token_exists || return 1
+
+  local FILE_LOWER
+  FILE_LOWER=$(echo "$TOOLBOX_FILE" | tr '[:upper:]' '[:lower:]')
+
+  local RESULT=""
+  if [[ "$FILE_LOWER" == *.adp ]]; then
+    RESULT=$(curl -s -k -w "\n%{http_code}" -X POST \
+      "${BASE_URL}/api/agent-operator-integration/v1/impex/import/toolbox" \
+      -H "x-business-domain: ${BUSINESS_DOMAIN}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -F "data=@${TOOLBOX_FILE}" \
+      -F "mode=upsert")
+  else
+    RESULT=$(curl -s -k -w "\n%{http_code}" -X POST \
+      "${BASE_URL}/api/agent-operator-integration/v1/tool-box" \
+      -H "x-business-domain: ${BUSINESS_DOMAIN}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -F "data=@${TOOLBOX_FILE}" \
+      -F "metadata_type=openapi")
+  fi
+
+  local HTTP_CODE
+  HTTP_CODE=$(echo "$RESULT" | tail -n 1)
+  local BODY
+  BODY=$(echo "$RESULT" | sed '$d')
+
+  if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+    local BOX_ID
+    BOX_ID=$(echo "$BODY" | grep -o '"box_id":"[^"]*"' | cut -d'"' -f4)
+    if [ -n "$BOX_ID" ]; then
+      echo "export TOOLBOX_BOX_ID=\"$BOX_ID\"" > "/tmp/toolbox_${temp_suffix}.env"
+      echo "  box_id: $BOX_ID"
+    fi
+    echo -e "${GREEN}✓ 工具导入成功${NC}"
+    return 0
+  else
+    echo -e "${RED}错误: 工具导入失败 (HTTP $HTTP_CODE)${NC}"
+    echo "响应内容: $BODY"
+    return 1
+  fi
+}
+
+# Import MCP (adp)
+import_mcp() {
+  local temp_suffix=$$
+  echo -e "${YELLOW}[8/8] 导入MCP...${NC}"
+
+  if [ -z "$MCP_FILE" ] || [ ! -f "$MCP_FILE" ]; then
+    echo -e "${RED}错误: MCP文件不存在或未指定: $MCP_FILE${NC}"
+    return 1
+  fi
+
+  ensure_token_exists || return 1
+
+  local RESULT
+  RESULT=$(curl -s -k -w "\n%{http_code}" -X POST \
+    "${BASE_URL}/api/agent-operator-integration/v1/impex/import/mcp" \
+    -H "x-business-domain: ${BUSINESS_DOMAIN}" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -F "data=@${MCP_FILE}" \
+    -F "mode=upsert")
+
+  local HTTP_CODE
+  HTTP_CODE=$(echo "$RESULT" | tail -n 1)
+  local BODY
+  BODY=$(echo "$RESULT" | sed '$d')
+
+  if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+    echo -e "${GREEN}✓ MCP导入成功${NC}"
+    return 0
+  else
+    echo -e "${RED}错误: MCP导入失败 (HTTP $HTTP_CODE)${NC}"
+    echo "响应内容: $BODY"
+    return 1
+  fi
+}
+
 # Main execution
 if [ "$STEP_MODE" = true ]; then
   # Step mode
@@ -684,14 +858,23 @@ if [ "$STEP_MODE" = true ]; then
     5)
       import_data_flow
       ;;
+    6)
+      import_operator
+      ;;
+    7)
+      import_toolbox
+      ;;
+    8)
+      import_mcp
+      ;;
     *)
       echo -e "${RED}错误: 无效的步骤编号${NC}"
-      echo "有效步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流"
+      echo "有效步骤编号: 1-获取token, 2-创建数据源并扫描, 3-导入知识网络, 4-导入DataAgent, 5-导入数据流, 6-导入算子, 7-导入工具, 8-导入MCP"
       exit 1
       ;;
   esac
   # Cleanup temp files
-  rm -rf /tmp/datasource_*.env /tmp/knowledge_network_*.env /tmp/agent_*.env /tmp/dataflow_*.env /tmp/scan_*.env /tmp/token_*.env
+  rm -rf /tmp/datasource_*.env /tmp/knowledge_network_*.env /tmp/agent_*.env /tmp/dataflow_*.env /tmp/scan_*.env /tmp/token_*.env /tmp/toolbox_*.env
   exit $?
 else
   # Run-all mode
@@ -733,6 +916,54 @@ else
       DATAFLOW_SUCCESS=0
       echo -e "${YELLOW}⚠ 数据流导入失败${NC}"
     fi
+
+    # 7. Import operator (optional)
+    if [ -n "$OPERATOR_FILE" ]; then
+      if [ -f "$OPERATOR_FILE" ]; then
+        if import_operator; then
+          OPERATOR_SUCCESS=1
+        else
+          OPERATOR_SUCCESS=0
+          echo -e "${YELLOW}⚠ 算子导入失败${NC}"
+        fi
+      else
+        echo -e "${YELLOW}⚠ 未找到算子文件，跳过：$OPERATOR_FILE${NC}"
+      fi
+    else
+      echo -e "${YELLOW}⚠ 未指定算子文件，跳过导入算子${NC}"
+    fi
+
+    # 8. Import toolbox (optional)
+    if [ -n "$TOOLBOX_FILE" ]; then
+      if [ -f "$TOOLBOX_FILE" ]; then
+        if import_toolbox; then
+          TOOLBOX_SUCCESS=1
+        else
+          TOOLBOX_SUCCESS=0
+          echo -e "${YELLOW}⚠ 工具导入失败${NC}"
+        fi
+      else
+        echo -e "${YELLOW}⚠ 未找到工具文件，跳过：$TOOLBOX_FILE${NC}"
+      fi
+    else
+      echo -e "${YELLOW}⚠ 未指定工具文件，跳过导入工具${NC}"
+    fi
+
+    # 9. Import MCP (optional)
+    if [ -n "$MCP_FILE" ]; then
+      if [ -f "$MCP_FILE" ]; then
+        if import_mcp; then
+          MCP_SUCCESS=1
+        else
+          MCP_SUCCESS=0
+          echo -e "${YELLOW}⚠ MCP导入失败${NC}"
+        fi
+      else
+        echo -e "${YELLOW}⚠ 未找到MCP文件，跳过：$MCP_FILE${NC}"
+      fi
+    else
+      echo -e "${YELLOW}⚠ 未指定MCP文件，跳过导入MCP${NC}"
+    fi
   else
     echo -e "${RED}获取token失败，终止执行${NC}"
     exit 1
@@ -740,5 +971,5 @@ else
 fi
 
 # Cleanup temp files
-rm -rf /tmp/datasource_*.env /tmp/knowledge_network_*.env /tmp/agent_*.env /tmp/dataflow_*.env /tmp/scan_*.env /tmp/token_*.env
+rm -rf /tmp/datasource_*.env /tmp/knowledge_network_*.env /tmp/agent_*.env /tmp/dataflow_*.env /tmp/scan_*.env /tmp/token_*.env /tmp/toolbox_*.env
 exit 0

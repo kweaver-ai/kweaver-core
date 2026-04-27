@@ -1,0 +1,161 @@
+{{- $businessDomainEnabled := true -}}
+{{- if hasKey .Values "businessDomain" -}}
+{{- if hasKey .Values.businessDomain "enabled" -}}
+{{- $businessDomainEnabled = .Values.businessDomain.enabled -}}
+{{- end -}}
+{{- end -}}
+{{- $sandboxPlatformEnabled := true -}}
+{{- if hasKey .Values "depServices" -}}
+{{- if hasKey .Values.depServices "sandboxPlatform" -}}
+{{- if hasKey .Values.depServices.sandboxPlatform "enable" -}}
+{{- $sandboxPlatformEnabled = .Values.depServices.sandboxPlatform.enable -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+apiVersion: v1
+data:
+  dm_svc.conf: |
+    TIME_ZON=(480)
+    LANGUAGE=(cn)
+    DM={{ printf "(%s)" .Values.depServices.rds.host }}
+    [DM]
+    LOGIN_MODE=(1)
+
+
+  agent-factory.yaml: |
+    # 配置文件路径/sysvol/conf/agent-factory.yaml
+
+    auth_enable: {{ .Values.auth.enabled }}
+
+    # ========== 特性开关配置 ==========
+    switch_fields:
+      keep_legacy_app_path: {{ .Values.service.keep_legacy_app_path | default false }}
+      disable_pms_check: {{ .Values.service.disablePmsCheck | default false }}
+      disable_biz_domain: {{ not $businessDomainEnabled }}
+      disable_audit_init: {{ .Values.service.disableAuditInit | default false }}
+      mock:
+        mock_mq_client: {{ .Values.service.mockMqClient | default false }}
+        mock_sandbox_platform: {{ .Values.service.mockSandboxPlatform | default false }}
+        mock_hydra: {{ .Values.service.mockHydra | default false }}
+        mock_authz: {{ .Values.service.mockAuthz | default false }}
+        mock_user_manager_module: {{ .Values.service.mockUserManagerModule | default false }}
+        mock_biz_domain: {{ .Values.service.mockBizDomain | default false }}
+    # ========================================
+
+    # ========== Swagger 文档配置 ==========
+    enable_swagger: {{ .Values.service.enableSwagger }}
+    swagger_token: {{ .Values.service.swaggerToken | quote | default "" }}
+    # ========================================
+
+    project:
+      language: {{ .Values.service.language }}
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      logger_level: {{ .Values.service.loggerLevel }}
+      log_file: {{ .Values.service.logFile | quote | default "/var/log/agent-factory/agent-factory.log" }}
+
+
+    hydra:
+      user-mgnt:
+        host: {{ .Values.depServices.hydra.userMgnt.host }}
+        port: {{ .Values.depServices.hydra.userMgnt.port }}
+      hydra-public:
+        host: {{ .Values.depServices.hydra.hydraPublic.host }}
+        port: {{ .Values.depServices.hydra.hydraPublic.port }}
+      hydra-admin:
+        host: {{ .Values.depServices.hydra.hydraAdmin.host }}
+        port: {{ .Values.depServices.hydra.hydraAdmin.port }}
+    model_factory:
+      model_api_svc:
+        host: {{ .Values.depServices.modelFactory.modelApiSvc.host }}
+        port: {{ .Values.depServices.modelFactory.modelApiSvc.port }}
+        protocol: {{ .Values.depServices.modelFactory.modelApiSvc.protocol | quote }}
+      model_manager_svc:
+        host: {{ .Values.depServices.modelFactory.modelManagerSvc.host }}
+        port: {{ .Values.depServices.modelFactory.modelManagerSvc.port }}
+        protocol: {{ .Values.depServices.modelFactory.modelManagerSvc.protocol | quote }}
+    authorization:
+      public_svc:
+        host: {{ .Values.depServices.authorization.publicSvc.host | quote }}
+        port: {{ .Values.depServices.authorization.publicSvc.port }}
+        protocol: {{ .Values.depServices.authorization.publicSvc.protocol | quote }}
+      private_svc:
+        host: {{ .Values.depServices.authorization.privateSvc.host | quote }}
+        port: {{ .Values.depServices.authorization.privateSvc.port }}
+        protocol: {{ .Values.depServices.authorization.privateSvc.protocol | quote }}
+    # ========== Sandbox Platform 配置 ==========
+    sandbox_platform:
+      enable: {{ $sandboxPlatformEnabled }}
+      public_svc:
+        host: {{ .Values.depServices.sandboxPlatform.publicSvc.host | quote }}
+        port: {{ .Values.depServices.sandboxPlatform.publicSvc.port }}
+        protocol: {{ .Values.depServices.sandboxPlatform.publicSvc.protocol | quote }}
+      private_svc:
+        host: {{ .Values.depServices.sandboxPlatform.privateSvc.host | quote }}
+        port: {{ .Values.depServices.sandboxPlatform.privateSvc.port }}
+        protocol: {{ .Values.depServices.sandboxPlatform.privateSvc.protocol | quote }}
+      default_ttl: {{ .Values.depServices.sandboxPlatform.defaultTtl | default 3600 }}
+      max_retries: {{ .Values.depServices.sandboxPlatform.maxRetries | default 10 }}
+      retry_interval: {{ .Values.depServices.sandboxPlatform.retryInterval | quote | default "500ms" }}
+      default_template_id: {{ .Values.depServices.sandboxPlatform.defaultTemplateId | quote | default "python-basic" }}
+      default_cpu: {{ .Values.depServices.sandboxPlatform.defaultCpu | quote | default "1" }}
+      default_memory: {{ .Values.depServices.sandboxPlatform.defaultMemory | quote | default "512Mi" }}
+      default_disk: {{ .Values.depServices.sandboxPlatform.defaultDisk | quote | default "1Gi" }}
+      default_timeout: {{ .Values.depServices.sandboxPlatform.defaultTimeout | default 300 }}
+      file_upload_config:
+        max_file_size: {{ .Values.depServices.sandboxPlatform.fileUploadConfig.maxFileSize | default 10 }}
+        max_file_size_unit: {{ .Values.depServices.sandboxPlatform.fileUploadConfig.maxFileSizeUnit | quote | default "MB" }}
+        max_file_count: {{ .Values.depServices.sandboxPlatform.fileUploadConfig.maxFileCount | default 10 }}
+        allowed_file_types:
+        {{- toYaml .Values.depServices.sandboxPlatform.fileUploadConfig.allowedFileTypes | nindent 8 }}
+    # ========================================
+
+    agent_factory:
+      private_svc:
+        host: {{ .Values.depServices.agentFactory.privateSvc.host | quote }}
+        port: {{ .Values.depServices.agentFactory.privateSvc.port }}
+        protocol: {{ .Values.depServices.agentFactory.privateSvc.protocol | quote }}
+    # ========== Agent Executor 配置 ==========
+    agent_executor:
+      private_svc:
+        host: {{ .Values.depServices.agentExecutor.privateSvc.host | quote }}
+        port: {{ .Values.depServices.agentExecutor.privateSvc.port }}
+        protocol: {{ .Values.depServices.agentExecutor.privateSvc.protocol | quote }}
+    # ========================================
+    uniquery:
+      public_svc:
+        host: {{ .Values.depServices.uniquery.publicSvc.host | quote }}
+        port: {{ .Values.depServices.uniquery.publicSvc.port }}
+        protocol: {{ .Values.depServices.uniquery.publicSvc.protocol | quote }}
+      private_svc:
+        host: {{ .Values.depServices.uniquery.privateSvc.host | quote }}
+        port: {{ .Values.depServices.uniquery.privateSvc.port }}
+        protocol: {{ .Values.depServices.uniquery.privateSvc.protocol | quote }}
+    # ========================================
+    biz_domain:
+      public_svc:
+        host: {{ .Values.depServices.bizDomain.publicSvc.host | quote }}
+        port: {{ .Values.depServices.bizDomain.publicSvc.port }}
+        protocol: {{ .Values.depServices.bizDomain.publicSvc.protocol | quote }}
+      private_svc:
+        host: {{ .Values.depServices.bizDomain.privateSvc.host | quote }}
+        port: {{ .Values.depServices.bizDomain.privateSvc.port }}
+        protocol: {{ .Values.depServices.bizDomain.privateSvc.protocol | quote }}
+    otel:
+      service_name: "agent-factory"
+      service_version: "1.0.0"
+      environment: {{ .Values.otel.environment | quote }}
+      otlp_endpoint: {{ .Values.otel.otlp_endpoint | quote }}
+      trace:
+        enabled: {{ .Values.otel.trace.enabled }}
+        sampling_rate: {{ .Values.otel.trace.sampling_rate }}
+      log:
+        enabled: {{ .Values.otel.log.enabled }}
+        level: {{ .Values.otel.log.level | quote }}
+  mq_config.yaml: |
+    {{- toYaml .Values.depServices.mq | nindent 4 }}
+
+kind: ConfigMap
+metadata:
+  name: agent-factory-yaml
+  namespace: {{ .Values.namespace }}

@@ -1,0 +1,132 @@
+{
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "response_format": {
+        "type": "string",
+        "enum": ["json", "toon"],
+        "default": "toon",
+        "description": "文本格式：json 或 toon，默认 toon"
+      },
+      "include_logic_params": {
+        "type": "boolean",
+        "description": "是否返回逻辑属性计算参数，默认 false"
+      },
+      "relation_type_paths": {
+        "type": "array",
+        "description": "关系路径模板。object_types 与 relation_types 的顺序必须严格对应：n 跳路径 => object_types 长度为 n+1，relation_types 长度为 n；relation_types 不可为空",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["object_types", "relation_types"],
+          "properties": {
+            "object_types": {
+              "type": "array",
+              "description": "路径中的对象类集合，顺序必须严格与路径一致。对于 n 跳路径，object_types 长度必须为 n+1。即使没有过滤条件，也必须提供 condition 与 limit 字段",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": ["id", "condition", "limit"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "对象类 id（ot_id）"
+                  },
+                  "condition": {
+                    "type": "object",
+                    "description": "过滤条件。operation 必填；value_from 仅支持 const，且必须与 value 同时出现。若无过滤条件，可用 operation=and 且 sub_conditions=[]",
+                    "required": ["operation"],
+                    "properties": {
+                      "field": { "type": "string", "description": "字段名（对象类属性）" },
+                      "operation": {
+                        "type": "string",
+                        "description": "条件操作符，具体支持以对象类的 condition_operations 为准",
+                        "enum": ["and", "or", "==", "!=", ">", ">=", "<", "<=", "in", "not_in", "like", "not_like", "exist", "not_exist", "match"]
+                      },
+                      "sub_conditions": {
+                        "type": "array",
+                        "description": "子条件数组，用于 and/or",
+                        "items": { "type": "object" }
+                      },
+                      "value_from": {
+                        "type": "string",
+                        "enum": ["const"],
+                        "description": "值来源，仅支持 const"
+                      },
+                      "value": {
+                        "description": "字段值；与 value_from=const 同时使用",
+                        "oneOf": [
+                          { "type": "string" },
+                          { "type": "number" },
+                          { "type": "boolean" },
+                          { "type": "array", "items": { "oneOf": [
+                            { "type": "string" },
+                            { "type": "number" },
+                            { "type": "boolean" }
+                          ]}}
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "sort": {
+                    "type": "array",
+                    "description": "排序字段（可选）",
+                    "items": {
+                      "type": "object",
+                      "required": ["field", "direction"],
+                      "properties": {
+                        "field": { "type": "string", "description": "排序字段" },
+                        "direction": { "type": "string", "enum": ["desc", "asc"], "description": "排序方向" }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "当前对象类返回数量限制，范围以接口定义为准（通常 1-10000）"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "relation_types": {
+              "type": "array",
+              "description": "路径中的边集合，顺序必须与 object_types 对齐。第 i 条边的 source/target 必须等于 object_types 的第 i / i+1 个对象类 id；方向由 source/target 与关系类定义一致性决定",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["relation_type_id", "source_object_type_id", "target_object_type_id"],
+                "properties": {
+                  "relation_type_id": { "type": "string", "description": "关系类 id（rt_id）" },
+                  "source_object_type_id": { "type": "string", "description": "起点对象类 id" },
+                  "target_object_type_id": { "type": "string", "description": "终点对象类 id" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "limit": {
+              "type": "integer",
+              "description": "当前路径返回的路径数量限制（可选）"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["relation_type_paths"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "description": "路径子图返回体数组（每条路径对应一个子图响应）",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

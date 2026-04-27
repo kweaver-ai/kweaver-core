@@ -1,0 +1,273 @@
+{
+    "componentDefineType": "helm/service",
+    "name": "sandbox",
+    "version": "1.0.0",
+    "configSchema": {
+        "title": "sandbox",
+        "description": "沙箱平台组件配置定义",
+        "type": "object",
+        "properties": {
+            "resources": {
+                "type": "object",
+                "title": "容器资源控制",
+                "properties": {
+                    "requests": {
+                        "type": "object",
+                        "description": "容器运行需要的最小资源分配",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    },
+                    "limits": {
+                        "type": "object",
+                        "description": "容器运行最大资源限制",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    }
+                }
+            },
+            "replicaCount": {
+                "type": "number",
+                "title": "服务副本数"
+            },
+            "observability": {
+                "type": "object",
+                "title": "可观测配置",
+                "properties": {
+                    "logEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启日志"
+                    },
+                    "traceEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启链路追踪"
+                    },
+                    "metricEnabled": {
+                        "type": "boolean",
+                        "title": "是否开启指标"
+                    }
+                }
+            },
+            "controlPlane": {
+                "type": "object",
+                "title": "Control Plane 配置",
+                "properties": {
+                    "environment": {
+                        "type": "string",
+                        "title": "运行环境",
+                        "description": "development, staging, production",
+                        "enum": [
+                            "development",
+                            "staging",
+                            "production"
+                        ]
+                    },
+                    "database": {
+                        "type": "object",
+                        "title": "数据库配置",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "title": "数据库连接 URL",
+                                "description": "MySQL/MariaDB 连接字符串"
+                            },
+                            "name": {
+                                "type": "string",
+                                "title": "数据库名称",
+                                "default": "adp"
+                            },
+                            "poolSize": {
+                                "type": "number",
+                                "title": "连接池大小",
+                                "default": 20
+                            }
+                        }
+                    },
+                    "s3": {
+                        "type": "object",
+                        "title": "S3 存储配置",
+                        "properties": {
+                            "endpointUrl": {
+                                "type": "string",
+                                "title": "S3 端点 URL"
+                            },
+                            "bucket": {
+                                "type": "string",
+                                "title": "存储桶名称",
+                                "default": "sandbox-workspace"
+                            },
+                            "region": {
+                                "type": "string",
+                                "title": "区域",
+                                "default": "us-east-1"
+                            },
+                            "accessKeyId": {
+                                "type": "string",
+                                "title": "访问密钥 ID"
+                            },
+                            "secretAccessKey": {
+                                "type": "string",
+                                "title": "秘密访问密钥"
+                            }
+                        }
+                    },
+                    "execution": {
+                        "type": "object",
+                        "title": "代码执行配置",
+                        "properties": {
+                            "defaultTimeout": {
+                                "type": "number",
+                                "title": "默认超时时间（秒）",
+                                "default": 300,
+                                "minimum": 1,
+                                "maximum": 3600
+                            },
+                            "maxTimeout": {
+                                "type": "number",
+                                "title": "最大超时时间（秒）",
+                                "default": 3600
+                            },
+                            "defaultCpu": {
+                                "type": "string",
+                                "title": "默认 CPU 配置",
+                                "default": "1"
+                            },
+                            "defaultMemory": {
+                                "type": "string",
+                                "title": "默认内存配置",
+                                "default": "512Mi"
+                            },
+                            "defaultDisk": {
+                                "type": "string",
+                                "title": "默认磁盘配置",
+                                "default": "1Gi"
+                            },
+                            "disableBwrap": {
+                                "type": "boolean",
+                                "title": "禁用 Bubblewrap",
+                                "description": "本地开发环境禁用 Bubblewrap 进程隔离",
+                                "default": true
+                            }
+                        }
+                    }
+                }
+            },
+            "runtime": {
+                "type": "object",
+                "title": "运行时配置",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "title": "运行时类型",
+                        "enum": [
+                            "docker",
+                            "kubernetes"
+                        ],
+                        "default": "kubernetes"
+                    },
+                    "namespace": {
+                        "type": "string",
+                        "title": "运行时命名空间",
+                        "default": "sandbox-system"
+                    },
+                    "dockerSocketPath": {
+                        "type": "string",
+                        "title": "Docker Socket 路径",
+                        "default": "/var/run/docker.sock"
+                    }
+                }
+            },
+            "security": {
+                "type": "object",
+                "title": "安全配置",
+                "properties": {
+                    "runAsNonRoot": {
+                        "type": "boolean",
+                        "title": "以非 root 用户运行",
+                        "default": true
+                    },
+                    "runAsUser": {
+                        "type": "number",
+                        "title": "运行用户 ID",
+                        "default": 1000
+                    },
+                    "runAsGroup": {
+                        "type": "number",
+                        "title": "运行组 ID",
+                        "default": 1000
+                    },
+                    "fsGroup": {
+                        "type": "number",
+                        "title": "文件系统组 ID",
+                        "default": 1000
+                    },
+                    "allowPrivilegeEscalation": {
+                        "type": "boolean",
+                        "title": "允许特权提升",
+                        "default": false
+                    },
+                    "dropCapabilities": {
+                        "type": "array",
+                        "title": "丢弃的能力",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": [
+                            "ALL"
+                        ]
+                    },
+                    "readOnlyRootFilesystem": {
+                        "type": "boolean",
+                        "title": "只读根文件系统",
+                        "default": false
+                    }
+                }
+            }
+        }
+    },
+    "subComponents": [
+        {
+            "name": "control-plane",
+            "title": "控制平面服务",
+            "description": "沙箱控制平面，提供 API、会话管理、代码执行调度等功能",
+            "required": true
+        },
+        {
+            "name": "web",
+            "title": "Web 控制台",
+            "description": "基于 React 的 Web 管理界面，提供可视化的会话、模板和执行管理",
+            "required": false
+        },
+        {
+            "name": "minio",
+            "title": "MinIO 对象存储",
+            "description": "S3 兼容的对象存储，用于存储代码文件、执行结果等",
+            "required": true
+        }
+    ],
+    "dependence": [
+        {
+            "name": "rds",
+            "description": "数据库服务，支持 DM8 和 MariaDB"
+        }
+    ],
+    "images": [
+        "acr.aishu.cn/sandbox/minio:RELEASE.2025-09-07T16-13-09Z",
+        "acr.aishu.cn/dip/sandbox-template-python-basic:v1.0.0"
+    ]
+}

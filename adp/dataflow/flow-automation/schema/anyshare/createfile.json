@@ -1,0 +1,114 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "新建文件",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "docid": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "name": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^[^#\\/:*?\"<>|]+$",
+                            "maxLength": 255
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "type": {
+                    "enum": [
+                        "xlsx",
+                        "docx",
+                        "pdf",
+                        "md"
+                    ]
+                },
+                "ondup": {
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "new_type": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "new_row",
+                                "new_col"
+                            ]
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^{{__.*}}$"
+                        }
+                    ]
+                },
+                "source_type": {
+                    "enum":["full_text", "url"]
+                },
+                "content": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "docid",
+                "name",
+                "type",
+                "ondup",
+                "source_type"
+            ],
+            "additionalProperties": false
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

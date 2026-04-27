@@ -1,0 +1,41 @@
+ARG BASE_IMAGE=acr.aishu.cn/dip/python:3.9.13-ubuntu22.04.20251014-2
+FROM ${BASE_IMAGE}
+
+WORKDIR /opt
+
+RUN groupadd -g 5000 -f coderunner && \
+    useradd coderunner -u 5000 -g 5000 -m -s /bin/bash && \
+    chown -R coderunner:coderunner /opt
+
+ADD --chown=coderunner:coderunner coderunner coderunner
+COPY deps deps
+COPY init_site_packages.sh init_site_packages.sh
+
+# 漏洞修复
+RUN set -ex && \
+    apt-get update && \
+    apt-get -y install --only-upgrade linux-libc-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 install --no-cache-dir setuptools==78.1.1 && \
+    pip3 install --no-cache-dir deps/* && \
+    cd coderunner && \
+    pip3 install --no-cache-dir -r requirements.txt && \
+    rm -rf /opt/coderunner/deps && \
+    rm -rf /opt/coderunner/requirements.txt && \
+    rm -rf /root/.cache/pip /tmp/* /opt/deps /opt/requirements.txt && \
+    find /usr/local/lib/python3.9/site-packages -name "*.pyc" -delete && \
+    find /usr/local/lib/python3.9/site-packages -name "__pycache__" -type d -exec rm -rf {} + && \
+    find /usr/local/lib/python3.9/site-packages -type d \( -name "tests" -o -name "test" -o -name "docs" -o -name "examples" \) -exec rm -rf {} +
+
+RUN cp -r /usr/local /usr/local.bk && \
+    cp init_site_packages.sh /opt/coderunner/ && \
+    chown coderunner:coderunner /opt/coderunner/init_site_packages.sh && \
+    chmod +x /opt/coderunner/init_site_packages.sh
+
+WORKDIR /opt/coderunner
+
+USER coderunner
+
+CMD ["/bin/bash", "-c", "python3 ./src/main.py"]

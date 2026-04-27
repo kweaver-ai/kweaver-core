@@ -1,0 +1,160 @@
+@token = Bearer ory_at_t9Mf7LEuu6NvgUeO1f7T-C8cWqpyaHb7XnaI5lUgCZg.BBk5K5sZ7eBG43zhiPUafpO7Qoul74yUSl_Uj5CNLvM
+
+### 删除算子
+DELETE http://localhost:9000/api/agent-operator-integration/v1/operator/delete?token=ory_at_DDlB2PucqHSzaEJygTPoiEwqqc96qGS9sJR93y5sdH8.TcLCi_mQdY1kTYpjBTGY6bX_S4A_q1UEVZ41BSoiPoc
+Content-Type: application/json
+Authorization: Bearer ory_at_xpIZ-_vxHKCpkh4iMZHBN-wL6T0wobKD9o-TkkmxVd8.nLmQflLhUdpSEvfoU_n26ulEIUPQgBKHwiP-J-M-VWc
+
+[
+    {
+        "operator_id": "3b7571e5-731d-4bf7-aaa9-f090c4bd1755",
+        "version": "8f25d9ad-cb64-434e-91b7-61f3c3544592"
+    }
+]
+
+### 获取算子信息
+GET http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/info/863df62a-2c23-4b30-9939-fd1efc252a99?version=5ceb3030-7025-4577-87c5-98bb63c2d486
+Content-Type: application/json
+Authorization: Bearer ory_at_9tY-7NYmbSExVdNr_lCea88U5G2K7uboFaPNAzoZx04.G4kZt2htkZ4KHxtjphTDyPkIBB4eaaG3Iz0bm5ITHHk
+
+### 编辑算子
+POST http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/info
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "name": "查询个人缴费信息汇总 1",
+    "metadata": {
+        "method": "POST",
+        "path": "/xgrjfxxhzbzhjk/xgrjfhzbzh",
+        "server_url": "https://117.73.253.229:8443/data-application-gateway",
+        "summary": "查询个人缴费信息汇总",
+        "description": "根据身份证号、姓名和时间范围查询个人缴费信息汇总"
+    },
+    "operator_info": {
+        "category": "data_process",
+        "execution_mode": "sync"
+    },
+    "operator_execute_control": {
+        "timeout": 3000000
+    },
+     "operator_id": "757372ec-11f9-44a8-b885-f2cb07494567",
+      "version": "c8c7ee2e-5ab3-4ef4-b6d3-0df333fcf089"
+}
+
+### 更新算子状态
+POST https://192.168.124.91/api/agent-operator-integration/v1/operator/status
+Content-Type: application/json
+Authorization: Bearer ory_at_gzaWB0Ckk2UoIIoumbBK-eXEepDnYWLLGS-oIhNhJm4.-AkbmSptX2vKojc0Ea4JJBGC2COsHOuRLOCqsjiWHYk
+
+[
+    {
+        "operator_id": "a73f0474-1d8f-4059-88bd-6dcb42b8d155",
+        "version": "370e97b6-41dd-47ed-82dd-fb2978b2752e",
+        "status": "published"
+    },
+    {
+        "operator_id": "7a5488de-29ae-4846-bb15-a0d06879f537",
+        "version": "f428f1ad-ec5c-4400-857e-75b4181bcc73",
+        "status": "published"
+    }
+]
+
+
+### 算子更新
+POST http://127.0.0.1:9000/api/agent-operator-integration/internal-v1/operator/info/update
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+Authorization: Bearer ory_at_Js67e1IfEMaz11uCcyiwupQeboI5tLw4KMZHmrWaQcU.c4nUBzrsR9WkYPKgbGJHdWcMRoUtI3tPV400vYbvTl8
+
+--WebAppBoundary
+Content-Disposition: form-data; name="operator_metadata_type"
+Content-Type: text/plain
+
+openapi
+--WebAppBoundary
+Content-Disposition: form-data; name="direct_publish"
+Content-Type: text/plain
+
+true
+--WebAppBoundary
+Content-Disposition: form-data; name="user_token"
+Content-Type: text/plain
+
+ory_at_D7I3fncILJBO4vzqBEzx7jAZRAYzTwvWHp0_k9SFF8A.Ub6G067KdkYDU403hXfaFz204FqERWnofvobJad1NXc
+--WebAppBoundary
+Content-Disposition: form-data; name="operator_id"
+Content-Type: text/plain
+
+ab602709-b614-4cc1-bfc0-c7d0ab006d2d
+--WebAppBoundary
+Content-Disposition: form-data; name="version"
+Content-Type: text/plain
+
+29d4aabe-37fe-49d6-bf6d-0aedca4ff878
+--WebAppBoundary
+Content-Disposition: form-data; name="data"; filename="test.yaml"
+Content-Type: application/json
+
+< /root/go/src/github.com/kweaver-ai/operator-hub/operator-integration/server/tests/file/yaml/test.yaml
+--WebAppBoundary--
+
+
+
+
+### 算子注册
+POST http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/register
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+Authorization: Bearer ory_at_LOCqj79FOcTFp1WAnLG-YGEXJPKyscITm2eeAcAEVp0.0C1D65dh7VLdw1LahEvIHveNnM_WN5Ayu35ONkOYmpY
+
+--WebAppBoundary
+Content-Disposition: form-data; name="operator_metadata_type"
+Content-Type: text/plain
+
+openapi
+--WebAppBoundary
+Content-Disposition: form-data; name="direct_publish"
+Content-Type: text/plain
+
+true
+--WebAppBoundary
+Content-Disposition: form-data; name="data"; filename="test.json"
+Content-Type: application/json
+
+< /root/go/src/github.com/kweaver-ai/operator-hub/operator-integration/server/tests/file/json/test.json
+--WebAppBoundary--
+
+
+### 分页查询算子
+GET http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/info/list?page=1&page_size=100&
+Authorization: {{token}}
+
+
+### 查询算子详情
+GET http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/info/9b4c3452-3143-4f47-a821-55561e8325f7?version=779ff836-02cb-4e62-9977-52a5f9cdaa9b
+Authorization: {{token}}
+
+
+### 算子调试
+POST http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/debug
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "operator_id": "55376ac3-53e5-41ce-b2e4-8376b8ba9bdc",
+    "version": "b79f87d0-0e0c-42d9-9c9f-151ec973792e",
+    "header": {
+        "Authorization": "Bearer ory_at_4XhbMCnfx1MnO3Gck2Jx51YUe25xIqWn9a51H9oF2GI.ur5yGB4bICTlnD3bFdvCRdZmeo2eBTdVPi5DzkmhNNM",
+        "Content-Type": "application/json"
+    },
+    "body": {
+        "a": "xxxxx"
+    }
+}
+
+### 获取算子列表
+GET http://127.0.0.1:9000/api/agent-operator-integration/v1/operator/info/list?page=1&page_size=100
+Content-Type: application/json
+Authorization: {{token}}
+
+# dd634106-35f5-11f0-973c-163d5ba131f5
+# 137f6a8e-459c-11f0-973c-163d5ba131f5

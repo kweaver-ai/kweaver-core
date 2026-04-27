@@ -1,0 +1,5161 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "SAP数据资产管理平台_管理控制台",
+        "version": "1.0.0",
+        "description": "数据建模",
+        "x-logo": {
+            "url": "anyshare",
+            "backgroundColor": "#FFFFFF",
+            "altText": "AnyShare logo"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{host}:{port}/api/",
+            "description": "host: AnyShare服务器IP, port: 默认端口443",
+            "variables": {
+                "host": {
+                    "default": "host",
+                    "description": "AnyShare服务器IP"
+                },
+                "port": {
+                    "default": "443",
+                    "description": "https默认端口443"
+                }
+            }
+        }
+    ],
+    "paths": {
+        "/capp-model/v1/manage/source": {
+            "get": {
+                "tags": [
+                    "数据源"
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "description": "每页显示数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "offset",
+                        "description": "分页偏移数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SourceRes"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "数据源列表"
+            }
+        },
+        "/capp-model/v1/manage/group_tree": {
+            "get": {
+                "tags": [
+                    "业务分组"
+                ],
+                "parameters": [
+                    {
+                        "name": "source",
+                        "description": "数据源ID",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "required": [
+                                            "id",
+                                            "name"
+                                        ],
+                                        "properties": {
+                                            "id": {
+                                                "$ref": "#/components/schemas/group_type_id"
+                                            },
+                                            "name": {
+                                                "$ref": "#/components/schemas/group_type_name"
+                                            },
+                                            "groups": {
+                                                "description": "业务分组",
+                                                "type": "array",
+                                                "items": {
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "$ref": "#/components/schemas/group_id"
+                                                        },
+                                                        "name": {
+                                                            "$ref": "#/components/schemas/group_name"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "树形分组"
+            }
+        },
+        "/capp-model/v1/manage/service/catalog": {
+            "get": {
+                "tags": [
+                    "注册服务"
+                ],
+                "parameters": [
+                    {
+                        "name": "type",
+                        "schema": {
+                            "$ref": "#/components/schemas/service_catalog_type"
+                        },
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "name": "source_id",
+                        "description": "数据源ID",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServiceCatalog"
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "服务编号列表"
+            }
+        },
+        "/capp-model/v1/manage/service": {
+            "get": {
+                "tags": [
+                    "注册服务"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "name": "name",
+                        "schema": {
+                            "$ref": "#/components/schemas/service_name"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "group_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/group_id"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "group_type_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/group_type_id"
+                        },
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "name": "source_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/source_id"
+                        },
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Service"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "服务列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "svc_code",
+                                    "head_type",
+                                    "group_id",
+                                    "item_type",
+                                    "service_fields",
+                                    "source_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/service_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/service_name"
+                                    },
+                                    "svc_code": {
+                                        "$ref": "#/components/schemas/svc_code"
+                                    },
+                                    "head_type": {
+                                        "$ref": "#/components/schemas/head_type"
+                                    },
+                                    "item_type": {
+                                        "$ref": "#/components/schemas/item_type"
+                                    },
+                                    "group_id": {
+                                        "$ref": "#/components/schemas/group_id"
+                                    },
+                                    "service_fields": {
+                                        "$ref": "#/components/schemas/service_fields"
+                                    },
+                                    "service_item_fields": {
+                                        "$ref": "#/components/schemas/service_item_fields"
+                                    },
+                                    "source_id": {
+                                        "$ref": "#/components/schemas/source_id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "201": {
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "format": "uri",
+                                    "type": "string"
+                                },
+                                "description": "/service/{id}"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/service_id"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建服务"
+            }
+        },
+        "/capp-model/v1/manage/service/node_service": {
+            "get": {
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NodeService"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "节点服务列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "svc_code",
+                                    "head_type",
+                                    "group_id",
+                                    "service_fields",
+                                    "source_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/service_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/service_name"
+                                    },
+                                    "svc_code": {
+                                        "$ref": "#/components/schemas/svc_code"
+                                    },
+                                    "head_type": {
+                                        "$ref": "#/components/schemas/head_type"
+                                    },
+                                    "group_id": {
+                                        "$ref": "#/components/schemas/group_id"
+                                    },
+                                    "service_fields": {
+                                        "$ref": "#/components/schemas/service_fields"
+                                    },
+                                    "source_id": {
+                                        "$ref": "#/components/schemas/source_id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "201": {
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "format": "uri",
+                                    "type": "string"
+                                },
+                                "description": "/service/{id}"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/service_id"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建服务1"
+            }
+        },
+        "/capp-model/v1/manage/service/{service_id}": {
+            "get": {
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Service"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "服务详情"
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "svc_code",
+                                    "head_type",
+                                    "item_type",
+                                    "group_id",
+                                    "service_fields",
+                                    "source_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "$ref": "#/components/schemas/service_name"
+                                    },
+                                    "svc_code": {
+                                        "$ref": "#/components/schemas/svc_code"
+                                    },
+                                    "head_type": {
+                                        "$ref": "#/components/schemas/head_type"
+                                    },
+                                    "item_type": {
+                                        "$ref": "#/components/schemas/item_type"
+                                    },
+                                    "group_id": {
+                                        "$ref": "#/components/schemas/group_id"
+                                    },
+                                    "source_id": {
+                                        "$ref": "#/components/schemas/source_id"
+                                    },
+                                    "service_fields": {
+                                        "$ref": "#/components/schemas/service_fields"
+                                    },
+                                    "service_item_fields": {
+                                        "$ref": "#/components/schemas/service_item_fields"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑服务"
+            },
+            "delete": {
+                "tags": [
+                    "注册服务"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除服务"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "service_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/service_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/service/scene_obj": {
+            "get": {
+                "tags": [
+                    "注册服务"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "name": "source_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/source_id"
+                        },
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SceneObjService"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "场景对象服务列表"
+            }
+        },
+        "/capp-model/v1/manage/scene_object_category": {
+            "get": {
+                "tags": [
+                    "对象分类"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SceneObjectCategory"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "分类列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "source_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/scene_object_category_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_object_category_name"
+                                    },
+                                    "source_id": {
+                                        "$ref": "#/components/schemas/source_id"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "对象分类"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建分类"
+            }
+        },
+        "/capp-model/v1/manage/scene_object_category/{category_id}": {
+            "get": {
+                "tags": [
+                    "对象分类"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SceneObjectCategory"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "分类详情"
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "service_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_object_category_name"
+                                    },
+                                    "service_id": {
+                                        "$ref": "#/components/schemas/service_id"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "对象分类"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑分类"
+            },
+            "delete": {
+                "tags": [
+                    "对象分类"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除分类"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "category_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/scene_object_category_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/scene_object": {
+            "get": {
+                "tags": [
+                    "场景对象"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SceneObject"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "对象列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "scene_object_category_id",
+                                    "code",
+                                    "name",
+                                    "service_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "scene_object_category_id": {
+                                        "$ref": "#/components/schemas/scene_object_category_id"
+                                    },
+                                    "code": {
+                                        "$ref": "#/components/schemas/scene_object_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_object_name"
+                                    },
+                                    "service_id": {
+                                        "$ref": "#/components/schemas/service_id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "场景对象"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建对象"
+            }
+        },
+        "/capp-model/v1/manage/scene_object/{object_id}": {
+            "get": {
+                "tags": [
+                    "场景对象"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SceneObject"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "对象详情"
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "scene_object_category_id",
+                                    "name",
+                                    "service_id"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "scene_object_category_id": {
+                                        "$ref": "#/components/schemas/scene_object_category_id"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_object_name"
+                                    },
+                                    "service_id": {
+                                        "$ref": "#/components/schemas/service_id"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "场景对象"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑对象"
+            },
+            "delete": {
+                "tags": [
+                    "场景对象"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除对象"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "object_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/scene_object_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/scene": {
+            "get": {
+                "tags": [
+                    "业务场景"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "name": "code",
+                        "schema": {
+                            "$ref": "#/components/schemas/scene_code"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "name",
+                        "schema": {
+                            "$ref": "#/components/schemas/scene_name"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "business_type",
+                        "schema": {
+                            "$ref": "#/components/schemas/business_type"
+                        },
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Scene"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "场景列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "show_item",
+                                    "business_type"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/scene_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_name"
+                                    },
+                                    "show_item": {
+                                        "$ref": "#/components/schemas/show_item"
+                                    },
+                                    "scene_object_list": {
+                                        "$ref": "#/components/schemas/Scene_object_list"
+                                    },
+                                    "business_type": {
+                                        "$ref": "#/components/schemas/business_type"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "业务场景"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建场景"
+            }
+        },
+        "/capp-model/v1/manage/scene/{scene_id}": {
+            "get": {
+                "tags": [
+                    "业务场景"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Scene"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "场景详情"
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "show_item",
+                                    "business_type"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/scene_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/scene_name"
+                                    },
+                                    "show_item": {
+                                        "$ref": "#/components/schemas/show_item"
+                                    },
+                                    "scene_object_list": {
+                                        "$ref": "#/components/schemas/scene_object_list"
+                                    },
+                                    "business_type": {
+                                        "$ref": "#/components/schemas/business_type"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "业务场景"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑场景"
+            },
+            "delete": {
+                "tags": [
+                    "业务场景"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除场景"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "scene_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/scene_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/scene/{scene_id}/node": {
+            "get": {
+                "tags": [
+                    "业务场景"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "name": "name",
+                        "description": "节点名称",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SceneNodeList"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "场景节点列表"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "scene_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/scene_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/node": {
+            "get": {
+                "tags": [
+                    "业务节点"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    },
+                    {
+                        "name": "code",
+                        "schema": {
+                            "$ref": "#/components/schemas/node_code"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "name",
+                        "schema": {
+                            "$ref": "#/components/schemas/node_name"
+                        },
+                        "in": "query"
+                    },
+                    {
+                        "name": "group_type_id",
+                        "schema": {
+                            "$ref": "#/components/schemas/service_name"
+                        },
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NodeList"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "节点列表"
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "service_id",
+                                    "node_fields",
+                                    "node_filters"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "$ref": "#/components/schemas/node_code"
+                                    },
+                                    "name": {
+                                        "$ref": "#/components/schemas/node_name"
+                                    },
+                                    "service_id": {
+                                        "$ref": "#/components/schemas/service_id"
+                                    },
+                                    "node_fields": {
+                                        "$ref": "#/components/schemas/node_fields"
+                                    },
+                                    "node_item_fields": {
+                                        "$ref": "#/components/schemas/node_item_fields"
+                                    },
+                                    "node_filters": {
+                                        "$ref": "#/components/schemas/node_filters"
+                                    },
+                                    "node_condition": {
+                                        "$ref": "#/components/schemas/node_condition"
+                                    },
+                                    "node_item_filters": {
+                                        "$ref": "#/components/schemas/node_fields"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "业务节点"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建节点"
+            }
+        },
+        "/capp-model/v1/manage/node/{node_id}": {
+            "get": {
+                "tags": [
+                    "业务节点"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Node"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "节点详情"
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "$ref": "#/components/schemas/node_name"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "业务节点"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑节点"
+            },
+            "delete": {
+                "tags": [
+                    "业务节点"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除节点"
+            },
+            "parameters": [
+                {
+                    "example": 1,
+                    "name": "node_id",
+                    "schema": {
+                        "$ref": "#/components/schemas/node_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/variant_time": {
+            "get": {
+                "tags": [
+                    "时间规则"
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "description": "每页显示数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "offset",
+                        "description": "分页偏移数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "name",
+                        "description": "时间规则规则名称",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "code",
+                        "description": "时间规则编号",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TimeVariant"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取时间规则列表"
+            },
+            "post": {
+                "requestBody": {
+                    "description": "创建时间规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/timeVariant"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "时间规则"
+                ],
+                "responses": {
+                    "201": {
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "format": "uri",
+                                    "type": "string"
+                                },
+                                "description": "/timeVariant/{id}"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "description": "时间规则ID",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "example": {
+                                        "id": 1
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建时间规则"
+            }
+        },
+        "/capp-model/v1/manage/variant_time/{id}": {
+            "get": {
+                "tags": [
+                    "时间规则"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeVariant"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取时间规则详情"
+            },
+            "put": {
+                "requestBody": {
+                    "description": "编辑时间规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "时间规则名称",
+                                        "type": "string"
+                                    },
+                                    "annual_type": {
+                                        "description": "年度类型（1:自然年度,2:财经年度）",
+                                        "type": "integer"
+                                    },
+                                    "start_month": {
+                                        "description": "时间规则起始月份",
+                                        "type": "integer"
+                                    },
+                                    "base_year_type": {
+                                        "description": "基准年度（1:系统年度,2:指定年度）",
+                                        "type": "integer"
+                                    },
+                                    "base_year": {
+                                        "description": "时间规则基准年份",
+                                        "type": "string"
+                                    },
+                                    "show_year_limit": {
+                                        "description": "显示年数（3:3年,5:5年,7:7年,10:10年,100:无限制）",
+                                        "type": "integer"
+                                    },
+                                    "show_quarter": {
+                                        "description": "显示季度（0:隐藏;1:显示）",
+                                        "type": "integer"
+                                    },
+                                    "show_month": {
+                                        "description": "显示月度（0:隐藏;1:显示）",
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "时间规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑时间规则"
+            },
+            "delete": {
+                "tags": [
+                    "时间规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除时间规则"
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "description": "时间规则ID",
+                    "schema": {
+                        "$ref": "#/components/schemas/time_variant_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/variant_time/time_earliest": {
+            "get": {
+                "tags": [
+                    "时间规则"
+                ],
+                "parameters": [
+                    {
+                        "name": "time_variant_id",
+                        "description": "时间流程id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "name": "node_code",
+                        "description": "节点Code列表",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "show_year_limit"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "show_year_limit": {
+                                            "description": "显示年数",
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取业务数据最早时间"
+            }
+        },
+        "/capp-model/v1/manage/variant_time/sync": {
+            "get": {
+                "tags": [
+                    "时间规则"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "同步业务数据最早时间"
+            }
+        },
+        "/capp-model/v1/manage/variant_flow": {
+            "get": {
+                "tags": [
+                    "流程规则"
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "description": "每页显示数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "offset",
+                        "description": "分页偏移数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "name",
+                        "description": "流程规则名称",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "code",
+                        "description": "流程规则编号",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "business_type",
+                        "description": "流程业务类型",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FlowVariant"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取流程规则列表"
+            },
+            "post": {
+                "requestBody": {
+                    "description": "创建流程规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/flowVariant"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "流程规则"
+                ],
+                "responses": {
+                    "201": {
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "format": "uri",
+                                    "type": "string"
+                                },
+                                "description": "/flowVariant/{id}"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "description": "流程规则ID",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "example": {
+                                        "id": 1
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "创建流程规则"
+            }
+        },
+        "/capp-model/v1/manage/variant_flow/{id}": {
+            "get": {
+                "tags": [
+                    "流程规则"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowVariant"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取流程规则详情"
+            },
+            "put": {
+                "requestBody": {
+                    "description": "编辑流程规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "流程规则名称",
+                                        "type": "string"
+                                    },
+                                    "scene_id": {
+                                        "description": "业务场景ID",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "业务场景ID",
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "business_type": {
+                                        "description": "流程业务类型",
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "流程规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑流程规则"
+            },
+            "delete": {
+                "tags": [
+                    "流程规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除流程规则"
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "description": "时间规则ID",
+                    "schema": {
+                        "$ref": "#/components/schemas/flow_variant_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        },
+        "/capp-model/v1/manage/variant_tree": {
+            "get": {
+                "tags": [
+                    "目录树规则"
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "description": "每页显示数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "offset",
+                        "description": "分页偏移数量",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "name",
+                        "description": "目录树规则名称",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    },
+                    {
+                        "name": "code",
+                        "description": "目录树规则编号",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "in": "query",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "total_count",
+                                        "entries"
+                                    ],
+                                    "type": "object",
+                                    "properties": {
+                                        "total_count": {
+                                            "description": "记录总数",
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "description": "数据记录",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TreeVariant"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取目录树规则列表"
+            },
+            "post": {
+                "requestBody": {
+                    "description": "创建目录树规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "description": "目录树规则编号",
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "description": "目录树规则名称",
+                                        "type": "string"
+                                    },
+                                    "note": {
+                                        "description": "目录树规则备注",
+                                        "type": "string"
+                                    },
+                                    "tree_structure": {
+                                        "description": "业务数据目录树结构",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "level": {
+                                                    "description": "目录树层级(1.第一层 2.第二层)",
+                                                    "type": "integer"
+                                                },
+                                                "variant_type": {
+                                                    "description": "规则类型(1.时间 2.流程)",
+                                                    "type": "integer"
+                                                },
+                                                "variant_id": {
+                                                    "description": "规则ID",
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "tree_mast_structure": {
+                                        "description": "主数据目录树结构",
+                                        "type": "object",
+                                        "properties": {
+                                            "variant_id": {
+                                                "description": "业务流程id",
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "tree_content_data_structure": {
+                                        "description": "非sap目录树结构",
+                                        "type": "object",
+                                        "properties": {
+                                            "variant_id": {
+                                                "description": "业务流程id",
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "目录树规则"
+                ],
+                "responses": {
+                    "201": {
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "format": "uri",
+                                    "type": "string"
+                                },
+                                "description": "/treeVariant/{id}"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "description": "目录树规则ID",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "example": {
+                                        "id": 1
+                                    }
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "请求出错"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "禁止"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "没有资源"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "资源冲突"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": "内部错误"
+                    }
+                },
+                "summary": "创建目录树规则"
+            }
+        },
+        "/capp-model/v1/manage/variant_tree/{id}": {
+            "get": {
+                "tags": [
+                    "目录树规则"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TreeVariant"
+                                }
+                            }
+                        },
+                        "description": "请求成功"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "获取目录树规则详情"
+            },
+            "put": {
+                "requestBody": {
+                    "description": "编辑目录树规则",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "目录树规则名称",
+                                        "type": "string"
+                                    },
+                                    "note": {
+                                        "description": "目录树规则备注",
+                                        "type": "string"
+                                    },
+                                    "tree_structure": {
+                                        "description": "目录树结构",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "规则ID",
+                                                    "type": "integer"
+                                                },
+                                                "level": {
+                                                    "description": "目录树层级",
+                                                    "type": "integer"
+                                                },
+                                                "variant_type": {
+                                                    "description": "规则类型",
+                                                    "type": "integer"
+                                                },
+                                                "variant_id": {
+                                                    "description": "规则ID",
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "目录树规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "编辑目录树规则"
+            },
+            "delete": {
+                "tags": [
+                    "目录树规则"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "请求成功"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/500"
+                    }
+                },
+                "summary": "删除目录树规则"
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "description": "目录树规则ID",
+                    "schema": {
+                        "$ref": "#/components/schemas/tree_variant_id"
+                    },
+                    "in": "path",
+                    "required": true
+                }
+            ]
+        }
+    },
+    "components": {
+        "schemas": {
+            "created_at": {
+                "format": "date-time",
+                "description": "创建时间",
+                "type": "string"
+            },
+            "updated_at": {
+                "format": "date-time",
+                "description": "更新时间",
+                "type": "string"
+            },
+            "scene_object_list": {
+                "description": "场景对象列表",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "scene_object",
+                        "scene_object_category"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "scene_object": {
+                            "$ref": "#/components/schemas/scene_object"
+                        },
+                        "scene_object_category": {
+                            "$ref": "#/components/schemas/scene_object"
+                        }
+                    }
+                }
+            },
+            "show_item": {
+                "description": "是否启用场景对象",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "Scene_object_list": {
+                "description": "创建场景数据源和场景对象id列表",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "source_id",
+                        "scene_object_id"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "source_id": {
+                            "description": "数据源ID",
+                            "type": "integer"
+                        },
+                        "scene_object_id": {
+                            "description": "场景对象ID",
+                            "type": "integer"
+                        }
+                    }
+                }
+            },
+            "service_catalog_type": {
+                "description": "服务目录类型\n\n类型 | 说明\n--- | ---\nbiz | 业务类型\nmast | 主数据类型\nkv | 键值类型",
+                "enum": [
+                    "biz",
+                    "object",
+                    "kv"
+                ],
+                "type": "string"
+            },
+            "service_catalog_code": {
+                "description": "服务目录编号",
+                "type": "string"
+            },
+            "service_catalog_name": {
+                "description": "服务目录名称",
+                "type": "string"
+            },
+            "service_id": {
+                "description": "注册服务ID",
+                "type": "integer"
+            },
+            "service_code": {
+                "description": "注册服务编号",
+                "type": "string"
+            },
+            "service_name": {
+                "description": "注册服务名称",
+                "type": "string"
+            },
+            "business_type": {
+                "description": "业务类型",
+                "type": "integer"
+            },
+            "scene_nodes": {
+                "description": "场景节点",
+                "type": "array",
+                "items": {
+                    "properties": {
+                        "id": {
+                            "description": "节点id",
+                            "type": "integer"
+                        },
+                        "code": {
+                            "description": "节点编号",
+                            "type": "integer"
+                        },
+                        "name": {
+                            "description": "节点名称",
+                            "type": "integer"
+                        }
+                    }
+                }
+            },
+            "scene_object_service": {
+                "description": "场景对象服务",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "id",
+                        "name"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "description": "id",
+                            "type": "integer"
+                        },
+                        "name": {
+                            "description": "服务名称",
+                            "type": "integer"
+                        }
+                    }
+                }
+            },
+            "svc_code": {
+                "description": "服务目录编号",
+                "type": "string"
+            },
+            "head_type": {
+                "description": "数据类型\n\n类型 | 描述\n--- | ---\n0 | 非业务事务型\n1 | 是业务事务型",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "item_type": {
+                "description": "是否开启明细字段\n\n类型 | 描述\n--- | ---\n0 | 不开启\n1 | 开启",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "source_id": {
+                "description": "数据源ID",
+                "type": "integer"
+            },
+            "source_name": {
+                "description": "数据源描述",
+                "type": "string"
+            },
+            "node_fields": {
+                "description": "节点展示字段id数组",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "service_field_id",
+                        "search_code"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "service_field_id": {
+                            "description": "字段id",
+                            "type": "integer"
+                        },
+                        "search_code": {
+                            "description": "查询编号 [不用传]",
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "node_item_fields": {
+                "description": "节点明细展示字段id数组",
+                "type": "array",
+                "items": {
+                    "type": "integer"
+                }
+            },
+            "node_filters": {
+                "description": "节点搜索字段",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "service_field_id",
+                        "filter_type",
+                        "required",
+                        "search_code"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "service_field_id": {
+                            "description": "字段id",
+                            "type": "integer"
+                        },
+                        "filter_type": {
+                            "description": "搜索类型",
+                            "type": "integer"
+                        },
+                        "required": {
+                            "description": "是否必填",
+                            "type": "integer"
+                        },
+                        "search_code": {
+                            "description": "查询编号",
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "node_condition": {
+                "description": "节点过滤条件 除了用户的搜索条件外的，系统配置的额外的默认条件",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "cond_type",
+                        "cond_value",
+                        "link_type",
+                        "service_field_id"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "cond_type": {
+                            "description": "比较类型\n\n类型 | 描述\n--- | ---\n1 | =\n2 | !=\n3 | >\n4 | <\n5 | >=\n6 | <=",
+                            "enum": [
+                                "1",
+                                "2",
+                                "3",
+                                "4",
+                                "5",
+                                "6"
+                            ],
+                            "type": "integer"
+                        },
+                        "cond_value": {
+                            "description": "搜索类型",
+                            "type": "integer"
+                        },
+                        "link_type": {
+                            "description": "连接类型\n\n类型 | 描述\n--- | ---\n0 | AND\n1 | OR",
+                            "enum": [
+                                "1",
+                                "2"
+                            ],
+                            "type": "integer"
+                        },
+                        "service_field_id": {
+                            "description": "字段id",
+                            "type": "integer"
+                        }
+                    }
+                }
+            },
+            "scene_object": {
+                "description": "场景对象",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/group_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/group_name"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/group_name"
+                    }
+                }
+            },
+            "group_id": {
+                "description": "业务分组ID",
+                "type": "integer"
+            },
+            "group_name": {
+                "description": "业务分组名称",
+                "type": "string"
+            },
+            "group": {
+                "description": "业务分组",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/group_id"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/group_name"
+                    }
+                }
+            },
+            "group_type_id": {
+                "description": "分组类型ID",
+                "type": "integer"
+            },
+            "group_type_name": {
+                "description": "分组类型名称",
+                "type": "string"
+            },
+            "group_type": {
+                "description": "分组类型",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/group_type_id"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/group_type_name"
+                    }
+                }
+            },
+            "service_field_id": {
+                "description": "服务字段ID",
+                "type": "integer"
+            },
+            "service_field_code": {
+                "description": "服务字段编号",
+                "type": "string"
+            },
+            "service_field_name": {
+                "description": "服务字段名称",
+                "type": "string"
+            },
+            "perm_type": {
+                "description": "权限类型\n\n类型 | 描述\n--- | ---\n0 | 非权限字段\n1 | 是权限字段",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "kv_type": {
+                "description": "键值类型\n\n类型 | 描述\n--- | ---\n0 | 非键值字段\n1 | 是键值字段",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "kv_svc_code": {
+                "description": "键值服务编号",
+                "type": "string"
+            },
+            "kv_param": {
+                "description": "键值参数",
+                "type": "string"
+            },
+            "data_type": {
+                "description": "数据类型\n\n类型 | 描述\n--- | ---\n1 | kv 字段\n2 | mast 主数据字段\n3 | biz 业务数据字段",
+                "enum": [
+                    "1",
+                    "2",
+                    "3"
+                ]
+            },
+            "search_type": {
+                "description": "搜索框类型\n\n类型 | 描述\n--- | ---\n1 | 文本框与范围框\n2 | 文本框\n3 | 时间框",
+                "enum": [
+                    "1",
+                    "2",
+                    "3"
+                ]
+            },
+            "disable_search": {
+                "description": "字段是否支持搜索",
+                "type": "boolean"
+            },
+            "search_code": {
+                "description": "查询编号",
+                "type": "string"
+            },
+            "service_fields": {
+                "description": "服务字段",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "code",
+                        "name",
+                        "perm_type",
+                        "kv_type",
+                        "kv_svc_code",
+                        "kv_param",
+                        "data_type",
+                        "search_type",
+                        "disable_search",
+                        "search_code"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "$ref": "#/components/schemas/service_field_code"
+                        },
+                        "name": {
+                            "$ref": "#/components/schemas/service_field_name"
+                        },
+                        "perm_type": {
+                            "$ref": "#/components/schemas/perm_type"
+                        },
+                        "kv_type": {
+                            "$ref": "#/components/schemas/kv_type"
+                        },
+                        "kv_svc_code": {
+                            "$ref": "#/components/schemas/kv_svc_code"
+                        },
+                        "kv_param": {
+                            "$ref": "#/components/schemas/kv_param"
+                        },
+                        "data_type": {
+                            "$ref": "#/components/schemas/data_type"
+                        },
+                        "search_type": {
+                            "$ref": "#/components/schemas/search_type"
+                        },
+                        "disable_search": {
+                            "$ref": "#/components/schemas/disable_search"
+                        },
+                        "search_code": {
+                            "$ref": "#/components/schemas/search_code"
+                        }
+                    }
+                }
+            },
+            "service_item_fields": {
+                "description": "明细服务字段",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "code",
+                        "name",
+                        "perm_type",
+                        "kv_type",
+                        "kv_svc_code",
+                        "kv_param",
+                        "data_type",
+                        "search_type",
+                        "disable_search"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "$ref": "#/components/schemas/service_field_code"
+                        },
+                        "name": {
+                            "$ref": "#/components/schemas/service_field_name"
+                        },
+                        "perm_type": {
+                            "$ref": "#/components/schemas/perm_type"
+                        },
+                        "kv_type": {
+                            "$ref": "#/components/schemas/kv_type"
+                        },
+                        "kv_svc_code": {
+                            "$ref": "#/components/schemas/kv_svc_code"
+                        },
+                        "kv_param": {
+                            "$ref": "#/components/schemas/kv_param"
+                        },
+                        "data_type": {
+                            "$ref": "#/components/schemas/data_type"
+                        },
+                        "search_type": {
+                            "$ref": "#/components/schemas/search_type"
+                        },
+                        "disable_search": {
+                            "$ref": "#/components/schemas/disable_search"
+                        }
+                    }
+                }
+            },
+            "ServiceFields": {
+                "description": "服务字段",
+                "type": "array",
+                "items": {
+                    "required": [
+                        "id",
+                        "code",
+                        "name",
+                        "perm_type",
+                        "kv_type",
+                        "kv_svc_code",
+                        "kv_param"
+                    ],
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "$ref": "#/components/schemas/service_field_id"
+                        },
+                        "code": {
+                            "$ref": "#/components/schemas/service_field_code"
+                        },
+                        "name": {
+                            "$ref": "#/components/schemas/service_field_name"
+                        },
+                        "perm_type": {
+                            "$ref": "#/components/schemas/perm_type"
+                        },
+                        "kv_type": {
+                            "$ref": "#/components/schemas/kv_type"
+                        },
+                        "kv_svc_code": {
+                            "$ref": "#/components/schemas/kv_svc_code"
+                        },
+                        "kv_param": {
+                            "$ref": "#/components/schemas/kv_param"
+                        }
+                    }
+                }
+            },
+            "scene_object_category_id": {
+                "description": "对象分类ID",
+                "type": "integer"
+            },
+            "scene_object_category_code": {
+                "description": "对象分类编号",
+                "type": "string"
+            },
+            "scene_object_category_name": {
+                "description": "对象分类名称",
+                "type": "string"
+            },
+            "scene_object_id": {
+                "description": "场景对象ID",
+                "type": "integer"
+            },
+            "scene_object_code": {
+                "description": "场景对象编号",
+                "type": "string"
+            },
+            "scene_object_name": {
+                "description": "场景对象名称",
+                "type": "string"
+            },
+            "scene_id": {
+                "description": "业务场景ID",
+                "type": "integer"
+            },
+            "scene_code": {
+                "description": "业务场景编号",
+                "type": "string"
+            },
+            "scene_name": {
+                "description": "业务场景名称",
+                "type": "string"
+            },
+            "node_id": {
+                "description": "业务节点ID",
+                "type": "integer"
+            },
+            "node_code": {
+                "description": "业务节点编号",
+                "type": "string"
+            },
+            "node_name": {
+                "description": "业务节点名称",
+                "type": "string"
+            },
+            "system": {
+                "description": "系统类型\n\n类型 | 描述\n--- | ---\n0 | 非系统类型\n1 | 是系统类型",
+                "enum": [
+                    "0",
+                    "1"
+                ],
+                "type": "integer"
+            },
+            "time_variant_id": {
+                "description": "时间规则ID",
+                "type": "integer"
+            },
+            "flow_variant_id": {
+                "description": "流程规则ID",
+                "type": "integer"
+            },
+            "tree_variant_id": {
+                "description": "目录树规则ID",
+                "type": "integer"
+            },
+            "tree_id": {
+                "description": "目录树ID",
+                "type": "integer"
+            },
+            "org_variant_id": {
+                "description": "组织规则ID",
+                "type": "integer"
+            },
+            "bizRecordId": {
+                "description": "业务记录ID",
+                "type": "integer"
+            },
+            "service": {
+                "required": [
+                    "code",
+                    "name",
+                    "svc_code",
+                    "head_type",
+                    "group_id",
+                    "service_fields"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "$ref": "#/components/schemas/service_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/service_name"
+                    },
+                    "svc_code": {
+                        "$ref": "#/components/schemas/svc_code"
+                    },
+                    "head_type": {
+                        "$ref": "#/components/schemas/head_type"
+                    },
+                    "group_id": {
+                        "$ref": "#/components/schemas/group_id"
+                    },
+                    "service_fields": {
+                        "$ref": "#/components/schemas/service_fields"
+                    }
+                }
+            },
+            "ServiceField": {
+                "required": [
+                    "code",
+                    "name",
+                    "data_type",
+                    "search_type",
+                    "disable_search",
+                    "is_permission",
+                    "search_code"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "服务编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "服务名称",
+                        "type": "string"
+                    },
+                    "data_type": {
+                        "description": "数据类型\n\n类型 | 描述\n--- | ---\n1 | kv 字段\n2 | mast 主数据字段\n3 | biz 业务数据字段",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3"
+                        ]
+                    },
+                    "search_type": {
+                        "description": "搜索框类型\n\n类型 | 描述\n--- | ---\n1 | 文本框与范围框\n2 | 文本框\n3 | 时间框",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3"
+                        ]
+                    },
+                    "disable_search": {
+                        "description": "字段是否支持搜索",
+                        "type": "boolean"
+                    },
+                    "is_permission": {
+                        "description": "是否权限字段",
+                        "type": "boolean"
+                    },
+                    "search_code": {
+                        "description": "查询编号",
+                        "type": "string"
+                    }
+                }
+            },
+            "ServiceFieldItem": {
+                "required": [
+                    "code",
+                    "name",
+                    "data_type",
+                    "search_type",
+                    "disable_search"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "服务编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "服务名称",
+                        "type": "string"
+                    },
+                    "data_type": {
+                        "description": "数据类型\n\n类型 | 描述\n--- | ---\n1 | kv 字段\n2 | mast 主数据字段\n3 | biz 业务数据字段",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3"
+                        ]
+                    },
+                    "search_type": {
+                        "description": "搜索框类型\n\n类型 | 描述\n--- | ---\n1 | 文本框与范围框\n2 | 文本框\n3 | 时间框",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3"
+                        ]
+                    },
+                    "disable_search": {
+                        "description": "字段是否支持搜索",
+                        "type": "boolean"
+                    }
+                }
+            },
+            "ServiceCatalog": {
+                "required": [
+                    "code",
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "服务编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "服务名称",
+                        "type": "string"
+                    },
+                    "fields": {
+                        "description": "服务字段",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceField"
+                        }
+                    },
+                    "item_fields": {
+                        "description": "明细服务字段",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceFieldItem"
+                        }
+                    }
+                }
+            },
+            "Service": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "svc_code",
+                    "head_type",
+                    "item_type",
+                    "source_id",
+                    "source_name",
+                    "group",
+                    "group_type",
+                    "created_at",
+                    "updated_at",
+                    "service_fields"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/service_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/service_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/service_name"
+                    },
+                    "svc_code": {
+                        "$ref": "#/components/schemas/svc_code"
+                    },
+                    "head_type": {
+                        "$ref": "#/components/schemas/head_type"
+                    },
+                    "item_type": {
+                        "$ref": "#/components/schemas/item_type"
+                    },
+                    "source_id": {
+                        "$ref": "#/components/schemas/source_id"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    },
+                    "group": {
+                        "description": "业务分组",
+                        "required": [
+                            "id",
+                            "name"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/group_id"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/group_name"
+                            }
+                        }
+                    },
+                    "group_type": {
+                        "$ref": "#/components/schemas/group_type"
+                    },
+                    "created_at": {
+                        "$ref": "#/components/schemas/created_at"
+                    },
+                    "updated_at": {
+                        "$ref": "#/components/schemas/updated_at"
+                    },
+                    "service_fields": {
+                        "description": "服务字段",
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "id",
+                                "code",
+                                "name",
+                                "perm_type",
+                                "kv_type",
+                                "kv_svc_code",
+                                "kv_param",
+                                "data_type",
+                                "search_type",
+                                "disable_search",
+                                "search_code"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "$ref": "#/components/schemas/service_field_id"
+                                },
+                                "code": {
+                                    "$ref": "#/components/schemas/service_field_code"
+                                },
+                                "name": {
+                                    "$ref": "#/components/schemas/service_field_name"
+                                },
+                                "perm_type": {
+                                    "$ref": "#/components/schemas/perm_type"
+                                },
+                                "kv_type": {
+                                    "$ref": "#/components/schemas/kv_type"
+                                },
+                                "kv_svc_code": {
+                                    "$ref": "#/components/schemas/kv_svc_code"
+                                },
+                                "kv_param": {
+                                    "$ref": "#/components/schemas/kv_param"
+                                },
+                                "data_type": {
+                                    "$ref": "#/components/schemas/data_type"
+                                },
+                                "search_type": {
+                                    "$ref": "#/components/schemas/search_type"
+                                },
+                                "disable_search": {
+                                    "$ref": "#/components/schemas/disable_search"
+                                },
+                                "search_code": {
+                                    "$ref": "#/components/schemas/search_code"
+                                }
+                            }
+                        }
+                    },
+                    "service_item_fields": {
+                        "description": "明细服务字段",
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "id",
+                                "code",
+                                "name",
+                                "perm_type",
+                                "kv_type",
+                                "kv_svc_code",
+                                "kv_param",
+                                "data_type",
+                                "search_type",
+                                "disable_search"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "$ref": "#/components/schemas/service_field_id"
+                                },
+                                "code": {
+                                    "$ref": "#/components/schemas/service_field_code"
+                                },
+                                "name": {
+                                    "$ref": "#/components/schemas/service_field_name"
+                                },
+                                "perm_type": {
+                                    "$ref": "#/components/schemas/perm_type"
+                                },
+                                "kv_type": {
+                                    "$ref": "#/components/schemas/kv_type"
+                                },
+                                "kv_svc_code": {
+                                    "$ref": "#/components/schemas/kv_svc_code"
+                                },
+                                "kv_param": {
+                                    "$ref": "#/components/schemas/kv_param"
+                                },
+                                "data_type": {
+                                    "$ref": "#/components/schemas/data_type"
+                                },
+                                "search_type": {
+                                    "$ref": "#/components/schemas/search_type"
+                                },
+                                "disable_search": {
+                                    "$ref": "#/components/schemas/disable_search"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "NodeService": {
+                "required": [
+                    "service_id",
+                    "service_name",
+                    "source_id",
+                    "source_name",
+                    "group_type_id",
+                    "group_type_name",
+                    "group_id",
+                    "group_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "service_id": {
+                        "$ref": "#/components/schemas/service_id"
+                    },
+                    "service_name": {
+                        "$ref": "#/components/schemas/service_name"
+                    },
+                    "source_id": {
+                        "$ref": "#/components/schemas/source_id"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    },
+                    "group_type_id": {
+                        "$ref": "#/components/schemas/group_type_id"
+                    },
+                    "group_type_name": {
+                        "$ref": "#/components/schemas/group_type_name"
+                    },
+                    "group_id": {
+                        "$ref": "#/components/schemas/group_id"
+                    },
+                    "group_name": {
+                        "$ref": "#/components/schemas/group_name"
+                    }
+                }
+            },
+            "SceneObjService": {
+                "required": [
+                    "id",
+                    "name",
+                    "scene_object_service"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/service_id"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/service_name"
+                    },
+                    "scene_object_service": {
+                        "$ref": "#/components/schemas/scene_object_service"
+                    }
+                }
+            },
+            "SceneObjectCategory": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "source_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/scene_object_category_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/scene_object_category_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/scene_object_category_name"
+                    },
+                    "created_at": {
+                        "$ref": "#/components/schemas/created_at"
+                    },
+                    "updated_at": {
+                        "$ref": "#/components/schemas/updated_at"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    }
+                }
+            },
+            "SceneObject": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "scene_object_category",
+                    "service",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/scene_object_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/scene_object_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/scene_object_name"
+                    },
+                    "scene_object_category": {
+                        "description": "对象分类",
+                        "required": [
+                            "id",
+                            "code",
+                            "name"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/scene_object_category_id"
+                            },
+                            "code": {
+                                "$ref": "#/components/schemas/scene_object_category_code"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/scene_object_category_name"
+                            }
+                        }
+                    },
+                    "service": {
+                        "description": "注册服务",
+                        "required": [
+                            "id",
+                            "code",
+                            "name",
+                            "svc_code"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/service_id"
+                            },
+                            "code": {
+                                "$ref": "#/components/schemas/service_code"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/service_name"
+                            },
+                            "svc_code": {
+                                "$ref": "#/components/schemas/svc_code"
+                            }
+                        }
+                    },
+                    "created_at": {
+                        "$ref": "#/components/schemas/created_at"
+                    },
+                    "updated_at": {
+                        "$ref": "#/components/schemas/updated_at"
+                    }
+                }
+            },
+            "Scene": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "show_item",
+                    "scene_object_list",
+                    "business_type",
+                    "scene_nodes"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/scene_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/scene_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/scene_name"
+                    },
+                    "created_at": {
+                        "$ref": "#/components/schemas/created_at"
+                    },
+                    "updated_at": {
+                        "$ref": "#/components/schemas/updated_at"
+                    },
+                    "show_item": {
+                        "$ref": "#/components/schemas/show_item"
+                    },
+                    "scene_object_list": {
+                        "$ref": "#/components/schemas/scene_object_list"
+                    },
+                    "business_type": {
+                        "$ref": "#/components/schemas/business_type"
+                    },
+                    "scene_nodes": {
+                        "$ref": "#/components/schemas/scene_nodes"
+                    }
+                }
+            },
+            "SceneNodeList": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "source_id",
+                    "source_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/scene_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/scene_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/scene_name"
+                    },
+                    "source_id": {
+                        "$ref": "#/components/schemas/source_id"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    }
+                }
+            },
+            "Node": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "system",
+                    "group_type",
+                    "group",
+                    "service",
+                    "created_at",
+                    "updated_at",
+                    "source_id",
+                    "source_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/node_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/node_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/node_name"
+                    },
+                    "system": {
+                        "$ref": "#/components/schemas/system"
+                    },
+                    "group_type": {
+                        "$ref": "#/components/schemas/group_type"
+                    },
+                    "group": {
+                        "description": "业务分组",
+                        "required": [
+                            "id",
+                            "name"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/group_id"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/group_name"
+                            }
+                        }
+                    },
+                    "service": {
+                        "description": "注册服务",
+                        "required": [
+                            "id",
+                            "code",
+                            "name",
+                            "svc_code"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/service_id"
+                            },
+                            "code": {
+                                "$ref": "#/components/schemas/service_code"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/service_name"
+                            },
+                            "svc_code": {
+                                "$ref": "#/components/schemas/svc_code"
+                            }
+                        }
+                    },
+                    "node_item_fields": {
+                        "description": "注册服务明细",
+                        "required": [
+                            "id",
+                            "code",
+                            "name",
+                            "svc_code"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/components/schemas/service_id"
+                            },
+                            "code": {
+                                "$ref": "#/components/schemas/service_code"
+                            },
+                            "name": {
+                                "$ref": "#/components/schemas/service_name"
+                            },
+                            "svc_code": {
+                                "$ref": "#/components/schemas/svc_code"
+                            }
+                        }
+                    },
+                    "created_at": {
+                        "$ref": "#/components/schemas/created_at"
+                    },
+                    "updated_at": {
+                        "$ref": "#/components/schemas/updated_at"
+                    },
+                    "source_id": {
+                        "$ref": "#/components/schemas/source_id"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    }
+                }
+            },
+            "NodeList": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "system",
+                    "service_name",
+                    "source_name",
+                    "group_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/node_id"
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/node_code"
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/node_name"
+                    },
+                    "system": {
+                        "$ref": "#/components/schemas/system"
+                    },
+                    "service_name": {
+                        "$ref": "#/components/schemas/service_name"
+                    },
+                    "source_name": {
+                        "$ref": "#/components/schemas/source_name"
+                    },
+                    "group_name": {
+                        "$ref": "#/components/schemas/group_name"
+                    }
+                }
+            },
+            "Error": {
+                "required": [
+                    "code",
+                    "message",
+                    "cause"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "错误编码",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "description": "错误消息",
+                        "type": "string"
+                    },
+                    "cause": {
+                        "description": "错误原因",
+                        "type": "string"
+                    }
+                }
+            },
+            "TimeVariant": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "annual_type",
+                    "start_month",
+                    "base_year_type",
+                    "base_year",
+                    "show_year_limit",
+                    "show_quarter",
+                    "show_month",
+                    "created_at",
+                    "updated_at"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "规则ID",
+                        "type": "integer"
+                    },
+                    "code": {
+                        "description": "时间规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "时间规则名称",
+                        "type": "string"
+                    },
+                    "annual_type": {
+                        "description": "年度类型（1:自然年度,2:财经年度）",
+                        "type": "integer"
+                    },
+                    "start_month": {
+                        "description": "起始月份",
+                        "type": "integer"
+                    },
+                    "base_year_type": {
+                        "description": "基准年度（1:系统年度,2:指定年度）",
+                        "type": "integer"
+                    },
+                    "base_year": {
+                        "description": "基准年份",
+                        "type": "integer"
+                    },
+                    "show_year_limit": {
+                        "description": "显示年数（3:3年,5:5年,7:7年,10:10年,100:无限制）",
+                        "type": "integer"
+                    },
+                    "show_quarter": {
+                        "description": "显示季度（0:隐藏;1:显示）",
+                        "type": "string"
+                    },
+                    "show_month": {
+                        "description": "显示月度（0:隐藏;1:显示）",
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "format": "date-time",
+                        "description": "创建时间",
+                        "type": "integer"
+                    },
+                    "updated_at": {
+                        "format": "date-time",
+                        "description": "更新时间",
+                        "type": "integer"
+                    }
+                }
+            },
+            "timeVariant": {
+                "required": [
+                    "code",
+                    "name",
+                    "annual_type",
+                    "start_month",
+                    "base_year_type",
+                    "base_year",
+                    "show_year_limit",
+                    "show_quarter",
+                    "show_month"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "时间规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "时间规则名称",
+                        "type": "string"
+                    },
+                    "annual_type": {
+                        "description": "年度类型（1:自然年度,2:财经年度）",
+                        "type": "integer"
+                    },
+                    "start_month": {
+                        "description": "起始月份",
+                        "type": "integer"
+                    },
+                    "base_year_type": {
+                        "description": "基准年度（1:系统年度,2:指定年度）",
+                        "type": "integer"
+                    },
+                    "base_year": {
+                        "description": "基准年份",
+                        "type": "integer"
+                    },
+                    "show_year_limit": {
+                        "description": "显示年数（3:3年,5:5年,7:7年,10:10年,100:无限制）",
+                        "type": "integer"
+                    },
+                    "show_quarter": {
+                        "description": "显示季度（0:隐藏;1:显示）",
+                        "type": "string"
+                    },
+                    "show_month": {
+                        "description": "显示月度（0:隐藏;1:显示）【只有显示季度为1时 显示月度才能为1】",
+                        "type": "integer"
+                    }
+                }
+            },
+            "FlowVariant": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "scene",
+                    "business_type"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "规则ID",
+                        "type": "integer"
+                    },
+                    "code": {
+                        "description": "流程规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "流程规则名称",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "format": "date-time",
+                        "description": "创建时间",
+                        "type": "integer"
+                    },
+                    "updated_at": {
+                        "format": "date-time",
+                        "description": "更新时间",
+                        "type": "integer"
+                    },
+                    "scene": {
+                        "description": "场景对象",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SceneParam"
+                        }
+                    },
+                    "business_type": {
+                        "$ref": "#/components/schemas/business_type"
+                    }
+                }
+            },
+            "flowVariant": {
+                "required": [
+                    "code",
+                    "name",
+                    "scene_id",
+                    "business_type"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "流程规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "流程规则名称",
+                        "type": "string"
+                    },
+                    "scene_id": {
+                        "description": "业务场景ID",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SceneArray"
+                        }
+                    },
+                    "business_type": {
+                        "description": "流程业务类型",
+                        "$ref": "#/components/schemas/business_type"
+                    }
+                }
+            },
+            "SceneArray": {
+                "description": "业务场景ID",
+                "required": [
+                    "id"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "业务场景ID",
+                        "type": "integer"
+                    }
+                }
+            },
+            "SceneParam": {
+                "description": "业务场景ID",
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "show_item"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "业务场景ID",
+                        "type": "integer"
+                    },
+                    "code": {
+                        "description": "业务场景编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "业务场景名称",
+                        "type": "string"
+                    },
+                    "show_item": {
+                        "description": "show_item",
+                        "type": "integer"
+                    }
+                }
+            },
+            "OrgVariant": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "show_branch",
+                    "created_at",
+                    "updated_at",
+                    "variant_org_company"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "组织规则ID",
+                        "type": "integer"
+                    },
+                    "code": {
+                        "description": "组织规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "组织规则名称",
+                        "type": "string"
+                    },
+                    "show_branch": {
+                        "description": "是否启用分公司",
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "format": "date-time",
+                        "description": "创建时间",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "format": "date-time",
+                        "description": "更新时间",
+                        "type": "string"
+                    },
+                    "variant_org_company": {
+                        "description": "总公司规则",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "description": "总公司规则ID",
+                                    "type": "integer"
+                                },
+                                "short_name": {
+                                    "description": "总公司简称",
+                                    "type": "string"
+                                },
+                                "company": {
+                                    "description": "公司",
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "description": "公司ID",
+                                            "type": "integer"
+                                        },
+                                        "name": {
+                                            "description": "公司名称",
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "variant_org_company_branch": {
+                                    "description": "分公司列表",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CompanyBranches"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "CompanyBranches": {
+                "description": "分公司",
+                "required": [
+                    "id",
+                    "short_name",
+                    "company_branch"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "分公司ID",
+                        "type": "integer"
+                    },
+                    "short_name": {
+                        "description": "分公司简称",
+                        "type": "string"
+                    },
+                    "company_branch": {
+                        "description": "分公司",
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "description": "分公司ID",
+                                "type": "integer"
+                            },
+                            "name": {
+                                "description": "分公司名称",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "orgVariant": {
+                "required": [
+                    "code",
+                    "name",
+                    "show_branch",
+                    "variant_org_company"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "组织规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "组织规则名称",
+                        "type": "string"
+                    },
+                    "show_branch": {
+                        "description": "显示分公司（0:隐藏;1:显示）",
+                        "type": "string"
+                    },
+                    "variant_org_company": {
+                        "description": "总公司规则",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "short_name": {
+                                    "description": "总公司简称",
+                                    "type": "string"
+                                },
+                                "company_id": {
+                                    "description": "总公司ID",
+                                    "type": "integer"
+                                },
+                                "variant_org_company_branch": {
+                                    "description": "分公司规则",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/companyBranches"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "searchRes": {
+                "required": [
+                    "field",
+                    "value"
+                ],
+                "type": "object",
+                "properties": {
+                    "field": {
+                        "description": "字段",
+                        "type": "string"
+                    },
+                    "value": {
+                        "description": "字段值",
+                        "type": "string"
+                    }
+                }
+            },
+            "searchEntriesRes": {
+                "required": [
+                    "demo1",
+                    "demo2"
+                ],
+                "type": "object",
+                "properties": {
+                    "demo1": {
+                        "description": "返回值1",
+                        "type": "string"
+                    },
+                    "demo2": {
+                        "description": "返回值1",
+                        "type": "string"
+                    }
+                }
+            },
+            "searchFieldRes": {
+                "required": [
+                    "value"
+                ],
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "description": "返回值1",
+                        "type": "string"
+                    }
+                }
+            },
+            "companyBranches": {
+                "description": "分公司",
+                "type": "object",
+                "properties": {
+                    "short_name": {
+                        "description": "分公司简称",
+                        "type": "string"
+                    },
+                    "company_branch_id": {
+                        "description": "分公司ID",
+                        "type": "integer"
+                    }
+                }
+            },
+            "TreeHead": {
+                "required": [
+                    "label",
+                    "key",
+                    "children"
+                ],
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "description": "当前结构的描述",
+                        "type": "string"
+                    },
+                    "key": {
+                        "description": "挂在树上的搜索条件",
+                        "type": "string"
+                    },
+                    "children": {
+                        "description": "嵌套子结构",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TreeHead"
+                        }
+                    }
+                }
+            },
+            "TreeTail": {
+                "required": [
+                    "label",
+                    "key",
+                    "children"
+                ],
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "description": "当前结构的描述",
+                        "type": "string"
+                    },
+                    "key": {
+                        "description": "挂在树上的搜索条件",
+                        "type": "string"
+                    },
+                    "children": {
+                        "description": "嵌套子结构",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TreeTail"
+                        }
+                    }
+                }
+            },
+            "ServiceCode": {
+                "required": [
+                    "entries"
+                ],
+                "type": "object",
+                "properties": {
+                    "entries": {
+                        "description": "服务编号展示的列",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "service_code": {
+                                    "description": "字段名（数据库中）",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "SourceRes": {
+                "required": [
+                    "total_count",
+                    "entries"
+                ],
+                "type": "object",
+                "properties": {
+                    "total_count": {
+                        "description": "数据总数",
+                        "type": "integer"
+                    },
+                    "entries": {
+                        "description": "服务编号展示的列",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "description": "ID",
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "description": "数据源描述",
+                                    "type": "string"
+                                },
+                                "mtype": {
+                                    "description": "数据源类型（1为op 2为cloud）"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "SourceTreeRes": {
+                "required": [
+                    "entries"
+                ],
+                "type": "object",
+                "properties": {
+                    "entries": {
+                        "description": "数据源列表",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "source_id": {
+                                    "description": "数据源ID",
+                                    "type": "integer"
+                                },
+                                "source_name": {
+                                    "description": "数据源描述",
+                                    "type": "string"
+                                },
+                                "company": {
+                                    "description": "公司列表",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "description": "公司id",
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "description": "公司名称",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "TreeConf": {
+                "required": [
+                    "fields",
+                    "filters"
+                ],
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "description": "显示字段",
+                        "type": "object",
+                        "properties": {
+                            "field": {
+                                "description": "字段code",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "字段描述",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "filters": {
+                        "description": "显示字段",
+                        "type": "object",
+                        "properties": {
+                            "field": {
+                                "description": "字段code",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "字段描述",
+                                "type": "string"
+                            },
+                            "field_type": {
+                                "description": "搜索框类型",
+                                "type": "integer"
+                            },
+                            "required": {
+                                "description": "是否为必填",
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            },
+            "TreeStructures": {
+                "description": "目录树结构",
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "目录树结构ID",
+                        "type": "integer"
+                    },
+                    "level": {
+                        "description": "目录树层级",
+                        "type": "integer"
+                    },
+                    "variant_type": {
+                        "description": "规则类型",
+                        "type": "integer"
+                    },
+                    "variant_id": {
+                        "description": "规则ID",
+                        "type": "integer"
+                    },
+                    "time_variant": {
+                        "description": "时间规则",
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "description": "时间规则ID",
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "treeVariant": {
+                "required": [
+                    "code",
+                    "name",
+                    "note",
+                    "tree_structure"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "description": "目录树规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "目录树规则名称",
+                        "type": "string"
+                    },
+                    "note": {
+                        "description": "目录树备注",
+                        "type": "string"
+                    },
+                    "tree_structure": {
+                        "description": "目录树结构",
+                        "required": [
+                            "level",
+                            "variant_id",
+                            "variant_type"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "level": {
+                                "description": "目录树层级",
+                                "type": "string"
+                            },
+                            "variant_type": {
+                                "description": "规则类型",
+                                "type": "integer"
+                            },
+                            "variant_id": {
+                                "description": "规则ID",
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "PortalBizAttachment": {
+                "type": "object",
+                "properties": {
+                    "file_name": {
+                        "description": "附件文件名称",
+                        "type": "string"
+                    },
+                    "gns": {
+                        "description": "附件文件GNS",
+                        "type": "string"
+                    },
+                    "created_date": {
+                        "description": "附件文件创建日期",
+                        "type": "string"
+                    }
+                }
+            },
+            "PortalBizDetailInfo": {
+                "type": "object",
+                "properties": {
+                    "info": {
+                        "description": "业务详情信息",
+                        "type": "object"
+                    },
+                    "fields": {
+                        "description": "配置展示的列",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "field": {
+                                    "description": "字段名（数据库中）",
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "description": "字段名（页面显示）",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "TreeVariant": {
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "note",
+                    "created_at",
+                    "updated_at",
+                    "tree_structure"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "目录树规则ID",
+                        "type": "integer"
+                    },
+                    "code": {
+                        "description": "目录树规则编号",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "目录树规则名称",
+                        "type": "string"
+                    },
+                    "note": {
+                        "description": "目录树备注",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "format": "date-time",
+                        "description": "创建时间",
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "format": "date-time",
+                        "description": "更新时间",
+                        "type": "string"
+                    },
+                    "tree_structure": {
+                        "description": "目录树结构列表",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TreeStructures"
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "400": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "请求失败"
+            },
+            "401": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "认证失败"
+            },
+            "403": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "权限不足"
+            },
+            "404": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "记录为空"
+            },
+            "409": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "资源冲突"
+            },
+            "500": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                },
+                "description": "内部错误"
+            }
+        },
+        "parameters": {
+            "limit": {
+                "example": 10,
+                "name": "limit",
+                "description": "每页显示数量",
+                "schema": {
+                    "format": "int32",
+                    "default": 10,
+                    "maximum": 1000,
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "in": "query"
+            },
+            "offset": {
+                "example": 10,
+                "name": "offset",
+                "description": "分页偏移数量",
+                "schema": {
+                    "format": "int32",
+                    "default": 0,
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "in": "query"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "type": "http"
+            }
+        }
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "业务分组"
+        },
+        {
+            "name": "服务目录"
+        },
+        {
+            "name": "注册服务"
+        },
+        {
+            "name": "对象分类"
+        },
+        {
+            "name": "场景对象"
+        },
+        {
+            "name": "业务场景"
+        },
+        {
+            "name": "业务节点"
+        },
+        {
+            "name": "时间规则"
+        },
+        {
+            "name": "组织规则"
+        },
+        {
+            "name": "流程规则"
+        },
+        {
+            "name": "目录树规则"
+        },
+        {
+            "name": "目录树"
+        },
+        {
+            "name": "数据搜索"
+        }
+    ],
+    "x-tagGroups": [
+        {
+            "name": "管理平台",
+            "tags": [
+                "数据源",
+                "业务分组",
+                "注册服务",
+                "对象分类",
+                "场景对象",
+                "业务场景",
+                "业务节点",
+                "时间规则",
+                "流程规则",
+                "目录树规则"
+            ]
+        }
+    ]
+}

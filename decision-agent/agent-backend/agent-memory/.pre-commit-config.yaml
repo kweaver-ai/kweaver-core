@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-merge-conflict
+        files: ^agent-backend/agent-memory/
+        exclude: ^agent-backend/agent-memory/mem0/
+      - id: end-of-file-fixer
+        files: ^agent-backend/agent-memory/
+        exclude: ^agent-backend/agent-memory/mem0/
+      - id: trailing-whitespace
+        files: ^agent-backend/agent-memory/
+        exclude: ^agent-backend/agent-memory/mem0/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.14.3"
+    hooks:
+      - id: ruff
+        args: [--exit-non-zero-on-fix]
+        files: ^agent-backend/agent-memory/
+        exclude: ^agent-backend/agent-memory/mem0/
+      - id: ruff-format
+        files: ^agent-backend/agent-memory/
+        exclude: ^agent-backend/agent-memory/mem0/

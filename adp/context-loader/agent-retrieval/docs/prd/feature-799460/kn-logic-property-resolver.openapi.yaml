@@ -1,0 +1,436 @@
+openapi: 3.0.2
+info:
+  title: 逻辑属性解析服务
+  version: 1.0.0
+  description: |
+    基于 query + 上下文生成 dynamic_params，并调用底层 ontology-query 接口批量获取逻辑属性值（metric + operator）。
+servers:
+  - url: http://agent-retrieval:30779
+paths:
+  /api/agent-retrieval/in/v1/kn/logic-property-resolver:
+    post:
+      summary: 逻辑属性解析接口
+      description: |
+        ## 功能说明
+        解析并查询知识网络中对象的逻辑属性值（包括 metric 指标和 operator 算子属性）。
+
+        ## 典型使用场景
+        - 查询企业在指定时间段的药品上市数量（metric 指标）
+        - 计算企业的健康度评分（operator 算子）
+        - 批量查询多个对象的多个逻辑属性值
+      parameters:
+        - name: x-account-id
+          in: header
+          required: true
+          description: 用户ID
+          schema:
+            type: string
+        - name: x-account-type
+          in: header
+          required: true
+          description: 账户类型
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveLogicPropertiesRequest'
+            examples:
+              示例:
+                value:
+                  kn_id: kn_medical
+                  ot_id: company
+                  query: 注册资金大于100万人民币的企业有哪些？想知道这些药企的药品上市情况，并且这些企业的健康度怎么样？
+                  unique_identities:
+                    - company_id: company_000001
+                  properties:
+                    - approved_drug_count
+                    - business_health_score
+                  additional_context:
+                    |
+                    用途：给 LLM/Agent 补充生成 dynamic_params 所需的上下文（自由文本或 JSON 均可）。
+                    建议至少包含：
+                    1) 对象实例信息：company_id=company_000001，registered_capital=2000000
+                    2) 约束/筛选：registered_capital > 1000000
+                    3) 时间信息：now_ms=1762996342241，timezone=Asia/Shanghai；若为趋势查询，建议注明 step=month；若为即时查询，注明 instant=true
+                  options:
+                    return_debug: false
+                    max_repair_rounds: 1
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveLogicPropertiesResponse'
+              examples:
+                成功示例:
+                  value:
+                    datas:
+                      - company_id: company_000001
+                        approved_drug_count:
+                          model:
+                            unit_type: countUnit
+                            unit: times
+                          datas:
+                            - labels: {}
+                              times: [1762996342241]
+                              values: [12]
+                        business_health_score:
+                          score: 0.82
+                          level: B
+                缺参示例:
+                  value:
+                    error_code: MISSING_INPUT_PARAMS
+                    message: dynamic_params 缺少必需的 input 参数
+                    missing:
+                      - property: approved_drug_count
+                        params:
+                          - name: start
+                            type: INTEGER
+                            hint: 在 additional_context 中补充明确时间范围（start/end 或 “最近半年”），或在 query 中明确时间范围
+                    trace_id: 3f5d6c1c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    ResolveLogicPropertiesRequest:
+      type: object
+      required:
+        - kn_id
+        - ot_id
+        - query
+        - unique_identities
+        - properties
+      properties:
+        kn_id:
+          type: string
+          description: |
+            业务知识网络ID。例如：kn_medical（医疗领域）、kn_finance（金融领域）
+          example: kn_medical
+        ot_id:
+          type: string
+          description: |
+            对象类ID。指定要查询的对象类型。例如：company（企业）、drug（药品）、person（人物）
+          example: company
+        query:
+          type: string
+          description: |
+            用户原始查询问题。用于 Agent 理解查询意图，生成逻辑属性所需的动态参数。
+
+            **重要**: query 的内容会直接影响参数生成质量，应包含：
+            - 时间信息（如"最近一年"、"2023年"）
+            - 统计维度（如"总数"、"趋势"、"分布"）
+            - 业务上下文（帮助 Agent 理解查询目的）
+          example: "查询最近一年的药品上市总数"
+        unique_identities:
+          type: array
+          description: |
+            要查询的对象实例主键数组（支持批量查询）。
+
+            每个元素是一个键值对对象，包含该对象类的主键字段。
+            例如：[{"company_id": "company_000001"}, {"company_id": "company_000002"}]
+          items:
+            $ref: '#/components/schemas/UniqueIdentity'
+        properties:
+          type: array
+          description: |
+            需要查询的逻辑属性名称列表。支持两种类型：
+            - **metric**: 指标属性（如药品上市数量、销售额趋势等）
+            - **operator**: 算子属性（如健康度评分、风险等级等）
+
+            本接口会自动为每个属性生成 dynamic_params 并查询其值。
+          example: ["approved_drug_count", "business_health_score"]
+          items:
+            type: string
+        additional_context:
+          type: string
+          description: |
+            【可选】补充上下文信息，帮助 Agent 更准确地生成 dynamic_params。
+
+            **何时需要提供**:
+            - query 中的时间信息模糊时（如"最近"需要明确为具体时间戳）
+            - 需要传递对象实例的关键属性值
+            - 需要指定特殊的查询模式（如即时查询 vs 趋势查询）
+
+            **推荐格式**: 结构化的 JSON 字符串（也支持自由文本）
+
+            **建议包含的信息**:
+            1. 时间信息：now_ms（当前时间戳毫秒）、timezone（时区）
+            2. 对象属性：对象实例的关键属性值（如 company_name、registered_capital）
+            3. 查询模式：instant（是否即时查询）、step（趋势查询的步长：day/week/month/quarter/year）
+            4. 筛选条件：业务约束条件（如 registered_capital > 1000000）
+
+            **示例**:
+            ```json
+            {
+              "now_ms": 1765951609952,
+              "timezone": "Asia/Shanghai",
+              "instant": true,
+              "object_context": {
+                "company_id": "company_000001",
+                "company_name": "广西金秀圣堂药业有限责任公司"
+              }
+            }
+            ```
+
+            **注意**: 避免传递大段无关文本，保持信息精准和结构化。
+        options:
+          $ref: '#/components/schemas/ResolveOptions'
+    ResolveOptions:
+      type: object
+      description: |
+        【可选配置】控制接口行为的高级选项
+      properties:
+        return_debug:
+          type: boolean
+          description: |
+            是否返回调试信息。设置为 true 时，响应中会包含 debug 字段，内容包括：
+            - dynamic_params: Agent 生成的所有动态参数
+            - now_ms: 服务器时间戳
+            - warnings: 警告信息（如有）
+
+            **用途**: 调试参数生成逻辑、验证 Agent 行为
+          default: false
+          example: true
+        max_repair_rounds:
+          type: integer
+          format: int32
+          description: |
+            当 Agent 返回的 JSON 格式不合法时，最大尝试修复的轮次。
+
+            **说明**:
+            - 0 = 不进行修复，直接报错
+            - 1 = 尝试修复一次（推荐，默认值）
+            - 2+ = 多次修复尝试（可能增加延迟）
+
+            **适用场景**: Agent 输出质量不稳定时可适当增加
+          default: 1
+          example: 1
+        max_concurrency:
+          type: integer
+          format: int32
+          description: |
+            当查询多个 properties 时，并发调用 Agent 生成参数的最大并发数。
+
+            **说明**:
+            - 较小值（1-3）：降低服务压力，适合 Agent 响应较慢的情况
+            - 推荐值（4-6）：平衡性能和资源消耗
+            - 较大值（7-10）：加快处理速度，适合对响应时间敏感的场景
+
+            **注意**: 过大的并发数可能导致 Agent 服务过载
+          default: 4
+          example: 4
+    ResolveLogicPropertiesResponse:
+      description: 成功返回 datas 数组；缺参时返回 error_code 和 missing 清单
+      oneOf:
+        - $ref: '#/components/schemas/ObjectPropertiesValuesResponse'
+        - $ref: '#/components/schemas/MissingParamsError'
+    MissingParamsError:
+      type: object
+      description: 缺参错误响应。根据 hint 在 additional_context 或 query 中补充信息后重试
+      required:
+        - error_code
+        - message
+        - missing
+        - trace_id
+      properties:
+        error_code:
+          type: string
+          description: 错误码，固定为 MISSING_INPUT_PARAMS
+          example: MISSING_INPUT_PARAMS
+        message:
+          type: string
+          description: 错误信息
+          example: "dynamic_params 缺少必需的 input 参数"
+        missing:
+          type: array
+          description: 缺参清单（按 property 分组）
+          items:
+            $ref: '#/components/schemas/MissingPropertyParams'
+        trace_id:
+          type: string
+          description: 请求追踪ID
+          example: "3f5d6c1c-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    MissingPropertyParams:
+      type: object
+      description: 单个属性的缺参信息
+      required:
+        - property
+        - params
+      properties:
+        property:
+          type: string
+          description: 逻辑属性名称
+          example: "approved_drug_count"
+        params:
+          type: array
+          description: 该属性缺失的参数列表
+          items:
+            $ref: '#/components/schemas/MissingParam'
+    MissingParam:
+      type: object
+      description: 缺失参数的详情（名称、类型、补充建议）
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: 参数名（如 start, end, instant, step）
+          example: "start"
+        type:
+          type: string
+          description: 参数类型（INTEGER/BOOLEAN/STRING/array/object）
+          example: "INTEGER"
+        hint:
+          type: string
+          description: 补参建议（如何在 additional_context 或 query 中补充）
+          example: "在 additional_context 中补充时间范围，或在 query 中明确时间信息"
+    ObjectPropertiesValuesResponse:
+      type: object
+      description: 成功响应，包含查询结果和可选的调试信息
+      required:
+        - datas
+      properties:
+        datas:
+          type: array
+          description: 对象实例数据数组（与 unique_identities 对齐，字段动态包含请求的 properties）
+          items:
+            $ref: '#/components/schemas/ObjectPropertyValue'
+        debug:
+          $ref: '#/components/schemas/ResolveDebugInfo'
+    ObjectPropertyValue:
+      type: object
+      description: 单个对象实例的属性值（字段动态，包含主键和请求的 properties）
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          - type: integer
+          - $ref: '#/components/schemas/MetricPropertyValue'
+          - type: object
+    MetricPropertyValue:
+      type: object
+      description: Metric 指标属性值（时序数据）
+      required:
+        - model
+        - datas
+      properties:
+        model:
+          $ref: '#/components/schemas/MetricModel'
+        datas:
+          type: array
+          description: 时序数据数组
+          items:
+            $ref: '#/components/schemas/MetricData'
+        is_calendar:
+          type: boolean
+          description: 是否为日历时间序列
+        is_variable:
+          type: boolean
+          description: 是否为可变指标
+        step:
+          type: string
+          description: 趋势查询的步长
+          example: "month"
+    MetricModel:
+      type: object
+      description: 指标元信息（单位和类型）
+      required:
+        - unit_type
+        - unit
+      properties:
+        unit_type:
+          type: string
+          description: 单位类型（countUnit/numUnit/percentUnit/timeUnit）
+          example: "countUnit"
+        unit:
+          type: string
+          description: 具体单位（times/yuan/percent/day 等）
+          example: "times"
+    MetricData:
+      type: object
+      description: 单条时间序列数据（标签、时间点、值）
+      required:
+        - labels
+        - times
+        - values
+      properties:
+        labels:
+          type: object
+          description: 时间序列的标签/维度（如主键、对象名称等）
+          additionalProperties:
+            type: string
+          example:
+            company_id: "company_000001"
+            company_name: "广西金秀圣堂药业有限责任公司"
+        times:
+          type: array
+          description: 时间点数组（与 values 一一对应）
+          items:
+            oneOf:
+              - type: string
+              - type: number
+          example: [0]
+        values:
+          type: array
+          description: 指标值数组（与 times 一一对应）
+          items:
+            oneOf:
+              - type: number
+          example: [9]
+    UniqueIdentity:
+      type: object
+      description: 对象唯一标识（主键字段 map）
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          - type: integer
+    ResolveDebugInfo:
+      type: object
+      description: 调试信息（仅当 return_debug=true 时返回）
+      properties:
+        dynamic_params:
+          type: object
+          description: Agent 生成的动态参数
+          additionalProperties: true
+        now_ms:
+          type: integer
+          format: int64
+          description: 服务器时间戳（毫秒）
+        warnings:
+          type: array
+          description: 警告信息
+          items:
+            type: string
+        trace_id:
+          type: string
+          description: 请求追踪ID
+    ArbitraryObject:
+      type: object
+      description: 任意对象（字段不定）
+      additionalProperties: true
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+

@@ -1,0 +1,98 @@
+{
+    "conponentDefineType": "helm/service",
+    "name": "coderunner",
+    "version": "1.0.0",
+    "configSchema": {
+        "title": "coderunner",
+        "description": "组件配置定义",
+        "type": "object",
+        "properties": {
+            "resources": {
+                "type": "object",
+                "title": "容器资源控制",
+                "properties": {
+                    "requests": {
+                        "type": "object",
+                        "description": "容器运行需要的最小资源分配",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    },
+                    "limits": {
+                        "type": "object",
+                        "description": "容器运行最大资源限制",
+                        "properties": {
+                            "memory": {
+                                "type": "string",
+                                "title": "内存"
+                            },
+                            "cpu": {
+                                "type": "string",
+                                "title": "cpu"
+                            }
+                        }
+                    }
+                }
+            },
+            "replicaCount": {
+                "type": "number",
+                "title": "服务副本数"
+            },
+            "service": {
+                "type": "object",
+                "title": "工作流python配置",
+                "properties": {
+                    "pythonMaxWorkers": {
+                        "type": "number",
+                        "title": "python节点最大线程数",
+                        "default": 300
+                    }
+                }
+            },
+            "image": {
+                "type": "object",
+                "title": "镜像配置",
+                "properties": {
+                    "registry": {
+                        "type": "string",
+                        "title": "镜像注册地址"
+                    },
+                    "repository": {
+                        "type": "string",
+                        "title": "镜像仓库"
+                    },
+                    "tag": {
+                        "type": "string",
+                        "title": "镜像版本"
+                    },
+                    "pullPolicy": {
+                        "type": "string",
+                        "title": "镜像拉取策略"
+                    }
+                }
+            }
+        }
+    },
+    "dependence": [
+        {
+            "name": "dataflow-dm-pre"
+        },
+        {
+            "name": "rds"
+        },
+        {
+            "name": "mq"
+        },
+        {
+            "name": "redis"
+        }
+    ],
+    "required": ["policy"]
+}

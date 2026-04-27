@@ -1,0 +1,85 @@
+# Job
+[BknBackend.Job.InvalidParameter]
+Description = "Invalid Request Paramter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidParameter.JobType]
+Description = "Invalid job type parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidParameter.JobState]
+Description = "Invalid job state parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidParameter.JobConceptConfig]
+Description = "Invalid job concept config parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidParameter.TaskState]
+Description = "Invalid task state parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidParameter.ConceptType]
+Description = "Invalid concept type parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.NullParameter.Name]
+Description = "Job name cannot be null"
+Solution = "Please provide a valid job name."
+ErrorLink = "None"
+
+[BknBackend.Job.LengthExceeded.Name]
+Description = "Job name length exceeded"
+Solution = "Please shorten the job name within the allowed length."
+ErrorLink = "None"
+
+[BknBackend.Job.NoneConceptType]
+Description = "Current job does not contain any buildable concept"
+Solution = "Please check the job configuration."
+ErrorLink = "None"
+
+[BknBackend.Job.InvalidObjectType]
+Description = "Invalid object type parameter"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.CreateConflict]
+Description = "Job create conflict"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.JobRunning]
+Description = "Job is running, "
+Solution = "Please try again later."
+ErrorLink = "None"
+
+[BknBackend.Job.JobNotFound]
+Description = "The Job Does Not Exist"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[BknBackend.Job.InternalError]
+Description = "Internal Error"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.Job.InternalError.BeginTransactionFailed]
+Description = "Begin Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.Job.InternalError.CommitTransactionFailed]
+Description = "Commit Transaction Failed"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"
+
+[BknBackend.Job.InternalError.MissingTransaction]
+Description = "Missing Transaction"
+Solution = "Please try again. If the error occurs again, please submit the work order or contact technical support."
+ErrorLink = "None"

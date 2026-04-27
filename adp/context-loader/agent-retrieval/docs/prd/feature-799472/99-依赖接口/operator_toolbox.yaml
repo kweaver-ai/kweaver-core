@@ -1,0 +1,646 @@
+openapi: "3.0.1"
+info:
+  title: "工具箱、工具相关接口"
+  description: "算子平台工具箱相关接口"
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:9000/api/agent-operator-integration/internal-v1
+    description: 服务器地址
+tags:
+  - name: "工具箱"
+  - name: "工具管理"
+    description: "工具操作内部接口相关接口"
+  - name: "工具代理"
+    description: "工具代理内部接口相关接口"
+paths:
+  /tool-box/{box_id}/tool/{tool_id}:
+    get:
+      summary: "获取工具"
+      description: "根据工具箱ID和工具ID获取工具信息"
+      tags:
+        - "工具管理"
+      parameters:
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "获取工具成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolInfo"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tool-box/{box_id}/proxy/{tool_id}:
+    post:
+      summary: "工具执行代理接口"
+      description: "工具执行代理接口"
+      tags:
+        - "工具代理"
+      parameters:
+        - name: "user_id"
+          in: "header"
+          required: true
+          description: "用户ID"
+          schema:
+            type: string
+        - name: "box_id"
+          in: "path"
+          required: true
+          description: "工具箱ID"
+          schema:
+            type: string
+        - name: "tool_id"
+          in: "path"
+          required: true
+          description: "工具ID"
+          schema:
+            type: string
+        - name: "stream"
+          in: "query"
+          description: "是否流模式"
+          schema:
+            type: boolean
+            default: false
+        - name: "mode"
+          in: "query"
+          description: "执行模式"
+          schema:
+            type: string
+            enum:
+              - "sync"
+              - "stream"
+            default: "sync"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/APIProxyRequest"
+                - properties:
+                    timeout:
+                      type: integer
+                      description: 指定超时时间，单位（秒）
+      responses:
+        "200":
+          description: "API代理接口"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIProxyResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Error:
+      type: object
+      description: "错误信息"
+      properties:
+        code:
+          type: string
+          description: "错误码"
+        description:
+          type: string
+          description: "错误信息"
+        detail:
+          type: object
+          description: "错误详情"
+        solution:
+          type: string
+          description: "错误解决方案"
+        link:
+          type: string
+          description: "错误链接"
+    APIProxyRequest:
+      type: object
+      required:
+        - execution_mode
+      properties:
+        header:
+          type: object
+          description: "请求头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "请求体参数"
+        query:
+          type: object
+          description: "查询参数"
+          additionalProperties:
+            type: string
+        path:
+          type: object
+          description: "路径参数"
+          additionalProperties:
+            type: string
+
+    APIProxyResponse:
+      type: object
+      properties:
+        status_code:
+          type: integer
+          description: "HTTP状态码"
+        headers:
+          type: object
+          description: "响应头"
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          description: "响应体"
+          format: binary
+        error:
+          type: string
+          description: "错误信息"
+      required:
+        - status_code
+    CreateInternalToolBoxReq:
+      type: object
+      description: "添加更新内置工具箱、工具组件"
+      required:
+        - box_id
+        - box_name
+        - box_desc
+        - metadata_type
+        - data
+        - source
+        - config_version
+        - config_source
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID，业务方需要保证唯一性"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        data:
+          type: string
+          format: binary
+          description: "OpenAPI 数据，[]byte 类型"
+        source:
+          type: string
+          description: "工具来源"
+          default: "internal"
+          enum: ["custom", "internal"]
+        config_version:
+          type: string
+          description: "业务方维护:x.y.z 满足格式，xyz用数字代替，当工具箱配置或者工具信息有变更，需要升级版本。"
+        config_source:
+          type: string
+          description: 配置更新方式：(auto自动/manual手动)
+          enum:
+            - auto
+            - manual
+        protected_flag:
+          type: boolean
+          description: 手动配置保护锁, 当前版本周期能，如果开启锁保护，禁止自动更新操作
+    CreateInternalToolBoxResp:
+      type: object
+      description: "内置工具、工具箱更新返回结果"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        tools:
+          type: array
+          description: 工具箱内工具详情
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    ToolBoxInfo:
+      type: object
+      description: "工具箱信息"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        box_name:
+          type: string
+          description: "工具箱名称"
+        box_desc:
+          type: string
+          description: "工具箱描述"
+        box_svc_url:
+          type: string
+          description: "工具箱服务地址"
+        box_category:
+          type: string
+          description: "工具箱分类"
+          enum:
+            - "other_category" # 自定义
+            - "data_process" # 数据处理
+            - "data_transform" # 数据转换
+            - "data_store" # 数据存储
+            - "data_analysis" # 数据分析
+            - "data_query" # 数据查询
+            - "data_extract" # 数据抽取
+            - "data_split" # 数据分割
+            - "model_train" # 模型训练
+        is_internal:
+          type: boolean
+          description: "是否为内部工具箱"
+        source:
+          type: string
+          description: "工具来源"
+          default: "custom" # 自定义
+        tools:
+          type: array
+          description: "工具名列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+    ToolInfo:
+      type: object
+      description: "工具箱工具信息"
+      properties:
+        tool_id:
+          type: string
+          description: "工具ID"
+        name:
+          type: string
+          description: "工具名称"
+        description:
+          type: string
+          description: "工具描述"
+        status:
+          type: string
+          description: "工具状态,启用/禁用"
+          default: "disabled" # 默认禁用
+          enum:
+            - "enabled" # 启用
+            - "disabled" # 禁用
+        metadata_type:
+          type: string
+          description: "数据类型"
+          enum:
+            - "openapi"
+        metadata:
+          type: object
+          description: "元数据"
+          properties:
+            openapi:
+              $ref: "#/components/schemas/OpenAPIStruct"
+        create_time:
+          type: integer
+          description: "创建时间"
+        create_user:
+          type: string
+          description: "创建用户"
+        update_time:
+          type: integer
+          description: "更新时间"
+        update_user:
+          type: string
+          description: "更新用户"
+        extend_info:
+          type: object
+          description: "扩展信息"
+          additionalProperties: true
+    OpenAPIStruct:
+      type: object
+      description: "openapi类型元数据"
+      properties:
+        summary:
+          type: string
+          description: "摘要"
+        path:
+          type: string
+          description: "路径"
+        method:
+          type: string
+          description: "方法"
+        description:
+          type: string
+          description: "描述"
+        server_url:
+          type: string
+          description: "服务器地址"
+        api_spec:
+          type: object
+          properties:
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "参数名称"
+                  in:
+                    type: string
+                    description: "参数位置，如path/query/header/cookie"
+                  description:
+                    type: string
+                    description: "参数描述"
+                  required:
+                    type: boolean
+                    default: false
+                  schema:
+                    $ref: "#/components/schemas/ParameterSchema"
+            request_body:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: "请求体描述"
+                required:
+                  type: boolean
+                  default: false
+                content:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      schema:
+                        $ref: "#/components/schemas/ExampleRequest"
+                      example:
+                        $ref: "#/components/schemas/ExampleRequest"
+            responses:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  description:
+                    type: string
+                    description: "响应描述"
+                  content:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        schema:
+                          $ref: "#/components/schemas/ExampleResponse"
+                        example:
+                          $ref: "#/components/schemas/ExampleResponse"
+            schemas:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/ParameterSchema"
+            security:
+              type: array
+              items:
+                type: object
+                properties:
+                  securityScheme:
+                    type: string
+                    enum: ["apiKey", "http", "oauth2"]
+    ParameterSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["string", "number", "integer", "boolean", "array"]
+        format:
+          type: string
+          enum: ["int32", "int64", "float", "double", "byte"]
+        example:
+          type: string
+    ExampleRequest:
+      type: object
+      properties:
+        field1:
+          type: string
+          example: "sample_value"
+        field2:
+          type: integer
+          format: int32
+          example: 123
+    ExampleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        data:
+          type: object
+          properties:
+            result:
+              type: string
+              example: "success"
+    Parameters:
+      type: object
+      description: "参数"
+      properties:
+        name:
+          type: string
+          description: "参数名称"
+        description:
+          type: string
+          description: "参数描述"
+        required:
+          type: boolean
+          description: "是否必填"
+          default: false
+        in:
+          type: string
+          description: "参数位置"
+          enum: ["path", "query", "header", "cookie", "body"]
+        type:
+          type: string
+          description: "参数类型"
+          enum: ["string", "object", "integer", "boolean", "array"]
+        value:
+          oneOf:
+            - type: string
+            - type: object
+            - type: integer
+            - type: boolean
+            - type: array
+              items:
+                type: string
+                description: "数组元素类型"
+                enum: ["string", "object", "integer", "boolean"]
+    BoxToolList:
+      type: object
+      description: "工具箱工具列表"
+      properties:
+        box_id:
+          type: string
+          description: "工具箱ID"
+        tools:
+          type: array
+          description: "工具列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    ToolInfoList:
+      type: object
+      description: "工具信息列表"
+      properties:
+        total:
+          type: integer
+          description: "工具总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          description: "工具信息列表"
+          items:
+            $ref: "#/components/schemas/ToolInfo"
+    ToolBoxInfoList:
+      type: object
+      description: "工具箱信息列表"
+      properties:
+        total:
+          type: integer
+          description: "工具箱总数"
+        page:
+          type: integer
+          description: "当前页码"
+        page_size:
+          type: integer
+          description: "每页大小"
+        total_pages:
+          type: integer
+          description: "总页数"
+        has_next:
+          type: boolean
+          description: "是否有下一页"
+        has_prev:
+          type: boolean
+          description: "是否有上一页"
+        data:
+          type: array
+          description: "工具箱信息列表"
+          items:
+            type: object
+            description: "工具箱信息"
+            properties:
+              business_domain_id:
+                type: string
+                description: 业务域Id
+              box_id:
+                type: string
+                description: "工具箱ID"
+              box_name:
+                type: string
+                description: "工具箱名称"
+              box_desc:
+                type: string
+                description: "工具箱描述"
+              box_svc_url:
+                type: string
+                description: "工具箱服务地址"
+              box_category:
+                type: string
+                description: "工具箱分类"
+                enum:
+                  - "other_category" # 自定义
+                  - "data_process" # 数据处理
+                  - "data_transform" # 数据转换
+                  - "data_store" # 数据存储
+                  - "data_analysis" # 数据分析
+                  - "data_query" # 数据查询
+                  - "data_extract" # 数据抽取
+                  - "data_split" # 数据分割
+                  - "model_train" # 模型训练
+              is_internal:
+                type: boolean
+                description: "是否为内部工具箱"
+              source:
+                type: string
+                description: "工具来源"
+                default: "custom" # 自定义
+              tools:
+                type: array
+                description: "工具列表"
+                items:
+                  type: string
+                  description: "工具名"
+              create_time:
+                type: integer
+                description: "创建时间"
+              create_user:
+                type: string
+                description: "创建用户"
+              update_time:
+                type: integer
+                description: "更新时间"
+              update_user:
+                type: string
+                description: "更新用户"

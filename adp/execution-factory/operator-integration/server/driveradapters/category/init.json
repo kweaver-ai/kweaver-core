@@ -1,0 +1,34 @@
+[
+    {
+        "category_type": "data_process",
+        "name": "数据处理"
+    },
+    {
+        "category_type": "data_transform",
+        "name": "数据转换"
+    },
+    {
+        "category_type": "data_store",
+        "name": "数据存储"
+    },
+    {
+        "category_type": "data_analysis",
+        "name": "数据分析"
+    },
+    {
+        "category_type": "data_query",
+        "name": "数据查询"
+    },
+    {
+        "category_type": "data_extract",
+        "name": "数据抽取"
+    },
+    {
+        "category_type": "data_split",
+        "name": "数据分割"
+    },
+    {
+        "category_type": "model_train",
+        "name": "模型训练"
+    }
+]

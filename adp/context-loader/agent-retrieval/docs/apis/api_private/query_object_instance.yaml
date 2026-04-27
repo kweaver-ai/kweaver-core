@@ -1,0 +1,662 @@
+openapi: 3.0.2
+info:
+  title: 对象实例查询
+  version: 1.0.0
+servers:
+  - url: http://agent-retrieval:30779
+paths:
+  /api/agent-retrieval/in/v1/kn/query_object_instance:
+    post:
+      summary: query_object_instance
+      description: 根据单个对象类查询对象实例，该接口基于业务知识网络语义检索接口返回的对象类定义，查询具体的对象实例数据。
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: ot_id
+          description: 对象类ID
+          schema:
+            type: string
+          in: query
+          required: true
+        - name: include_logic_params
+          description: 包含逻辑属性的计算参数，默认false，返回结果不包含逻辑属性的字段和值
+          schema:
+            type: boolean
+          in: query
+        - name: response_format
+          description: 响应格式：json 或 toon，默认 json
+          schema:
+            type: string
+            enum:
+              - json
+              - toon
+            default: json
+          in: query
+          required: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirstQueryWithSearchAfter'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectDataResponse'
+          description: ok
+components:
+  schemas:
+    Object:
+      description: 对象的json，字段不定，随对象实例动态变化
+      type: object
+    Condition:
+      description: |
+        过滤条件结构，用于构建对象实例的查询筛选条件。
+
+        **重要规则：**
+        - `value_from` 和 `value` 必须同时使用，不能单独使用
+        - `value_from` 当前仅支持 "const"（常量值）
+        - 当使用 `value_from: "const"` 时，必须同时提供 `value` 字段
+      required:
+      - operation
+      type: object
+      properties:
+        field:
+          description: 字段名称，也即对象类的属性名称
+          type: string
+        operation:
+          description: |
+            查询条件操作符。
+            **注意：** 虽然这里列出了所有可能的操作符，但每个对象类实际支持的操作符列表以对象类定义中的 `condition_operations` 字段为准。
+          enum:
+          - and
+          - or
+          - ==
+          - '!='
+          - '>'
+          - '>='
+          - <
+          - '<='
+          - in
+          - not_in
+          - like
+          - not_like
+          - exist
+          - not_exist
+          - match
+          type: string
+        sub_conditions:
+          description: 子过滤条件数组，用于逻辑操作符(and/or)的组合查询
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        value:
+          description: |
+            字段值，格式根据操作符类型而定：
+            - 比较操作符: 单个值
+            - 范围查询: [min, max]数组
+            - 集合操作: 值数组
+            - 向量搜索: 特定格式数组
+
+            **必须与 `value_from: "const"` 同时使用**
+        value_from:
+          description: |
+            字段值来源。
+
+            **重要：** 当前仅支持 "const"（常量值），且必须与 `value` 字段同时使用
+          enum:
+          - const
+          type: string
+    ObjectTypeNode:
+      description: 节点（对象类）信息
+      required:
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          description: 节点(对象类)ID
+          type: string
+        name:
+          description: 节点（对象类）名称
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件。当在当前节点上有过滤条件时才需要填入。
+    Sort:
+      description: 排序字段
+      required:
+      - field
+      - direction
+      type: object
+      properties:
+        field:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+          - desc
+          - asc
+          type: string
+    ObjectQueryBaseOnObjectType:
+      description: 对象实例查询请求体
+      required:
+      - sort
+      - limit
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          $ref: '#/components/schemas/Sort'
+          description: 排序字段，默认使用 @timestamp排序，排序方向为 desc
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+    FirstQueryWithSearchAfter:
+      description: 分页查询的第一次查询请求
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sort'
+          description: 排序字段，默认使用 @timestamp排序，排序方向为 desc
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+          default: 10
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        properties:
+          description: 指定返回的对象属性字段列表，默认返回所有属性。
+          type: array
+          items:
+            type: string
+    PageTurnQueryWithSearchAfter:
+      description: 分页查询的第一次查询请求
+      required:
+      - sort
+      - limit
+      - search_after
+      type: object
+      properties:
+        condition:
+          $ref: '#/components/schemas/Condition'
+          description: 过滤条件
+        sort:
+          $ref: '#/components/schemas/Sort'
+          description: 排序字段，默认使用 @timestamp排序，排序方向为 desc
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        search_after:
+          description: 上次查询返回的最后一个文档的排序值。
+          type: array
+          items: {}
+    FulltextConfig:
+      description: 全文索引的配置
+      required:
+      - analyzer
+      - field_keyword
+      type: object
+      properties:
+        analyzer:
+          description: 分词器
+          enum:
+          - standard
+          - ik_max_word
+          type: string
+        field_keyword:
+          description: 是否保留原始字符串，保留原始字符串可用于精确匹配。默认是false
+          type: boolean
+    DataSource:
+      description: 数据来源
+      required:
+      - type
+      - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型为数据视图
+          enum:
+          - data_view
+          type: string
+        id:
+          description: 数据视图ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    MetricProperty:
+      description: 指标属性
+      required:
+      - property_type
+      - mapping_source_id
+      - has_any_unfilled_params
+      - parameters
+      - dynamic_params
+      type: object
+      properties:
+        property_type:
+          description: 属性类型
+          enum:
+          - metric
+          type: string
+        mapping_source_id:
+          description: 映射的指标模型id
+          type: string
+        has_any_unfilled_params:
+          description: 是否有未填充的参数，默认是false
+          type: boolean
+        parameters:
+          $ref: '#/components/schemas/MetricFilters'
+          description: 实例化了的参数
+        dynamic_params:
+          $ref: '#/components/schemas/MetricRequiredParams'
+          description: 动态参数
+    MetricFilters:
+      description: 指标模型属性的计算参数
+      required:
+      - Filters
+      type: object
+      properties:
+        Filters:
+          description: 指标模型过滤条件
+          type: array
+          items:
+            $ref: '#/components/schemas/Filter'
+    Filter:
+      description: 过滤条件
+      required:
+      - name
+      - value
+      - operation
+      type: object
+      properties:
+        name:
+          description: 过滤字段名称
+          type: string
+        value:
+          description: "过滤的值。当 operation 是 in 时，value 为任意基本类型的数组，且长度大于等于1；当 operation\
+            \ 是 = 或 != 时，value 为任意基本类型的值；当 operation 是 range 时，value 是个由范围的下边界和上边界\
+            组成的长度为 2 的数值型数组。当 operation 是 out_range 时, value 是一个长度为 2 的数组，对应过滤条件时是\
+            \ 字段 < value[0] || 字段 >= value[1]"
+          type: array
+          items: {}
+        operation:
+          description: 操作符。
+          enum:
+          - in
+          - =
+          - '!='
+          - range
+          - out_range
+          - like
+          - not_like
+          - '>'
+          - '>='
+          - <
+          - <=
+          type: string
+    MetricRequiredParams:
+      description: 指标模型查询的动态参数
+      required:
+      - instant
+      - start
+      - end
+      type: object
+      properties:
+        instant:
+          description: 是否即时查询。默认为false，非即时查询，即为趋势查询
+          type: boolean
+        start:
+          description: 开始时间戳
+          type: integer
+        end:
+          description: 结束时间戳
+          type: integer
+    OperatorProperty:
+      description: 算子属性
+      required:
+      - property_type
+      - mapping_source_id
+      - has_any_unfilled_params
+      - parameters
+      - dynamic_params
+      type: object
+      properties:
+        property_type:
+          description: 属性类型
+          enum:
+          - metric
+          type: string
+        mapping_source_id:
+          description: 映射的指标模型id
+          type: string
+        has_any_unfilled_params:
+          description: 是否有未填充的参数，默认是false
+          type: boolean
+        parameters:
+          description: 实例化了的参数。是个map
+        dynamic_params:
+          description: 动态参数。是个map
+    ObjectDataResponse:
+      description: 节点（对象类）信息
+      required:
+      - groups
+      - type
+      - datas
+      - search_after
+      type: object
+      properties:
+        object_type:
+          $ref: '#/components/schemas/ObjectTypeDetail'
+          description: 对象类信息
+        datas:
+          description: 对象实例数据。动态数据字段，其值可以是基本类型、MetricProperty或OperatorProperty
+          type: array
+          items:
+            type: object
+        total_count:
+          description: 总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个文档的排序值，获取这个用于下一次 search_after 分页
+          type: array
+          items: {}
+    ObjectTypeDetail:
+      description: 对象类信息
+      type: object
+      properties:
+        id:
+          description: 对象类ID
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络id
+          type: string
+        concept_groups:
+          description: 概念分组id
+          type: array
+          items:
+            $ref: '#/components/schemas/ConceptGroup'
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+          description: 数据来源
+        data_properties:
+          description: 数据属性
+          type: array
+          items:
+            $ref: '#/components/schemas/DataProperty'
+        logic_properties:
+          description: 逻辑属性
+          type: array
+          items:
+            $ref: '#/components/schemas/LogicProperty'
+        primary_keys:
+          description: 主键
+          type: array
+          items:
+            type: string
+        display_key:
+          description: 对象实例的显示属性
+          type: string
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段
+          type: string
+        module_type:
+          description: 模块类型
+          enum:
+          - object_type
+          type: string
+    ConceptGroup:
+      description: 概念分组
+      required:
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          description: 概念分组ID
+          type: string
+        name:
+          description: 概念分组名称
+          type: string
+    DataProperty:
+      description: 数据属性
+      required:
+      - name
+      - display_name
+      - type
+      - comment
+      - mapped_field
+      - index
+      - fulltext_config
+      - vector_config
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        mapped_field:
+          $ref: '#/components/schemas/ViewField'
+          description: 属性映射到数据来源中的字段名
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        fulltext_config:
+          $ref: '#/components/schemas/FulltextConfig'
+          description: 全文索引的配置
+        vector_config:
+          $ref: '#/components/schemas/VectorConfig'
+          description: 向量索引的配置
+    ViewField:
+      description: 视图字段信息
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          description: 字段名称
+          type: string
+        display_name:
+          description: 字段显示名.查看时有此字段
+          type: string
+        type:
+          description: 视图字段类型，查看时有此字段
+          type: string
+    VectorConfig:
+      description: 向量索引的配置
+      required:
+      - dimension
+      type: object
+      properties:
+        dimension:
+          description: 向量维度
+          type: integer
+    LogicProperty:
+      description: 逻辑属性
+      required:
+      - name
+      - data_source
+      - parameters
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        data_source:
+          $ref: '#/components/schemas/LogicSource'
+          description: 逻辑来源
+        parameters:
+          description: 逻辑所需的参数
+          type: array
+          items:
+            $ref: '#/components/schemas/Parameter'
+    LogicSource:
+      description: 数据来源
+      required:
+      - type
+      - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型
+          enum:
+          - metric
+          - operator
+          type: string
+        id:
+          description: 数据来源ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    Parameter:
+      oneOf:
+      - $ref: '#/components/schemas/Parameter4Operator'
+      - $ref: '#/components/schemas/Parameter4Metric'
+      description: 逻辑/指标参数
+      type: object
+    Parameter4Operator:
+      description: 逻辑参数
+      required:
+      - name
+      - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        type:
+          description: 参数类型
+          type: string
+        source:
+          description: 参数来源
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    Parameter4Metric:
+      description: 逻辑参数
+      required:
+      - name
+      - value_from
+      - operation
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+          - property
+          - input
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+        operation:
+          description: 操作符。映射指标模型的属性时，此字段必须
+          enum:
+          - in
+          - =
+          - '!='
+          - '>'
+          - '>='
+          - <
+          - <=
+          type: string

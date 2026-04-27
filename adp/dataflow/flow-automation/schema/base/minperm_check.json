@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "服务开关",
+    "description": "POST /permissions/check",
+    "type": "object",
+    "properties": {
+        "resource_ids": {
+            "description": "资源实例id列表",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        }
+    },
+    "required": ["resource_ids"],
+    "additionalProperties": false
+}

@@ -1,0 +1,129 @@
+{{- if semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: apps/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ .Release.Name }}
+            topologyKey: "kubernetes.io/hostname"
+      {{- if ne .Values.runMode "dev" }}
+      {{- if eq .Values.enableSecurityContext true }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Release.Name }}
+          {{- if ne .Values.runMode "dev" }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.service.repository }}:{{ .Values.image.service.tag }}"
+          imagePullPolicy: {{ .Values.image.service.pullPolicy }}
+          {{- else}}
+          image: "acr.aishu.cn/client/godevenv:1.16.2"
+          {{- end}}
+
+          env:
+            {{- if .Values.service.loggerOutput}}
+              - name: LOGOUT
+                value: {{ .Values.service.loggerOutput }}
+            {{- end}}
+            {{- if .Values.env.language}}
+              - name: LANG
+                value: {{ .Values.env.language }}
+              - name: LC_ALL
+                value: {{ .Values.env.language }}
+            {{- end}}
+            {{- if .Values.env.timezone}}
+              - name: TZ
+                value: {{ .Values.env.timezone }}
+            {{- end}}
+            {{- if .Values.depServices.rds.type}}
+              - name: DB_TYPE
+                value: {{ .Values.depServices.rds.type | quote }}
+            {{- end}}
+            {{- if hasKey .Values "auth" }}
+              - name: AUTH_ENABLED
+                value: {{ .Values.auth.enabled | quote }}
+            {{- end}}
+
+          ports:
+            - name: public-port
+              containerPort: {{ .Values.service.port }}
+          {{- if ne .Values.runMode "dev"}}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: public-port
+            initialDelaySeconds: {{ .Values.service.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.service.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.service.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.service.readinessProbe.failureThreshold }}
+          {{- end}}
+          volumeMounts:
+            - name: {{ .Release.Name }}-config
+              mountPath: /sysvol/config/
+            - name: {{ .Release.Name }}-secret
+              mountPath: /sysvol/secret/
+            {{- if eq .Values.runMode "dev" }}
+            - name: home-path
+              mountPath: /root
+            {{- end }}
+          {{- if ne .Values.runMode "dev" }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          {{ end }}
+      volumes:
+        - name: {{ .Release.Name }}-config
+          configMap:
+            name: {{ .Release.Name }}
+        - name: {{ .Release.Name }}-secret
+          secret:
+            secretName: {{ .Release.Name }}
+        {{ if eq .Values.runMode "dev" }}
+        - name: home-path
+          hostPath:
+            path: /root
+        {{ end }}
+      dnsConfig:
+         options:
+           - name: single-request-reopen
+           - name: use-vc

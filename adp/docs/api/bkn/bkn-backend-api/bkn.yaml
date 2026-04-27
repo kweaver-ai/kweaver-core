@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: BKN Backend API
+  description: |
+    BKN (Business Knowledge Network) Backend API 提供了业务知识网络的导入导出功能。
+  version: 1.0.0
+  contact:
+    name: KWeaver Team
+
+servers:
+  - url: http://localhost:13014
+    description: Local development server
+
+security:
+  - OAuth2: []
+  - InternalAuth: []
+
+tags:
+  - name: BKN Import/Export
+    description: BKN 导入导出接口
+
+paths:
+  # ==================== BKN Import/Export ====================
+  /api/bkn-backend/v1/bkns:
+    post:
+      tags:
+        - BKN Import/Export
+      summary: 上传 BKN tar 包并导入
+      description: 上传 BKN tar 包文件并导入为业务知识网络，tar 包内容格式参考 docs/design/bkn/features/bkn_docs/SPECIFICATION.md
+      operationId: uploadBKN
+      security:
+        - OAuth2: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: BKN tar 包文件
+            encoding:
+              file:
+                contentType: application/octet-stream
+      parameters:
+        - name: branch
+          in: query
+          description: 分支名称，默认为 main
+          schema:
+            type: string
+            default: main
+        - name: X-Business-Domain
+          in: header
+          required: true
+          description: 业务域
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 导入成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kn_id:
+                    type: string
+                    description: 创建的知识网络 ID
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未授权
+
+  /api/bkn-backend/v1/bkns/{kn_id}:
+    get:
+      tags:
+        - BKN Import/Export
+      summary: 下载 BKN tar 包
+      description: 导出业务知识网络为 BKN tar 包文件，tar 包内容格式参考 docs/design/bkn/features/bkn_docs/SPECIFICATION.md
+      operationId: downloadBKN
+      security:
+        - OAuth2: []
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+          description: 知识网络 ID
+          schema:
+            type: string
+        - name: branch
+          in: query
+          description: 分支名称，默认为 main
+          schema:
+            type: string
+            default: main
+      responses:
+        '200':
+          description: 导出成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未授权
+        '404':
+          description: 知识网络不存在
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: OAuth2 认证，用于外网接口
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes: {}

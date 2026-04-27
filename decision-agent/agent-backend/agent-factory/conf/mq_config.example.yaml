@@ -1,0 +1,12 @@
+auth:
+    mechanism: PLAIN
+    password: xxx
+    username: xxxx
+    connectorType: kafka
+    mqHost: xx.xx.xx.
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9097
+    mqType: kafka
+    protocol: sasl_plaintext
+    tenant: default

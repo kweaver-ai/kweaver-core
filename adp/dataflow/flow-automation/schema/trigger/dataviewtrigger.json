@@ -1,0 +1,95 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "数据视图触发器",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "syncMode": {
+                    "type": "string",
+                    "enum": [
+                        "incremental",
+                        "full"
+                    ]
+                },
+                "batchSize": {
+                    "type":"integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                }
+            },
+            "required": [
+                "id",
+                "batchSize"
+            ],
+            "if": {
+                "properties": {
+                    "syncMode": {
+                        "const": "incremental"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "incrementField": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "incrementValue": {},
+                    "filter": {
+                        "type": "string"
+                    }
+                },
+                "required": ["incrementField"]
+            },
+            "else": {
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "duration",
+                            "range",
+                            "none"
+                        ]
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "start": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "end": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                }
+            }
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

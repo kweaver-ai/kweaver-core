@@ -1,0 +1,542 @@
+---
+openapi: 3.0.2
+info:
+  title: Job
+  version: 0.1.0
+  description: 任务管理API
+paths:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/jobs:
+    get:
+      parameters:
+        - name: name_pattern
+          description: 任务名称过滤
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: state
+          description: 任务状态过滤
+          schema:
+            enum:
+              - pending
+              - running
+              - completed
+              - canceled
+              - failed
+            type: string
+          in: query
+        - name: job_type
+          description: 任务类型
+          schema:
+            enum:
+              - full
+            type: string
+          in: query
+        - name: limit
+          description: 返回任务条数
+          schema:
+            type: integer
+          in: query
+        - name: direction
+          description: 排序方向
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: 数据翻页起点
+          schema:
+            type: integer
+          in: query
+      responses:
+        "400":
+          $ref: "#/components/responses/400-BadRequest"
+        "401":
+          $ref: "#/components/responses/401-Unauthorized"
+        "404":
+          $ref: "#/components/responses/404-NotFound"
+        "500":
+          $ref: "#/components/responses/500-InternalServerError"
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListJobResp"
+          description: 获取任务列表
+      summary: 获取任务列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobReqBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json: {}
+          description: 创建成功
+        "400":
+          $ref: "#/components/responses/400-BadRequest"
+        "401":
+          $ref: "#/components/responses/401-Unauthorized"
+        "404":
+          $ref: "#/components/responses/404-NotFound"
+        "500":
+          $ref: "#/components/responses/500-InternalServerError"
+      summary: 创建任务
+    parameters:
+      - name: kn_id
+        description: 业务知识网络id
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/jobs/{job_id}/tasks:
+    get:
+      parameters:
+        - name: concept_type
+          description: 概念类型
+          schema:
+            enum:
+              - object_type
+            type: string
+          in: query
+          required: false
+        - name: state
+          description: 子任务状态
+          schema:
+            enum:
+              - pending
+              - running
+              - completed
+              - canceled
+              - failed
+            type: string
+          in: query
+        - name: concept_name_pattern
+          description: 概念名称
+          schema:
+            type: string
+          in: query
+        - name: offset
+          description: 数据翻页起点
+          schema:
+            type: integer
+          in: query
+        - name: limit
+          description: 返回子任务条数
+          schema:
+            type: integer
+          in: query
+        - name: sort
+          description: 排序字段
+          schema:
+            enum:
+              - create_time
+              - finishe_time
+              - time_cost
+            type: string
+          in: query
+        - name: direction
+          description: 排序方向
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTaskResp"
+          description: 子任务列表
+        "400":
+          $ref: "#/components/responses/400-BadRequest"
+        "401":
+          $ref: "#/components/responses/401-Unauthorized"
+        "404":
+          $ref: "#/components/responses/404-NotFound"
+        "500":
+          $ref: "#/components/responses/500-InternalServerError"
+      summary: 获取子任务列表
+    parameters:
+      - name: kn_id
+        description: 业务知识网络id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: job_id
+        description: 任务id
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/jobs/{job_ids}:
+    delete:
+      responses:
+        "204":
+          description: 删除成功
+        "404":
+          $ref: "#/components/responses/404-NotFound"
+        "401":
+          $ref: "#/components/responses/401-Unauthorized"
+        "500":
+          $ref: "#/components/responses/500-InternalServerError"
+      summary: 批量删除任务
+    parameters:
+      - name: kn_id
+        description: 业务知识网络id
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: job_ids
+        description: 任务id列表，逗号分隔
+        schema:
+          type: string
+        in: path
+        required: true
+components:
+  schemas:
+    CreateJobReqBody:
+      title: Root Type for CreateJobReqBody
+      description: 创建任务所需结构体
+      required:
+        - job_type
+        - name
+      type: object
+      properties:
+        name:
+          description: 任务名称
+          type: string
+        job_type:
+          description: 任务类型
+          enum:
+            - full
+          type: string
+        job_concept_config:
+          description: 任务概念配置列表；可选，未传时服务端可能根据知识网络对象类型自动生成
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptConfig"
+      example:
+        name: some text
+        job_type: full
+        job_concept_config:
+          - concept_type: object_type
+            concept_id: some text
+    ConceptConfig:
+      title: ConceptConfig
+      description: 任务概念配置项，与 JobInfo.job_concept_config 数组元素一致
+      type: object
+      required:
+        - concept_type
+        - concept_id
+      properties:
+        concept_type:
+          description: 概念类型
+          enum:
+            - object_type
+            - relation_type
+          type: string
+        concept_id:
+          description: 概念id
+          type: string
+      example:
+        concept_type: object_type
+        concept_id: some text
+    ListJobResp:
+      title: Root Type for ListResp
+      description: 任务列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 任务列表
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total_count:
+          format: int64
+          description: 任务总数
+          type: integer
+      example:
+        entries:
+          - id: some text
+            name: some text
+            kn_id: some text
+            state: failed
+            state_detail: some text
+            creator: some text
+            create_time: 50
+            finished_time: 21
+            time_cost: 92
+            job_type: full
+            job_concept_config:
+              - concept_type: object_type
+                concept_id: some text
+          - id: some text
+            name: some text
+            kn_id: some text
+            state: canceled
+            state_detail: some text
+            creator: some text
+            create_time: 73
+            finished_time: 70
+            time_cost: 21
+            job_type: full
+            job_concept_config: []
+        total_count: 48
+    ListTaskResp:
+      title: Root Type for ListResp
+      description: 任务列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 任务列表
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        total_count:
+          format: int64
+          description: 任务总数
+          type: integer
+      example:
+        entries:
+          - id: some text
+            state: pending
+            state_detail: some text
+            time_cost: 5
+            concept_type: object_type
+            finish_time: 71
+            start_time: 83
+            job_id: some text
+            concept_id: some text
+          - id: some text
+            state: canceled
+            state_detail: some text
+            time_cost: 24
+            concept_type: object_type
+            finish_time: 6
+            start_time: 54
+            job_id: some text
+            concept_id: some text
+        total_count: 15
+    Job:
+      title: Root Type for Job
+      description: 任务详情
+      required:
+        - create_time
+        - creator
+        - id
+        - kn_id
+        - name
+        - state
+        - job_type
+        - finished_time
+        - state_detail
+        - time_cost
+      type: object
+      properties:
+        id:
+          description: 任务id
+          type: string
+        name:
+          description: 任务名称
+          type: string
+        kn_id:
+          description: 业务知识网络id
+          type: string
+        state:
+          description: 状态
+          enum:
+            - pending
+            - running
+            - completed
+            - canceled
+            - failed
+          type: string
+        state_detail:
+          description: 状态详情
+          type: string
+        creator:
+          description: 创建者
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        finished_time:
+          description: 结束时间
+          type: integer
+        time_cost:
+          format: int64
+          description: 任务运行时间
+          type: integer
+        job_type:
+          description: 任务类型
+          enum:
+            - full
+          type: string
+        job_concept_config:
+          description: 任务概念配置列表
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptConfig"
+      example:
+        id: some text
+        name: some text
+        kn_id: some text
+        state: running
+        state_detail: some text
+        creator: some text
+        create_time: 59
+        finished_time: 37
+        time_cost: 26
+        job_type: full
+        job_concept_config:
+          - concept_type: object_type
+            concept_id: some text
+    Task:
+      title: Root Type for Job
+      description: 任务详情
+      required:
+        - start_time
+        - id
+        - job_id
+        - concept_id
+        - state
+        - concept_type
+        - finish_time
+        - state_detail
+        - time_cost
+      type: object
+      properties:
+        id:
+          description: 子任务id
+          type: string
+        state:
+          description: 状态
+          enum:
+            - pending
+            - running
+            - completed
+            - canceled
+            - failed
+          type: string
+        state_detail:
+          description: 状态详情
+          type: string
+        time_cost:
+          format: int64
+          description: 任务运行时间
+          type: integer
+        concept_type:
+          description: 概念类型
+          enum:
+            - object_type
+          type: string
+        finish_time:
+          format: int64
+          description: 结束时间
+          type: integer
+        start_time:
+          format: int64
+          description: 开始时间
+          type: integer
+        job_id:
+          description: 任务id
+          type: string
+        concept_id:
+          description: 概念id
+          type: string
+      example:
+        id: some text
+        state: completed
+        state_detail: some text
+        time_cost: 9
+        concept_type: object_type
+        finish_time: 98
+        start_time: 12
+        job_id: some text
+        concept_id: some text
+    CreateJobResp:
+      title: Root Type for CreateJobResp
+      description: 创建任务成功
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: 任务id
+          type: string
+      example:
+        id: some text
+    ErrorResponse:
+      title: Root Type for ErrorResponse
+      description: 错误返回体
+      required:
+        - description
+        - error_code
+        - error_details
+        - error_link
+        - solution
+      type: object
+      properties:
+        error_code:
+          description: 错误码
+          type: string
+        description:
+          description: 描述
+          type: string
+        solution:
+          description: 错误解决方法
+          type: string
+        error_link:
+          description: 错误解决指导link
+          type: string
+        error_details:
+          description: 错误详情
+          type: string
+      example:
+        error_code: some text
+        description: some text
+        solution: some text
+        error_link: some text
+        error_details: some text
+  responses:
+    "400-BadRequest":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: 400-参数错误
+    "401-Unauthorized":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: 401-未授权
+    "404-NotFound":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: 404-对象不存在
+    "500-InternalServerError":
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: 500-服务内部错误

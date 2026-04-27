@@ -1,0 +1,65 @@
+# RiskType
+[BknBackend.RiskType.Duplicated.IDInFile]
+Description = "存在重复的风险类ID"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.RiskType.Duplicated.Name]
+Description = "存在重复的风险类名称"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[BknBackend.RiskType.InvalidParameter]
+Description = "请求参数无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeIDExisted]
+Description = "风险类ID已存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeNameExisted]
+Description = "风险类名称已存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskFunctionToolNotFound]
+Description = "风险评估工具不存在或不可达"
+Solution = "请确认 box_id 与 tool_id 已在 agent-operator-integration 中注册并可访问。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.InvalidMaxAcceptableLevel]
+Description = "最高可接受等级无效"
+Solution = "请使用以下之一：safe, low, medium, high, critical。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError]
+Description = "内部错误"
+Solution = "请重试。若问题持续，请提交工单或联系技术支持。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError.CheckRiskTypeIfExistFailed]
+Description = "检查风险类存在性失败"
+Solution = "请重试。若问题持续，请提交工单或联系技术支持。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.InternalError.GetRiskTypesByIDsFailed]
+Description = "按ID获取风险类失败"
+Solution = "请重试。若问题持续，请提交工单或联系技术支持。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.RiskTypeNotFound]
+Description = "风险类不存在"
+Solution = "请重试。若问题持续，请提交工单或联系技术支持。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.NullParameter.Name]
+Description = "风险类名称为空"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[BknBackend.RiskType.LengthExceeded.Name]
+Description = "风险类名称长度超出限制"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"

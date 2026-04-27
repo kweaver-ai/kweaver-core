@@ -1,39 +1,18 @@
-# KWeaver Deploy
+# KWeaver Core Deploy
 
 [中文](README.zh.md) | English
 
-One-click deployment of the KWeaver AI platform to a single-node Kubernetes cluster.
+One-click deployment of **KWeaver Core** onto a single-node Kubernetes cluster.
+
+This `deploy` directory provides scripts to install KWeaver Core along with its dependencies including Kubernetes, infrastructure services, and data services.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
 ## 🚀 Quick Start
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/kweaver-ai/kweaver.git
-cd kweaver/deploy
+### Host prerequisites
 
-# 2. Edit the config file (optional; skip to use defaults)
-# vim conf/config.yaml
-
-# 3. Deploy all components (installs the latest version by default)
-bash ./deploy.sh full init
-```
-
-After deployment, open `https://<node-ip>/studio`. Username: `admin`, initial password: `eisoo.com`.
-
-## 📋 Prerequisites
-
-### System requirements
-
-| Item | Minimum | Recommended |
-| --- | --- | --- |
-| OS | CentOS 7/8+, RHEL 8 | CentOS 7 |
-| CPU | 16 cores | 24 cores |
-| Memory | 48 GB | 64 GB |
-| Disk | 200 GB | 500 GB |
-
-### Host prerequisites (required)
+Run install commands as `root` or through `sudo`.
 
 ```bash
 # 1. Disable firewall
@@ -42,120 +21,129 @@ systemctl stop firewalld && systemctl disable firewalld
 # 2. Disable swap
 swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab
 
-# 3. Disable SELinux (optional; the script may handle this)
+# 3. Set SELinux to permissive if needed
 setenforce 0
 
-# 4. Manually install container-selinux
+# 4. Install containerd.io
+dnf install containerd.io
 ```
+
+### Install KWeaver Core
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/kweaver-ai/kweaver-core.git
+cd kweaver-core/deploy
+
+# 2. Install KWeaver Core
+# Minimum installation — recommended for first-time experience
+bash ./deploy.sh kweaver-core install --minimum
+# Equivalent to:
+# bash ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
+
+# Full installation (includes auth & business-domain modules)
+bash ./deploy.sh kweaver-core install
+
+# The script will interactively prompt for the access address and auto-detect the API server address.
+
+# Or specify addresses explicitly (skips interactive prompts):
+#   --access_address       Address for clients to reach KWeaver services (can be IP or domain)
+#   --api_server_address   IP bound to a local network interface for K8s API server (must be a real NIC IP)
+bash ./deploy.sh kweaver-core install \
+  --access_address=<your-ip> \
+  --api_server_address=<your-ip>
+
+# (Optional) Customize ingress ports (default 80/443):
+export INGRESS_NGINX_HTTP_PORT=8080
+export INGRESS_NGINX_HTTPS_PORT=8443
+```
+
+## 📋 Prerequisites
+
+### System requirements
+
+| Item | Minimum | Recommended |
+| --- | --- | --- |
+| OS | CentOS 8+, OpenEuler 23+ | CentOS 8+ |
+| CPU | 16 cores | 16 cores |
+| Memory | 48 GB | 64 GB |
+| Disk | 200 GB | 500 GB |
 
 ### Network requirements
 
-The deployment scripts need access to the following domains:
+The deployment scripts need access to these domains:
 
 | Domain | Purpose |
 | --- | --- |
 | `mirrors.aliyun.com` | RPM package mirrors |
-| `mirrors.tuna.tsinghua.edu.cn` | TUNA `containerd.io` RPM mirror |
+| `mirrors.tuna.tsinghua.edu.cn` | `containerd.io` RPM mirror |
 | `registry.aliyuncs.com` | Kubernetes component images |
-| `swr.cn-east-3.myhuaweicloud.com` | Application images registry |
+| `swr.cn-east-3.myhuaweicloud.com` | KWeaver application image registry |
 | `repo.huaweicloud.com` | Helm binary download |
 | `kweaver-ai.github.io` | KWeaver Helm chart repository |
 
-## 📦 Components
+## 📦 Deployment Model
 
-### Infrastructure
+`kweaver-core` is the product-level entrypoint in this repository. The install flow is:
 
-- **Kubernetes** v1.28 (single-node)
-- **containerd** v1.6+
-- **Flannel CNI** v0.25.5
-- **ingress-nginx** v1.14.1
+1. Install or repair single-node Kubernetes, local-path storage, and ingress-nginx.
+2. Install or repair data services: MariaDB, Redis, Kafka, ZooKeeper, and OpenSearch.
+3. Deploy the KWeaver Core application charts.
 
-### Data services
-
-- **MariaDB** v11.4.7
-- **MongoDB** v4.4.30
-- **Redis** v7.4.6 (Sentinel)
-- **Kafka** v3.9.0
-- **OpenSearch** v2.19.4
-- **ZooKeeper** v3.9.3
+The Core application layer includes charts for data services management, application deployment, and task orchestration.
 
 ## 🔧 Usage
 
-### Deployment commands
+### Recommended commands
 
 ```bash
-# Full one-click deployment (recommended)
-./deploy.sh full init     # Infrastructure + KWeaver application services
+# Install KWeaver Core
+./deploy.sh kweaver-core install
 
-# Layered deployment
-./deploy.sh infra init    # Infrastructure only: K8s + data services
-./deploy.sh kweaver init  # Application services only: ISF/Studio/Ontology, etc.
+# Show Core status
+./deploy.sh kweaver-core status
 
-# Deploy a single infrastructure component
-./deploy.sh k8s init         # Kubernetes cluster
-./deploy.sh mariadb init     # MariaDB
-./deploy.sh mongodb init     # MongoDB
-./deploy.sh redis init       # Redis
-./deploy.sh kafka init       # Kafka
-./deploy.sh opensearch init  # OpenSearch
+# Uninstall Core
+./deploy.sh kweaver-core uninstall
 
-# Deploy a single application service
-./deploy.sh isf init         # ISF service
-./deploy.sh studio init      # Studio service
-
-# Specify Helm repo and version
-./deploy.sh kweaver init --helm_repo=https://kweaver-ai.github.io/helm-repo/ --version=0.1.0
-
-# Multiple version types are supported
-./deploy.sh kweaver init --version=0.1.0              # Stable release
-./deploy.sh kweaver init --version=0.0.0-feature-xxx  # Branch/dev build
-./deploy.sh kweaver init                              # Latest
-
-# Help
-./deploy.sh --help
-```
-
-### Verify deployment
-
-```bash
-# Cluster status
+# Cluster and Pod status
 kubectl get nodes
 kubectl get pods -A
-
-# Service status
-./deploy.sh kweaver status
 ```
 
-## ⚙️ Configuration
+## 📁 Project Structure
 
-Config file: `conf/config.yaml`
-
-Key settings:
-
-```yaml
-namespace: kweaver          # Namespace
-image:
-  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai  # Image registry
-
-depServices:
-  rds:
-    source_type: internal   # internal=embedded MariaDB, external=external DB
-    host: 'mariadb.resource.svc.cluster.local'
-    user: 'adp'
-    password: ''            # Auto-generated
+```text
+deploy/
+├── deploy.sh                 # Main entry script
+├── conf/                     # Bundled config and static manifests
+├── release-manifests/        # Versioned release bill of materials
+├── scripts/
+│   ├── lib/                  # Common helper functions
+│   ├── services/             # Product and dependency install scripts
+│   └── sql/                  # Versioned SQL initialization scripts
+└── .tmp/charts/              # Local chart cache generated by download
 ```
 
-### Use an external database
+## 🗑️ Uninstall
 
-If you use an external database:
+`bash deploy.sh kweaver-core uninstall` removes only the Core application layer.
 
-1. Change `source_type` to `external`
-2. Configure external DB connection settings
-3. Manually run the SQL initialization scripts under `scripts/sql/`
+```bash
+# Remove the Core application layer
+./deploy.sh kweaver-core uninstall
+```
+
+`bash deploy.sh k8s reset` resets the Kubernetes cluster, including data services and core.
+
+```bash
+# Reset Kubernetes cluster
+./deploy.sh k8s reset
+```
 
 ## 🔍 Troubleshooting
 
-### CoreDNS not ready
+### CoreDNS is not ready
 
 ```bash
 # Check whether firewall is disabled
@@ -175,51 +163,41 @@ curl -I https://swr.cn-east-3.myhuaweicloud.com
 cat /etc/containerd/config.toml
 ```
 
+### Kubernetes apt source 404 (Ubuntu/Debian)
+
+If `apt update` fails with a 404 from the legacy `packages.cloud.google.com` repository:
+
+```text
+Err:7 https://packages.cloud.google.com/apt kubernetes-xenial Release
+  404  Not Found
+```
+
+The old Google-hosted apt repository is deprecated. Migrate to `pkgs.k8s.io`:
+
+```bash
+sudo apt-mark unhold kubeadm kubelet kubectl || true
+sudo apt remove -y kubeadm kubelet kubectl
+sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo mkdir -p /etc/apt/keyrings
+
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
 ### View component logs
 
 ```bash
 kubectl logs -n <namespace> <pod-name>
 ```
 
-## 📁 Project Structure
-
-```
-deploy/
-├── deploy.sh           # Main entry script
-├── conf/
-│   ├── config.yaml              # Deployment config
-│   ├── kube-flannel.yml         # Flannel network config
-│   └── local-path-storage.yaml  # Local storage config
-└── scripts/
-    ├── lib/
-    │   └── common.sh            # Common utilities
-    ├── services/                # Component installation scripts
-    │   ├── k8s.sh
-    │   ├── mariadb.sh
-    │   ├── mongodb.sh
-    │   └── ...
-    └── sql/                     # SQL init scripts
-        ├── isf/
-        ├── studio/
-        └── ...
-```
-
-## 🗑️ Uninstall
-
-```bash
-# Full uninstall
-./deploy.sh full reset         # Uninstall everything (apps + infrastructure)
-
-# Layered uninstall
-./deploy.sh kweaver uninstall  # Uninstall application services only
-./deploy.sh infra reset        # Uninstall infrastructure only
-
-# Uninstall a single component
-./deploy.sh mariadb uninstall
-./deploy.sh k8s reset
-```
-
 ## 📄 License
 
-[Apache License 2.0](../LICENSE.txt)
-
+[Apache License 2.0](../LICENSE)

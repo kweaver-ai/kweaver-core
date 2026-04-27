@@ -1,0 +1,17 @@
+auth:
+  mechanism: PLAIN
+  password: eisoo.com123
+  username: anyrobot
+connectorType: nsq
+deployTrait:
+  aiid: 1
+  cid: 21
+  trait:
+    status: 4
+    timeout: 0
+  version: ""
+mqHost: "kafka-headless.resource.svc.cluster.local."
+mqLookupdHost: ""
+mqLookupdPort: 0
+mqPort: 9097
+mqType: kafka

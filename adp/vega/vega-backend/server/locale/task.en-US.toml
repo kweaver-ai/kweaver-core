@@ -1,0 +1,44 @@
+[VegaBackend.Task.NotFound]
+Description = "Task not found"
+Solution = "Please check the parameters"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.CreateFailed]
+Description = "Failed to create build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.GetFailed]
+Description = "Failed to get build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.Exist]
+Description = "Build task already exists"
+Solution = "Please check if the resource already has a build task"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.Running]
+Description = "Build task is running"
+Solution = "Please wait for the task to complete or stop before operating"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidStatus]
+Description = "Invalid build task status"
+Solution = "Please check the status value"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidExecuteType]
+Description = "Invalid build task execute type"
+Solution = "Please check the execute type value"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.UpdateFailed]
+Description = "Failed to update build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InternalError.DeleteFailed]
+Description = "Failed to delete build task"
+Solution = "Please contact the administrator"
+ErrorLink = "No solution"

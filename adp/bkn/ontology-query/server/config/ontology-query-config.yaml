@@ -1,0 +1,95 @@
+server:
+  runMode: release
+  httpPort: 13018
+  language: zh-CN
+  readTimeOut: 120
+  writeTimeOut: 120
+  viewDataTimeout: 5m
+  defaultSmallModelEnabled: true
+  filteredCrossJoinMaxEdgeExpand: 10000
+log:
+  logLevel: debug
+  developMode: false
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  logEnabled: false
+  traceEnabled: false
+  metricEnabled: false
+  logExporter: console
+  traceProvider: http
+  metricProvider: http
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  traceMaxQueueSize: 50000
+  metricIntervalSecond: 60
+  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  grpcTraceFeedIngesterUrl: feed-ingester-service:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+
+depServices:
+  class-443:
+    ingressClass: class-443
+  rds:
+    host: localhost
+    port: 30006
+    user: test
+    password: testpwd
+    type: MariaDB
+  opensearch:
+    host: localhost
+    port: 30000
+    protocol: http
+    user: test
+    password: testpwd 
+  authorization-private:
+    host: localhost
+    port: 30920
+    protocol: http
+  user-management: 
+    host: localhost
+    port:  30981
+    protocol: http
+  hydra-public:
+    host: localhost
+    port: 4444
+    protocol: http
+  hydra-admin:
+    host: localhost
+    port: 4445
+    protocol: http
+  model-factory:
+    host: localhost
+    port: 9898
+    protocol: http
+  data-model:
+    host: localhost
+    port: 13020
+    protocol: http
+  uniquery:
+    host: localhost
+    port: 13011
+    protocol: http
+  vega-backend:
+    host: localhost
+    port: 13014
+    protocol: http
+  bkn-backend:
+    host: localhost
+    port: 13014
+    protocol: http
+  agent-operator-integration:
+    host: localhost
+    port: 9000
+    protocol: http
+  mf-model-manager:
+    host: localhost
+    port: 9899
+    protocol: http
+  mf-model-api:
+    host: localhost
+    port: 9898
+    protocol: http

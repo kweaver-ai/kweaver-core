@@ -1,0 +1,68 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go
+{
+	"name": "Go",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "acr.aishu.cn/as/ubuntu-workcenter.build:universal.20230926",
+
+	"mounts": [
+		{
+			"source": "/root/.ssh",
+			"target": "/root/.ssh",
+			"type": "bind"
+		},
+		{
+			"source": "/root/.netrc",
+			"target": "/root/.netrc",
+			"type": "bind"
+		},
+		{
+			"source": "/root/go",
+			"target": "/root/go",
+			"type": "bind"
+		},
+		{
+			"source": "/root/repos/API",
+			"target": "/workspaces/API",
+			"type": "bind"
+		}
+	],
+
+	"containerEnv": {
+		"NETRC": "/root/.netrc",
+		"GO111MODULE": "on",
+		"CGO_ENABLED": "1"
+	},
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [8082, 8083],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": {
+		"1": "go env -w GOPRIVATE=devops.aishu.cn,gitlab-archive.aishu.cn",
+		"2": "go env -w GOPROXY=https://goproxy.aishu.cn,direct",
+		"3": "git config --global url.\"ssh://git@gitlab-archive.aishu.cn/\".insteadOf \"https://gitlab-archive.aishu.cn/\"",
+		"4": "git config --global url.\"ssh://devops.aishu.cn:22/AISHUDevOps/\".insteadOf \"https://devops.aishu.cn/AISHUDevOps/\""
+	},
+	
+	"postStartCommand": "go install github.com/golang/mock/mockgen@v1.6.0",
+
+	"postAttachCommand": "./init_tapi.sh /workspaces/API && go generate ./... && go mod tidy",
+
+	"runArgs": ["--network", "host","--cap-add", "SYS_PTRACE"],
+
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go"
+			]
+		}
+	},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+}

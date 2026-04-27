@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "修改配置信息",
+    "description": "post /api/automation/v1/config",
+    "type": "object",
+    "properties": {
+        "configs": {
+            "description": "配置列表",
+            "type": "array",
+            "items": {
+                "type":"object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "pattern": "^[a-zA-Z0-9_]+$"
+                    },
+                    "value": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "pattern": "^[a-zA-Z0-9_]+$"
+                    }
+                },
+                "required": ["key", "value"],
+                "additionalProperties": false
+            },
+            "uniqueItems": true,
+            "minItems": 1
+        }
+    },
+    "required": [
+        "configs"
+    ],
+    "additionalProperties": false
+}

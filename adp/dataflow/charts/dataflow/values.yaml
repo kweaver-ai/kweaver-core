@@ -1,0 +1,550 @@
+# Unified values for dataflow chart
+# This chart combines: ecron-analysis, ecron-management, flow-automation, flow-stream-data-pipeline
+
+# =============================================================================
+# Global Configuration (Common Settings)
+# =============================================================================
+namespace: anyshare
+replicaCount: 1
+
+image:
+  registry: acr.aishu.cn
+  repository: dip/flow-automation
+  tag: 1.0.0-feature-744853.76f808f
+  pullPolicy: IfNotPresent
+
+# Common Environment Settings
+env:
+  timezone: Asia/Shanghai
+  language: en_US.UTF-8
+  logger: stdout
+
+# Common Pod Level Configuration (Scheduling, Security, etc.)
+nodeSelector: {}
+tolerations: []
+
+# 反亲和性设置
+antiAffinity:
+  enabled: true
+  rule: "soft" # hard, soft
+
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsGroup: 5000
+  runAsUser: 5000
+
+podSecurityContext: {}
+
+serviceAccountName: dataflow-service-account
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 2
+    maxUnavailable: 1
+
+# 集群配置信息
+accessAddress:
+  host: ""
+  port: ""
+  schema: ""
+  path: ""
+
+
+# Common Dependency Services (Centralized)
+depServices:
+  rds:
+    system_id: ""
+    host: mariadb-mariadb-master.resource
+    port: 3330
+    database: "kweaver"
+    user: "anyshare"
+    password: "xxxxxx"
+    type: "mysql"
+  mq:
+    auth:
+      mechanism: PLAIN
+      password: xxxxxx
+      username: anyrobot
+    connectorType: nsq
+    mqHost: proton-mq-nsq-nsqd.resource
+    mqLookupdHost: proton-mq-nsq-nsqlookupd.resource
+    mqLookupdPort: 4161
+    mqPort: 4151
+    mqType: nsq
+    protocol: sasl_plaintext
+    tenant: default
+  hydra:
+    publicHost: hydra-public
+    publicPort: 4444
+    publicProtocol: http
+    administrativeHost: hydra-admin
+    administrativePort: 4445
+    administrativeProtocol: http
+    administrativePrefix: /admin
+  opensearch:
+    host: opensearch-master.resource
+    port: 9200
+    protocol: http
+    user: admin
+    password: xxxxxx
+  mongodb:
+    host: mongodb-mongodb-0.mongodb-mongodb.resource
+    port: 28000
+    user: "anyshare"
+    password: "xxxxxx"
+    replicaSet: "rs0"
+    options:
+      authSource: "anyshare"
+    ssl: false
+    sslCAFile: ""
+    direct: false
+    maxPoolSize: 5
+    minPoolSize: 1
+  redis:
+    connectInfo:
+      host: ""
+      port: 26379
+      masterHost: ""
+      masterPort: 26379
+      slaveHost: ""
+      slavePort: 26379
+      masterGroupName: mymaster
+      password: xxxxxx
+      sentinelHost: proton-redis-proton-redis-sentinel.resource
+      sentinelPassword: xxxxxx
+      sentinelPort: 26379
+      sentinelUsername: root
+      username: root
+    connectType: sentinel
+    enableSSL: false
+  # Additional common services from flow-automation
+  aladdin-tika:
+    host: aladdin-tika
+    port: "9998"
+  doc-convert:
+    host: doc-convert-private
+    gotenbergPort: "3000"
+    tikaPort: "9998"
+  authentication:
+    privateHost: authentication-private
+    privatePort: "30110"
+    publicHost: authentication-public
+    publicPort: "30110"
+  deploy-service:
+    HttpHost: deploy-service
+    HttpPort: "9703"
+  doc-share:
+    privateHost: doc-share-private
+    privatePort: "30920"
+    publicHost: doc-share-public
+    publicPort: "30920"
+  document:
+    privateHost: document-private
+    privatePort: "30920"
+    publicHost: document-public
+    publicPort: "30920"
+  efast:
+    efastThriftHost: efast-efast
+    efastThriftPort: "9121"
+    evfsThriftHost: efast-evfs
+    evfsThriftPort: "9064"
+    privateHttpHost: efast-private
+    privateHttpPort: "9123"
+    publicHttpHost: efast-public
+    publicHttpPort: "9123"
+  emetadata:
+    host: emetadata
+    port: "30156"
+    privateHost: emetadata-private
+    privatePort: "30157"
+  fast-text-analysis:
+    host: fast-text-analysis
+    port: "9528"
+  user-management:
+    privateHost: user-management-private
+    privatePort: "30980"
+    publicHost: user-management-public
+    publicPort: "30980"
+  appstore-public:
+    host: appstore-public
+    port: 7010
+  intelliinfo:
+    privateHost: intelliinfo-private
+    privatePort: "9002"
+    publicHost: intelliinfo-public
+    publicPort: "9000"
+  ecotag:
+    privateHost: ecotag-private
+    privatePort: "32157"
+  content-automation:
+    privateHost: flow-automation-private
+    privatePort: "8680"
+    publicHost: flow-automation
+    publicPort: "8680"
+  kc-mc:
+    host: kc-mc
+    port: 7201
+    privateHost: kc-mc-private
+    privatePort: "7203"
+  ossgatewaymanager:
+    privateHost: ossgatewaymanager-private
+    privatePort: 9002
+  ocr-engine:
+    t4th:
+      switch: false
+      host: 127.0.0.1
+      port: 100
+      protocol: http
+      connectType: ocr
+  observability:
+    host: feed-ingester-service
+    port: 13031
+    protocol: http
+    log_level: warn
+    trace_enabled: false
+  sharemgnt:
+    host: sharemgnt
+    port: "9600"
+  cognitive-assistant:
+    host: cognitive-assistant
+    port: 8888
+  docset:
+    privateHost: docset-private
+    privatePort: 32597
+    publicHost: docset-public
+    publicPort: 32596
+  personal-config:
+    privateHost: personal-config-private
+    privatePort: 8082
+    publicHost: personal-config
+    publicPort: 8081
+  metadata:
+    privateHost: metadata-private
+    privatePort: 30159
+    publicHost: metadata-public
+    publicPort: 30158
+  speech-model:
+    privateHost: 127.0.0.1
+    privatePort: 8680
+  uie:
+    privateHost: 127.0.0.1
+    privatePort: 8680
+  anydata:
+    protocol: "https"
+    host: ""
+    port: "8444"
+    appid: ""
+    model: ""
+  coderunner:
+    privateHost: coderunner-private
+    privatePort: 8680
+  dataflowtools:
+    privateHost: dataflowtools-private
+    privatePort: 8683
+  agentoperatorintegration:
+    host: agent-operator-integration
+    port: 9000
+  mfmodelmanager:
+    host: mf-model-manager
+    port: 9898
+  mfmodelapi:
+    host: mf-model-api
+    port: 9898
+  agentfactory:
+    host: agent-factory
+    port: 13020
+  knknowledgedata:
+    host: kn-knowledge-data
+    port: 6475
+  ecoconfig:
+    publicHost: ecoconfig-public.anyshare
+    publicPort: "32127"
+    privateHost: ecoconfig-private.anyshare
+    privatePort: "32128"
+  agentapp:
+    host: agent-app
+    port: "30777"
+  mdl_uniquery:
+    host: mdl-uniquery-svc
+    port: 13011
+  mdl_datamodel:
+    host: mdl-data-model-svc
+    port: 13020
+  authorization:
+    privateHost: authorization-private
+    privatePort: 30920
+  dp_datasource:
+    host: data-connection
+    port: 8098
+    protocol: http
+  contentpipeline:
+    privateHost: contentpipeline-private
+    privatePort: 9002
+  structure-extractor:
+    useMineru: false
+    mineruBaseURL: https://mineru.net
+    mineruToken: ""
+    privateHost: 192.168.102.250
+    privatePort: 18089
+    outputDir: /output
+    backend: vlm-http-client
+    serverUrl: http://127.0.0.1:8088
+    fileHost: 192.168.173.19
+    filePort: 8090
+  ocr:
+    privateHost: 192.168.152.11
+    privatePort: 12349
+  oss-gateway-backend:
+    host: oss-gateway-backend
+    port: 8080
+  business-system-service:
+    host: business-system-service
+    port: 80
+  class-443:
+    ingressClass: class-443
+  # Component specific internal references
+  ecron-management:
+    host: ecron-management
+    port: 32345
+    protocol: http
+  flow-stream-data-pipeline:
+    host: flow-stream-data-pipeline-svc
+    port: 13012
+    protocol: http
+  index-base:
+    host: mdl-index-base-svc
+    port: 13013
+    protocol: http
+  sandbox:
+    host: sandbox-control-plane
+    port: 8000
+    template_id: "python-basic"
+    cpu: "1"
+    memory: "512Mi"
+    disk: "1Gi"
+    timeout: 30
+
+# Common Resource Limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 100Mi
+  limits:
+    cpu: 4
+    memory: 8192Mi
+
+# =============================================================================
+# Component Switches
+# =============================================================================
+components:
+  ecronManagement:
+    enabled: true
+  flowAutomation:
+    enabled: true
+  streamDataPipeline:
+    enabled: true
+
+nameOverride: ""
+fullnameOverride: ""
+
+auth:
+  enabled: true
+
+businessDomain:
+  enabled: true
+
+# =============================================================================
+# ecron-management Configuration
+# =============================================================================
+ecronManagement:
+  service:
+    type: ClusterIP
+    ecronAnlysPort: 32346
+    ecronMgntPort: 32345
+    jobFailures: 3
+    language: zh_CN
+    webhook: /api/ecron-management/v1/executionresult
+    logger: stdout
+    sleep:
+      analysisLoad: 10
+      analysisRefresh: 10
+      jobStatusRefresh: 10
+      msmqClientOp: 10
+      dbClientPing: 30
+      lostImmediateJobExecute: 10
+      tokenRefresh: 10
+    sslOn: false
+    certFile: /sysvol/conf/ecron.crt
+    keyFile: /sysvol/conf/ecron.key
+
+# =============================================================================
+# flow-automation Configuration
+# =============================================================================
+flowAutomation:
+  service:
+    type: ClusterIP
+    port: 8680
+    prefix: /api/automation/v1
+    coderunnerPrefix: /api/coderunner
+    coderunnerLogLevel: INFO
+    debug: "false"
+    language: zh_CN
+    logger: stdout
+    name: content-automation
+    # 用于控制自动化转存运行列表历史记录最大阈值
+    dagThreshold: "1000000"
+    # 用于控制自动化转存运行列表任务任务历史记录最大阈值
+    taskThreshold: "2000000"
+    # 最近历史运行记录保留时间，支持按天或按小时配置 7d:保留近七天的记录 7h:保留近7小时的运行记录, 不支持的值默认保留最近7天
+    keepHistory: "7d"
+    # 默认12小时执行一次，可手动修改执行时间, 必须符合cron表达式格式
+    # 格式校验地址参考: https://crontab.guru/
+    deleteLogsCron: "0 */12 * * *"
+    lowestExecutorCount: 200
+    lowExecutorCount: 200
+    mediumExecutorCount: 200
+    highExecutorCount: 200
+    highestExecutorCount: 200
+    debugExcutorCount: 300
+    listdagCount: 500
+    parserCount: 200
+    executorTimeout: 600
+    scheduleTimeout: 150
+    # 告警邮件发送间隔时间, 默认30min
+    warningInternal: 30m
+    livenessProbe:
+      failureThreshold: 3
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      failureThreshold: 3
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    # 超过此大小的 sharedata、dump 上传到对象存储
+    mongoMaxInlineSize: 262144
+    # 对象存储前缀路径
+    storagePrefix: "29376f25-1aad-4a03-91d4-901c5ee4b905"
+    # 已删除的 dag instance 关联的文件清理周期
+    deleteExtDataCron: "0 1 * * *"
+    deleteExpiredTaskCacheCron: "0 3 * * *"
+    dagInstanceEventMaxInlineSize: 262144
+    dagInstanceEventArchivePolicy: successOnly
+    edition: "community"
+    # 用于控制使用哪种数据库
+    dbType: "mysql"
+    # 存储后端类型: ossgatewaybackend(默认), s3, ossgateway
+    storageBackend: "ossgatewaybackend"
+
+  # 文件下载线程池配置
+  flowFileDownload:
+    workerCount: 3              # 每实例 worker 数
+    pollInterval: 5             # 轮询间隔(秒)
+    batchSize: 10               # 每次查询任务数
+    downloadTimeout: 300        # 下载超时(秒)
+    maxFileSize: 104857600      # 最大文件大小(100MB)
+
+  kafka:
+    sessionTimeoutMs: 45000
+    socketTimeoutMs: 60000
+    maxPollIntervalMs: 300000
+    heartbeatIntervalMs: 10000
+    transactionTimeoutMs: 60000
+    retentionTime: 7d
+    retentionSize: -1
+    autoOffsetReset: earliest
+    adminClientRequestTimeoutMs: 30000
+    adminClientOperationTimeoutMs: 60000
+    retries: 5
+    retryBackoffMs: 500
+
+  actionConfigYaml: /conf/action_config.yaml
+  actionConfig:
+    fulltext:
+      timeoutSec: 3600
+    docformatconvert:
+      timeoutSec: 3600
+
+  flow-o11y-data-log:
+    log_level: "INFO"
+    exporters:
+      console:
+        enable: false
+      proton_mq:
+        enable: true
+        config:
+          sub_type: "kafka"
+          topic: default.dataflow.dip-flow-o11y-data
+          broker_list: ["kafka-headless.resource:9097"]
+          username: "dX25DulTIJd+H6e8JKKBPaQBYfwtoE+KSg+QBkgJom5X2ZkRYZiMMVPtxl/nfTfD3i8A4gfhMzK9u6johN7LV0uFToAk9DcCzLO9emV3rS6H8YQerQSP2J56uSCKiMA9UfeIbdwJ+pXqVqXPiqV/10ayw5WYi7zW+Yv+M0r6vx4dw5xYATOHKCK6GQJqS3uaZi3TwHgY/HicDw2o/5PAFkQAnbNiQoitGS4owC2UuSljtkoYyr3r9HrhiHry/usddx9WUPa/GW5NGQ2QGRia1eeuQax3obVZ6AzI4JhpfYmy3qrZ938YOKNpfb+/atmin/qfrWcPcsNvpnJ1zeMOFQ=="
+          password: "YMqgppqxZGwjBhfWr9397RZvU5OTK7jd3Yp/aZk0hQomHUjEtocBo39Lb8xKmaNSXN0z+wk8AeBxdpqw/ZLFUULkKcCTl5IZ/SwMmv29Hizw/4hhjZpnjvZPt4go3gR9tPYNveNpz0Yc9COCovH3f95wdtJHAGttDEr1Mb/B/y+UvpLjDE3d+YgksNOZT1Z55P0HrZ4Zlr6lFyRnQn26SJ9ga+o76wzcrDT+jarB2g/D/ByMNzsc9O0bY9sZI+Je+b0J+ax1/uek/nQI1DMi3JXIEF6nR+rkAPuMGLsPWdQsRpj4XYzdtqpJf0tG584SJnuuOLWwNGKm+erNrlCaaw=="
+
+  s3:
+    default: "default"
+    connections:
+      - name: default
+        endpoint: ""
+        region: us-east-1
+        accessKeyID: ""
+        secretAccessKey: ""
+        bucketName: ""
+        skipVerify: true
+        disableHTTPS: false
+
+# =============================================================================
+# flow-stream-data-pipeline Configuration
+# =============================================================================
+streamDataPipeline:
+  moduleName: flow-stream-data-pipeline
+
+  service:
+    streamDataPipeline:
+      type: ClusterIP
+      port: 13012
+      nodePort: 30012
+      ingress:
+        enabled: true
+        interface:
+          path:
+            - /api/flow-stream-data-pipeline/v1
+
+  config:
+    server:
+      runMode: release
+      httpPort: 13012
+      language: zh-CN
+      readTimeOut: 120
+      writeTimeOut: 120
+      retryIntervalMs: 3000
+      flushMiB: 5
+      flushItems: 10000
+      flushIntervalSec: 3
+      failureThreshold: 10
+      packagePoolSize: 40
+      monitorIntervalSec: 10
+      watchWorkersIntervalMin: 5
+      watchDeployInterval: 10
+      cpuMax: 8
+      memoryMax: 8192
+      maxPipelineCount: 100
+    log:
+      logLevel: info
+      developMode: false
+      maxAge: 100
+      maxBackups: 20
+      maxSize: 100
+    kafka:
+      sessionTimeoutMs: 45000
+      socketTimeoutMs: 60000
+      maxPollIntervalMs: 300000
+      heartbeatIntervalMs: 10000
+      transactionTimeoutMs: 60000
+      retentionTime: 7d
+      retentionSize: -1
+      autoOffsetReset: earliest
+      adminClientRequestTimeoutMs: 30000
+      adminClientOperationTimeoutMs: 60000
+      retries: 5
+      retryBackoffMs: 500

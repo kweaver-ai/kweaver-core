@@ -1,0 +1,89 @@
+basePath: /api/agent-observability/v1
+definitions:
+  rdto.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: APIs for querying agent traces from OpenSearch.
+  title: Agent Observability API
+  version: "1.0"
+paths:
+  /api/agent-observability/v1/traces/_search:
+    post:
+      consumes:
+      - application/json
+      description: Proxy raw OpenSearch DSL to the configured trace index and return
+        the original OpenSearch response body.
+      parameters:
+      - description: OpenSearch DSL JSON body
+        in: body
+        name: request
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw OpenSearch search response
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+        "504":
+          description: Gateway Timeout
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+      summary: Search traces with raw OpenSearch DSL
+      tags:
+      - traces
+  /api/agent-observability/v1/traces/by-conversation:
+    get:
+      consumes:
+      - application/json
+      description: Build a term filter automatically using attributes.gen_ai.conversation.id.keyword
+        and return the original OpenSearch response body.
+      parameters:
+      - description: Conversation ID
+        in: query
+        name: conversation_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw OpenSearch search response
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+        "504":
+          description: Gateway Timeout
+          schema:
+            $ref: '#/definitions/rdto.ErrorResponse'
+      summary: Search traces by conversation ID
+      tags:
+      - traces
+swagger: "2.0"

@@ -1,0 +1,380 @@
+# 公共错误码
+[AgentFactory.InvalidParameter.RequestBody]
+Description = "请求体无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentFactory.InvalidRequestHeader.Authorization]
+Description = "认证失败"
+Solution = "请检查Http请求头。"
+ErrorLink = "暂无"
+
+[AgentFactory.InvalidRequestHeader.ContentType]
+Description = "无效的ContentType"
+Solution = "请检查Http请求头。"
+ErrorLink = "暂无"
+
+[AgentFactory.Forbidden.FilterField]
+Description = "过滤条件字段不允许 __id 和 __routing"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentFactory.InternalError]
+Description = "服务器内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+
+
+# Realease 相关错误码
+[AgentFactory.Release.InternalError.PublishFailed]
+Description = "发布智能体失败，服务器内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "None"
+
+[AgentFactory.Release.NotFound]
+Description = "此已发布的智能体不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[AgentFactory.Release.BadRequest.PublishFailedByConfigError]
+Description = "配置检查失败。请先修改配置后再尝试发布。"
+Solution = "请检查配置是否正确。"
+ErrorLink = "None"
+
+# ReleaseHistory 相关错误码
+[AgentFactory.ReleaseHistory.NotFound]
+Description = "此已发布的智能体历史记录不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+
+# Data Agent Config 相关错误码
+[AgentFactory.DataAgentConfig.Conflict.NameExists]
+Description = "智能体名称已存在"
+Solution = "请修改名称。"
+ErrorLink = "暂无"
+
+[AgentFactory.DataAgentConfig.NotFound]
+Description = "智能体不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentFactory.DataAgentConfig.Forbidden.NotOwner]
+Description = "您不是该智能体的所有者，无法操作"
+Solution = "请检查您的权限。"
+ErrorLink = "暂无"
+
+[AgentFactory.DataAgentConfig.Conflict.Published.CannotBeDeleted]
+Description = "已发布的智能体无法删除"
+Solution = "请先取消发布。"
+ErrorLink = "暂无"
+
+# Data Agent Config 相关错误码 end
+
+# Custom Space 相关错误码 start
+[AgentFactory.CustomSpace.Conflict.NameExists]
+Description = "自定义空间名称已存在"
+Solution = "请修改名称。"
+ErrorLink = "暂无"
+
+[AgentFactory.CustomSpace.Conflict.KeyExists]
+Description = "自定义空间标识已存在"
+Solution = "请修改标识。"
+ErrorLink = "暂无"
+
+[AgentFactory.CustomSpace.NotFound]
+Description = "自定义空间不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentFactory.DataAgentConfig.BadRequest.LlmRequired]
+Description = "此智能体未选择LLM"
+Solution = "请先选择LLM。"
+ErrorLink = "暂无"
+
+[AgentFactory.DataAgentConfig.BadRequest.RetrieverDataSourceKnEntryExceedLimitSize]
+Description = "知识来源中的知识条目超过数量限制，最多可添加10个知识条目。"
+Solution = "请减少知识来源中的知识条目数量。"
+ErrorLink = "暂无"
+
+
+
+# Custom Space 相关错误码 end
+
+# Custom Space Member 相关错误码 start
+[AgentFactory.CustomSpaceMember.NotFound]
+Description = "自定义空间成员不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[AgentFactory.CustomSpaceMember.NotBelongsToSpace]
+Description = "自定义空间成员不属于该空间"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+# Custom Space Member 相关错误码 end
+
+# Custom Space Resource 相关错误码 start
+[AgentFactory.CustomSpaceResource.NotFound]
+Description = "自定义空间资源不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+[AgentFactory.CustomSpaceResource.NotBelongsToSpace]
+Description = "自定义空间资源不属于该空间"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+# Custom Space Resource 相关错误码 end
+
+# Product 相关错误码 start
+[AgentFactory.Product.Conflict.NameExists]
+Description = "此产品名称已存在"
+Solution = "请修改名称。"
+ErrorLink = "暂无"
+
+[AgentFactory.Product.Conflict.KeyExists]
+Description = "此产品标识已存在"
+Solution = "请修改标识。"
+ErrorLink = "暂无"
+
+[AgentFactory.Product.NotFound]
+Description = "此产品不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+# Product 相关错误码 end
+
+# Category 相关错误码 start
+[AgentFactory.Category.NotFound]
+Description = "智能体分类不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+# Category 相关错误码 end
+
+# Agent Tpl 相关错误码 start
+[AgentFactory.AgentTpl.Conflict.NameExists]
+Description = "Agent模板名称已存在"
+Solution = "请修改名称。"
+ErrorLink = "暂无"
+
+[AgentFactory.AgentTpl.Conflict.KeyExists]
+Description = "Agent模板标识已存在"
+Solution = "请修改标识。"
+ErrorLink = "暂无"
+
+[AgentFactory.AgentTpl.NotFound]
+Description = "此Agent模板不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentFactory.AgentTpl.Forbidden.NotOwner]
+Description = "您不是此Agent模板的所有者，无法操作"
+Solution = "请检查您的权限。"
+ErrorLink = "暂无"
+
+[AgentFactory.AgentTpl.IsUnpublished]
+Description = "此Agent模板是未发布状态"
+Solution = "请先发布。"
+ErrorLink = "暂无"
+
+[AgentFactory.AgentTpl.Conflict.Published.CannotBeDeleted]
+Description = "已发布的 Agent 模板无法删除"
+Solution = "请先取消发布。"
+ErrorLink = "暂无"
+
+# Agent Tpl 相关错误码 end
+
+
+#Agent AIAutoGen
+[AgentFactory.AiAutogenError]
+Description = "AI 自动生成失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+# Published Agent Tpl 相关错误码 start
+[AgentFactory.PublishedTpl.NotFound]
+Description = "此已发布的Agent模板不存在"
+Solution = "请检查参数是否正确。"
+ErrorLink = "None"
+
+# Published Agent Tpl 相关错误码 end
+
+# Permission 相关错误码 start
+[AgentFactory.Permission.Forbidden]
+Description = "抱歉，您目前没有此操作的权限。"
+Solution = "请检查您的权限。"
+ErrorLink = "暂无"
+
+# Permission 相关错误码 end
+
+# Import、Export 相关错误码 start
+[AgentFactory.Inout.ParseFileFailed]
+Description = "解析文件失败。"
+Solution = "请检查文件格式。"
+ErrorLink = "None"
+
+[AgentFactory.Inout.MaxSizeExceeded]
+Description = "导入的Agent数量超过最大限制。"
+Solution = "请减少导入的Agent数量。"
+ErrorLink = "None"
+# Import、Export 相关错误码 end
+
+# 公共错误码
+[AgentAPP.InvalidParameter.RequestBody]
+Description = "请求体无效"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentAPP.InvalidRequestHeader.Authorization]
+Description = "认证失败"
+Solution = "请检查Http请求头"
+ErrorLink = "暂无"
+
+[AgentAPP.InvalidRequestHeader.ContentType]
+Description = "无效的ContentType"
+Solution = "请检查Http请求头"
+ErrorLink = "暂无"
+
+[AgentAPP.Forbidden.FilterField]
+Description = "过滤条件字段不允许 __id 和 __routing"
+Solution = "请检查参数是否正确。"
+ErrorLink = "暂无"
+
+[AgentAPP.Forbidden.PermissionDenied]
+Description = "没有使用权限"
+Solution = "请检查权限分配是否正确。"
+ErrorLink = "暂无"
+
+[AgentAPP.InternalError]
+Description = "服务器内部错误"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.GetAgentFailed]
+Description = "获取 Agent 配置 失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.CreateConversationFailed]
+Description = "创建会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.GetConversationFailed]
+Description = "获取会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.GetMaxIndexFailed]
+Description = "获取消息最大索引失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.GetHistoryFailed]
+Description = "获取会话历史记录失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.CreateMessageFailed]
+Description = "创建消息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.UpdateConversationFailed]
+Description = "更新会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.GetMessageFailed]
+Description = "获取消息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.UpdateMessageFailed]
+Description = "更新消息失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.CallAgentExecutorFailed]
+Description = "调用 Agent 执行器失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.ModelExecption]
+Description = "调用大模型异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.SkillExecption]
+Description = "调用技能异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.DolphinSDKExecption]
+Description = "调用Dolphin SDK异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.ExecutorExecption]
+Description = "调用Agent Executor异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+
+[AgentAPP.Agent.ResumeFailed]
+Description = "恢复会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Agent.ConversationSessionInitFailed]
+Description = "初始化会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Conversation.NotFound]
+Description = "会话不存在"
+Solution = "请检查请求参数是否正确"
+ErrorLink = "暂无"
+
+[AgentAPP.Conversation.DeleteFailed]
+Description = "删除会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Conversation.GetDetailFailed]
+Description = "获取会话详情失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Conversation.InitFailed]
+Description = "初始化会话失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Conversation.GetListFailed]
+Description = "获取会话列表失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+
+[AgentAPP.Temparea.RemoveFailed]
+Description = "删除临时区域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Temparea.GetFailed]
+Description = "获取临时区域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Temparea.Createfailed]
+Description = "创建临时区域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[AgentAPP.Temparea.AppendFailed]
+Description = "追加文件到临时区域失败"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"

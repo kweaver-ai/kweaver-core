@@ -1,0 +1,288 @@
+openapi: 3.0.2
+info:
+  title: AGENT-Memory服务 API
+  version: 1.0.0
+  description: |
+    API to access DIP
+
+    如有任何疑问，可到开发者社区提问：https://developers.aishu.cn
+
+    # Authentication
+    - 调用需要鉴权的API，必须将token放在HTTP header中："Authorization: Bearer ACCESS_TOKEN"
+servers:
+  - url: 'http://agent-memory:30790'
+tags:
+
+  - name: 记忆构建&召回
+  - name: 记忆管理
+  - name: 自定义错误码汇总
+  - name: 相关文档
+    description: |
+      相关文档：
+      - [confluence](https://confluence.aishu.cn/pages/viewpage.action?pageId=267740883)
+      - [devops](https://devops.aishu.cn/AISHUDevOps/DIP/_workitems/edit/764795)
+x-tagGroups:
+  - name: AGENT Memory
+    tags:
+      - 记忆管理
+      - 记忆构建&召回
+  - name: 错误码
+    tags:
+      - 自定义错误码汇总
+  - name: 相关文档
+    tags:
+      - 相关文档
+paths:
+  /api/agent-memory/internal/v1/memory:
+    post:
+      summary: build_memory
+      description: 构建记忆
+      tags:
+        - 记忆构建&召回
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMemoryReq'
+      responses:
+        '204':
+          description: 记忆构建成功
+        '400':
+          $ref: '#/components/responses/400'
+        '500':
+          $ref: '#/components/responses/500'
+  /api/agent-memory/internal/v1/search:
+    post:
+      summary: search_memory
+      description: 召回记忆
+      tags:
+        - 记忆构建&召回
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchMemoryReq'
+      responses:
+        '200':
+          description: 记忆召回结果
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/SearchMemoryResp'
+        '400':
+          $ref: '#/components/responses/400'
+        '500':
+          $ref: '#/components/responses/500'
+
+components:
+  responses:
+    '400':
+      description: 错误的请求
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '403':
+      description: 请求被拒绝
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '404':
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '409':
+      description: 资源冲突
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '500':
+      description: 内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '502':
+      description: 网关错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    CreateMemoryReq:
+      description:  |
+        构建记忆请求参数,
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: |
+            用户ID
+            请求参数中必须包含 user_id, agent_id, run_id 中的至少一个参数
+        agent_id:
+          type: string
+          description: Agent ID
+        run_id:
+          type: string
+          description: Run ID
+        messages:
+          type: array
+          description: 消息列表
+          items:
+            $ref: '#/components/schemas/Message'
+        metadata:
+          type: object
+          description: |
+            元数据,格式: {key: value}
+      required:
+        - messages
+    Message:
+      type: object
+      description: |
+        消息对象
+      properties:
+        role:
+          type: string
+          description: |
+            消息角色：
+            - user: 用户
+            - assistant: 助手
+        content:
+          type: string
+          description: 消息内容
+      required:
+        - role
+        - content
+    SearchMemoryReq:
+      description: 召回记忆请求参数
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: 用户ID
+        agent_id:
+          type: string
+          description: Agent ID
+        run_id:
+          type: string
+          description: Run ID
+        query:
+          type: string
+          description: 搜索内容
+        limit:
+          type: integer
+          description: 返回数量(默认值：5)
+        threshold:
+          type: number
+          description: |
+            向量查询评分阈值, 返回大于阈值的结果
+            评分基于余弦相似度计算，数值越大越相似（1==完全相同）
+        rerank_threshold:
+          type: number
+          description: |
+            重排序评分阈值, 搜索结果进行重新排序,只返回重排序评分>=该阈值的记忆，默认为0，表示返回所有
+      required:
+        - messages
+    SearchMemoryResp:
+      description: 召回记忆返回结果
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchMemoryRespItem'
+
+
+    SearchMemoryRespItem:
+      description: 召回记忆返回结果项
+      type: object
+      properties:
+        id:
+          type: string
+          description: 记忆ID
+        hash:
+          type: string
+          description: data sign
+        user_id:
+          type: string
+          description: 用户ID
+        agent_id:
+          type: string
+          description: Agent ID
+        run_id:
+          type: string
+          description: Run ID
+        metadata:
+          type: object
+          description: |
+            元数据,格式: {key: value}
+        memory:
+          type: string
+          description: 记忆内容
+        score:
+          type: number
+          description: 向量查询评分
+        rerank_score:
+          type: number
+          description: 重排序评分
+        created_at:
+          type: string
+          description: 记忆创建时间
+        updated_at:
+          type: string
+          description: 记忆更新时间
+      required:
+        - id
+        - memory
+        - hash
+        - score
+        - created_at
+    Error:
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      type: object
+      description: 错误信息（统一格式）
+      properties:
+        error_code:
+          type: string
+          description: 业务错误码
+        description:
+          type: string
+          description: 错误描述
+        solution:
+          type: string
+          description: 解决方法
+        error_link:
+          type: string
+          description: 错误链接
+        error_details:
+          description: |
+            - 错误详情（比如当某些数据不存在时，这里可以包含不存在的id）
+            - 任意类型
+          nullable: true
+
+  securitySchemes: {}
+
+
+
+
+
+security:
+  - ApiKeyAuth: []

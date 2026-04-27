@@ -1,0 +1,45 @@
+
+### 解析SSE-amap-sse-server
+POST https://10.4.175.99//api/agent-operator-integration/v1/mcp/parse/sse
+Content-Type: application/json
+Authorization: Bearer ory_at_wC1s7BcpsKT-_c-vhMqTOsyANPkOmeIaCzswVWHP0pI.rzMYiFfONv07iyx_VBJBIkJP4rdYSTo2IiW1RAyadvQ
+
+{
+  "mode": "sse",
+  "url": "https://mcp.amap.com/sse?key=4402d421c6333f99f01e751816590472"
+}
+
+
+### 注册MCP服务，sse模式 , remote mcp server
+POST http://localhost:9000/api/agent-operator-integration/v1/mcp/manage/register
+Content-Type: application/json
+Authorization: Bearer ory_at_xpIZ-_vxHKCpkh4iMZHBN-wL6T0wobKD9o-TkkmxVd8.nLmQflLhUdpSEvfoU_n26ulEIUPQgBKHwiP-J-M-VWc
+
+{
+  "name": "amap-sse-server-test",
+  "description": "这是高德地图sse mcp server",
+  "mode": "sse",
+  "url": "https://mcp.amap.com/sse?key=4402d421c6333f99f01e751816590472",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234567890",
+    "X-Custom-Header": "custom-value"
+  },
+  "source": "custom",
+  "category": "test"
+}
+
+
+### 调用MCP工具 - amap-sse-server
+POST http://10.4.175.99:9000/api/agent-operator-integration/internal-v1/mcp/proxy/tool/call
+Content-Type: application/json
+
+{
+  "mcp_id": "c7a12c4a-c5e9-4e91-95f0-db25c27e23ee",
+  "tool_name": "maps_text_search",
+  "parameters": {
+      "city": "上海",
+      "keywords": "爱数大厦",
+      "citylimit": true
+  }
+}

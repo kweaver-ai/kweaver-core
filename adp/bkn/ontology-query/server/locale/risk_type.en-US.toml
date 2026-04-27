@@ -1,0 +1,20 @@
+# RiskType (ontology-query evaluation)
+[OntologyQuery.RiskType.RiskLevelExceedsMaxAcceptable]
+Description = "Risk level exceeds the maximum acceptable level for this risk type"
+Solution = "Adjust inputs or risk configuration, or use an action with a lower assessed risk."
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.RiskTypeNotFound]
+Description = "Referenced risk type does not exist"
+Solution = "Check that risk_type_id in the action type configuration matches an existing risk type."
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.InternalError.GetRiskTypesByIDsFailed]
+Description = "Failed to load risk types"
+Solution = "Please try again. If the error persists, contact technical support."
+ErrorLink = "N/A"
+
+[OntologyQuery.RiskType.InternalError.ExecuteRiskAssessmentToolFailed]
+Description = "Risk assessment tool execution failed"
+Solution = "Please check the risk function tool configuration and try again."
+ErrorLink = "N/A"

@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "多数据库写入操作",
+  "description": "支持MySQL、DM8、KDB等多种数据库的写入操作",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "operator": {
+      "type": "string",
+      "pattern": "^@.*",
+      "maxLength": 255
+    },
+    "title": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "datasource_type": {
+          "type": "string",
+          "description": "数据库类型，支持任意字符串值"
+        },
+        "datasource_id": {
+          "type": "string",
+          "description": "数据连接ID，用于查询连接信息"
+        },
+        "datasource_name": {
+          "type": "string",
+          "description": "数据连接名称"
+        },
+        "table_exist": {
+          "type": "boolean",
+          "description": "目标表是否存在"
+        },
+        "table_name": {
+          "type": "string",
+          "description": "目标表名称",
+          "minLength": 1
+        },
+        "operate_type": {
+          "type": "string",
+          "enum": ["insert", "append"],
+          "description": "操作类型：insert/append(插入/追加)",
+          "default": "append"
+        },
+        "conn": {
+          "type": "object",
+          "description": "目标端连接信息",
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "数据库主机地址"
+            },
+            "port": {
+              "type": "integer",
+              "description": "数据库端口号",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "username": {
+              "type": "string",
+              "description": "数据库用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "数据库密码"
+            },
+            "database": {
+              "type": "string",
+              "description": "数据库名称"
+            },
+            "params": {
+              "type": "object",
+              "description": "数据库连接参数",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["host", "port", "username", "password", "database"]
+        },
+        "sync_model_fields": {
+          "type": "array",
+          "description": "字段映射配置（源字段到目标字段）",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "object",
+                "description": "目标字段信息",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "目标字段名称"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "description": "目标字段注释"
+                  },
+                  "data_lenth": {
+                    "type": "integer",
+                    "description": "目标字段数据长度（DECIMAL类型用作总位数scale）"
+                  },
+                  "data_type": {
+                    "type": "string",
+                    "description": "目标字段数据类型"
+                  },
+                  "is_nullable": {
+                    "type": "string",
+                    "enum": ["YES", "NO"],
+                    "description": "目标字段是否允许为空"
+                  },
+                  "primary_key": {
+                    "type": "integer",
+                    "enum": [0, 1],
+                    "description": "目标字段是否为主键"
+                  },
+                  "precision": {
+                    "type": "integer",
+                    "description": "DECIMAL类型的小数位数精度",
+                    "minimum": 0,
+                    "maximum": 38,
+                    "default": 2
+                  }
+                },
+                "required": ["name"]
+              },
+              "source": {
+                "type": "object",
+                "description": "源字段信息",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "源字段名称"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "description": "源字段注释"
+                  },
+                  "data_lenth": {
+                    "type": "integer",
+                    "description": "源字段数据长度"
+                  },
+                  "data_type": {
+                    "type": "string",
+                    "description": "源字段数据类型"
+                  },
+                  "is_nullable": {
+                    "type": "string",
+                    "enum": ["YES", "NO"],
+                    "description": "源字段是否允许为空"
+                  },
+                  "primary_key": {
+                    "type": "integer",
+                    "enum": [0, 1],
+                    "description": "源字段是否为主键"
+                  }
+                },
+                "required": ["name"]
+              }
+            },
+            "required": ["target", "source"]
+          }
+        },
+        "sync_options": {
+          "type": "object",
+          "description": "同步写入选项",
+          "properties": {
+            "batch_size": {
+              "type": "integer",
+              "description": "批量写入大小",
+              "minimum": 1,
+              "default": 1000
+            },
+            "truncate_before_write": {
+              "type": "boolean",
+              "description": "写入前是否清空表",
+              "default": false
+            }
+          }
+        },
+        "data": {
+          "description": "要操作的数据（对象或对象数组），支持字段映射",
+          "oneOf": [
+            {
+              "type": "object",
+              "description": "单条记录数据"
+            },
+            {
+              "type": "array",
+              "items": { 
+                "type": "object",
+                "description": "记录数据"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "where": {
+          "description": "WHERE条件，用于update和delete操作，支持变量引用($变量名)",
+          "type": "object"
+        },
+        "output_var": {
+          "type": "string",
+          "description": "输出变量名，用于存储操作结果",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        }
+      },
+      "required": ["datasource_type", "table_name"],
+      "anyOf": [
+        {
+          "required": ["conn"]
+        },
+        {
+          "required": ["datasource_id"]
+        }
+      ]
+    },
+    "settings":{
+        "$ref": "../common.json#/definitions/Settings"
+    }
+  },
+  "required": ["id", "operator", "parameters"],
+  "additionalProperties": false
+}

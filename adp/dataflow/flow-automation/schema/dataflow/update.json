@@ -1,0 +1,90 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "更新数据处理流任务",
+    "description": "put /api/automation/v1/data-flow/flow/{dagId}",
+    "type": "object",
+    "properties": {
+        "title": {
+            "description": "任务名称,名称不能包含 /:*?\"<>| 特殊字符，长度不能超过128个字符",
+            "type": "string",
+            "pattern": "^[^/:\\*?\"<>\\|]+$",
+            "maxLength": 128
+        },
+        "description": {
+            "description": "详情描述,不允许换行输入,不允许超过300个字符",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "maxLength": 300
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "status": {
+            "description": "任务状态，默认启用",
+            "enum": [
+                null,
+                "normal",
+                "stopped"
+            ]
+        },
+        "steps": {
+            "description": "自动化流程定义",
+            "type": "array",
+            "items": {
+                "type": "object"
+            },
+            "minItems": 2,
+            "uniqueItems": true
+        },
+        "create_by": {
+            "description": "创建方式",
+            "enum": ["local", "direct", "template"]
+        },
+        "trigger_config": {
+            "type": "object",
+            "properties": {
+                "operator": {
+                    "type": "string",
+                    "description": "触发器类型"
+                },
+                "dataSource": {
+                    "type": "object",
+                    "properties": {
+                        "operator": {
+                            "type": "string",
+                            "description": "数据源操作类型"
+                        },
+                        "parameters": {
+                            "type": "object"
+                        }
+                    },
+                    "required": ["operator", "parameters"]
+                },
+                "cron": {
+                    "type": "string",
+                    "description": "定时任务表达式",
+                    "pattern": "(@(annually|yearly|monthly|weekly|daily|hourly|reboot))|(@every (\\d+(ns|us|µs|ms|s|m|h))+)|((((\\d+,)+\\d+|(\\d+(\/|-)\\d+)|\\d+|\\*|\\?) ?){5,7})"
+                }
+            },
+            "required": ["operator"]
+        },
+        "version" : {
+            "type": "string",
+            "pattern": "^v(0|[1-9]\\d*)(?:\\.(0|[1-9]\\d*)){2}$",
+            "not": {
+                "const": "v0.0.0"
+            }
+        },
+        "change_log" : {
+            "type": "string",
+            "maxLength": 300
+        },
+        "debug_id": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false
+}

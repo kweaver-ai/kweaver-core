@@ -1,0 +1,174 @@
+replicaCount: 1
+
+nodeSelector: {}
+
+namespace: dip
+moduleName: agent-retrieval
+
+# 设置为dev则为开发模式.
+runMode: release
+
+enableSecurityContext: true
+securityContext:
+  runAsUser: 5000
+  runAsGroup: 5000
+
+image:
+  registry: acr.aishu.cn
+  service:
+    repository: dip/agent-retrieval
+    tag: data-581755
+    pullPolicy: IfNotPresent
+
+service:
+  podID: "POD_ID" # 使用PODID作为machineID, 这里填写podID环境变量名
+  name: "agent-retrieval"
+  machineID: ""
+  ingressclassname: "class-443"
+  agentRetrieval:
+    nodePort: 31023
+    ingress:
+      enabled: true
+      interface:
+        path:
+          - /api/agent-retrieval/v1
+  type: ClusterIP
+  enableDualStack: false
+  port: 30779
+  language: zh-CN
+  loggerOutput: stdout
+  loggerLevel: 1
+  debug: false
+  businessTimeOffset: 0
+  readinessProbe:
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 5
+  livenessProbe:
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 5
+  startupProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 30
+  concept_search_config:
+    concept_recall_size: 100
+    knn_k: 300
+  deploy_agent:
+    concept_intention_analysis_agent_key: "01K5FS890WD4V7M27GAXER8JKB" # 概念意图分析智能体Key
+    concept_retrieval_strategist_agent_key: "01K5G6JFAVJF94C40K90YMPJN9" # 概念召回策略智能体Key
+    metric_dynamic_params_generator_key: "01KCG0MEPBNHHZHCSM5NTXRFSG" # Metric 动态参数生成智能体Key
+    operator_dynamic_params_generator_key: "01KCJJ7PAK3ATSC02F48QJXFH8" # Operator 动态参数生成智能体Key
+  rerank_llm:
+    model: ""
+    temperature: 0
+    top_k: 2
+    top_p: 0.5
+    frequency_penalty: 0.5
+    presence_penalty: 0.5
+    max_tokens: 5000
+# 认证开关
+auth:
+  enabled: true
+
+depServices:
+  rds:
+    type: mysql
+    host: 127.0.0.1
+    port: 3320
+    user: ""
+    password: ""
+    maxConnections: 30
+    useExternalDB: false
+    connTimeout: 30
+    readTimeout: 30
+    writeTimeout: 30
+    database: dip_data_agent
+    dbCharset: utf8mb4
+    system_id: ""
+  hydra:
+    publicHost: hydra-public
+    publicPort: 4444
+    publicProtocol: http
+    administrativeHost: hydra-admin
+    administrativePort: 4445
+    administrativeProtocol: http
+    administrativePrefix: /admin
+  agent-app:
+    privateHost: agent-factory
+    privatePort: 13020
+    privateProtocol: http
+  bkn-backend:
+    privateHost: bkn-backend-svc
+    privatePort: 13014
+    privateProtocol: http
+  ontology-query:
+    privateHost: ontology-query-svc
+    privatePort: 13018
+    privateProtocol: http
+  agent-operator-integration:
+    privateHost: agent-operator-integration
+    privatePort: 9000
+    privateProtocol: http
+  redis:
+    connectType: sentinel
+    enableSSL: false
+    connectInfo:
+      username: root
+      password: yourpassword
+      host: ""
+      port: 26379
+      masterHost: ""
+      masterPort: 26379
+      slaveHost: ""
+      slavePort: 26379
+      sentinelHost: proton-redis-proton-redis-sentinel.resource.svc.cluster.local
+      sentinelPort: 26379
+      sentinelUsername: root
+      sentinelPassword: yourpassword
+      masterGroupName: mymaster
+      poolSize: 10
+    secretName: ""
+    caName: ""
+    certName: ""
+    keyName: ""
+  class-443:
+    ingressClass: class-443
+  mf-model-api:
+    privateProtocol: http
+    privateHost: mf-model-api
+    privatePort: 9898
+
+env:
+  language: en_US.UTF-8
+  timezone: Asia/Shanghai
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 200Mi
+  limits:
+    cpu: 4
+    memory: 8Gi
+
+observability:
+  traceType: otlp # 可选值: jaeger, otlp
+  logEnabled: false # 是否开启 log
+  traceEnabled: false # 是否开启 trace
+  metricEnabled: false # 是否开启 metric
+  logExporter: consle # log上报方式:consle;http
+  traceProvider: http # trace 上报方式consle;http;grpc
+  metricProvider: http # metric 上报方式consle;http
+  logLoadInternal: 1 # log 批量上报策略 -- 时间间隔，单位：秒
+  logLoadMaxLog: 10 # log 批量上报策略 -- 日志数量，单位： 个
+  traceMaxQueueSize: 50000 # trace 队列最大长度
+  metricIntervalSecond: 60 # metric 上报间隔，单位：秒
+  httpLogFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events # log http 上报端点
+  httpTraceFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events # trace http 上报端点
+  httpMetricFeedIngesterUrl: http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events # metric http 上报端点
+  grpcTraceFeedIngesterUrl: feed-ingester-grpc-service:13033 # trace grpc上报端点
+  grpcTraceJobId: dip-o11y-trace-grpc # trace grpc 上报任务ID

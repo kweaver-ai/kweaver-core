@@ -1,0 +1,38 @@
+---
+type: entity
+id: node
+name: Node节点
+version: 1.0.0
+network: k8s-modular
+tags: [拓扑架构, 基础设施, Kubernetes]
+---
+
+# Node节点
+
+Kubernetes 集群中的工作节点，承载 Pod 运行。
+
+## 数据来源
+
+| 类型 | ID | 名称 |
+|------|-----|------|
+| data_view | d2mio43q6gt6p380disg | node_info_view |
+
+> **主键**: `id` | **显示属性**: `node_name`
+
+## 属性覆盖
+
+| 属性名 | 显示名 | 说明 |
+|--------|--------|------|
+| node_status | 节点状态 | Ready/NotReady/Unknown |
+
+## 业务语义
+
+Node 是集群的计算资源单元，可以是物理机或虚拟机。
+
+### 常见状态
+
+| 状态 | 说明 |
+|------|------|
+| Ready | 节点健康，可调度 |
+| NotReady | 节点异常，不可调度 |
+| Unknown | 无法获取状态 |

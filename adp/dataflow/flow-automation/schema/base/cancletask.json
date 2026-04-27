@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "取消任务运行实例",
+    "description": "post /run-instance/:instanceId",
+    "type": "object",
+    "properties": {
+        "status": {
+            "description": "任务状态",
+            "enum": [
+                "canceled"
+            ]
+        }
+    },
+    "required": [
+        "status"
+    ],
+    "additionalProperties": false
+}

@@ -1,0 +1,147 @@
+name: agent-observability-release
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'trace-ai/agent-observability/**'
+      - 'trace-ai/VERSION'
+      - '.github/workflows/release-agent-observability.yml'
+  workflow_dispatch:
+
+env:
+  SWR_REGISTRY: swr.cn-east-3.myhuaweicloud.com
+  SWR_ORGANIZATION: kweaver-ai
+  REGISTRY_IMAGE_NAME: agent-observability
+  APP_PATH: trace-ai/agent-observability
+  CHART_PATH: trace-ai/agent-observability/charts/agent-observability
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image: ${{ steps.version.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_VERSION="$(tr -d '[:space:]' < trace-ai/VERSION)"
+          REF_NAME="${GITHUB_REF_NAME}"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+
+          if [[ "${REF_NAME}" == release/* ]]; then
+            VERSION="${BASE_VERSION}"
+          else
+            SANITIZED_BRANCH="$(echo "${REF_NAME}" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^0-9a-zA-Z.-]+#-#g; s#-+#-#g; s#^[.-]+##; s#[.-]+$##')"
+            VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}.sha${SHORT_SHA}"
+          fi
+
+          echo "Base version: ${BASE_VERSION}"
+          echo "Git ref name: ${REF_NAME}"
+          echo "Short SHA: ${SHORT_SHA}"
+          echo "Resolved version: ${VERSION}"
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "image=${{ env.SWR_REGISTRY }}/${{ env.SWR_ORGANIZATION }}/${{ env.REGISTRY_IMAGE_NAME }}:${VERSION}" >> "${GITHUB_OUTPUT}"
+
+  test-and-lint:
+    runs-on: ubuntu-latest
+    needs: resolve-version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: trace-ai/agent-observability/go.mod
+
+      - name: Go test
+        working-directory: ${{ env.APP_PATH }}
+        run: go test ./...
+
+      - name: GolangCI-Lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.6.2
+          working-directory: ${{ env.APP_PATH }}
+
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    needs:
+      - resolve-version
+      - test-and-lint
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to SWR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.SWR_REGISTRY }}
+          username: ${{ secrets.SWR_USERNAME }}
+          password: ${{ secrets.SWR_PASSWORD }}
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./trace-ai/agent-observability
+          file: ./trace-ai/agent-observability/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ needs.resolve-version.outputs.image }}
+
+  package-and-push-chart:
+    runs-on: ubuntu-latest
+    needs:
+      - resolve-version
+      - build-and-push-image
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update chart versions and image tag
+        run: |
+          sed -i "s/^version: .*/version: ${VERSION}/" ${CHART_PATH}/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" ${CHART_PATH}/Chart.yaml
+          sed -i "s/__VERSION__/${VERSION}/g" ${CHART_PATH}/values.yaml
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+
+      - name: Helm lint
+        run: helm lint ${CHART_PATH}
+
+      - name: Helm package
+        run: helm package ${CHART_PATH} --destination dist
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push chart to GHCR
+        run: helm push dist/agent-observability-${{ needs.resolve-version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts

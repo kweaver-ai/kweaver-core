@@ -1,0 +1,5 @@
+1. OTLP gRPC endpoint:
+   {{ .Release.Name }}:{{ .Values.service.ports.grpc }}
+
+2. OTLP HTTP endpoint:
+   http://{{ .Release.Name }}:{{ .Values.service.ports.http }}/v1/traces

@@ -1,0 +1,100 @@
+# 1. app相关
+app:
+  debug: false
+  host_ip: "0.0.0.0"
+  port: 30778
+  host_prefix: "/api/agent-executor/v1"
+  host_prefix_v2: "/api/agent-executor/v2"
+  rps_limit: 100
+  enable_system_log: true
+  log_level: "info"
+  enable_dolphin_agent_verbose: false
+  log_conversation_session_init: false
+  is_write_exception_log_to_file: false
+
+
+# 2. redis数据库相关
+redis:
+  # 连接类型: standalone, sentinel, master-slave
+  cluster_mode: "standalone"
+
+  # standalone模式配置
+  host: "decision-agent-redis"
+  port: "6379"
+  user: ""
+  password: "redis123456"
+
+  # sentinel模式配置
+  sentinel_master: "mymaster"
+  sentinel_user: "root"
+  sentinel_password: "your-sentinel-password-here"  # 替换为实际的Sentinel密码
+
+  # master-slave模式配置
+  read_host: "your-redis-read-host-here"    # 替换为实际的Redis读库地址
+  read_port: "6379"
+  read_user: "root"
+  read_password: "your-redis-read-password-here"  # 替换为实际的Redis读库密码
+  write_host: "your-redis-write-host-here"   # 替换为实际的Redis写库地址
+  write_port: "6379"
+  write_user: "root"
+  write_password: "your-redis-write-password-here"  # 替换为实际的Redis写库密码
+
+
+# 3. 依赖的服务地址
+services:
+  mf_model_api:
+    host: "mf-model-api"
+    port: "9898"
+  agent_factory:
+    host: "localhost"
+    port: "30777"
+  agent_operator_integration:
+    host: "agent-operator-integration"
+    port: "9000"
+  agent_memory:
+    host: "agent-memory"
+    port: "30790"
+
+
+# 4. 记忆相关
+memory:
+  limit: 50
+  threshold: 0.5
+  rerank_threshold: 0.1
+
+# 6. 一些特性控制
+features:
+  use_explore_block_v2: true
+  disable_dolphin_sdk_llm_cache: false
+  enable_dolphin_agent_output_variables_ctrl: false
+  is_skill_agent_need_progress: false
+  enable_traceai_evidence: false
+  skill_enabled: true  # 是否开启 Skill 功能
+
+# 7. o11y 相关
+o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
+  log_enabled: false
+  log_level: "info"
+  trace_enabled: false
+  trace_endpoint: ""
+  trace_sampling_rate: 1.0
+
+# 8. 对话日志相关配置
+dialog_logging:
+  enable_dialog_logging: false
+  use_single_log_file: false
+  single_profile_file_path: "./data/dialog_single_file_logs/profile.log"
+  single_trajectory_file_path: "./data/dialog_single_file_logs/trajectory.log"
+
+# 9. LLM message 日志
+llm_message_logging:
+  enabled: false
+  log_dir: "./data/dolphin_llm_log"
+
+
+
+local_dev:
+  do_not_init_built_in_agent_and_tool: true

@@ -1,0 +1,3333 @@
+### 解析SSE-自定义local mcp server
+POST http://data-retrieval.anyshare:9100/tools/knowledge_rerank
+Content-Type: application/json
+
+{
+    "action": "llm",
+    "query_understanding": {
+        "origin_query": "企业",
+        "processed_query": "",
+        "intent": null,
+        "query_strategy": [
+            {
+                "strategy_type": "concept_discovery",
+                "filter": {
+                    "concept_type": "object_type",
+                    "concept_id": "",
+                    "concept_ids": null,
+                    "conditions": [
+                        {
+                            "field": "*",
+                            "operation": "match",
+                            "value": "企业"
+                        },
+                        {
+                            "field": "*",
+                            "operation": "knn",
+                            "value": "企业"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "concepts": [
+        {
+            "concept_type": "object_type",
+            "concept_id": "enterprise",
+            "concept_name": "企业",
+            "concept_detail": {
+                "branch": "main",
+                "create_time": 0,
+                "display_key": "name",
+                "id": "enterprise",
+                "primary_keys": [
+                    "ad_eid"
+                ],
+                "creator": "",
+                "update_time": 1762333040541,
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "__score": 9.505491,
+                "color": "#0e5fc5",
+                "data_properties": [
+                    {
+                        "comment": "实缴资本",
+                        "display_name": "实缴资本",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "实缴资本",
+                            "name": "actual_capi"
+                        },
+                        "name": "actual_capi",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业唯一id",
+                        "display_name": "企业唯一id",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "企业唯一id",
+                            "name": "ad_eid"
+                        },
+                        "name": "ad_eid",
+                        "type": "varchar"
+                    },
+                    {
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "注册地址",
+                            "name": "address"
+                        },
+                        "name": "address",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "注册地址",
+                        "display_name": "注册地址",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "高级搜索四合一",
+                        "display_name": "高级搜索四合一",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "高级搜索四合一",
+                            "name": "advanced_label",
+                            "type": "varchar"
+                        },
+                        "name": "advanced_label",
+                        "type": "varchar"
+                    },
+                    {
+                        "display_name": "所在区域编码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所在区域编码",
+                            "name": "area_code",
+                            "type": "int"
+                        },
+                        "name": "area_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "所在区域编码"
+                    },
+                    {
+                        "name": "before_content",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "曾用名",
+                        "display_name": "曾用名",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "曾用名",
+                            "name": "before_content",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "name": "belong_org",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "登记机关",
+                        "display_name": "登记机关",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "登记机关",
+                            "name": "belong_org",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "comment": "登记机关区域代码",
+                        "display_name": "登记机关区域代码",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "登记机关区域代码",
+                            "name": "belong_org_code",
+                            "type": "int"
+                        },
+                        "name": "belong_org_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所属证监会行业",
+                            "name": "blcsrcind",
+                            "type": "varchar"
+                        },
+                        "name": "blcsrcind",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "所属证监会行业",
+                        "display_name": "所属证监会行业"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "简介",
+                        "display_name": "简介",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "简介",
+                            "name": "brirf_info",
+                            "type": "int"
+                        },
+                        "name": "brirf_info",
+                        "type": "int"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "核准日期",
+                            "name": "check_date"
+                        },
+                        "name": "check_date",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "核准日期",
+                        "display_name": "核准日期"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "所在城市代码",
+                        "display_name": "所在城市代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "int",
+                            "display_name": "所在城市代码",
+                            "name": "city_code"
+                        },
+                        "name": "city_code",
+                        "type": "int"
+                    },
+                    {
+                        "comment": "股票代码",
+                        "display_name": "股票代码",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "股票代码",
+                            "name": "code",
+                            "type": "varchar"
+                        },
+                        "name": "code",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "是否是核心企业",
+                        "display_name": "是否是核心企业",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "是否是核心企业",
+                            "name": "core_code",
+                            "type": "int"
+                        },
+                        "name": "core_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "",
+                        "display_name": "create_time",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "create_time",
+                            "type": "varchar",
+                            "display_name": "create_time"
+                        },
+                        "name": "create_time"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "统一社会信用代码",
+                        "display_name": "统一社会信用代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "统一社会信用代码",
+                            "name": "credit_no",
+                            "type": "varchar"
+                        },
+                        "name": "credit_no",
+                        "type": "varchar"
+                    },
+                    {
+                        "display_name": "企业类型",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业类型",
+                            "name": "econ_kind",
+                            "type": "varchar"
+                        },
+                        "name": "econ_kind",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业类型"
+                    },
+                    {
+                        "display_name": "启信宝企业eid",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "eid",
+                            "type": "varchar",
+                            "display_name": "启信宝企业eid"
+                        },
+                        "name": "eid",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "启信宝企业eid"
+                    },
+                    {
+                        "name": "email",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "公司邮箱",
+                        "display_name": "公司邮箱",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "公司邮箱",
+                            "name": "email",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "comment": "邮箱更新日期",
+                        "display_name": "邮箱更新日期",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "邮箱更新日期",
+                            "name": "email_date",
+                            "type": "varchar"
+                        },
+                        "name": "email_date",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "进出口企业代码",
+                        "display_name": "进出口企业代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "进出口企业代码",
+                            "name": "import_export_num",
+                            "type": "varchar"
+                        },
+                        "name": "import_export_num",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业经营规模全国门类评分",
+                            "name": "ind_bus_score_dc",
+                            "type": "double"
+                        },
+                        "name": "ind_bus_score_dc",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业经营规模全国门类评分",
+                        "display_name": "企业经营规模全国门类评分"
+                    },
+                    {
+                        "name": "ind_grown_score_dc",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业成长能力全国门类评分",
+                        "display_name": "企业成长能力全国门类评分",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业成长能力全国门类评分",
+                            "name": "ind_grown_score_dc",
+                            "type": "double"
+                        }
+                    },
+                    {
+                        "display_name": "企业创新能力指数全国门类评分",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业创新能力指数全国门类评分",
+                            "name": "ind_inno_score_dc",
+                            "type": "double"
+                        },
+                        "name": "ind_inno_score_dc",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业创新能力指数全国门类评分"
+                    },
+                    {
+                        "name": "ind_invest_score_dc",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业资本市场吸引力全国门类评分",
+                        "display_name": "企业资本市场吸引力全国门类评分",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业资本市场吸引力全国门类评分",
+                            "name": "ind_invest_score_dc",
+                            "type": "double"
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业品牌活跃度指数全国门类评分",
+                        "display_name": "企业品牌活跃度指数全国门类评分",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "double",
+                            "display_name": "企业品牌活跃度指数全国门类评分",
+                            "name": "ind_score_percent_dc"
+                        },
+                        "name": "ind_score_percent_dc",
+                        "type": "double"
+                    },
+                    {
+                        "comment": "行业编号",
+                        "display_name": "行业编号",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "行业编号",
+                            "name": "industry_code",
+                            "type": "varchar"
+                        },
+                        "name": "industry_code",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "display_name": "所在行业名称",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所在行业名称",
+                            "name": "industry_name",
+                            "type": "varchar"
+                        },
+                        "name": "industry_name",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "所在行业名称"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "是否上市 0 未上市, 1以上市",
+                        "display_name": "是否上市 0 未上市, 1以上市",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "是否上市 0 未上市, 1以上市",
+                            "name": "is_listed",
+                            "type": "int"
+                        },
+                        "name": "is_listed",
+                        "type": "int"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "是否已人工核查",
+                            "name": "is_mark",
+                            "type": "int"
+                        },
+                        "name": "is_mark",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "是否已人工核查",
+                        "display_name": "是否已人工核查"
+                    },
+                    {
+                        "display_name": "备选标签或公司官网等信息是否发生修改",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "备选标签或公司官网等信息是否发生修改",
+                            "name": "is_update",
+                            "type": "int"
+                        },
+                        "name": "is_update",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "备选标签或公司官网等信息是否发生修改"
+                    },
+                    {
+                        "comment": "榜单类型",
+                        "display_name": "榜单类型",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "榜单类型",
+                            "name": "list_type",
+                            "type": "varchar"
+                        },
+                        "name": "list_type",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "display_name": "上市状态",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "上市状态",
+                            "name": "listed_status",
+                            "type": "varchar"
+                        },
+                        "name": "listed_status",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "上市状态"
+                    },
+                    {
+                        "name": "listmkt",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "上市交易所",
+                        "display_name": "上市交易所",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "上市交易所",
+                            "name": "listmkt",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业Logo地址",
+                        "display_name": "企业Logo地址",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "企业Logo地址",
+                            "name": "logo_url",
+                            "type": "varchar"
+                        },
+                        "name": "logo_url",
+                        "type": "varchar"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "企业名称",
+                            "name": "name"
+                        },
+                        "name": "name",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业名称",
+                        "display_name": "企业名称"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "公司英文名",
+                            "name": "nameen"
+                        },
+                        "name": "nameen",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "公司英文名",
+                        "display_name": "公司英文名"
+                    },
+                    {
+                        "comment": "登记状态",
+                        "display_name": "登记状态",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "new_status",
+                            "type": "varchar",
+                            "display_name": "登记状态"
+                        },
+                        "name": "new_status",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "name": "oper_name",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "法定代表",
+                        "display_name": "法定代表",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "法定代表",
+                            "name": "oper_name",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "display_name": "企业评分",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "order_score",
+                            "type": "int",
+                            "display_name": "企业评分"
+                        },
+                        "name": "order_score",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "企业评分"
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "组织机构代码",
+                        "display_name": "组织机构代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "组织机构代码",
+                            "name": "org_no",
+                            "type": "varchar"
+                        },
+                        "name": "org_no"
+                    },
+                    {
+                        "comment": "是否为园区企业 0不是园区企业, 1是园区企业",
+                        "display_name": "是否为园区企业 0不是园区企业, 1是园区企业",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "是否为园区企业 0不是园区企业, 1是园区企业",
+                            "name": "park_code",
+                            "type": "int"
+                        },
+                        "name": "park_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "display_name": "性质分类",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "性质分类",
+                            "name": "property_type",
+                            "type": "varchar"
+                        },
+                        "name": "property_type",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "性质分类"
+                    },
+                    {
+                        "comment": "所在省份名称",
+                        "display_name": "所在省份名称",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所在省份名称",
+                            "name": "province",
+                            "type": "varchar"
+                        },
+                        "name": "province",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "省份代码",
+                            "name": "province_code",
+                            "type": "int"
+                        },
+                        "name": "province_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "省份代码",
+                        "display_name": "省份代码"
+                    },
+                    {
+                        "name": "qualification",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "纳税人资质",
+                        "display_name": "纳税人资质",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "纳税人资质",
+                            "name": "qualification",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "comment": "工商注册号",
+                        "display_name": "工商注册号",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "type": "varchar",
+                            "display_name": "工商注册号",
+                            "name": "reg_no"
+                        },
+                        "name": "reg_no",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "display_name": "注册资本",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "注册资本",
+                            "name": "regist_capi",
+                            "type": "varchar"
+                        },
+                        "name": "regist_capi",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "注册资本"
+                    },
+                    {
+                        "name": "regist_new",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "注册资本(万元)",
+                        "display_name": "注册资本(万元)",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "注册资本(万元)",
+                            "name": "regist_new",
+                            "type": "double"
+                        }
+                    },
+                    {
+                        "name": "scope",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "经营范围",
+                        "display_name": "经营范围",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "经营范围",
+                            "name": "scope",
+                            "type": "varchar"
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "参保人数",
+                            "name": "shiyebx_num",
+                            "type": "varchar"
+                        },
+                        "name": "shiyebx_num",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "参保人数",
+                        "display_name": "参保人数"
+                    },
+                    {
+                        "display_name": "参保人数数值",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "参保人数数值",
+                            "name": "shiyebxval",
+                            "type": "int"
+                        },
+                        "name": "shiyebxval",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "参保人数数值"
+                    },
+                    {
+                        "display_name": "来源码 0:核心企业 1:分支机构 2:投资公司",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "来源码 0:核心企业 1:分支机构 2:投资公司",
+                            "name": "source_code",
+                            "type": "int"
+                        },
+                        "name": "source_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "来源码 0:核心企业 1:分支机构 2:投资公司"
+                    },
+                    {
+                        "comment": "成立日期",
+                        "display_name": "成立日期",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "成立日期",
+                            "name": "start_date",
+                            "type": "varchar"
+                        },
+                        "name": "start_date",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "股票种类（英文）",
+                        "display_name": "股票种类（英文）",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "股票种类（英文）",
+                            "name": "stock_class",
+                            "type": "varchar"
+                        },
+                        "name": "stock_class",
+                        "type": "varchar"
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "股票种类（中文）",
+                        "display_name": "股票种类（中文）",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "股票种类（中文）",
+                            "name": "stock_desc",
+                            "type": "varchar"
+                        },
+                        "name": "stock_desc"
+                    },
+                    {
+                        "comment": "股票简称",
+                        "display_name": "股票简称",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "股票简称",
+                            "name": "stock_name",
+                            "type": "varchar"
+                        },
+                        "name": "stock_name",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "纳税人识别号",
+                        "display_name": "纳税人识别号",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "纳税人识别号",
+                            "name": "tax_num",
+                            "type": "varchar"
+                        },
+                        "name": "tax_num",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "technology_type",
+                            "type": "varchar",
+                            "display_name": "科技类型"
+                        },
+                        "name": "technology_type",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "科技类型",
+                        "display_name": "科技类型"
+                    },
+                    {
+                        "comment": "电话更新日期",
+                        "display_name": "电话更新日期",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "电话更新日期",
+                            "name": "tele_date",
+                            "type": "varchar"
+                        },
+                        "name": "tele_date",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "公司电话",
+                        "display_name": "公司电话",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "公司电话",
+                            "name": "telephone",
+                            "type": "varchar"
+                        },
+                        "name": "telephone",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "经营期限开始 - 经营期限结束",
+                        "display_name": "经营期限开始 - 经营期限结束",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "经营期限开始 - 经营期限结束",
+                            "name": "term_region",
+                            "type": "varchar"
+                        },
+                        "name": "term_region"
+                    },
+                    {
+                        "mapped_field": {
+                            "display_name": "证券类别",
+                            "name": "trade_market",
+                            "type": "varchar"
+                        },
+                        "name": "trade_market",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "证券类别",
+                        "display_name": "证券类别",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "web_checked",
+                            "type": "varchar",
+                            "display_name": "人工核查的企业官网地址"
+                        },
+                        "name": "web_checked",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "人工核查的企业官网地址",
+                        "display_name": "人工核查的企业官网地址"
+                    }
+                ],
+                "detail": "",
+                "kn_id": "test_1000",
+                "name": "企业",
+                "tags": [
+                    "企业",
+                    "公司"
+                ],
+                "comment": "企业，公司的基本信息对象类",
+                "data_source": {
+                    "name": "",
+                    "type": "data_view",
+                    "id": "d3tejh2qkogavhk7hsu0"
+                },
+                "icon": "icon-dip-suanziguanli",
+                "module_type": "object_type"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "park",
+            "concept_name": "园区",
+            "concept_detail": {
+                "kn_id": "test_1000",
+                "name": "园区",
+                "update_time": 1762408192382,
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "__score": 3.7512803,
+                "data_source": {
+                    "id": "d3tejh2qkogavhk7ht6g",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "icon": "icon-dip-suanziguanli",
+                "create_time": 1762408192382,
+                "primary_keys": [
+                    "id"
+                ],
+                "comment": "",
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "display_key": "name",
+                "detail": "",
+                "id": "park",
+                "module_type": "object_type",
+                "tags": null,
+                "branch": "main",
+                "color": "#0e5fc5",
+                "data_properties": [
+                    {
+                        "comment": "地址",
+                        "display_name": "地址",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "地址",
+                            "name": "address",
+                            "type": "varchar"
+                        },
+                        "name": "address",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "供气量",
+                        "display_name": "供气量",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "供气量",
+                            "name": "air_supplyze",
+                            "type": "double"
+                        },
+                        "name": "air_supplyze",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "所在地区",
+                        "display_name": "所在地区",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所在地区",
+                            "name": "area",
+                            "type": "varchar"
+                        },
+                        "name": "area",
+                        "type": "varchar"
+                    },
+                    {
+                        "comment": "区域代码",
+                        "display_name": "区域代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "area_code",
+                            "type": "int",
+                            "display_name": "区域代码"
+                        },
+                        "name": "area_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "简介",
+                        "display_name": "简介",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "简介",
+                            "name": "brief",
+                            "type": "varchar"
+                        },
+                        "name": "brief",
+                        "type": "varchar"
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "contact",
+                            "type": "varchar",
+                            "display_name": "联系电话"
+                        },
+                        "name": "contact",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "联系电话",
+                        "display_name": "联系电话",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "comment": "所在国家",
+                        "display_name": "所在国家",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "所在国家",
+                            "name": "country",
+                            "type": "varchar"
+                        },
+                        "name": "country",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "",
+                        "display_name": "created_time",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "created_time",
+                            "name": "created_time",
+                            "type": "varchar"
+                        },
+                        "name": "created_time",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "id",
+                            "type": "varchar",
+                            "display_name": "id"
+                        },
+                        "name": "id",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "",
+                        "display_name": "id"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "产业id拼接字符串",
+                            "name": "industry_ids",
+                            "type": "varchar"
+                        },
+                        "name": "industry_ids",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "产业id拼接字符串",
+                        "display_name": "产业id拼接字符串"
+                    },
+                    {
+                        "display_name": "产业方向",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "产业方向",
+                            "name": "industry_names",
+                            "type": "varchar"
+                        },
+                        "name": "industry_names",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "产业方向"
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "土地余量",
+                        "display_name": "土地余量",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "土地余量",
+                            "name": "land_surplus",
+                            "type": "varchar"
+                        },
+                        "name": "land_surplus"
+                    },
+                    {
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "园区级别:国家级=1  省级=2",
+                        "display_name": "园区级别:国家级=1  省级=2",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "园区级别:国家级=1  省级=2",
+                            "name": "level",
+                            "type": "int"
+                        },
+                        "name": "level"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "name": "name",
+                            "type": "varchar",
+                            "display_name": "园区名称"
+                        },
+                        "name": "name",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "园区名称",
+                        "display_name": "园区名称"
+                    },
+                    {
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "发展规划",
+                        "display_name": "发展规划",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "发展规划",
+                            "name": "planning",
+                            "type": "varchar"
+                        },
+                        "name": "planning"
+                    },
+                    {
+                        "display_name": "邮政编码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "邮政编码",
+                            "name": "postal_code",
+                            "type": "varchar"
+                        },
+                        "name": "postal_code",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "邮政编码"
+                    },
+                    {
+                        "comment": "供电量",
+                        "display_name": "供电量",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "type": "double",
+                            "display_name": "供电量",
+                            "name": "power_supply"
+                        },
+                        "name": "power_supply",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "省",
+                        "display_name": "省",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "省",
+                            "name": "province",
+                            "type": "varchar"
+                        },
+                        "name": "province",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "province_code",
+                        "type": "int",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "省份代码",
+                        "display_name": "省份代码",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "mapped_field": {
+                            "display_name": "省份代码",
+                            "name": "province_code",
+                            "type": "int"
+                        }
+                    },
+                    {
+                        "comment": "",
+                        "display_name": "source",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "source",
+                            "name": "source",
+                            "type": "varchar"
+                        },
+                        "name": "source",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "display_name": "供水量",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "供水量",
+                            "name": "water_supply",
+                            "type": "double"
+                        },
+                        "name": "water_supply",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "供水量"
+                    },
+                    {
+                        "name": "website",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "网址",
+                        "display_name": "网址",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "mapped_field": {
+                            "display_name": "网址",
+                            "name": "website",
+                            "type": "varchar"
+                        }
+                    }
+                ]
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3teg9grvcs5qgvji9s0",
+            "concept_name": "object_315",
+            "concept_detail": {
+                "detail": "",
+                "kn_id": "test_1000",
+                "module_type": "object_type",
+                "name": "object_315",
+                "tags": [
+                    "自动化测试"
+                ],
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "update_time": 1761273894111,
+                "__score": 1.0008366,
+                "branch": "main",
+                "create_time": 1761273894111,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "display_key": "d6p90ile",
+                "icon": "icon-dip-KG",
+                "color": "#EB2F96",
+                "data_properties": [
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "f6esdw7e",
+                        "display_name": "tsvb7lx0",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "d6p90ile"
+                        },
+                        "name": "d6p90ile",
+                        "type": "vector"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "rnr9xegz",
+                        "display_name": "xzgkyp86",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "3xk5elqz"
+                        },
+                        "name": "3xk5elqz",
+                        "type": "short"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "4hpaihsu",
+                        "display_name": "wmkfywdj",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "voevnnbe"
+                        },
+                        "name": "voevnnbe",
+                        "type": "varchar"
+                    },
+                    {
+                        "display_name": "q6bypaur",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "la0tyyqs"
+                        },
+                        "name": "la0tyyqs",
+                        "type": "short",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "osa2phak"
+                    },
+                    {
+                        "name": "zvzguno1",
+                        "type": "long",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "jsgasqca",
+                        "display_name": "g8lue1go",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "zvzguno1"
+                        }
+                    },
+                    {
+                        "comment": "ntnxkzec",
+                        "display_name": "qvxm3mdb",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "g5zwxub4"
+                        },
+                        "name": "g5zwxub4",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "t45ckfds"
+                        },
+                        "name": "t45ckfds",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "8yu8bcu8",
+                        "display_name": "9oz1lc2t"
+                    },
+                    {
+                        "name": "rodipsnj",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "hkg8grm8",
+                        "display_name": "ez9lv7qf",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "rodipsnj"
+                        }
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "k29na0lw"
+                        },
+                        "name": "k29na0lw",
+                        "type": "float",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "9clb4tnu",
+                        "display_name": "chyjhpto",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true
+                    },
+                    {
+                        "comment": "xd3v3wkp",
+                        "display_name": "47srd1q3",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "fbqc1t9x"
+                        },
+                        "name": "fbqc1t9x",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    }
+                ],
+                "comment": "自动化测试",
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "id": "d3teg9grvcs5qgvji9s0",
+                "primary_keys": [
+                    "d6p90ile"
+                ]
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tegaorvcs5qgvjicp0",
+            "concept_name": "object_408",
+            "concept_detail": {
+                "branch": "main",
+                "display_key": "ght5i62p",
+                "kn_id": "test_1000",
+                "primary_keys": [
+                    "ght5i62p"
+                ],
+                "data_source": {
+                    "name": "",
+                    "type": "data_view",
+                    "id": ""
+                },
+                "detail": "",
+                "icon": "icon-dip-cepingshuju",
+                "module_type": "object_type",
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "__score": 0.9978116,
+                "color": "#0E5FC5",
+                "comment": "自动化测试",
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "name": "object_408",
+                "tags": [
+                    "自动化测试"
+                ],
+                "update_time": 1761273899691,
+                "create_time": 1761273899691,
+                "data_properties": [
+                    {
+                        "comment": "tfqdcy72",
+                        "display_name": "lceznirv",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "ght5i62p"
+                        },
+                        "name": "ght5i62p",
+                        "type": "boolean",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "name": "n7myffs1",
+                        "type": "vector",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "trm5lqdj",
+                        "display_name": "ikvjkeug",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "n7myffs1"
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "hbx2fvef",
+                        "display_name": "itbt8n6k",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "vupgzzur"
+                        },
+                        "name": "vupgzzur",
+                        "type": "short"
+                    },
+                    {
+                        "display_name": "d198ggnb",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "nloc34lu"
+                        },
+                        "name": "nloc34lu",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ajwvyso8"
+                    },
+                    {
+                        "comment": "vwgtu0p6",
+                        "display_name": "wmlinp7k",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "smcvndb6"
+                        },
+                        "name": "smcvndb6",
+                        "type": "boolean",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "hpdigg2c"
+                        },
+                        "name": "hpdigg2c",
+                        "type": "long",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "2kbkfpbn",
+                        "display_name": "isc4lic6"
+                    },
+                    {
+                        "display_name": "2fbmqtit",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "xa6tkc0r"
+                        },
+                        "name": "xa6tkc0r",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "quhxsdj2"
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "sjjd7p2u"
+                        },
+                        "name": "sjjd7p2u",
+                        "type": "varchar",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "tkljijsg",
+                        "display_name": "mw7m95i4",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "ki2bjril"
+                        },
+                        "name": "ki2bjril",
+                        "type": "short",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ovaamx4m",
+                        "display_name": "jiw8ecaw",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "9wilhcs1"
+                        },
+                        "name": "9wilhcs1",
+                        "type": "long",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "mgldgj24",
+                        "display_name": "lhug8scr",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true
+                    }
+                ],
+                "id": "d3tegaorvcs5qgvjicp0"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tega0rvcs5qgvjib90",
+            "concept_name": "object_360",
+            "concept_detail": {
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "data_properties": [
+                    {
+                        "comment": "wkyvzlao",
+                        "display_name": "sy5adxjz",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "eahe58wa"
+                        },
+                        "name": "eahe58wa",
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "zbimgays"
+                        },
+                        "name": "zbimgays",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "kyhxyjrf",
+                        "display_name": "gxfmylqo",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "display_name": "b4urede0",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "irhree7u"
+                        },
+                        "name": "irhree7u",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "tllzh579"
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "tfwgifmf"
+                        },
+                        "name": "tfwgifmf",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "emcsgkuk",
+                        "display_name": "hahrlp94",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "fywtkziu",
+                        "display_name": "mksk8yxj",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "6a3af5wy"
+                        },
+                        "name": "6a3af5wy",
+                        "type": "long"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "zsyeok9x"
+                        },
+                        "name": "zsyeok9x",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "u3uh9yut",
+                        "display_name": "hariecqo"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "whc8llrp"
+                        },
+                        "name": "whc8llrp",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "q5ahvyb1",
+                        "display_name": "ipsngdbz"
+                    },
+                    {
+                        "display_name": "7zhrftix",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "bxp7gjrr"
+                        },
+                        "name": "bxp7gjrr",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "zib3vgj6"
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "pln8y7xv"
+                        },
+                        "name": "pln8y7xv",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "eygf4hxg",
+                        "display_name": "fidcbvht",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "comment": "hx4gzqsx",
+                        "display_name": "9nxtdqbm",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "t0g1nsv1"
+                        },
+                        "name": "t0g1nsv1",
+                        "type": "datetime",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    }
+                ],
+                "comment": "自动化测试",
+                "create_time": 1761273896825,
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "update_time": 1761273896825,
+                "color": "#3A93FF",
+                "icon": "icon-dip-cebianlan",
+                "module_type": "object_type",
+                "name": "object_360",
+                "primary_keys": [
+                    "eahe58wa"
+                ],
+                "__score": 0.99715185,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "detail": "",
+                "display_key": "eahe58wa",
+                "id": "d3tega0rvcs5qgvjib90",
+                "kn_id": "test_1000",
+                "tags": [
+                    "自动化测试"
+                ],
+                "branch": "main"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tege8rvcs5qgvjijb0",
+            "concept_name": "object_618",
+            "concept_detail": {
+                "module_type": "object_type",
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "data_source": {
+                    "name": "",
+                    "type": "data_view",
+                    "id": ""
+                },
+                "detail": "",
+                "comment": "自动化测试",
+                "tags": [
+                    "自动化测试"
+                ],
+                "display_key": "s7648xxe",
+                "id": "d3tege8rvcs5qgvjijb0",
+                "primary_keys": [
+                    "s7648xxe"
+                ],
+                "create_time": 1761273913687,
+                "data_properties": [
+                    {
+                        "mapped_field": {
+                            "name": "s7648xxe"
+                        },
+                        "name": "s7648xxe",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "9d7ijnfa",
+                        "display_name": "bzbaxfnp",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "dqhnaq6q"
+                        },
+                        "name": "dqhnaq6q",
+                        "type": "float",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "1xktn2zp",
+                        "display_name": "n1jtxitl",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "lgc0dvwv"
+                        },
+                        "name": "lgc0dvwv",
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "bamvkob1",
+                        "display_name": "xzps8emo",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "comment": "cwu5aaub",
+                        "display_name": "eowylfcq",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "y9zi95tc"
+                        },
+                        "name": "y9zi95tc",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "comment": "o4yy3ysa",
+                        "display_name": "6egcfsj6",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "9w1drqgx"
+                        },
+                        "name": "9w1drqgx",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "tin0q4bz",
+                        "display_name": "uglzsb4y",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "syyi4dbn"
+                        },
+                        "name": "syyi4dbn",
+                        "type": "varchar"
+                    },
+                    {
+                        "display_name": "pm39seod",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "3apl4bc8"
+                        },
+                        "name": "3apl4bc8",
+                        "type": "float",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "z3h163oc"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "zmy8nvyf"
+                        },
+                        "name": "zmy8nvyf",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ama1lmdt",
+                        "display_name": "h2wmx5s1"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "zuuxnb67",
+                        "display_name": "7o1erkfy",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "bmgzqdqy"
+                        },
+                        "name": "bmgzqdqy",
+                        "type": "float"
+                    },
+                    {
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "flqjyyoo",
+                        "display_name": "xyajn89k",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "d8z9xisa"
+                        },
+                        "name": "d8z9xisa"
+                    }
+                ],
+                "icon": "icon-dip-zhengshuxing",
+                "kn_id": "test_1000",
+                "name": "object_618",
+                "__score": 0.99680305,
+                "branch": "main",
+                "color": "#EB2F96",
+                "update_time": 1761273913687,
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tega8rvcs5qgvjibe0",
+            "concept_name": "object_365",
+            "concept_detail": {
+                "comment": "自动化测试",
+                "data_properties": [
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "po6tnmhk"
+                        },
+                        "name": "po6tnmhk",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "hlfqewba",
+                        "display_name": "wupwrhbc",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "xawgdjr8",
+                        "display_name": "g45uerdd",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "v4amnfvt"
+                        },
+                        "name": "v4amnfvt",
+                        "type": "long"
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "fbeoetmt"
+                        },
+                        "name": "fbeoetmt",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "rxuzccuc",
+                        "display_name": "mz9lihcz",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "vgmtlrzu",
+                        "display_name": "mvueo2f9",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "lorvopsw"
+                        },
+                        "name": "lorvopsw",
+                        "type": "decimal"
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "j1qkj3us"
+                        },
+                        "name": "j1qkj3us",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "iwtuwyvl",
+                        "display_name": "ttsu7zjj",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "yjvjln4t"
+                        },
+                        "name": "yjvjln4t",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "bozigsd7",
+                        "display_name": "0jfsv5ln"
+                    },
+                    {
+                        "display_name": "mfua5yut",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "fayge5ck"
+                        },
+                        "name": "fayge5ck",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "2hmz2hbw"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "qrd4rdyh"
+                        },
+                        "name": "qrd4rdyh",
+                        "type": "boolean",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "y72ufl76",
+                        "display_name": "2qun1cko"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "gybbu8ka"
+                        },
+                        "name": "gybbu8ka",
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "viw561ac",
+                        "display_name": "ym0catbi"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "9vcvpdes",
+                        "display_name": "n3xjvmsn",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "kko6kcld"
+                        },
+                        "name": "kko6kcld",
+                        "type": "integer"
+                    }
+                ],
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "primary_keys": [
+                    "po6tnmhk"
+                ],
+                "tags": [
+                    "自动化测试"
+                ],
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "__score": 0.9965411,
+                "branch": "main",
+                "create_time": 1761273897149,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "module_type": "object_type",
+                "color": "#0E5FC5",
+                "detail": "",
+                "display_key": "po6tnmhk",
+                "icon": "icon-dip-saomiao1",
+                "name": "object_365",
+                "id": "d3tega8rvcs5qgvjibe0",
+                "kn_id": "test_1000",
+                "update_time": 1761273897149
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tege0rvcs5qgvjiiu0",
+            "concept_name": "object_605",
+            "concept_detail": {
+                "comment": "自动化测试",
+                "kn_id": "test_1000",
+                "name": "object_605",
+                "primary_keys": [
+                    "dle5hhxf"
+                ],
+                "update_time": 1761273912899,
+                "color": "#FF7A45",
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "detail": "",
+                "icon": "icon-dip-refresh",
+                "module_type": "object_type",
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "branch": "main",
+                "create_time": 1761273912899,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "data_properties": [
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "putjck4x",
+                        "display_name": "dngyg5qy",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "dle5hhxf"
+                        },
+                        "name": "dle5hhxf",
+                        "type": "boolean"
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "tnnxcjs8"
+                        },
+                        "name": "tnnxcjs8",
+                        "type": "datetime",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "nn0ipbvv",
+                        "display_name": "gs8ryina",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true
+                    },
+                    {
+                        "display_name": "ndhsifjx",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "lit1cn6y"
+                        },
+                        "name": "lit1cn6y",
+                        "type": "float",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ctpht0qn"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "b4u9x5pc"
+                        },
+                        "name": "b4u9x5pc",
+                        "type": "vector",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "trhwxle2",
+                        "display_name": "zrl1hkpj"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "i2oble4g"
+                        },
+                        "name": "i2oble4g",
+                        "type": "float",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "qlae5d0n",
+                        "display_name": "j1t4jazx"
+                    },
+                    {
+                        "display_name": "mfxshqhk",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "sxzup3ou"
+                        },
+                        "name": "sxzup3ou",
+                        "type": "datetime",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "q7yhukwq"
+                    },
+                    {
+                        "name": "axivx2tg",
+                        "type": "text",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "eeooplgy",
+                        "display_name": "dmd5leph",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "axivx2tg"
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "rqfvnlrl"
+                        },
+                        "name": "rqfvnlrl",
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "6ituqika",
+                        "display_name": "ayvxfaxe"
+                    },
+                    {
+                        "display_name": "kdz9yqln",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "xebueozk"
+                        },
+                        "name": "xebueozk",
+                        "type": "vector",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "pwbzmktd"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "nzo2ceiv",
+                        "display_name": "mx5jh0kf",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "ihgv23xk"
+                        },
+                        "name": "ihgv23xk",
+                        "type": "double"
+                    }
+                ],
+                "display_key": "dle5hhxf",
+                "tags": [
+                    "自动化测试"
+                ],
+                "__score": 0.99653107,
+                "id": "d3tege0rvcs5qgvjiiu0"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3tegf0rvcs5qgvjikr0",
+            "concept_name": "object_666",
+            "concept_detail": {
+                "id": "d3tegf0rvcs5qgvjikr0",
+                "kn_id": "test_1000",
+                "comment": "自动化测试",
+                "create_time": 1761273916520,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "color": "#9254DE",
+                "data_properties": [
+                    {
+                        "type": "double",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "kacefguo",
+                        "display_name": "fayzkvtr",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "kvouylmn"
+                        },
+                        "name": "kvouylmn"
+                    },
+                    {
+                        "mapped_field": {
+                            "name": "yzt8bcsp"
+                        },
+                        "name": "yzt8bcsp",
+                        "type": "integer",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "x4dnhkb7",
+                        "display_name": "rd9tozha",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "cwk9maen"
+                        },
+                        "name": "cwk9maen",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "awxjif2b",
+                        "display_name": "fwfrhkkd",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "ctchnyvl"
+                        },
+                        "name": "ctchnyvl",
+                        "type": "boolean",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "jigiprlp",
+                        "display_name": "uxvol3vs"
+                    },
+                    {
+                        "name": "ayhdldpb",
+                        "type": "keyword",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "aq1djzvk",
+                        "display_name": "tcjnq6sx",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "ayhdldpb"
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ox3t0gos",
+                        "display_name": "7q1gojst",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "scwkn8us"
+                        },
+                        "name": "scwkn8us",
+                        "type": "datetime"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "pplyufqa",
+                        "display_name": "o4ndnkcw",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "7gm3ik3x"
+                        },
+                        "name": "7gm3ik3x",
+                        "type": "integer"
+                    },
+                    {
+                        "name": "wjjswjvu",
+                        "type": "decimal",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "zrydfv4u",
+                        "display_name": "mmipmrln",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "wjjswjvu"
+                        }
+                    },
+                    {
+                        "comment": "uhhl8r9j",
+                        "display_name": "mgglvrmu",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "00x1ox5d"
+                        },
+                        "name": "00x1ox5d",
+                        "type": "short",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "type": "datetime",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ey4hhrr4",
+                        "display_name": "fyr328g1",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "wxynvhli"
+                        },
+                        "name": "wxynvhli"
+                    }
+                ],
+                "detail": "",
+                "display_key": "kvouylmn",
+                "primary_keys": [
+                    "kvouylmn"
+                ],
+                "update_time": 1761273916520,
+                "__score": 0.9964687,
+                "branch": "main",
+                "icon": "icon-dip-DATALake",
+                "name": "object_666",
+                "module_type": "object_type",
+                "tags": [
+                    "自动化测试"
+                ]
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        },
+        {
+            "concept_type": "object_type",
+            "concept_id": "d3teg7orvcs5qgvji6d0",
+            "concept_name": "object_204",
+            "concept_detail": {
+                "create_time": 1761273887008,
+                "creator": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "kn_id": "test_1000",
+                "module_type": "object_type",
+                "tags": [
+                    "自动化测试"
+                ],
+                "color": "#FAAD14",
+                "detail": "",
+                "icon": "icon-dip-cepingshuju",
+                "data_source": {
+                    "id": "",
+                    "name": "",
+                    "type": "data_view"
+                },
+                "display_key": "6xsfuyqq",
+                "__score": 0.99595004,
+                "branch": "main",
+                "data_properties": [
+                    {
+                        "display_name": "zmwcu5l0",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "6xsfuyqq"
+                        },
+                        "name": "6xsfuyqq",
+                        "type": "short",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "ntx3osei"
+                    },
+                    {
+                        "type": "vector",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "xfoaleih",
+                        "display_name": "6rqhyx23",
+                        "fulltext_config": {
+                            "field_keyword": false,
+                            "analyzer": ""
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "afa6lmzd"
+                        },
+                        "name": "afa6lmzd"
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "f2q8ttdn"
+                        },
+                        "name": "f2q8ttdn",
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "3ybcsf9z",
+                        "display_name": "rj1gxuxv",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "index": true,
+                        "mapped_field": {
+                            "name": "3d905kc1"
+                        },
+                        "name": "3d905kc1",
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "2np6qslk",
+                        "display_name": "cwee3nmr",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        }
+                    },
+                    {
+                        "type": "timestamp",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "9xc2zket",
+                        "display_name": "4dttirsn",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "prrwxqou"
+                        },
+                        "name": "prrwxqou"
+                    },
+                    {
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "dti6ifw7"
+                        },
+                        "name": "dti6ifw7",
+                        "type": "datetime",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "xex0mg6i",
+                        "display_name": "yswt55ih"
+                    },
+                    {
+                        "comment": "qbzrhowv",
+                        "display_name": "xbxynubi",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "3hscvv8j"
+                        },
+                        "name": "3hscvv8j",
+                        "type": "short",
+                        "vector_config": {
+                            "dimension": 0
+                        }
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "mjeszzot",
+                        "display_name": "jpwhg2rn",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "x6fhbfco"
+                        },
+                        "name": "x6fhbfco",
+                        "type": "datetime"
+                    },
+                    {
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "umiu2yxl",
+                        "display_name": "owwdvecv",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "pwvesx5v"
+                        },
+                        "name": "pwvesx5v",
+                        "type": "timestamp"
+                    },
+                    {
+                        "name": "u7piqx7n",
+                        "type": "long",
+                        "vector_config": {
+                            "dimension": 0
+                        },
+                        "comment": "kqvxnchq",
+                        "display_name": "vzuo56ov",
+                        "fulltext_config": {
+                            "analyzer": "",
+                            "field_keyword": false
+                        },
+                        "index": true,
+                        "mapped_field": {
+                            "name": "u7piqx7n"
+                        }
+                    }
+                ],
+                "primary_keys": [
+                    "6xsfuyqq"
+                ],
+                "update_time": 1761273887008,
+                "updater": "bdb78b62-6c48-11f0-af96-fa8dcc0a06b2",
+                "comment": "自动化测试",
+                "id": "d3teg7orvcs5qgvji6d0",
+                "name": "object_204"
+            },
+            "intent_score": 0,
+            "match_score": 0,
+            "rerank_score": 0,
+            "samples": null
+        }
+    ]
+}

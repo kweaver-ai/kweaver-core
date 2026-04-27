@@ -1,0 +1,112 @@
+{
+    "logic_definition": [
+        {
+            "id": "node_UgVju",
+            "name": "erp_real_time_inventory",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "2017573348090867713",
+                "filters": {},
+                "distinct": false
+            },
+            "output_fields": [
+                "aux_attr",
+                "available_base_qty",
+                "available_inventory_qty",
+                "base_qty",
+                "base_uom",
+                "batch_master",
+                "batch_no",
+                "bin_location",
+                "conv_ratio",
+                "conv_ratio_available",
+                "conv_ratio_reserved",
+                "custodian",
+                "custodian_type",
+                "expiry_date",
+                "inbound_date",
+                "inventory_org",
+                "inventory_qty",
+                "inventory_uom",
+                "manufacture_date",
+                "material_code",
+                "material_name",
+                "owner",
+                "owner_type",
+                "purchase_qty",
+                "purchase_qty_available",
+                "purchase_qty_reserved",
+                "purchase_uom",
+                "reserved_base_qty",
+                "reserved_inventory_qty",
+                "seq_no",
+                "spec_model",
+                "stock_status",
+                "stock_type",
+                "total_col",
+                "warehouse"
+            ]
+        },
+        {
+            "id": "node_CRfXL",
+            "name": "erp_material",
+            "type": "resource",
+            "inputs": [],
+            "config": {
+                "resource_id": "2017573348468355073",
+                "filters": {
+                    "value": "库存商品-产成品",
+                    "operation": "!=",
+                    "value_from": "const",
+                    "field": "group_name"
+                },
+                "distinct": false
+            },
+            "output_fields": [
+                "baseunit_name",
+                "baseunit_number",
+                "group_name",
+                "group_type",
+                "huid_productline_name",
+                "material_code",
+                "material_name",
+                "material_standard_price",
+                "materialattr",
+                "modelnum",
+                "product_fixedleadtime",
+                "product_status",
+                "purchase_fixedleadtime",
+                "purchase_huid_batchqty",
+                "purchase_huid_minlotsize"
+            ]
+        },
+        {
+            "id": "node_DQTew",
+            "name": "SQL",
+            "type": "sql",
+            "inputs": [
+                "node_UgVju",
+                "node_CRfXL"
+            ],
+            "config": {
+                "sql": "SELECT *\nFROM {{.node_UgVju}} eri\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM {{.node_CRfXL}} emf\n    WHERE emf.material_code = eri.material_code\n)\n"
+            },
+            "output_fields": [
+                "*"
+            ]
+        },
+        {
+            "id": "node-output",
+            "name": "输出视图",
+            "type": "output",
+            "inputs": [
+                "node_DQTew"
+            ],
+            "config": {},
+            "output_fields": [
+                "*"
+            ]
+        }
+    ]
+}

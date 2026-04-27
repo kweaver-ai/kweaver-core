@@ -1,0 +1,147 @@
+### S3配置验证接口
+
+POST http://localhost:8080/api/automation/v1/s3/validate
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "bucket": "my-test-bucket",
+  "path": "data/"
+}
+
+###
+
+### 创建带S3数据源的DataFlow
+
+POST http://localhost:8082/api/automation/v1/data-flow/flow
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-Business-Domain: bd-public
+
+{
+    "title": "S3数据流示例1111111111",
+    "description": "从S3读取数据并处理1",
+    "status": "normal",
+    "steps": [
+        {
+            "id": "0",
+            "title": "触发器",
+            "operator": "@trigger/dataflow-doc"
+        },
+        {
+            "id": "4",
+            "title": "文本分割",
+            "operator": "@internal/text/split",
+            "parameters": {
+            "text": "{{__0.fields.input_data}}",
+            "separator": ","
+            }
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/manual",
+        "dataSource": {
+            "operator": "@s3/list-objects",
+            "parameters": {
+                "mode": "upload",
+                "sources": [
+                    {
+                        "path": "dataflow-doc/temp/temp-d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    }
+                ]
+            }
+        }
+    }
+}
+
+###
+
+### 运行S3数据流
+
+POST {{host}}/api/automation/v1/run-instance/604851178156619196
+Authorization: {{token}}
+Content-Type: application/json
+
+{}
+
+###
+### 获取dag运行列表
+GET   {{host}}/api/automation/v1/dag/604851178156619196/results
+Authorization: {{token}}
+Content-Type: application/json
+
+### 获取dag运行详情
+GET   {{host}}/api/automation/v1/dag/604388688545215932/result/604560014270559676
+Authorization: {{token}}
+Content-Type: application/json
+
+### 上传文件到S3 (使用临时会话ID)
+# 客户端生成一个UUID作为临时ID
+@temp_session_id = {{ $uuid }} 
+
+POST {{host}}/api/automation/v1/data-flow/temp-d290f1ee-6c54-4b01-90e6-d701748f0851/files/upload
+Authorization: {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="doc1.txt"
+Content-Type: text/plain
+
+Content of doc1
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 创建带S3数据源的DataFlow (引用通过临时ID上传的文件)
+POST {{host}}/api/automation/v1/data-flow/flow
+Authorization: {{token}}
+Content-Type: application/json
+X-Business-Domain: bd-public
+
+{
+    "title": "S3数据流(临时上传)",
+    "description": "测试临时文件上传后自动移动",
+    "status": "normal",
+    "steps": [
+        {
+            "id": "0",
+            "title": "触发器",
+            "operator": "@trigger/dataflow-s3"
+        },
+        {
+            "id": "1",
+            "title": "处理",
+            "operator": "@internal/text/split",
+            "parameters": {}
+        }
+    ],
+    "trigger_config": {
+        "operator": "@trigger/manual",
+        "dataSource": {
+            "operator": "@s3/list-objects",
+            "parameters": {
+                "mode": "upload",
+                "sources": [
+                    {
+                        "key": "dataflow-doc/temp/temp-d290f1ee-6c54-4b01-90e6-d701748f0851/doc1.txt",
+                        "name": "doc1.txt",
+                        "size": 15
+                    }
+                ]
+            }
+        }
+    }
+}
+
+
+### 列举S3文件
+GET {{host}}/api/automation/v1/data-flow/604388688545215932/files
+Authorization: {{token}}
+
+### 删除S3文件
+DELETE {{host}}/api/automation/v1/data-flow/604388688545215932/files?key=dataflow-doc/604388688545215932/test.txt
+Authorization: {{token}}
+
+
+### 下载S3文件
+@dagID = 604851178156619196
+GET {{host}}/api/automation/v1/data-flow/{{dagID}}/files/download?key=dataflow-doc/{{dagID}}/test.txt
+Authorization: {{token}}

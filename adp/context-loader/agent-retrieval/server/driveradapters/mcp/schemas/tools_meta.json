@@ -1,0 +1,26 @@
+{
+  "search_schema": {
+    "name": "search_schema",
+    "description": "统一的 Schema 探索入口。根据 query 返回相关 object_types、relation_types、action_types、metric_types，供 query_*、find_*、get_* 工具继续消费。"
+  },
+  "query_object_instance": {
+    "name": "query_object_instance",
+    "description": "单对象类实例过滤查询。已知对象类与过滤条件时，查询实例列表。"
+  },
+  "query_instance_subgraph": {
+    "name": "query_instance_subgraph",
+    "description": "沿关系路径拉取实例子图，支持多跳关系查询。"
+  },
+  "get_logic_properties_values": {
+    "name": "get_logic_properties_values",
+    "description": "逻辑属性解析（指标/算子）。针对实例批量计算逻辑属性值。"
+  },
+  "get_action_info": {
+    "name": "get_action_info",
+    "description": "行动信息召回。针对对象实例返回可执行行动的工具定义。"
+  },
+  "find_skills": {
+    "name": "find_skills",
+    "description": "技能召回。根据知识网络、对象类型、实例上下文等召回匹配的可用技能列表。"
+  }
+}

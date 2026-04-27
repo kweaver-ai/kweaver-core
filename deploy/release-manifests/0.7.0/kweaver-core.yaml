@@ -1,0 +1,82 @@
+apiVersion: deploy.kweaver.ai/v1alpha1
+kind: VersionSet
+product: kweaver-core
+version: 0.7.0
+source:
+  helmRepoName: kweaver
+  helmRepoUrl: https://kweaver-ai.github.io/helm-repo/
+dependencies:
+- product: isf
+  version: 0.7.0
+  manifest: ./isf.yaml
+  optional: true
+  defaultEnabled: true
+  enabledIf: auth.enabled
+releases:
+  kweaver-core-data-migrator:
+    chart: kweaver-core-data-migrator
+    version: 0.7.0
+    stage: pre
+  mf-model-manager:
+    chart: mf-model-manager
+    version: 0.7.0
+  mf-model-api:
+    chart: mf-model-api
+    version: 0.7.0
+  bkn-backend:
+    chart: bkn-backend
+    version: 0.7.0
+  ontology-query:
+    chart: ontology-query
+    version: 0.7.0
+  vega-backend:
+    chart: vega-backend
+    version: 0.7.0
+  data-connection:
+    chart: data-connection
+    version: 0.6.0
+  vega-gateway:
+    chart: vega-gateway
+    version: 0.6.0
+  vega-gateway-pro:
+    chart: vega-gateway-pro
+    version: 0.6.0
+  mdl-data-model:
+    chart: mdl-data-model
+    version: 0.6.0
+  mdl-uniquery:
+    chart: mdl-uniquery
+    version: 0.6.0
+  mdl-data-model-job:
+    chart: mdl-data-model-job
+    version: 0.6.0
+  agent-operator-integration:
+    chart: agent-operator-integration
+    version: 0.7.0
+  agent-retrieval:
+    chart: agent-retrieval
+    version: 0.7.0
+  agent-backend:
+    chart: agent-backend
+    version: 0.7.0
+  dataflow:
+    chart: dataflow
+    version: 0.7.0
+  coderunner:
+    chart: coderunner
+    version: 0.7.0
+  doc-convert:
+    chart: doc-convert
+    version: 0.7.0
+  sandbox:
+    chart: sandbox
+    version: 0.3.3
+  oss-gateway-backend:
+    chart: oss-gateway-backend
+    version: 0.7.0
+  otelcol-contrib:
+    chart: otelcol-contrib
+    version: 0.2.3
+  agent-observability:
+    chart: agent-observability
+    version: 0.2.3

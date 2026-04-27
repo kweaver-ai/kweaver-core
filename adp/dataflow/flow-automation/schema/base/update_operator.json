@@ -1,0 +1,181 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建任务",
+    "description": "post /api/automation/v1/dag/{dagId}",
+    "type": "object",
+    "properties": {
+        "title": {
+            "oneOf": [
+                {
+                    "description": "任务名称,名称不能包含 /:*?\"<>| 特殊字符，长度不能超过50个字符",
+                    "type": "string",
+                    "pattern": "^[^/:\\*?\"<>\\|]+$",
+                    "maxLength": 50
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "description": {
+            "description": "详情描述,不允许换行输入,不允许超过255个字符",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "steps": {
+            "oneOf": [
+                {
+                    "description": "自动化流程定义",
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operator": {
+                                        "description": "算子名称",
+                                        "const": "@trigger/form"
+                                    },
+                                    "parameters": {
+                                        "type": "object",
+                                        "properties": {
+                                            "fields": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "key": {
+                                                            "type": "string",
+                                                            "pattern": "^[a-zA-Z]+(_?[a-zA-Z]+)*$",
+                                                            "maxLength": 50
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "key",
+                                                        "type"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operator": {
+                                        "description": "算子名称",
+                                        "type": "string",
+                                        "not": {
+                                            "const": "@trigger/form"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "minItems": 2,
+                    "uniqueItems": true
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "category": {
+            "description": "组合算子分类",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "pattern": "[a-zA-Z0-9_-]*"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "operator_id": {
+            "description": "组合算子ID",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 36
+        },
+        "version": {
+            "description": "算子版本",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 36
+        },
+        "outputs": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z]+(_?[a-zA-Z]+)*$",
+                                "maxLength": 50
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "enum": [
+                                    "string",
+                                    "number",
+                                    "object",
+                                    "array"
+                                ]
+                            },
+                            "description": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "enum": [
+                                            "text"
+                                        ]
+                                    },
+                                    "additionalProperties": false
+                                }
+                            }
+                        },
+                        "required": [
+                            "key",
+                            "type"
+                        ],
+                        "additionalProperties": false
+                    },
+                    "uniqueItems": true
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "unpublish",
+                "published"
+            ]
+        }
+    },
+    "required": [
+        "operator_id",
+        "version",
+        "status"
+    ],
+    "additionalProperties": false
+}

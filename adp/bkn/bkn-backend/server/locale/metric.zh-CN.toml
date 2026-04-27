@@ -1,0 +1,50 @@
+# Metric
+[BknBackend.Metric.InvalidParameter]
+Description = "指标请求参数无效"
+Solution = "请检查请求体与查询参数。"
+ErrorLink = "None"
+
+[BknBackend.Metric.NullParameter.Name]
+Description = "指标名称不能为空"
+Solution = "请填写非空的指标名称。"
+ErrorLink = "None"
+
+[BknBackend.Metric.LengthExceeded.Name]
+Description = "指标名称过长"
+Solution = "请将名称缩短到允许长度内。"
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError]
+Description = "处理指标时发生内部错误"
+Solution = "请重试或联系支持。"
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError.BeginTransactionFailed]
+Description = "开启事务异常"
+Solution = "请重试该操作，若再次出现该错误请提交工单或联系技术支持工程师。"
+ErrorLink = "暂无"
+
+[BknBackend.Metric.InternalError.CheckMetricIfExistFailed]
+Description = "检查指标是否存在失败"
+Solution = "请重试或联系支持。"
+ErrorLink = "None"
+
+[BknBackend.Metric.InternalError.GetMetricsByIDsFailed]
+Description = "按 ID 批量加载指标失败"
+Solution = "请重试或联系支持。"
+ErrorLink = "None"
+
+[BknBackend.Metric.NotFound]
+Description = "未找到指标"
+Solution = "请确认指标 ID 与分支。"
+ErrorLink = "None"
+
+[BknBackend.Metric.Duplicated.Name]
+Description = "已存在同名指标"
+Solution = "请更换名称或更新已有指标。"
+ErrorLink = "None"
+
+[BknBackend.Metric.InvalidMetricType]
+Description = "指标类型不允许"
+Solution = "严格模式下当前仅支持 atomic 指标。"
+ErrorLink = "None"

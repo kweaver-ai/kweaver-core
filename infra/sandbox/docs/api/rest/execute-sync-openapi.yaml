@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: Sandbox Control Plane
+  description: 代码沙箱管理平台 API
+  version: 2.1.0
+servers:
+  - url: http://sandbox-control-plane:8000/
+paths:
+  /api/v1/executions/sessions/{session_id}/execute-sync:
+    post:
+      tags:
+      - executions
+      summary: Execute Code Sync
+      description: 'Synchronous code execution endpoint
+
+
+        Internally calls async execution and polls for result until:
+
+        - Execution reaches terminal state (COMPLETED, FAILED, TIMEOUT, CRASHED)
+
+        - sync_timeout is reached
+
+
+        - **poll_interval**: Polling interval in seconds (default: 0.5, range: 0.1-10.0)
+
+        - **sync_timeout**: Maximum wait time in seconds (default: 300, range: 10-3600)
+
+        - **code**: Code to execute
+
+        - **language**: Programming language (python, javascript, shell)
+
+        - **timeout**: Execution timeout in seconds
+
+        - **event**: Event data'
+      operationId: execute_code_sync_api_v1_executions_sessions__session_id__execute_sync_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: poll_interval
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 10.0
+          minimum: 0.1
+          description: Polling interval in seconds
+          default: 0.5
+          title: Poll Interval
+        description: Polling interval in seconds
+      - name: sync_timeout
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 3600
+          minimum: 10
+          description: Maximum wait time in seconds
+          default: 300
+          title: Sync Timeout
+        description: Maximum wait time in seconds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteCodeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ArtifactResponse:
+      properties:
+        path:
+          type: string
+          title: Path
+        size:
+          type: integer
+          title: Size
+        mime_type:
+          type: string
+          title: Mime Type
+        type:
+          type: string
+          title: Type
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        checksum:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Checksum
+      type: object
+      required:
+      - path
+      - size
+      - mime_type
+      - type
+      - created_at
+      title: ArtifactResponse
+      description: 文件制品响应
+    ExecuteCodeRequest:
+      properties:
+        code:
+          type: string
+          maxLength: 102400
+          minLength: 1
+          title: Code
+          description: 要执行的代码（必须符合 AWS Lambda handler 格式）
+        language:
+          type: string
+          enum:
+          - python
+          - javascript
+          - shell
+          title: Language
+          description: 编程语言
+        timeout:
+          type: integer
+          maximum: 3600.0
+          minimum: 1.0
+          title: Timeout
+          description: 执行超时（秒）
+          default: 30
+        event:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Event
+          description: 事件数据
+      type: object
+      required:
+      - code
+      - language
+      title: ExecuteCodeRequest
+      description: 执行代码请求
+      examples:
+      - code: "def handler(event):\n    name = event.get(\"name\", \"World\")\n    return {\"message\": f\"Hello, {name}!\"\
+          }"
+        event:
+          name: World
+        language: python
+        timeout: 10
+      - code: "def handler(event):\n    name = event.get(\"name\", \"World\")\n    age = event.get(\"age\", 0)\n    return\
+          \ {\"message\": f\"Hello, {name}!\", \"age_doubled\": age * 2}"
+        event:
+          age: 25
+          name: Alice
+        language: python
+        timeout: 30
+    ExecutionResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        session_id:
+          type: string
+          title: Session Id
+        status:
+          type: string
+          title: Status
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
+        timeout:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Timeout
+        exit_code:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Exit Code
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Message
+        execution_time:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Execution Time
+        stdout:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stdout
+        stderr:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stderr
+        artifacts:
+          items:
+            $ref: '#/components/schemas/ArtifactResponse'
+          type: array
+          title: Artifacts
+          default: []
+        retry_count:
+          type: integer
+          title: Retry Count
+          default: 0
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+        return_value:
+          anyOf:
+          - {}
+          - type: 'null'
+          title: Return Value
+        metrics:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metrics
+      type: object
+      required:
+      - id
+      - session_id
+      - status
+      title: ExecutionResponse
+      description: 执行响应
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

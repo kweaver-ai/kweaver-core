@@ -1,0 +1,6 @@
+# Flow Observability Data Configuration
+# This is a minimal mock configuration for local development
+
+# Add your observability configuration here as needed
+version: "1.0"
+enabled: false

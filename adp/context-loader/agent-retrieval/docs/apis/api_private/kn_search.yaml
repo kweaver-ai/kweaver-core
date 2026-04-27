@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: 知识网络检索兼容接口
+  version: 1.0.0
+  description: |
+    `kn_search` 是 `search_schema` 的兼容 HTTP 契约。
+
+    该接口继续兼容旧请求字段写法，但底层与 `search_schema` 共用同一套收敛后的 Schema Search logic：
+    - 固定为 Schema-only
+    - 不再返回实例检索结果
+    - 不再返回 `nodes` / `message`
+    - `only_schema=false` 等旧写法不会报错，但也不会恢复旧能力
+
+    新接入方应优先使用 `POST /api/agent-retrieval/in/v1/kn/search_schema`。
+servers:
+  - url: http://agent-retrieval:30779
+    description: agent-retrieval 服务
+paths:
+  /api/agent-retrieval/in/v1/kn/kn_search:
+    post:
+      tags:
+        - SchemaSearch
+      summary: kn_search（兼容接口）
+      description: |
+        兼容历史 `kn_search` 调用方式的 HTTP 接口。
+        请求仍可携带部分旧字段，但输出统一收敛为 Schema 结果：
+        `object_types`、`relation_types`、`action_types`。
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [user, app, anonymous]
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, toon]
+            default: json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnSearchCompatRequest'
+      responses:
+        '200':
+          description: 成功返回 Schema 检索结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchSchemaResponse'
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    KnSearchCompatRequest:
+      type: object
+      required:
+        - query
+        - kn_id
+      properties:
+        query:
+          type: string
+          description: 用户查询问题或关键词
+        kn_id:
+          type: string
+          description: 指定的知识网络ID
+        retrieval_config:
+          type: object
+          nullable: true
+          description: |
+            兼容历史请求结构。仅 `concept_retrieval.top_k` 与
+            `concept_retrieval.schema_brief` 仍可被兼容吸收；
+            其他配置项即使传入也不会恢复旧能力。
+          properties:
+            concept_retrieval:
+              type: object
+              properties:
+                top_k:
+                  type: integer
+                  minimum: 1
+                  default: 10
+                  description: 兼容映射到候选规模上限
+                schema_brief:
+                  type: boolean
+                  default: false
+                  description: 兼容映射到 Schema 精简返回控制，默认返回相对完整的 Schema
+                include_sample_data:
+                  type: boolean
+                  default: false
+                  description: 兼容接收但当前版本不生效
+            semantic_instance_retrieval:
+              type: object
+              additionalProperties: true
+              description: 兼容接收但当前版本不生效
+            property_filter:
+              type: object
+              additionalProperties: true
+              description: 兼容接收但当前版本不生效
+        only_schema:
+          type: boolean
+          description: 兼容接收但不再改变行为；接口固定为 Schema-only，无论传入何值均按 true 处理
+        enable_rerank:
+          type: boolean
+          default: true
+          description: 是否启用关系类型 Rerank
+
+    SearchSchemaResponse:
+      type: object
+      properties:
+        object_types:
+          type: array
+          description: 对象类型列表
+          items:
+            type: object
+            additionalProperties: true
+        relation_types:
+          type: array
+          description: 关系类型列表
+          items:
+            type: object
+            additionalProperties: true
+        action_types:
+          type: array
+          description: 动作类型列表
+          items:
+            type: object
+            additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        details:
+          description: 错误详情
+          additionalProperties: true
+        solution:
+          type: string
+        link:
+          type: string

@@ -1,0 +1,50 @@
+# Action Execution
+[OntologyQuery.ActionExecution.InvalidParameter]
+Description = "Invalid request parameter"
+Solution = "Please check if the parameters are correct."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.ActionTypeNotFound]
+Description = "Action type not found"
+Solution = "Please check if the action type ID is correct."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.ExecutionNotFound]
+Description = "Execution record not found"
+Solution = "Please check if the execution ID is correct."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.DuplicateExecution]
+Description = "Duplicate execution detected"
+Solution = "An execution for this action is already in progress. Please wait for it to complete."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.GetActionTypeFailed]
+Description = "Failed to get action type"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.CreateExecutionFailed]
+Description = "Failed to create execution record"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.ExecuteToolFailed]
+Description = "Tool execution failed"
+Solution = "Please check the tool configuration and try again."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.ExecuteMCPFailed]
+Description = "MCP execution failed"
+Solution = "Please check the MCP configuration and try again."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.QueryExecutionsFailed]
+Description = "Failed to query execution logs"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "N/A"
+
+[OntologyQuery.ActionExecution.CancelExecutionFailed]
+Description = "Failed to cancel execution"
+Solution = "Please try again. If the error occurs again, please submit a ticket or contact technical support."
+ErrorLink = "N/A"

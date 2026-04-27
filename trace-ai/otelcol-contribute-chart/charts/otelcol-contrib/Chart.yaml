@@ -1,0 +1,15 @@
+apiVersion: v2
+name: otelcol-contrib
+description: Helm chart for OpenTelemetry Collector Contrib with OCI publishing to GHCR
+type: application
+version: 0.1.0
+appVersion: "0.145.0"
+home: https://github.com/kweaver-ai/otelcol-contrib-chart
+sources:
+  - https://github.com/open-telemetry/opentelemetry-collector-contrib
+keywords:
+  - opentelemetry
+  - observability
+  - collector
+maintainers:
+  - name: platform-team

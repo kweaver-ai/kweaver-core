@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "批量写入 OpenSearch",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+        },
+        "title": {
+            "type": "string"
+        },
+        "operator": {
+            "type": "string",
+            "pattern": "^@.*",
+            "maxLength": 255
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "base_type": {
+                    "type": "string"
+                },
+                "data_type": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "template": {
+                    "type": "string",
+                    "description": "索引模板名称。设置为 'default' 时使用内置的默认索引配置模板（包含KNN向量搜索配置）。如果同时提供了 settings 和 mappings，则优先使用自定义配置"
+                },
+                "documents": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object"
+                        },
+                        {
+                            "type": "array"
+                        }
+                    ]
+                },
+                "settings": {
+                    "type": "object",
+                    "description": "索引设置，包括分片数、副本数、knn配置等。如果提供此字段和mappings字段，写入时会自动创建索引",
+                    "additionalProperties": true
+                },
+                "mappings": {
+                    "type": "object",
+                    "description": "索引映射，定义字段类型和属性。如果提供此字段和settings字段，写入时会自动创建索引",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "base_type",
+                "data_type",
+                "category",
+                "documents"
+            ]
+        },
+        "settings":{
+            "$ref": "../common.json#/definitions/Settings"
+        }
+    },
+    "required": [
+        "id",
+        "operator",
+        "parameters"
+    ],
+    "additionalProperties": false
+}

@@ -1,0 +1,52 @@
+namespace: dip
+moduleName: kafka-connect
+
+# 环境变量：语言/时区
+env:
+  timezone: Asia/Shanghai
+  language: en_US.UTF-8
+
+replicaCount: 1
+
+# 节点选择器
+nodeSelector: {}
+
+image:
+  registry: acr.aishu.cn
+  repository: dip/kafka-connect
+  tag: tag
+  pullPolicy: IfNotPresent
+
+service:
+  kafkaConnect:
+    type: ClusterIP
+    port: 8083
+    nodePort: 38083
+  kafkaHeapOpts: "-Xms256m -Xmx2G"
+
+# 反亲和性设置
+antiAffinity:
+  enabled: true
+  rule: "soft" # 可选参数 hard, soft
+
+# 微服务通信依赖配置
+depServices:
+  mq:
+    mqType: kafka
+    mqHost: kafka-headless.resource.svc.cluster.local.
+    mqPort: 9097
+    protocol: sasl_plaintext
+    tenant: default
+    auth:
+      username: admin
+      password: ""
+      mechanism: PLAIN
+
+# 资源配置
+resources:
+  requests:
+    cpu: 0
+    memory: 0Gi
+  limits:
+    cpu: 2
+    memory: 4Gi

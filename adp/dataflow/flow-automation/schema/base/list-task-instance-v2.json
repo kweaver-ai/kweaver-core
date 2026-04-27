@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "列举任务详情",
+    "description": "get /api/automation/v2/dag/:dagId/result/:resultId",
+    "type": "object",
+    "properties": {
+        "page": {
+            "description": "页码，默认值为0",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "limit": {
+            "description": "每页显示条目数，默认值为20，有效值在1-100之间",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    },
+    "additionalProperties": false
+}

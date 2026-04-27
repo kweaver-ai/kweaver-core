@@ -1,0 +1,26 @@
+{{- if .Values.service.agentFactory.ingress.enabled -}}
+{{ if .Values.service.agentFactory.ingress.interface }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-factory-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "500M"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" }}
+  rules:
+  - http:
+      paths:
+        {{- range .Values.service.agentFactory.ingress.interface.path }}
+        - path: {{ . }}
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: agent-factory
+              port:
+                number: {{ $.Values.service.agentFactory.port }}
+        {{- end }}
+{{ end }}
+{{- end }}

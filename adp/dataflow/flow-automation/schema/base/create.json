@@ -1,0 +1,129 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "创建任务",
+    "description": "post /api/automation/v1/dag",
+    "type": "object",
+    "properties": {
+        "title": {
+            "description": "任务名称,名称不能包含 /:*?\"<>| 特殊字符，长度不能超过128个字符",
+            "type": "string",
+            "pattern": "^[^/:\\*?\"<>\\|]+$",
+            "maxLength": 128
+        },
+        "description": {
+            "description": "详情描述,不允许换行输入,不允许超过300个字符",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "maxLength": 300
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "status": {
+            "description": "任务状态，默认启用",
+            "enum": [
+                null,
+                "normal",
+                "stopped"
+            ]
+        },
+        "steps": {
+            "description": "自动化流程定义",
+            "type": "array",
+            "items": {
+                "type": "object"
+            },
+            "minItems": 2,
+            "uniqueItems": true
+        },
+        "shortcuts": {
+            "description": "入口类型",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "workcenter"
+                ]
+            }
+        },
+        "accessors": {
+            "description": "显示入口的用户/部门/用户组",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "访问者id",
+                        "maxLength": 36
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "访问者name",
+                        "maxLength": 200
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "department",
+                            "contactor",
+                            "group"
+                        ]
+                    }
+                }
+            }
+        },
+        "appinfo": {
+            "type": "object",
+            "properties": {
+                "enable": {
+                    "type": "boolean",
+                    "description": "是否使用应用账户身份"
+                }
+            }
+        },
+        "emails": {
+            "description": "任务执行失败时告警邮件发送列表",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+            }
+        },
+        "template": {
+            "description": "流程模板",
+            "type": "string"
+        },
+        "create_by": {
+            "description": "创建方式",
+            "enum": ["local", "direct", "template"]
+        },
+        "published": {
+            "description": "Whether the DAG is published",
+            "type": "boolean",
+            "default": false
+        },
+        "type": {
+            "description": "工作流类型",
+            "type": "string",
+            "pattern": "[a-zA-Z0-9_-]*"
+        },
+        "version" : {
+            "type": "string",
+            "pattern": "^v(0|[1-9]\\d*)(?:\\.(0|[1-9]\\d*)){2}$"
+        },
+        "change_log" : {
+            "type": "string",
+            "maxLength": 300
+        }
+    },
+    "required": [
+        "title",
+        "steps"
+    ],
+    "additionalProperties": false
+}

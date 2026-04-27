@@ -1,0 +1,437 @@
+openapi: 3.0.3
+info:
+  title: Schema Search Legacy 接口
+  version: 1.0.0
+  description: |
+    `kn_schema_search` 是 legacy HTTP 契约。
+
+    该接口保持当前实现与输出形态不变，仍使用历史 `concepts[]` 返回结构，
+    不参与本次 `search_schema + kn_search` 的 shared logic 收敛。
+
+    新接入方应优先使用 `search_schema`；需要继续沿用历史概念输出结构的场景，
+    才使用该 legacy 接口。
+servers:
+  - url: http://agent-retrieval:30779
+security:
+  - BearerAuth: []
+paths:
+  /api/agent-retrieval/in/v1/kn/semantic-search:
+    post:
+      tags:
+        - SemanticSearch
+      summary: kn_schema_search（legacy）
+      description: |
+        基于用户查询意图，返回业务知识网络中相关的概念信息。
+        该接口保持历史 `concepts[]` 输出结构，不与 `search_schema` 共用收敛后的 shared logic。
+      parameters:
+        - name: x-account-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 账户ID，用于内部服务调用时传递账户信息
+        - name: x-account-type
+          in: header
+          required: false
+          schema:
+            type: string
+            enum:
+              - user
+              - app
+              - anonymous
+          description: 账户类型：user(用户), app(应用), anonymous(匿名)
+        - name: response_format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - toon
+            default: json
+          description: 响应格式：json 或 toon，默认 json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanticSearchRequest"
+      responses:
+        "200":
+          description: 成功返回相关概念信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticSearchResponse"
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    SemanticSearchRequest:
+      type: object
+      required:
+        - query
+        - kn_id
+      properties:
+        query:
+          type: string
+          description: 用户自然语言查询
+        kn_id:
+          type: string
+          description: 业务知识网络ID
+        search_scope:
+          $ref: "#/components/schemas/SearchScope"
+        max_concepts:
+          type: integer
+          default: 10
+          description: 最大返回概念数量
+        rerank_action:
+          type: string
+          default: "default"
+          description: 重排动作
+          enum:
+            - "default"
+            - "vector"
+            - "llm"
+
+    SearchScope:
+      type: object
+      description: |
+        【可选】搜索域配置
+      properties:
+        concept_groups:
+          type: array
+          items:
+            type: string
+          description: 限定的概念分组
+        include_object_types:
+          type: boolean
+          description: 是否包含对象类
+        include_relation_types:
+          type: boolean
+          description: 是否包含关系类
+        include_action_types:
+          type: boolean
+          description: 是否包含行作类
+
+    SemanticSearchResponse:
+      type: object
+      properties:
+        concepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Concept"
+
+    QueryUnderstanding:
+      type: object
+      properties:
+        origin_query:
+          type: string
+          description: 用户原始查询
+        processed_query:
+          type: string
+          description: LLM处理后的标准化查询
+        intent:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryIntent"
+        query_strategy:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryStrategy"
+
+    QueryIntent:
+      type: object
+      properties:
+        query_segment:
+          type: string
+          description: 对应的查询片段
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: 置信度
+        reasoning:
+          type: string
+          description: 简要识别推理过程
+        requires_reasoning:
+          type: boolean
+          default: false
+          description: 是否需要进一步推理
+        related_concepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RelatedConcept"
+
+    QueryStrategy:
+      type: object
+      properties:
+        strategy_type:
+          type: string
+          enum: [concept_get, concept_discovery, object_instance_discovery]
+          description: 策略类型
+        filter:
+          $ref: "#/components/schemas/ConceptFilter"
+
+    ConceptFilter:
+      type: object
+      properties:
+        concept_type:
+          type: string
+          enum: [object_type, relation_type, action_type]
+          description: 概念类型
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+
+    Condition:
+      type: object
+      properties:
+        field:
+          type: string
+          description: 字段名称
+        operation:
+          type: string
+          description: 操作类型
+        value:
+          type: string
+          description: 值
+
+    RelatedConcept:
+      type: object
+      properties:
+        concept_type:
+          type: string
+          enum: [object_type, relation_type, action_type]
+          description: 概念类型
+        concept_id:
+          type: string
+          description: 概念类ID
+        concept_name:
+          type: string
+          description: 概念类名称
+
+    Concept:
+      type: object
+      properties:
+        concept_type:
+          type: string
+          enum: [object_type, relation_type, action_type]
+          description: 概念类型
+        concept_id:
+          type: string
+          description: 概念类ID
+        concept_name:
+          type: string
+          description: 概念类名称
+        concept_detail:
+          description: |
+            概念类详情，根据concept_type返回不同结构：
+            - 当concept_type为"object_type"时，返回ObjectTypeDetail结构，包含对象类的完整信息
+            - 当concept_type为"relation_type"时，返回RelationTypeDetail结构，包含关系类的完整信息
+            - 当concept_type为"action_type"时，返回ActionTypeDetail结构，包含行动类的完整信息
+          oneOf:
+            - $ref: "#/components/schemas/ObjectTypeDetail"
+            - $ref: "#/components/schemas/RelationTypeDetail"
+            - $ref: "#/components/schemas/ActionTypeDetail"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 错误码
+        description:
+          type: string
+          description: 错误描述
+        detail:
+          type: object
+          description: 错误详情
+        solution:
+          type: string
+          description: 解决方案
+        link:
+          type: string
+          description: 错误链接
+
+    ObjectTypeDetail:
+      type: object
+      description: 对象类概念详情
+      properties:
+        module_type:
+          type: string
+          description: 模块类型
+        id:
+          type: string
+          description: 对象id
+        name:
+          type: string
+          description: 对象名称
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签
+        comment:
+          type: string
+          description: 备注
+        _score:
+          type: number
+          format: float
+          description: 分数
+        data_source:
+          $ref: "#/components/schemas/ResourceInfo"
+          description: 数据来源信息
+        data_properties:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataProperty"
+          description: 数据属性
+        logic_properties:
+          type: array
+          items:
+            type: object
+          description: 逻辑属性
+        primary_keys:
+          type: array
+          items:
+            type: string
+          description: 主键字段
+
+    RelationTypeDetail:
+      type: object
+      description: 关系类概念详情
+      properties:
+        module_type:
+          type: string
+          description: 模块类型
+        id:
+          type: string
+          description: 关系类id
+        name:
+          type: string
+          description: 关系类名称
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签
+        comment:
+          type: string
+          description: 备注
+        _score:
+          type: number
+          format: float
+          description: 分数
+        source_object_type_id:
+          type: string
+          description: 起点对象类ID
+        target_object_type_id:
+          type: string
+          description: 目标对象类ID
+        type:
+          type: string
+          description: 关系类型
+
+    ActionTypeDetail:
+      type: object
+      description: 行动类概念详情
+      properties:
+        module_type:
+          type: string
+          description: 模块类型
+        id:
+          type: string
+          description: 行动类ID
+        name:
+          type: string
+          description: 行动类名称
+        tags:
+          type: array
+          items:
+            type: string
+          description: 标签
+        comment:
+          type: string
+          description: 备注
+        _score:
+          type: number
+          format: float
+          description: 分数
+        object_type_id:
+          type: string
+          description: 行动类所绑定的对象类ID
+
+    ResourceInfo:
+      type: object
+      description: 数据来源信息
+      properties:
+        type:
+          type: string
+          description: 数据来源类型
+        id:
+          type: string
+          description: 数据视图id
+        name:
+          type: string
+          description: 视图名称
+
+    DataProperty:
+      type: object
+      description: 数据属性结构定义
+      properties:
+        name:
+          type: string
+          description: 属性名称
+        display_name:
+          type: string
+          description: 属性显示名称
+        type:
+          type: string
+          description: 属性数据类型
+        comment:
+          type: string
+          description: 备注
+        mapped_field:
+          description: 视图字段信息
+        condition_operations:
+          type: array
+          items:
+            type: string
+            enum:
+              - "=="
+              - "!="
+              - ">"
+              - "<"
+              - ">="
+              - "<="
+              - in
+              - not_in
+              - like
+              - not_like
+              - range
+              - out_range
+              - exist
+              - not_exist
+              - regex
+              - match
+              - knn
+          description: |
+            该数据属性支持的查询条件操作符列表。
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer

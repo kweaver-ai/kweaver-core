@@ -1,0 +1,11 @@
+order_id,product_name,material_code,material_risk,quantity,planned_date,status
+WO-2024-001,智能控制器,MAT-001,critical,200,2024-04-20,pending
+WO-2024-002,工业网关,MAT-002,normal,150,2024-04-22,pending
+WO-2024-003,精密传感器,MAT-003,critical,300,2024-04-18,pending
+WO-2024-004,散热组件,MAT-004,normal,100,2024-04-25,pending
+WO-2024-005,密封装置,MAT-005,critical,500,2024-04-21,pending
+WO-2024-006,控制模组,MAT-002,normal,250,2024-04-23,pending
+WO-2024-007,高精仪器,MAT-003,critical,120,2024-04-17,pending
+WO-2024-008,标准组件,MAT-004,normal,400,2024-04-28,pending
+WO-2024-009,精密壳体,MAT-001,critical,80,2024-04-19,pending
+WO-2024-010,通用模块,MAT-006,normal,180,2024-04-26,pending

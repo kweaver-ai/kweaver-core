@@ -1,0 +1,132 @@
+services:
+  # MariaDB 数据库
+  decision-agent-mariadb:
+    image: mariadb:10.6
+    container_name: decision-agent-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-adp}
+      MYSQL_USER: ${MYSQL_USER:-aishu}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aishu123456}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${MARIADB_HOST_PORT:-3306}:3306"
+    volumes:
+      - decision-agent-mariadb_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root123456}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - decision-agent-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: decision-agent-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123456}
+    command: sh -c "redis-server --requirepass $$REDIS_PASSWORD --appendonly yes"
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - decision-agent-redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-redis123456} ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - decision-agent-network
+
+  # Agent Backend (包含 agent-factory, agent-executor, agent-memory)
+  agent-backend:
+    build:
+      context: ../..
+      dockerfile: agent-backend/deploy/docker/Dockerfile
+      args:
+        buildImage: python:3.11-slim
+        baseImage: ubuntu:noble
+        goBuildImage: golang:1.24-alpine
+        ARCH_TYPE: amd64
+        UID: 1001
+        GID: 1001
+    container_name: decision-agent-backend
+    restart: unless-stopped
+    depends_on:
+      decision-agent-mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${AGENT_FACTORY_HOST_PORT:-30777}:30777" # agent-factory
+      - "${AGENT_EXECUTOR_HOST_PORT:-30778}:30778" # agent-executor
+      - "${AGENT_MEMORY_HOST_PORT:-30790}:30790" # agent-memory
+    volumes:
+      # 挂载配置文件目录，便于运行时修改配置
+      - ../../agent-backend/agent-factory/conf:/app/agent-factory/conf:ro
+      - ../../agent-backend/agent-executor/conf:/app/agent-executor/conf:ro
+    environment:
+      # 数据库配置
+      DB_HOST: ${DB_HOST:-decision-agent-mariadb}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${MYSQL_USER:-aishu}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-aishu123456}
+      DB_DATABASE: ${MYSQL_DATABASE:-adp}
+      # Redis 配置
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123456}
+      # Agent Factory 配置路径
+      AGENT_FACTORY_CONFIG_PATH: /app/agent-factory/conf
+      # 其他配置
+      TZ: ${TZ:-Asia/Shanghai}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test: |
+        curl -f http://localhost:30777/health/ready &&
+        curl -f http://localhost:30778/api/agent-executor/v1/health/ready || exit 1
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - decision-agent-network
+
+  # Agent Web (前端)
+  agent-web:
+    build:
+      context: ../..
+      dockerfile: agent-web/Dockerfile-compose
+    container_name: decision-agent-web
+    restart: unless-stopped
+    environment:
+      # 前端请求后端的baseUrl地址
+      BACKEND_URL: ${BACKEND_URL:-http://agent-backend:30777}
+    depends_on:
+      agent-backend:
+        condition: service_started
+    ports:
+      - "${AGENT_WEB_HOST_PORT:-1101}:1101"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:1101/probe" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - decision-agent-network
+
+networks:
+  decision-agent-network:
+    driver: bridge
+
+volumes:
+  decision-agent-mariadb_data:
+    driver: local
+  decision-agent-redis_data:
+    driver: local

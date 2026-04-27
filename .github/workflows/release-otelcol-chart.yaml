@@ -1,0 +1,82 @@
+name: otelcol-chart-release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'trace-ai/otelcol-contribute-chart/**'
+      - 'trace-ai/VERSION'
+      - '.github/workflows/release-otelcol-chart.yaml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_VERSION="$(tr -d '[:space:]' < trace-ai/VERSION)"
+          REF_NAME="${GITHUB_REF_NAME}"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+
+          if [[ "${REF_NAME}" == release/* ]]; then
+            VERSION="${BASE_VERSION}"
+          else
+            SANITIZED_BRANCH="$(echo "${REF_NAME}" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's#[^0-9a-zA-Z.-]+#-#g; s#-+#-#g; s#^[.-]+##; s#[.-]+$##')"
+            VERSION="${BASE_VERSION}-${SANITIZED_BRANCH}.sha${SHORT_SHA}"
+          fi
+
+          echo "Base version: ${BASE_VERSION}"
+          echo "Git ref name: ${REF_NAME}"
+          echo "Short SHA: ${SHORT_SHA}"
+          echo "Resolved version: ${VERSION}"
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+  publish-ghcr:
+    runs-on: ubuntu-latest
+    needs: resolve-version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Update chart versions
+        run: |
+          sed -i "s/^version: .*/version: ${VERSION}/" trace-ai/otelcol-contribute-chart/charts/otelcol-contrib/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" trace-ai/otelcol-contribute-chart/charts/otelcol-contrib/Chart.yaml
+
+
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Package chart
+        run: helm package trace-ai/otelcol-contribute-chart/charts/otelcol-contrib --destination .artifacts
+
+      - name: Push chart to GHCR
+        run: |
+          CHART_PACKAGE=$(ls .artifacts/otelcol-contrib-${{ needs.resolve-version.outputs.version }}.tgz)
+          helm push "$CHART_PACKAGE" oci://ghcr.io/${{ github.repository_owner }}/charts

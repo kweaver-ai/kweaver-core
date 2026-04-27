@@ -1,0 +1,1763 @@
+openapi: "3.0.2"
+info:
+  title: "Agent Skill 公有接口"
+  description: "Agent Skill 注册、删除、查询、读取相关公有接口"
+  version: "1.0.0"
+servers:
+  - url: "http://{host}:{port}/api/agent-operator-integration/v1"
+    description: "Agent Skill 公有接口地址"
+    variables:
+      host:
+        default: "agent-operator-integration"
+        description: "服务地址"
+      port:
+        default: "9000"
+        description: "服务端口"
+
+paths:
+  /skills:
+    post:
+      summary: "注册 Skill"
+      description: "注册 Skill，支持 JSON、表单和 multipart 三种提交方式"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer token"
+          required: true
+          schema:
+            type: string
+        - name: x-business-domain
+          in: header
+          description: "业务域 ID"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RegisterSkillReq"
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file_type
+                - file
+              properties:
+                file_type:
+                  type: string
+                  enum: ["zip", "content"]
+                  description: "文件类型"
+                file:
+                  type: string
+                  format: binary
+                  description: "Skill 文件内容"
+                source:
+                  type: string
+                  description: "Skill 来源"
+                extend_info:
+                  type: object
+                  description: "扩展信息"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterSkillResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      summary: "查询 Skill 列表"
+      description: "分页查询业务域下的 Skill 列表，仅返回轻量摘要，不返回 SKILL.md 正文和文件清单"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer token"
+          required: true
+          schema:
+            type: string
+        - name: x-business-domain
+          in: header
+          description: "业务域 ID"
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: "页码，从 1 开始"
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: "每页数量"
+          schema:
+            type: integer
+            default: 10
+        - name: sort_by
+          in: query
+          description: "排序字段"
+          schema:
+            type: string
+            enum: ["create_time", "update_time", "name"]
+            default: "update_time"
+        - name: sort_order
+          in: query
+          description: "排序方式"
+          schema:
+            type: string
+            enum: ["asc", "desc"]
+            default: "desc"
+        - name: all
+          in: query
+          description: "是否返回全部"
+          schema:
+            type: boolean
+            default: false
+        - name: name
+          in: query
+          description: "Skill 名称"
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: "Skill 状态"
+          schema:
+            type: string
+            enum: ["unpublish", "published", "offline"]
+        - name: source
+          in: query
+          description: "Skill 来源"
+          schema:
+            type: string
+        - name: create_user
+          in: query
+          description: "创建用户"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuerySkillListResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/market:
+    get:
+      summary: "查询 Skill 市场列表"
+      description: "分页查询 Skill 市场列表，仅返回已发布 Skill 的轻量摘要，不返回 skill_content 和文件清单。"
+      tags:
+        - "Skill 市场"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - name: page
+          in: query
+          description: "页码，从 1 开始"
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: "每页数量"
+          schema:
+            type: integer
+            default: 10
+        - name: all
+          in: query
+          description: "是否返回全部"
+          schema:
+            type: boolean
+            default: false
+        - name: name
+          in: query
+          description: "Skill 名称"
+          schema:
+            type: string
+        - name: source
+          in: query
+          description: "Skill 来源"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuerySkillListResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/market/{skill_id}:
+    get:
+      summary: "获取 Skill 市场详情"
+      description: "根据 Skill ID 获取已发布 Skill 的轻量市场详情，不返回 skill_content 和文件清单。"
+      tags:
+        - "Skill 市场"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}:
+    get:
+      summary: "获取 Skill 详情"
+      description: "根据 Skill ID 获取纯元数据详情，不返回 SKILL.md 正文和文件清单"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillInfo"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: "删除 Skill"
+      description: "物理删除指定 Skill。当前实现会先将 `f_is_deleted` 置为 1，再在同一请求内同步完成对象存储、文件索引和主记录清理；`f_is_deleted=1` 对外视为不存在。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSkillResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/status:
+    put:
+      summary: "更新 Skill 状态"
+      description: "根据 Skill ID 更新业务状态，当前仅支持 `unpublish`、`published`、`offline`。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSkillStatusReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSkillStatusResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/metadata:
+    put:
+      summary: "更新 Skill 元数据"
+      description: "根据 Skill ID 更新 Skill 的名称、描述、分类、来源和扩展信息。该操作只更新草稿态，不直接变更发布态内容。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSkillMetadataReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSkillMetadataResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/package:
+    put:
+      summary: "更新 Skill 包"
+      description: "根据 Skill ID 更新 Skill 包内容。仅支持 `application/x-www-form-urlencoded` 和 `multipart/form-data`。`content` 模式只更新声明内容；`zip` 模式会重新解析 `SKILL.md` 与文件清单。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UpdateSkillPackageFormReq"
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file_type
+                - file
+              properties:
+                file_type:
+                  type: string
+                  enum: ["zip", "content"]
+                  description: "更新类型"
+                file:
+                  type: string
+                  format: binary
+                  description: "当 `file_type=zip` 时为 ZIP 文件；当 `file_type=content` 时为原始内容文件"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSkillPackageResp"
+        "400":
+          description: "参数错误或 Content-Type 不支持"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history:
+    get:
+      summary: "查询 Skill 发布历史"
+      description: "根据 Skill ID 查询发布历史摘要列表。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSkillReleaseHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history/republish:
+    post:
+      summary: "将历史版本回灌到草稿态"
+      description: "根据 Skill ID 和历史版本号，将指定历史版本恢复到当前草稿态。该操作不会直接覆盖当前发布态。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepublishSkillHistoryReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepublishSkillHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 或历史版本不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/history/publish:
+    post:
+      summary: "直接发布历史版本"
+      description: "根据 Skill ID 和历史版本号，直接将指定历史版本重新发布为当前发布态。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishSkillHistoryReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishSkillHistoryResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 或历史版本不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/content:
+    get:
+      summary: "获取 Skill 内容"
+      description: "获取 Skill 内容下载地址与文件摘要。`f_is_deleted=1` 的 Skill 对外视为不存在；当前实现满足 execute / public_access / view 任一权限即可读取。"
+      tags:
+        - "Skill 读取"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSkillContentResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/download:
+    get:
+      summary: "下载 Skill ZIP"
+      description: "下载指定 Skill 的 ZIP 包。返回内容包含 SKILL.md 与已登记的内部文件。`f_is_deleted=1` 的 Skill 对外视为不存在；当前实现满足 execute / public_access / view 任一权限即可下载。"
+      tags:
+        - "Skill 管理"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      responses:
+        "200":
+          description: "成功"
+          headers:
+            Content-Disposition:
+              description: "附件下载文件名"
+              schema:
+                type: string
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无下载权限"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/files/read:
+    post:
+      summary: "读取 Skill 文件"
+      description: "按相对路径获取 Skill 内部文件下载地址。`f_is_deleted=1` 的 Skill 对外视为不存在；当前实现满足 execute / public_access / view 任一权限即可读取。"
+      tags:
+        - "Skill 读取"
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReadSkillFileReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadSkillFileResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "无权限或文件不可读"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 或文件不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /skills/index/build:
+    get:
+      summary: "查询 Skill 索引构建任务列表"
+      description: "分页查询 Skill 索引构建任务列表，支持按状态、执行类型和创建人过滤。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/All"
+        - $ref: "#/components/parameters/SortBy"
+        - $ref: "#/components/parameters/SortOrder"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "pending"
+              - "running"
+              - "completed"
+              - "failed"
+        - name: execute_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "full"
+              - "incremental"
+        - name: create_user
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuerySkillIndexBuildTaskListResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: "创建 Skill 索引构建任务"
+      description: "创建 Skill 索引全量或增量构建任务，任务创建后由 Asynq worker 异步执行。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSkillIndexBuildTaskReq"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "已有运行中任务"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}:
+    get:
+      summary: "查询 Skill 索引构建任务"
+      description: "根据任务 ID 查询 Skill 索引构建任务状态和统计信息。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - name: task_id
+          in: path
+          description: "任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}/cancel:
+    post:
+      summary: "取消 Skill 索引构建任务"
+      description: "取消指定的 Skill 索引构建任务。对于 active 任务发送取消信号；对于 pending/scheduled/retry/archived 任务直接从队列移除。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - name: task_id
+          in: path
+          description: "任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelSkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "任务不可取消"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/index/build/{task_id}/retry:
+    post:
+      summary: "重试 Skill 索引构建任务"
+      description: "仅允许对 failed 任务发起重试。重试会创建一个新的构建任务，不复用原 task_id。"
+      tags:
+        - "Skill 索引"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - name: task_id
+          in: path
+          description: "原任务 ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetrySkillIndexBuildTaskResp"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "任务不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "任务不可重试"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    Authorization:
+      name: Authorization
+      in: header
+      description: "Bearer token"
+      required: true
+      schema:
+        type: string
+    BusinessDomain:
+      name: x-business-domain
+      in: header
+      description: "业务域 ID"
+      required: true
+      schema:
+        type: string
+    SkillID:
+      name: skill_id
+      in: path
+      description: "Skill ID"
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      description: "页码，从 1 开始，默认 1"
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      description: "每页数量，默认 10，最大 100"
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    All:
+      name: all
+      in: query
+      description: "是否返回全部"
+      required: false
+      schema:
+        type: boolean
+        default: false
+    SortBy:
+      name: sort_by
+      in: query
+      description: "排序字段"
+      required: false
+      schema:
+        type: string
+        enum:
+          - "create_time"
+          - "update_time"
+          - "name"
+        default: "update_time"
+    SortOrder:
+      name: sort_order
+      in: query
+      description: "排序方式"
+      required: false
+      schema:
+        type: string
+        enum:
+          - "asc"
+          - "desc"
+        default: "desc"
+
+  schemas:
+    RegisterSkillReq:
+      type: object
+      required:
+        - file_type
+        - file
+      properties:
+        file_type:
+          type: string
+          enum: ["zip", "content"]
+          description: "文件类型"
+        file:
+          type: object
+          description: "Skill 内容，JSON/表单模式下为原始内容"
+        source:
+          type: string
+          description: "Skill 来源"
+        extend_info:
+          type: object
+          description: "扩展信息"
+
+    RegisterSkillResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            name:
+              type: string
+            description:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "offline"]
+            files:
+              type: array
+              items:
+                type: string
+
+    DeleteSkillResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            deleted:
+              type: boolean
+
+    UpdateSkillStatusReq:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: ["unpublish", "published", "offline"]
+
+    UpdateSkillStatusResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "offline"]
+
+    UpdateSkillMetadataReq:
+      type: object
+      required:
+        - name
+        - description
+        - category
+      properties:
+        name:
+          type: string
+          description: "Skill 名称"
+        description:
+          type: string
+          description: "Skill 描述"
+        category:
+          type: string
+          enum: ["other_category", "system"]
+          description: "Skill 分类"
+        source:
+          type: string
+          enum: ["custom", "internal"]
+          description: "Skill 来源"
+        extend_info:
+          type: object
+          additionalProperties: true
+          description: "扩展信息"
+
+    UpdateSkillMetadataResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    UpdateSkillPackageFormReq:
+      type: object
+      required:
+        - file_type
+        - file
+      properties:
+        file_type:
+          type: string
+          enum: ["zip", "content"]
+          description: "更新类型"
+        file:
+          type: string
+          description: "当 `file_type=content` 时为原始内容；当 `file_type=zip` 时为编码后的文件内容"
+
+    UpdateSkillPackageResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    RepublishSkillHistoryReq:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: "历史版本号"
+
+    RepublishSkillHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    PublishSkillHistoryReq:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+          description: "历史版本号"
+
+    PublishSkillHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            version:
+              type: string
+            status:
+              type: string
+              enum: ["unpublish", "published", "editing", "offline"]
+
+    GetSkillReleaseHistoryResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillReleaseHistoryInfo"
+
+    SkillReleaseHistoryInfo:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: ["unpublish", "published", "editing", "offline"]
+        category:
+          type: string
+          enum: ["other_category", "system"]
+        source:
+          type: string
+        release_desc:
+          type: string
+        release_user:
+          type: string
+        release_time:
+          type: integer
+          format: int64
+        create_user:
+          type: string
+        create_time:
+          type: integer
+          format: int64
+        update_user:
+          type: string
+        update_time:
+          type: integer
+          format: int64
+
+    QuerySkillListResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            total_count:
+              type: integer
+            page:
+              type: integer
+            page_size:
+              type: integer
+            total_page:
+              type: integer
+            has_next:
+              type: boolean
+            has_prev:
+              type: boolean
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/SkillSummaryData"
+
+    SkillInfo:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/SkillInfoData"
+
+    SkillSummaryData:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: ["unpublish", "published", "offline"]
+        source:
+          type: string
+        create_user:
+          type: string
+        create_time:
+          type: integer
+          format: int64
+        update_user:
+          type: string
+        update_time:
+          type: integer
+          format: int64
+
+    SkillInfoData:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: ["unpublish", "published", "offline"]
+        source:
+          type: string
+        dependencies:
+          type: object
+          additionalProperties: true
+        extend_info:
+          type: object
+          additionalProperties: true
+        create_user:
+          type: string
+        create_time:
+          type: integer
+          format: int64
+        update_user:
+          type: string
+        update_time:
+          type: integer
+          format: int64
+
+    SkillFileSummary:
+      type: object
+      properties:
+        rel_path:
+          type: string
+        file_type:
+          type: string
+        size:
+          type: integer
+          format: int64
+        mime_type:
+          type: string
+
+    GetSkillContentResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            url:
+              type: string
+              description: "SKILL.md 下载地址"
+            files:
+              type: array
+              items:
+                $ref: "#/components/schemas/SkillFileSummary"
+            status:
+              type: string
+              enum: ["unpublish", "published", "offline"]
+
+    ReadSkillFileReq:
+      type: object
+      required:
+        - rel_path
+      properties:
+        rel_path:
+          type: string
+          description: "Skill 文件相对路径"
+
+    ReadSkillFileResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            skill_id:
+              type: string
+            rel_path:
+              type: string
+            url:
+              type: string
+              description: "文件下载地址"
+            mime_type:
+              type: string
+            file_type:
+              type: string
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          nullable: true
+
+    CreateSkillIndexBuildTaskReq:
+      type: object
+      required:
+        - execute_type
+      properties:
+        execute_type:
+          type: string
+          enum:
+            - "full"
+            - "incremental"
+
+    CreateSkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+
+    SkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+            queue_state:
+              type: string
+              enum:
+                - "pending"
+                - "active"
+                - "scheduled"
+                - "retry"
+                - "archived"
+                - "completed"
+                - "aggregating"
+            total_count:
+              type: integer
+              format: int64
+            success_count:
+              type: integer
+              format: int64
+            delete_count:
+              type: integer
+              format: int64
+            failed_count:
+              type: integer
+              format: int64
+            retry_count:
+              type: integer
+              format: int64
+            max_retry:
+              type: integer
+              format: int64
+            cursor_update_time:
+              type: integer
+              format: int64
+            cursor_skill_id:
+              type: string
+            error_msg:
+              type: string
+            create_user:
+              type: string
+            create_time:
+              type: integer
+              format: int64
+            update_time:
+              type: integer
+              format: int64
+            last_finished_time:
+              type: integer
+              format: int64
+
+    CancelSkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            task_id:
+              type: string
+            action:
+              type: string
+              enum:
+                - "cancel_processing"
+                - "delete_queue_task"
+            queue_state:
+              type: string
+              enum:
+                - "pending"
+                - "active"
+                - "scheduled"
+                - "retry"
+                - "archived"
+                - "completed"
+                - "aggregating"
+
+    RetrySkillIndexBuildTaskResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            source_task_id:
+              type: string
+            task_id:
+              type: string
+            status:
+              type: string
+              enum:
+                - "pending"
+                - "running"
+                - "completed"
+                - "failed"
+            execute_type:
+              type: string
+              enum:
+                - "full"
+                - "incremental"
+
+    QuerySkillIndexBuildTaskListResp:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            page_size:
+              type: integer
+            total_pages:
+              type: integer
+            has_next:
+              type: boolean
+            has_prev:
+              type: boolean
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - "pending"
+                      - "running"
+                      - "completed"
+                      - "failed"
+                  execute_type:
+                    type: string
+                    enum:
+                      - "full"
+                      - "incremental"
+                  queue_state:
+                    type: string
+                  total_count:
+                    type: integer
+                    format: int64
+                  success_count:
+                    type: integer
+                    format: int64
+                  delete_count:
+                    type: integer
+                    format: int64
+                  failed_count:
+                    type: integer
+                    format: int64
+                  retry_count:
+                    type: integer
+                    format: int64
+                  max_retry:
+                    type: integer
+                    format: int64
+                  cursor_update_time:
+                    type: integer
+                    format: int64
+                  cursor_skill_id:
+                    type: string
+                  error_msg:
+                    type: string
+                  create_user:
+                    type: string
+                  create_time:
+                    type: integer
+                    format: int64
+                  update_time:
+                    type: integer
+                    format: int64
+                  last_finished_time:
+                    type: integer
+                    format: int64

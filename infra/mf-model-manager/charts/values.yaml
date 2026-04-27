@@ -1,0 +1,131 @@
+replicaCount: 1
+
+namespace: dip
+
+image:
+  registry: acr.aishu.cn
+  repository: /dip/mf-model-manager
+  tag: 5.0.0
+  pullPolicy: IfNotPresent
+  name: mf-model-manager
+
+service:
+  enableDualStack: false
+  type: ClusterIP
+  ports:
+    port: 9898
+    targetPort: 9898
+  annotations: {}
+
+ingress:
+  enabled: true
+  # 基于路径（Path）的路由分发
+  # 不配置 host，通过不同的 path 前缀区分服务
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "500M"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  paths:
+    - /api/mf-model-manager
+
+env:
+  devicecode: ""
+
+nodeSelector: {}
+
+depServices:
+  class-443:
+    ingressClass: class-443
+  rds:
+    host: "rds-proton-rds-mariadb-cluster"
+    port: "3320"
+    user: 'username'
+    password: 'password'
+    type: ""
+    database: "kweaver"
+    maxConnections: 5
+  opensearch:
+    read: "opensearch-read"
+    write: "opensearch-write"
+    host: "opensearch-master"
+    port: "9200"
+    user: "admin"
+    password: "password"
+  redis:
+    connectType: sentinel
+    enableSSL: false
+    connectInfo:
+      sentinelHost: kg-redis-cluster-proton-redis-sentinel
+      sentinelPort: 26379
+      username: root
+      password: password
+      sentinelUsername: root
+      sentinelPassword: password
+      masterGroupName: mymaster
+      masterHost: xxx.dcs.huaweicloud.com
+      masterPort: 26379
+      slaveHost: xxx-readonly.dcs.huaweicloud.com
+      slavePort: 26379
+      host: ""
+      port: 26379
+    secretName: redis-ssl-secret
+    caName: ca.pem
+    certName: cert.pem
+    keyName: key.pem
+  mq:
+    auth:
+      mechanism: 'PLAIN'
+      username: 'anyrobot'
+      password: 'password'
+    mqHost: 'kafka-headless.resource'
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9097
+    mqType: kafka
+  text_vector:
+    mapping: "{}"
+  vlm_vector:
+    mapping: "{}"
+  text_reranker:
+    mapping: "{}"
+  hydra:
+    publicHost: "hydra-public"
+    publicPort: "4444"
+    administrativeHost: "hydra-admin"
+    administrativePort: "4445"
+  user_management:
+    publicHost: "user-management-public"
+    publicPort: "30980"
+    privateHost: "user-management-private"
+    privatePort: "30980"
+  authorization:
+    privateHost: "authorization-private"
+    privatePort: "30920"
+
+
+resources:
+  requests:
+    cpu: 1000m
+    memory: 1024Mi
+  limits:
+    cpu: 4
+    memory: 8Gi
+auth:
+  # 是否开启权限控制。false=关闭（所有接口放行，不过滤数据）；true=开启（走完整鉴权与资源权限逻辑）
+  enabled: "true"
+
+observability:
+    logEnabled: "false"
+    traceEnabled: "false"
+    metricEnabled: "false"
+    logExporter: "http"
+    traceProvider: "http"
+    metricProvider: "http"
+    logLoadInternal: "10"
+    logLoadMaxLog: "1000"
+    traceMaxQueueSize: "50000"
+    metricIntervalSecond: "60"
+    httpLogFeedIngesterUrl: "http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events"
+    httpTraceFeedIngesterUrl: "http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events"
+    httpMetricFeedIngesterUrl: "http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events"
+    grpcTraceFeedIngesterUrl: "feed-ingester-service:30013"
+    grpcTraceJobId: "dip-o11y-trace-grpc"

@@ -1,0 +1,35 @@
+{
+    "description": "更新文件内容参数校验",
+    "type": "object",
+    "properties": {
+        "type": {
+            "type": "string",
+            "enum": [
+                "docx",
+                "pdf",
+                "md"
+            ]
+        },
+        "docid": {
+            "type": "string",
+            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+        },
+        "insert_type": {
+            "type": "string",
+            "enum": [
+                "append",
+                "cover"
+            ]
+        },
+        "content": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "type",
+        "docid",
+        "insert_type",
+        "content"
+    ],
+    "additionalProperties": false
+}

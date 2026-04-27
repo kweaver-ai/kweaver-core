@@ -1,0 +1,35 @@
+{
+  "name": "sandbox_web",
+  "version": "1.0.0",
+  "description": "Sandbox Control Plane Web Frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,less}\""
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "antd": "^5.26.2",
+    "axios": "^1.7.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.0.1",
+    "@rsbuild/plugin-less": "^1.5.0",
+    "@rsbuild/plugin-react": "^1.0.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.8.2"
+  },
+  "overrides": {
+    "@rspack/core": "1.7.3",
+    "@rspack/binding": "1.7.3"
+  }
+}

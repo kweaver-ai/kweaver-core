@@ -1,0 +1,2305 @@
+---
+openapi: 3.0.2
+info:
+  title: RelationType
+  version: 0.1.0
+paths:
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/relation-types:
+    get:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: name_pattern
+          description: 根据络名称模糊查询，默认为空
+          schema:
+            type: string
+          in: query
+        - name: sort
+          description: 排序类型，默认是update_time
+          schema:
+            enum:
+              - update_time
+              - name
+            type: string
+          in: query
+        - name: direction
+          description: |-
+            排序结果方向，可选asc、desc。
+            默认desc
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+          in: query
+        - name: offset
+          description: "开始响应的项目的偏移量\t\n范围需大于等于0，默认值0"
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: limit
+          description: |-
+            每页最多可返回的项目数；
+            分页可选1-1000，-1表示不分页；
+            默认值10
+          schema:
+            format: int64
+            type: integer
+          in: query
+        - name: tag
+          description: 根据标签精准查询，默认为空.
+          schema:
+            type: string
+          in: query
+        - name: group_id
+          description: 按概念分组过滤
+          schema:
+            type: string
+          in: query
+        - name: source_object_type_id
+          description: 起点对象类ID
+          schema:
+            type: string
+          in: query
+        - name: target_object_type_id
+          description: 终点对象类ID
+          schema:
+            type: string
+          in: query
+        - name: bound_object_type_id
+          description: 绑定的对象类ID，查询起点等于此对象类或者终点等于此对象类的关系类。支持传入多个值
+          schema:
+            type: array
+            items:
+              type: string
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListRelationTypes"
+          description: ok
+      summary: 获取关系类列表
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/override"
+            examples:
+              创建关系类:
+                value:
+                  - id: service_2_pod
+                    name: 包含
+                    tags:
+                      - 拓扑架构
+                    comment: 服务到pod的关系，服务包含于pod
+                    icon: ""
+                    color: ""
+                    branch: main
+                    source_object_type_id: service
+                    target_object_type_id: pod
+                    type: direct
+                    mapping_rules:
+                      - source_property:
+                          name: service_name
+                        target_property:
+                          name: service_name
+                    module_type: relation_type
+                  - id: pod_2_node
+                    name: 属于
+                    tags:
+                      - 拓扑架构
+                    comment: pod到node的关系，pod包含于节点
+                    icon: ""
+                    color: ""
+                    branch: main
+                    source_object_type_id: pod
+                    target_object_type_id: node
+                    type: direct
+                    mapping_rules:
+                      - source_property:
+                          name: pod_node_name
+                        target_property:
+                          name: node_name
+                    module_type: relation_type
+              检索关系类-第一次请求:
+                value:
+                  need_total: true
+                  limit: 1
+                  condition:
+                    operation: and
+                    sub_conditions:
+                      - field: comment
+                        operation: match
+                        value_from: const
+                        value: pod
+                      - field: "*"
+                        operation: knn
+                        value_from: const
+                        value:
+                          - pod
+                          - 10
+              检索关系类-非第一次:
+                value:
+                  search_after:
+                    - 3.7951493
+                    - pod_2_node_TEST
+                  need_total: true
+                  limit: 1
+                  condition:
+                    operation: and
+                    sub_conditions:
+                      - field: comment
+                        operation: match
+                        value_from: const
+                        value: pod
+                      - field: "*"
+                        operation: knn
+                        value_from: const
+                        value:
+                          - pod
+                          - 10
+        required: true
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: x-http-method-override
+          description: 重载请求头
+          schema:
+            enum:
+              - POST
+              - GET
+            type: string
+          in: header
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelationTypeSearchResponse"
+              examples:
+                检索关系类-第一次请求:
+                  value:
+                    entries:
+                      - id: pod_2_node_TEST
+                        name: 属于2
+                        tags:
+                          - 拓扑架构
+                        comment: pod到node的关系，pod包含于节点
+                        icon: ""
+                        color: ""
+                        branch: main
+                        detail: ""
+                        creator: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        create_time: 1758339660119
+                        updater: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        update_time: 1758339660119
+                        kn_id: kn_system_incident_event_network
+                        source_object_type_id: pod
+                        source_object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        target_object_type_id: node
+                        target_object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        type: direct
+                        mapping_rules:
+                          - source_property:
+                              name: pod_node_name
+                            target_property:
+                              name: node_name
+                        IfNameModify: false
+                        module_type: relation_type
+                    total_count: 2
+                    search_after:
+                      - 3.7951493
+                      - pod_2_node_TEST
+                检索关系类--非第一次请求:
+                  value:
+                    entries:
+                      - id: service_2_pod_test
+                        name: 包含2
+                        tags:
+                          - 拓扑架构
+                        comment: 服务到pod的关系，服务包含于pod
+                        icon: ""
+                        color: ""
+                        branch: main
+                        detail: ""
+                        creator: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        create_time: 1758339660119
+                        updater: a0f02238-6cec-11f0-82bb-fa1c4529a151
+                        update_time: 1758339660119
+                        kn_id: kn_system_incident_event_network
+                        source_object_type_id: service
+                        source_object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        target_object_type_id: pod
+                        target_object_type:
+                          id: ""
+                          name: ""
+                          icon: ""
+                          color: ""
+                        type: direct
+                        mapping_rules:
+                          - source_property:
+                              name: service_name
+                            target_property:
+                              name: service_name
+                        IfNameModify: false
+                        module_type: relation_type
+                    search_after:
+                      - 3.782332
+                      - service_2_pod_test
+          description: "重载GET, 检索关系类"
+        "201":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ID"
+          description: ok
+      summary: 创建或检索关系类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/relation-types/{rt_id}:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRelationType"
+        required: true
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: rt_id
+          description: 关系类ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true。为 true 时校验关联对象类、数据视图等依赖是否存在；为 false 时不做该校验
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: validate_dependency
+          deprecated: true
+          description: "[已废弃] 请使用 strict_mode。兼容保留，strict_mode 为空时会读取此参数"
+          schema:
+            type: boolean
+            default: true
+          in: query
+      responses:
+        "204":
+          description: ok
+      summary: 修改关系类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: rt_id
+        description: 关系类ID
+        schema:
+          type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/relation-types/{rt_ids}:
+    get:
+      parameters:
+        - name: rt_ids
+          description: 关系类ID
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: include_detail
+          description: 是否包含说明书信息，默认false，不包含。
+          schema:
+            type: boolean
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelationTypeDetails"
+          description: ok
+      summary: 获取关系类详情
+    delete:
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: rt_ids
+          description: 关系类ID
+          schema:
+            type: array
+            items:
+              type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: ok
+      summary: 删除关系类
+    parameters:
+      - name: kn_id
+        description: 业务知识网络ID
+        schema:
+          type: string
+        in: path
+        required: true
+      - name: rt_ids
+        description: 关系类ID
+        schema:
+          type: array
+          items:
+            type: string
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/relation-type-paths:
+    summary: 从起点探索概念路径
+    description: 从起点探索概念路径
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RelationPathReqeustBody"
+            examples:
+              获取路径:
+                value:
+                  source_object_type_id: comment
+                  direction: backward
+                  path_length: 1
+        required: true
+      parameters:
+        - name: kn_id
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelationTypePaths"
+              examples:
+                example:
+                  value:
+                    - object_types:
+                        - id: comment
+                          name: comment
+                          data_source:
+                            type: data_view
+                            id: "1995407615886381058"
+                            name: 评论表
+                          data_properties:
+                            - name: c_browserused
+                              display_name: c_browserused
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_browserused
+                                type: text
+                                display_name: c_browserused
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - in
+                                - not_in
+                                - match
+                            - name: c_commentid
+                              display_name: c_commentid
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_commentid
+                                type: integer
+                                display_name: c_commentid
+                            - name: c_content
+                              display_name: c_content
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_content
+                                type: text
+                                display_name: c_content
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - "!="
+                                - in
+                                - not_in
+                                - match
+                                - ==
+                            - name: c_creationdate
+                              display_name: c_creationdate
+                              type: datetime
+                              comment: ""
+                              mapped_field:
+                                name: c_creationdate
+                                type: datetime
+                                display_name: c_creationdate
+                            - name: c_length
+                              display_name: c_length
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_length
+                                type: integer
+                                display_name: c_length
+                            - name: c_locationip
+                              display_name: c_locationip
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_locationip
+                                type: text
+                                display_name: c_locationip
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - match
+                                - ==
+                                - "!="
+                                - in
+                                - not_in
+                          primary_keys:
+                            - c_commentid
+                          display_key: c_browserused
+                        - id: comment
+                          name: comment
+                          data_source:
+                            type: data_view
+                            id: "1995407615886381058"
+                            name: ""
+                          data_properties:
+                            - name: c_browserused
+                              display_name: c_browserused
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_browserused
+                            - name: c_commentid
+                              display_name: c_commentid
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_commentid
+                            - name: c_content
+                              display_name: c_content
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_content
+                            - name: c_creationdate
+                              display_name: c_creationdate
+                              type: datetime
+                              comment: ""
+                              mapped_field:
+                                name: c_creationdate
+                            - name: c_length
+                              display_name: c_length
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_length
+                            - name: c_locationip
+                              display_name: c_locationip
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_locationip
+                          primary_keys:
+                            - c_commentid
+                          display_key: c_browserused
+                      relation_types:
+                        - relation_type_id: comment_replyof_comment
+                          relation_type:
+                            id: comment_replyof_comment
+                            name: comment_replyof_comment
+                            source_object_type_id: comment
+                            target_object_type_id: comment
+                            type: data_view
+                            mapping_rules:
+                              backing_data_source:
+                                type: data_view
+                                id: "1995407615768940546"
+                              source_mapping_rules:
+                                - source_property:
+                                    name: c_commentid
+                                  target_property:
+                                    name: c_commentid1
+                              target_mapping_rules:
+                                - target_property:
+                                    name: c_commentid
+                                  source_property:
+                                    name: c_commentid2
+                          source_object_type_id: comment
+                          target_object_type_id: comment
+                          direction: backward
+                      length: 1
+                    - object_types:
+                        - id: comment
+                          name: comment
+                          data_source:
+                            type: data_view
+                            id: "1995407615886381058"
+                            name: 评论表
+                          data_properties:
+                            - name: c_browserused
+                              display_name: c_browserused
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_browserused
+                                type: text
+                                display_name: c_browserused
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - in
+                                - not_in
+                                - match
+                            - name: c_commentid
+                              display_name: c_commentid
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_commentid
+                                type: integer
+                                display_name: c_commentid
+                            - name: c_content
+                              display_name: c_content
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_content
+                                type: text
+                                display_name: c_content
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - "!="
+                                - in
+                                - not_in
+                                - match
+                                - ==
+                            - name: c_creationdate
+                              display_name: c_creationdate
+                              type: datetime
+                              comment: ""
+                              mapped_field:
+                                name: c_creationdate
+                                type: datetime
+                                display_name: c_creationdate
+                            - name: c_length
+                              display_name: c_length
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: c_length
+                                type: integer
+                                display_name: c_length
+                            - name: c_locationip
+                              display_name: c_locationip
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: c_locationip
+                                type: text
+                                display_name: c_locationip
+                              index_config:
+                                keyword_config:
+                                  enabled: true
+                                  ignore_above_len: 1024
+                                fulltext_config:
+                                  enabled: true
+                                  analyzer: standard
+                                vector_config:
+                                  enabled: false
+                                  model_id: ""
+                              condition_operations:
+                                - match
+                                - ==
+                                - "!="
+                                - in
+                                - not_in
+                          primary_keys:
+                            - c_commentid
+                          display_key: c_browserused
+                        - id: person
+                          name: person
+                          data_source:
+                            type: data_view
+                            id: "1995407615877992449"
+                            name: ""
+                          data_properties:
+                            - name: p_birthday
+                              display_name: p_birthday
+                              type: date
+                              comment: ""
+                              mapped_field:
+                                name: p_birthday
+                                type: date
+                                display_name: p_birthday
+                            - name: p_browserused
+                              display_name: p_browserused
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: p_browserused
+                                type: text
+                                display_name: p_browserused
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - match
+                            - name: p_creationdate
+                              display_name: p_creationdate
+                              type: datetime
+                              comment: ""
+                              mapped_field:
+                                name: p_creationdate
+                                type: datetime
+                                display_name: p_creationdate
+                            - name: p_firstname
+                              display_name: p_firstname
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: p_firstname
+                                type: text
+                                display_name: p_firstname
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - match
+                            - name: p_gender
+                              display_name: p_gender
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: p_gender
+                                type: text
+                                display_name: p_gender
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - match
+                            - name: p_lastname
+                              display_name: p_lastname
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: p_lastname
+                                type: text
+                                display_name: p_lastname
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - match
+                            - name: p_locationip
+                              display_name: p_locationip
+                              type: text
+                              comment: ""
+                              mapped_field:
+                                name: p_locationip
+                                type: text
+                                display_name: p_locationip
+                              condition_operations:
+                                - ==
+                                - "!="
+                                - match
+                            - name: p_personid
+                              display_name: p_personid
+                              type: integer
+                              comment: ""
+                              mapped_field:
+                                name: p_personid
+                                type: integer
+                                display_name: p_personid
+                          primary_keys:
+                            - p_personid
+                          display_key: p_birthday
+                      relation_types:
+                        - relation_type_id: person_likes_comment
+                          relation_type:
+                            id: person_likes_comment
+                            name: person_likes_comment
+                            source_object_type_id: person
+                            target_object_type_id: comment
+                            type: data_view
+                            mapping_rules:
+                              source_mapping_rules:
+                                - target_property:
+                                    name: p_personid
+                                  source_property:
+                                    name: p_personid
+                              target_mapping_rules:
+                                - source_property:
+                                    name: c_commentid
+                                  target_property:
+                                    name: c_commentid
+                              backing_data_source:
+                                type: data_view
+                                id: "1995407615873798146"
+                          source_object_type_id: comment
+                          target_object_type_id: person
+                          direction: backward
+                      length: 1
+          description: ok
+      summary: 从起点探索概念路径
+      description: 从起点探索概念路径
+    parameters:
+      - name: kn_id
+        in: path
+        required: true
+  /api/bkn-backend/v1/knowledge-networks/{kn_id}/relation-types/validation:
+    post:
+      summary: 校验关系类
+      description: |
+        仅校验关系类依赖存在性，不写库。校验起点/终点对象类、间接数据视图等依赖是否存在。
+
+        **响应**：HTTP 200 时 `valid`/`detail` 同其它 validate 接口；参数与鉴权错误为非 2xx。
+
+        **内部接口**：`POST /api/bkn-backend/in/v1/.../relation-types/validation` 与 `POST /api/ontology-manager/in/v1/.../relation-types/validation`；Header 解析访问者，无 OAuth。
+      parameters:
+        - name: kn_id
+          description: 业务知识网络ID
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: branch
+          description: 分支，不填则使用 main 分支
+          schema:
+            type: string
+          in: query
+        - name: strict_mode
+          description: 是否严格校验依赖，默认为 true
+          schema:
+            type: boolean
+            default: true
+          in: query
+        - name: import_mode
+          description: 与创建关系类接口一致；用于关系类 ID 已存在等冲突的校验语义（名称维度与创建侧一致时由创建逻辑约束）。
+          schema:
+            type: string
+            enum: [normal, ignore, overwrite]
+            default: normal
+          in: query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entries:
+                  type: array
+                  description: 待校验的关系类列表，结构与创建接口一致
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: 已返回校验结果（通过与否均可能为 200）
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                properties:
+                  valid:
+                    type: boolean
+                  detail:
+                    type: string
+                    description: 当 valid 为 false 时的说明（error.Error()）
+        "400":
+          description: 请求参数错误等；业务校验未通过见 200 + valid:false
+components:
+  schemas:
+    BasicInfo:
+      description: 资源的基本信息，包含id和名称
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 资源ID
+          type: string
+        name:
+          description: 资源名称
+          type: string
+    ConceptCondition:
+      description: 概念查询数据条件。可用于过滤的字段有类名、属性名和描述
+      required:
+        - operation
+      type: object
+      properties:
+        field:
+          description: 字段名称
+          enum:
+            - type_id
+            - type_name
+            - property_name
+            - property_display_name
+            - comment
+          type: string
+        operation:
+          description: |-
+            操作符。
+
+            knn: 未对原文进行向量化的向量过滤，接收的值是数组，第一个值，过滤内容，第二个值为 int,是邻居搜索时返回的邻居个数。
+
+            knn_vector: 对原文进行向量化后的向量过滤，接收的值是数组，第一个值，向量，第二个值为 int,是邻居搜索时返回的邻居个数。
+          enum:
+            - and
+            - or
+            - ==
+            - "!="
+            - in
+            - not_in
+            - like
+            - not_like
+            - regex
+            - match
+            - match_phrase
+            - knn
+            - knn_vector
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptCondition"
+        value:
+          description: 字段值
+        value_from:
+          description: 字段值来源，当前仅支持 "const"
+          enum:
+            - const
+          type: string
+    ConceptGroup:
+      description: 概念分组
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          description: 概念分组ID
+          type: string
+        name:
+          description: 概念分组名称
+          type: string
+    DataSource:
+      description: 数据来源
+      required:
+        - type
+        - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型为数据视图
+          enum:
+            - data_view
+          type: string
+        id:
+          description: 数据视图ID
+          type: string
+        name:
+          description: 数据视图名称。查看详情时返回。
+          type: string
+    DataViewMappingRule:
+      description: 关系类型为 data_view 时的匹配规则
+      required:
+        - backing_data_source
+        - source_mapping_rules
+        - target_mapping_rules
+      type: object
+      properties:
+        backing_data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源视图
+        source_mapping_rules:
+          description: 起点对象类与数据集的匹配规则
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+        target_mapping_rules:
+          description: 终点对象类与数据集匹配规则
+          type: array
+          items:
+            $ref: "#/components/schemas/Mapping"
+    FilteredCrossJoinMappingRule:
+      description: |
+        关系类型为 `filtered_cross_join`（分侧过滤全连接，FCJ）时的匹配规则。
+        不绑定数据视图，无数组形式的键映射；`source_condition` 与 `target_condition` 分别约束起点侧、终点侧对象实例是否参与该关系
+        （结构与对象实例查询的 Condition 相同）。
+        两侧条件均可省略：可只填一侧、或两侧皆不传/`{}`（表示该侧或两侧无额外过滤，与引擎中「无条件即全量」语义一致）。
+      type: object
+      properties:
+        source_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 起点对象类实例需满足的条件；可省略或为空表示该侧无额外约束
+        target_condition:
+          $ref: "#/components/schemas/Condition"
+          description: 终点对象类实例需满足的条件；可省略或为空表示该侧无额外约束
+    ID:
+      description: id
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          description: id
+          type: string
+    ListRelationTypes:
+      description: 关系类列表
+      required:
+        - entries
+        - total_count
+      type: object
+      properties:
+        entries:
+          description: 条目列表
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationType"
+        total_count:
+          description: 总条数
+          type: integer
+    Mapping:
+      description: 关联规则
+      required:
+        - target_property
+        - source_property
+      type: object
+      properties:
+        target_property:
+          $ref: "#/components/schemas/SimpleProperty"
+          description: 起点属性
+        source_property:
+          $ref: "#/components/schemas/SimpleProperty"
+          description: 终点属性
+    SimpleProperty:
+      description: 属性简单信息
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: 属性名称
+          type: string
+        display_name:
+          description: 属性显示名。当查看详情时会返回此字段
+          type: string
+    SimpleObjectType:
+      description: ""
+      required:
+        - id
+        - name
+        - icon
+        - color
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        icon:
+          description: 对象类图标
+          type: string
+        color:
+          description: 对象类颜色
+          type: string
+    Path:
+      description: 路径
+      required:
+        - nodes
+        - edges
+        - length
+      type: object
+      properties:
+        nodes:
+          description: 路径中的节点列表(有序)
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectTypeDetail"
+        edges:
+          description: 路径中的边列表(有序)
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationTypeDetail"
+        length:
+          description: 路径长度(边数量)
+          type: integer
+    ObjectTypeDetail:
+      description: 节点（对象类）信息
+      required:
+        - id
+        - name
+        - comment
+        - tags
+        - kn_id
+        - groups
+        - data_source
+        - data_properties
+        - primary_keys
+        - display_key
+        - type
+        - module_type
+        - branch
+        - color
+        - icon
+        - logic_properties
+        - concept_groups
+        - creator
+        - update_time
+        - updater
+        - create_time
+      type: object
+      properties:
+        id:
+          description: 对象类ID
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络id
+          type: string
+        concept_groups:
+          description: 概念分组id
+          type: array
+          items:
+            $ref: "#/components/schemas/ConceptGroup"
+        data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源
+        data_properties:
+          description: 数据属性
+          type: array
+          items:
+            $ref: "#/components/schemas/DataProperty"
+        logic_properties:
+          description: 逻辑属性
+          type: array
+          items:
+            $ref: "#/components/schemas/LogicProperty"
+        primary_keys:
+          description: 主键
+          type: array
+          items:
+            type: string
+        display_key:
+          description: 对象实例的显示属性
+          type: string
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        module_type:
+          description: 模块类型
+          enum:
+            - object_type
+          type: string
+    DataProperty:
+      description: 数据属性
+      required:
+        - name
+        - display_name
+        - type
+        - comment
+        - mapped_field
+        - index
+        - fulltext_config
+        - vector_config
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        mapped_field:
+          $ref: "#/components/schemas/ViewField"
+          description: 属性映射到数据来源中的字段名
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        fulltext_config:
+          $ref: "#/components/schemas/FulltextConfig"
+          description: 全文索引的配置
+        vector_config:
+          $ref: "#/components/schemas/VectorConfig"
+          description: 向量索引的配置
+    FulltextConfig:
+      description: 全文索引的配置
+      required:
+        - analyzer
+        - field_keyword
+      type: object
+      properties:
+        analyzer:
+          description: 分词器
+          enum:
+            - standard
+            - ik_max_word
+          type: string
+        field_keyword:
+          description: 是否保留原始字符串，保留原始字符串可用于精确匹配。默认是false
+          type: boolean
+    ViewField:
+      description: 视图字段信息
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: 字段名称
+          type: string
+        display_name:
+          description: 字段显示名.查看时有此字段
+          type: string
+        type:
+          description: 视图字段类型，查看时有此字段
+          type: string
+    VectorConfig:
+      description: 向量索引的配置
+      required:
+        - dimension
+      type: object
+      properties:
+        dimension:
+          description: 向量维度
+          type: integer
+    LogicProperty:
+      description: 逻辑属性
+      required:
+        - name
+        - data_source
+        - parameters
+      type: object
+      properties:
+        name:
+          description: 属性名称。只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        display_name:
+          description: 属性显示名
+          type: string
+        type:
+          description: 属性数据类型。除了视图的字段类型之外，还有 metric、objective、event、trace、log、operator
+          type: string
+        comment:
+          description: 属性描述
+          type: string
+        index:
+          description: 是否开启索引，默认是true
+          type: boolean
+        data_source:
+          $ref: "#/components/schemas/LogicSource"
+          description: 逻辑来源
+        parameters:
+          description: 逻辑所需的参数
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+    LogicSource:
+      description: 数据来源
+      required:
+        - type
+        - id
+      type: object
+      properties:
+        type:
+          description: 数据来源类型
+          enum:
+            - metric
+            - operator
+          type: string
+        id:
+          description: 数据来源ID
+          type: string
+        name:
+          description: 名称。查看详情时返回。
+          type: string
+    Parameter:
+      description: 逻辑参数
+      required:
+        - name
+        - value_from
+      type: object
+      properties:
+        name:
+          description: 参数名称
+          type: string
+        value_from:
+          description: 值来源
+          enum:
+            - property
+            - input
+          type: string
+        value:
+          description: 参数值。value_from=property时，填入的是对象类的数据属性名称；value_from=input时，不设置此字段
+          type: string
+    override:
+      oneOf:
+        - type: object
+        - $ref: "#/components/schemas/ReqRelationTypes"
+        - $ref: "#/components/schemas/override--get"
+      discriminator:
+        mapping:
+          x-http-method-override:POST: "#/components/schemas/ReqRelationTypes"
+          x-http-method-override:GET: "#/components/schemas/override--get"
+        propertyName": x-http-method-override
+      description: post 重载批量创建、关系类检索接口
+      type: object
+    override--get:
+      oneOf:
+        - $ref: "#/components/schemas/FirstQueryWithSearchAfter"
+        - $ref: "#/components/schemas/PageTurnQueryWithSearchAfter"
+      description: 关系类检索请求体
+      type: object
+    Sort:
+      description: 排序字段。默认按 _score 倒序排序
+      required:
+        - field
+        - direction
+      type: object
+      properties:
+        field:
+          description: 排序字段
+          type: string
+        direction:
+          description: 排序方向
+          enum:
+            - desc
+            - asc
+          type: string
+    DirectMappingRules:
+      description: 直接关联
+      type: array
+      items:
+        $ref: "#/components/schemas/Mapping"
+    ReqRelationType:
+      description: 关系类创建信息
+      required:
+        - name
+        - branch
+        - base_version
+      type: object
+      properties:
+        id:
+          description: ID.新建后不可修改，只能包含小写英文字母、数字、下划线（_）、连字符（-），且不能以下划线和连字符开头
+          type: string
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签。用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        source_object_type_id:
+          description: 起点象类ID
+          type: string
+        target_object_type_id:
+          description: 终点对象类ID
+          type: string
+        type:
+          description: 关系类型
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 映射规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join`（FCJ）时为 FilteredCrossJoinMappingRule（分侧条件，无键映射）。
+    UpdateRelationType:
+      description: 关系类更新信息
+      required:
+        - name
+        - branch
+        - base_version
+        - source_object_type
+        - target_object_type
+      type: object
+      properties:
+        name:
+          description: 名称
+          type: string
+        tags:
+          description: 标签。用于业务标识
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        source_object_type_id:
+          description: 起点象类ID
+          type: string
+        target_object_type_id:
+          description: 终点对象类ID
+          type: string
+        type:
+          description: 关系类型
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
+    RelationTypeDetail:
+      description: 关系类
+      required:
+        - source_object_type
+        - target_object_type
+        - type
+        - direct_mapping_rules
+        - comment
+        - data_view_mapping_rules
+        - groups
+        - id
+        - kn_id
+        - name
+        - tags
+        - branch
+        - color
+        - icon
+        - mapping_rules
+        - source_object_type_id
+        - target_object_type_id
+        - create_time
+        - creator
+        - updater
+        - update_time
+      type: object
+      properties:
+        id:
+          description: 关系类ID
+          type: string
+        name:
+          description: 关系类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        source_object_type_id:
+          description: 起点象类ID
+          type: string
+        source_object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 起点象类名称，当查看详情时，此字段才会返回。
+        target_object_type_id:
+          description: 终点对象类ID
+          type: string
+        target_object_type:
+          $ref: "#/components/schemas/SimpleObjectType"
+          description: 终点对象类名称，当查看详情时，此字段才会返回
+        type:
+          description: 关系类型
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段。
+          type: string
+    RelationType:
+      description: 关系类
+      required:
+        - source_object_type
+        - target_object_type
+        - type
+        - direct_mapping_rules
+        - comment
+        - data_view_mapping_rules
+        - groups
+        - id
+        - kn_id
+        - name
+        - tags
+        - concept_type
+        - branch
+        - color
+        - icon
+        - mapping_rules
+        - source_object_type_id
+        - target_object_type_id
+        - create_time
+        - creator
+        - updater
+        - update_time
+      type: object
+      properties:
+        concept_type:
+          description: 概念类型
+          enum:
+            - relation_type
+          type: string
+        id:
+          description: 关系类ID
+          type: string
+        name:
+          description: 关系类名称
+          type: string
+        tags:
+          description: 标签。 （可以为空）
+          type: array
+          items:
+            type: string
+        comment:
+          description: 备注（可以为空）
+          type: string
+        icon:
+          description: 图标
+          type: string
+        color:
+          description: 颜色
+          type: string
+        branch:
+          description: 分支ID
+          type: string
+        kn_id:
+          description: 业务知识网络ID
+          type: string
+        source_object_type_id:
+          description: 起点象类ID
+          type: string
+        target_object_type_id:
+          description: 终点对象类ID
+          type: string
+        type:
+          description: 关系类型
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+          description: 关联的匹配规则。`direct` 时为 Mapping 数组；`data_view` 时为 DataViewMappingRule；`filtered_cross_join` 时为 FilteredCrossJoinMappingRule。
+        creator:
+          description: 创建人ID
+          type: string
+        create_time:
+          format: int64
+          description: 创建时间
+          type: integer
+        updater:
+          description: 最近一次修改人
+          type: string
+        update_time:
+          format: int64
+          description: 最近一次更新时间
+          type: integer
+        detail:
+          description: 说明书。按需返回，若指定了include_detail=true，则返回，否则不返回。列表查询时不返回此字段。
+          type: string
+    RelationTypeSearchResponse:
+      description: 关系类检索返回结果
+      required:
+        - groups
+        - type
+        - entries
+        - search_after
+      type: object
+      properties:
+        entries:
+          description: 对象实例数据
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationTypeDetail"
+        total_count:
+          description: 总条数
+          type: integer
+        search_after:
+          description: 表示返回的最后一个文档的排序值，获取这个用于下一次 search_after 分页。
+          type: array
+          items: {}
+    RelationTypePath:
+      description: 概念路径
+      required:
+        - object_types
+        - relation_types
+        - length
+      type: object
+      properties:
+        object_types:
+          description: 概念路径中各节点的对象类数组
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectTypeWithKeyField"
+        relation_types:
+          description: 概念路径
+          type: array
+          items:
+            $ref: "#/components/schemas/TypeEdge"
+        length:
+          description: 路径长度
+          type: integer
+    ObjectTypeWithKeyField:
+      description: 对象类的关键信息
+      required:
+        - id
+        - name
+        - data_source
+        - data_properties
+        - logic_properties
+        - primary_keys
+        - display_key
+      type: object
+      properties:
+        id:
+          description: 对象类id
+          type: string
+        name:
+          description: 对象类名称
+          type: string
+        data_source:
+          $ref: "#/components/schemas/DataSource"
+          description: 数据来源信息
+        data_properties:
+          description: 数据属性
+          type: array
+          items:
+            $ref: "#/components/schemas/DataProperty"
+        logic_properties:
+          description: 逻辑属性
+          type: array
+          items:
+            $ref: "#/components/schemas/LogicProperty"
+        primary_keys:
+          description: 主键信息
+          type: array
+          items:
+            type: string
+        display_key:
+          description: 对象类的显示属性名
+          type: string
+    RelationTypeWithKeyField:
+      description: 关系类关键信息
+      required:
+        - id
+        - name
+        - source_object_type_id
+        - target_object_type_id
+        - type
+        - MappingRules
+      type: object
+      properties:
+        id:
+          description: 关系类id
+          type: string
+        name:
+          description: 关系类名称
+          type: string
+        source_object_type_id:
+          description: 起点对象类id
+          type: string
+        target_object_type_id:
+          description: 终点对象类id
+          type: string
+        type:
+          description: 关联类型。`direct` 直接键映射；`data_view` 经数据视图关联；`filtered_cross_join` 分侧过滤全连接（FCJ），无数组形式键映射
+          enum:
+            - direct
+            - data_view
+            - filtered_cross_join
+          type: string
+        mapping_rules:
+          oneOf:
+            - $ref: "#/components/schemas/DirectMappingRules"
+            - $ref: "#/components/schemas/DataViewMappingRule"
+            - $ref: "#/components/schemas/FilteredCrossJoinMappingRule"
+    TypeEdge:
+      description: 路径的边
+      required:
+        - relation_type_id
+        - relation_type
+        - source_object_type_id
+        - target_object_type_id
+        - direction
+      type: object
+      properties:
+        relation_type_id:
+          description: 关系类id
+          type: string
+        relation_type:
+          $ref: "#/components/schemas/RelationTypeWithKeyField"
+          description: 关系类信息
+        source_object_type_id:
+          description: 边的起点对象类id
+          type: string
+        target_object_type_id:
+          description: 边的终点对象类id
+          type: string
+        direction:
+          description: 当前边相对于关系类的方向。正向(forward)、反向(backward)、双向(bidirectional)
+          enum:
+            - forward
+            - reverse
+            - bidirectional
+          type: string
+    RelationTypeDetails:
+      description: 关系类详情
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 关系类详情
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationTypeDetail"
+    ReqRelationTypes:
+      description: 批量创建请求体
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: 关系类详情
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqRelationType"
+    RelationTypePaths:
+      description: 概念路径
+      required:
+        - entries
+      type: object
+      properties:
+        entries:
+          description: ""
+          type: array
+          items:
+            $ref: "#/components/schemas/RelationTypePath"
+    FirstQueryWithSearchAfter:
+      description: 关系类检索第一次请求
+      required:
+        - condition
+        - limit
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组id数组
+          type: array
+          items:
+            type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 关系类检索条件
+        sort:
+          description: 排序字段，默认使用 _score 排序，排序方向为 desc
+          type: array
+          items:
+            $ref: "#/components/schemas/Sort"
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+    PageTurnQueryWithSearchAfter:
+      description: 分页查询的后续分页查询请求
+      required:
+        - limit
+        - search_after
+        - condition
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组id数组
+          type: array
+          items:
+            type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+          description: 过滤条件
+        sort:
+          description: 排序字段，默认使用 _score 排序，排序方向为 desc
+          type: array
+          items:
+            $ref: "#/components/schemas/Sort"
+        limit:
+          description: 返回的数量，默认值 10。范围 1-10000
+          type: integer
+        need_total:
+          description: 是否需要总数，默认false
+          type: boolean
+        search_after:
+          description: 上次查询返回的最后一个文档的排序值。
+          type: array
+          items: {}
+    RelationPathReqeustBody:
+      description: 路径查询的请求体
+      required:
+        - source_object_type_id
+        - path_length
+        - direction
+      type: object
+      properties:
+        concept_groups:
+          description: 概念分组id数组
+          type: array
+          items:
+            type: string
+        source_object_type_id:
+          description: 起点对象类ID
+          type: string
+        path_length:
+          description: "路径长度,不超过3."
+          type: integer
+        direction:
+          description: 方向：正向(forward)、反向(backward)、双向(bidirectional)
+          enum:
+            - forward
+            - reverse
+            - bidirectional
+          type: string
+    condition_or:
+      description: or 的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - or
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    condition_eq:
+      description: 等于过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，等于支持的字段类型：数值、字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - ==
+          type: string
+        value:
+          description: 过滤值
+    condition_not_eq:
+      description: 不等于的过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不等于支持的字段类型：数值、字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - "!="
+          type: string
+        value:
+          description: 过滤值
+    condition_in:
+      description: 包含过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，包含支持所有类型
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_like:
+      description: like过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，相似支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_not_like:
+      description: not_like过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不相似支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_like
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_regex:
+      description: regex过滤
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，正则支持的字段类型：字符串
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - regex
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_multi_match:
+      description: 多字段全文匹配
+      required:
+        - operation
+        - value
+      type: object
+      properties:
+        fields:
+          description:
+            "过滤字段数组，多字段全文匹配支持的字段类型：字符串。为空时，用opensearch中 index.default_field\
+            \ 配置的字段进行查询。当需要对所有字段进行匹配时，此参数传 [\"*\"]。支持的字段有： name, comment, detail,\
+            \ *"
+          type: array
+          items:
+            type: string
+        operation:
+          description: 操作符
+          enum:
+            - multi_match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+        match_type:
+          description: 全文匹配类型，默认是 best_fields
+          enum:
+            - best_fields
+            - most_fields
+            - cross_fields
+            - phrase
+            - phrase_prefix
+            - bool_prefix
+          type: string
+    condition_not_in:
+      description: not_in过滤条件
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，不包含支持所有类型
+          enum:
+            - id
+            - name
+            - comment
+            - detail
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - not_in
+          type: string
+        value:
+          description: 过滤值
+          type: array
+          items: {}
+    condition_match_phrase:
+      description: "match_phrase 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，短语匹配支持的字段类型：字符串
+          enum:
+            - name
+            - comment
+            - detail
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - match_phrase
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_match:
+      description: "match 过滤，支持单个字段和*, * 表示全部字段"
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: 过滤字段，全文匹配支持的字段类型：字符串
+          enum:
+            - name
+            - comment
+            - detail
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - match
+          type: string
+        value:
+          description: 过滤值
+          type: string
+    condition_knn:
+      description: 'knn 过滤，支持单个字段和*, * 表示"_vector"'
+      required:
+        - field
+        - operation
+        - value
+      type: object
+      properties:
+        field:
+          description: "过滤字段，,概念索引是内部生成，不对外暴露，所以knn过滤时，field 传 * 即可"
+          enum:
+            - "*"
+          type: string
+        operation:
+          description: 操作符
+          enum:
+            - knn
+          type: string
+        value:
+          description: 过滤值。当limit_key为k时，limit_value为整型；当limit_key为max_distance和min_score时，limit_value为浮点型
+          type: number
+        limit_key:
+          description:
+            "执行径向搜索时使用的过滤和评分行为, k:返回最相似的limit_value个结果；max_distance:返回距\
+            离小于等于limit_value的结果；min_score：返回相似度分数大于等于limit_value的结果。默认值为k"
+          enum:
+            - k
+            - max_distance
+            - min_score
+          type: string
+          default: k
+        limit_value:
+          description: "执行径向搜索使用的值。默认值为100"
+          type: number
+          default: 100
+        sub_conditions:
+          description: knn下的子查询
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    condition_and:
+      description: and的过滤条件
+      required:
+        - operation
+        - sub_conditions
+      type: object
+      properties:
+        operation:
+          description: 过滤操作符
+          enum:
+            - and
+          type: string
+        sub_conditions:
+          description: 子过滤条件
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+    Condition:
+      oneOf:
+        - $ref: "#/components/schemas/condition_and"
+        - $ref: "#/components/schemas/condition_or"
+        - $ref: "#/components/schemas/condition_eq"
+        - $ref: "#/components/schemas/condition_not_eq"
+        - $ref: "#/components/schemas/condition_in"
+        - $ref: "#/components/schemas/condition_not_in"
+        - $ref: "#/components/schemas/condition_like"
+        - $ref: "#/components/schemas/condition_not_like"
+        - $ref: "#/components/schemas/condition_regex"
+        - $ref: "#/components/schemas/condition_match"
+        - $ref: "#/components/schemas/condition_match_phrase"
+        - $ref: "#/components/schemas/condition_knn"
+        - $ref: "#/components/schemas/condition_multi_match"

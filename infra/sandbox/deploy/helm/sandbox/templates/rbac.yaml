@@ -1,0 +1,45 @@
+{{- if .Values.rbac.create }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "sandbox.rbacName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: control-plane
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "sandbox.rbacName" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "sandbox.fullname" . }}
+    component: control-plane
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "sandbox.rbacName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "sandbox.serviceAccountName" . }}
+    namespace: {{ .Values.namespace }}
+{{- end }}

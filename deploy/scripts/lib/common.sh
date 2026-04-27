@@ -22,9 +22,11 @@ CONF_DIR="${CONF_DIR:-${SCRIPT_DIR}/conf}"
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
 
 AUTO_GENERATE_CONFIG="${AUTO_GENERATE_CONFIG:-true}"
+DEFAULT_SQL_VERSION="${DEFAULT_SQL_VERSION:-0.5.0}"
 
 # Local Helm charts directory
 LOCAL_CHARTS_DIR="${LOCAL_CHARTS_DIR:-${SCRIPT_DIR}/charts}"
+SHARED_CHARTS_DIR="${SHARED_CHARTS_DIR:-${SCRIPT_DIR}/.tmp/charts}"
 
 # Default namespace for infrastructure components (MariaDB/Redis/Kafka/OpenSearch, etc.)
 RESOURCE_NAMESPACE="${RESOURCE_NAMESPACE:-resource}"
@@ -43,12 +45,765 @@ is_helm_installed() {
     helm list -n "${ns}" --short | grep -q "^${release}$"
 }
 
+# Get currently installed chart version for a release.
+# Args: <release_name> <namespace> [chart_name]
+get_installed_chart_version() {
+    local release_name="$1"
+    local namespace="$2"
+    local chart_name="${3:-}"
+
+    local installed_chart
+    installed_chart=$(helm list -n "${namespace}" --filter "^${release_name}$" -o json 2>/dev/null \
+        | grep -o '"chart":"[^"]*"' | head -1 | sed -e 's/^"chart":"//' -e 's/"$//')
+
+    if [[ -z "${installed_chart}" ]]; then
+        return 0
+    fi
+
+    if [[ -n "${chart_name}" && "${installed_chart}" == "${chart_name}-"* ]]; then
+        echo "${installed_chart#${chart_name}-}"
+        return 0
+    fi
+
+    # Fallback format: chart string is usually <chartName>-<version>
+    echo "${installed_chart##*-}"
+}
+
+# Get latest chart version from Helm repo metadata.
+# Args: <repo_name> <chart_name>
+get_repo_chart_latest_version() {
+    local repo_name="$1"
+    local chart_name="$2"
+    helm search repo "${repo_name}/${chart_name}" --devel -l 2>/dev/null | awk 'NR==2 {print $2}'
+}
+
+# Resolve the shared local cache directory for downloaded application charts.
+resolve_shared_charts_dir() {
+    echo "${SHARED_CHARTS_DIR}"
+}
+
+# Remove the default shared chart cache before an install that does not use an
+# explicit local charts directory.
+# Args: [explicit_charts_dir]
+clear_shared_charts_cache_for_install() {
+    local explicit_charts_dir="${1:-}"
+    if [[ -n "${explicit_charts_dir}" ]]; then
+        return 0
+    fi
+
+    local shared_dir
+    shared_dir="$(resolve_shared_charts_dir)"
+    if [[ -d "${shared_dir}" ]]; then
+        rm -rf "${shared_dir}"
+    fi
+}
+
+# Ensure a chart directory exists and print its absolute path.
+# Args: <charts_dir>
+ensure_charts_dir() {
+    local charts_dir="$1"
+    mkdir -p "${charts_dir}"
+    (
+        cd "${charts_dir}" >/dev/null 2>&1
+        pwd
+    )
+}
+
+# List cached chart tarballs whose filenames share the requested chart prefix.
+# Args: <charts_dir> <chart_name>
+list_cached_chart_candidates() {
+    local charts_dir="$1"
+    local chart_name="$2"
+    find "${charts_dir}" -maxdepth 1 -name "${chart_name}-*.tgz" 2>/dev/null | sort -V
+}
+
+# Read the embedded chart name from a local .tgz package.
+# Args: <chart_tgz_path>
+get_local_chart_name() {
+    local chart_tgz="$1"
+    helm show chart "${chart_tgz}" 2>/dev/null | awk '/^name:[[:space:]]/ {sub(/^name:[[:space:]]*/, "", $0); print; exit}'
+}
+
+# Find the newest cached chart tarball for a chart name.
+# Args: <charts_dir> <chart_name>
+find_cached_chart_tgz() {
+    local charts_dir="$1"
+    local chart_name="$2"
+    local chart_tgz
+    local resolved_chart_name
+    local latest_match=""
+
+    while IFS= read -r chart_tgz; do
+        [[ -n "${chart_tgz}" ]] || continue
+        resolved_chart_name="$(get_local_chart_name "${chart_tgz}")"
+        if [[ "${resolved_chart_name}" == "${chart_name}" ]]; then
+            latest_match="${chart_tgz}"
+        fi
+    done < <(list_cached_chart_candidates "${charts_dir}" "${chart_name}")
+
+    echo "${latest_match}"
+}
+
+# Extract chart version from a chart tarball filename.
+# Args: <chart_tgz_path> <chart_name>
+get_chart_version_from_filename() {
+    local chart_tgz="$1"
+    local chart_name="$2"
+    local filename
+    filename="$(basename "${chart_tgz}")"
+    filename="${filename%.tgz}"
+    filename="${filename#${chart_name}-}"
+    echo "${filename}"
+}
+
+# Get the latest cached chart version from a directory.
+# Args: <charts_dir> <chart_name>
+get_cached_chart_latest_version() {
+    local charts_dir="$1"
+    local chart_name="$2"
+    local chart_tgz
+    chart_tgz="$(find_cached_chart_tgz "${charts_dir}" "${chart_name}")"
+    if [[ -z "${chart_tgz}" ]]; then
+        return 0
+    fi
+
+    local chart_version
+    chart_version="$(get_local_chart_version "${chart_tgz}")"
+    if [[ -n "${chart_version}" ]]; then
+        echo "${chart_version}"
+        return 0
+    fi
+
+    get_chart_version_from_filename "${chart_tgz}" "${chart_name}"
+}
+
+# Compare semantic-like versions using sort -V.
+# Return 0 when the first version is newer than the second.
+# Args: <lhs_version> <rhs_version>
+version_gt() {
+    local lhs="$1"
+    local rhs="$2"
+
+    if [[ -z "${lhs}" ]]; then
+        return 1
+    fi
+    if [[ -z "${rhs}" ]]; then
+        return 0
+    fi
+    [[ "$(printf '%s\n%s\n' "${lhs}" "${rhs}" | sort -V | tail -1)" == "${lhs}" && "${lhs}" != "${rhs}" ]]
+}
+
+# Download a chart to the local cache if needed.
+# Args: <charts_dir> <repo_name> <chart_name> [chart_version] [force_refresh]
+download_chart_to_cache() {
+    local charts_dir="$1"
+    local repo_name="$2"
+    local chart_name="$3"
+    local requested_version="${4:-}"
+    local force_refresh="${5:-false}"
+
+    charts_dir="$(ensure_charts_dir "${charts_dir}")"
+
+    local target_version="${requested_version}"
+    if [[ -z "${target_version}" ]]; then
+        target_version="$(get_repo_chart_latest_version "${repo_name}" "${chart_name}")"
+        if [[ -z "${target_version}" ]]; then
+            log_error "Failed to resolve latest chart version for ${repo_name}/${chart_name}"
+            return 1
+        fi
+    fi
+
+    local cached_version
+    cached_version="$(get_cached_chart_latest_version "${charts_dir}" "${chart_name}")"
+
+    if [[ "${force_refresh}" != "true" ]]; then
+        if [[ -n "${requested_version}" ]]; then
+            if [[ "${cached_version}" == "${requested_version}" ]] || [[ -n "$(find "${charts_dir}" -maxdepth 1 -name "${chart_name}-${requested_version}.tgz" -print -quit 2>/dev/null)" ]]; then
+                log_info "Skip download ${chart_name}: cached version ${requested_version} already exists."
+                return 0
+            fi
+        elif [[ -n "${cached_version}" ]] && ! version_gt "${target_version}" "${cached_version}"; then
+            log_info "Skip download ${chart_name}: cached version ${cached_version} is current."
+            return 0
+        fi
+    fi
+
+    log_info "Downloading ${repo_name}/${chart_name} ${target_version} to ${charts_dir}..."
+    helm pull "${repo_name}/${chart_name}" \
+        --version "${target_version}" \
+        --devel \
+        --destination "${charts_dir}"
+}
+
+# Ensure a Helm repo is registered and refreshed.
+# Args: <repo_name> <repo_url>
+ensure_helm_repo() {
+    local repo_name="$1"
+    local repo_url="$2"
+    helm repo add --force-update "${repo_name}" "${repo_url}" || true
+    helm repo update "${repo_name}" || true
+}
+
+# Ensure helm is available before running chart download logic.
+ensure_helm_available() {
+    if type -P helm >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log_info "Helm not found; installing it before continuing..."
+    install_helm
+}
+
+# Get chart version from local .tgz package.
+# Args: <chart_tgz_path>
+get_local_chart_version() {
+    local chart_tgz="$1"
+    helm show chart "${chart_tgz}" 2>/dev/null | awk '$1=="version:" {print $2; exit}'
+}
+
+# Find a cached chart tarball for an exact chart version.
+# Args: <charts_dir> <chart_name> <chart_version>
+find_cached_chart_tgz_by_version() {
+    local charts_dir="$1"
+    local chart_name="$2"
+    local chart_version="$3"
+    local chart_tgz
+    local resolved_chart_name
+    local resolved_chart_version
+
+    while IFS= read -r chart_tgz; do
+        [[ -n "${chart_tgz}" ]] || continue
+        resolved_chart_name="$(get_local_chart_name "${chart_tgz}")"
+        resolved_chart_version="$(get_local_chart_version "${chart_tgz}")"
+        if [[ "${resolved_chart_name}" == "${chart_name}" && "${resolved_chart_version}" == "${chart_version}" ]]; then
+            echo "${chart_tgz}"
+            return 0
+        fi
+    done < <(list_cached_chart_candidates "${charts_dir}" "${chart_name}")
+
+    return 1
+}
+
+_manifest_fail() {
+    echo "$1" >&2
+    return 1
+}
+
+_manifest_strip_quotes() {
+    local value="${1:-}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    echo "${value}"
+}
+
+_manifest_read_top_level_value() {
+    local manifest_file="$1"
+    local key="$2"
+
+    awk -F': ' -v key="${key}" '
+        $1 == key { print $2; exit }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+_manifest_validate_identity() {
+    local manifest_file="$1"
+    local expected_product="${2:-}"
+    local expected_version="${3:-}"
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local actual_product actual_version
+    actual_product="$(_manifest_strip_quotes "$(_manifest_read_top_level_value "${manifest_file}" "product")")"
+    actual_version="$(_manifest_strip_quotes "$(_manifest_read_top_level_value "${manifest_file}" "version")")"
+
+    if [[ -n "${expected_product}" && "${actual_product}" != "${expected_product}" ]]; then
+        _manifest_fail "Manifest product mismatch for ${manifest_file}: expected ${expected_product}, got ${actual_product:-<empty>}"
+        return 1
+    fi
+
+    if [[ -n "${expected_version}" && "${actual_version}" != "${expected_version}" ]]; then
+        _manifest_fail "Manifest version mismatch for ${manifest_file}: expected ${expected_version}, got ${actual_version:-<empty>}"
+        return 1
+    fi
+}
+
+_manifest_read_release_field() {
+    local manifest_file="$1"
+    local release_name="$2"
+    local field_name="$3"
+
+    awk -v release="${release_name}" -v field="${field_name}" '
+        BEGIN {
+            in_releases = 0
+            in_target = 0
+        }
+        /^releases:/ {
+            in_releases = 1
+            next
+        }
+        in_releases && /^[A-Za-z0-9_-]+:/ {
+            in_releases = 0
+        }
+        !in_releases { next }
+        $0 == "  " release ":" {
+            in_target = 1
+            next
+        }
+        in_target && $0 ~ /^  [^[:space:]][^:]*:/ {
+            in_target = 0
+        }
+        in_target && $1 == field ":" {
+            print $2
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+_manifest_list_release_names() {
+    local manifest_file="$1"
+
+    awk '
+        BEGIN {
+            in_releases = 0
+        }
+        /^releases:/ {
+            in_releases = 1
+            next
+        }
+        in_releases && /^[A-Za-z0-9_-]+:/ {
+            in_releases = 0
+        }
+        !in_releases { next }
+        /^  [^[:space:]][^:]*:/ {
+            line = $0
+            sub(/^  /, "", line)
+            sub(/:.*/, "", line)
+            print line
+        }
+    ' "${manifest_file}"
+}
+
+_manifest_read_dependency_field() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local field_name="$3"
+
+    awk -v dependency="${dependency_product}" -v field="${field_name}" '
+        BEGIN {
+            in_dependencies = 0
+            in_target = 0
+        }
+        /^dependencies:/ {
+            in_dependencies = 1
+            next
+        }
+        in_dependencies && /^[A-Za-z0-9_-]+:/ {
+            in_dependencies = 0
+        }
+        !in_dependencies { next }
+        $1 == "-" && $2 == "product:" {
+            in_target = ($3 == dependency)
+            next
+        }
+        in_target && $1 == field ":" {
+            print $2
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+# Get the value of a key from an array of key=value strings.
+# Args: <key> <array_of_set_values...>
+# Returns: value if found, empty string otherwise
+# Example: get_set_value "auth.enabled" "${CORE_SET_VALUES[@]}"
+get_set_value() {
+    local key="$1"
+    shift
+    local -a set_values=("$@")
+    
+    local item
+    for item in "${set_values[@]}"; do
+        if [[ "${item}" == "${key}="* ]]; then
+            echo "${item#*=}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check if a dependency should be enabled based on its enabledIf condition.
+# Args: <manifest_file> <dependency_product> <array_of_set_values...>
+# Returns: 0 if enabled, 1 if disabled
+is_dependency_enabled() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    shift 2
+    local -a set_values=("$@")
+    
+    # Read enabledIf field from manifest
+    local enabled_if
+    enabled_if="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "enabledIf")")"
+    
+    # If no enabledIf condition, check defaultEnabled
+    if [[ -z "${enabled_if}" ]]; then
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        # Default to true if defaultEnabled is not specified or is true
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    
+    # Check if the enabledIf key is set in --set values
+    local value
+    if value="$(get_set_value "${enabled_if}" "${set_values[@]}" 2>/dev/null)"; then
+        # Value was explicitly set, check if it's true
+        if [[ "${value}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        # Value not set, use defaultEnabled
+        local default_enabled
+        default_enabled="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "defaultEnabled")")"
+        
+        if [[ -z "${default_enabled}" || "${default_enabled}" == "true" ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
+
+# Resolve the embedded release manifest path for one aggregate product version.
+# Args: <product> <version>
+resolve_embedded_release_manifest() {
+    local product="$1"
+    local version="${2:-}"
+
+    if [[ -z "${product}" || -z "${version}" ]]; then
+        return 0
+    fi
+
+    local candidate="${RELEASE_MANIFESTS_DIR}/${version}/${product}.yaml"
+    if [[ -f "${candidate}" ]]; then
+        echo "${candidate}"
+    fi
+}
+
+# Resolve the latest embedded release manifest path for one aggregate product.
+# Args: <product>
+resolve_latest_embedded_release_manifest() {
+    local product="$1"
+
+    if [[ -z "${product}" ]] || [[ ! -d "${RELEASE_MANIFESTS_DIR}" ]]; then
+        return 0
+    fi
+
+    find "${RELEASE_MANIFESTS_DIR}" -mindepth 2 -maxdepth 2 -type f -name "${product}.yaml" 2>/dev/null \
+        | sort -V \
+        | tail -1
+}
+
+# Resolve the exact chart version for one aggregate release.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name> [fallback_version]
+resolve_release_chart_version() {
+    local manifest_file="${1:-}"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+    local fallback_version="${5:-}"
+
+    if [[ -z "${manifest_file}" ]]; then
+        echo "${fallback_version}"
+        return 0
+    fi
+
+    get_release_manifest_release_version "${manifest_file}" "${expected_product}" "${aggregate_version}" "${release_name}"
+}
+
+# Resolve the chart name for one aggregate release.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name> [fallback_chart_name]
+resolve_release_chart_name() {
+    local manifest_file="${1:-}"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+    local fallback_chart_name="${5:-${release_name}}"
+
+    if [[ -z "${manifest_file}" ]]; then
+        echo "${fallback_chart_name}"
+        return 0
+    fi
+
+    get_release_manifest_release_chart_name "${manifest_file}" "${expected_product}" "${aggregate_version}" "${release_name}"
+}
+
+# Get one release's exact chart version from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_version() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "version")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Release version missing in manifest: ${release_name}"
+        return 1
+    fi
+    echo "${value}"
+}
+
+# Get one release's chart name from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_chart_name() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "chart")")"
+    if [[ -z "${value}" ]]; then
+        echo "${release_name}"
+        return 0
+    fi
+
+    echo "${value}"
+}
+
+# List release names from a release manifest in manifest order.
+# Args: <manifest_file> <expected_product> <aggregate_version>
+get_release_manifest_release_names() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+    _manifest_list_release_names "${manifest_file}"
+}
+
+# Get one release's install stage from a release manifest.
+# Args: <manifest_file> <expected_product> <aggregate_version> <release_name>
+get_release_manifest_release_stage() {
+    local manifest_file="$1"
+    local expected_product="$2"
+    local aggregate_version="${3:-}"
+    local release_name="$4"
+
+    _manifest_validate_identity "${manifest_file}" "${expected_product}" "${aggregate_version}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "stage")")"
+    if [[ -z "${value}" ]]; then
+        echo "main"
+        return 0
+    fi
+
+    case "${value}" in
+        pre|main|post)
+            echo "${value}"
+            ;;
+        *)
+            _manifest_fail "Unsupported release stage in manifest for ${release_name}: ${value} (expected pre, main, or post)"
+            return 1
+            ;;
+    esac
+}
+
+# Get one dependency's aggregate version from a release manifest.
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_version() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "version")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Dependency version missing in manifest: ${dependency_product}"
+        return 1
+    fi
+    echo "${value}"
+}
+
+# Get one dependency's manifest file from a release manifest.
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_manifest() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local manifest_dir
+
+    [[ -f "${manifest_file}" ]] || _manifest_fail "Manifest file not found: ${manifest_file}" || return 1
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "manifest")")"
+    if [[ -z "${value}" ]]; then
+        _manifest_fail "Dependency manifest missing in manifest: ${dependency_product}"
+        return 1
+    fi
+
+    if [[ "${value}" == /* ]]; then
+        echo "${value}"
+        return 0
+    fi
+
+    manifest_dir="$(cd "$(dirname "${manifest_file}")" && pwd)"
+    echo "$(cd "${manifest_dir}" && cd "$(dirname "${value}")" && pwd)/$(basename "${value}")"
+}
+
+# Get one dependency's aggregate version from a release manifest (optional, returns empty if not found).
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_version_optional() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+
+    [[ -f "${manifest_file}" ]] || return 0
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "version")")"
+    echo "${value}"
+}
+
+# Get one dependency's manifest file from a release manifest (optional, returns empty if not found).
+# Args: <manifest_file> <dependency_product>
+get_release_manifest_dependency_manifest_optional() {
+    local manifest_file="$1"
+    local dependency_product="$2"
+    local manifest_dir
+
+    [[ -f "${manifest_file}" ]] || return 0
+
+    local value
+    value="$(_manifest_strip_quotes "$(_manifest_read_dependency_field "${manifest_file}" "${dependency_product}" "manifest")")"
+    if [[ -z "${value}" ]]; then
+        return 0
+    fi
+
+    if [[ "${value}" == /* ]]; then
+        echo "${value}"
+        return 0
+    fi
+
+    manifest_dir="$(cd "$(dirname "${manifest_file}")" && pwd)"
+    echo "$(cd "${manifest_dir}" && cd "$(dirname "${value}")" && pwd)/$(basename "${value}")"
+}
+
+# Decide whether upgrade can be skipped when installed chart version equals target version.
+# Return 0 => skip upgrade, Return 1 => continue upgrade.
+# Args: <release_name> <namespace> <chart_name> <target_version>
+should_skip_upgrade_same_chart_version() {
+    local release_name="$1"
+    local namespace="$2"
+    local chart_name="$3"
+    local target_version="$4"
+
+    # Honor explicit override: never skip when caller asked to force re-render.
+    if [[ "${FORCE_UPGRADE:-false}" == "true" ]]; then
+        return 1
+    fi
+
+    if [[ -z "${target_version}" ]]; then
+        return 1
+    fi
+
+    local current_status
+    current_status=$(helm status "${release_name}" -n "${namespace}" -o json 2>/dev/null \
+        | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ "${current_status}" != "deployed" ]]; then
+        return 1
+    fi
+
+    local installed_version
+    installed_version=$(get_installed_chart_version "${release_name}" "${namespace}" "${chart_name}")
+    if [[ -n "${installed_version}" && "${installed_version}" == "${target_version}" ]]; then
+        log_info "Skip ${release_name}: installed chart version ${installed_version} equals target ${target_version}. (Pass --force-upgrade to re-render with updated values.)"
+        return 0
+    fi
+
+    return 1
+}
+
 # Get existing password from config.yaml if it exists
 get_existing_password() {
     local key="$1"
     if [[ -f "${CONFIG_YAML_PATH}" ]]; then
         grep "${key}:" "${CONFIG_YAML_PATH}" | awk '{print $2}' | tr -d '"'\'' '
     fi
+}
+
+resolve_sql_version() {
+    local requested_version="${1:-}"
+    if [[ -n "${requested_version}" ]]; then
+        echo "${requested_version}"
+        return 0
+    fi
+
+    echo "${DEFAULT_SQL_VERSION}"
+}
+
+# Resolve the SQL base directory for one product/version pair.
+# Args: <product> [version]
+resolve_versioned_sql_dir() {
+    local product="$1"
+    local version="${2:-}"
+    local resolved_version
+
+    if [[ -z "${product}" ]]; then
+        return 0
+    fi
+
+    resolved_version="$(resolve_sql_version "${version}")"
+    echo "${SCRIPT_DIR}/scripts/sql/${resolved_version}/${product}"
+}
+
+# Return 0 when a directory exists and contains at least one .sql file.
+# Args: <sql_dir>
+sql_dir_has_files() {
+    local sql_dir="$1"
+    [[ -d "${sql_dir}" ]] || return 1
+    find "${sql_dir}" -type f -name "*.sql" -print -quit 2>/dev/null | grep -q .
+}
+
+# List module subdirectories under one product/version SQL directory.
+# Args: <product> [version]
+list_versioned_sql_modules() {
+    local product="$1"
+    local version="${2:-}"
+    local sql_base_dir
+
+    sql_base_dir="$(resolve_versioned_sql_dir "${product}" "${version}")"
+    [[ -d "${sql_base_dir}" ]] || return 0
+
+    find "${sql_base_dir}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort
+}
+
+# Execute one SQL directory only when it exists and contains SQL files.
+# Args: <module_name> <sql_dir> [display_name]
+init_module_database_if_present() {
+    local module_name="$1"
+    local sql_dir="$2"
+    local display_name="${3:-${module_name}}"
+
+    if ! sql_dir_has_files "${sql_dir}"; then
+        log_info "Skipping ${display_name} database initialization: no SQL files found in ${sql_dir}"
+        return 0
+    fi
+
+    init_module_database "${module_name}" "${sql_dir}"
 }
 
 # Check if RDS is internal (MariaDB installed in cluster)
@@ -107,7 +862,7 @@ K8S_RPM_REPO_GPGKEY="${K8S_RPM_REPO_GPGKEY:-https://mirrors.aliyun.com/kubernete
 # Flannel CNI Image Repository Configuration
 FLANNEL_IMAGE_REPO="${FLANNEL_IMAGE_REPO:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/}"
 FLANNEL_MANIFEST_PATH="${FLANNEL_MANIFEST_PATH:-${CONF_DIR}/kube-flannel.yml}"
-FLANNEL_MANIFEST_URL="${FLANNEL_MANIFEST_URL:-https://raw.githubusercontent.com/flannel-io/flannel/v0.25.5/Documentation/kube-flannel.yml}"
+FLANNEL_MANIFEST_URL="${FLANNEL_MANIFEST_URL:-https://gitee.com/mirrors/flannel/raw/main/Documentation/kube-flannel.yml}"
 
 
 # Helm Configuration
@@ -119,10 +874,11 @@ HELM_INSTALL_SCRIPT_URL="${HELM_INSTALL_SCRIPT_URL:-https://raw.githubuserconten
 HELM_VERSION="${HELM_VERSION:-v3.19.0}"
 HELM_TARBALL_BASEURL="${HELM_TARBALL_BASEURL:-https://repo.huaweicloud.com/helm/${HELM_VERSION}/}"
 
-# Global Helm Chart Configuration (for Studio, Ontology, and other modules)
+# Global Helm Chart Configuration (for Studio, BKN, and other modules)
 HELM_CHART_VERSION="${HELM_CHART_VERSION:-}"
 HELM_CHART_REPO_URL="${HELM_CHART_REPO_URL:-https://kweaver-ai.github.io/helm-repo/}"
 HELM_CHART_REPO_NAME="${HELM_CHART_REPO_NAME:-kweaver}"
+RELEASE_MANIFESTS_DIR="${RELEASE_MANIFESTS_DIR:-${VERSION_MANIFESTS_DIR:-${SCRIPT_DIR}/release-manifests}}"
 
 DOCKER_IO_MIRROR_PREFIX="${DOCKER_IO_MIRROR_PREFIX:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/}"
 DOCKER_CE_REPO_URL="${DOCKER_CE_REPO_URL:-http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo}"
@@ -148,9 +904,9 @@ MARIADB_PERSISTENCE_ENABLED="${MARIADB_PERSISTENCE_ENABLED:-true}"
 MARIADB_STORAGE_CLASS="${MARIADB_STORAGE_CLASS:-}"
 MARIADB_PURGE_PVC="${MARIADB_PURGE_PVC:-false}"
 MARIADB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-}"
-MARIADB_DATABASE="${MARIADB_DATABASE:-adp}"
-MARIADB_USER="${MARIADB_USER:-adp}"
-MARIADB_PASSWORD="${MARIADB_PASSWORD:-}"
+MARIADB_DATABASE="${MARIADB_DATABASE:-kweaver}"
+MARIADB_USER="${MARIADB_USER:-kweaver}"
+MARIADB_PASSWORD="${MARIADB_PASSWORD:-kweaver}"
 MARIADB_STORAGE_SIZE="${MARIADB_STORAGE_SIZE:-10Gi}"
 MARIADB_MAX_CONNECTIONS="${MARIADB_MAX_CONNECTIONS:-5000}"
 
@@ -226,8 +982,8 @@ OPENSEARCH_IMAGE="${OPENSEARCH_IMAGE:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai
 OPENSEARCH_IMAGE_REPOSITORY="${OPENSEARCH_IMAGE_REPOSITORY:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/opensearchproject/opensearch}"
 OPENSEARCH_IMAGE_TAG="${OPENSEARCH_IMAGE_TAG:-2.19.4}"
 OPENSEARCH_IMAGE_FALLBACK="${OPENSEARCH_IMAGE_FALLBACK:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/opensearchproject/opensearch:2.19.4}"
-# OpenSearch chart uses busybox initContainers (fsgroup-volume/sysctl) by default; set a mirror to avoid Docker Hub pulls.
-OPENSEARCH_INIT_IMAGE="${OPENSEARCH_INIT_IMAGE:-${LOCALPV_HELPER_IMAGE}}"
+# OpenSearch chart uses busybox initContainers (fsgroup-volume/sysctl); use a dedicated SWR mirror by default.
+OPENSEARCH_INIT_IMAGE="${OPENSEARCH_INIT_IMAGE:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/busybox:1.36.1}"
 OPENSEARCH_JAVA_OPTS="${OPENSEARCH_JAVA_OPTS:--Xms512m -Xmx512m -XX:MaxDirectMemorySize=128m}"
 OPENSEARCH_MEMORY_REQUEST="${OPENSEARCH_MEMORY_REQUEST:-512Mi}"
 # NOTE: OpenSearch uses heap + direct memory + native overhead. 768Mi is too tight for -Xmx512m.
@@ -236,6 +992,7 @@ OPENSEARCH_MEMORY_LIMIT="${OPENSEARCH_MEMORY_LIMIT:-2048Mi}"
 OPENSEARCH_PROTOCOL="${OPENSEARCH_PROTOCOL:-http}" # http (default) or https (requires enabling security)
 OPENSEARCH_DISABLE_SECURITY="${OPENSEARCH_DISABLE_SECURITY:-}"
 OPENSEARCH_SINGLE_NODE="${OPENSEARCH_SINGLE_NODE:-true}"
+OPENSEARCH_HELM_ATOMIC="${OPENSEARCH_HELM_ATOMIC:-false}"
 OPENSEARCH_PERSISTENCE_ENABLED="${OPENSEARCH_PERSISTENCE_ENABLED:-true}"
 OPENSEARCH_STORAGE_CLASS="${OPENSEARCH_STORAGE_CLASS:-}"
 OPENSEARCH_STORAGE_SIZE="${OPENSEARCH_STORAGE_SIZE:-8Gi}"
@@ -300,8 +1057,8 @@ ZOOKEEPER_SASL_PASSWORD="${ZOOKEEPER_SASL_PASSWORD:-}"
 ZOOKEEPER_EXTRA_SET_VALUES="${ZOOKEEPER_EXTRA_SET_VALUES:-}"  # Additional --set values (space-separated, e.g., "image.registry=xxx key2=value2")
 
 # Ingress-Nginx Configuration
-INGRESS_NGINX_HTTP_PORT="${INGRESS_NGINX_HTTP_PORT:-30080}"
-INGRESS_NGINX_HTTPS_PORT="${INGRESS_NGINX_HTTPS_PORT:-30443}"
+INGRESS_NGINX_HTTP_PORT="${INGRESS_NGINX_HTTP_PORT:-80}"
+INGRESS_NGINX_HTTPS_PORT="${INGRESS_NGINX_HTTPS_PORT:-443}"
 INGRESS_NGINX_CLASS="${INGRESS_NGINX_CLASS:-class-443}"
 INGRESS_NGINX_CONTROLLER_IMAGE="${INGRESS_NGINX_CONTROLLER_IMAGE:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/ingress-nginx/controller:v1.14.1}"
 INGRESS_NGINX_CONTROLLER_IMAGE_REPOSITORY="${INGRESS_NGINX_CONTROLLER_IMAGE_REPOSITORY:-swr.cn-east-3.myhuaweicloud.com/kweaver-ai/ingress-nginx/controller}"
@@ -331,6 +1088,185 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+k8s_is_running() {
+    if ! command -v kubectl >/dev/null 2>&1; then
+        return 1
+    fi
+
+    if kubectl get nodes >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [[ -f /root/.kube/config ]]; then
+        export KUBECONFIG=/root/.kube/config
+        if kubectl get nodes >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+
+    if [[ -f /etc/kubernetes/admin.conf ]]; then
+        mkdir -p /root/.kube
+        cp -f /etc/kubernetes/admin.conf /root/.kube/config
+        chown root:root /root/.kube/config 2>/dev/null || true
+        export KUBECONFIG=/root/.kube/config
+        if kubectl get nodes >/dev/null 2>&1; then
+            log_info "Recovered kubeconfig from /etc/kubernetes/admin.conf"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+ensure_k8s() {
+    if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    if k8s_is_running; then
+        log_info "Kubernetes cluster detected, skipping K8s installation."
+        export KWEAVER_K8S_ENSURED="true"
+        return 0
+    fi
+
+    log_info "No running Kubernetes cluster detected. Installing K8s first..."
+    check_root
+    detect_package_manager || return 1
+    install_containerd || return 1
+    install_kubernetes || return 1
+    install_helm || return 1
+
+    check_prerequisites || return 1
+    init_k8s_master || return 1
+    allow_master_scheduling || return 1
+    install_cni || return 1
+    wait_for_dns || return 1
+
+    if [[ "${AUTO_INSTALL_LOCALPV}" == "true" ]]; then
+        if [[ -z "$(kubectl get storageclass --no-headers 2>/dev/null)" ]]; then
+            install_localpv || return 1
+        fi
+    fi
+
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+        install_ingress_nginx || return 1
+    fi
+
+    export KWEAVER_K8S_ENSURED="true"
+    log_info "K8s installation completed."
+}
+
+ensure_data_services() {
+    if [[ "${KWEAVER_DATA_SERVICES_ENSURED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    log_info "Ensuring platform data services (MariaDB/Redis/Kafka/Zookeeper/OpenSearch)..."
+
+    install_mariadb || return 1
+    install_redis || return 1
+    install_kafka || return 1
+    install_zookeeper || return 1
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+        install_ingress_nginx || return 1
+    fi
+    install_opensearch || return 1
+
+    if [[ "${AUTO_GENERATE_CONFIG}" == "true" ]]; then
+        generate_config_yaml || return 1
+    fi
+
+    export KWEAVER_DATA_SERVICES_ENSURED="true"
+}
+
+ensure_platform_prerequisites() {
+    if [[ "${KWEAVER_PLATFORM_PREREQUISITES_DONE:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    ensure_k8s || return 1
+    ensure_data_services || return 1
+
+    export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
+}
+
+get_access_address_field() {
+    local field="$1"
+    local cfg="${CONFIG_YAML_PATH}"
+
+    if [[ ! -f "${cfg}" ]]; then
+        return 0
+    fi
+
+    awk -v key="${field}:" '
+        $1=="accessAddress:" {in_block=1; next}
+        in_block && $1==key {print $2; exit}
+        in_block && $0 ~ /^[^ ]/ {in_block=0}
+    ' "${cfg}" 2>/dev/null | sed -e 's/^"//; s/"$//' -e "s/^'//; s/'$//"
+}
+
+get_access_address_base_url() {
+    local host port path scheme
+    host="$(get_access_address_field "host")"
+    port="$(get_access_address_field "port")"
+    path="$(get_access_address_field "path")"
+    scheme="$(get_access_address_field "scheme")"
+
+    if [[ -z "${host}" ]]; then
+        return 0
+    fi
+
+    scheme="${scheme:-https}"
+    path="${path:-/}"
+    if [[ "${path}" != /* ]]; then
+        path="/${path}"
+    fi
+    if [[ "${path}" == "/" ]]; then
+        path=""
+    else
+        path="${path%/}"
+    fi
+
+    local url="${scheme}://${host}"
+    if [[ -n "${port}" ]]; then
+        url="${url}:${port}"
+    fi
+    echo "${url}${path}"
+}
+
+get_dip_studio_openclaw_field() {
+    local field="$1"
+    local cfg="${CONFIG_YAML_PATH}"
+
+    if [[ ! -f "${cfg}" ]]; then
+        return 0
+    fi
+
+    awk -v key="${field}:" '
+        $1=="studio:" {
+            in_studio=1
+            in_openclaw=0
+            next
+        }
+        in_studio && $1=="openclaw:" {
+            in_openclaw=1
+            next
+        }
+        in_studio && in_openclaw && $1==key {
+            sub(/^[^:]+:[[:space:]]*/, "", $0)
+            print $0
+            exit
+        }
+        in_studio && in_openclaw && $0 ~ /^  [^ ]/ {
+            in_openclaw=0
+        }
+        in_studio && $0 ~ /^[^ ]/ {
+            in_studio=0
+            in_openclaw=0
+        }
+    ' "${cfg}" 2>/dev/null | sed -e 's/^"//; s/"$//' -e "s/^'//; s/'$//" | tr -d '\r'
 }
 
 random_password() {
@@ -421,7 +1357,7 @@ read_or_fetch() {
 
 # Initialize database by connecting to MariaDB pod and executing SQL files
 # Usage: init_module_database "module_name" "sql_directory"
-# Example: init_module_database "decisionagent" "${SCRIPT_DIR}/scripts/sql/decisionagent"
+# Example: init_module_database "decisionagent" "${SCRIPT_DIR}/scripts/sql/0.5.0/kweaver-core/decisionagent"
 init_module_database() {
     local module_name="$1"
     local sql_dir="$2"
@@ -446,10 +1382,10 @@ init_module_database() {
     # Get MariaDB credentials from config.yaml (under depServices.rds section)
     local mariadb_user=$(grep -A 20 "^  rds:" "${CONFIG_YAML_PATH}" | grep "user:" | head -1 | awk '{print $2}' | tr -d "'\"")
     local mariadb_password=$(grep -A 20 "^  rds:" "${CONFIG_YAML_PATH}" | grep "password:" | head -1 | awk '{print $2}' | tr -d "'\"")
-    
+
     # Set defaults if not found
-    mariadb_user="${mariadb_user:-adp}"
-    mariadb_password="${mariadb_password:-adp}"
+    mariadb_user="${mariadb_user:-kweaver}"
+    mariadb_password="${mariadb_password:-kweaver}"
     
     log_info "Using MariaDB user: ${mariadb_user}"
     
@@ -537,4 +1473,117 @@ show_status() {
     kubectl get nodes -o wide
     echo ""
     kubectl get pods -A
+}
+
+# =============================================================================
+# Release Manifest Database Initialization Detection
+# =============================================================================
+
+# Check if a release manifest has a stage="pre" data-migrator release.
+# This indicates the manifest handles database initialization via Helm chart.
+# Args: <manifest_file>
+# Returns: 0 if pre-stage data-migrator found, 1 otherwise
+manifest_has_pre_stage_db_init() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    # Look for any release with stage="pre" and chart name containing "data-migrator"
+    local release_name
+    for release_name in $(_manifest_list_release_names "${manifest_file}"); do
+        local stage
+        stage="$(_manifest_strip_quotes "$(_manifest_read_release_field "${manifest_file}" "${release_name}" "stage")")"
+        if [[ "${stage}" == "pre" && "${release_name}" == *"data-migrator"* ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+# Check if the manifest version is 0.6.0 or higher (semver comparison).
+# Args: <manifest_file>
+# Returns: 0 if version >= 0.6.0, 1 otherwise
+manifest_version_gte_060() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    local version
+    version="$(_manifest_strip_quotes "$(_manifest_read_top_level_field "${manifest_file}" "version")")"
+
+    if [[ -z "${version}" ]]; then
+        return 1
+    fi
+
+    # Extract major.minor.patch
+    local major minor
+    major="$(echo "${version}" | cut -d. -f1)"
+    minor="$(echo "${version}" | cut -d. -f2)"
+
+    # Compare: >= 0.6.0
+    if [[ "${major}" -gt 0 ]] || [[ "${major}" -eq 0 && "${minor}" -ge 6 ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Check if database initialization should be skipped for this manifest.
+# Returns true (0) if:
+#   1. Manifest version is >= 0.6.0 AND
+#   2. Manifest has a stage="pre" data-migrator release
+# Args: <manifest_file>
+# Returns: 0 if DB init should be skipped, 1 otherwise
+should_skip_db_init_for_manifest() {
+    local manifest_file="$1"
+
+    if [[ -z "${manifest_file}" || ! -f "${manifest_file}" ]]; then
+        return 1
+    fi
+
+    # Check version >= 0.6.0 and has pre-stage data-migrator
+    if manifest_version_gte_060 "${manifest_file}" && manifest_has_pre_stage_db_init "${manifest_file}"; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Read a top-level field from a YAML manifest file.
+# Args: <manifest_file> <field_name>
+_manifest_read_top_level_field() {
+    local manifest_file="$1"
+    local field_name="$2"
+
+    awk -v field="${field_name}" '
+        BEGIN { in_releases = 0 }
+        /^releases:/ || /^dependencies:/ { in_releases = 1; next }
+        in_releases && /^[A-Za-z0-9_-]+:/ { in_releases = 0 }
+        !in_releases && $1 == field ":" {
+            sub(/^[^:]+:[[:space:]]*/, "", $0)
+            print $0
+            exit
+        }
+    ' "${manifest_file}" | sed 's/[[:space:]]*$//'
+}
+
+# List all release names from a manifest file.
+# Args: <manifest_file>
+_manifest_list_release_names() {
+    local manifest_file="$1"
+
+    awk '
+        BEGIN { in_releases = 0 }
+        /^releases:/ { in_releases = 1; next }
+        in_releases && /^  [A-Za-z0-9_-]+:/ {
+            sub(/:.*$/, "", $0)
+            sub(/^  /, "", $0)
+            print $0
+        }
+    ' "${manifest_file}"
 }

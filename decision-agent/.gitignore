@@ -1,0 +1,25 @@
+env
+.env
+.venv
+venv
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+*.log
+.vscode
+.idea
+from_intranet/
+tests/config/env.ini
+tests/data/data-agent/zhipu_search_tool_config.json
+tests/tools/*/build/
+
+#ai ide
+.agents/
+.claude/
+.cursor/
+.windsurf/
+.kiro/
+.specify/
+

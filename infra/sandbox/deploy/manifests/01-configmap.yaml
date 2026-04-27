@@ -1,0 +1,31 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sandbox-config
+  namespace: sandbox-system
+data:
+  # 环境配置（改为 development 以自动创建数据库表）
+  ENVIRONMENT: "development"
+  DEBUG: "false"
+
+  # 数据库配置
+  DATABASE_URL: "mysql+aiomysql://sandbox:password@mariadb.sandbox-system.svc.cluster.local:3306/sandbox"
+
+  # Kubernetes 配置（executor pods 部署到同一个 namespace）
+  KUBERNETES_NAMESPACE: "sandbox-system"
+
+  # 执行配置（降低默认资源请求以适应本地环境）
+  DEFAULT_TIMEOUT: "300"
+  MAX_TIMEOUT: "3600"
+  DEFAULT_CPU: "0.2"
+  DEFAULT_MEMORY: "256Mi"
+  DEFAULT_DISK: "512Mi"
+
+  # 清理配置
+  IDLE_THRESHOLD_MINUTES: "30"
+  MAX_LIFETIME_HOURS: "6"
+  CLEANUP_INTERVAL_SECONDS: "300"
+
+  # 禁用 Bubblewrap（K8s 环境下推荐使用）
+  DISABLE_BWRAP: "true"

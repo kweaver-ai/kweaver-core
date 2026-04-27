@@ -1,0 +1,379 @@
+# Common
+[AgentFactory.InvalidParameter.RequestBody]
+Description = "Invalid Request Body"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.InvalidRequestHeader.Authorization]
+Description = "Authorization Failed"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[AgentFactory.InvalidRequestHeader.ContentType]
+Description = "Invalid ContentType"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[AgentFactory.Forbidden.FilterField]
+Description = "The filter field '__id' and '__routing' is not allowed."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.InternalError]
+Description = "Internal Server Error"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+
+# Realease 相关错误码
+[AgentFactory.Release.InternalError.PublishFailed]
+Description = "An Internal Server Error Occurred While Publishing the Agent"
+Solution = "Please try this operation again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+
+[AgentFactory.Release.NotFound]
+Description = "This published Agent does not exist."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.Release.BadRequest.PublishFailedByConfigError]
+Description = "Publish Agent Failed Because of Configuration Error"
+Solution = "Please check the configuration."
+ErrorLink = "None"
+
+# ReleaseHistory 相关错误码
+[AgentFactory.ReleaseHistory.NotFound]
+Description = "This published Agent history does not exist."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+
+# Data Agent Config 相关错误码 start
+[AgentFactory.DataAgentConfig.Conflict.NameExists]
+Description = "Agent Name Already Exists"
+Solution = "Please change the name."
+ErrorLink = "None"
+
+[AgentFactory.DataAgentConfig.NotFound]
+Description = "Agent Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.DataAgentConfig.Forbidden.NotOwner]
+Description = "You are not the owner of this Agent, and cannot operate it."
+Solution = "Please check your permission."
+ErrorLink = "None"
+
+[AgentFactory.DataAgentConfig.Conflict.Published.CannotBeDeleted]
+Description = "Published Agent Cannot Be Deleted"
+Solution = "You can unpublish it first."
+ErrorLink = "None"
+
+# Data Agent Config 相关错误码 end
+
+# Custom Space 相关错误码 start
+[AgentFactory.CustomSpace.Conflict.NameExists]
+Description = "Custom Space Name Already Exists"
+Solution = "Please change the name."
+ErrorLink = "None"
+
+[AgentFactory.CustomSpace.Conflict.KeyExists]
+Description = "Custom Space key Already Exists"
+Solution = "Please change the key."
+ErrorLink = "None"
+
+[AgentFactory.CustomSpace.NotFound]
+Description = "Custom Space Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.DataAgentConfig.BadRequest.LlmRequired]
+Description = "This Agent has not selected an LLM."
+Solution = "Please select an LLM."
+ErrorLink = "None"
+
+[AgentFactory.DataAgentConfig.BadRequest.RetrieverDataSourceKnEntryExceedLimitSize]
+Description = "The number of knowledge entries in the knowledge source exceeds the limit. A maximum of 10 knowledge entries can be added."
+Solution = "Please reduce the number of knowledge entries in the knowledge source."
+ErrorLink = "None"
+
+
+
+# Custom Space 相关错误码 end
+
+# Custom Space Member 相关错误码 start
+[AgentFactory.CustomSpaceMember.NotFound]
+Description = "Custom Space Member Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.CustomSpaceMember.NotBelongsToSpace]
+Description = "The Custom Space Member does not belong to the Space."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+# Custom Space Member 相关错误码 end
+
+# Custom Space Resource 相关错误码 start
+[AgentFactory.CustomSpaceResource.NotFound]
+Description = "Custom Space Resource Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.CustomSpaceResource.NotBelongsToSpace]
+Description = "The Custom Space Resource does not belong to the Space."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+# Custom Space Resource 相关错误码 end
+
+# Product 相关错误码 start
+[AgentFactory.Product.Conflict.NameExists]
+Description = "Product Name Already Exists"
+Solution = "Please change the name."
+ErrorLink = "None"
+
+[AgentFactory.Product.Conflict.KeyExists]
+Description = "Product Key Already Exists"
+Solution = "Please change the key."
+ErrorLink = "None"
+
+[AgentFactory.Product.NotFound]
+Description = "Product Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+# Product 相关错误码 end
+
+# Category 相关错误码 start
+[AgentFactory.Category.NotFound]
+Description = "Category Not Found"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+# Category 相关错误码 end
+
+# Agent Tpl 相关错误码 start
+[AgentFactory.AgentTpl.Conflict.NameExists]
+Description = "The Agent template Name already exists."
+Solution = "Please change the name."
+ErrorLink = "None"
+
+[AgentFactory.AgentTpl.Conflict.KeyExists]
+Description = "The Agent template key already exists."
+Solution = "Please change the key."
+ErrorLink = "None"
+
+[AgentFactory.AgentTpl.NotFound]
+Description = "The Agent template does not exist."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentFactory.AgentTpl.Forbidden.NotOwner]
+Description = "You are not the owner of this Agent template, and can not operate it."
+Solution = "Please check your permission."
+ErrorLink = "None"
+
+[AgentFactory.AgentTpl.IsUnpublished]
+Description = "This Agent template is not published."
+Solution = "Please publish it first."
+ErrorLink = "None"
+
+[AgentFactory.AgentTpl.Conflict.Published.CannotBeDeleted]
+Description = "Published Agent Template Cannot Be Deleted"
+Solution = "Please unpublish it first."
+ErrorLink = "None"
+
+# Agent Tpl 相关错误码 end
+
+
+#Agent AIAutoGen
+[AgentFactory.AiAutogenError]
+Description = "AI Auto Generation Failed"
+Solution = "Please try again, if the error occurs again, submit the work order or contact technical support engineers."
+ErrorLink = "None"
+# Published Agent Tpl 相关错误码 start
+[AgentFactory.PublishedTpl.NotFound]
+Description = "This published Agent template does not exist."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+# Published Agent Tpl 相关错误码 end
+
+# Permission 相关错误码 start
+[AgentFactory.Permission.Forbidden]
+Description = "Sorry, you currently do not have the permission to perform this operation."
+Solution = "Please check your permission."
+ErrorLink = "None"
+
+# Permission 相关错误码 end
+
+# Import、Export 相关错误码 start
+[AgentFactory.Inout.ParseFileFailed]
+Description = "Failed to parse file."
+Solution = "Please check the file format."
+ErrorLink = "None"
+
+[AgentFactory.Inout.MaxSizeExceeded]
+Description = "The number of agents to import exceeds the maximum limit."
+Solution = "Please reduce the number of agents to import."
+ErrorLink = "None"
+# Import、Export 相关错误码 end
+
+
+
+# Common
+[AgentAPP.InvalidParameter.RequestBody]
+Description = "Invalid Request Body"
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentAPP.InvalidRequestHeader.Authorization]
+Description = "Authorization Failed"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[AgentAPP.InvalidRequestHeader.ContentType]
+Description = "Invalid ContentType"
+Solution = "Please check the Http Header."
+ErrorLink = "None"
+
+[AgentAPP.Forbidden.FilterField]
+Description = "The filter field '__id' and '__routing' is not allowed."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentAPP.Forbidden.PermissionDenied]
+Description = "Permission Denied"
+Solution = "Please check whether the permission is correct."
+ErrorLink = "None"
+
+[AgentAPP.InternalError]
+Description = "Internal Server Error"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.GetAgentFailed]
+Description = "Get Agent Configuration Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.CreateConversationFailed]
+Description = "Create Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.GetConversationFailed]
+Description = "Get Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.GetMaxIndexFailed]
+Description = "Get Maximum Index Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.GetHistoryFailed]
+Description = "Get Conversation History Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.CreateMessageFailed]
+Description = "Create Message Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.UpdateConversationFailed]
+Description = "Update Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.GetMessageFailed]
+Description = "Get Message Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.UpdateMessageFailed]
+Description = "Update Message Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.CallAgentExecutorFailed]
+Description = "Agent Executor Invocation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.ModelExecption]
+Description = "LLM Invocation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.SkillExecption]
+Description = "Skill Invocation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.DolphinSDKExecption]
+Description = "Dolphin SDK Invocation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.ExecutorExecption]
+Description = "Agent Executor Invocation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.ResumeFailed]
+Description = "Resume Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Agent.ConversationSessionInitFailed]
+Description = "Initialize Conversation Session Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Conversation.NotFound]
+Description = "The conversation does not exist."
+Solution = "Please check whether the parameter is correct."
+ErrorLink = "None"
+
+[AgentAPP.Conversation.DeleteFailed]
+Description = "Delete Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Conversation.GetDetailFailed]
+Description = "Get Conversation Detail Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Conversation.InitFailed]
+Description = "Initialize Conversation Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Conversation.GetListFailed]
+Description = "Get Conversation List Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Temparea.RemoveFailed]
+Description = "Remove Temporary Area Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Temparea.GetFailed]
+Description = "Get Temporary Area Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Temparea.Createfailed]
+Description = "Create Temporary Area Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"
+
+[AgentAPP.Temparea.AppendFailed]
+Description = "Append File to Temporary Area Failed"
+Solution = "Please try this operation again, if the error occurs again, please submit work order or contact Technical Supports."
+ErrorLink = "None"

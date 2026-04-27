@@ -1,0 +1,51 @@
+{
+    "description": "更新文件内容参数校验",
+    "type": "object",
+    "properties": {
+        "type": {
+            "type": "string",
+            "enum": [
+                "xlsx"
+            ]
+        },
+        "docid": {
+            "type": "string",
+            "pattern": "^gns://([A-Z0-9]{32}/?)+$"
+        },
+        "new_type": {
+            "type": "string",
+            "enum": [
+                "new_row",
+                "new_col"
+            ]
+        },
+        "insert_type": {
+            "type": "string",
+            "enum": [
+                "append",
+                "append_before",
+                "append_after",
+                "cover"
+            ]
+        },
+        "insert_pos": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "content": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "type",
+        "docid",
+        "new_type",
+        "insert_type",
+        "insert_pos",
+        "content"
+    ],
+    "additionalProperties": false
+}

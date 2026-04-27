@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "coderunner.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "coderunner.fullname" . }}
+{{ include "coderunner.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "coderunner.fullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "coderunner.fullname" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      dnsConfig:
+        options:
+          - name: single-request-open
+          - name: use-vc
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: coderunner
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args: 
+            - "./init_site_packages.sh && python3 ./src/main.py"
+          ports:
+            - name: coderunner-port
+              containerPort: {{ add1 .Values.service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.coderunnerPrefix }}/v1/health/ready
+              port: coderunner-port
+            failureThreshold: 6
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "coderunner.fullname" . }}
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+          - name: pythonlib
+            mountPath: /tmp
+          - name: python3-volume
+            mountPath: /usr/local
+        - name: dataflowtools
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.dataflowtools.repository }}:{{ .Values.image.dataflowtools.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: dft-private
+              containerPort: {{ .Values.service.privatePort }}
+              protocol: TCP
+            - name: dft-public
+              containerPort: {{ .Values.service.publicPort }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.coderunnerPrefix }}/v1/health/ready
+              port: dft-private
+            failureThreshold: 6
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "dataflowtools.fullname" . }}
+            - secretRef:
+                name: {{ include "dataflowtools.fullname" . }}
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - name: mq-config-yaml
+              mountPath: /sysvol/conf/mq_config.yaml
+              subPath: mq_config.yaml
+            - name: tmp-volume
+              mountPath: /tmp
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      volumes:
+        - name: {{ include "coderunner.fullname" . }}-ca
+          secret:
+            secretName: {{ include "coderunner.fullname" . }}-ca
+        - emptyDir: {}
+          name: pythonlib
+        - emptyDir: {}
+          name: python3-volume
+        - emptyDir: {}
+          name: tmp-volume
+        - name: mq-config-yaml
+          configMap:
+            name: {{ template "dataflowtools.fullname" . }}

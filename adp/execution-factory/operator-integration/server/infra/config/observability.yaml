@@ -1,0 +1,16 @@
+traceType: jaeger # 可选值: jaeger, otlp
+logEnabled: true # 是否开启 log
+traceEnabled: true # 是否开启 trace
+metricEnabled: false # 是否开启 metric
+logExporter: consle # log上报方式:consle;http
+traceProvider: grpc # trace 上报方式consle;http;grpc
+metricProvider: http # metric 上报方式consle;http
+logLoadInternal: 1 # log 批量上报策略 -- 时间间隔，单位：秒
+logLoadMaxLog: 10 # log 批量上报策略 -- 日志数量，单位： 个
+traceMaxQueueSize: 50000 # trace 队列最大长度
+metricIntervalSecond: 60 # metric 上报间隔，单位：秒
+httpLogFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events # log http 上报端点
+httpTraceFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events # trace http 上报端点
+httpMetricFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events # metric http 上报端点
+grpcTraceFeedIngesterUrl: 0.0.0.0:4317 # trace grpc上报端点
+grpcTraceJobId: dip-o11y-trace-grpc # trac grpc 上报任务ID

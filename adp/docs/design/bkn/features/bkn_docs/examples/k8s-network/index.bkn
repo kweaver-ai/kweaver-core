@@ -1,0 +1,58 @@
+---
+type: network
+id: k8s-network
+name: Kubernetes网络
+version: 1.0.0
+tags: [Kubernetes, 拓扑架构, 运维]
+includes:
+  - entities.bkn
+  - relations.bkn
+  - actions.bkn
+---
+
+# Kubernetes网络
+
+Kubernetes 集群的核心资源拓扑结构，采用多文件组织方式。
+
+## 网络概览
+
+```mermaid
+graph TB
+    subgraph Entities["实体 (entities.bkn)"]
+        Node["Node"]
+        Pod["Pod"]
+        Service["Service"]
+    end
+    
+    subgraph Relations["关系 (relations.bkn)"]
+        Node -->|包含| Pod
+        Service -->|路由| Pod
+    end
+    
+    subgraph Actions["行动 (actions.bkn)"]
+        Pod -.-> RestartPod["restart_pod"]
+        Node -.-> CordonNode["cordon_node"]
+    end
+```
+
+## 文件说明
+
+| 文件 | 说明 |
+|------|------|
+| [entities.bkn](entities.bkn) | 实体定义：Pod、Node、Service |
+| [relations.bkn](relations.bkn) | 关系定义：归属、路由 |
+| [actions.bkn](actions.bkn) | 行动定义：重启、隔离 |
+
+## 网络统计
+
+| 类型 | 数量 |
+|------|------|
+| 实体类 | 3 |
+| 关系类 | 2 |
+| 行动类 | 2 |
+
+## 典型应用场景
+
+1. **故障根因分析**: 通过拓扑关系追溯故障影响链
+2. **自动化运维**: 基于行动定义实现故障自愈
+3. **容量规划**: 分析 Node 资源与 Pod 分布

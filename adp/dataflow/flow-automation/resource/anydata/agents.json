@@ -1,0 +1,397 @@
+{
+  "agents": [
+    {
+      "name": "anyshare_automation_check",
+      "version": "v0.0.42",
+      "description": "检查 Agent 服务是否可用",
+      "color": "icon-color-agent-126EE3",
+      "release_config": {
+        "input": {
+          "fields": [
+            {
+              "name": "query",
+              "type": "string",
+              "id": 1
+            }
+          ],
+          "augment": {},
+          "rewrite": {}
+        },
+        "logic_block": [
+          {
+            "id": "1",
+            "name": "LLM",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "result",
+                "type": "text"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 1000
+            },
+            "mode": "common",
+            "context_length": 8,
+            "system_prompt": "<%= include `prompts/check_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/check_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "query",
+                "type": "string",
+                "from": "input"
+              }
+            ]
+          }
+        ],
+        "output": {
+          "answer": [
+            {
+              "name": "answer",
+              "type": "text"
+            }
+          ],
+          "block_answer": []
+        }
+      }
+    },
+    {
+      "name": "anyshare_automation_extract_references",
+      "version": "v0.0.42",
+      "description": "从描述中提取文件、文件夹、用户名称",
+      "color": "icon-color-agent-126EE3",
+      "release_config": {
+        "input": {
+          "fields": [
+            {
+              "name": "query",
+              "type": "string",
+              "id": 1
+            }
+          ],
+          "augment": {},
+          "rewrite": {}
+        },
+        "logic_block": [
+          {
+            "id": "1",
+            "name": "LLM",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "result",
+                "type": "text"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1000,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 1000
+            },
+            "mode": "common",
+            "context_length": 32,
+            "system_prompt": "<%= include `prompts/extract_references_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/extract_references_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "query"
+              }
+            ]
+          }
+        ],
+        "output": {
+          "answer": [
+            {
+              "name": "answer",
+              "type": "text"
+            }
+          ],
+          "block_answer": []
+        }
+      }
+    },
+    {
+      "name": "anyshare_automation_dag_analyzer",
+      "version": "v0.0.42",
+      "description": "分析流程步骤",
+      "color": "icon-color-agent-126EE3",
+      "release_config": {
+        "input": {
+          "fields": [
+            {
+              "name": "query",
+              "type": "string",
+              "id": 1
+            },
+            {
+              "name": "csflevels",
+              "type": "string",
+              "id": 2
+            },
+            {
+              "name": "references",
+              "type": "string",
+              "id": 3
+            },
+            {
+              "name": "selections",
+              "type": "string",
+              "id": 4
+            }
+          ],
+          "augment": {},
+          "rewrite": {}
+        },
+        "logic_block": [
+          {
+            "id": "1",
+            "name": "LLM1",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "language",
+                "type": "string",
+                "from": "LLM1"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 1000
+            },
+            "mode": "common",
+            "context_length": 8,
+            "system_prompt": "<%= include `prompts/detect_language_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/detect_language_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "query",
+                "type": "string",
+                "from": "input"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "name": "LLM",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "result",
+                "type": "text"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 8192
+            },
+            "mode": "common",
+            "context_length": 8,
+            "system_prompt": "<%= include `prompts/dag_analyzer_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/dag_analyzer_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "language",
+                "type": "string",
+                "from": "LLM1"
+              },
+              {
+                "name": "selections",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "csflevels",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "references",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "from": "input"
+              }
+            ]
+          }
+        ],
+        "output": {
+          "answer": [
+            {
+              "name": "answer",
+              "type": "text"
+            }
+          ],
+          "block_answer": [
+            {
+              "name": "language",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "anyshare_automation_dag_generator",
+      "version": "v0.0.42",
+      "description": "生成流程配置",
+      "color": "icon-color-agent-126EE3",
+      "release_config": {
+        "input": {
+          "fields": [
+            {
+              "name": "query",
+              "type": "string",
+              "id": 1
+            },
+            {
+              "name": "csflevels",
+              "type": "string",
+              "id": 2
+            },
+            {
+              "name": "selections",
+              "type": "string",
+              "id": 3
+            },
+            {
+              "name": "references",
+              "type": "string",
+              "id": 4
+            }
+          ],
+          "augment": {},
+          "rewrite": {}
+        },
+        "logic_block": [
+          {
+            "id": "1",
+            "name": "LLM1",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "language",
+                "type": "string",
+                "from": "LLM1"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 1000
+            },
+            "mode": "common",
+            "context_length": 8,
+            "system_prompt": "<%= include `prompts/detect_language_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/detect_language_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "query",
+                "type": "string",
+                "from": "input"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "name": "LLM",
+            "type": "llm_block",
+            "output": [
+              {
+                "name": "result",
+                "type": "text"
+              }
+            ],
+            "llm_config": {
+              "name": "<%= .model %>",
+              "temperature": 0,
+              "top_p": 1,
+              "top_k": 1,
+              "frequency_penalty": 0,
+              "presence_penalty": 0,
+              "max_tokens": 8192
+            },
+            "mode": "common",
+            "context_length": 8,
+            "system_prompt": "<%= include `prompts/dag_generator_system_prompt.md` %>",
+            "system_prompt_variables": [],
+            "tools": [],
+            "user_prompt": "<%= include `prompts/dag_generator_user_prompt.md` %>",
+            "user_prompt_variables": [
+              {
+                "name": "language",
+                "type": "string",
+                "from": "LLM1"
+              },
+              {
+                "name": "csflevels",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "selections",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "references",
+                "type": "string",
+                "from": "input"
+              },
+              {
+                "name": "query",
+                "type": "string",
+                "from": "input"
+              }
+            ]
+          }
+        ],
+        "output": {
+          "answer": [
+            {
+              "name": "answer",
+              "type": "text"
+            }
+          ],
+          "block_answer": []
+        }
+      }
+    }
+  ]
+}
