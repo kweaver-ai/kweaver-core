@@ -237,15 +237,15 @@ onboard_ensure_isf_test_for_kweaver_impex() {
         return 0
     fi
     if ! command -v kweaver-admin &>/dev/null; then
-        log_info "ISF+impex: kweaver-admin not in PATH; using your current  kweaver  login (may 403; install admin CLI or log in as test.)"
-        return 0
+        log_warn "ISF+impex: kweaver-admin not on PATH — cannot use user test for impex (admin  kweaver  session often returns 403). Install:  npm i -g @kweaver-ai/kweaver-admin  , then create user  test  and re-run this import."
+        return 1
     fi
     if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
-        log_info "ISF+impex: kweaver-admin not authenticated; using current kweaver session for impex"
-        return 0
+        log_warn "ISF+impex: kweaver-admin is not logged in. Run:  kweaver-admin auth login <url> -k  , ensure user  test  exists, then re-run import."
+        return 1
     fi
     if ! onboard_user_test_exists; then
-        log_warn "ISF+impex: user  test  is missing. Create it (kweaver-admin user create / onboard offer) and assign  role list  roles, then re-run this import."
+        log_warn "ISF+impex: user  test  is missing. Create it first (onboard  test-user  step or  kweaver-admin user create --login test  + roles), then re-run."
         return 1
     fi
     log_info "ISF+impex: sync role list to user test, then  kweaver auth  as test (built-in  admin  often cannot import toolboxes)…"

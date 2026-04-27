@@ -3,9 +3,8 @@
 # Replaces deploy-time curl/port-forward; uses: kweaver call ... -F (multipart), same as manual impex.
 #
 # Who can import (token from  kweaver auth login  , stored under ~/.kweaver):
-#   - Full install (ISF): prefer user  test  with all roles from  kweaver-admin role list  (typically
-#     three business admin roles). Console  admin  is often not allowed to add ADP resources (HTTP 403).
-#     This script syncs role list to  test  and re-runs  kweaver auth login  as  test  before impex.
+#   - Full install (ISF): create user  test  first (onboard offer / kweaver-admin), then this import. Uses
+#      test  (role list roles) and  kweaver auth  as  test ; console  admin  often gets HTTP 403 on impex.
 #   - Minimum (no ISF):  kweaver auth login  only; kweaver-admin is not required.
 # shellcheck source=/dev/null
 # Report: ONBOARD_REPORT_CONTEXT_LOADER (onboard_report.sh)
@@ -70,6 +69,7 @@ onboard_context_loader_import_via_kweaver() {
 }
 
 # After kweaver auth; optional Y/n; -y to auto-run. Skips if no operator or ADP.
+# ISF: user [test] must exist before ADP impex (admin kweaver token often gets CommonAddForbidden/403).
 onboard_offer_context_loader_toolset() {
     if [[ "${ONBOARD_SKIP_CONTEXT_LOADER:-false}" == "true" ]]; then
         ONBOARD_REPORT_CONTEXT_LOADER="skipped: ONBOARD_SKIP_CONTEXT_LOADER"
@@ -82,6 +82,9 @@ onboard_offer_context_loader_toolset() {
     if ! command -v kweaver &>/dev/null; then
         ONBOARD_REPORT_CONTEXT_LOADER="skipped: kweaver CLI not found"
         return 0
+    fi
+    if type onboard_prepend_npm_global_bin_to_path &>/dev/null; then
+        onboard_prepend_npm_global_bin_to_path
     fi
     local ns
     ns="${NAMESPACE:-kweaver}"
@@ -97,6 +100,26 @@ onboard_offer_context_loader_toolset() {
         return 0
     fi
 
+    # ISF: create user [test] first, then this step (import uses kweaver as test, not admin).
+    if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
+        if ! command -v kweaver-admin &>/dev/null; then
+            ONBOARD_REPORT_CONTEXT_LOADER="skipped: ISF needs kweaver-admin on PATH before ADP impex; npm i -g @kweaver-ai/kweaver-admin then re-run onboard"
+            log_warn "Context Loader: skipped — ISF full install: add kweaver-admin, create user [test] first, then import (or you may get 403 on toolbox impex)."
+            return 0
+        fi
+        if kweaver-admin --json user list --limit 1 &>/dev/null; then
+            if type onboard_user_test_exists &>/dev/null && ! onboard_user_test_exists; then
+                ONBOARD_REPORT_CONTEXT_LOADER="skipped: ISF requires user [test] before toolbox import; run the test-user step above, then re-run or import manually"
+                log_warn "Context Loader: skipped — on ISF, create user [test] (kweaver-admin) first, then import Context Loader. Import order: test user -> toolbox impex."
+                return 0
+            fi
+        else
+            ONBOARD_REPORT_CONTEXT_LOADER="skipped: kweaver-admin not authenticated; run: kweaver-admin auth login <url> -k"
+            log_warn "Context Loader: skipped —  kweaver-admin auth login  required before ADP impex on ISF."
+            return 0
+        fi
+    fi
+
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         log_info "Context Loader: importing toolset (-y)…"
         onboard_context_loader_import_via_kweaver || true
@@ -108,7 +131,7 @@ onboard_offer_context_loader_toolset() {
         return 0
     fi
     echo ""
-    read -r -p "Import Context Loader (ADP) now (ISF: will re-login  kweaver  as user test for impex) [Y/n]: " _clm
+    read -r -p "Import Context Loader (ADP) now? (ISF: user test must already exist; kweaver will sign in as test for impex) [Y/n]: " _clm
     if [[ "${_clm}" =~ ^[Nn] ]]; then
         ONBOARD_REPORT_CONTEXT_LOADER="skipped: user declined import (run kweaver call impex later)"
         log_info "Skipped. Manual: kweaver call '/api/agent-operator-integration/v1/impex/import/toolbox' -X POST -F data=@'${adp}' -F mode=upsert -bd ${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
