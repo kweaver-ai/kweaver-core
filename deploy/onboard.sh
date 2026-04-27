@@ -574,13 +574,15 @@ onboard_ensure_kweaver_admin_for_isf() {
 }
 
 # Full ISF: kweaver (SDK) and kweaver-admin are separate logins. After kweaver auth, ensure admin CLI can list users before [test] + Context Loader.
+# On ISF, kweaver-admin must be on PATH and authenticated; otherwise the rest of onboard cannot succeed — exit 1 (no skip).
 onboard_ensure_kweaver_admin_auth_for_isf() {
     if ! (type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null); then
         return 0
     fi
     onboard_prepend_npm_global_bin_to_path
     if ! command -v kweaver-admin &>/dev/null; then
-        return 0
+        onboard_log_err "ISF (full) install: kweaver-admin is not on PATH. Install: npm i -g @kweaver-ai/kweaver-admin, add npm global bin to PATH, then re-run. (Unset ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL if that blocked the install step.)"
+        exit 1
     fi
     if kweaver-admin --json user list --limit 1 &>/dev/null; then
         onboard_log_info "kweaver-admin: authenticated (user list ok)."
@@ -592,45 +594,47 @@ onboard_ensure_kweaver_admin_auth_for_isf() {
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         _defu="$(onboard_default_access_base_url 2>/dev/null || true)"
         if [[ -z "${_defu}" ]]; then
-            onboard_log_warn "Non-interactive (-y): set ONBOARD_DEFAULT_ACCESS_BASE=... for kweaver-admin HTTP auth, or re-run in a TTY."
-            return 0
+            onboard_log_err "ISF: set ONBOARD_DEFAULT_ACCESS_BASE=... to your platform URL, or re-run in a TTY. kweaver-admin sign-in is required; cannot continue (-y, non-interactive)."
+            exit 1
         fi
         onboard_log_info "kweaver-admin: ISF — HTTP sign-in (same defaults as kweaver: ${ONBOARD_DEFAULT_KWEAVER_USER:-admin})…"
-        if onboard_kweaver_admin_auth_login_for_url "${_defu}"; then
-            if kweaver-admin --json user list --limit 1 &>/dev/null; then
-                onboard_log_info "kweaver-admin: authenticated (user list ok, -y)."
-            else
-                onboard_log_warn "kweaver-admin: sign-in returned but user list failed; check platform or credentials."
-            fi
-        else
-            onboard_log_warn "Non-interactive (-y): kweaver-admin auth failed. Try: kweaver-admin auth login ${_defu} -u ${ONBOARD_DEFAULT_KWEAVER_USER:-admin} -p '<password>' --http-signin -k"
+        if ! onboard_kweaver_admin_auth_login_for_url "${_defu}"; then
+            onboard_log_err "kweaver-admin: HTTP sign-in failed. Check URL, user ${ONBOARD_DEFAULT_KWEAVER_USER:-admin}, and password, then re-run: $0"
+            exit 1
         fi
+        if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
+            onboard_log_err "kweaver-admin: sign-in did not work (user list still fails). Fix credentials or platform, then re-run: $0"
+            exit 1
+        fi
+        onboard_log_info "kweaver-admin: authenticated (user list ok, -y)."
         return 0
     fi
     if ! onboard_is_bootstrap_tty; then
-        return 0
+        onboard_log_err "ISF: kweaver-admin is not signed in, and this is not a TTY — cannot prompt. Run kweaver-admin auth in this shell, or: $0 -y  (set ONBOARD_DEFAULT_ACCESS_BASE=... for HTTP). Cannot continue."
+        exit 1
     fi
     _defu="$(onboard_default_access_base_url 2>/dev/null || true)"
     echo ""
     read -r -p "Run kweaver-admin auth now (HTTP sign-in recommended; same as kweaver) [Y/n] (Enter = Y): " _go
     if [[ -n "${_go}" && "${_go}" =~ ^[Nn] ]]; then
-        onboard_log_warn "Skipped. For ISF run: kweaver-admin auth login <url> -u ${ONBOARD_DEFAULT_KWEAVER_USER:-admin} -p … --http-signin -k  then:  $0  again."
-        return 0
+        onboard_log_err "ISF: kweaver-admin must be signed in for onboard. When ready: kweaver-admin auth login <url> -u ${ONBOARD_DEFAULT_KWEAVER_USER:-admin} -p '...' --http-signin -k  then: $0  again."
+        exit 1
     fi
     read -r -p "kweaver-admin access base URL [Enter = ${_defu}]: " _url
     _url="${_url:-${_defu}}"
     if [[ -z "${_url}" ]]; then
-        return 0
+        onboard_log_err "ISF: kweaver-admin sign-in needs a non-empty access base URL. Re-run: $0"
+        exit 1
     fi
     if ! onboard_kweaver_admin_auth_login_for_url "${_url}"; then
-        onboard_log_warn "kweaver-admin auth login failed. Run it manually, then re-run:  $0"
-        return 0
+        onboard_log_err "kweaver-admin: sign-in failed. Fix the error above, then re-run: $0"
+        exit 1
     fi
-    if kweaver-admin --json user list --limit 1 &>/dev/null; then
-        onboard_log_info "kweaver-admin: login OK — next: user [test], then kweaver CLI as test, then Context Loader."
-    else
-        onboard_log_warn "kweaver-admin: sign-in returned but user list still fails; re-run auth or check platform."
+    if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
+        onboard_log_err "kweaver-admin: sign-in did not work (user list still fails). Re-check, then re-run: $0"
+        exit 1
     fi
+    onboard_log_info "kweaver-admin: login OK — next: user [test], then kweaver CLI as test, then Context Loader."
     return 0
 }
 

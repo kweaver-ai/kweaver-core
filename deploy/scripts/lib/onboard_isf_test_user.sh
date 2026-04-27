@@ -187,7 +187,8 @@ onboard_isf_relogin_kweaver_cli_as_test_for_downstream() {
     type onboard_default_access_base_url &>/dev/null && kurl="$(onboard_default_access_base_url)"
     log_info "kweaver CLI: re-authenticating as user test (HTTP, same as impex) for Context Loader and model registration — use the password set for test above."
     if ! onboard_kweaver_relogin_isf_test "${kurl}"; then
-        log_warn "kweaver re-login as test failed; Context Loader will retry. Set ONBOARD_TEST_USER_PASSWORD or: kweaver auth login ${kurl} -u test -p '...' --http-signin -k"
+        onboard_log_err "kweaver: sign-in as user test failed. Set ONBOARD_TEST_USER_PASSWORD, or: kweaver auth login ${kurl} -u test -p '...' --http-signin -k  then re-run: $0"
+        exit 1
     fi
     return 0
 }
@@ -203,16 +204,15 @@ onboard_offer_isf_test_user() {
         return 0
     }
     command -v kweaver-admin &>/dev/null || {
-        ONBOARD_REPORT_ISF_TEST_USER="已跳过: 无 kweaver-admin (需 npm i -g @kweaver-ai/kweaver-admin 后再建 test)"
-        log_warn "未检测到 kweaver-admin（可执行  which kweaver-admin ）：已跳过「创建/同步用户 test」。若已  npm -g  装过: 在**当前终端**  export PATH=\"\$(npm config get prefix)/bin:\$PATH\"  后重试本脚本，或:  $0 -y  （ISF 会再装/刷新  PATH ）。"
-        log_warn "  首次使用: kweaver-admin auth login <https://平台地址> -u admin -p … --http-signin -k（与 kweaver 相同），再运行 ./onboard.sh 创建 test"
-        return 0
+        ONBOARD_REPORT_ISF_TEST_USER="error: kweaver-admin not on PATH"
+        onboard_log_err "ISF: kweaver-admin not found. Install: npm i -g @kweaver-ai/kweaver-admin, then: export PATH=\"\$(npm config get prefix 2>/dev/null)/bin:\$PATH\"  and re-run: $0"
+        exit 1
     }
 
     if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
-        ONBOARD_REPORT_ISF_TEST_USER="skipped: kweaver-admin not logged in (auth login failed or not run)"
-        log_warn "kweaver-admin: cannot list users. Run: kweaver-admin auth login <https://access-url> -u admin -p … --http-signin -k (same as kweaver). Skipping test user offer."
-        return 0
+        ONBOARD_REPORT_ISF_TEST_USER="error: kweaver-admin not authenticated"
+        onboard_log_err "ISF: kweaver-admin cannot list users (not signed in). This should not happen after the auth step. Run: kweaver-admin auth login <https://access-url> -u admin -p '...' --http-signin -k, then: $0"
+        exit 1
     fi
 
     if onboard_user_test_exists; then
@@ -226,7 +226,11 @@ onboard_offer_isf_test_user() {
 
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         log_info "ONBOARD: creating user test, password/roles (-y)…"
-        onboard_create_test_user_with_all_roles
+        if ! onboard_create_test_user_with_all_roles; then
+            ONBOARD_REPORT_ISF_TEST_USER="error: create/configure user test failed"
+            onboard_log_err "ISF: could not create or configure user test. Fix the errors above, then re-run: $0"
+            exit 1
+        fi
         ONBOARD_REPORT_ISF_TEST_USER="created test with roles (-y: default password ${ONBOARD_DEFAULT_TEST_USER_PASSWORD:-111111}; override ONBOARD_TEST_USER_PASSWORD=...)"
         onboard_isf_relogin_kweaver_cli_as_test_for_downstream
         return 0
@@ -243,7 +247,11 @@ onboard_offer_isf_test_user() {
         log_info "Skipped. You can: kweaver-admin user create --login test && kweaver-admin user reset-password -u test --prompt-password -y && (assign all role ids from role list)"
         return 0
     fi
-    onboard_create_test_user_with_all_roles
+    if ! onboard_create_test_user_with_all_roles; then
+        ONBOARD_REPORT_ISF_TEST_USER="error: create/configure user test failed"
+        onboard_log_err "ISF: could not create or configure user test. Fix the errors above, then re-run: $0"
+        exit 1
+    fi
     ONBOARD_REPORT_ISF_TEST_USER="created test, set password, assigned all business roles from role list"
     onboard_isf_relogin_kweaver_cli_as_test_for_downstream
 }

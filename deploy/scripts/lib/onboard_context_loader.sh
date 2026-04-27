@@ -103,26 +103,25 @@ onboard_offer_context_loader_toolset() {
     # ISF: create user [test] first, then this step (import uses kweaver as test, not admin).
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
         if ! command -v kweaver-admin &>/dev/null; then
-            ONBOARD_REPORT_CONTEXT_LOADER="skipped: ISF needs kweaver-admin on PATH before ADP impex; npm i -g @kweaver-ai/kweaver-admin then re-run onboard"
-            log_warn "Context Loader: skipped — ISF full install: add kweaver-admin, create user [test] first, then import (or you may get 403 on toolbox impex)."
-            return 0
+            ONBOARD_REPORT_CONTEXT_LOADER="error: ISF needs kweaver-admin on PATH for ADP impex"
+            onboard_log_err "Context Loader: ISF — kweaver-admin not on PATH. Install it and re-run onboard (earlier steps should not reach here)."
+            exit 1
         fi
-        if kweaver-admin --json user list --limit 1 &>/dev/null; then
-            if type onboard_user_test_exists &>/dev/null && ! onboard_user_test_exists; then
-                ONBOARD_REPORT_CONTEXT_LOADER="skipped: ISF requires user [test] before toolbox import; run the test-user step above, then re-run or import manually"
-                log_warn "Context Loader: skipped — on ISF, create user [test] (kweaver-admin) first, then import Context Loader. Import order: test user -> toolbox impex."
-                return 0
-            fi
-        else
-            ONBOARD_REPORT_CONTEXT_LOADER="skipped: kweaver-admin not authenticated; run: kweaver-admin auth login <url> -u admin -p … --http-signin -k (same as kweaver)"
-            log_warn "Context Loader: skipped — kweaver-admin HTTP auth (same as kweaver) required before ADP impex on ISF."
-            return 0
+        if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
+            ONBOARD_REPORT_CONTEXT_LOADER="error: kweaver-admin not authenticated"
+            onboard_log_err "Context Loader: ISF — kweaver-admin is not signed in. Sign in, then re-run: $0"
+            exit 1
+        fi
+        if type onboard_user_test_exists &>/dev/null && ! onboard_user_test_exists; then
+            ONBOARD_REPORT_CONTEXT_LOADER="error: ISF requires user [test] before toolbox import"
+            onboard_log_err "Context Loader: ISF — user [test] is missing. Create with kweaver-admin (or re-run onboard without --skip-isf-test-user), then import."
+            exit 1
         fi
     fi
 
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         log_info "Context Loader: importing toolset (-y)…"
-        onboard_context_loader_import_via_kweaver || true
+        onboard_context_loader_import_via_kweaver
         return 0
     fi
     if ! (type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty); then
@@ -137,5 +136,5 @@ onboard_offer_context_loader_toolset() {
         log_info "Skipped. Manual: kweaver call '/api/agent-operator-integration/v1/impex/import/toolbox' -X POST -F data=@'${adp}' -F mode=upsert -bd ${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
         return 0
     fi
-    onboard_context_loader_import_via_kweaver || true
+    onboard_context_loader_import_via_kweaver
 }
