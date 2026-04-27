@@ -203,3 +203,95 @@ echo ""
 echo "=== Step 5: Build KN (sync) ==="
 kweaver bkn build "$KN_ID" --wait --timeout 60 2>&1 | tail -2
 
+# ── Step 6: Start mock business backend ──────────────────────────────────────
+echo ""
+echo "=== Step 6: Start mock business backend (port $TOOL_BACKEND_PORT) ==="
+TOOL_BACKEND_URL="http://127.0.0.1:$TOOL_BACKEND_PORT"
+DB_HOST="$DB_HOST" DB_PORT="$DB_PORT" DB_NAME="$DB_NAME" \
+DB_USER="$DB_USER" DB_PASS="$DB_PASS" \
+TOOL_BACKEND_PORT="$TOOL_BACKEND_PORT" \
+python3 "$SCRIPT_DIR/tool_backend/server.py" >"$SCRIPT_DIR/.tool_backend.log" 2>&1 &
+TOOL_BACKEND_PID=$!
+sleep 2
+curl -s "$TOOL_BACKEND_URL/healthz" | grep -q '"ok"' \
+    || { echo "ERROR: mock backend failed; see .tool_backend.log" >&2; exit 1; }
+echo "  ✓ mock backend pid $TOOL_BACKEND_PID"
+
+# ── Step 7: Register Skill packages ──────────────────────────────────────────
+echo ""
+echo "=== Step 7: Register Skill packages ==="
+for skill_dir in "$SCRIPT_DIR"/skills/*/; do
+    skill_name=$(basename "$skill_dir")
+    zip_path="$SCRIPT_DIR/.${skill_name}.zip"
+    rm -f "$zip_path"
+    (cd "$skill_dir" && zip -qr "$zip_path" .)
+    REG_RAW=$(kweaver skill register --zip-file "$zip_path" 2>&1)
+    sid=$(echo "$REG_RAW" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+def find_objs(s):
+    depth = 0; start = -1
+    for i, ch in enumerate(s):
+        if ch == '{':
+            if depth == 0: start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                yield s[start:i+1]; start = -1
+for chunk in find_objs(raw):
+    try: obj = json.loads(chunk)
+    except Exception: continue
+    if isinstance(obj, dict) and 'id' in obj:
+        print(obj['id']); break
+")
+    [ -z "$sid" ] && { echo "ERROR: skill register failed for $skill_name" >&2; echo "$REG_RAW" >&2; exit 1; }
+    kweaver skill status "$sid" published >/dev/null
+    SKILL_IDS+=("$sid")
+    echo "  ✓ $skill_name → $sid (published)"
+    rm -f "$zip_path"
+done
+
+# ── Step 8: Register context-loader MCP server (with X-Kn-ID header) ─────────
+echo ""
+echo "=== Step 8: Register context-loader MCP server ==="
+MCP_REG_BODY=$(python3 -c "
+import json
+print(json.dumps({
+    'mode': 'stream',
+    'url': '$PLATFORM_HOST/api/agent-retrieval/v1/mcp',
+    'name': 'ex04_ctx_loader_${TIMESTAMP}',
+    'description': 'context-loader MCP for find_skills',
+    'creation_type': 'custom',
+    'headers': {'X-Kn-ID': '$KN_ID'},
+}))
+")
+MCP_RAW=$(kweaver call /api/agent-operator-integration/v1/mcp/ -X POST \
+    -H "Content-Type: application/json" \
+    -H "x-business-domain: bd_public" \
+    -d "$MCP_REG_BODY" 2>&1)
+MCP_ID=$(echo "$MCP_RAW" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+def find_objs(s):
+    depth = 0; start = -1
+    for i, ch in enumerate(s):
+        if ch == '{':
+            if depth == 0: start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                yield s[start:i+1]; start = -1
+for chunk in find_objs(raw):
+    try: obj = json.loads(chunk)
+    except Exception: continue
+    if isinstance(obj, dict) and 'mcp_id' in obj:
+        print(obj['mcp_id']); break
+")
+[ -z "$MCP_ID" ] && { echo "ERROR: MCP register failed" >&2; echo "$MCP_RAW" >&2; exit 1; }
+kweaver call "/api/agent-operator-integration/v1/mcp/$MCP_ID/status" -X POST \
+    -H "x-business-domain: bd_public" \
+    -d '{"status":"published"}' >/dev/null
+echo "  ✓ MCP $MCP_ID (published, X-Kn-ID=$KN_ID)"
+
