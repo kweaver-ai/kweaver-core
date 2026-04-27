@@ -177,32 +177,55 @@ Typical flags:
 
 At the end, an **English completion report** is printed unless `ONBOARD_NO_COMPLETION_REPORT=1`.
 
-### `onboard.sh` flow (simplified)
+### `onboard.sh` flow (Mermaid)
+
+**1) Entry: bootstrap, then one of three modes**
 
 ```mermaid
-flowchart TD
-  start([Start onboard.sh]) --> boot[Ensure Node 22+ and kweaver CLI]
-  boot --> args{CLI mode?}
-  args -->|BKN only| probe1[onboard_probe] --> bkn[BKN ConfigMap patch] --> rep1[Completion report] --> end1([Exit])
-  args -->|config YAML| probe2[onboard_probe] --> py[onboard_apply_config.py] --> rep2[Completion report] --> end2([Exit])
-  args -->|default or -y| probe3[onboard_probe]
-  probe3 --> ka[Ensure kweaver auth until bkn list works]
-  ka --> kc[kubectl namespace check]
-  kc --> npm[Prepend npm global bin to PATH]
-  npm --> isf{ISF full install?}
-  isf -->|no| clm[Context Loader offer if operator + ADP present]
-  isf -->|yes| rec[Log: recommend kweaver-admin]
-  rec --> admN[Install kweaver-admin via npm if missing]
-  admN --> admA[kweaver-admin auth if user list fails]
-  admA --> test[Offer: user test + all role list roles]
-  test --> cl[Context Loader offer gated on test user + admin auth]
-  clm --> inter{Interactive and no config?}
-  cl --> inter
-  inter -->|yes| models[Prompts: LLM / embedding / BKN patch]
-  inter -->|no| rep3[Completion report]
-  models --> rep3
-  rep3 --> end3([Exit])
+flowchart TB
+  s([onboard.sh]) --> boot["Bootstrap: Node 22+, kweaver, kubectl, python3"]
+  boot --> mode{Mode}
+  mode -->|"--enable-bkn-search"| p1[onboard_probe] --> bkn["BKN / ontology ConfigMap patch + rollout"] --> r1[Completion report] --> e1([exit 0])
+  mode -->|"--config=…"| p2[onboard_probe] --> py["exec onboard_apply_config.py"] --> e2([exit])
+  mode -->|default: interactive; optional -y| p3[onboard_probe] --> ui["Namespace + LLM + embedding + optional BKN patch"] --> r2[Completion report] --> e3([exit 0])
 ```
+
+- **`onboard_probe` runs in all three modes** before BKN-only, YAML, or interactive model registration.
+- **`-y`** does not set `--config`; it mainly auto-accepts **Node / npm -g** bootstrap and **ISF** `kweaver` / `kweaver-admin` auth defaults where applicable.
+
+**2) What `onboard_probe` does (shared path)**
+
+```mermaid
+flowchart TB
+  subgraph probe["onboard_probe"]
+    A["onboard_ensure_kweaver_auth"] --> B["kubectl: ns list or target namespace"]
+    B --> C["onboard_prepend_npm_global_bin_to_path"]
+    C --> D["onboard_recommend_admin_cli (Helm / ns: ISF?)"]
+    D --> E["onboard_ensure_kweaver_admin_for_isf"]
+    E --> F["onboard_ensure_kweaver_admin_auth_for_isf"]
+    F --> G["onboard_offer_isf_test_user"]
+    G --> H["onboard_offer_context_loader_toolset"]
+  end
+```
+
+**3) ISF full install: who talks to whom (user `test` + Context Loader impex)**
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Operator
+  participant O as onboard.sh
+  participant K as kweaver
+  participant A as kweaver-admin
+  U->>O: run from deploy/
+  O->>K: kweaver auth login (console user, e.g. admin)
+  O->>A: kweaver-admin on PATH; kweaver-admin auth login
+  A-->>O: user list / user create
+  O->>K: kweaver auth as test (impex session)
+  O->>K: kweaver call … impex (Context Loader)
+```
+
+The admin CLI and the SDK use **separate** credential stores; **only `kweaver` as `test`** is appropriate for the impex call that imports the ADP toolset, not the same session as ad‑hoc `admin` when the API is restricted.
 
 ---
 

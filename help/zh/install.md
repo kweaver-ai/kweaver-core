@@ -180,32 +180,55 @@ bash ./onboard.sh --help
 
 结束前会打印 **英文** 完成报告（可用 `ONBOARD_NO_COMPLETION_REPORT=1` 关闭）。
 
-### `onboard.sh` 流程（简图）
+### `onboard.sh` 流程（Mermaid）
+
+**1）入口：环境检查后三选一**
 
 ```mermaid
-flowchart TD
-  start([Start onboard.sh]) --> boot[Ensure Node 22+ and kweaver CLI]
-  boot --> args{CLI mode?}
-  args -->|BKN only| probe1[onboard_probe] --> bkn[BKN ConfigMap patch] --> rep1[Completion report] --> end1([Exit])
-  args -->|config YAML| probe2[onboard_probe] --> py[onboard_apply_config.py] --> rep2[Completion report] --> end2([Exit])
-  args -->|default or -y| probe3[onboard_probe]
-  probe3 --> ka[Ensure kweaver auth until bkn list works]
-  ka --> kc[kubectl namespace check]
-  kc --> npm[Prepend npm global bin to PATH]
-  npm --> isf{ISF full install?}
-  isf -->|no| clm[Context Loader offer if operator + ADP present]
-  isf -->|yes| rec[Log: recommend kweaver-admin]
-  rec --> admN[Install kweaver-admin via npm if missing]
-  admN --> admA[kweaver-admin auth if user list fails]
-  admA --> test[Offer: user test + all role list roles]
-  test --> cl[Context Loader offer gated on test user + admin auth]
-  clm --> inter{Interactive and no config?}
-  cl --> inter
-  inter -->|yes| models[Prompts: LLM / embedding / BKN patch]
-  inter -->|no| rep3[Completion report]
-  models --> rep3
-  rep3 --> end3([Exit])
+flowchart TB
+  s([onboard.sh]) --> boot["引导：Node 22+、kweaver、kubectl、python3"]
+  boot --> mode{模式}
+  mode -->|"--enable-bkn-search"| p1[onboard_probe] --> bkn["BKN / ontology ConfigMap 补丁 + rollout"] --> r1[完成报告] --> e1([exit 0])
+  mode -->|"--config=…"| p2[onboard_probe] --> py["exec onboard_apply_config.py"] --> e2([exit])
+  mode -->|默认交互；可选 -y| p3[onboard_probe] --> ui["命名空间 + LLM + 向量 + 可选 BKN 补丁"] --> r2[完成报告] --> e3([exit 0])
 ```
+
+- **三种模式都会先跑 `onboard_probe`**，再进入「仅 BKN」、YAML 或交互式注册。
+- **`-y`** 不会自动等价于 `--config`；主要自动确认 **Node / npm -g** 安装，以及在 **ISF 全量** 下对 `kweaver` / `kweaver-admin` 登录的默认行为。
+
+**2）`onboard_probe` 内部（与脚本一致）**
+
+```mermaid
+flowchart TB
+  subgraph probe["onboard_probe"]
+    A["onboard_ensure_kweaver_auth"] --> B["kubectl：列命名空间或检查目标 namespace"]
+    B --> C["onboard_prepend_npm_global_bin_to_path"]
+    C --> D["onboard_recommend_admin_cli（Helm/命名空间判断是否 ISF）"]
+    D --> E["onboard_ensure_kweaver_admin_for_isf"]
+    E --> F["onboard_ensure_kweaver_admin_auth_for_isf"]
+    F --> G["onboard_offer_isf_test_user"]
+    G --> H["onboard_offer_context_loader_toolset"]
+  end
+```
+
+**3）ISF 全量：双 CLI 与 impex 会话（序列图）**
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as 操作者
+  participant O as onboard.sh
+  participant K as kweaver
+  participant A as kweaver-admin
+  U->>O: 在 deploy/ 下执行
+  O->>K: kweaver auth login（如控制台 admin）
+  O->>A: 确保 PATH 有 kweaver-admin；kweaver-admin auth login
+  A-->>O: user list / 创建 test 等
+  O->>K: 以 test 建立 kweaver 会话（impex）
+  O->>K: kweaver call … impex（Context Loader）
+```
+
+`kweaver` 与 `kweaver-admin` **凭据独立**；ADP **impex** 需 **`kweaver` 以 `test` 登录** 的会话，与仅用控制台 `admin` 的 SDK 会话常见 **403** 场景不同。
 
 ---
 
