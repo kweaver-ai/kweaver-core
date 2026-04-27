@@ -386,14 +386,18 @@ class AgentFactoryService:
         [".md", ".txt", ".json", ".yaml", ".yml", ".py", ".sh", ".js", ".ts"]
     )
 
-    # MIME type prefixes that indicate binary (non-text) content.  If the API
-    # returns a mime_type matching any of these, the file is rejected even when
-    # the extension check would otherwise pass.
+    # MIME type prefixes that indicate binary (non-text) content.
+    # Note: application/octet-stream is excluded from this list because it's a
+    # generic fallback MIME type that many servers use for unknown file types.
+    # We rely on file extension checking as the primary method to determine
+    # whether a file is text or binary. Only explicitly binary MIME types are
+    # rejected here, and only when the extension check did not already approve
+    # the file as text.
     _BINARY_MIME_PREFIXES = (
         "image/",
         "audio/",
         "video/",
-        "application/octet-stream",
+        # "application/octet-stream",  # Too generic; rely on extension check instead
         "application/zip",
         "application/x-tar",
         "application/x-gzip",
@@ -410,8 +414,12 @@ class AgentFactoryService:
     ) -> str:
         """Download a skill file and return its text content.
 
-        Only files with extensions in _TEXT_EXTENSIONS are allowed (design § 5.3).
-        Binary files are rejected before any network request is made.
+        Files are validated in two stages:
+        1. Extension check: If the file extension is in _TEXT_EXTENSIONS, it is
+           allowed regardless of MIME type (because servers often return generic
+           'application/octet-stream' for script files like .py, .sh, etc.).
+        2. MIME type check: If the extension check didn't pass and the MIME type
+           explicitly indicates binary content, the file is rejected.
 
         Args:
             url: Download URL returned by read_skill_file_meta or get_skill_content
@@ -430,15 +438,28 @@ class AgentFactoryService:
 
         ext = os.path.splitext(file_path)[1].lower()
 
-        if ext and ext not in self._TEXT_EXTENSIONS:
+        # Stage 1: Extension check (primary method)
+        # If the extension is in our allowlist, trust it regardless of MIME type.
+        # This handles cases where servers return 'application/octet-stream' for
+        # script files (.py, .sh, etc.) which are actually plain text.
+        if ext and ext in self._TEXT_EXTENSIONS:
+            StandLogger.info(
+                f"read_downloaded_skill_text: File '{file_path}' approved by "
+                f"extension check (ext={ext}), proceeding with download from url={url}"
+            )
+            return await self.download_text_by_url(url)
+
+        # Stage 2: Extension not in allowlist - reject unknown extensions
+        if ext:
             err = (
                 f"Unsupported file type '{ext}' for skill file '{file_path}'. "
                 f"Only text formats are supported: {sorted(self._TEXT_EXTENSIONS)}"
             )
             error_log = log_oper.get_error_log(err, sys._getframe())
             StandLogger.error(error_log, log_oper.SYSTEM_LOG)
-            raise CodeException(errors.ParamException(), err)
+            raise CodeException(errors.ParamError(), err)
 
+        # Stage 3: No extension - check MIME type for explicit binary indicators
         if mime_type:
             for binary_prefix in self._BINARY_MIME_PREFIXES:
                 if mime_type.lower().startswith(binary_prefix):
@@ -448,7 +469,9 @@ class AgentFactoryService:
                     )
                     error_log = log_oper.get_error_log(err, sys._getframe())
                     StandLogger.error(error_log, log_oper.SYSTEM_LOG)
-                    raise CodeException(errors.ParamException(), err)
+                    raise CodeException(errors.ParamError(), err)
+
+        # Passed all checks or no indicators to reject - attempt download
         StandLogger.info(f"read_downloaded_skill_text url={url}")
         return await self.download_text_by_url(url)
 
