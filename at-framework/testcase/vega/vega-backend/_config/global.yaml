@@ -1,27 +1,29 @@
 # 全局变量：vega-backend 模块
 
-mysql_host: "10.4.111.229"
+mysql_host: "192.168.40.105"
 mysql_port: 3306
 mysql_user: "root"
-mysql_password: "Eisoo.com123"
-mysql_password_error: "eisoo.com123"
+mysql_password: "eisoo.com123"
+mysql_password_error: "Eisoo.com123"
 mysql_password_ciphertext: "im/xcTIMv9W8LrmUw02Ce6mo2P7yE+1PvXur1JmGkqP4qmSBoNKWpkakPCnOkPCVqgVnmng21BA5/ov/FB8y7SBSbLnZg9uM2mcykDhaFBYEg+0AKBY9GKcP2do2G7ZtphSOnNRR8iUrA0sgOGX11HhNmnPt7jUtUK5q95dgi9jBxj0rGWgJD/G7jRr5l/GvSLwGltbVf7pIww1CtiTr7YfASf4NnXvoPQ/+E4Zk3uJoe2ydITqvlHaETj031JPpCPiLUem0SvgHAIcLrDXdK2YCK9ITK8ivHNOyduHn76hX4iI7dl8kOIWvqAw1u+tnIzMQq8xzml5MpSTn45C9wA=="
 mysql_db_1: "tpcds1g"
 mysql_db_2: "tpch1g"
 
-mariadb_host: "10.4.111.229"
+mariadb_host: "192.168.40.105"
 mariadb_port: 3306
 mariadb_user: "root"
-mariadb_password: "Eisoo.com123"
-mariadb_password_error: "eisoo.com123"
+mariadb_password: "eisoo.com123"
+mariadb_password_error: "Eisoo.com123"
 mariadb_password_ciphertext: "im/xcTIMv9W8LrmUw02Ce6mo2P7yE+1PvXur1JmGkqP4qmSBoNKWpkakPCnOkPCVqgVnmng21BA5/ov/FB8y7SBSbLnZg9uM2mcykDhaFBYEg+0AKBY9GKcP2do2G7ZtphSOnNRR8iUrA0sgOGX11HhNmnPt7jUtUK5q95dgi9jBxj0rGWgJD/G7jRr5l/GvSLwGltbVf7pIww1CtiTr7YfASf4NnXvoPQ/+E4Zk3uJoe2ydITqvlHaETj031JPpCPiLUem0SvgHAIcLrDXdK2YCK9ITK8ivHNOyduHn76hX4iI7dl8kOIWvqAw1u+tnIzMQq8xzml5MpSTn45C9wA=="
 mariadb_db_1: "tpcds1g"
 mariadb_db_2: "tpch1g"
 
-opensearch_host: "10.4.111.218"
-opensearch_port: 32000
-opensearch_user: "admin"
-opensearch_password: "eisoo.com123"
-opensearch_password_error: "Eisoo.com123"
-opensearch_password_ciphertext: "AWThfLCFtwgWChPa/bq7IsXL3jYNVYn7zUfNgz2X4zRkbfMQolAsDW8p57LfVlPxr0JiLmr1OQNHiu3Pc9TT9u49DYFW0fqCMe4uJBPQjWRZvrE7bV5K4Jgkc5xqs4CHqRgJHdWraa50mxNPj6ITCxPZu51PTJDx42NR10dFd0BpopVhM/qFMASwSY05e2BaJ0N/+QX0RO9AATvEGnHlbHgOxpjm33BMOzvjBlT+rYooMqqBaWt7XRXW2Q4IAT2RghpEmO8OKxMhdfHrr+GhJhGoSn7jSCa6gzro/pRbIkiMYrmN7Zy8cqR8dZHnXCxmM4rshnxjYdNnp6D1rVsJnw=="
-
+postgres_host: "192.168.40.105"
+postgres_port: 5432
+postgres_user: "postgres"
+postgres_password: "eisoo.com123"
+postgres_password_error: "Eisoo.com123"
+postgres_password_ciphertext: "im/xcTIMv9W8LrmUw02Ce6mo2P7yE+1PvXur1JmGkqP4qmSBoNKWpkakPCnOkPCVqgVnmng21BA5/ov/FB8y7SBSbLnZg9uM2mcykDhaFBYEg+0AKBY9GKcP2do2G7ZtphSOnNRR8iUrA0sgOGX11HhNmnPt7jUtUK5q95dgi9jBxj0rGWgJD/G7jRr5l/GvSLwGltbVf7pIww1CtiTr7YfASf4NnXvoPQ/+E4Zk3uJoe2ydITqvlHaETj031JPpCPiLUem0SvgHAIcLrDXdK2YCK9ITK8ivHNOyduHn76hX4iI7dl8kOIWvqAw1u+tnIzMQq8xzml5MpSTn45C9wA=="
+postgres_db_1: "tpcds1g"
+postgres_db_2: "tpch1g"
+postgres_schema: "public"
