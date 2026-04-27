@@ -295,3 +295,59 @@ kweaver call "/api/agent-operator-integration/v1/mcp/$MCP_ID/status" -X POST \
     -d '{"status":"published"}' >/dev/null
 echo "  ✓ MCP $MCP_ID (published, X-Kn-ID=$KN_ID)"
 
+# ── Step 9: Render agent.json with MCP_ID + LLM_ID ───────────────────────────
+echo ""
+echo "=== Step 9: Render agent.json ==="
+RENDERED_AGENT="$SCRIPT_DIR/.rendered-agent.json"
+sed \
+    -e "s|{{MCP_ID}}|$MCP_ID|" \
+    -e "s|{{LLM_ID}}|$LLM_ID|" \
+    -e "s|{{LLM_NAME}}|$LLM_NAME|" \
+    "$SCRIPT_DIR/agent.json" > "$RENDERED_AGENT"
+python3 -c "import json; json.load(open('$RENDERED_AGENT'))" >/dev/null
+echo "  ✓ agent.json rendered"
+
+# ── Step 10: Create + publish agent ──────────────────────────────────────────
+echo ""
+echo "=== Step 10: Create + publish Decision Agent ==="
+AGENT_NAME="ex04_skill_routing_${TIMESTAMP}"
+CREATE_RAW=$(kweaver agent create \
+    --name "$AGENT_NAME" \
+    --profile "Example 04 — KN-driven skill routing" \
+    --config "$RENDERED_AGENT" 2>&1)
+AGENT_ID=$(echo "$CREATE_RAW" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+def find_objs(s):
+    depth = 0; start = -1
+    for i, ch in enumerate(s):
+        if ch == '{':
+            if depth == 0: start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                yield s[start:i+1]; start = -1
+for chunk in find_objs(raw):
+    try: obj = json.loads(chunk)
+    except Exception: continue
+    if isinstance(obj, dict) and 'id' in obj:
+        print(obj['id']); break
+")
+[ -z "$AGENT_ID" ] && { echo "ERROR: agent create failed" >&2; echo "$CREATE_RAW" >&2; exit 1; }
+kweaver agent publish "$AGENT_ID" >/dev/null
+echo "  ✓ agent $AGENT_ID (published)"
+
+# ── Step 11: Trigger 3 critical-stock alerts; show DA's decisions ────────────
+echo ""
+echo "=== Step 11: Trigger 3 alerts (one per material) ==="
+for sku in MAT-001 MAT-002 MAT-003; do
+    echo ""
+    echo "--- $sku ---"
+    kweaver agent chat "$AGENT_ID" \
+        -m "Material $sku hit critical stock level. Use find_skills to identify applicable skills, query the BKN for evidence (supplier capability, etc.), pick the best skill, and report what you would execute." \
+        --stream 2>&1 \
+        | sed '/^(node:.*Warning:/d; /trace-warnings/d; /To continue this conversation/,$d' \
+        | tail -40
+done
+
