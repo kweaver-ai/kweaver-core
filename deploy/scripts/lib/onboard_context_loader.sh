@@ -3,8 +3,8 @@
 # Replaces deploy-time curl/port-forward; uses: kweaver call ... -F (multipart), same as manual impex.
 #
 # Who can import (token from  kweaver auth login  , stored under ~/.kweaver):
-#   - Full install (ISF present): use a platform admin. Default admin login is often
-#     admin@eisoo.com / eisoo.com (same as deploy/auto_cofig/README.md console: admin / eisoo.com).
+#   - Full install (ISF present): use a platform admin. Default console: username admin, password eisoo.com
+#     if still unchanged from install (same as deploy/auto_cofig/README.md: admin / eisoo.com).
 #   - Minimum (no ISF, kweaver-core --minimum): only kweaver-sdk is needed;  kweaver auth login
 #     then  kweaver call  impex; kweaver-admin is not required.
 # shellcheck source=/dev/null
@@ -23,7 +23,7 @@ onboard_context_loader_import_via_kweaver() {
     adp="$(onboard_context_loader_adp_path)"
     bd="${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
-        log_info "Context Loader: full/ISF — ensure  kweaver auth login  uses a platform admin (e.g. admin@eisoo.com / eisoo.com; see deploy/auto_cofig/README.md)."
+        log_info "Context Loader: full/ISF — ensure  kweaver auth login  uses a platform admin (default user admin, password eisoo.com if unchanged; see deploy/auto_cofig/README.md)."
     else
         log_info "Context Loader: minimum (no ISF) —  kweaver auth login  is enough; kweaver-admin not required."
     fi
@@ -47,7 +47,7 @@ onboard_context_loader_import_via_kweaver() {
     fi
     log_warn "Context Loader: kweaver call failed. Re-login:  kweaver auth login <url> -k"
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
-        log_warn "  (ISF/full) use a platform admin token, e.g. admin@eisoo.com / eisoo.com (see deploy/auto_cofig/README.md)."
+        log_warn "  (ISF/full) use a platform admin token (e.g. admin / eisoo.com if default password not changed; see deploy/auto_cofig/README.md)."
     else
         log_warn "  (minimum) ensure a valid  kweaver auth login  for this cluster."
     fi

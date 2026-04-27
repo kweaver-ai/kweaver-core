@@ -21,8 +21,9 @@ ONBOARD_ASSUME_YES="false"
 ONBOARD_SKIP_ISF_TEST_USER="${ONBOARD_SKIP_ISF_TEST_USER:-false}"
 ONBOARD_SKIP_CONTEXT_LOADER="${ONBOARD_SKIP_CONTEXT_LOADER:-false}"
 
-# kweaver auth: HTTP sign-in defaults (ISF / full install). Override in CI. Not hard-coded in CLI — only used when you confirm / press Enter.
-: "${ONBOARD_DEFAULT_KWEAVER_USER:=admin@eisoo.com}"
+# kweaver auth: HTTP sign-in defaults (ISF / full install). Console account is usually  admin  /  eisoo.com  if not changed.
+# Override in CI. Used when you press Enter at username/password prompts.
+: "${ONBOARD_DEFAULT_KWEAVER_USER:=admin}"
 : "${ONBOARD_DEFAULT_KWEAVER_PASSWORD:=eisoo.com}"
 
 # Same requirement as @kweaver-ai/kweaver-sdk on npm (node >= 22). https://www.npmjs.com/package/@kweaver-ai/kweaver-sdk
@@ -115,8 +116,8 @@ usage() {
     echo "  --skip-context-loader   Do not offer Context Loader ADP import (kweaver call impex); same as ONBOARD_SKIP_CONTEXT_LOADER=true"
     echo ""
     echo "  Context Loader (impex) auth:  kweaver call uses ~/.kweaver from  kweaver auth login  (not kweaver-admin)."
-    echo "    - Full install (ISF on cluster): use a platform admin token. Default console admin:  admin@eisoo.com  / password  eisoo.com"
-    echo "      (same as deploy/auto_cofig/README.md:  admin  /  eisoo.com  on the console)."
+    echo "    - Full install (ISF on cluster): use a platform admin token. Default console: username  admin , password  eisoo.com  (if you have not changed them from install defaults)."
+    echo "      (same as deploy/auto_cofig/README.md: admin / eisoo.com on the console.)"
     echo "    - Minimum / no ISF:  kweaver-sdk  only — log in with  kweaver auth login  then import; kweaver-admin not required."
     echo "  --namespace=NS           (default: kweaver; or key 'namespace' in yaml)"
     echo "  --enable-bkn-search      Only patch bkn/ontology ConfigMaps and rollout"
@@ -131,7 +132,7 @@ usage() {
     echo "                IMPORT_CONTEXT_LOADER_TOOLSET=false  skip Context Loader (legacy name; same effect)"
     echo "                CONTEXT_LOADER_TOOLSET_ADP_PATH=...  default ADP under repo adp/context-loader/.../context_loader_toolset.adp"
     echo "  Default KWeaver access URL (kweaver auth): this host’s primary IPv4, e.g.  https://\$(local-ip)  (set ONBOARD_DEFAULT_ACCESS_BASE=... to override; ONBOARD_DEFAULT_ACCESS_PORT e.g. 8443; ONBOARD_DEFAULT_ACCESS_SCHEME=http)"
-    echo "  kweaver auth: not auto-filled before — you always confirm URL. ISF+full: default HTTP user/pass = ONBOARD_DEFAULT_KWEAVER_USER / ONBOARD_DEFAULT_KWEAVER_PASSWORD (admin@eisoo.com / eisoo.com); Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
+    echo "  kweaver auth: you confirm URL. ISF+full: HTTP defaults user=admin pass=eisoo.com (if still default); override with ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD. Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
     echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."
     echo "  (preflight on the server: sudo preflight --fix still optional; this script can install Node in your *user* account via nvm.)"
 }
@@ -366,12 +367,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# After access URL is chosen: ISF → HTTP sign-in (defaults admin@eisoo.com / eisoo.com, Enter=accept) or browser -k; no ISF → --no-auth (Enter) or HTTP.
+# After access URL is chosen: ISF → HTTP sign-in (defaults admin / eisoo.com if unchanged) or browser -k; no ISF → --no-auth (Enter) or HTTP.
 # Env: ONBOARD_DEFAULT_KWEAVER_USER, ONBOARD_DEFAULT_KWEAVER_PASSWORD, ONBOARD_ASSUME_YES (non-interactive: ISF=HTTP+defaults, min=--no-auth).
 onboard_kweaver_auth_login_for_url() {
     local _kurl="$1"
     local _u _p _duser _dpass
-    _duser="${ONBOARD_DEFAULT_KWEAVER_USER:-admin@eisoo.com}"
+    _duser="${ONBOARD_DEFAULT_KWEAVER_USER:-admin}"
     _dpass="${ONBOARD_DEFAULT_KWEAVER_PASSWORD:-eisoo.com}"
 
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
@@ -387,7 +388,7 @@ onboard_kweaver_auth_login_for_url() {
         if [[ -z "${_htt}" || ! "${_htt}" =~ ^[Nn] ]]; then
             read -r -p "  Username [Enter = ${_duser}]: " _u
             _u="${_u:-${_duser}}"
-            read -r -s -p "  Password [Enter = default from ONBOARD_DEFAULT_KWEAVER_PASSWORD] " _p
+            read -r -s -p "  Password [Enter = ${_dpass} if still default / 未改密] " _p
             echo
             _p="${_p:-${_dpass}}"
             if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin -k; then
@@ -419,7 +420,7 @@ onboard_kweaver_auth_login_for_url() {
     fi
     read -r -p "  Username [Enter = ${_duser}]: " _u
     _u="${_u:-${_duser}}"
-    read -r -s -p "  Password [Enter = default] " _p
+    read -r -s -p "  Password [Enter = ${_dpass} if still default / 未改密] " _p
     echo
     _p="${_p:-${_dpass}}"
     if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin -k; then
