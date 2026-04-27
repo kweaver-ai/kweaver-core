@@ -537,6 +537,53 @@ onboard_ensure_kweaver_admin_for_isf() {
     fi
 }
 
+# Full ISF: kweaver (SDK) and kweaver-admin are separate logins. After kweaver auth, ensure admin CLI can list users before [test] + Context Loader.
+onboard_ensure_kweaver_admin_auth_for_isf() {
+    if ! (type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null); then
+        return 0
+    fi
+    onboard_prepend_npm_global_bin_to_path
+    if ! command -v kweaver-admin &>/dev/null; then
+        return 0
+    fi
+    if kweaver-admin --json user list --limit 1 &>/dev/null; then
+        onboard_log_info "kweaver-admin: authenticated (user list ok)."
+        return 0
+    fi
+    onboard_log_warn "Full ISF:  kweaver  (SDK) and  kweaver-admin  are different sessions. You logged in  kweaver  above; you still need:  kweaver-admin auth login <url> -k  to create user [test] and run ADP import."
+    if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
+        onboard_log_warn "Non-interactive (-y): run  kweaver-admin auth login  with the same access base URL, then re-run onboard; user [test] and Context Loader are skipped this run."
+        return 0
+    fi
+    if ! onboard_is_bootstrap_tty; then
+        return 0
+    fi
+    local _url _defu _go
+    _defu="$(onboard_default_access_base_url 2>/dev/null || true)"
+    echo ""
+    read -r -p "Run kweaver-admin auth now (device/browser) [Y/n] (Enter = Y): " _go
+    if [[ -n "${_go}" && "${_go}" =~ ^[Nn] ]]; then
+        onboard_log_warn "Skipped. To create [test] and import Context Loader on ISF, run:  kweaver-admin auth login <url> -k  then:  $0  again."
+        return 0
+    fi
+    read -r -p "kweaver-admin access base URL [Enter = ${_defu}]: " _url
+    _url="${_url:-${_defu}}"
+    if [[ -z "${_url}" ]]; then
+        return 0
+    fi
+    onboard_log_info "kweaver-admin: auth (browser)…"
+    if kweaver-admin auth login "${_url}" -k; then
+        if kweaver-admin --json user list --limit 1 &>/dev/null; then
+            onboard_log_info "kweaver-admin: login OK — next: user [test], then Context Loader."
+        else
+            onboard_log_warn "kweaver-admin: auth finished but user list still fails; re-run  kweaver-admin auth login  or check platform."
+        fi
+    else
+        onboard_log_warn "kweaver-admin auth login failed. Run it manually, then re-run:  $0"
+    fi
+    return 0
+}
+
 onboard_probe() {
     onboard_ensure_kweaver_auth
     if [[ "${INTERACTIVE}" == "true" ]]; then
@@ -559,6 +606,7 @@ onboard_probe() {
     onboard_recommend_admin_cli
     onboard_ensure_kweaver_admin_for_isf
     onboard_prepend_npm_global_bin_to_path
+    onboard_ensure_kweaver_admin_auth_for_isf
     onboard_offer_isf_test_user
     onboard_offer_context_loader_toolset
 }
