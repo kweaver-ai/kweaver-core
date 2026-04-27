@@ -483,6 +483,7 @@ One admin endpoint (called by Bonus):
 """
 import json
 import os
+import re
 import sys
 
 import mysql.connector
@@ -497,6 +498,11 @@ DB_CONFIG = {
     "user": os.environ["DB_USER"],
     "password": os.environ["DB_PASS"],
 }
+
+# run.sh imports CSVs with --table-prefix, so the real table is ex04_<ts>_suppliers.
+SUPPLIERS_TABLE = os.environ.get("SUPPLIERS_TABLE", "suppliers")
+if not re.fullmatch(r"[A-Za-z0-9_]+", SUPPLIERS_TABLE):
+    raise ValueError(f"Invalid SUPPLIERS_TABLE: {SUPPLIERS_TABLE!r}")
 
 # ── Business endpoints ───────────────────────────────────────────────────────
 
@@ -541,7 +547,7 @@ def admin_set_capability():
     try:
         cur = conn.cursor()
         cur.execute(
-            "UPDATE suppliers SET capability=%s WHERE supplier_id=%s",
+            f"UPDATE {SUPPLIERS_TABLE} SET capability=%s WHERE supplier_id=%s",
             (capability, supplier_id),
         )
         affected = cur.rowcount
@@ -1097,6 +1103,7 @@ TOOL_BACKEND_URL="http://127.0.0.1:$TOOL_BACKEND_PORT"
 DB_HOST="$DB_HOST" DB_PORT="$DB_PORT" DB_NAME="$DB_NAME" \
 DB_USER="$DB_USER" DB_PASS="$DB_PASS" \
 TOOL_BACKEND_PORT="$TOOL_BACKEND_PORT" \
+SUPPLIERS_TABLE="${TABLE_PREFIX}suppliers" \
 python3 "$SCRIPT_DIR/tool_backend/server.py" >"$SCRIPT_DIR/.tool_backend.log" 2>&1 &
 TOOL_BACKEND_PID=$!
 sleep 2

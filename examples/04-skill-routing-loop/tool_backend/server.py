@@ -12,6 +12,7 @@ One admin endpoint (called by Bonus):
 """
 import json
 import os
+import re
 import sys
 
 import mysql.connector
@@ -26,6 +27,11 @@ DB_CONFIG = {
     "user": os.environ["DB_USER"],
     "password": os.environ["DB_PASS"],
 }
+
+# run.sh imports CSVs with --table-prefix, so the real table is ex04_<ts>_suppliers.
+SUPPLIERS_TABLE = os.environ.get("SUPPLIERS_TABLE", "suppliers")
+if not re.fullmatch(r"[A-Za-z0-9_]+", SUPPLIERS_TABLE):
+    raise ValueError(f"Invalid SUPPLIERS_TABLE: {SUPPLIERS_TABLE!r}")
 
 # ── Business endpoints ───────────────────────────────────────────────────────
 
@@ -70,7 +76,7 @@ def admin_set_capability():
     try:
         cur = conn.cursor()
         cur.execute(
-            "UPDATE suppliers SET capability=%s WHERE supplier_id=%s",
+            f"UPDATE {SUPPLIERS_TABLE} SET capability=%s WHERE supplier_id=%s",
             (capability, supplier_id),
         )
         affected = cur.rowcount
