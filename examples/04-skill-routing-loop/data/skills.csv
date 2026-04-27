@@ -1,0 +1,4 @@
+skill_id,name,description
+standard_replenish,标准补货,Default procurement order via ERP
+substitute_swap,替代料切换,Pick best substitute via Python scoring then call MES
+supplier_expedite,供应商加急,Send expedite request to supplier portal
