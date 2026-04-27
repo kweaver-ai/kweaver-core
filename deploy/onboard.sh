@@ -326,6 +326,19 @@ onboard_ensure_kweaver_cli() {
     log_info "kweaver: $(kweaver --version 2>/dev/null | head -1)"
 }
 
+# Same shell as nvm/node: global CLIs (kweaver, kweaver-admin) live under $(npm config get prefix)/bin — prepend so a just-installed -g is visible.
+onboard_prepend_npm_global_bin_to_path() {
+    local pfx
+    pfx="$(npm config get prefix 2>/dev/null)" || true
+    if [[ -n "${pfx}" && -d "${pfx}/bin" ]]; then
+        case ":${PATH}:" in
+            *":${pfx}/bin:"*) ;;
+            *) export PATH="${pfx}/bin${PATH:+:${PATH}}" ;;
+        esac
+    fi
+    hash -r 2>/dev/null || true
+}
+
 onboard_ensure_node_22
 onboard_ensure_kweaver_cli
 if ! command -v kubectl &>/dev/null; then
@@ -481,6 +494,7 @@ onboard_ensure_kweaver_admin_for_isf() {
     if ! (type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null); then
         return 0
     fi
+    onboard_prepend_npm_global_bin_to_path
     command -v kweaver-admin &>/dev/null && return 0
     if [[ "${ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL:-false}" == "true" ]]; then
         onboard_log_info "kweaver-admin: skip npm install (ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL=true)."
@@ -496,6 +510,7 @@ onboard_ensure_kweaver_admin_for_isf() {
             onboard_log_warn "npm i -g @kweaver-ai/kweaver-admin failed; install manually, then: kweaver-admin auth login <url> -k"
         fi
         hash -r 2>/dev/null || true
+        onboard_prepend_npm_global_bin_to_path
         if command -v kweaver-admin &>/dev/null; then
             onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
         fi
@@ -505,7 +520,7 @@ onboard_ensure_kweaver_admin_for_isf() {
         return 0
     fi
     echo ""
-    read -r -p "ISF (full) install: need kweaver-admin to create user [test]. Install @kweaver-ai/kweaver-admin now (npm i -g)? [Y/n]: " _kadm
+    read -r -p "ISF: run  npm i -g @kweaver-ai/kweaver-admin  to create user [test] (re-run is OK if already installed) [Y/n]: " _kadm
     if [[ -n "${_kadm}" && "${_kadm}" =~ ^[Nn] ]]; then
         onboard_log_warn "kweaver-admin not installed: user test will not be created this run. Install later: npm i -g @kweaver-ai/kweaver-admin"
         return 0
@@ -514,11 +529,11 @@ onboard_ensure_kweaver_admin_for_isf() {
         onboard_log_warn "npm i -g @kweaver-ai/kweaver-admin failed (registry, proxy, or EACCES)."
         return 0
     fi
-    hash -r 2>/dev/null || true
+    onboard_prepend_npm_global_bin_to_path
     if command -v kweaver-admin &>/dev/null; then
         onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
     else
-        onboard_log_warn "kweaver-admin still not on PATH. Add: export PATH=\"\$(npm config get prefix 2>/dev/null)/bin:\$PATH\""
+        onboard_log_warn "kweaver-admin still not on PATH. In this shell:  export PATH=\"\$(npm config get prefix 2>/dev/null)/bin:\$PATH\""
     fi
 }
 
@@ -540,8 +555,10 @@ onboard_probe() {
     else
         onboard_log_info "OK: kweaver + kubectl (ns=${NAMESPACE})"
     fi
+    onboard_prepend_npm_global_bin_to_path
     onboard_recommend_admin_cli
     onboard_ensure_kweaver_admin_for_isf
+    onboard_prepend_npm_global_bin_to_path
     onboard_offer_isf_test_user
     onboard_offer_context_loader_toolset
 }
@@ -567,9 +584,7 @@ onboard_recommend_admin_cli() {
         if command -v kweaver-admin &>/dev/null; then
             onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
         else
-            onboard_log_warn "kweaver-admin not in PATH. Full install needs it for user/org/role/model/audit ops."
-            onboard_log_warn "  Install:  npm i -g @kweaver-ai/kweaver-admin"
-            onboard_log_warn "  Login:    kweaver-admin auth login <https://access-url> -k"
+            onboard_log_info "kweaver-admin: 未在初始 PATH 中。已尝试加入 npm 全局 bin；若本步仍无，下一段会再装或见提示。全量建用户需:  kweaver-admin auth login <url> -k 。"
         fi
     else
         onboard_log_info "No ISF releases detected — minimum install. kweaver-sdk (this CLI) is enough; kweaver-admin not required."

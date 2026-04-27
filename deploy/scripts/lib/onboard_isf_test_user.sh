@@ -187,9 +187,8 @@ onboard_offer_isf_test_user() {
     }
     command -v kweaver-admin &>/dev/null || {
         ONBOARD_REPORT_ISF_TEST_USER="已跳过: 无 kweaver-admin (需 npm i -g @kweaver-ai/kweaver-admin 后再建 test)"
-        log_warn "未安装 kweaver-admin：已跳过「创建/同步用户 test」步骤（建用户、赋权依赖该 CLI）。"
-        log_warn "  安装:  npm i -g @kweaver-ai/kweaver-admin  →  kweaver-admin auth login <https://平台访问地址> -k  →  再执行  ./onboard.sh"
-        log_warn "  全自动化可试:  $0 -y  （在 ISF 下会尝试自动  npm  安装  kweaver-admin；或设  ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL=true  则不装）"
+        log_warn "未检测到 kweaver-admin（可执行  which kweaver-admin ）：已跳过「创建/同步用户 test」。若已  npm -g  装过: 在**当前终端**  export PATH=\"\$(npm config get prefix)/bin:\$PATH\"  后重试本脚本，或:  $0 -y  （ISF 会再装/刷新  PATH ）。"
+        log_warn "  首次使用还需:  kweaver-admin auth login <https://平台地址> -k  （再  ./onboard.sh  建  test ）"
         return 0
     }
 
