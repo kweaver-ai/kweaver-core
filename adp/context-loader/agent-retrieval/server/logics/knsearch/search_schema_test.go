@@ -111,6 +111,46 @@ func hasMetricExpansionScopeTypeConstraint(req *interfaces.QueryConceptsReq) boo
 	return false
 }
 
+func stringSlicesEqual(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestNormalizeSearchSchemaReq_NormalizesConceptGroups(t *testing.T) {
+	maxConcepts := 10
+	knReq, scope, err := NormalizeSearchSchemaReq(&interfaces.SearchSchemaReq{
+		Query:       "find schema",
+		KnID:        "kn-001",
+		MaxConcepts: &maxConcepts,
+		SearchScope: &interfaces.SearchSchemaScope{
+			ConceptGroups: []string{" supply_chain ", "supply_chain", "", "finance"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("NormalizeSearchSchemaReq returned error: %v", err)
+	}
+
+	want := []string{"supply_chain", "finance"}
+	if !stringSlicesEqual(scope.ConceptGroups, want) {
+		t.Fatalf("scope.ConceptGroups=%v, want %v", scope.ConceptGroups, want)
+	}
+
+	cfg, ok := knReq.RetrievalConfig.(*interfaces.RetrievalConfig)
+	if !ok || cfg == nil || cfg.ConceptRetrieval == nil {
+		t.Fatalf("expected typed retrieval config, got %#v", knReq.RetrievalConfig)
+	}
+	if !stringSlicesEqual(cfg.ConceptRetrieval.ConceptGroups, want) {
+		t.Fatalf("ConceptRetrieval.ConceptGroups=%v, want %v", cfg.ConceptRetrieval.ConceptGroups, want)
+	}
+}
+
 func TestSearchSchema_AppliesMaxConceptsPerResourceType(t *testing.T) {
 	maxConcepts := 1
 	service := &knSearchService{
@@ -415,6 +455,69 @@ func TestSearchSchema_ExpansionQueryConstrainsScopeTypeToObjectType(t *testing.T
 	}
 }
 
+func TestSearchSchema_MetricQueriesCarryConceptGroups(t *testing.T) {
+	maxConcepts := 10
+	var directReq *interfaces.QueryConceptsReq
+	var expansionReq *interfaces.QueryConceptsReq
+	backend := &stubSearchSchemaBknBackend{
+		searchMetricTypesFunc: func(_ context.Context, req *interfaces.QueryConceptsReq) (*interfaces.MetricTypeConcepts, error) {
+			if isMetricExpansionQuery(req) {
+				expansionReq = req
+				return &interfaces.MetricTypeConcepts{
+					Entries: []*interfaces.MetricType{
+						{ID: "m_2", Name: "stock_turnover", MetricType: "atomic", ScopeType: "object_type", ScopeRef: "ot_1", CalculationFormula: map[string]any{"op": "avg"}},
+					},
+				}, nil
+			}
+			directReq = req
+			return &interfaces.MetricTypeConcepts{
+				Entries: []*interfaces.MetricType{
+					{ID: "m_1", Name: "inventory", MetricType: "atomic", ScopeType: "object_type", ScopeRef: "ot_1", CalculationFormula: map[string]any{"op": "sum"}},
+				},
+			}, nil
+		},
+	}
+
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_1", ConceptName: "Inventory"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(backend, func() {
+		_, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "inventory metrics",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+			SearchScope: &interfaces.SearchSchemaScope{
+				ConceptGroups: []string{"supply_chain"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+	})
+
+	want := []string{"supply_chain"}
+	if directReq == nil {
+		t.Fatal("expected direct metric recall query")
+	}
+	if !stringSlicesEqual(directReq.ConceptGroups, want) {
+		t.Fatalf("direct metric ConceptGroups=%v, want %v", directReq.ConceptGroups, want)
+	}
+	if expansionReq == nil {
+		t.Fatal("expected expansion metric recall query")
+	}
+	if !stringSlicesEqual(expansionReq.ConceptGroups, want) {
+		t.Fatalf("expansion metric ConceptGroups=%v, want %v", expansionReq.ConceptGroups, want)
+	}
+}
+
 func TestSearchSchema_DirectMetricRecallErrorReturnsError(t *testing.T) {
 	maxConcepts := 10
 	backend := &stubSearchSchemaBknBackend{
@@ -500,8 +603,8 @@ func TestSearchSchema_AllScopeDisabled_ReturnsBadRequest(t *testing.T) {
 	includeActionTypes := false
 	includeMetricTypes := false
 	service := &knSearchService{
-		Logger:         infraLogger.DefaultLogger(),
-		LocalSearch:    &stubSearchSchemaLocalService{},
+		Logger:      infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{},
 	}
 
 	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {

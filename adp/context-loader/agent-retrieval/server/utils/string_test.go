@@ -29,6 +29,7 @@ func TestObjectToByte(t *testing.T) {
 		convey.So(byt, convey.ShouldNotEqual, nil)
 	})
 }
+
 func TestObjectToJSON(t *testing.T) {
 	convey.Convey("ObjectToJSON", t, func() {
 		byt := ObjectToJSON(nil)

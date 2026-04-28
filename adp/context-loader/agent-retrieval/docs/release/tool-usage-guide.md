@@ -6,13 +6,14 @@
 
 | 字段 | 值 |
 | :--- | :--- |
-| 文档版本 | v1.4 |
-| 适用版本 | context-loader v0.7.0 |
-| 发布日期 | 2026-04-23 |
+| 文档版本 | v1.6 |
+| 适用版本 | context-loader v0.8.0 |
+| 发布日期 | 2026-04-28 |
 | 状态 | 正式发布 |
 
 | 修订日期 | 修订说明 |
 | :--- | :--- |
+| 2026-04-28 | 更新为 context-loader `0.8.0`；`search_schema` 增加 `search_scope.concept_groups`，用于按 BKN 概念分组限定 object / relation / action schema 召回范围，并向 metric schema 检索透传分组条件 |
 | 2026-04-23 | 更新为 context-loader `0.7.0`；本版 release 仅纳入 `issue-189` / `issue-234`；`search_schema` 的 HTTP `kn_id` 改为通过 body 传递，并补充 `metric_types` 发布口径 |
 | 2026-04-16 | Schema 探索入口统一为 `search_schema`；MCP 不再暴露 `kn_search` / `kn_schema_search`；补充标准 / 兼容 / legacy 接口分层说明 |
 | 2026-04-10 | 更新为 context-loader `0.6.0`，新增 `find_skills` 工具说明，并补充 `search/query/find/get` 四类工具语义 |
@@ -72,6 +73,7 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/search_s
     "kn_id": "kn_medical",
     "query": "头晕吃什么药",
     "search_scope": {
+      "concept_groups": ["medical_core"],
       "include_object_types": true,
       "include_relation_types": true,
       "include_action_types": true,
@@ -163,6 +165,7 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 - 作用：根据 query 返回与之相关的 `object_types / relation_types / action_types / metric_types`
 - 说明：这是新版本标准 Schema 探索接口，也是 MCP / Agent 唯一推荐入口。
 - HTTP 口径：`kn_id` 通过 request body 传入，不再使用 `x-kn-id` Header。
+- 概念分组：`search_scope.concept_groups` 可按 BKN 概念分组限定 Schema 召回范围；该范围作用于对象类、关系类和动作类，并向指标类检索透传分组条件，不作为实例数据过滤条件。
 
 请求体（关键字段）：
 
@@ -170,15 +173,20 @@ curl -X POST "http://agent-retrieval:30779/api/agent-retrieval/in/v1/kn/query_ob
 | :--- | :--- | :--- |
 | `query` | 是 | 用户自然语言查询 |
 | `kn_id` | 是 | 知识网络 ID，通过 request body 传入 |
-| `search_scope` | 否 | 是否包含对象类/关系类/动作类/指标类；至少开启一种，默认全开 |
+| `search_scope` | 否 | 是否包含对象类/关系类/动作类/指标类；`concept_groups` 用于限定 BKN 概念分组，其中对象类/关系类/动作类按分组生效，指标类透传分组条件；至少开启一种资源类型，默认全开 |
 | `max_concepts` | 否 | 最大候选概念数量（默认 10） |
 | `schema_brief` | 否 | 是否返回精简 Schema（默认 false） |
 | `enable_rerank` | 否 | 是否启用关系类型 Rerank（默认 true） |
 
 返回要点：
 
-- `object_types / relation_types / action_types / metric_types`：分组后的 Schema 结果
+- `object_types / relation_types / action_types / metric_types`：Schema 结果；对象类/关系类/动作类可按概念分组限定，指标类会透传同一组分组条件
 - 不返回实例数据，不返回 `nodes` / `message`
+- 不传或传空 `concept_groups` 时不限定分组；分组语义实际由 BKN 完成，ContextLoader 直接调用 BKN 的 typed search 接口并把列表透传下去
+- BKN 概念分组以对象类为直接边界：`object_types` 直接按组内对象类召回，`relation_types` 按 source / target 对象类均在组内推导，`action_types` 按绑定对象类在组内推导
+- 当关系类或动作类结果引用了对象检索未命中的对象类时，ContextLoader 会补齐对应对象类详情，保证返回 Schema 引用完整
+- `metric_types` 会携带同一组 `concept_groups` 调用 BKN metrics 检索；接口字段已支持，实际分组过滤依赖 BKN metrics 侧实现
+- 当 BKN 判定请求分组均不存在时，当前会返回 5xx 错误（含 `error_details: "all concept group not found ..."`），`search_schema` 会直接向上透传该错误，而不是包装为成功的空结果；调用方可据此区分“分组不存在”与“分组合法但范围内无概念”
 
 Data Agent 配置（建议）：
 
@@ -198,11 +206,13 @@ Data Agent 配置（建议）：
 - `kn_search`
   - 兼容 HTTP 接口：`POST /api/agent-retrieval/in/v1/kn/kn_search`
   - 与 `search_schema` 共用收敛后的 Schema-only logic
+  - 本次 `0.8.0` 的概念分组需求不改造该接口；新接入方如需按 BKN 概念分组探索 Schema，应使用 `search_schema.search_scope.concept_groups`
   - 旧字段可传，但不再恢复实例检索或 `nodes / message`
 - `kn_schema_search`
   - legacy HTTP 接口：`POST /api/agent-retrieval/in/v1/kn/semantic-search`
   - 保持历史 `concepts[]` 输出形态
   - 不参与本次 shared logic 收敛
+  - 虽然历史请求结构中已有 `concept_groups` 表达，但本次不改造该 legacy 链路；新接入方应使用 `search_schema`
 
 ### 6.3 query_object_instance（对象实例查询）
 

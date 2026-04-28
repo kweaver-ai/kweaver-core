@@ -20,6 +20,7 @@ func GetLanguageFromCtx(ctx context.Context) Language {
 func SetLanguageToCtx(ctx context.Context, languageInfo Language) context.Context {
 	return SetLanguageByCtx(ctx, languageInfo)
 }
+
 func SetPublicAPIToCtx(ctx context.Context, isPublic bool) context.Context {
 	return context.WithValue(ctx, interfaces.IsPublic, isPublic)
 }

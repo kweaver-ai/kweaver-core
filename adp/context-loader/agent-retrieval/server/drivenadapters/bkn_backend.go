@@ -223,7 +223,6 @@ func (b *bknBackendAccess) SearchRelationTypes(ctx context.Context, query *inter
 	header[rest.ContentTypeKey] = rest.ContentTypeJSON
 	header["x-http-method-override"] = "GET"
 	respCode, respBody, err := b.httpClient.PostNoUnmarshal(ctx, src, header, query)
-
 	if err != nil {
 		b.logger.WithContext(ctx).Errorf("[BknBackendAccess] SearchRelationTypes request failed, err: %v", err)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,
@@ -333,7 +332,6 @@ func (b *bknBackendAccess) SearchActionTypes(ctx context.Context, query *interfa
 	header[rest.ContentTypeKey] = rest.ContentTypeJSON
 	header["x-http-method-override"] = "GET"
 	respCode, respBody, err := b.httpClient.PostNoUnmarshal(ctx, src, header, query)
-
 	if err != nil {
 		b.logger.WithContext(ctx).Errorf("[BknBackendAccess] SearchActionTypes request failed, err: %v", err)
 		return nil, infraErr.DefaultHTTPError(ctx, respCode,

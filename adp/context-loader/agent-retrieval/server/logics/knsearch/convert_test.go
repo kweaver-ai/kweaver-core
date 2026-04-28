@@ -73,6 +73,26 @@ func TestKnSearchReqToLocal_RetrievalConfigTypedPreservesFalseBools(t *testing.T
 	assertFalseBoolPtr(t, "EnablePropertyFilter", pf.EnablePropertyFilter)
 }
 
+func TestKnSearchReqToLocal_SearchScopeConceptGroups(t *testing.T) {
+	req := &interfaces.KnSearchReq{
+		Query: "q",
+		KnID:  "kn-1",
+		SearchScope: &interfaces.SearchScopeConfig{
+			ConceptGroups: []string{" supply_chain ", "supply_chain", "", "finance"},
+		},
+	}
+
+	local := KnSearchReqToLocal(req)
+	if local == nil || local.RetrievalConfig == nil || local.RetrievalConfig.ConceptRetrieval == nil {
+		t.Fatalf("expected local concept retrieval config, got %#v", local)
+	}
+
+	want := []string{"supply_chain", "finance"}
+	if !stringSlicesEqual(local.RetrievalConfig.ConceptRetrieval.ConceptGroups, want) {
+		t.Fatalf("ConceptGroups=%v, want %v", local.RetrievalConfig.ConceptRetrieval.ConceptGroups, want)
+	}
+}
+
 func assertFalseBoolPtr(t *testing.T, name string, p *bool) {
 	t.Helper()
 	if p == nil {

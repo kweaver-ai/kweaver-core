@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      # ==================== agent-retrieval ====================
+      - id: agent-retrieval-lint
+        name: agent-retrieval lint
+        entry: bash -c 'cd adp/context-loader/agent-retrieval && make lint'
+        language: system
+        files: ^adp/context-loader/agent-retrieval/.*\.go$
+        pass_filenames: false
