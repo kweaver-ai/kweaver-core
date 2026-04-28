@@ -16,6 +16,48 @@ onboard_context_loader_adp_path() {
     printf '%s' "${CONTEXT_LOADER_TOOLSET_ADP_PATH:-${repo_root}/adp/context-loader/agent-retrieval/docs/release/toolset/context_loader_toolset.adp}"
 }
 
+# Extract box_id / box_name from a toolbox ADP file (JSON: toolbox.configs[0]).
+# Prints "<box_id>\t<box_name>" on stdout; empty and non-zero on failure.
+onboard_context_loader_adp_meta() {
+    local adp="$1"
+    [[ -f "${adp}" ]] || return 1
+    python3 - "${adp}" <<'PY' 2>/dev/null || return 1
+import json, sys
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as f:
+        j = json.load(f)
+except Exception:
+    sys.exit(1)
+configs = (j.get("toolbox") or {}).get("configs") or []
+if not configs:
+    sys.exit(1)
+bid = configs[0].get("box_id") or ""
+bname = configs[0].get("box_name") or ""
+if not bid:
+    sys.exit(1)
+print("%s\t%s" % (bid, bname))
+PY
+}
+
+# Returns 0 if the toolbox box_id is already present on the platform, else 1.
+# Uses the same -bd as the importer so the check sees the right business domain.
+onboard_context_loader_already_imported() {
+    local box_id="$1" bd
+    bd="${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
+    [[ -z "${box_id}" ]] && return 1
+    local out
+    if ! out=$(kweaver call "/api/agent-operator-integration/v1/tool-box/${box_id}" -bd "${bd}" 2>/dev/null); then
+        return 1
+    fi
+    # success payload contains the box_id; failures look like {"code":"...","message":"..."}
+    # or HTTP 404 wrapped JSON. Be conservative: require the box_id literal AND no "not found" indicator.
+    if printf '%s' "${out}" | grep -Fq "${box_id}" \
+        && ! printf '%s' "${out}" | grep -qiE '"code"[[:space:]]*:[[:space:]]*"?(4[0-9]{2}|5[0-9]{2})|not[[:space:]]*found|不存在|does not exist'; then
+        return 0
+    fi
+    return 1
+}
+
 # Import via kweaver call (uses ~/.kweaver token from kweaver auth login). Needs permission to impex.
 onboard_context_loader_import_via_kweaver() {
     local ns adp bd
@@ -46,6 +88,36 @@ onboard_context_loader_import_via_kweaver() {
         else
             log_info "Context Loader: ISF — (onboard_ensure_isf_test_for_kweaver_impex missing) using current kweaver user."
         fi
+    fi
+    # Skip if the toolbox is already on the platform. With -y we never re-import (use --reimport-context-loader=true to force).
+    # In TTY mode we ask whether to overwrite via the same upsert endpoint.
+    local _adp_meta _adp_box_id _adp_box_name
+    if _adp_meta="$(onboard_context_loader_adp_meta "${adp}")" && [[ -n "${_adp_meta}" ]]; then
+        _adp_box_id="${_adp_meta%%	*}"
+        _adp_box_name="${_adp_meta#*	}"
+        if onboard_context_loader_already_imported "${_adp_box_id}"; then
+            local _force="${REIMPORT_CONTEXT_LOADER:-false}"
+            if [[ "${_force}" != "true" && "${ONBOARD_ASSUME_YES:-false}" == "true" ]]; then
+                ONBOARD_REPORT_CONTEXT_LOADER="skipped: already imported (box_id=${_adp_box_id}${_adp_box_name:+, name=${_adp_box_name}}); set REIMPORT_CONTEXT_LOADER=true to overwrite"
+                log_info "Context Loader: already imported on this platform (box_id=${_adp_box_id}${_adp_box_name:+, name=${_adp_box_name}}). Skipping. Set REIMPORT_CONTEXT_LOADER=true to force re-import."
+                return 0
+            fi
+            local _is_tty="false"
+            if type onboard_is_bootstrap_tty &>/dev/null && onboard_is_bootstrap_tty; then
+                _is_tty="true"
+            fi
+            if [[ "${_force}" != "true" && "${_is_tty}" == "true" ]]; then
+                read -r -p "Context Loader is already imported (box_id=${_adp_box_id}${_adp_box_name:+, name=${_adp_box_name}}). Re-import (upsert) anyway? [y/N]: " _reimp
+                if [[ ! "${_reimp}" =~ ^[Yy] ]]; then
+                    ONBOARD_REPORT_CONTEXT_LOADER="skipped: already imported (box_id=${_adp_box_id}); user declined re-import"
+                    log_info "Context Loader: skipped (already imported, user declined re-import)."
+                    return 0
+                fi
+            fi
+            log_info "Context Loader: already imported — proceeding with upsert (force=${_force})."
+        fi
+    else
+        log_info "Context Loader: could not extract box_id from ADP — will import unconditionally."
     fi
     log_info "Importing Context Loader toolset via kweaver call (impex upsert)…"
     if kweaver call "/api/agent-operator-integration/v1/impex/import/toolbox" -X POST \
