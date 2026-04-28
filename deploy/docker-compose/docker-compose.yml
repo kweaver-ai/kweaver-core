@@ -1,6 +1,6 @@
-# KWeaver Core (minimum, no ISF) — see COMPOSE.md
+# KWeaver Core (minimum, no ISF) — see README.md
 
-name: kweaver-compose
+name: ${COMPOSE_PROJECT_NAME:-kweaver-compose}
 
 services:
   mariadb:

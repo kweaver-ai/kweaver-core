@@ -27,7 +27,7 @@ chmod +x ./setup.sh
    - shared CLI flag `-p / --password=…` or shared env var `PASSWORD=…` (one value applied to all three fields)
    - current value in `.env`
    - interactive prompt (TTY only; `Enter` keeps the current value)
-   - `.env.example` default (with a warning if it is still the placeholder)
+   - error exit if the value is still empty
 3. Always rewrite `SANDBOX_DATABASE_URL` so its password matches `MARIADB_PASSWORD`.
 4. Render `configs/kweaver/config.yaml.template` → `configs/generated/config.yaml`.
 5. Run `docker compose config` as an offline sanity check.
@@ -69,7 +69,7 @@ MINIO_ROOT_PASSWORD=MinioPw_2026 \
 
 Or just edit `.env` by hand and re-run `./setup.sh --non-interactive`.
 
-> Password tip: stick to `[A-Za-z0-9_-]` so the value can be embedded in `SANDBOX_DATABASE_URL` (a Python DSN) without URL-encoding.
+> Password rule: use only `[A-Za-z0-9_-]`. `setup.sh` enforces this because the value is written to `.env` and embedded in `SANDBOX_DATABASE_URL` (a Python DSN) without URL-encoding.
 
 ## Bringing the stack up (optional)
 
@@ -89,10 +89,10 @@ docker compose down
 
 ## Entry points
 
-| What | URL / port |
-|------|------------|
-| KWeaver API (via nginx) | `http://<ACCESS_HOST>:<KWEAVER_HTTP_PORT>` — default `http://localhost:8080` |
-| Sandbox control plane | **Not** behind nginx; map `8000` (container) → **`SANDBOX_HTTP_PORT`** on the host (default **8001**) — `http://localhost:8001` |
+| What                    | URL / port                                                                                                                                |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| KWeaver API (via nginx) | `http://<ACCESS_HOST>:<KWEAVER_HTTP_PORT>` — default `http://localhost:8080`                                                              |
+| Sandbox control plane   | **Not** behind nginx; map `8000` (container) → **`SANDBOX_HTTP_PORT`** on the host (default **8001**) — `http://localhost:8001`           |
 
 Set `ACCESS_HOST`, `KWEAVER_HTTP_PORT`, and `SANDBOX_HTTP_PORT` in `.env` to avoid port clashes.
 
@@ -118,11 +118,13 @@ present, which leads to `Access denied` errors.
 To rotate safely, pick one:
 
 - **Wipe and re-init (DESTROYS data)**:
+
   ```bash
   docker compose down -v          # removes mariadb_data / minio_data / ...
   ./setup.sh -p NEW_PASSWORD -y
   docker compose up -d
   ```
+
 - **Change in place**: `ALTER USER 'adp'@'%' IDENTIFIED BY 'NEW';
   FLUSH PRIVILEGES;` inside the mariadb container (and `mc admin user …` for
   MinIO), then sync `.env` and re-run `./setup.sh -y`.

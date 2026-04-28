@@ -38,7 +38,7 @@ Resolution order per field (highest wins):
     >  shared --password CLI flag  >  shared PASSWORD env var
     >  current .env value
     >  interactive prompt (TTY only)
-    >  .env.example default
+    >  error exit if still empty
 EOF
 }
 
@@ -166,21 +166,6 @@ ROOT_PW="$(resolve_pw MARIADB_ROOT_PASSWORD "$CLI_ROOT_PW" "$CLI_ROOT_PW_SET")"
 ADP_PW="$(resolve_pw MARIADB_PASSWORD       "$CLI_ADP_PW"  "$CLI_ADP_PW_SET")"
 MINIO_PW="$(resolve_pw MINIO_ROOT_PASSWORD  "$CLI_MINIO_PW" "$CLI_MINIO_PW_SET")"
 
-# Only write back values we actually resolved; never overwrite the placeholder
-# with an empty string (the validation below will then catch the leftover).
-[[ -n "$ROOT_PW" ]]  && set_env_var .env MARIADB_ROOT_PASSWORD "$ROOT_PW"
-[[ -n "$ADP_PW" ]]   && set_env_var .env MARIADB_PASSWORD      "$ADP_PW"
-[[ -n "$MINIO_PW" ]] && set_env_var .env MINIO_ROOT_PASSWORD   "$MINIO_PW"
-
-# Always rebuild SANDBOX_DATABASE_URL so it stays consistent with MARIADB_USER/PASSWORD,
-# but only if we have a real password (otherwise leave the placeholder in place).
-if [[ -n "$ADP_PW" ]]; then
-  ADP_USER="$(read_env_var .env MARIADB_USER)"
-  ADP_USER="${ADP_USER:-adp}"
-  set_env_var .env SANDBOX_DATABASE_URL \
-    "mysql+aiomysql://${ADP_USER}:${ADP_PW}@mariadb:3306/sandbox"
-fi
-
 # Refuse to render if any required password is still empty.
 UNFILLED=()
 [[ -z "$ROOT_PW"  ]] && UNFILLED+=("MARIADB_ROOT_PASSWORD (--mariadb-root-password)")
@@ -196,31 +181,62 @@ if (( ${#UNFILLED[@]} > 0 )); then
   exit 1
 fi
 
-# shellcheck disable=1091
-set -a
-# shellcheck disable=1090
-source .env
-set +a
+validate_secret() {
+  local key="$1" val="$2"
+  if [[ ! "$val" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    echo "ERROR: ${key} contains unsupported characters." >&2
+    echo "Use only [A-Za-z0-9_-]. These values are written to .env and" >&2
+    echo "embedded in SANDBOX_DATABASE_URL without URL encoding." >&2
+    exit 1
+  fi
+}
+
+ADP_USER="$(read_env_var .env MARIADB_USER)"
+ADP_USER="${ADP_USER:-adp}"
+
+validate_secret MARIADB_ROOT_PASSWORD "$ROOT_PW"
+validate_secret MARIADB_USER "$ADP_USER"
+validate_secret MARIADB_PASSWORD "$ADP_PW"
+validate_secret MINIO_ROOT_PASSWORD "$MINIO_PW"
+
+# Write back only after validation, so a bad CLI/env value never corrupts .env.
+set_env_var .env MARIADB_ROOT_PASSWORD "$ROOT_PW"
+set_env_var .env MARIADB_PASSWORD      "$ADP_PW"
+set_env_var .env MINIO_ROOT_PASSWORD   "$MINIO_PW"
+
+# Always rebuild SANDBOX_DATABASE_URL so it stays consistent with MARIADB_USER/PASSWORD.
+set_env_var .env SANDBOX_DATABASE_URL \
+  "mysql+aiomysql://${ADP_USER}:${ADP_PW}@mariadb:3306/sandbox"
 
 mkdir -p "${ROOT}/configs/generated"
 
 export TEMPLATE="${ROOT}/configs/kweaver/config.yaml.template"
 export OUT="${ROOT}/configs/generated/config.yaml"
+export ENV_FILE="${ROOT}/.env"
 
 python3 - <<'PY'
 import os
 from pathlib import Path
 
+def read_env(path: Path):
+    values = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key] = value
+    return values
+
+env = read_env(Path(os.environ["ENV_FILE"]))
 tpl = Path(os.environ["TEMPLATE"]).read_text(encoding="utf-8")
 rep = {
-    "__IMAGE_REGISTRY__": os.environ.get("IMAGE_REGISTRY", ""),
-    "__ACCESS_HOST__": os.environ.get("ACCESS_HOST", "localhost"),
-    "__ACCESS_PORT__": os.environ.get("ACCESS_PORT", "8080"),
-    "__MARIADB_USER__": os.environ.get("MARIADB_USER", ""),
-    "__MARIADB_PASSWORD__": os.environ.get("MARIADB_PASSWORD", ""),
-    "__MARIADB_DATABASE__": os.environ.get("MARIADB_DATABASE", ""),
-    "__KAFKA_USER__": os.environ.get("KAFKA_USER", ""),
-    "__KAFKA_PASSWORD__": os.environ.get("KAFKA_PASSWORD", ""),
+    "__IMAGE_REGISTRY__": env.get("IMAGE_REGISTRY", ""),
+    "__ACCESS_HOST__": env.get("ACCESS_HOST", "localhost"),
+    "__ACCESS_PORT__": env.get("ACCESS_PORT", "8080"),
+    "__MARIADB_USER__": env.get("MARIADB_USER", ""),
+    "__MARIADB_PASSWORD__": env.get("MARIADB_PASSWORD", ""),
+    "__MARIADB_DATABASE__": env.get("MARIADB_DATABASE", ""),
 }
 for k, v in rep.items():
     tpl = tpl.replace(k, v)

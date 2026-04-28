@@ -35,9 +35,10 @@ dipStudio:
 depServices:
   mq:
     auth:
-      mechanism: PLAIN
-      username: __KAFKA_USER__
-      password: __KAFKA_PASSWORD__
+      # Compose Kafka is PLAINTEXT; leave SASL fields empty.
+      mechanism: ""
+      username: ""
+      password: ""
     mqHost: kafka
     mqLookupdHost: ""
     mqLookupdPort: 0
