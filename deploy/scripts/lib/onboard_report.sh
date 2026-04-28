@@ -15,15 +15,17 @@ onboard_print_completion_report() {
         return 0
     fi
 
-    local _ctx _isfu _line _kwh _kctx _bd _acurl _isf
+    local _ctx _isfu _line _kwh _kctx _bd _acurl _isf _isf_styled
     _ctx="${ONBOARD_REPORT_CONTEXT_LOADER:-}"
     _isfu="${ONBOARD_REPORT_ISF_TEST_USER:-}"
     _line="--------------------------------------------"
 
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
         _isf="ISF (full install detected)"
+        _isf_styled="${GREEN}${_isf}${NC}"
     else
         _isf="Minimum install / no ISF components detected"
+        _isf_styled="${YELLOW}${_isf}${NC}"
     fi
 
     if command -v kweaver &>/dev/null; then
@@ -59,7 +61,7 @@ onboard_print_completion_report() {
         echo "  Business -bd  ${_bd}  (DEPLOY_BUSINESS_DOMAIN)"
         echo "  Default base  ${_acurl}"
         echo "${_line}"
-        echo "  Install type   ${_isf}"
+        echo -e "  Install type   ${_isf_styled}"
         echo "  User [test]    ${_isfu:-(not run or not recorded)}"
         echo "  Models         ${ONBOARD_REPORT_MODELS:-(not run or not recorded)}"
         echo "  BKN ConfigMap  ${ONBOARD_REPORT_BKN_CM:-(not run or not recorded)}"
