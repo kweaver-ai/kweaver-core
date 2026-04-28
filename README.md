@@ -23,6 +23,7 @@ Want to have an intuitive experience of the core functions of KWeaver DIP? Click
 - 🛡️ [kweaver-admin](https://github.com/kweaver-ai/kweaver-admin) - Platform administrator CLI (users / orgs / roles / models / audit) for full installs
 - 🤝 [Contributing](rules/CONTRIBUTING.md) - Guidelines for contributing to the project
 - 🚢 [Deployment](deploy/README.md) - One-click deploy to Kubernetes
+- 🐳 [Docker Compose](deploy/docker-compose/README.md) - Minimum stack for local / lab (no ISF; optional full bring-up)
 - 📘 [Documentation](help/README.md) - Product documentation and usage guides ([EN](help/en/README.md) / [中文](help/zh/README.md))
 - 📦 [Examples](examples/README.md) - End-to-end CLI walkthroughs (DB / CSV / actions)
 - 📝 [Blog](https://kweaver-ai.github.io/kweaver-core/) - KWeaver technical articles and updates
