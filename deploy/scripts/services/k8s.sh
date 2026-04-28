@@ -564,15 +564,15 @@ install_containerd() {
             # Construct correct URL based on OS type
             if [[ "${os_id}" == "rhel" ]] || [[ "${os_id}" == "rocky" ]] || [[ "${os_id}" == "almalinux" ]]; then
                 # RHEL-based systems use /rhel/ path
-                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/rhel/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.33-3.1.el${rhel_version}.${arch}.rpm"
+                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/rhel/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.32-3.1.el${rhel_version}.${arch}.rpm"
             else
                 # CentOS uses /centos/ path
-                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.33-3.1.el${rhel_version}.${arch}.rpm"
+                rpm_url="https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/${rhel_version}/${arch}/stable/Packages/containerd.io-1.6.32-3.1.el${rhel_version}.${arch}.rpm"
             fi
             
             local rpm_file="/tmp/containerd.io.rpm"
             
-            log_info "Downloading containerd.io v1.6.33 RPM from Tsinghua mirror..."
+            log_info "Downloading containerd.io v1.6.32 RPM from Tsinghua mirror..."
             log_info "URL: ${rpm_url}"
             
             set +e
@@ -602,7 +602,7 @@ install_containerd() {
             log_error "Please install containerd manually using one of these methods:"
             log_error ""
             log_info "  Option 1: Download and install RPM directly"
-            log_info "    curl -fsSLo /tmp/containerd.io.rpm https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/\$(rpm -E %rhel)/\$(uname -m)/stable/Packages/containerd.io-1.6.33-3.1.el\$(rpm -E %rhel).\$(uname -m).rpm"
+            log_info "    curl -fsSLo /tmp/containerd.io.rpm https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/\$(rpm -E %rhel)/\$(uname -m)/stable/Packages/containerd.io-1.6.32-3.1.el\$(rpm -E %rhel).\$(uname -m).rpm"
             log_info "    dnf install -y /tmp/containerd.io.rpm"
             log_error ""
             log_info "  Option 2: Install from Aliyun mirror"
