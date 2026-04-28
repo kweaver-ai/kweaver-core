@@ -895,6 +895,43 @@ if [[ "${INTERACTIVE}" == "true" ]]; then
         fi
     done
 
+    # If the user did NOT register a new embedding but embeddings already exist on the platform,
+    # offer to (re)apply one of them as the BKN default. This covers two cases:
+    #   1) BKN default is unset — first-time wiring of an already-registered embedding.
+    #   2) BKN default is set — operator wants to switch to a different existing embedding.
+    if [[ "${SKIP_BKN}" != "true" && -z "${bkn_default_name}" && "${_existing_sm_count}" -gt 0 ]]; then
+        if [[ -z "${_bkn_current_default}" ]]; then
+            read -r -p "Use one of the already-registered embeddings as the BKN default (will patch ConfigMaps and restart bkn-backend / ontology-query)? [Y/n]: " _use_existing_em
+            _use_existing_em_apply="true"
+            if [[ "${_use_existing_em}" =~ ^[Nn] ]]; then
+                _use_existing_em_apply="false"
+            fi
+        else
+            read -r -p "BKN default is currently [${_bkn_current_default}]. Switch to a different already-registered embedding? [y/N]: " _use_existing_em
+            _use_existing_em_apply="false"
+            if [[ "${_use_existing_em}" =~ ^[Yy] ]]; then
+                _use_existing_em_apply="true"
+            fi
+        fi
+        if [[ "${_use_existing_em_apply}" == "true" ]]; then
+            _existing_em_names="$(onboard_get_existing_small_model_names | sed '/^$/d')"
+            if [[ -z "${_existing_em_names}" ]]; then
+                onboard_log_info "Could not list existing embedding/small models — skipping ConfigMap patch."
+            else
+                _default_pick="$(printf '%s\n' "${_existing_em_names}" | head -n1)"
+                echo "Available embedding / small models:"
+                printf '  - %s\n' ${_existing_em_names}
+                read -r -p "Embedding model_name to set as BKN default [${_default_pick}]: " _pick_em
+                _pick_em="${_pick_em:-${_default_pick}}"
+                if printf '%s\n' "${_existing_em_names}" | grep -Fxq "${_pick_em}"; then
+                    bkn_default_name="${_pick_em}"
+                else
+                    onboard_log_info "[${_pick_em}] not in the existing embedding list — skipping ConfigMap patch."
+                fi
+            fi
+        fi
+    fi
+
     if [[ "${SKIP_BKN}" == "true" ]]; then
         onboard_log_info "Done (skip BKN not used in interactive; omit model to skip BKN patch)."
         ONBOARD_REPORT_BKN_CM="skipped (--skip-bkn)"
