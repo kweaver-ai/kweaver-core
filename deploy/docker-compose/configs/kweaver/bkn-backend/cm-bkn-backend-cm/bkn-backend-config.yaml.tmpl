@@ -1,0 +1,103 @@
+server:
+  defaultSmallModelEnabled: false
+  defaultSmallModelName: embedding
+  httpPort: 13014
+  jobMaxRetryTimes: 3
+  language: zh-CN
+  maxConcurrentTasks: 4
+  readTimeOut: 600
+  reloadJobEnabled: true
+  runMode: release
+  viewDataLimit: 1000
+  writeTimeOut: 600
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  logEnabled: false
+  logExporter: console
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  metricEnabled: false
+  metricIntervalSecond: 60
+  metricProvider: http
+  traceEnabled: false
+  traceMaxQueueSize: 50000
+  traceProvider: http
+depServices:
+  agent-operator-integration:
+    host: agent-operator-integration
+    port: 9000
+    protocol: http
+  authorization-private:
+    host: nginx
+    port: 30920
+    protocol: http
+  business-system:
+    host: nginx
+    port: 80
+    protocol: http
+  class-443:
+    ingressClass: class-443
+  data-model:
+    host: mdl-data-model
+    port: 13020
+    protocol: http
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  mq:
+    auth:
+      mechanism: ""
+      password: ""
+      username: ""
+    mqHost: __KAFKA_HOST__
+    mqPort: __KAFKA_PORT__
+    mqType: kafka
+    protocol: plaintext
+    tenant: default
+  ontology-query:
+    host: ontology-query
+    port: 13018
+    protocol: http
+  opensearch:
+    host: __OPENSEARCH_HOST__
+    password: ""
+    port: 9200
+    protocol: http
+    user: ''
+  rds:
+    host: __MARIA_HOST__
+    password: "__MARIADB_PASSWORD__"
+    port: __MARIA_PORT__
+    type: MariaDB
+    user: __MARIADB_USER__
+  uniquery:
+    host: mdl-uniquery
+    port: 13011
+    protocol: http
+  user-management:
+    host: nginx
+    port: 30980
+    protocol: http
+  vega-backend:
+    host: vega-backend
+    port: 13014
+    protocol: http

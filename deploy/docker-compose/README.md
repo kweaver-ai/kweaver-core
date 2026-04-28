@@ -1,14 +1,26 @@
-# KWeaver Core — Docker Compose (minimum stack)
+# KWeaver Core — Docker Compose (B1 demo subset)
 
-This directory provides a **minimal** local or lab stack for KWeaver Core (no ISF, no auth / business-domain bundles by default), similar in spirit to `./deploy.sh kweaver-core install --minimum` but using **Docker Compose** instead of Kubernetes.
+This directory provides a **lean demo** stack: **infrastructure + one-shot DB migrator + 11 KWeaver business services** (ontology/query, data model, model factory, Vega, data-connection). It is **not** the full `deploy.sh kweaver-core --minimum` Helm surface (no agent-*, dataflow, coderunner, doc-convert, sandbox, oss-gateway, or bundled otel/observability).
 
-**Important:** This document does **not** require you to successfully run the full stack on your laptop; real bring-up happens in your environment. The **mandatory** sanity check is **`docker compose config`** (no image pull, no containers).
+Service definitions, ports, volumes, and `configs/kweaver/**` templates are aligned with charts in **[kweaver-ai/helm-repo](https://github.com/kweaver-ai/helm-repo)**. Re-run `tools/extract-helm-templates.py` after unpacking charts in `/tmp/kc-charts-unpacked` if you refresh templates; then reconcile any **manual** Compose tweaks (e.g. `mf-model-*/cm-kw-yaml.env.tmpl` host wiring).
+
+The **mandatory** sanity check is **`./setup.sh`** (renders templates + runs `docker compose config`). That does **not** pull images.
+
+## What is included (19 `docker compose` services)
+
+| Layer | Services |
+|-------|----------|
+| **Infra (7)** | `mariadb`, `redis`, `zookeeper`, `kafka`, `opensearch`, `minio`, `nginx` |
+| **Job (1)** | `kweaver-core-data-migrator` (one-shot; others wait for `service_completed_successfully`) |
+| **KWeaver (11)** | `bkn-backend`, `ontology-query`, `mdl-data-model`, `mdl-uniquery`, `mdl-data-model-job`, `mf-model-manager`, `mf-model-api`, `vega-backend`, `vega-gateway`, `vega-gateway-pro`, `data-connection` |
+
+**Not included:** `agent-backend`, `agent-operator-integration`, `agent-retrieval`, `agent-observability`, `dataflow`, `flow-stream-data-pipeline`, `coderunner`, `dataflowtools`, `doc-convert-*`, `sandbox`, `oss-gateway-backend`, `otelcol-contrib`. Generated configs may still mention these hosts in comments or deps; calls routed to `nginx` for DNS will **502** unless you add those services.
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/) (Compose v2 plugin: `docker compose`; **Docker Compose v2.17+ recommended**, v2.20+ preferred). Legacy `docker-compose` v1 is not supported.
-- Enough disk and RAM for MariaDB, Kafka, OpenSearch, Redis, MinIO, and many application containers (typical dev machine: 16 GB+ RAM recommended).
-- **Network access** to the image registry in `.env` (`IMAGE_REGISTRY`). Change it if you mirror images elsewhere.
+- [Docker](https://docs.docker.com/get-docker/) and **Docker Compose v2** (`docker compose`). **v2.17+ recommended** (v2.20+ preferred).
+- **~10–12 GB RAM** typical for this subset (OpenSearch + Kafka + MariaDB).
+- **Image registry:** Default images use Huawei SWR under `swr.cn-east-3.myhuaweicloud.com/kweaver-ai/dip`. Keep `.env` as `IMAGE_REGISTRY=swr.cn-east-3.myhuaweicloud.com/kweaver-ai` and `DIP_NAMESPACE=dip`. If pull fails (`You may not login yet`, etc.), run `docker compose config --images`, confirm paths include `/dip/`, then `docker login swr.cn-east-3.myhuaweicloud.com` if your org requires it. **Public** images (MariaDB, Redis, Kafka, Zookeeper, Nginx, OpenSearch, MinIO) do not need SWR.
 
 ## One-time setup
 
@@ -21,65 +33,20 @@ chmod +x ./setup.sh
 `setup.sh` will:
 
 1. Copy `.env.example` → `.env` (gitignored) if `.env` is missing.
-2. Resolve passwords for `MARIADB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `MINIO_ROOT_PASSWORD`. For each, the value is taken from (in order):
-   - matching per-field CLI flag (e.g. `--mariadb-password=…`)
-   - matching per-field env var (e.g. `MARIADB_PASSWORD=…`)
-   - shared CLI flag `-p / --password=…` or shared env var `PASSWORD=…` (one value applied to all three fields)
-   - current value in `.env`
-   - interactive prompt (TTY only; `Enter` keeps the current value)
-   - error exit if the value is still empty
-3. Always rewrite `SANDBOX_DATABASE_URL` so its password matches `MARIADB_PASSWORD`.
-4. Render `configs/kweaver/config.yaml.template` → `configs/generated/config.yaml`.
-5. Run `docker compose config` as an offline sanity check.
+2. Resolve passwords for `MARIADB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `MINIO_ROOT_PASSWORD` (CLI > env > shared `-p` / `PASSWORD` > `.env` > prompt > error).
+3. Run `tools/render_compose_configs.py`: substitute `configs/kweaver/**/*.tmpl` → `configs/generated/...` (includes `cm-kw-yaml.env.tmpl` → `cm-kw-yaml.env` for `mf-model-*`).
 
-### Examples
+### Password rule
 
-Interactive prompt (default — first asks for one shared password, then per-field if you skip):
-
-```bash
-./setup.sh
-```
-
-Use the **same** password for MariaDB root + MariaDB user + MinIO root in one shot:
-
-```bash
-./setup.sh --password='OnePw_2026' --non-interactive
-# or
-PASSWORD='OnePw_2026' ./setup.sh --non-interactive
-```
-
-Pass per-field passwords on the command line (good for automation / CI):
-
-```bash
-./setup.sh \
-  --mariadb-root-password='RootPw_2026' \
-  --mariadb-password='AdpPw_2026' \
-  --minio-root-password='MinioPw_2026' \
-  --non-interactive
-```
-
-Pass via environment variables:
-
-```bash
-MARIADB_ROOT_PASSWORD=RootPw_2026 \
-MARIADB_PASSWORD=AdpPw_2026 \
-MINIO_ROOT_PASSWORD=MinioPw_2026 \
-./setup.sh --non-interactive
-```
-
-Or just edit `.env` by hand and re-run `./setup.sh --non-interactive`.
-
-> Password rule: use only `[A-Za-z0-9_-]`. `setup.sh` enforces this because the value is written to `.env` and embedded in `SANDBOX_DATABASE_URL` (a Python DSN) without URL-encoding.
+Use only `[A-Za-z0-9_-]` — values are written to `.env` and embedded in generated configs where required.
 
 ## Bringing the stack up (optional)
-
-When you are ready to run containers in **your** environment:
 
 ```bash
 docker compose up -d
 ```
 
-Expect the **data migrator** job to run once (`kweaver-core-data-migrator`); core services should start after migrations. Check logs with `docker compose logs -f <service>`.
+Expect `kweaver-core-data-migrator` to **complete once**; application services start after it.
 
 **Stopping:**
 
@@ -87,64 +54,56 @@ Expect the **data migrator** job to run once (`kweaver-core-data-migrator`); cor
 docker compose down
 ```
 
+### Smoke checks (local)
+
+```bash
+curl -sS http://localhost:8080/healthz    # expect: ok
+curl -sI http://localhost:8080/api/bkn-backend/v1/nonexistent  # routing to bkn-backend (401/404 acceptable)
+docker compose logs bkn-backend 2>&1 | head -50
+```
+
+## Infra-only smoke (no KWeaver images)
+
+```bash
+docker compose up -d mariadb redis zookeeper kafka opensearch minio
+```
+
+(Optional: add `nginx` if you mount only `configs/nginx/default.conf` — run `./setup.sh` first if anything references `configs/generated/`.)
+
 ## Entry points
 
-| What                    | URL / port                                                                                                                                |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| KWeaver API (via nginx) | `http://<ACCESS_HOST>:<KWEAVER_HTTP_PORT>` — default `http://localhost:8080`                                                              |
-| Sandbox control plane   | **Not** behind nginx; map `8000` (container) → **`SANDBOX_HTTP_PORT`** on the host (default **8001**) — `http://localhost:8001`           |
-
-Set `ACCESS_HOST`, `KWEAVER_HTTP_PORT`, and `SANDBOX_HTTP_PORT` in `.env` to avoid port clashes.
-
-## What is included
-
-- **Infra:** MariaDB, Redis (no password on the internal network — matches generated config), Kafka (Zookeeper + single broker, PLAINTEXT), OpenSearch (security plugin disabled), MinIO.
-- **Core microservices** as in the [0.7.0 release manifest](../release-manifests/0.7.0/kweaver-core.yaml), with **version overrides** from `.env.example` where charts differ.
-- **Nginx** as a single HTTP entry, proxying path prefixes to backend container ports (derived from Helm defaults in this repo where available).
-- **Optional:** `otelcol-contrib` and observability sidecars as in the manifests; OpenTelemetry collector routes are not fully wired in this minimal compose.
-
-## Rotating credentials after first start
-
-`MARIADB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, and `MINIO_ROOT_PASSWORD` are
-**only consumed when the corresponding data volume is empty** (i.e. the
-**first** `docker compose up`). After that, the password is stored inside the
-container's volume (MariaDB's `mysql.user` table, MinIO's IAM store, etc.) and
-the env var is just what every client uses to log in.
-
-Editing `.env` later and restarting **will not** change the password the
-service has on disk — but it **will** change what KWeaver clients try to
-present, which leads to `Access denied` errors.
-
-To rotate safely, pick one:
-
-- **Wipe and re-init (DESTROYS data)**:
-
-  ```bash
-  docker compose down -v          # removes mariadb_data / minio_data / ...
-  ./setup.sh -p NEW_PASSWORD -y
-  docker compose up -d
-  ```
-
-- **Change in place**: `ALTER USER 'adp'@'%' IDENTIFIED BY 'NEW';
-  FLUSH PRIVILEGES;` inside the mariadb container (and `mc admin user …` for
-  MinIO), then sync `.env` and re-run `./setup.sh -y`.
+| What | URL / port |
+|------|------------|
+| APIs via nginx | `http://<ACCESS_HOST>:<KWEAVER_HTTP_PORT>` — default `http://localhost:8080` |
+| Health | `http://localhost:8080/healthz` |
 
 ## Limitations vs Kubernetes / Helm
 
-- No ingress TLS, no multi-replica HA, no Helm hooks — only what Compose can express.
-- Some images expect specific `CONFIG_FILE` paths and volume layouts; the compose file uses a shared bind mount to `configs/generated/config.yaml` **where the chart does so**; if a service fails at startup, compare with its chart `values.yaml` in `../charts/` and adjust `environment` / `volumes`.
-- **Sandbox** uses the Docker socket and host-mapped MinIO; review security before using outside a trusted dev machine.
+- No ingress TLS, no multi-replica HA, no Helm hooks; migrator is a one-shot Compose service.
+- **Auth / IAM:** charts reference `authorization-private`, `hydra-admin`, etc. Extracted YAML may rewrite hosts to `nginx` so DNS resolves; without real IAM, those calls fail. `AUTH_ENABLED=false` is set where the compose file exposes it.
+- **Redis:** `mf-model-*` env uses a **standalone** Redis (`REDISCLUSTERMODE=false`, port `6379`), not Sentinel as in some charts.
 
-## Offline / CI validation (no full stack)
-
-Recommended checks (no container run required beyond what `config` does internally):
+## Developer: refresh templates from Helm
 
 ```bash
-docker compose config
+# Unpack charts to /tmp/kc-charts-unpacked (see tools/extract-helm-templates.py header)
+python3 deploy/docker-compose/tools/extract-helm-templates.py
 ```
 
-Optional: add the same command to CI (e.g. GitHub Actions) so every PR validates Compose syntax and variable substitution.
+Then reconcile manual edits (especially `mf-model-*/cm-kw-yaml.env.tmpl` and `dm_svc.conf.tmpl` for Compose).
+
+## Remote lab (e.g. Ubuntu VM)
+
+After syncing this directory to the host:
+
+```bash
+cd deploy/docker-compose
+./setup.sh -p YOUR_PASSWORD -y
+sudo docker compose up -d   # if daemon requires sudo
+```
+
+Verify `curl http://127.0.0.1:8080/healthz` and backend routing as above. (Automated SSH from CI/agents may be blocked by firewall.)
 
 ---
 
-For production-style deployment on Kubernetes, see [../README.md](../README.md).
+For Kubernetes deployment, see [../README.md](../README.md).

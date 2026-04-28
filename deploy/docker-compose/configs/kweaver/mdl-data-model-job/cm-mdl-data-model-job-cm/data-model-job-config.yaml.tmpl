@@ -1,0 +1,67 @@
+server:
+  connectCheckTimeout: 3
+  failureThreshold: 5
+  flushIntervalSec: 3
+  flushItems: 10000
+  flushMiB: 5
+  httpPort: 13025
+  language: zh-CN
+  packagePoolSize: 500
+  readTimeOut: 120
+  retryIntervalMs: 3000
+  runMode: release
+  watchJobsIntervalMin: 10
+  writeTimeOut: 120
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+kafka:
+  adminClientOperationTimeoutMs: 60000
+  adminClientRequestTimeoutMs: 30000
+  autoOffsetReset: latest
+  fetchWaitMaxMs: 3000
+  heartbeatIntervalMs: 10000
+  maxPollIntervalMs: 300000
+  retentionBytes: 104857600
+  retentionMs: 28800000
+  retries: 5
+  retryBackoffMs: 500
+  sessionTimeoutMs: 45000
+  socketTimeoutMs: 60000
+  transactionTimeoutMs: 60000
+depServices:
+  data-model:
+    host: mdl-data-model
+    port: 13020
+    protocol: http
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  index-base:
+    host: mdl-index-base-svc
+    port: 13013
+    protocol: http
+  mq:
+    auth:
+      mechanism: ""
+      password: testpwd
+      username: test
+    mqHost: __KAFKA_HOST__
+    mqPort: __KAFKA_PORT__
+    mqType: kafka
+    protocol: plaintext
+    tenant: default
+  rds:
+    host: __MARIA_HOST__
+    password: testpwd
+    port: __MARIA_PORT__
+    type: MariaDB
+    user: test
+  uniquery:
+    host: mdl-uniquery
+    port: 13011
+    protocol: http

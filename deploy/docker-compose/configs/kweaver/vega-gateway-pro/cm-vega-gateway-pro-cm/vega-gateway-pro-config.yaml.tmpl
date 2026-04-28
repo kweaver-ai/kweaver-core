@@ -1,0 +1,52 @@
+server:
+  httpPort: 8097
+  language: zh-CN
+  runMode: release
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+pool:
+  queryPoolSize: 1000
+query:
+  cleanIntervalTime: 5m
+  dataCacheSize: 20000
+  dataQuerySize: 10000
+  maxIntervalTime: 1h
+trace:
+  maxSearchSpanSize: 1000
+observability:
+  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  logEnabled: false
+  logExporter: console
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  metricEnabled: false
+  metricIntervalSecond: 60
+  metricProvider: http
+  traceEnabled: false
+  traceMaxQueueSize: 50000
+  traceProvider: http
+depServices:
+  class-443:
+    ingressClass: class-443
+  data-connection:
+    host: data-connection
+    port: 8098
+    protocol: http
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  vega-calculate-coordinator:
+    host: vega-calculate-coordinator
+    port: 8090
+    protocol: http
+rsa:
+  privateKeyPath: /rsa/private_key.pem

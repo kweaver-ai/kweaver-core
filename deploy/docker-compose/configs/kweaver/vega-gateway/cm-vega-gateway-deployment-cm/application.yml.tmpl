@@ -1,0 +1,84 @@
+server:
+  port: 8099
+  max-http-header-size: 512KB
+spring:
+  main:
+    allow-circular-references: true
+  application:
+    name: vega-gateway
+    version: 1.0.0
+    queryName: vega-calculate-coordinator
+  mvc:
+    throw-exception-if-no-handler-found: true
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    dynamic:
+      primary: default  # 指定默认数据源
+      strict: false # true：找不到数据源报错
+      lazy: true
+      datasource:
+        default:
+          driver-class-name: org.mariadb.jdbc.Driver
+          url: jdbc:mariadb://mariadb-mariadb-master.resource:3330/kweaver?useUnicode=true&useSSL=false&characterEncoding=utf8mb4&serverTimezone=GMT%2B8
+          username: anyshare
+          password: ""
+          type: com.alibaba.druid.pool.DruidDataSource
+          druid:
+            initial-size: 5
+            min-idle: 5
+            max-active: 300
+            max-wait: 60000
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+            min-evictable-idle-time-millis: 30000
+            validation-query: select 'x'
+            test-on-borrow: false
+            test-on-return: false
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 20
+mybatis-plus:
+  global-config:
+    banner: false
+    enable-sql-runner: true
+  mapper-locations: classpath*:com/**/mapper/xml/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+openlookeng:
+  url: http://vega-calculate-coordinator:8090
+  connect-timeout: 3000
+  jdbc:
+    pushdown-module: FULL_PUSHDOWN
+olk:
+  view:
+    catalog: olk_view_vdm
+  connector:
+    name: mysql,maria,hive-hadoop2,postgresql,clickhouse,doris,oracle,sqlserver,hive-jdbc,hologres,inceptor-jdbc
+sql:
+  enabled: true
+
+auth:
+  register-clientid-url: http://hydra-admin:4445/admin/clients
+  clientid-token: http://hydra-public:4444/oauth2/token
+  token-introspect: http://hydra-admin:4445/admin/oauth2/introspect
+  row-column-rule: http://auth-service:8155/api/auth-service/v1/sub-views
+
+anyrobot:
+  log:
+    enabled: false
+    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+    level: false
+  trace:
+    enabled: false
+    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+logging:
+  config: classpath:logback-spring.xml
+
+collector-data-source: mymaria_fast2 #扫描用数据源，列表过滤时使用
+
+services:
+  efast-public: http://efast-public:9123

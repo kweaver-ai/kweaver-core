@@ -1,0 +1,68 @@
+server:
+  defaultSmallModelEnabled: true
+  filteredCrossJoinMaxEdgeExpand: 10000
+  httpPort: 13018
+  language: zh-CN
+  readTimeOut: 120
+  runMode: release
+  viewDataTimeout: 5m
+  writeTimeOut: 120
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  logEnabled: false
+  logExporter: console
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  metricEnabled: false
+  metricIntervalSecond: 60
+  metricProvider: http
+  traceEnabled: false
+  traceMaxQueueSize: 50000
+  traceProvider: http
+depServices:
+  agent-operator-integration:
+    host: agent-operator-integration
+    port: 9000
+    protocol: http
+  bkn-backend:
+    host: bkn-backend
+    port: 13014
+    protocol: http
+  class-443:
+    ingressClass: class-443
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  opensearch:
+    host: __OPENSEARCH_HOST__
+    password: ""
+    port: 9200
+    protocol: http
+    user: ''
+  uniquery:
+    host: mdl-uniquery
+    port: 13011
+    protocol: http
+  vega-backend:
+    host: vega-backend
+    port: 13014
+    protocol: http

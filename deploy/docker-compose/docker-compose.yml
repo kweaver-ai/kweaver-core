@@ -1,4 +1,4 @@
-# KWeaver Core (minimum, no ISF) — see README.md
+# KWeaver Core (B1 demo: infra + migrator + 11 services, no agent/dataflow/sandbox)
 
 name: ${COMPOSE_PROJECT_NAME:-kweaver-compose}
 
@@ -9,9 +9,6 @@ services:
     networks:
       - kweaver-network
     environment:
-      # ${VAR:?msg} makes `docker compose` refuse to parse the file when the
-      # variable is unset OR empty (no container is created). Don't relax these
-      # without keeping an equivalent guard somewhere upstream.
       MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD must be set in .env (run ./setup.sh -p YOUR_PASSWORD)}
       MYSQL_DATABASE: ${MARIADB_DATABASE}
       MYSQL_USER: ${MARIADB_USER}
@@ -131,7 +128,7 @@ services:
       start_period: 15s
 
   kweaver-core-data-migrator:
-    image: ${IMAGE_REGISTRY}/kweaver-core-data-migrator:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/kweaver-core-data-migrator:${KWEAVER_VERSION}
     restart: "no"
     networks:
       - kweaver-network
@@ -148,44 +145,13 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  mf-model-manager:
-    image: ${IMAGE_REGISTRY}/mf-model-manager:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  mf-model-api:
-    image: ${IMAGE_REGISTRY}/mf-model-api:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/kweaver-core-data-migrator/cm-kw-migrator-app/config.yaml:/app/config.yaml:ro
+      - ./configs/generated/kweaver-core-data-migrator/secret-kweaver-core-data-migrator-secret/secret-config.yaml:/etc/data-migrator/secret-config.yaml:ro
 
   bkn-backend:
-    image: ${IMAGE_REGISTRY}/bkn-backend:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/bkn-backend:${KWEAVER_VERSION}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -196,12 +162,54 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      DB_TYPE: MariaDB
+      MQ_TYPE: kafka
+      AUTH_ENABLED: "false"
+      BUSINESS_DOMAIN_ENABLED: "false"
+      DM_SVC_PATH: /opt/bkn-backend/config
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/bkn-backend/cm-bkn-backend-cm/bkn-backend-config.yaml:/opt/bkn-backend/config/bkn-backend-config.yaml:ro
+      - ./configs/generated/bkn-backend/cm-bkn-backend-cm/dm_svc.conf:/opt/bkn-backend/config/dm_svc.conf:ro
+
+  mf-model-manager:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-manager:${KWEAVER_VERSION}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/mf-model-manager/cm-kw-yaml.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DM_SVC_PATH: /tmp/rds_conf/
+      DEVICE_CODE: "None"
+    volumes:
+      - ./configs/generated/mf-model-manager/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
+
+  mf-model-api:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-api:${KWEAVER_VERSION}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/mf-model-api/cm-kw-yaml.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DM_SVC_PATH: /tmp/rds_conf/
+      DEVICE_CODE: "None"
+    volumes:
+      - ./configs/generated/mf-model-api/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
 
   ontology-query:
-    image: ${IMAGE_REGISTRY}/ontology-query:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/ontology-query:${KWEAVER_VERSION}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -212,12 +220,15 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      AUTH_ENABLED: "false"
+      DM_SVC_PATH: /opt/ontology-query/config
+      ACTION_EXECUTION_MAX_OBJECTS: "10000"
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/ontology-query/cm-ontology-query-cm/ontology-query-config.yaml:/opt/ontology-query/config/ontology-query-config.yaml:ro
 
   vega-backend:
-    image: ${IMAGE_REGISTRY}/vega-backend:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-backend:${KWEAVER_VERSION}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -228,12 +239,17 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      DB_TYPE: MariaDB
+      MQ_TYPE: kafka
+      AUTH_ENABLED: "false"
+      DM_SVC_PATH: /opt/vega-backend/config
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/vega-backend/cm-vega-backend-cm/vega-backend-config.yaml:/opt/vega-backend/config/vega-backend-config.yaml:ro
+      - ./configs/generated/vega-backend/cm-vega-backend-cm/dm_svc.conf:/opt/vega-backend/config/dm_svc.conf:ro
 
   data-connection:
-    image: ${IMAGE_REGISTRY}/data-connection:${DATA_CONNECTION_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/data-connection:${DATA_CONNECTION_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -244,12 +260,13 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      AUTH_ENABLED: "false"
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=512M -XX:MetaspaceSize=128M -XX:+UseG1GC -XX:InitiatingHeapOccupancyPercent=30 -XX:ParallelGCThreads=8 -XX:+ExitOnOutOfMemoryError"
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/data-connection/cm-data-connection/application.yml:/opt/vega/config/application.yml:ro
 
   vega-gateway:
-    image: ${IMAGE_REGISTRY}/vega-gateway:${VEGA_GATEWAY_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway:${VEGA_GATEWAY_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -260,12 +277,12 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      AUTH_ENABLED: "false"
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/vega-gateway/cm-vega-gateway-deployment-cm/application.yml:/opt/virtual-engine/config/application.yml:ro
 
   vega-gateway-pro:
-    image: ${IMAGE_REGISTRY}/vega-gateway-pro:${VEGA_GATEWAY_PRO_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway-pro:${VEGA_GATEWAY_PRO_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -276,12 +293,13 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      AUTH_ENABLED: "false"
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/vega-gateway-pro/cm-vega-gateway-pro-cm/vega-gateway-pro-config.yaml:/opt/vega-gateway-pro/config/vega-gateway-pro-config.yaml:ro
 
   mdl-data-model:
-    image: ${IMAGE_REGISTRY}/mdl-data-model:${MDL_DATA_MODEL_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model:${MDL_DATA_MODEL_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -292,12 +310,18 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      DB_TYPE: MariaDB
+      MQ_TYPE: kafka
+      AUTH_ENABLED: "false"
+      AES_KEY: ${MDL_DATA_MODEL_AES_KEY:-46EBA22EF5204DD5B110A1F730513965}
+      DM_SVC_PATH: /opt/data-model/config
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/mdl-data-model/cm-mdl-data-model-cm/data-model-config.yaml:/opt/data-model/config/data-model-config.yaml:ro
+      - ./configs/generated/mdl-data-model/cm-mdl-data-model-cm/dm_svc.conf:/opt/data-model/config/dm_svc.conf:ro
 
   mdl-uniquery:
-    image: ${IMAGE_REGISTRY}/mdl-uniquery:${MDL_UNIQUERY_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-uniquery:${MDL_UNIQUERY_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -308,12 +332,17 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      DB_TYPE: MariaDB
+      MQ_TYPE: kafka
+      AUTH_ENABLED: "false"
+      DM_SVC_PATH: /opt/uniquery/config
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/mdl-uniquery/cm-mdl-uniquery-cm/uniquery-config.yaml:/opt/uniquery/config/uniquery-config.yaml:ro
+      - ./configs/generated/mdl-uniquery/cm-mdl-uniquery-cm/dm_svc.conf:/opt/uniquery/config/dm_svc.conf:ro
 
   mdl-data-model-job:
-    image: ${IMAGE_REGISTRY}/mdl-data-model-job:${MDL_DATA_MODEL_JOB_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model-job:${MDL_DATA_MODEL_JOB_VERSION:-0.6.0}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -324,195 +353,13 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
+      LANG: en_US.UTF-8
+      DB_TYPE: MariaDB
+      MQ_TYPE: kafka
+      DM_SVC_PATH: /opt/data-model-job/config
     volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  agent-operator-integration:
-    image: ${IMAGE_REGISTRY}/agent-operator-integration:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-      kafka:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  agent-retrieval:
-    image: ${IMAGE_REGISTRY}/agent-retrieval:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-      opensearch:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  agent-backend:
-    image: ${IMAGE_REGISTRY}/agent-backend:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-      kafka:
-        condition: service_healthy
-      mf-model-api:
-        condition: service_started
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  dataflow:
-    image: ${IMAGE_REGISTRY}/dataflow:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-      kafka:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  coderunner:
-    image: ${IMAGE_REGISTRY}/coderunner:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  doc-convert:
-    image: ${IMAGE_REGISTRY}/doc-convert:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  sandbox:
-    image: ${IMAGE_REGISTRY}/sandbox:${SANDBOX_VERSION:-0.3.3}
-    restart: unless-stopped
-    ports:
-      - "${SANDBOX_HTTP_PORT:-8001}:8000"
-    networks:
-      - kweaver-network
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    privileged: false
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      DATABASE_URL: ${SANDBOX_DATABASE_URL:?SANDBOX_DATABASE_URL must be set in .env (run ./setup.sh)}
-      DOCKER_HOST: unix:///var/run/docker.sock
-      S3_ENDPOINT_URL: http://minio:9000
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-      S3_BUCKET: sandbox-workspace
-      DISABLE_BWRAP: "true"
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  oss-gateway-backend:
-    image: ${IMAGE_REGISTRY}/oss-gateway-backend:${KWEAVER_VERSION}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
-
-  otelcol-contrib:
-    image: ${IMAGE_REGISTRY}/otelcol-contrib:${OTELCOL_CONTRIB_VERSION:-0.2.3}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      opensearch:
-        condition: service_healthy
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-
-  agent-observability:
-    image: ${IMAGE_REGISTRY}/agent-observability:${AGENT_OBSERVABILITY_VERSION:-0.2.3}
-    restart: unless-stopped
-    networks:
-      - kweaver-network
-    depends_on:
-      opensearch:
-        condition: service_healthy
-      kweaver-core-data-migrator:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      TZ: ${TZ:-Asia/Shanghai}
-      CONFIG_FILE: /config/config.yaml
-    volumes:
-      - ${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}:/config/config.yaml:ro
+      - ./configs/generated/mdl-data-model-job/cm-mdl-data-model-job-cm/data-model-job-config.yaml:/opt/data-model-job/config/data-model-job-config.yaml:ro
+      - ./configs/generated/mdl-data-model-job/cm-mdl-data-model-job-cm/dm_svc.conf:/opt/data-model-job/config/dm_svc.conf:ro
 
   nginx:
     image: nginx:1.27-alpine
@@ -533,21 +380,13 @@ services:
       - mdl-data-model
       - mdl-uniquery
       - mdl-data-model-job
-      - agent-operator-integration
-      - agent-retrieval
-      - agent-backend
-      - dataflow
-      - coderunner
-      - doc-convert
-      - oss-gateway-backend
-      - agent-observability
     volumes:
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
 networks:
   kweaver-network:
     driver: bridge
-    name: kweaver-compose-network
+    name: ${COMPOSE_PROJECT_NAME:-kweaver-compose}-network
 
 volumes:
   mariadb_data:

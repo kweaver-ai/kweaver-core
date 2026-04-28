@@ -1,0 +1,94 @@
+server:
+  httpPort: 13020
+  language: zh-CN
+  persistSteps:
+  - 5m
+  - 10m
+  - 15m
+  - 20m
+  - 30m
+  - 1h
+  - 2h
+  - 3h
+  - 6h
+  - 12h
+  - 1d
+  readTimeOut: 120
+  runMode: release
+  watchMetadataBatchSize: 100
+  watchMetadataEnabled: true
+  watchMetadataInterval: 60
+  writeTimeOut: 120
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  logEnabled: false
+  logExporter: console
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  metricEnabled: false
+  metricIntervalSecond: 60
+  metricProvider: http
+  traceEnabled: false
+  traceMaxQueueSize: 50000
+  traceProvider: http
+thirdParty:
+  tingYunTokenActiveTime: 120
+dataModelJob:
+  serviceDeploymentEnabled: true
+depServices:
+  authorization-private:
+    host: nginx
+    port: 30920
+    protocol: http
+  class-443:
+    ingressClass: class-443
+  data-connection:
+    host: data-connection
+    port: 8098
+    protocol: http
+  data-model-job:
+    host: mdl-data-model-job
+    port: 13025
+    protocol: http
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  index-base:
+    host: mdl-index-base-svc
+    port: 13013
+    protocol: http
+  mq:
+    auth:
+      mechanism: ""
+      password: testpwd
+      username: test
+    mqHost: __KAFKA_HOST__
+    mqPort: __KAFKA_PORT__
+    mqType: kafka
+    protocol: plaintext
+    tenant: default
+  rds:
+    host: __MARIA_HOST__
+    password: testpwd
+    port: __MARIA_PORT__
+    type: MariaDB
+    user: test
+  uniquery:
+    host: mdl-uniquery
+    port: 13011
+    protocol: http
+  vega-gateway:
+    host: vega-gateway
+    port: 8099
+    protocol: http

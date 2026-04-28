@@ -8,7 +8,7 @@ usage() {
   cat <<'EOF'
 Usage: ./setup.sh [options]
 
-Generates configs/generated/config.yaml from .env and validates Compose.
+Generates configs/generated/* from configs/kweaver/**/*.tmpl and validates Compose.
 
 Shared password (one value used for ALL three fields below):
 
@@ -20,8 +20,7 @@ Shared password (one value used for ALL three fields below):
 Per-field passwords (override the shared --password if both are given):
 
   --mariadb-root-password=PW    Sets MARIADB_ROOT_PASSWORD
-  --mariadb-password=PW         Sets MARIADB_PASSWORD (also rewrites
-                                SANDBOX_DATABASE_URL to embed this password)
+  --mariadb-password=PW         Sets MARIADB_PASSWORD
   --minio-root-password=PW      Sets MINIO_ROOT_PASSWORD
 
 Environment variables are honored as fallbacks:
@@ -183,12 +182,16 @@ require_env_var() {
 }
 
 require_env_var IMAGE_REGISTRY "container image registry"
+require_env_var DIP_NAMESPACE "image path segment (usually dip)"
 require_env_var KWEAVER_VERSION "KWeaver Core image tag"
 require_env_var MARIADB_USER "MariaDB application user, usually adp"
 require_env_var MARIADB_DATABASE "MariaDB application database, usually adp"
 require_env_var MINIO_ROOT_USER "MinIO root user"
 require_env_var ACCESS_HOST "public host used in generated config"
 require_env_var ACCESS_PORT "public port used in generated config"
+
+IMAGE_REGISTRY_VALUE="$(read_env_var .env IMAGE_REGISTRY)"
+DIP_NAMESPACE_VALUE="$(read_env_var .env DIP_NAMESPACE)"
 
 # Resolve final value for one password key.
 # Args: KEY  CLI_VAL  CLI_SET(true|false)
@@ -254,7 +257,7 @@ validate_secret() {
   if [[ ! "$val" =~ ^[A-Za-z0-9_-]+$ ]]; then
     echo "ERROR: ${key} contains unsupported characters." >&2
     echo "Use only [A-Za-z0-9_-]. These values are written to .env and" >&2
-    echo "embedded in SANDBOX_DATABASE_URL without URL encoding." >&2
+    echo "embedded in generated configs without URL encoding when required." >&2
     exit 1
   fi
 }
@@ -272,48 +275,28 @@ set_env_var .env MARIADB_ROOT_PASSWORD "$ROOT_PW"
 set_env_var .env MARIADB_PASSWORD      "$ADP_PW"
 set_env_var .env MINIO_ROOT_PASSWORD   "$MINIO_PW"
 
-# Always rebuild SANDBOX_DATABASE_URL so it stays consistent with MARIADB_USER/PASSWORD.
-set_env_var .env SANDBOX_DATABASE_URL \
-  "mysql+aiomysql://${ADP_USER}:${ADP_PW}@mariadb:3306/sandbox"
-
 mkdir -p "${ROOT}/configs/generated"
 
-export TEMPLATE="${ROOT}/configs/kweaver/config.yaml.template"
-export OUT="${ROOT}/configs/generated/config.yaml"
-export ENV_FILE="${ROOT}/.env"
+if ! python3 "${ROOT}/tools/render_compose_configs.py"; then
+  echo "ERROR: config render failed (tools/render_compose_configs.py)." >&2
+  exit 1
+fi
 
-python3 - <<'PY'
-import os
-from pathlib import Path
+if [[ -f "${HOME}/.docker/config.json" ]] \
+    && grep -q 'swr.cn-east-3.myhuaweicloud.com' "${HOME}/.docker/config.json" 2>/dev/null; then
+  :
+else
+  echo "NOTE: Default KWeaver SWR images should pull anonymously when paths include /${DIP_NAMESPACE_VALUE}/." >&2
+  echo "      If pull fails, run: docker compose config --images" >&2
+  echo "      Confirm paths look like ${IMAGE_REGISTRY_VALUE}/${DIP_NAMESPACE_VALUE}/<image>:<tag> before trying docker login swr.cn-east-3.myhuaweicloud.com." >&2
+fi
 
-def read_env(path: Path):
-    values = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        values[key] = value
-    return values
-
-env = read_env(Path(os.environ["ENV_FILE"]))
-tpl = Path(os.environ["TEMPLATE"]).read_text(encoding="utf-8")
-rep = {
-    "__IMAGE_REGISTRY__": env.get("IMAGE_REGISTRY", ""),
-    "__ACCESS_HOST__": env.get("ACCESS_HOST", "localhost"),
-    "__ACCESS_PORT__": env.get("ACCESS_PORT", "8080"),
-    "__MARIADB_USER__": env.get("MARIADB_USER", ""),
-    "__MARIADB_PASSWORD__": env.get("MARIADB_PASSWORD", ""),
-    "__MARIADB_DATABASE__": env.get("MARIADB_DATABASE", ""),
-}
-for k, v in rep.items():
-    tpl = tpl.replace(k, v)
-Path(os.environ["OUT"]).write_text(tpl, encoding="utf-8")
-PY
-
-export KWEAVER_CONFIG_FILE="${KWEAVER_CONFIG_FILE:-./configs/generated/config.yaml}"
+cd "${ROOT}"
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-kweaver-compose}"
 
 docker compose config >/dev/null
-echo "Wrote ${OUT}. docker compose configuration is valid."
-echo "Start stack when ready (optional): docker compose up -d"
-echo "Sandbox control plane: http://localhost:${SANDBOX_HTTP_PORT:-8001}"
+ACCESS_HINT="$(read_env_var .env ACCESS_HOST)"; ACCESS_HINT="${ACCESS_HINT:-localhost}"
+PORT_HINT="$(read_env_var .env KWEAVER_HTTP_PORT)"; PORT_HINT="${PORT_HINT:-8080}"
+echo "Wrote configs under ${ROOT}/configs/generated/. docker compose configuration is valid."
+echo "Start stack when ready: docker compose up -d"
+echo "HTTP entry (nginx): http://${ACCESS_HINT}:${PORT_HINT}/healthz"

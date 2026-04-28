@@ -1,0 +1,125 @@
+server:
+  eventSubscribeEnabled: true
+  fixedQuerySteps: ["15s","30s","1m","2m","5m","10m","15m","20m","30m","1h","2h","3h","6h","12h","1d","1y"]
+  fullCacheRefreshInterval: 24h
+  httpPort: 13011
+  ignoringHcts: false
+  language: zh-CN
+  readTimeOut: 120
+  runMode: release
+  writeTimeOut: 600
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+pool:
+  batchSubmitPoolSize: 300
+  executePoolSize: 300
+  megerPoolSize: 500
+  objectivePoolSize: 500
+  viewPoolSize: 500
+promql:
+  lookbackDelta: 5m
+  maxSearchSeriesSize: 10000
+trace:
+  maxSearchSpanSize: 1000
+observability:
+  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceJobId: dip-o11y-trace-grpc
+  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  logEnabled: false
+  logExporter: console
+  logLoadInternal: 1
+  logLoadMaxLog: 10
+  metricEnabled: false
+  metricIntervalSecond: 60
+  metricProvider: http
+  traceEnabled: false
+  traceMaxQueueSize: 50000
+  traceProvider: http
+thirdParty:
+  tingYunMaxTimePeriod: 172800
+kafka:
+  adminClientOperationTimeoutMs: 60000
+  adminClientRequestTimeoutMs: 30000
+  batchSize: 1000
+  fetchWaitMaxMs: 3000
+  heartbeatIntervalMs: 10000
+  maxPollIntervalMs: 300000
+  maxPollRecords: 1000
+  produceFlushTimeoutMs: 1000
+  retries: 5
+  retryBackoffMs: 500
+  sessionTimeoutMs: 45000
+  socketTimeoutMs: 60000
+  transactionOperationTimeoutMs: 60000
+  transactionTimeoutMs: 60000
+depServices:
+  authorization-private:
+    host: nginx
+    port: 30920
+    protocol: http
+  class-443:
+    ingressClass: class-443
+  data-connection:
+    host: data-connection
+    port: 8098
+    protocol: http
+  data-manager:
+    host: data-manager-svc
+    port: 13013
+    protocol: http
+  data-model:
+    host: mdl-data-model
+    port: 13020
+    protocol: http
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  index-base:
+    host: mdl-index-base-svc
+    port: 13013
+    protocol: http
+  mq:
+    auth:
+      mechanism: ""
+      password: testpwd
+      username: test
+    mqHost: __KAFKA_HOST__
+    mqPort: __KAFKA_PORT__
+    mqType: kafka
+    protocol: plaintext
+    tenant: default
+  opensearch:
+    host: __OPENSEARCH_HOST__
+    password: testpwd
+    port: 9200
+    protocol: http
+    user: test
+  rds:
+    host: __MARIA_HOST__
+    password: testpwd
+    port: __MARIA_PORT__
+    type: MariaDB
+    user: test
+  search:
+    host: search-svc
+    port: 13013
+    protocol: http
+  vega-gateway:
+    host: vega-gateway
+    port: 8099
+    protocol: http
+  vega-gateway-pro:
+    host: vega-gateway-pro
+    port: 8097
+    protocol: http
+  vega-logic-view:
+    host: vega-logic-view
+    port: 8123
+    protocol: http

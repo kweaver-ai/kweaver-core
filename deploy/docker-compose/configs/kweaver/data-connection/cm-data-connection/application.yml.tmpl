@@ -1,0 +1,104 @@
+server:
+  port: 8098
+  max-http-header-size: 512KB
+spring:
+  main:
+    allow-circular-references: true
+  application:
+    name: data-connection
+    version: 1.0.0
+    queryName: vega-calculate-coordinator
+    dbType: 
+  mvc:
+    throw-exception-if-no-handler-found: true
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    dynamic:
+      primary: default  # 指定默认数据源
+      strict: false # true：xx找不到数据源报错
+      lazy: true
+      datasource:
+        default:
+          driver-class-name: org.mariadb.jdbc.Driver
+          url: jdbc:mariadb://mariadb-mariadb-master.resource:3330/kweaver?maxAllowedPacket=134217728&socketTimeout=300000&autoReconnect=true&useUnicode=true&useSSL=false&characterEncoding=utf8mb4&serverTimezone=GMT%2B8
+          username: anyshare
+          password: ""
+          type: com.alibaba.druid.pool.DruidDataSource
+          druid:
+            initial-size: 5
+            min-idle: 5
+            max-active: 300
+            max-wait: 60000
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+            min-evictable-idle-time-millis: 30000
+            validation-query: select 'x'
+            test-on-borrow: false
+            test-on-return: false
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 20
+mybatis-plus:
+  global-config:
+    banner: false
+    enable-sql-runner: true
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+openlookeng:
+  jdbc:
+    pushdown-module: FULL_PUSHDOWN
+olk:
+  view:
+    catalog: olk_view_vdm
+
+services:
+  is-local: false
+  vega-calculate-coordinator: http://vega-calculate-coordinator:8090
+  hydra-admin: http://hydra-admin:4445
+  user-management-private: http://user-management-private:30980
+  authorization-private: http://authorization-private:30920
+  efast-private: http://efast-private:9123
+  efast-public: http://efast-public:9123
+  vega-gateway: http://vega-gateway:8099
+anyrobot:
+  log:
+    enabled: false
+    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/job-4d42d761dbf0ea95/events
+    level: false
+  trace:
+    enabled: false
+    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/job-a2491f67d02e482c/events
+logging:
+  config: classpath:logback-spring.xml
+
+collector-data-source: mymaria_fast2 #扫描用数据源，列表过滤时使用
+
+mq:
+  mqHost: __KAFKA_HOST__
+  mqPort: __KAFKA_PORT__
+  mqLookupdHost: proton-mq-nsq-nsqlookupd.resource
+  mqLookupdPort: 4161
+  mqType: kafka
+  auth:
+    username: anyrobot
+    password: ""
+    mechanism: ""
+
+http:
+  client:
+    connect-timeout: 60000    # 连接超时时间（毫秒）
+    read-timeout: 60000      # 读超时时间（毫秒）
+
+metadata:
+  scanUrl: http://vega-metadata:80/api/metadata-manage/v1/task/fillMetaDataByVirtual/%s
+scan:
+  numThread: 5
+
+rsa:
+  publicKeyPath: public_key.pem
+  privateKeyPath: private_key.pem

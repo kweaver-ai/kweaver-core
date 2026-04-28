@@ -1,0 +1,79 @@
+server:
+  httpPort: 13014
+  language: zh-CN
+  readTimeOut: 600
+  runMode: release
+  writeTimeOut: 600
+log:
+  developMode: false
+  logLevel: info
+  maxAge: 100
+  maxBackups: 20
+  maxSize: 100
+observability:
+  null
+depServices:
+  authorization-private:
+    host: nginx
+    port: 30920
+    protocol: http
+  class-443:
+    ingressClass: class-443
+  hydra-admin:
+    host: nginx
+    port: 4445
+    protocol: http
+  kafka-connect:
+    host: nginx
+    port: 8083
+    protocol: http
+  mf-model-api:
+    host: mf-model-api
+    port: 9898
+    protocol: http
+  mf-model-manager:
+    host: mf-model-manager
+    port: 9898
+    protocol: http
+  mq:
+    auth:
+      mechanism: ""
+      password: ""
+      username: ""
+    mqHost: __KAFKA_HOST__
+    mqPort: __KAFKA_PORT__
+    mqType: kafka
+    protocol: plaintext
+    tenant: default
+  opensearch:
+    host: __OPENSEARCH_HOST__
+    password: ""
+    port: 9200
+    protocol: http
+    user: ''
+  rds:
+    host: __MARIA_HOST__
+    password: "__MARIADB_PASSWORD__"
+    port: __MARIA_PORT__
+    type: MariaDB
+    user: __MARIADB_USER__
+  redis:
+    connectInfo:
+      host: ""
+      masterGroupName: mymaster
+      masterHost: ""
+      masterPort: 0
+      password: ""
+      port: 0
+      sentinelHost: __REDIS_SENTINEL_HOST__
+      sentinelPassword: ""
+      sentinelPort: 26379
+      sentinelUsername: root
+      slaveHost: ""
+      slavePort: 0
+      username: root
+    connectType: sentinel
+  user-management:
+    host: nginx
+    port: 30980
+    protocol: http
