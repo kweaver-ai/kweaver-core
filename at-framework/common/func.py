@@ -8,7 +8,6 @@
 """
 import configparser
 import copy
-import json
 import os
 import random
 import re
@@ -46,143 +45,6 @@ def _read_yaml(path):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-
-# def load_global_manifest(base_dir):
-#     """
-#     加载全局变量清单（global_manifest.yaml），供智能体提取：有哪些变量、如何引用。
-#     返回 list[dict]，每项含 name、description（可选）、ref（可选，默认 ${name}）。
-#     """
-#     if not _YAML_AVAILABLE:
-#         raise ImportError("需要安装 PyYAML")
-#     base_dir = os.path.abspath(base_dir)
-#     config_dir = os.path.join(base_dir, "_config")
-#     if not os.path.isdir(config_dir):
-#         config_dir = base_dir
-#     path = os.path.join(config_dir, "global_manifest.yaml")
-#     data = _read_yaml(path)
-#     variables = data.get("variables", [])
-#     out = []
-#     for v in variables:
-#         if isinstance(v, dict):
-#             item = {"name": v.get("name", ""), "description": v.get("description", ""),
-#                     "ref": v.get("ref", "${%s}" % v.get("name", ""))}
-#             if "used_in" in v:
-#                 item["used_in"] = v["used_in"]
-#             out.append(item)
-#         else:
-#             out.append({"name": str(v), "description": "", "ref": "${%s}" % v})
-#     return out
-
-# def load_case_from_yaml(base_dir):
-#     """
-#     从 YAML 目录加载用例，返回与 load_case 相同结构的 case_list。
-#     目录结构建议：
-#       base_dir/
-#         _config/
-#           global.yaml   # 全局变量 name: value
-#           apis.yaml    # 接口定义 name -> {name, url, method, headers}
-#         suites/
-#           *.yaml       # 每个文件: feature, story, switch, cases (list)
-#     依赖 PyYAML，未安装时抛出 ImportError。
-#     """
-#     if not _YAML_AVAILABLE:
-#         raise ImportError("YAML 用例加载需要安装 PyYAML: pip install PyYAML")
-#
-#     base_dir = os.path.abspath(base_dir)
-#     config_dir = os.path.join(base_dir, "_config")
-#     suites_dir = os.path.join(base_dir, "suites")
-#
-#     # 全局变量：支持 {name: value} 或 [{name, value}, ...]
-#     raw_global = _read_yaml(os.path.join(config_dir, "global.yaml"), {})
-#     if isinstance(raw_global, list):
-#         global_params = {item["name"]: item["value"] for item in raw_global}
-#     else:
-#         global_params = dict(raw_global)
-#     # 嵌套引用一次替换
-#     params = dict(global_params)
-#     global_flat = {k: string.Template(str(v)).safe_substitute(**params) for k, v in params.items()}
-#
-#     # 接口信息：name -> {name, url, method, headers}
-#     apis_list = _read_yaml(os.path.join(config_dir, "apis.yaml"), {})
-#     if isinstance(apis_list, list):
-#         api_params = {item["name"]: item for item in apis_list}
-#     else:
-#         api_params = {k: v if isinstance(v, dict) else {"name": k, "url": v, "method": "GET", "headers": "{}"}
-#                      for k, v in apis_list.items()}
-#     for k, v in api_params.items():
-#         if "name" not in v:
-#             v["name"] = k
-#         if "url" not in v:
-#             v["url"] = ""
-#         if "method" not in v:
-#             v["method"] = "GET"
-#         if "headers" not in v:
-#             v["headers"] = "{}"
-#
-#     # 用例字段默认值（与 YAML case 结构一致，含 OpenAPI 对齐的 header/cookie/resp_headers）
-#     case_keys = ["name", "url", "prev_case", "path_params", "query_params", "header_params", "cookie_params",
-#                  "body_params", "form_params", "resp_values", "code_check", "resp_headers_check",
-#                  "resp_schema", "resp_check", "description"]
-#
-#     def _normalize_case(c):
-#         out = {}
-#         for key in case_keys:
-#             val = c.get(key, "")
-#             if isinstance(val, (dict, list)):
-#                 val = json.dumps(val, ensure_ascii=False)
-#             out[key] = str(val) if val is not None else ""
-#         return out
-#
-#     case_list = []
-#     skipped_missing_api = []
-#     if not os.path.isdir(suites_dir):
-#         return case_list
-#
-#     for fn in sorted(os.listdir(suites_dir)):
-#         if not fn.endswith((".yaml", ".yml")):
-#             continue
-#         path = os.path.join(suites_dir, fn)
-#         if not os.path.isfile(path):
-#             continue
-#         with open(path, "r", encoding="utf-8") as f:
-#             suite = yaml.safe_load(f) or {}
-#         feature = suite.get("feature", "")
-#         story = suite.get("story", fn.replace(".yaml", "").replace(".yml", ""))
-#         if str(suite.get("switch", "")).lower() != "y":
-#             continue
-#         suite_tags = suite.get("tags")
-#         if suite_tags is None:
-#             suite_tags = []
-#         if not isinstance(suite_tags, list):
-#             suite_tags = [suite_tags] if suite_tags else []
-#         for c in suite.get("cases", []):
-#             case = _normalize_case(c)
-#             api_name = case["url"]
-#             if api_name not in api_params:
-#                 cname = (case.get("name") or "").strip() or "(unnamed)"
-#                 skipped_missing_api.append("  suite=%s case=%s api_name=%r" % (fn, cname, api_name))
-#                 continue
-#             case["feature"] = feature
-#             case["story"] = story
-#             case["_suite_file"] = fn
-#             # 仅从 apis 合并 url/method/headers，避免 API 项的 name 覆盖用例的 name
-#             api_row = api_params[api_name]
-#             case["url"] = api_row.get("url", "")
-#             case["method"] = api_row.get("method", "GET")
-#             case["headers"] = api_row.get("headers", "{}")
-#             case = replace_params(case, **global_flat)
-#             case["api_name"] = api_name
-#             case["_suite_file"] = fn
-#             ct = c.get("tags")
-#             if isinstance(ct, list) and ct:
-#                 case["tags"] = list(ct)
-#             else:
-#                 case["tags"] = list(suite_tags)
-#             # 套件或单条用例可设 token_source: login，执行时走 token_provider.get_token
-#             case["_token_source"] = str(
-#                 c.get("token_source") or suite.get("token_source", "") or ""
-#             ).strip()
-#             case_list.append(case)
 
 def _resolve_scope_to_tags(base_dir: str, scope):
     """根据 path_scope_mapping 将 scope(id) 解析为 tags 列表。"""
@@ -275,8 +137,8 @@ def load_case(path: str):
     default_protocol = (parsed.scheme if parsed and parsed.scheme else "https")
     default_host = (server_cfg.get("host", "") or (parsed.hostname if parsed else "") or "").strip()
     default_port = (
-        str(server_cfg.get("public_port", "")).strip()
-        or (str(parsed.port) if parsed and parsed.port else ("443" if default_protocol == "https" else "80"))
+            str(server_cfg.get("public_port", "")).strip()
+            or (str(parsed.port) if parsed and parsed.port else ("443" if default_protocol == "https" else "80"))
     )
 
     global_flat.setdefault("protocol", default_protocol)
@@ -284,9 +146,12 @@ def load_case(path: str):
     global_flat.setdefault("port", default_port)
 
     # 加载接口信息
-    # 为方便查找，转换index格式：name -> {name, url, method, headers, response: {200: {}, 400: {}}}
+    # 为方便查找，转换index格式：name -> {api_name, url, method, headers, response: {200: {}, 400: {}}}
     api_list = _read_yaml(os.path.join(path, "_config", "apis.yaml"))
-    api_params = {item["name"]: item for item in api_list}
+    api_params = {
+        x["name"]: {("api_name" if k == "name" else k): v for k, v in x.items()}
+        for x in api_list
+    }
 
     case_list = []
     # 加载suite
@@ -312,15 +177,10 @@ def load_case(path: str):
         raise ValueError(msg)
 
     # 更新api信息
-    # 合并 api_params 到 case，但保留 case 的原始 name（存到 _case_name），避免 prev_case 匹配失败
-    case_list = [
-        {**({"_case_name": x["name"]} if "name" in x else {}), **x, **api_params[x["url"]]}
-        for x in case_list if x["url"] in api_params
-    ]
+    case_list = [{**x, **api_params[x["url"]]} for x in case_list if x["url"] in api_params]
 
     # 替换全局变量
     case_list = [replace_params(x, **global_flat) for x in case_list]
-
     return case_list
 
 
@@ -532,7 +392,7 @@ def replace_params_with_placeholders(input_case, **kwargs):
 
 if __name__ == "__main__":
     base = os.path.join(os.path.dirname(__file__), "..")
-    case_file = os.path.join(base, "testcase", "agent-backend")  # 默认示例模块
+    case_file = os.path.join(base, "testcase", "vega-backend")  # 默认示例模块
     rst = load_case(case_file)
-    # for x in rst:
-    #     print(x)
+    for x in rst:
+        print(x)

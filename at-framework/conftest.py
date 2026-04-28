@@ -2,9 +2,10 @@ import os
 
 import allure
 import pytest
+from anyio.abc import _tasks
 
 from common import at_env
-from common.func import load_sys_config, load_case, get_cases
+from common.func import load_sys_config, load_case, get_cases, _resolve_scope_to_tags
 from common.hooks import load_session_clean_up
 
 config = load_sys_config("./config/config.ini")
@@ -33,26 +34,44 @@ def compute_case_list():
     global _case_list_cache
     if _case_list_cache is not None:
         return _case_list_cache
+
+    _case_names = os.environ.get("CASE_NAMES", "").strip()
     _scope = os.environ.get("SCOPE", "").strip()
     _tags = os.environ.get("TAGS", "").strip()
+    _suite = os.environ.get("SUITE", "").strip()
     _api_name = os.environ.get("API_NAME", "").strip()
     _api_path = os.environ.get("API_PATH", "").strip()
-    _case_names = os.environ.get("CASE_NAMES", "").strip()
-    _suite = os.environ.get("SUITE", "").strip()
-    if _case_names:
-        names_list = [x.strip() for x in _case_names.split(",") if x.strip()]
-        _case_list_cache = get_cases(_case_file, names=names_list) if names_list else load_case(_case_file)
-    elif _scope or _tags or _api_name or _api_path or _suite:
-        _case_list_cache = get_cases(
-            _case_file,
-            scope=_scope or None,
-            tags=_tags or None,
-            suite=_suite or None,
-            api_name=_api_name or None,
-            api_path=_api_path or None,
-        )
-    else:
-        _case_list_cache = load_case(_case_file)
+
+    _case_list_cache = load_case(_case_file)
+
+    name_condition = [x.strip() for x in _case_names.split(",")] if _case_names else []
+    api_name_condition = [x.strip() for x in _api_name.split(",")] if _api_name else []
+    api_path_condition = [x.strip() for x in _api_path.split(",")] if _api_path else []
+    tag_condition = [x.strip() for x in _tags.split(",")] if _tags else []
+    tag_condition.extend(_resolve_scope_to_tags(os.path.abspath(_case_file), _scope) if _scope else [])
+    suite_condition = [
+        x.strip().replace(".yaml", "").replace(".yml", "")
+        for x in _suite.split(",")
+    ] if _suite else []
+
+    filtered_cases = []
+    for case_item in _case_list_cache:
+        if len(name_condition) > 0 and case_item["name"] not in name_condition:
+            continue
+        if len(tag_condition) > 0 and not (set(case_item["tags"]) & set(tag_condition)):
+            continue
+        if len(suite_condition) > 0:
+            suite_file = case_item["_suite_file"].replace(".yaml", "").replace(".yml", "")
+            if case_item["story"] not in suite_condition and suite_file not in suite_condition:
+                continue
+        if len(api_name_condition) > 0 and case_item["api_name"] not in api_name_condition:
+            continue
+        if len(api_path_condition) > 0 and case_item["url"] not in api_path_condition:
+            continue
+
+        filtered_cases.append(case_item)
+
+    _case_list_cache = filtered_cases
     return _case_list_cache
 
 
@@ -139,3 +158,7 @@ def clean_up(request):
     print(f"Calling session_clean_up for: {_module_name}")
     fn(config, allure)
     print("\n========== CLEANUP FIXTURE COMPLETED ==========\n")
+
+
+if __name__ == "__main__":
+    compute_case_list()

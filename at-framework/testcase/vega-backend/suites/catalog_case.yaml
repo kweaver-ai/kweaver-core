@@ -3,8 +3,6 @@ story: catalog_manager
 switch: y
 tags:
   - vega-backend
-  - smoke
-  - catalog
 
 cases:
   - name: 创建Catalog_逻辑资源_请求成功
