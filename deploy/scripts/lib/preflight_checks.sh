@@ -203,6 +203,19 @@ preflight_skip() {
     [[ "${PREFLIGHT_SKIP_SET:-}" == *"|${name}|"* ]]
 }
 
+# --- --fix-allow matching (legacy alias) ---------------------------------------
+# Primary fix name for pkgs.k8s.io repo wiring (apt OR yum/dnf): k8s-pkgs-repo.
+# Older docs used k8s-apt-source — still accepted in PREFLIGHT_FIX_ALLOW for the same step.
+_preflight_fix_allow_matches() {
+    local name="$1"
+    [[ -n "${PREFLIGHT_FIX_ALLOW:-}" ]] || return 1
+    [[ "${PREFLIGHT_FIX_ALLOW}" == *"|${name}|"* ]] && return 0
+    if [[ "${name}" == "k8s-pkgs-repo" ]] && [[ "${PREFLIGHT_FIX_ALLOW}" == *"|k8s-apt-source|"* ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # --- per-fix confirmation -----------------------------------------------------
 # Ask the user before applying a fix. Honors:
 #   PREFLIGHT_ASSUME_YES=true   auto-yes for ALL fixes (used by -y / --yes)
@@ -246,7 +259,7 @@ preflight_confirm_fix() {
     fi
 
     if [[ -n "${PREFLIGHT_FIX_ALLOW:-}" ]]; then
-        if [[ "${PREFLIGHT_FIX_ALLOW}" == *"|${name}|"* ]]; then
+        if _preflight_fix_allow_matches "${name}"; then
             preflight_report_append "[APPROVE] ${name} (--fix-allow)"
             return 0
         else
@@ -1210,9 +1223,9 @@ preflight_check_target_tools() {
         preflight_ok "kubectl: $(command -v kubectl)"
     else
         # On pure worker nodes kubectl is optional; on the install host it's required by deploy.sh.
-        # Treat as strict (FAIL) by default — sudo preflight --fix runs k8s-apt-source then
+        # Treat as strict (FAIL) by default — sudo preflight --fix runs k8s-pkgs-repo then
         # k8s-bins to actually install the binaries.
-        preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-apt-source then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
+        preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
     fi
 
     if command -v helm &>/dev/null; then
@@ -1370,7 +1383,7 @@ preflight_check_pkg_repos() {
             fi
         done
         if [[ ${#legacy_files[@]} -gt 0 ]]; then
-            preflight_fail "Deprecated Kubernetes apt source detected (packages.cloud.google.com) in: ${legacy_files[*]}. This 404s and breaks 'apt-get update'. Migrate to pkgs.k8s.io (sudo preflight --fix → k8s-apt-source)."
+            preflight_fail "Deprecated Kubernetes apt source detected (packages.cloud.google.com) in: ${legacy_files[*]}. This 404s and breaks 'apt-get update'. Migrate to pkgs.k8s.io (sudo preflight --fix → k8s-pkgs-repo)."
         else
             preflight_ok "No deprecated packages.cloud.google.com apt source"
         fi
@@ -1429,7 +1442,7 @@ preflight_check_apt_install_candidates() {
     if [[ -n "${_apt_kubeadm_cand}" && "${_apt_kubeadm_cand}" != "(none)" ]]; then
         preflight_ok "apt source can install kubeadm (Candidate: ${_apt_kubeadm_cand})"
     else
-        preflight_strict_warn_or_fail "apt has no install candidate for kubeadm — Kubernetes apt source missing or unreachable. sudo preflight --fix → k8s-apt-source will write /etc/apt/sources.list.d/kubernetes.list pointing to pkgs.k8s.io."
+        preflight_strict_warn_or_fail "apt has no install candidate for kubeadm — Kubernetes apt source missing or unreachable. sudo preflight --fix → k8s-pkgs-repo will write /etc/apt/sources.list.d/kubernetes.list pointing to pkgs.k8s.io."
     fi
 
     _apt_containerd_cand="$(apt-cache policy containerd.io 2>/dev/null | awk '/Candidate:/{print $2; exit}' || true)"
@@ -1583,7 +1596,7 @@ EOF
 }
 
 # Install the Kubernetes binaries (kubeadm, kubelet, kubectl) once the apt/yum
-# source is configured. Kept separate from k8s-apt-source so users can choose to
+# source is configured. Kept separate from k8s-pkgs-repo so users can choose to
 # only prime the source (and let deploy.sh do the install). On apt also runs
 # 'apt-mark hold' to prevent unattended-upgrades from breaking pinned versions.
 preflight_fix_k8s_bins() {
@@ -1598,7 +1611,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via apt and apt-mark hold (kubelet enabled; not started — kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "apt-get install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/apt/sources.list.d/kubernetes.list, then retry."
+            preflight_warn "apt-get install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/apt/sources.list.d/kubernetes.list (legacy alias: --fix-allow=k8s-apt-source), then retry."
         fi
     elif command -v dnf &>/dev/null; then
         if dnf install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
@@ -1606,7 +1619,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via dnf (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "dnf install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/yum.repos.d/kubernetes.repo, then retry."
+            preflight_warn "dnf install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
         fi
     elif command -v yum &>/dev/null; then
         if yum install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
@@ -1614,7 +1627,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via yum (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "yum install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/yum.repos.d/kubernetes.repo, then retry."
+            preflight_warn "yum install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
         fi
     else
         preflight_warn "No supported package manager (apt/dnf/yum) — install kubeadm/kubelet/kubectl manually."
@@ -1928,7 +1941,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-apt-source (apt OR yum/dnf — also runs when no source is configured), k8s-bins (apt/dnf/yum install kubeadm/kubelet/kubectl after the source is primed), containerd-install (apt: containerd.io with fallback to distro containerd), helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh)"
+    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins (apt/dnf/yum install kubeadm/kubelet/kubectl after the source is primed), containerd-install (apt: containerd.io with fallback to distro containerd), helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh)"
     log_info "------------------------------------------------------------------"
 }
 
@@ -2098,14 +2111,14 @@ preflight_apply_safe_fixes() {
             fi
         fi
         if [[ "${has_legacy}" == "true" ]]; then
-            if preflight_confirm_fix "k8s-apt-source" \
-                "Migrate k8s apt to pkgs.k8s.io/${k8s_apt_resolved}" \
+            if preflight_confirm_fix "k8s-pkgs-repo" \
+                "Migrate Kubernetes apt repo to pkgs.k8s.io/${k8s_apt_resolved} (replace legacy Google apt URL)" \
                 "Rewrites kubernetes.list and keyring; unholds kube packages. Set PREFLIGHT_K8S_APT_MINOR to override version."; then
                 PREFLIGHT_K8S_APT_MINOR="${k8s_apt_resolved}" preflight_fix_kubernetes_apt_source
             fi
         elif [[ "${need_k8s_init}" == "true" ]]; then
-            if preflight_confirm_fix "k8s-apt-source" \
-                "Configure k8s apt source pkgs.k8s.io/${k8s_apt_resolved} (none configured)" \
+            if preflight_confirm_fix "k8s-pkgs-repo" \
+                "Configure Kubernetes apt repo pkgs.k8s.io/${k8s_apt_resolved} (none configured yet)" \
                 "Writes /etc/apt/keyrings/kubernetes-apt-keyring.gpg and /etc/apt/sources.list.d/kubernetes.list. Required so 'apt install kubeadm kubelet kubectl' (run by deploy.sh) succeeds. Set PREFLIGHT_K8S_APT_MINOR to override version."; then
                 PREFLIGHT_K8S_APT_MINOR="${k8s_apt_resolved}" preflight_fix_kubernetes_apt_source
             fi
@@ -2114,8 +2127,8 @@ preflight_apply_safe_fixes() {
         local _ypm="dnf"; command -v dnf &>/dev/null || _ypm="yum"
         if ! "${_ypm}" -q list available kubeadm >/dev/null 2>&1 \
             && ! "${_ypm}" -q list installed kubeadm >/dev/null 2>&1; then
-            if preflight_confirm_fix "k8s-apt-source" \
-                "Configure k8s ${_ypm} repo pkgs.k8s.io/${k8s_apt_resolved} (none configured)" \
+            if preflight_confirm_fix "k8s-pkgs-repo" \
+                "Configure Kubernetes ${_ypm} repo pkgs.k8s.io/${k8s_apt_resolved} (none configured yet)" \
                 "Writes /etc/yum.repos.d/kubernetes.repo. Required so '${_ypm} install kubeadm kubelet kubectl' (run by deploy.sh) succeeds. Set PREFLIGHT_K8S_APT_MINOR to override version."; then
                 PREFLIGHT_K8S_APT_MINOR="${k8s_apt_resolved}" preflight_fix_kubernetes_yum_source
             fi
@@ -2132,7 +2145,7 @@ preflight_apply_safe_fixes() {
     fi
 
     # --- 4b) Kubernetes binaries (kubeadm, kubelet, kubectl) -----------------
-    # Runs after k8s-apt-source has primed the source. deploy.sh would also
+    # Runs after k8s-pkgs-repo has primed the source. deploy.sh would also
     # install these later, but doing it here means preflight --check-only after
     # --fix shows OK instead of leaving a misleading [FAIL] for kubectl.
     if ! command -v kubectl &>/dev/null \
@@ -2155,7 +2168,7 @@ preflight_apply_safe_fixes() {
                 preflight_fix_k8s_bins
             fi
         else
-            log_info "  -> skipping k8s-bins: package manager has no candidate for kubeadm yet (run k8s-apt-source first)"
+            log_info "  -> skipping k8s-bins: package manager has no candidate for kubeadm yet (run k8s-pkgs-repo first)"
         fi
     fi
 

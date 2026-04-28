@@ -195,12 +195,12 @@ cat /etc/containerd/config.toml
 **推荐修复（一条命令搞定）：**
 
 ```bash
-sudo bash deploy/preflight.sh --fix --fix-allow=k8s-apt-source
+sudo bash deploy/preflight.sh --fix --fix-allow=k8s-pkgs-repo
 # 也可以一次性把 containerd / helm / Node 等全准备好：
 sudo bash deploy/preflight.sh --fix -y
 ```
 
-`preflight --fix → k8s-apt-source` 同时覆盖**两种**情况：
+`preflight --fix → k8s-pkgs-repo`（旧文档中的 `k8s-apt-source` 仍为 `--fix-allow` 别名）同时覆盖**两种**情况：
 
 - 检测到旧的 `packages.cloud.google.com` 源 → 自动迁移到 `pkgs.k8s.io`。
 - 完全没配置 K8s 源 → 直接写入 `/etc/apt/sources.list.d/kubernetes.list`（或 `/etc/yum.repos.d/kubernetes.repo`），指向 `pkgs.k8s.io/core:/stable:/<vX.Y>/deb|rpm/`。

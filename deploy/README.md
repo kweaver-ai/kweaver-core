@@ -194,12 +194,12 @@ cat /etc/containerd/config.toml
 **Recommended fix (one command):**
 
 ```bash
-sudo bash deploy/preflight.sh --fix --fix-allow=k8s-apt-source
+sudo bash deploy/preflight.sh --fix --fix-allow=k8s-pkgs-repo
 # or, to also pre-stage containerd / helm / Node, etc.:
 sudo bash deploy/preflight.sh --fix -y
 ```
 
-`preflight --fix → k8s-apt-source` covers **both** scenarios:
+`preflight --fix → k8s-pkgs-repo` covers **both** scenarios (legacy alias `k8s-apt-source` still works in `--fix-allow`):
 
 - Legacy `packages.cloud.google.com` source present → migrate it to `pkgs.k8s.io`.
 - No K8s source configured at all → write `/etc/apt/sources.list.d/kubernetes.list` (or `/etc/yum.repos.d/kubernetes.repo`) pointing to `pkgs.k8s.io/core:/stable:/<vX.Y>/deb|rpm/`.
