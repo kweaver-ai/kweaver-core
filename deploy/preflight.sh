@@ -46,6 +46,9 @@ usage() {
     echo "                       containerd, kubectl, helm, swap, broken apt sources, missing k8s/containerd"
     echo "                       install candidate, ulimit, inotify, vm.max_map_count, overlay) back to [WARN]."
     echo "                       Same as PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false."
+    echo "  --forget-decisions   Wipe remembered \"no\" answers under /var/lib/kweaver/preflight-decline-* before"
+    echo "                       running. Use after you change your mind about onboard-tooling / node-22 etc."
+    echo "                       Same as PREFLIGHT_FORGET_DECISIONS=true."
     echo "  --report=PATH        Append full log to a file"
     echo "  --skip=LIST          Comma-separated check names to skip (see source: preflight_checks.sh preflight_skip)"
     echo ""
@@ -55,6 +58,9 @@ usage() {
     echo "  PREFLIGHT_K8S_APT_MINOR=vX.YY            pin pkgs.k8s.io minor (default v1.28 / detected from kubeadm)"
     echo "  PREFLIGHT_STRICT=true|false              [default true] install-blocking items as [FAIL] not [WARN]"
     echo "  PREFLIGHT_STRICT_SOURCES=true|false      [default true] verify apt/yum can fetch kubeadm + containerd"
+    echo "  PREFLIGHT_REMEMBER_DECISIONS=true|false  [default true] persist 'no' to onboard-tooling / node-22"
+    echo "  PREFLIGHT_FORGET_DECISIONS=true          wipe remembered decisions before this run (one-shot)"
+    echo "  PREFLIGHT_DECISION_DIR=/path             where decision sentinels live (default /var/lib/kweaver)"
     echo ""
     echo "Exit codes: 0 = OK, 1 = FAIL present, 2 = only WARN (no FAIL)"
     echo ""
@@ -105,6 +111,10 @@ while [[ $# -gt 0 ]]; do
             PREFLIGHT_STRICT_SOURCES="false"
             shift
             ;;
+        --forget-decisions)
+            PREFLIGHT_FORGET_DECISIONS="true"
+            shift
+            ;;
         --role=*)
             PREFLIGHT_ROLE="${1#*=}"
             shift
@@ -146,6 +156,12 @@ export PREFLIGHT_CHECK_ONLY PREFLIGHT_REPORT_FILE PREFLIGHT_SKIP_SET
 export PREFLIGHT_ASSUME_YES PREFLIGHT_ASSUME_NO PREFLIGHT_FIX_ALLOW
 export PREFLIGHT_OUTPUT_JSON PREFLIGHT_ROLE PREFLIGHT_LIST_FIXES_ONLY PREFLIGHT_NO_RECHECK PREFLIGHT_ROOT
 export PREFLIGHT_STRICT PREFLIGHT_STRICT_SOURCES
+export PREFLIGHT_REMEMBER_DECISIONS PREFLIGHT_FORGET_DECISIONS PREFLIGHT_DECISION_DIR
+
+# Wipe remembered "no" answers (onboard-tooling / node-22) before the run.
+if [[ "${PREFLIGHT_FORGET_DECISIONS:-false}" == "true" ]]; then
+    preflight_forget_decisions
+fi
 
 if [[ -n "${PREFLIGHT_REPORT_FILE}" ]]; then
     mkdir -p "$(dirname "${PREFLIGHT_REPORT_FILE}")" 2>/dev/null || true

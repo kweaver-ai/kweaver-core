@@ -1974,6 +1974,54 @@ preflight_onboard_tooling_needed() {
     return 1
 }
 
+# --- decision persistence (per-host opt-out for noisy interactive prompts) ----
+# Some fixes (currently `onboard-tooling`, `node-22`) re-prompt on every run as
+# long as the underlying state is unchanged — e.g. node still missing because
+# the operator chose to install it on a different host. Persist a "no" to a
+# sentinel file so we stop nagging. Override or wipe with:
+#   sudo rm /var/lib/kweaver/preflight-decline-<name>
+# or env: PREFLIGHT_REMEMBER_DECISIONS=false (do not save), PREFLIGHT_FORGET_DECISIONS=true (wipe before run).
+PREFLIGHT_DECISION_DIR="${PREFLIGHT_DECISION_DIR:-/var/lib/kweaver}"
+PREFLIGHT_REMEMBER_DECISIONS="${PREFLIGHT_REMEMBER_DECISIONS:-true}"
+
+_preflight_decision_file() {
+    printf '%s/preflight-decline-%s' "${PREFLIGHT_DECISION_DIR}" "$1"
+}
+
+# Returns 0 (truthy) if the operator previously declined this fix.
+preflight_was_declined() {
+    local f
+    f="$(_preflight_decision_file "$1")"
+    [[ -f "${f}" ]]
+}
+
+preflight_remember_no() {
+    [[ "${PREFLIGHT_REMEMBER_DECISIONS}" == "true" ]] || return 0
+    [[ "${EUID}" -eq 0 ]] || return 0
+    local name="$1" f
+    f="$(_preflight_decision_file "${name}")"
+    mkdir -p "${PREFLIGHT_DECISION_DIR}" 2>/dev/null || return 0
+    {
+        echo "# Saved by KWeaver preflight $(date -Iseconds 2>/dev/null || date)"
+        echo "# Operator answered No to: ${name}"
+        echo "# Re-prompt on next run by removing this file:"
+        echo "#   sudo rm ${f}"
+        echo "# Or run preflight with PREFLIGHT_FORGET_DECISIONS=true (wipes ALL decisions)."
+    } > "${f}" 2>/dev/null || true
+    log_info "  Saved decision: ${name}=no — preflight will not ask again. Re-prompt: sudo rm ${f}"
+}
+
+preflight_forget_decisions() {
+    [[ "${EUID}" -eq 0 ]] || return 0
+    [[ -d "${PREFLIGHT_DECISION_DIR}" ]] || return 0
+    local removed=0 f
+    for f in "${PREFLIGHT_DECISION_DIR}"/preflight-decline-*; do
+        [[ -f "${f}" ]] || continue
+        rm -f "${f}" 2>/dev/null && removed=$((removed + 1)) || true
+    done
+    [[ "${removed}" -gt 0 ]] && log_info "Forgot ${removed} previously saved fix decision(s) under ${PREFLIGHT_DECISION_DIR}"
+}
+
 preflight_fix_allow_includes_onboard_step() {
     [[ -n "${PREFLIGHT_FIX_ALLOW:-}" ]] || return 1
     [[ "${PREFLIGHT_FIX_ALLOW}" == *"|onboard-tooling|"* ]] \
@@ -2273,15 +2321,18 @@ preflight_apply_safe_fixes() {
     local _ot_run=false
     if [[ "${PREFLIGHT_ROLE:-both}" == "target" ]]; then
         log_info "  -> skipping onboard-tooling / node-22 / kweaver-sdk / kweaver-admin: PREFLIGHT_ROLE=target (admin tooling lives on another host)"
+    elif preflight_was_declined "onboard-tooling"; then
+        log_info "  -> skipping onboard-tooling: previously declined ($(_preflight_decision_file onboard-tooling)). Re-prompt: sudo rm $(_preflight_decision_file onboard-tooling) (or run preflight with PREFLIGHT_FORGET_DECISIONS=true)"
     elif preflight_onboard_tooling_needed; then
         if preflight_fix_allow_includes_onboard_step; then
             _ot_run=true
         elif preflight_confirm_fix "onboard-tooling" \
             "Will you run ./onboard.sh (and optionally kweaver CLIs) on this machine? We standardize on Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (kweaver-sdk, kweaver-admin, onboard); we can nvm/NodeSource → npm -g in the next prompts if you say Yes" \
-            "Choose No if you will run onboard/CLIs on another host with Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (nvm, container, laptop, etc.). If you stay on this machine without node-22, you still need that other environment. Yes = may run node-22 and global npm; each step y/N unless -y."; then
+            "Choose No if you will run onboard/CLIs on another host with Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (nvm, container, laptop, etc.). If you stay on this machine without node-22, you still need that other environment. Yes = may run node-22 and global npm; each step y/N unless -y. Saying No is REMEMBERED — preflight will not ask again until you remove the sentinel."; then
             _ot_run=true
         else
-            log_info "Skipped preparing this host for onboard (onboard-tooling: No). You still need Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ somewhere for ./onboard.sh and the CLIs — use another machine, nvm in your user, a devcontainer, or CI. Re-run with --fix to install on this host later."
+            preflight_remember_no "onboard-tooling"
+            log_info "Skipped preparing this host for onboard (onboard-tooling: No). You still need Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ somewhere for ./onboard.sh and the CLIs — use another machine, nvm in your user, a devcontainer, or CI."
         fi
     else
         _ot_run=true
@@ -2300,10 +2351,14 @@ preflight_apply_safe_fixes() {
         local _nmj22
         _nmj22="$(preflight_node_major)"
         if [[ -n "${_nmj22}" && $(( 10#${_nmj22} )) -lt ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} ]]; then
-            if preflight_confirm_fix "node-22" \
+            if preflight_was_declined "node-22"; then
+                log_info "  -> skipping node-22: previously declined ($(_preflight_decision_file node-22)). Re-prompt: sudo rm $(_preflight_decision_file node-22)"
+            elif preflight_confirm_fix "node-22" \
                 "nvm in \$HOME/.nvm + nvm install 22 (LTS); if nvm fails, NodeSource 22.x (adds OS repo; needs HTTPS)" \
-                "For hosts below Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}. nvm: GitHub+nodejs.org; NodeSource: third-party apt/dnf. Air-gapped: install Node 22+ manually. ${PREFLIGHT_OFFHOST_NODE22_HINT}"; then
+                "For hosts below Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}. nvm: GitHub+nodejs.org; NodeSource: third-party apt/dnf. Air-gapped: install Node 22+ manually. Saying No is REMEMBERED — preflight will not ask again until you remove the sentinel. ${PREFLIGHT_OFFHOST_NODE22_HINT}"; then
                 preflight_fix_node_22
+            else
+                preflight_remember_no "node-22"
             fi
         fi
     fi
