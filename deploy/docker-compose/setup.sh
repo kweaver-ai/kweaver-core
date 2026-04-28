@@ -85,7 +85,29 @@ fi
 
 if ! docker compose version >/dev/null 2>&1; then
   echo "Docker Compose v2 CLI is required (\"docker compose\")." >&2
+  echo "The legacy \"docker-compose\" v1 command is not supported." >&2
   exit 1
+fi
+
+compose_version="$(docker compose version --short 2>/dev/null || true)"
+if [[ -n "$compose_version" ]]; then
+  python3 - "$compose_version" <<'PY'
+import re
+import sys
+
+raw = sys.argv[1]
+m = re.search(r"(\d+)\.(\d+)\.(\d+)", raw)
+if not m:
+    sys.exit(0)
+
+version = tuple(map(int, m.groups()))
+if version < (2, 17, 0):
+    print(
+        f"WARNING: Docker Compose {raw} detected. "
+        "Recommended: v2.17.0+ (v2.20.0+ preferred).",
+        file=sys.stderr,
+    )
+PY
 fi
 
 if [[ ! -f .env ]] && [[ ! -f .env.example ]]; then
@@ -120,6 +142,24 @@ read_env_var() {
   local file="$1" key="$2"
   grep -E "^${key}=" "$file" 2>/dev/null | head -1 | cut -d= -f2-
 }
+
+require_env_var() {
+  local key="$1" hint="$2" val
+  val="$(read_env_var .env "$key")"
+  if [[ -z "$val" ]]; then
+    echo "ERROR: ${key} is empty in .env." >&2
+    echo "Set ${key}${hint:+ (${hint})} and re-run this script." >&2
+    exit 1
+  fi
+}
+
+require_env_var IMAGE_REGISTRY "container image registry"
+require_env_var KWEAVER_VERSION "KWeaver Core image tag"
+require_env_var MARIADB_USER "MariaDB application user, usually adp"
+require_env_var MARIADB_DATABASE "MariaDB application database, usually adp"
+require_env_var MINIO_ROOT_USER "MinIO root user"
+require_env_var ACCESS_HOST "public host used in generated config"
+require_env_var ACCESS_PORT "public port used in generated config"
 
 # Resolve final value for one password key.
 # Args: KEY  CLI_VAL  CLI_SET(true|false)

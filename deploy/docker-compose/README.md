@@ -6,7 +6,7 @@ This directory provides a **minimal** local or lab stack for KWeaver Core (no IS
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/) (Compose v2 plugin: `docker compose`).
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/) (Compose v2 plugin: `docker compose`; **Docker Compose v2.17+ recommended**, v2.20+ preferred). Legacy `docker-compose` v1 is not supported.
 - Enough disk and RAM for MariaDB, Kafka, OpenSearch, Redis, MinIO, and many application containers (typical dev machine: 16 GB+ RAM recommended).
 - **Network access** to the image registry in `.env` (`IMAGE_REGISTRY`). Change it if you mirror images elsewhere.
 
