@@ -347,9 +347,14 @@ onboard_upsert_cm_embedded_yaml() {
         return 1
     }
 
-    # Resolve the helper next to this library file (BASH_SOURCE = onboard_models.sh)
+    # Resolve the helper from SCRIPT_DIR (deploy/) first. BASH_SOURCE can vary
+    # when the library is sourced through a test harness or another wrapper.
     local _lib_dir _patcher
-    _lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [[ -n "${SCRIPT_DIR:-}" && -d "${SCRIPT_DIR}/scripts/lib" ]]; then
+        _lib_dir="${SCRIPT_DIR}/scripts/lib"
+    else
+        _lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    fi
     _patcher="${_lib_dir}/onboard_patch_bkn_cm.py"
     if [[ ! -f "${_patcher}" ]]; then
         onboard_log_err "missing helper ${_patcher}"
@@ -357,7 +362,7 @@ onboard_upsert_cm_embedded_yaml() {
         return 1
     fi
 
-    if ! OUT_JSON=$(python3 "${_patcher}" "${jtmp}" "${dname}" 2> "${errtmp}"); then
+    if OUT_JSON=$(python3 "${_patcher}" "${jtmp}" "${dname}" 2> "${errtmp}"); then
         rm -f "${jtmp}" "${errtmp}"
     else
         rc=$?
