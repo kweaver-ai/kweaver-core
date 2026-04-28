@@ -481,7 +481,7 @@ onboard_kweaver_admin_auth_login_for_url() {
     return 0
 }
 
-# When kweaver bkn list fails, interactively let the user log in or retry; non-interactive exits.
+# When kweaver bkn list fails, interactively let the user log in or retry; non-interactive (or -y) exits.
 onboard_ensure_kweaver_auth() {
     while true; do
         if kweaver bkn list &>/dev/null; then
@@ -491,6 +491,19 @@ onboard_ensure_kweaver_auth() {
             _durl="$(onboard_default_access_base_url)"
             onboard_log_err "kweaver bkn list failed. Run: kweaver auth login ${_durl} -k  (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
             exit 1
+        fi
+        if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
+            _durl="$(onboard_default_access_base_url)"
+            onboard_log_warn "kweaver bkn list failed (-y, non-interactive). Trying  kweaver auth login ${_durl}  with defaults…"
+            if ! onboard_kweaver_auth_login_for_url "${_durl}"; then
+                onboard_log_err "kweaver auth login failed. Set ONBOARD_DEFAULT_ACCESS_BASE / ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD, or run kweaver auth login manually, then re-run: $0 -y"
+                exit 1
+            fi
+            if ! kweaver bkn list &>/dev/null; then
+                onboard_log_err "kweaver bkn list still fails after auth login. Check the platform, then re-run: $0 -y"
+                exit 1
+            fi
+            return 0
         fi
         onboard_log_warn "kweaver bkn list failed (not logged in or platform unreachable)."
         echo ""
@@ -732,6 +745,13 @@ fi
 
 # Interactive (bash path for registration; BKN uses upsert in models.sh)
 if [[ "${INTERACTIVE}" == "true" ]]; then
+    if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
+        onboard_log_info "Skipping interactive model registration (-y). For non-interactive registration, use --config=models.yaml (see -h) or --enable-bkn-search."
+        ONBOARD_REPORT_MAIN_MODE="interactive"
+        onboard_log_info "Done."
+        onboard_print_completion_report
+        exit 0
+    fi
     if ! python3 -c "import yaml" 2>/dev/null; then
         onboard_log_warn "PyYAML not installed: BKN ConfigMap patch will fail. pip3 install pyyaml"
     fi
