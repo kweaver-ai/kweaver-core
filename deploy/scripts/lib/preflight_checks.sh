@@ -73,11 +73,14 @@ preflight_backup_file() {
 
 # Resolve vX.Y for pkgs.k8s.io from installed kubeadm (Debian/.deb), or env default.
 preflight_resolve_k8s_apt_minor() {
-    local dpkg_ver out
+    # With `set -u` (preflight.sh): locals must start empty — on RPM hosts dpkg-query
+    # does not exist, so skipping the assignment would leave dpkg_ver unset in some Bash builds.
+    local dpkg_ver=""
+    local out=""
     if command -v dpkg-query &>/dev/null; then
         dpkg_ver="$(dpkg-query -W -f='${Version}' kubeadm 2>/dev/null || true)"
     fi
-    if [[ -n "${dpkg_ver}" ]]; then
+    if [[ -n "${dpkg_ver:-}" ]]; then
         out="${dpkg_ver%%[-~]*}"
         out="$(echo "${out}" | cut -d. -f1-2)"
         if [[ "${out}" =~ ^[0-9]+\.[0-9]+$ ]]; then
