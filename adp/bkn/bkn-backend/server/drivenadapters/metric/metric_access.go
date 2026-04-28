@@ -323,7 +323,7 @@ func (ma *metricAccess) GetMetricsByIDs(ctx context.Context, knID string, branch
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var metrics []*interfaces.MetricDefinition
 	for rows.Next() {
@@ -397,7 +397,7 @@ func (ma *metricAccess) ListMetrics(ctx context.Context, query interfaces.Metric
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var metrics []*interfaces.MetricDefinition
 	for rows.Next() {
@@ -558,7 +558,7 @@ func (ma *metricAccess) GetMetricIDsByKnID(ctx context.Context, knID string, bra
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []string
 	for rows.Next() {

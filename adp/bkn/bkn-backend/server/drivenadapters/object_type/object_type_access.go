@@ -359,7 +359,7 @@ func (ota *objectTypeAccess) ListObjectTypes(ctx context.Context, tx *sql.Tx, qu
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ObjectType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	objectTypes := make([]*interfaces.ObjectType, 0)
 	for rows.Next() {
@@ -712,7 +712,7 @@ func (ota *objectTypeAccess) GetObjectTypesByIDs(ctx context.Context, tx *sql.Tx
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ObjectType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	objectTypes := make([]*interfaces.ObjectType, 0)
 	for rows.Next() {
@@ -1200,7 +1200,7 @@ func (ota *objectTypeAccess) GetObjectTypeIDsByKnID(ctx context.Context, knID st
 		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	otIDs := []string{}
 	for rows.Next() {
@@ -1340,7 +1340,7 @@ func (ota *objectTypeAccess) GetAllObjectTypesByKnID(ctx context.Context, knID s
 		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.ObjectType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	objectTypes := make(map[string]*interfaces.ObjectType)
 	for rows.Next() {

@@ -186,7 +186,7 @@ func (rta *riskTypeAccess) ListRiskTypes(ctx context.Context, query interfaces.R
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {
@@ -280,7 +280,7 @@ func (rta *riskTypeAccess) GetRiskTypesByIDs(ctx context.Context, knID string, b
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var riskTypes []*interfaces.RiskType
 	for rows.Next() {

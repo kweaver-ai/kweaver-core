@@ -309,7 +309,7 @@ func (a *actionScheduleAccess) GetSchedules(ctx context.Context, scheduleIDs []s
 		span.SetStatus(codes.Error, "Query data error")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[string]*interfaces.ActionSchedule)
 	for rows.Next() {
@@ -372,7 +372,7 @@ func (a *actionScheduleAccess) ListSchedules(ctx context.Context, query interfac
 		span.SetStatus(codes.Error, "Query data error")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schedules []*interfaces.ActionSchedule
 	for rows.Next() {
@@ -502,7 +502,7 @@ func (a *actionScheduleAccess) GetDueSchedules(ctx context.Context, now int64) (
 		span.SetStatus(codes.Error, "Query data error")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schedules []*interfaces.ActionSchedule
 	for rows.Next() {

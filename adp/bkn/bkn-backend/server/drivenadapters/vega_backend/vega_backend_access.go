@@ -104,7 +104,7 @@ func (vba *vegaBackendAccess) GetCatalogByID(ctx context.Context, id string) (*i
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
 		logger.Errorf("Failed to unmarshal GetCatalogByID response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal GetCatalogByID response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal GetCatalogByID response: %v", err)
 	}
 
 	return &catalog, nil
@@ -143,7 +143,7 @@ func (vba *vegaBackendAccess) CreateCatalog(ctx context.Context, req *interfaces
 	var catalog interfaces.Catalog
 	if err := json.Unmarshal([]byte(respData), &catalog); err != nil {
 		logger.Errorf("Failed to unmarshal CreateCatalog response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal CreateCatalog response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal CreateCatalog response: %v", err)
 	}
 
 	return &catalog, nil
@@ -232,7 +232,7 @@ func (vba *vegaBackendAccess) CreateResource(ctx context.Context, req *interface
 	var resource interfaces.VegaResource
 	if err := json.Unmarshal([]byte(respData), &resource); err != nil {
 		logger.Errorf("Failed to unmarshal CreateResource response: %v", err)
-		return fmt.Errorf("Failed to unmarshal CreateResource response: %v", err)
+		return fmt.Errorf("failed to unmarshal CreateResource response: %v", err)
 	}
 
 	return nil
@@ -382,7 +382,7 @@ func (vba *vegaBackendAccess) QueryResourceData(ctx context.Context, resourceID 
 	var response interfaces.DatasetQueryResponse
 	if err := json.Unmarshal([]byte(respData), &response); err != nil {
 		logger.Errorf("Failed to unmarshal QueryDatasetData response: %v", err)
-		return nil, fmt.Errorf("Failed to unmarshal QueryDatasetData response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal QueryDatasetData response: %v", err)
 	}
 
 	return &response, nil

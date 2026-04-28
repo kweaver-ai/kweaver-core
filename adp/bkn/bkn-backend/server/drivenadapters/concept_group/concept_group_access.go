@@ -251,7 +251,7 @@ func (cga *conceptGroupAccess) ListConceptGroups(ctx context.Context, query inte
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make([]*interfaces.ConceptGroup, 0)
 
@@ -336,7 +336,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByIDs(ctx context.Context, tx *sq
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make([]*interfaces.ConceptGroup, 0)
 	for rows.Next() {
@@ -754,7 +754,7 @@ func (cga *conceptGroupAccess) GetConceptGroupIDsByKnID(ctx context.Context, knI
 		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	cgIDs := []string{}
 	for rows.Next() {
@@ -848,7 +848,7 @@ func (cga *conceptGroupAccess) GetAllConceptGroupsByKnID(ctx context.Context, kn
 		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroups := make(map[string]*interfaces.ConceptGroup)
 	for rows.Next() {
@@ -928,7 +928,7 @@ func (cga *conceptGroupAccess) ListConceptGroupRelations(ctx context.Context, tx
 		otellog.LogError(ctx, "List data error", err)
 		return []interfaces.ConceptGroupRelation{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptGroupRelations := make([]interfaces.ConceptGroupRelation, 0)
 	for rows.Next() {
@@ -1115,7 +1115,7 @@ func (cga *conceptGroupAccess) GetConceptIDsByConceptGroupIDs(ctx context.Contex
 		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	conceptIDs := make([]string, 0)
 	for rows.Next() {
@@ -1185,7 +1185,7 @@ func (cga *conceptGroupAccess) GetRelationTypeIDsFromConceptGroupRelation(ctx co
 		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	rtIDs := make([]string, 0)
 	for rows.Next() {
@@ -1255,7 +1255,7 @@ func (cga *conceptGroupAccess) GetActionTypeIDsFromConceptGroupRelation(ctx cont
 		otellog.LogError(ctx, "List data error", err)
 		return []string{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	atIDs := make([]string, 0)
 	for rows.Next() {
@@ -1323,7 +1323,7 @@ func (cga *conceptGroupAccess) GetConceptGroupsByOTIDs(ctx context.Context, tx *
 		otellog.LogError(ctx, "List data error", err)
 		return map[string][]*interfaces.ConceptGroup{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	results := map[string][]*interfaces.ConceptGroup{}
 	for rows.Next() {

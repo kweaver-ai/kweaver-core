@@ -56,7 +56,7 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// 验证文件类型
 	if header.Header.Get("Content-Type") != "application/octet-stream" {

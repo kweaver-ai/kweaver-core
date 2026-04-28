@@ -155,7 +155,7 @@ func validatePaginationQueryParameters(ctx context.Context, offset, limit, sort,
 			WithErrorDetails(err.Error())
 	}
 
-	if !(limit == interfaces.NO_LIMIT || (lim >= interfaces.MIN_LIMIT && lim <= interfaces.MAX_LIMIT)) {
+	if limit != interfaces.NO_LIMIT && (lim < interfaces.MIN_LIMIT || lim > interfaces.MAX_LIMIT) {
 		return pageParams, rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_InvalidParameter_Limit).
 			WithErrorDetails(fmt.Sprintf("The number per page does not equal %s is not in the range of [%d,%d]", interfaces.NO_LIMIT, interfaces.MIN_LIMIT, interfaces.MAX_LIMIT))
 	}

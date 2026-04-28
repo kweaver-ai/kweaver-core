@@ -382,7 +382,7 @@ func (ja *jobAccess) GetJobsByIDs(ctx context.Context, jobIDs []string) (map[str
 		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	jobInfos := map[string]*interfaces.JobInfo{}
 	for rows.Next() {
@@ -456,7 +456,7 @@ func (ja *jobAccess) GetJobIDsByKnID(ctx context.Context, tx *sql.Tx, knID strin
 		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	jobIDs := []string{}
 	for rows.Next() {
@@ -604,7 +604,7 @@ func (ja *jobAccess) ListJobs(ctx context.Context, query interfaces.JobsQueryPar
 		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	jobInfos := []*interfaces.JobInfo{}
 	for rows.Next() {
@@ -814,7 +814,7 @@ func (ja *jobAccess) ListTasks(ctx context.Context, query interfaces.TasksQueryP
 		otellog.LogError(ctx, "Query data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	taskInfos := []*interfaces.TaskInfo{}
 	for rows.Next() {

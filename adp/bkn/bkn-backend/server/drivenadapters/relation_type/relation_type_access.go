@@ -225,7 +225,7 @@ func (rta *relationTypeAccess) ListRelationTypes(ctx context.Context, query inte
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.RelationType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	relationTypes := make([]*interfaces.RelationType, 0)
 	for rows.Next() {
@@ -489,7 +489,7 @@ func (rta *relationTypeAccess) GetRelationTypesByIDs(ctx context.Context, knID s
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.RelationType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	relationTypes := make([]*interfaces.RelationType, 0)
 	for rows.Next() {
@@ -757,7 +757,7 @@ func (rta *relationTypeAccess) GetRelationTypeIDsByKnID(ctx context.Context, knI
 		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	rtIDs := []string{}
 	for rows.Next() {
@@ -867,7 +867,7 @@ func (rta *relationTypeAccess) GetAllRelationTypesByKnID(ctx context.Context, kn
 		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.RelationType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	relationTypes := make(map[string]*interfaces.RelationType)
 	for rows.Next() {

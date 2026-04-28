@@ -435,7 +435,7 @@ func TestJobExecutor_HandleTask(t *testing.T) {
 		je.mJobs["job1"] = job
 
 		Convey("Failed with task not in pending state", func() {
-			taskInfo.TaskStateInfo.State = interfaces.TaskStateRunning
+			taskInfo.State = interfaces.TaskStateRunning
 			ja.EXPECT().UpdateTaskState(ctx, "task1", gomock.Any()).Return(nil)
 			err := je.HandleTask(ctx, objectTypeTask)
 			So(err, ShouldNotBeNil)

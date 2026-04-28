@@ -253,7 +253,7 @@ func (kna *knowledgeNetworkAccess) ListKNs(ctx context.Context, query interfaces
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.KN{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	KNs := make([]*interfaces.KN, 0)
 	for rows.Next() {
@@ -781,7 +781,8 @@ func (kna *knowledgeNetworkAccess) GetNeighborPathsBatch(ctx context.Context, ot
 		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
+
 	rtPathsMap := map[string][]interfaces.RelationTypePath{}
 	for rows.Next() {
 		var (
@@ -919,7 +920,7 @@ func (kna *knowledgeNetworkAccess) GetAllKNs(ctx context.Context) (map[string]*i
 		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.KN{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	KNs := make(map[string]*interfaces.KN)
 	for rows.Next() {
@@ -996,7 +997,7 @@ func (kna *knowledgeNetworkAccess) ListKnSrcs(ctx context.Context,
 		otellog.LogError(ctx, "List data error", err)
 		return []interfaces.PermissionResource{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	srcs := make([]interfaces.PermissionResource, 0)
 	for rows.Next() {

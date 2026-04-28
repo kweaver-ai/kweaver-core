@@ -305,7 +305,7 @@ func (ata *actionTypeAccess) ListActionTypes(ctx context.Context, query interfac
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ActionType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	actionTypes := make([]*interfaces.ActionType, 0)
 	for rows.Next() {
@@ -471,7 +471,7 @@ func (ata *actionTypeAccess) GetActionTypesByIDs(ctx context.Context, knID strin
 		otellog.LogError(ctx, "List data error", err)
 		return []*interfaces.ActionType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	actionTypes := make([]*interfaces.ActionType, 0)
 	for rows.Next() {
@@ -776,7 +776,7 @@ func (ata *actionTypeAccess) GetActionTypeIDsByKnID(ctx context.Context, knID st
 		otellog.LogError(ctx, "List data error", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	atIDs := []string{}
 	for rows.Next() {
@@ -881,7 +881,7 @@ func (ata *actionTypeAccess) GetAllActionTypesByKnID(ctx context.Context, knID s
 		otellog.LogError(ctx, "List data error", err)
 		return map[string]*interfaces.ActionType{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	actionTypes := make(map[string]*interfaces.ActionType)
 	for rows.Next() {
