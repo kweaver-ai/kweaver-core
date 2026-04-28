@@ -39,8 +39,14 @@ async def create_resume_generator(
             for arg in resume_info.modified_args:
                 tool_args.append({"key": arg.key, "value": arg.value})
 
+        # 从 interrupt data 中提取 tool_name (必需字段)
+        tool_name = resume_info.data.get("tool_name")
+        if not tool_name:
+            raise ValueError("Missing tool_name in resume_info.data")
+
         updates = {
             "tool": {
+                "tool_name": tool_name,  # 否则 tool_name 丢失
                 "action": resume_info.action,
                 "tool_args": tool_args,
             }

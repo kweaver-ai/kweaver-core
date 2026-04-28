@@ -10,14 +10,14 @@ present regardless of what skills the agent has configured.  Their model-visible
 names are fixed reserved names: any user-defined tool with the same name is
 overwritten by these built-in tools.
 
-Schemas are imported from dolphin.sdk.skill.skill_contracts so that the
+Schemas are imported from dolphin.sdk.tool.skill_contracts so that the
 executor side never duplicates the contract definition.
 """
 
 from typing import Any, AsyncGenerator, Dict, Optional
 
 from dolphin.core.utils.tools import Tool
-from dolphin.sdk.skill.skill_contracts import (
+from dolphin.sdk.tool.skill_contracts import (
     BUILTIN_SKILL_LOAD,
     BUILTIN_SKILL_READ_FILE,
     BUILTIN_SKILL_EXECUTE_SCRIPT,
