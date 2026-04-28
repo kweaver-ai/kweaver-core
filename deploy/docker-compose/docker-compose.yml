@@ -1,4 +1,6 @@
-# KWeaver Core (B1 demo: infra + migrator + 11 services, no agent/dataflow/sandbox)
+# KWeaver Core — Docker Compose aligned with `deploy.sh kweaver-core install --minimum`
+# (release-manifests/0.7.0/kweaver-core.yaml releases; AUTH_ENABLED=false / BUSINESS_DOMAIN_ENABLED=false).
+# Does not install optional ISF from the manifest (skip when auth.enabled=false in Helm).
 
 name: ${COMPOSE_PROJECT_NAME:-kweaver-compose}
 
@@ -361,6 +363,258 @@ services:
       - ./configs/generated/mdl-data-model-job/cm-mdl-data-model-job-cm/data-model-job-config.yaml:/opt/data-model-job/config/data-model-job-config.yaml:ro
       - ./configs/generated/mdl-data-model-job/cm-mdl-data-model-job-cm/dm_svc.conf:/opt/data-model-job/config/dm_svc.conf:ro
 
+  agent-operator-integration:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-operator-integration:${AGENT_OPERATOR_INTEGRATION_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - agent-operator-integration
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: en_US.UTF-8
+      DB_TYPE: MYSQL
+      AUTH_ENABLED: "false"
+      BUSINESS_DOMAIN_ENABLED: "false"
+    volumes:
+      - ./configs/generated/agent-operator-integration/cm-kw:/sysvol/config:ro
+      - ./configs/generated/agent-operator-integration/secret-kw:/sysvol/secret:ro
+
+  agent-retrieval:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-retrieval:${AGENT_RETRIEVAL_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - agent-retrieval
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: en_US.UTF-8
+      DB_TYPE: MYSQL
+      AUTH_ENABLED: "false"
+    volumes:
+      - ./configs/generated/agent-retrieval/cm-kw:/sysvol/config:ro
+      - ./configs/generated/agent-retrieval/secret-kw:/sysvol/secret:ro
+
+  agent-backend:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-backend:${AGENT_BACKEND_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - agent-backend
+          - agent-factory
+          - agent-app
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/agent-backend/cm-agent-memory-yaml.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: en_US.UTF-8
+      AGENT_FACTORY_DISABLE_PMS_CHECK: "false"
+      AUTH_ENABLED: "false"
+      BUSINESS_DOMAIN_ENABLED: "false"
+      DM_SVC_PATH: /tmp/rds_conf/
+    volumes:
+      - ./configs/generated/agent-backend/cm-agent-factory-yaml/agent-factory.yaml:/sysvol/conf/agent-factory.yaml:ro
+      - ./configs/generated/agent-backend/cm-agent-factory-yaml/dm_svc.conf:/sysvol/conf/dm_svc.conf:ro
+      - ./configs/generated/agent-backend/cm-agent-factory-yaml/mq_config.yaml:/sysvol/conf/mq_config.yaml:ro
+      - ./configs/generated/agent-backend/secret-agent-factory-secret-yaml:/sysvol/conf/secret:ro
+      - ./configs/generated/agent-backend/cm-agent-executor-yaml/agent-executor.yaml:/sysvol/conf/agent-executor.yaml:ro
+      - ./configs/generated/agent-backend/cm-agent-factory-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
+
+  dataflow:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - flow-automation
+          - flow-automation-private
+          - ecron-management
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/dataflow/flow-automation.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: en_US.UTF-8
+      LOGOUT: stdout
+      AUTH_ENABLED: "false"
+      BUSINESS_DOMAIN_ENABLED: "false"
+    volumes:
+      - ./configs/generated/dataflow/secret-flow-automation-ca/mongo.ca.pem:/opt/flow-automation/ssl/mongo.ca.pem:ro
+      - ./configs/generated/dataflow/cm-flow-automation/flow_o11y_data.yaml:/conf/flow_o11y_data.yaml:ro
+      - ./configs/generated/dataflow/cm-flow-automation/ACTION_CONFIG:/conf/action_config.yaml:ro
+      - ./configs/generated/dataflow/cm-flow-automation/S3:/conf/s3.yaml:ro
+      - ./configs/generated/dataflow/cm-ecron-management-yaml:/sysvol/conf/service_conf:ro
+      - ./configs/generated/dataflow/secret-ecron-management-secret:/sysvol/conf/secret_conf:ro
+      - dataflow_tmp:/tmp
+      - dataflow_osslog:/opt/flow-automation/osslog
+    command: ["/bin/bash", "-c", "cd /opt/flow-automation && ./flow-automation"]
+
+  flow-stream-data-pipeline:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+      dataflow:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: en_US.UTF-8
+      DB_TYPE: mysql
+      MQ_TYPE: kafka
+      DM_SVC_PATH: /opt/pipeline/config
+      AUTH_ENABLED: "false"
+      SDP_PIPELINE_IMAGE: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+      SDP_PIPELINE_NAMESPACE: ${SDP_PIPELINE_NAMESPACE:-dip}
+    volumes:
+      - ./configs/generated/dataflow/cm-flow-stream-data-pipeline-cm:/opt/pipeline/config:ro
+    command: ["/bin/bash", "-c", "cd /opt/pipeline && ./pipeline-mgmt-server"]
+
+  dataflowtools:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflowtools:${DATAFLOWTOOLS_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - dataflowtools-private
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/coderunner/dataflowtools.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./configs/generated/coderunner/cm-dataflowtools/mq_config.yaml:/sysvol/conf/mq_config.yaml:ro
+      - dataflowtools_tmp:/tmp
+
+  coderunner:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/coderunner:${CODERUNNER_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - coderunner-private
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+      dataflowtools:
+        condition: service_started
+    env_file:
+      - .env
+      - ./configs/generated/coderunner/coderunner.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - coderunner_pylib:/tmp
+      - coderunner_usr_local:/usr/local
+    command: ["/bin/bash", "-c", "./init_site_packages.sh && python3 ./src/main.py"]
+
+  doc-convert-gotenberg:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/gotenberg:${DOC_CONVERT_GOTENBERG_VERSION:-0.7.0-0a6213d.1799448}
+    restart: unless-stopped
+    networks:
+      kweaver-network:
+        aliases:
+          - doc-convert-private
+    expose:
+      - "3000"
+      - "9998"
+
+  doc-convert-tika:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/tika:${DOC_CONVERT_TIKA_VERSION:-0.7.0-0a6213d.1799448}
+    restart: unless-stopped
+    network_mode: "service:doc-convert-gotenberg"
+    depends_on:
+      - doc-convert-gotenberg
+
+  sandbox:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/sandbox-control-plane:${SANDBOX_VERSION:-0.3.3}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+      mariadb:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    env_file:
+      - .env
+      - ./configs/generated/sandbox/sandbox.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${SANDBOX_HTTP_PORT:-8001}:8000"
+
+  oss-gateway-backend:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/oss-gateway-backend:${OSS_GATEWAY_BACKEND_VERSION:-0.7.0}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      kweaver-core-data-migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+      - ./configs/generated/oss-gateway-backend/cm-kw-yaml.env
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DEVICE_CODE: ""
+    volumes:
+      - ./configs/generated/oss-gateway-backend/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
+
+  otelcol-contrib:
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/opentelemetry-collector-contrib:${OTELCOL_CONTRIB_VERSION:-0.148.0}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    command: ["--config=/conf/collector-config.yaml"]
+    volumes:
+      - ./configs/generated/otelcol-contrib/cm-kw-otelcol-contrib/collector-config.yaml:/conf/collector-config.yaml:ro
+
+  agent-observability:
+    image: ${IMAGE_REGISTRY}/agent-observability:${AGENT_OBSERVABILITY_VERSION:-0.2.2}
+    restart: unless-stopped
+    networks:
+      - kweaver-network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      OPENSEARCH_ENDPOINT: http://${OPENSEARCH_HOST:-opensearch}:${OPENSEARCH_PORT:-9200}
+      OPENSEARCH_TRACE_INDEX: ${AGENT_OBSERVABILITY_TRACE_INDEX:-ss4o_traces-default-anyshare}
+      OPENSEARCH_AUTH_ENABLED: "false"
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -380,6 +634,19 @@ services:
       - mdl-data-model
       - mdl-uniquery
       - mdl-data-model-job
+      - agent-operator-integration
+      - agent-retrieval
+      - agent-backend
+      - dataflow
+      - flow-stream-data-pipeline
+      - coderunner
+      - dataflowtools
+      - doc-convert-gotenberg
+      - doc-convert-tika
+      - sandbox
+      - oss-gateway-backend
+      - otelcol-contrib
+      - agent-observability
     volumes:
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
@@ -396,3 +663,8 @@ volumes:
   kafka_data:
   opensearch_data:
   minio_data:
+  dataflow_tmp:
+  dataflow_osslog:
+  dataflowtools_tmp:
+  coderunner_pylib:
+  coderunner_usr_local:

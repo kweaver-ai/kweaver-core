@@ -1,0 +1,13 @@
+log_level: INFO
+exporters:
+  console:
+    enable: false
+  proton_mq:
+    config:
+      broker_list:
+      - kafka-headless.resource:9097
+      password: ""
+      sub_type: kafka
+      topic: default.dataflow.dip-flow-o11y-data
+      username: anyrobot
+    enable: true

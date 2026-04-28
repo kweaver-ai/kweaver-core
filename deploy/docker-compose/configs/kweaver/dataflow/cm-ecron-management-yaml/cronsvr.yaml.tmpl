@@ -1,0 +1,43 @@
+LC_ALL: zh_CN
+
+#配置文件路径/sysvol/conf/cronsvr.yaml
+lang: zh_CN #系统语言
+webhook: /api/ecron-management/v1/executionresult #任务结果监听地址
+job_failures: 3 #任务执行失败次数上限
+
+#消费队列
+mq_host: proton-mq-nsq-nsqd.resource
+mq_port: 4151
+mq_lookupd_host: proton-mq-nsq-nsqlookupd.resource
+mq_lookupd_port: 4161
+mq_connector_type: nsq
+
+#定时服务，multi_node=true表示定时服务可以多节点运行，端口号动态选择
+cron_addr: ecron-management
+cron_port: 32345
+cron_protocol: http
+anlys_port: 32346
+multi_node: false
+
+#SSL证书
+ssl_on: false
+cert_file: /sysvol/conf/ecron.crt
+key_file: /sysvol/conf/ecron.key
+
+#sleep时间，单位秒
+analysis_load_sleep: 10
+analysis_refresh_sleep: 10
+job_status_refresh_sleep: 10
+msmq_client_op_sleep: 10
+db_client_ping_sleep: 30
+lost_immediate_job_sleep: 10
+token_refresh_sleep: 10
+
+#授权服务
+oauth_public_addr: hydra-public
+oauth_public_port: 4444
+oauth_public_protocol: http
+oauth_admin_addr: hydra-admin
+oauth_admin_port: 4445
+oauth_admin_protocol: http
+auth_enabled: "true"

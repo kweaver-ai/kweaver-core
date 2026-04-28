@@ -61,6 +61,7 @@ usage() {
     echo "  kweaver-core download         Download/update KWeaver Core charts into deploy/.tmp/charts"
     echo "  kweaver-core uninstall        Uninstall KWeaver Core services"
     echo "  kweaver-core status           Show KWeaver Core services status"
+    echo "                                Compose mirror (local): deploy/docker-compose (see README; Core manifest parity, not K8s/ISF)"
     echo "                                Use --set to pass custom values to all charts"
     echo "  isf install                   Install ISF services; auto-installs K8s/data services if missing"
     echo "  isf download                  Download/update ISF charts into deploy/.tmp/charts"

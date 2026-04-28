@@ -18,11 +18,11 @@ query:
 trace:
   maxSearchSpanSize: 1000
 observability:
-  grpcTraceFeedIngesterUrl: otelcol-contrib:30013
+  grpcTraceFeedIngesterUrl: nginx:30013
   grpcTraceJobId: dip-o11y-trace-grpc
-  httpLogFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
-  httpMetricFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
-  httpTraceFeedIngesterUrl: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+  httpLogFeedIngesterUrl: http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+  httpMetricFeedIngesterUrl: http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events
+  httpTraceFeedIngesterUrl: http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
   logEnabled: false
   logExporter: console
   logLoadInternal: 1

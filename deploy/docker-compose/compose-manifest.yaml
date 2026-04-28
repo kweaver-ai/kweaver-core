@@ -1,0 +1,292 @@
+apiVersion: deploy.kweaver.ai/v1alpha1
+kind: ComposeImageSet
+product: kweaver-core
+version: 0.7.0
+description: Docker Compose image manifest for the KWeaver Core compose stack.
+source:
+  releaseManifest: ../release-manifests/0.7.0/kweaver-core.yaml
+  note: Most KWeaver image tags follow the chart version in the release manifest. Entries with different image tags are recorded explicitly below.
+defaults:
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+  namespace: dip
+  env:
+    registry: IMAGE_REGISTRY
+    namespace: DIP_NAMESPACE
+
+images:
+  mariadb:
+    phase: infra
+    public: true
+    image: mariadb:11.4
+
+  redis:
+    phase: infra
+    public: true
+    image: redis:7.2-alpine
+
+  zookeeper:
+    phase: infra
+    public: true
+    image: confluentinc/cp-zookeeper:7.5.0
+
+  kafka:
+    phase: infra
+    public: true
+    image: confluentinc/cp-kafka:7.5.0
+
+  opensearch:
+    phase: infra
+    public: true
+    image: opensearchproject/opensearch:2.19.4
+
+  minio:
+    phase: infra
+    public: true
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+
+  nginx:
+    phase: app
+    public: true
+    image: nginx:1.27-alpine
+
+  kweaver-core-data-migrator:
+    phase: app
+    release: kweaver-core-data-migrator
+    chart: kweaver-core-data-migrator
+    chartVersion: 0.7.0
+    repository: kweaver-core-data-migrator
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  bkn-backend:
+    phase: app
+    release: bkn-backend
+    chart: bkn-backend
+    chartVersion: 0.7.0
+    repository: bkn-backend
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  mf-model-manager:
+    phase: app
+    release: mf-model-manager
+    chart: mf-model-manager
+    chartVersion: 0.7.0
+    repository: mf-model-manager
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  mf-model-api:
+    phase: app
+    release: mf-model-api
+    chart: mf-model-api
+    chartVersion: 0.7.0
+    repository: mf-model-api
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  ontology-query:
+    phase: app
+    release: ontology-query
+    chart: ontology-query
+    chartVersion: 0.7.0
+    repository: ontology-query
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  vega-backend:
+    phase: app
+    release: vega-backend
+    chart: vega-backend
+    chartVersion: 0.7.0
+    repository: vega-backend
+    tag: 0.7.0
+    tagEnv: KWEAVER_VERSION
+
+  data-connection:
+    phase: app
+    release: data-connection
+    chart: data-connection
+    chartVersion: 0.6.0
+    repository: data-connection
+    tag: 0.6.0
+    tagEnv: DATA_CONNECTION_VERSION
+
+  vega-gateway:
+    phase: app
+    release: vega-gateway
+    chart: vega-gateway
+    chartVersion: 0.6.0
+    repository: vega-gateway
+    tag: 0.6.0
+    tagEnv: VEGA_GATEWAY_VERSION
+
+  vega-gateway-pro:
+    phase: app
+    release: vega-gateway-pro
+    chart: vega-gateway-pro
+    chartVersion: 0.6.0
+    repository: vega-gateway-pro
+    tag: 0.6.0
+    tagEnv: VEGA_GATEWAY_PRO_VERSION
+
+  mdl-data-model:
+    phase: app
+    release: mdl-data-model
+    chart: mdl-data-model
+    chartVersion: 0.6.0
+    repository: mdl-data-model
+    tag: 0.6.0
+    tagEnv: MDL_DATA_MODEL_VERSION
+
+  mdl-uniquery:
+    phase: app
+    release: mdl-uniquery
+    chart: mdl-uniquery
+    chartVersion: 0.6.0
+    repository: mdl-uniquery
+    tag: 0.6.0
+    tagEnv: MDL_UNIQUERY_VERSION
+
+  mdl-data-model-job:
+    phase: app
+    release: mdl-data-model-job
+    chart: mdl-data-model-job
+    chartVersion: 0.6.0
+    repository: mdl-data-model-job
+    tag: 0.6.0
+    tagEnv: MDL_DATA_MODEL_JOB_VERSION
+
+  agent-operator-integration:
+    phase: app
+    release: agent-operator-integration
+    chart: agent-operator-integration
+    chartVersion: 0.7.0
+    repository: agent-operator-integration
+    tag: 0.7.0
+    tagEnv: AGENT_OPERATOR_INTEGRATION_VERSION
+
+  agent-retrieval:
+    phase: app
+    release: agent-retrieval
+    chart: agent-retrieval
+    chartVersion: 0.7.0
+    repository: agent-retrieval
+    tag: 0.7.0
+    tagEnv: AGENT_RETRIEVAL_VERSION
+
+  agent-backend:
+    phase: app
+    release: agent-backend
+    chart: agent-backend
+    chartVersion: 0.7.0
+    repository: agent-backend
+    tag: 0.7.0
+    tagEnv: AGENT_BACKEND_VERSION
+
+  dataflow:
+    phase: app
+    release: dataflow
+    chart: dataflow
+    chartVersion: 0.7.0
+    repository: dataflow
+    tag: 0.7.0
+    tagEnv: DATAFLOW_VERSION
+
+  flow-stream-data-pipeline:
+    phase: app
+    release: dataflow
+    chart: dataflow
+    chartVersion: 0.7.0
+    repository: dataflow
+    tag: 0.7.0
+    tagEnv: DATAFLOW_VERSION
+
+  dataflowtools:
+    phase: app
+    release: coderunner
+    chart: coderunner
+    chartVersion: 0.7.0
+    repository: dataflowtools
+    tag: 0.7.0
+    tagEnv: DATAFLOWTOOLS_VERSION
+    note: Sidecar/tool image used by the coderunner chart.
+
+  coderunner:
+    phase: app
+    release: coderunner
+    chart: coderunner
+    chartVersion: 0.7.0
+    repository: coderunner
+    tag: 0.7.0
+    tagEnv: CODERUNNER_VERSION
+
+  doc-convert-gotenberg:
+    phase: app
+    release: doc-convert
+    chart: doc-convert
+    chartVersion: 0.7.0
+    repository: gotenberg
+    tag: 0.7.0-0a6213d.1799448
+    tagEnv: DOC_CONVERT_GOTENBERG_VERSION
+    note: Image tag is chart-specific and does not equal the chart version.
+
+  doc-convert-tika:
+    phase: app
+    release: doc-convert
+    chart: doc-convert
+    chartVersion: 0.7.0
+    repository: tika
+    tag: 0.7.0-0a6213d.1799448
+    tagEnv: DOC_CONVERT_TIKA_VERSION
+    note: Image tag is chart-specific and does not equal the chart version.
+
+  sandbox:
+    phase: app
+    release: sandbox
+    chart: sandbox
+    chartVersion: 0.3.3
+    repository: sandbox-control-plane
+    tag: 0.3.3
+    tagEnv: SANDBOX_VERSION
+
+  sandbox-template-python-basic:
+    phase: app
+    release: sandbox
+    chart: sandbox
+    chartVersion: 0.3.3
+    repository: sandbox-template-python-basic
+    tag: 0.3.3
+    tagEnv: SANDBOX_VERSION
+    note: Referenced by generated sandbox configuration rather than as a Compose service image.
+
+  oss-gateway-backend:
+    phase: app
+    release: oss-gateway-backend
+    chart: oss-gateway-backend
+    chartVersion: 0.7.0
+    repository: oss-gateway-backend
+    tag: 0.7.0
+    tagEnv: OSS_GATEWAY_BACKEND_VERSION
+
+  otelcol-contrib:
+    phase: app
+    release: otelcol-contrib
+    chart: otelcol-contrib
+    chartVersion: 0.2.3
+    repository: opentelemetry-collector-contrib
+    tag: 0.148.0
+    tagEnv: OTELCOL_CONTRIB_VERSION
+    note: Collector image tag differs from the chart version.
+
+  agent-observability:
+    phase: app
+    release: agent-observability
+    chart: agent-observability
+    chartVersion: 0.2.3
+    registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+    namespace: ""
+    repository: agent-observability
+    tag: 0.2.2
+    tagEnv: AGENT_OBSERVABILITY_VERSION
+    note: This image is stored at the registry root instead of under the dip namespace, and its image tag differs from the chart version.

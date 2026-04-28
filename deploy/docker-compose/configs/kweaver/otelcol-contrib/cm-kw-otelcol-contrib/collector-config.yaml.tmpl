@@ -1,0 +1,38 @@
+exporters:
+  opensearch:
+    bulk_action: create
+    dataset: default
+    http:
+      endpoint: http://opensearch-cluster-master.resource.svc.cluster.local:9200
+      tls:
+        insecure: true
+    logs_index_fallback: unknown
+    mapping:
+      mode: ss4o
+    namespace: namespace
+    traces_index_fallback: unknown
+processors:
+  batch: {}
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+service:
+  pipelines:
+    logs:
+      exporters:
+      - opensearch
+      processors:
+      - batch
+      receivers:
+      - otlp
+    traces:
+      exporters:
+      - opensearch
+      processors:
+      - batch
+      receivers:
+      - otlp

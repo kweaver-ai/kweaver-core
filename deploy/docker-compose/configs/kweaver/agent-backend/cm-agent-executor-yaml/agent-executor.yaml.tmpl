@@ -1,0 +1,109 @@
+# agent-executor v2版本配置文件
+# K8s部署时通过configmap-executor-v2.yaml挂载到 /sysvol/conf/ 目录
+#
+# 重要提示：
+# 1. 请勿将包含敏感信息的配置文件提交到版本控制系统
+# 2. 生产环境请使用强密码并定期更换
+# 3. 建议使用密钥管理系统（Kubernetes Secrets, Vault等）存储敏感信息
+
+# 1. app相关
+app:
+  debug: false
+  host_ip: "0.0.0.0"
+  port: 30778
+  host_prefix: "/api/agent-executor/v1"
+  host_prefix_v2: "/api/agent-executor/v2"
+  rps_limit: 100
+  enable_system_log: true
+  log_level: "info"
+  enable_dolphin_agent_verbose: false
+  log_conversation_session_init: false
+  is_write_exception_log_to_file: false
+
+# 2. 结构化数据库相关
+rds:
+  host: "mariadb-mariadb-cluster.resource"
+  port: __MARIA_PORT__
+  dbname: "kweaver"
+  user: "anyshare"
+  password: "xxx"
+  db_type: "MYSQL"
+
+# 3. redis数据库相关
+redis:
+  # 连接类型: standalone, sentinel, master-slave
+  cluster_mode: "sentinel"
+  # sentinel模式配置
+  host: "proton-redis-proton-redis-sentinel.resource"
+  port: "26379"
+  user: "root"
+  password: "xxx"
+  sentinel_master: "mymaster"
+  sentinel_user: "root"
+  sentinel_password: "xxx"
+
+# 4. 图数据库相关
+graphdb:
+  host: ""
+  port: "9669"
+  type: "nebulaGraph"
+  read_only_user: ""
+  read_only_password: ""
+
+# 5. opensearch
+opensearch:
+  host: "opensearch-master"
+  port: "9200"
+  user: "admin"
+  password: "xxx"
+
+# 6. 依赖的服务地址
+services:
+  mf_model_api:
+    host: "mf-model-api"
+    port: "9898"
+  agent_executor:
+    host: "localhost"
+    port: "30778"
+  agent_factory:
+    host: "localhost"
+    port: "13020"
+  agent_operator_integration:
+    host: "agent-operator-integration"
+    port: "9000"
+  agent_memory:
+    host: "localhost"
+    port: "30790"
+
+# 7. 记忆相关
+memory:
+  limit: 50
+  threshold: 0.5
+  rerank_threshold: 0.1
+
+# 9. 一些特性控制
+features:
+  use_explore_block_v2: true
+  disable_dolphin_sdk_llm_cache: false
+  enable_dolphin_agent_output_variables_ctrl: false
+  is_skill_agent_need_progress: false
+  enable_traceai_evidence: false
+  skill_enabled: true
+
+# 10. o11y 相关
+o11y:
+  service_name: "agent-executor"
+  service_version: "1.0.0"
+  environment: "production"
+  log_enabled: true
+  log_level: "info"
+  trace_enabled: true
+  trace_endpoint: "otelcol-contrib:4318"
+  trace_sampling_rate: 1
+
+# 11. 对话日志相关配置
+dialog_logging:
+  enable_dialog_logging: false
+  use_single_log_file: false
+  single_profile_file_path: "./data/dialog_single_file_logs/profile.log"
+  single_trajectory_file_path: "./data/dialog_single_file_logs/trajectory.log"

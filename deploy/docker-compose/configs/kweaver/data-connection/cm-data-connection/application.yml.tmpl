@@ -68,11 +68,11 @@ services:
 anyrobot:
   log:
     enabled: false
-    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/job-4d42d761dbf0ea95/events
+    endpoint: http://nginx:13031/api/feed_ingester/v1/jobs/job-4d42d761dbf0ea95/events
     level: false
   trace:
     enabled: false
-    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/job-a2491f67d02e482c/events
+    endpoint: http://nginx:13031/api/feed_ingester/v1/jobs/job-a2491f67d02e482c/events
 logging:
   config: classpath:logback-spring.xml
 

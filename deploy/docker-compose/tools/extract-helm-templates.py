@@ -23,8 +23,25 @@ DEPLOY_COMPOSE_ROOT = Path(__file__).resolve().parents[1]
 OUT_BASE = DEPLOY_COMPOSE_ROOT / "configs" / "kweaver"
 CHART_ROOT = Path("/tmp/kc-charts-unpacked")
 
+# Single-key Secret files whose chart-default value is a placeholder ("xxxxxx",
+# "root", "anyrobot", ...). Map the key name to a Compose placeholder so re-extracts
+# don't leak chart fixtures into configs/kweaver/**/secret-*/<KEY>.tmpl.
+SECRET_KEY_TO_PLACEHOLDER: dict[str, str] = {
+    "DB_PASSWORD": "__MARIADB_PASSWORD__",
+    "RDSPASS": "__MARIADB_PASSWORD__",
+    "REDIS_PASSWORD": "__REDIS_PASSWORD__",
+    "REDIS_SENTINEL_PASSWORD": "__REDIS_PASSWORD__",
+    "REDIS_USERNAME": "__REDIS_USER__",
+    "REDIS_SENTINEL_USERNAME": "__REDIS_USER__",
+    "MQ_AUTH_USERNAME": "__KAFKA_USER__",
+    "MQ_AUTH_PASSWORD": "__KAFKA_PASSWORD__",
+    "MQ_AUTH_MECHANISM": "__MQ_AUTH_MECHANISM__",
+    "MONGODB_PASSWORD": "__MONGODB_PASSWORD__",
+}
+
 # chart folder name (without path) -> logical output subdir
-# Subset aligned with B1 + Vega demo compose (see README).
+# Matches deploy/release-manifests/0.7.0/kweaver-core.yaml (kweaver-core --minimum installs
+# the same release set; --minimum only sets auth.enabled=false businessDomain.enabled=false).
 CHART_MAP = [
     ("kweaver-core-data-migrator-0.7.0", "kweaver-core-data-migrator"),
     ("mf-model-manager-0.7.0", "mf-model-manager"),
@@ -38,11 +55,17 @@ CHART_MAP = [
     ("mdl-data-model-0.6.0", "mdl-data-model"),
     ("mdl-uniquery-0.6.0", "mdl-uniquery"),
     ("mdl-data-model-job-0.6.0", "mdl-data-model-job"),
+    ("agent-operator-integration-0.7.0", "agent-operator-integration"),
+    ("agent-retrieval-0.7.0", "agent-retrieval"),
+    ("agent-backend-0.7.0", "agent-backend"),
+    ("dataflow-0.7.0", "dataflow"),
+    ("coderunner-0.7.0", "coderunner"),
+    ("doc-convert-0.7.0", "doc-convert"),
+    ("sandbox-0.3.3", "sandbox"),
+    ("oss-gateway-backend-0.7.0", "oss-gateway-backend"),
+    ("otelcol-contrib-0.2.3", "otelcol-contrib"),
+    ("agent-observability-0.2.3", "agent-observability"),
 ]
-
-# Full kweaver-core chart set (not used in current compose subset):
-# agent-operator-integration, agent-retrieval, agent-backend, dataflow, coderunner,
-# doc-convert, sandbox, oss-gateway-backend, otelcol-contrib, agent-observability
 
 ENV_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
@@ -122,6 +145,19 @@ def patch_compose_placeholders(blob: str) -> str:
     return s
 
 
+def _secret_value(key: str, raw: str) -> str:
+    """Single-key Secret values: prefer placeholder when key matches a known one and
+    chart shipped a fixture (xxxxxx / root / anyrobot / minioadmin), else keep raw."""
+    text = patch_compose_placeholders(raw)
+    placeholder = SECRET_KEY_TO_PLACEHOLDER.get(key)
+    if placeholder is None:
+        return text
+    stripped = text.strip()
+    if stripped in {"xxxxxx", "root", "anyrobot", "minioadmin", "PLAIN", ""}:
+        return placeholder
+    return text
+
+
 def helm_template(chart_dir: Path) -> str:
     p = subprocess.run(
         ["helm", "template", "kw", str(chart_dir)],
@@ -159,7 +195,10 @@ def write_configmap_data(out_sub: str, cm_name: str, data: dict) -> None:
         text = patch_compose_placeholders(str(content))
         stem = str(fname)
         if "." not in stem and ENV_KEY_RE.match(stem):
-            env_pairs.append((stem, text))
+            if "\n" in text.replace("\r", "").strip() or "\n" in text:
+                file_entries.append((fname, text))
+            else:
+                env_pairs.append((stem, text))
         else:
             file_entries.append((fname, text))
 
@@ -213,7 +252,7 @@ def main() -> int:
                 seen = set()
                 for fname, content in sdata.items():
                     seen.add(fname)
-                    text = patch_compose_placeholders(str(content))
+                    text = _secret_value(fname, str(content))
                     out_name = f"{fname}.tmpl"
                     (sec_dir / out_name).write_text(text, encoding="utf-8")
                 for fname, content in (doc.get("data") or {}).items():
@@ -227,7 +266,7 @@ def main() -> int:
                         raw_use = decoded
                     except Exception:
                         raw_use = raw_b
-                    text = patch_compose_placeholders(raw_use)
+                    text = _secret_value(fname, raw_use)
                     out_name = f"{fname}.tmpl"
                     (sec_dir / out_name).write_text(text, encoding="utf-8")
 

@@ -15,9 +15,9 @@ INFRA_SERVICES=(
 
 APP_SERVICES=(
   kweaver-core-data-migrator
-  bkn-backend
   mf-model-manager
   mf-model-api
+  bkn-backend
   ontology-query
   vega-backend
   data-connection
@@ -26,6 +26,19 @@ APP_SERVICES=(
   mdl-data-model
   mdl-uniquery
   mdl-data-model-job
+  agent-operator-integration
+  agent-retrieval
+  agent-backend
+  dataflow
+  flow-stream-data-pipeline
+  dataflowtools
+  coderunner
+  doc-convert-gotenberg
+  doc-convert-tika
+  sandbox
+  oss-gateway-backend
+  otelcol-contrib
+  agent-observability
   nginx
 )
 
@@ -47,14 +60,15 @@ Modules:
   setup             Render configs and validate Compose (delegates to ./setup.sh)
   infra             Public dependency services only
   vega              Vega-related services only (vega-backend, data-connection, gateways)
-  app               KWeaver migrator, application services, and nginx
+  app               Same release set as deploy.sh kweaver-core install --minimum
+                    (see deploy/release-manifests/*/kweaver-core.yaml), plus nginx
   all               infra + app
 
 Actions:
   setup run         Run ./setup.sh
   infra up          Start MariaDB/Redis/Zookeeper/Kafka/OpenSearch/MinIO
   vega up           Start infra, migrator, then Vega services (no nginx; see README)
-  app up            Start migrator + KWeaver services + nginx
+  app up            Start migrator + all kweaver-core manifest services + nginx
   all up            Start infra first, then app
   <module> pull     Pull images for that module
   <module> down     Stop/remove services for that module

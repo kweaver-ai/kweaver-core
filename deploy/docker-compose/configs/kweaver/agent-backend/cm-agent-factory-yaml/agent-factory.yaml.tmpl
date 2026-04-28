@@ -1,0 +1,134 @@
+# 配置文件路径/sysvol/conf/agent-factory.yaml
+
+auth_enable: true
+
+# ========== 特性开关配置 ==========
+switch_fields:
+  keep_legacy_app_path: false
+  disable_pms_check: false
+  disable_biz_domain: false
+  disable_audit_init: false
+  mock:
+    mock_mq_client: false
+    mock_sandbox_platform: false
+    mock_hydra: false
+    mock_authz: false
+    mock_user_manager_module: false
+    mock_biz_domain: false
+# ========================================
+
+# ========== Swagger 文档配置 ==========
+enable_swagger: true
+swagger_token: ""
+# ========================================
+
+project:
+  language: zh-CN
+  host: "0.0.0.0"
+  port: 13020
+  logger_level: info
+  log_file: "/app/agent-factory/log/agent-factory.log"
+
+
+hydra:
+  user-mgnt:
+    host: nginx
+    port: 30980
+  hydra-public:
+    host: hydra-public
+    port: 4444
+  hydra-admin:
+    host: nginx
+    port: 4445
+model_factory:
+  model_api_svc:
+    host: mf-model-api
+    port: 9898
+    protocol: "http"
+  model_manager_svc:
+    host: mf-model-manager
+    port: 9898
+    protocol: "http"
+authorization:
+  public_svc:
+    host: "authorization-public"
+    port: 30920
+    protocol: "http"
+  private_svc:
+    host: "authorization-private"
+    port: 30920
+    protocol: "http"
+# ========== Sandbox Platform 配置 ==========
+sandbox_platform:
+  enable: true
+  public_svc:
+    host: "sandbox-control-plane"
+    port: 8000
+    protocol: "http"
+  private_svc:
+    host: "sandbox-control-plane"
+    port: 8000
+    protocol: "http"
+  default_ttl: 3600
+  max_retries: 10
+  retry_interval: "500ms"
+  default_template_id: "python-basic"
+  default_cpu: "1"
+  default_memory: "512Mi"
+  default_disk: "1Gi"
+  default_timeout: 300
+  file_upload_config:
+    max_file_size: 10
+    max_file_size_unit: "MB"
+    max_file_count: 10
+    allowed_file_types:
+    - .txt
+    - .py
+    - .js
+    - .json
+    - .csv
+    - .md
+# ========================================
+
+agent_factory:
+  private_svc:
+    host: "localhost"
+    port: 13020
+    protocol: "http"
+# ========== Agent Executor 配置 ==========
+agent_executor:
+  private_svc:
+    host: "localhost"
+    port: 30778
+    protocol: "http"
+# ========================================
+uniquery:
+  public_svc:
+    host: "mdl-uniquery"
+    port: 13011
+    protocol: "http"
+  private_svc:
+    host: "mdl-uniquery"
+    port: 13011
+    protocol: "http"
+# ========================================
+biz_domain:
+  public_svc:
+    host: "business-system-service"
+    port: 80
+    protocol: "http"
+  private_svc:
+    host: "business-system-service"
+    port: 80
+    protocol: "http"
+otel:
+  service_name: "agent-factory"
+  service_version: "1.0.0"
+  environment: "production"
+  otlp_endpoint: "otelcol-contrib:4318"
+  trace:
+    enabled: true
+    sampling_rate: 1
+  log:
+    enabled: true
+    level: "info"

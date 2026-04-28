@@ -1,0 +1,62 @@
+# 配置文件路径/sysvol/conf/agent-retrieval.yaml
+project:
+  language: zh-CN
+  host: "0.0.0.0"
+  port: 30779
+  logger_level: 1
+  name: "agent-retrieval"
+  pod_id : "POD_ID"
+  machine_id: ""
+  debug: false
+concept_search_config:
+  concept_recall_size: 100
+  knn_k: 300
+deploy_agent:
+  concept_intention_analysis_agent_key: 01K5FS890WD4V7M27GAXER8JKB
+  concept_retrieval_strategist_agent_key: 01K5G6JFAVJF94C40K90YMPJN9
+  metric_dynamic_params_generator_key: 01KCG0MEPBNHHZHCSM5NTXRFSG
+  operator_dynamic_params_generator_key: 01KCJJ7PAK3ATSC02F48QJXFH8
+oauth:
+  public_host: "hydra-public"
+  public_port: 4444
+  public_protocol: "http"
+  admin_host: "hydra-admin"
+  admin_port: 4445
+  admin_protocol: "http"
+  admin_prefix: "/admin"
+agent_app:
+  private_protocol: "http"
+  private_host: "agent-factory"
+  private_port: 13020
+bkn_backend:
+  private_protocol: "http"
+  private_host: "bkn-backend"
+  private_port: 13014
+ontology_query:
+  private_protocol: "http"
+  private_host: "ontology-query"
+  private_port: 13018
+operator_integration:
+  private_protocol: "http"
+  private_host: "agent-operator-integration"
+  private_port: 9000
+redis:
+  connectType: "sentinel"
+  enableSSL: false
+  secretName: ""
+  caName: ""
+  certName: ""
+  keyName: ""
+  poolSize: 10
+mf_model_api:
+  private_protocol: "http"
+  private_host: "mf-model-api"
+  private_port: 9898
+rerank_llm:
+  model: ""
+  temperature: 0
+  top_k: 2
+  top_p: 0.5
+  frequency_penalty: 0.5
+  presence_penalty: 0.5
+  max_tokens: 5000

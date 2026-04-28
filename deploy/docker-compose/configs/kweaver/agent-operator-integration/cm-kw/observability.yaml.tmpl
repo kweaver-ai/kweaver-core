@@ -1,0 +1,17 @@
+# 可观测相关配置
+traceType: "otlp"
+logEnabled: false
+traceEnabled: false
+metricEnabled: false
+logExporter: "consle"
+traceProvider: "http"
+metricProvider: "http"
+logLoadInternal: 1
+logLoadMaxLog: 10
+traceMaxQueueSize: 50000
+metricIntervalSecond: 60
+httpLogFeedIngesterUrl: "http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events"
+httpTraceFeedIngesterUrl: "http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events"
+httpMetricFeedIngesterUrl: "http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events"
+grpcTraceFeedIngesterUrl: "feed-ingester-grpc-service:13033"
+grpcTraceJobId: "dip-o11y-trace-grpc"

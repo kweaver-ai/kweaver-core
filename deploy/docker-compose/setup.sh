@@ -275,6 +275,13 @@ set_env_var .env MARIADB_ROOT_PASSWORD "$ROOT_PW"
 set_env_var .env MARIADB_PASSWORD      "$ADP_PW"
 set_env_var .env MINIO_ROOT_PASSWORD   "$MINIO_PW"
 
+MARIADB_HOST_VAL="$(read_env_var .env MARIADB_HOST)"; MARIADB_HOST_VAL="${MARIADB_HOST_VAL:-mariadb}"
+MARIADB_PORT_VAL="$(read_env_var .env MARIADB_PORT)"; MARIADB_PORT_VAL="${MARIADB_PORT_VAL:-3306}"
+SANDBOX_DB_EXISTING="$(read_env_var .env SANDBOX_DATABASE_URL)"
+if [[ -z "$SANDBOX_DB_EXISTING" ]]; then
+  set_env_var .env SANDBOX_DATABASE_URL "mysql+aiomysql://${ADP_USER}:${ADP_PW}@${MARIADB_HOST_VAL}:${MARIADB_PORT_VAL}/sandbox"
+fi
+
 mkdir -p "${ROOT}/configs/generated"
 
 if ! python3 "${ROOT}/tools/render_compose_configs.py"; then

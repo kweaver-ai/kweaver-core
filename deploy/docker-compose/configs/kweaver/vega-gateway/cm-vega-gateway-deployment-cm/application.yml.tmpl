@@ -70,11 +70,11 @@ auth:
 anyrobot:
   log:
     enabled: false
-    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
+    endpoint: http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events
     level: false
   trace:
     enabled: false
-    endpoint: http://otelcol-contrib:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
+    endpoint: http://nginx:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events
 logging:
   config: classpath:logback-spring.xml
 
