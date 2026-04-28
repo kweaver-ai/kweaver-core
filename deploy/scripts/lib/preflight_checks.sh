@@ -649,7 +649,35 @@ preflight_check_ulimits() {
     if [[ "${soft}" =~ ^[0-9]+$ ]] && [[ "${soft}" -ge 65536 ]]; then
         preflight_ok "ulimit -n soft=${soft} (>= 65536)"
     else
-        preflight_strict_warn_or_fail "ulimit -n soft=${soft} (need >= 65536 for kubelet/containerd; sudo preflight --fix → system-tuning will raise it via /etc/security/limits.d and systemd LimitNOFILE)"
+        # The current shell still sees the old soft limit even after writing
+        # /etc/security/limits.d (PAM only applies it to NEW login sessions).
+        # If the persistent config is already in place AND systemd's
+        # DefaultLimitNOFILE is bumped, treat as OK with a nudge to re-login.
+        local _persist_soft=0 _sysd_soft=0 _f
+        for _f in /etc/security/limits.conf /etc/security/limits.d/*.conf; do
+            [[ -f "${_f}" ]] || continue
+            local _v
+            _v="$(awk '
+                $0 ~ /^[[:space:]]*#/ { next }
+                ($1=="*"||$1=="root") && ($2=="soft"||$2=="-") && $3=="nofile" { print $4 }
+            ' "${_f}" 2>/dev/null | tail -1)"
+            if [[ "${_v}" =~ ^[0-9]+$ ]] && [[ "${_v}" -gt "${_persist_soft}" ]]; then
+                _persist_soft="${_v}"
+            fi
+        done
+        for _f in /etc/systemd/system.conf /etc/systemd/system.conf.d/*.conf; do
+            [[ -f "${_f}" ]] || continue
+            local _v
+            _v="$(awk -F'[=:]' '/^[[:space:]]*DefaultLimitNOFILE[[:space:]]*=/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}' "${_f}" 2>/dev/null)"
+            if [[ "${_v}" =~ ^[0-9]+$ ]] && [[ "${_v}" -gt "${_sysd_soft}" ]]; then
+                _sysd_soft="${_v}"
+            fi
+        done
+        if [[ "${_persist_soft}" -ge 65536 && "${_sysd_soft}" -ge 65536 ]]; then
+            preflight_ok "ulimit -n soft=${soft} in this shell, but persistent config is set (limits.d soft=${_persist_soft}, systemd DefaultLimitNOFILE=${_sysd_soft}). New login sessions / restarted services will see the higher limit."
+        else
+            preflight_strict_warn_or_fail "ulimit -n soft=${soft} (need >= 65536 for kubelet/containerd; sudo preflight --fix → nofile-limits will write /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, and kubelet/containerd LimitNOFILE drop-ins)"
+        fi
     fi
     if [[ "${hard}" =~ ^[0-9]+$ ]] && [[ "${hard}" -ge 65536 ]]; then
         preflight_ok "ulimit -n hard=${hard}"
@@ -1179,9 +1207,9 @@ preflight_check_target_tools() {
         preflight_ok "kubectl: $(command -v kubectl)"
     else
         # On pure worker nodes kubectl is optional; on the install host it's required by deploy.sh.
-        # Treat as strict (FAIL) by default — sudo preflight --fix → k8s-apt-source then
-        # ./deploy.sh k8s install will provide it.
-        preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix → k8s-apt-source primes the apt source so deploy.sh can install kubectl/kubeadm/kubelet)"
+        # Treat as strict (FAIL) by default — sudo preflight --fix runs k8s-apt-source then
+        # k8s-bins to actually install the binaries.
+        preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-apt-source then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
     fi
 
     if command -v helm &>/dev/null; then
@@ -1551,6 +1579,45 @@ EOF
     fi
 }
 
+# Install the Kubernetes binaries (kubeadm, kubelet, kubectl) once the apt/yum
+# source is configured. Kept separate from k8s-apt-source so users can choose to
+# only prime the source (and let deploy.sh do the install). On apt also runs
+# 'apt-mark hold' to prevent unattended-upgrades from breaking pinned versions.
+preflight_fix_k8s_bins() {
+    if command -v kubectl &>/dev/null && command -v kubeadm &>/dev/null && command -v kubelet &>/dev/null; then
+        return 0
+    fi
+    if command -v apt-get &>/dev/null; then
+        apt-get update -y -o Acquire::ForceIPv4=true 2>/dev/null || true
+        if apt-get install -y kubeadm kubelet kubectl 2>/dev/null; then
+            apt-mark hold kubeadm kubelet kubectl 2>/dev/null || true
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl enable kubelet 2>/dev/null || true
+            preflight_fixed "Installed kubeadm/kubelet/kubectl via apt and apt-mark hold (kubelet enabled; not started — kubeadm init runs during deploy.sh k8s install)"
+        else
+            preflight_warn "apt-get install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/apt/sources.list.d/kubernetes.list, then retry."
+        fi
+    elif command -v dnf &>/dev/null; then
+        if dnf install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl enable kubelet 2>/dev/null || true
+            preflight_fixed "Installed kubeadm/kubelet/kubectl via dnf (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
+        else
+            preflight_warn "dnf install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/yum.repos.d/kubernetes.repo, then retry."
+        fi
+    elif command -v yum &>/dev/null; then
+        if yum install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl enable kubelet 2>/dev/null || true
+            preflight_fixed "Installed kubeadm/kubelet/kubectl via yum (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
+        else
+            preflight_warn "yum install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-apt-source first to configure /etc/yum.repos.d/kubernetes.repo, then retry."
+        fi
+    else
+        preflight_warn "No supported package manager (apt/dnf/yum) — install kubeadm/kubelet/kubectl manually."
+    fi
+}
+
 # Optional fixes (called from preflight_apply_safe_fixes) --------------------
 preflight_fix_k3s_uninstall() {
     if [[ -x /usr/local/bin/k3s-killall.sh ]]; then
@@ -1785,6 +1852,58 @@ EOF
     preflight_fixed "Wrote /etc/sysctl.d/99-kweaver-preflight.conf and ran sysctl --system"
 }
 
+# Persistent nofile bump: /etc/security/limits.d + systemd defaults + drop-ins
+# for kubelet/containerd. Best-effort raises the current shell's soft limit too
+# so the in-script recheck does not still see 1024.
+# configure_system() in k8s.sh only handles swap/sysctl/kernel modules; this is
+# the missing piece behind the "system-tuning will raise ulimit" message.
+preflight_fix_nofile_limits() {
+    local soft="${PREFLIGHT_NOFILE_SOFT:-65536}"
+    local hard="${PREFLIGHT_NOFILE_HARD:-1048576}"
+
+    preflight_backup_file /etc/security/limits.d/99-kweaver-nofile.conf
+    cat > /etc/security/limits.d/99-kweaver-nofile.conf <<EOF || true
+# Added by KWeaver preflight (nofile-limits fix)
+* soft nofile ${soft}
+* hard nofile ${hard}
+root soft nofile ${soft}
+root hard nofile ${hard}
+EOF
+
+    if [[ -d /etc/systemd/system.conf.d ]] || mkdir -p /etc/systemd/system.conf.d 2>/dev/null; then
+        preflight_backup_file /etc/systemd/system.conf.d/99-kweaver-nofile.conf
+        cat > /etc/systemd/system.conf.d/99-kweaver-nofile.conf <<EOF || true
+# Added by KWeaver preflight (nofile-limits fix)
+[Manager]
+DefaultLimitNOFILE=${soft}:${hard}
+EOF
+    fi
+
+    local svc dropin
+    for svc in kubelet containerd; do
+        dropin="/etc/systemd/system/${svc}.service.d"
+        mkdir -p "${dropin}" 2>/dev/null || true
+        preflight_backup_file "${dropin}/99-kweaver-nofile.conf"
+        cat > "${dropin}/99-kweaver-nofile.conf" <<EOF || true
+# Added by KWeaver preflight (nofile-limits fix)
+[Service]
+LimitNOFILE=${soft}:${hard}
+EOF
+    done
+
+    systemctl daemon-reload 2>/dev/null || true
+    # Apply to running services if they exist (avoids needing a reboot before deploy.sh).
+    for svc in kubelet containerd; do
+        systemctl is-active --quiet "${svc}" 2>/dev/null && systemctl restart "${svc}" 2>/dev/null || true
+    done
+
+    # Best-effort raise the current shell so the in-script recheck does not
+    # still report 1024. New login sessions will pick up the persistent config.
+    ulimit -Sn "${soft}" 2>/dev/null || true
+
+    preflight_fixed "Wrote /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, and kubelet/containerd LimitNOFILE drop-ins (soft=${soft}, hard=${hard}); reloaded systemd. New login sessions will see the new ulimit."
+}
+
 preflight_fix_bridge_sysctl() {
     preflight_backup_file /etc/sysctl.d/99-kweaver-bridge.conf
     cat > /etc/sysctl.d/99-kweaver-bridge.conf <<'EOF' || true
@@ -1806,7 +1925,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-apt-source (apt OR yum/dnf — also runs when no source is configured), containerd-install (apt: containerd.io with fallback to distro containerd), helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh)"
+    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-apt-source (apt OR yum/dnf — also runs when no source is configured), k8s-bins (apt/dnf/yum install kubeadm/kubelet/kubectl after the source is primed), containerd-install (apt: containerd.io with fallback to distro containerd), helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh)"
     log_info "------------------------------------------------------------------"
 }
 
@@ -1961,6 +2080,34 @@ preflight_apply_safe_fixes() {
         fi
     fi
 
+    # --- 4b) Kubernetes binaries (kubeadm, kubelet, kubectl) -----------------
+    # Runs after k8s-apt-source has primed the source. deploy.sh would also
+    # install these later, but doing it here means preflight --check-only after
+    # --fix shows OK instead of leaving a misleading [FAIL] for kubectl.
+    if ! command -v kubectl &>/dev/null \
+        || ! command -v kubeadm &>/dev/null \
+        || ! command -v kubelet &>/dev/null; then
+        local _can_install=false
+        if command -v apt-get &>/dev/null; then
+            local _kbc
+            _kbc="$(apt-cache policy kubeadm 2>/dev/null | awk '/Candidate:/{print $2; exit}' || true)"
+            [[ -n "${_kbc}" && "${_kbc}" != "(none)" ]] && _can_install=true
+        elif command -v dnf &>/dev/null; then
+            dnf -q list available kubeadm >/dev/null 2>&1 && _can_install=true
+        elif command -v yum &>/dev/null; then
+            yum -q list available kubeadm >/dev/null 2>&1 && _can_install=true
+        fi
+        if [[ "${_can_install}" == "true" ]]; then
+            if preflight_confirm_fix "k8s-bins" \
+                "apt/dnf/yum install kubeadm kubelet kubectl (with apt-mark hold on Debian)" \
+                "Installs the Kubernetes binaries from the apt/yum source primed above. Does NOT run kubeadm init — that happens in 'deploy.sh k8s install'."; then
+                preflight_fix_k8s_bins
+            fi
+        else
+            log_info "  -> skipping k8s-bins: package manager has no candidate for kubeadm yet (run k8s-apt-source first)"
+        fi
+    fi
+
     # --- 5) Helm 3 -----------------------------------------------------------
     local hver=""
     if command -v helm &>/dev/null; then
@@ -2046,6 +2193,17 @@ preflight_apply_safe_fixes() {
         "Write /etc/sysctl.d/99-kweaver-preflight.conf (vm, inotify, pid_max)" \
         "Persistent kernel tuning; remove file to revert."; then
         preflight_fix_kernel_limits_sysctl
+    fi
+
+    # --- nofile limits (kubelet/containerd Too many open files) -------------
+    # configure_system() in k8s.sh does not touch ulimit; this is the missing piece.
+    if [[ "$(ulimit -Sn 2>/dev/null || echo 0)" -lt 65536 ]] \
+        || [[ ! -f /etc/security/limits.d/99-kweaver-nofile.conf ]]; then
+        if preflight_confirm_fix "nofile-limits" \
+            "Write /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, kubelet+containerd LimitNOFILE drop-ins" \
+            "Persistent nofile bump (soft=${PREFLIGHT_NOFILE_SOFT:-65536}, hard=${PREFLIGHT_NOFILE_HARD:-1048576}). New login sessions and restarted services pick it up; current shells keep their old soft limit until re-login."; then
+            preflight_fix_nofile_limits
+        fi
     fi
 
     if command -v update-alternatives &>/dev/null && update-alternatives --display iptables 2>/dev/null | grep -qi 'current mode.*nf_tables'; then

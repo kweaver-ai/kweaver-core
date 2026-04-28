@@ -104,7 +104,7 @@ sudo bash deploy/preflight.sh --help         # 全部参数
 | `--fix` | 检查 + 应用修复（K8s / sysctl / containerd / Helm / 防火墙 / SELinux / 系统调优 / sysctl 等）；同时按需提示安装 Node 22+ + `kweaver` / `kweaver-admin` |
 | `-y` / `--yes` | **全部**修复项自动确认 |
 | `-n` / `--no` | 全部修复项自动拒绝（仅查看风险描述，不改东西） |
-| `--fix-allow=LIST` | 仅自动确认指定修复项（其余跳过），如 `containerd-install,helm-v3,nodejs-npm,kweaver-sdk` |
+| `--fix-allow=LIST` | 仅自动确认指定修复项（其余跳过），如 `k8s-apt-source,k8s-bins,containerd-install,helm-v3,nofile-limits,nodejs-npm,kweaver-sdk`。可用 `sudo bash deploy/preflight.sh --list-fixes` 查看本机当前可用的全部修复名 |
 | `--role=target\|admin\|both` | `target` = 仅 `kubectl`/`helm`；`admin` = `kweaver` / Node / npm；`both`（默认）= 全部 |
 | `--no-recheck` | 修复完不再重新跑一遍完整检查 |
 | `--lenient` | 把「会阻塞 install + `--fix` 能搞定」的 `[FAIL]` 项（sysctl / 内核模块 / containerd / kubectl / helm / swap / apt 源损坏 / 缺 kubeadm 或 containerd 安装候选 / ulimit / inotify / vm.max_map_count / overlay）降回 `[WARN]`。等同 `PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false`。 |

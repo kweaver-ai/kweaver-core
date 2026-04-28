@@ -103,7 +103,7 @@ Common flags:
 | `--fix` | Check + apply fixes (K8s / sysctl / containerd / Helm / firewall / SELinux / system tuning / sysctl …); also offers Node 22+ + `kweaver` / `kweaver-admin` |
 | `-y` / `--yes` | Auto-approve **every** fix prompt |
 | `-n` / `--no` | Auto-decline every fix (preview risk text only) |
-| `--fix-allow=LIST` | Comma-separated fix names to auto-approve, others are skipped (e.g. `containerd-install,helm-v3,nodejs-npm,kweaver-sdk`) |
+| `--fix-allow=LIST` | Comma-separated fix names to auto-approve, others are skipped (e.g. `k8s-apt-source,k8s-bins,containerd-install,helm-v3,nofile-limits,nodejs-npm,kweaver-sdk`). Run `sudo bash deploy/preflight.sh --list-fixes` to see all fix names available on this host. |
 | `--role=target\|admin\|both` | `target` = `kubectl`/`helm` only, `admin` = `kweaver` / Node / npm, `both` (default) covers all |
 | `--no-recheck` | Do not re-run full checks after fixes |
 | `--lenient` | Downgrade install-blocking `[FAIL]` items (sysctl / kernel modules / containerd / kubectl / helm / swap / broken apt sources / missing kubeadm or containerd install candidate / ulimit / inotify / vm.max_map_count / overlay) back to `[WARN]`. Same as `PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false`. |
