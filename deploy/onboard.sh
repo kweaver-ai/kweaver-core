@@ -350,6 +350,22 @@ if ! command -v python3 &>/dev/null; then
     log_error "python3 not found"
     exit 1
 fi
+# Verify (and best-effort install) yq OR PyYAML now, so we never get stuck
+# halfway through onboard at the BKN ConfigMap patch step. Skip when the
+# operator has explicitly opted out of BKN with --skip-bkn.
+__onboard_skip_bkn_early=false
+for __arg in "$@"; do
+    case "${__arg}" in
+        --skip-bkn) __onboard_skip_bkn_early=true ;;
+    esac
+done
+if [[ "${__onboard_skip_bkn_early}" != "true" ]]; then
+    if ! onboard_ensure_yaml_dep; then
+        log_error "onboard.sh needs PyYAML or yq to patch the BKN ConfigMap. Install one of the commands above (or pass --skip-bkn if you really want to onboard without touching BKN), then re-run."
+        exit 1
+    fi
+fi
+unset __onboard_skip_bkn_early __arg
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
