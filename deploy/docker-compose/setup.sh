@@ -68,24 +68,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Shared password from env var fallback (only if --password was not given).
-SHARED_PW_ENV="${PASSWORD:-}"
-if ! $CLI_SHARED_PW_SET && [[ -z "$SHARED_PW_ENV" ]] && $INTERACTIVE && [[ -t 0 ]] \
-    && ! $CLI_ROOT_PW_SET && ! $CLI_ADP_PW_SET && ! $CLI_MINIO_PW_SET \
-    && [[ -z "${MARIADB_ROOT_PASSWORD:-}" ]] \
-    && [[ -z "${MARIADB_PASSWORD:-}" ]] \
-    && [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
-  read -r -s -p "Enter a single password to use for MariaDB root, MariaDB '${MARIADB_USER:-adp}', and MinIO root [Enter to skip and configure each separately]: " entered </dev/tty
-  echo >&2
-  if [[ -n "$entered" ]]; then
-    CLI_SHARED_PW="$entered"
-    CLI_SHARED_PW_SET=true
-  fi
-fi
-
 if ! docker compose version >/dev/null 2>&1; then
-  echo "Docker Compose v2 CLI is required (\"docker compose\")." >&2
-  echo "The legacy \"docker-compose\" v1 command is not supported." >&2
+  echo "Docker Compose v2 is required before setup can continue." >&2
+  echo "" >&2
+  echo "Please install the Docker Compose v2 plugin and use: docker compose" >&2
+  echo "The legacy docker-compose v1 command is not supported." >&2
+  echo "" >&2
+  echo "Ubuntu/Debian example:" >&2
+  echo "  sudo apt-get update" >&2
+  echo "  sudo apt-get install -y docker-compose-plugin" >&2
+  echo "" >&2
+  echo "CentOS/RHEL example:" >&2
+  echo "  sudo yum install -y docker-compose-plugin" >&2
   exit 1
 fi
 
@@ -108,6 +102,21 @@ if version < (2, 17, 0):
         file=sys.stderr,
     )
 PY
+fi
+
+# Shared password from env var fallback (only if --password was not given).
+SHARED_PW_ENV="${PASSWORD:-}"
+if ! $CLI_SHARED_PW_SET && [[ -z "$SHARED_PW_ENV" ]] && $INTERACTIVE && [[ -t 0 ]] \
+    && ! $CLI_ROOT_PW_SET && ! $CLI_ADP_PW_SET && ! $CLI_MINIO_PW_SET \
+    && [[ -z "${MARIADB_ROOT_PASSWORD:-}" ]] \
+    && [[ -z "${MARIADB_PASSWORD:-}" ]] \
+    && [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
+  read -r -s -p "Enter a single password to use for MariaDB root, MariaDB '${MARIADB_USER:-adp}', and MinIO root [Enter to skip and configure each separately]: " entered </dev/tty
+  echo >&2
+  if [[ -n "$entered" ]]; then
+    CLI_SHARED_PW="$entered"
+    CLI_SHARED_PW_SET=true
+  fi
 fi
 
 if [[ ! -f .env ]] && [[ ! -f .env.example ]]; then
