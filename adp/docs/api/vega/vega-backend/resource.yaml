@@ -640,6 +640,219 @@ paths:
       summary: Query resource data
       tags:
       - resources
+  /resources/buildtask/{resource_id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a build task for a resource
+      parameters:
+      - description: Resource ID
+        in: path
+        name: resource_id
+        required: true
+        type: string
+      - description: Build task information
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: resource.yaml#/definitions/interfaces.BuildTaskCreateRequest
+      produces:
+      - application/json
+      responses:
+        '201':
+          description: Created
+          schema:
+            properties:
+              task_id:
+                description: Task ID
+                type: string
+            type: object
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+        '401':
+          description: Unauthorized
+          schema:
+            type: object
+        '409':
+          description: Conflict
+          schema:
+            type: object
+        '500':
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: Create build task
+      tags:
+      - resources
+  /resources/buildtask/{resource_id}/{task_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get build task information
+      parameters:
+      - description: Resource ID
+        in: path
+        name: resource_id
+        required: true
+        type: string
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: resource.yaml#/definitions/interfaces.BuildTaskInfo
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+        '401':
+          description: Unauthorized
+          schema:
+            type: object
+        '404':
+          description: Not Found
+          schema:
+            type: object
+        '500':
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: Get build task info
+      tags:
+      - resources
+  /resources/buildtask/{resource_id}/{task_id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update build task status
+      parameters:
+      - description: Resource ID
+        in: path
+        name: resource_id
+        required: true
+        type: string
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: Status update information
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: resource.yaml#/definitions/interfaces.BuildTaskStatusUpdateRequest
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+        '401':
+          description: Unauthorized
+          schema:
+            type: object
+        '404':
+          description: Not Found
+          schema:
+            type: object
+        '409':
+          description: Conflict
+          schema:
+            type: object
+        '500':
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: Update build task status
+      tags:
+      - resources
+  /resources/buildtask:
+    get:
+      consumes:
+      - application/json
+      description: List build tasks for a resource
+      parameters:
+      - description: Resource ID filter
+        in: query
+        name: resource_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            properties:
+              total_count:
+                description: Total number of build tasks
+                type: integer
+              entries:
+                description: List of build tasks
+                items:
+                  $ref: resource.yaml#/definitions/interfaces.BuildTaskInfo
+                type: array
+            type: object
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+        '401':
+          description: Unauthorized
+          schema:
+            type: object
+        '500':
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: List build tasks
+      tags:
+      - resources
+  /resources/buildtask/{task_ids}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete build tasks by IDs
+      parameters:
+      - description: Comma-separated task IDs
+        in: path
+        name: task_ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          schema:
+            type: object
+        '401':
+          description: Unauthorized
+          schema:
+            type: object
+        '500':
+          description: Internal Server Error
+          schema:
+            type: object
+      summary: Delete build tasks
+      tags:
+      - resources
 definitions:
   interfaces.ResourceDataQueryParams:
     properties:
@@ -1157,3 +1370,105 @@ definitions:
         type: object
       real_value:
         type: object
+  interfaces.BuildTaskCreateRequest:
+    properties:
+      task_type:
+        description: Task type, batch or streaming
+        enum:
+        - batch
+        - streaming
+        type: string
+      embedding_fields:
+        description: Embedding fields, multiple fields separated by comma
+        type: string
+      embedding_model:
+        description: Embedding model name
+        type: string
+      model_dimensions:
+        description: Embedding model dimensions
+        type: integer
+      build_key_fields:
+        description: Build key fields, used for sorting when reading data in batches for batch type tasks, used as unique identifier when source data is modified for streaming type tasks
+        type: string
+    required:
+    - task_type
+    - build_key_fields
+    type: object
+  interfaces.BuildTaskInfo:
+    properties:
+      id:
+        description: Task ID
+        type: string
+      resource_id:
+        description: Resource ID
+        type: string
+      status:
+        description: Task status
+        enum:
+        - init
+        - running
+        - completed
+        - failed
+        - stopping
+        - stopped
+        type: string
+      mode:
+        description: Task mode
+        enum:
+        - batch
+        - streaming
+        type: string
+      total_count:
+        description: Total count
+        type: integer
+      synced_count:
+        description: Synced count
+        type: integer
+      vectorized_count:
+        description: Vectorized count
+        type: integer
+      synced_mark:
+        description: Synced mark
+        type: string
+      creator:
+        $ref: common.yaml#/definitions/interfaces.AccountInfo
+        description: Creator information
+      create_time:
+        description: Create time
+        type: integer
+      updater:
+        $ref: common.yaml#/definitions/interfaces.AccountInfo
+        description: Updater information
+      update_time:
+        description: Update time
+        type: integer
+      embedding_fields:
+        description: Embedding fields
+        type: string
+      build_key_fields:
+        description: Build key fields
+        type: string
+      embedding_model:
+        description: Embedding model name
+        type: string
+      model_dimensions:
+        description: Model dimensions
+        type: integer
+    type: object
+  interfaces.BuildTaskStatusUpdateRequest:
+    properties:
+      status:
+        description: Task status
+        enum:
+        - running
+        - stopped
+        type: string
+      execute_type:
+        description: Execute type, full or incremental, only valid for batch task type, default is incremental
+        enum:
+        - full
+        - incremental
+        type: string
+    required:
+    - status
+    type: object
