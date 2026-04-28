@@ -4,6 +4,7 @@ switch: y
 cases:
 - name: 非流式调用大模型成功--role为user
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -21,6 +22,7 @@ cases:
 
 - name: 非流式调用大模型成功--role为system
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -38,6 +40,7 @@ cases:
 
 - name: 非流式调用大模型成功--role为assistant
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -55,6 +58,7 @@ cases:
 
 - name: 非流式调用大模型成功--传递多组role
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -76,6 +80,7 @@ cases:
 
 - name: 非流式调用大模型成功--传递top_k参数
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -94,6 +99,7 @@ cases:
 
 - name: 流式调用大模型成功--role为user
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -111,6 +117,7 @@ cases:
 
 - name: 流式调用大模型成功--role为system
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -128,6 +135,7 @@ cases:
 
 - name: 流式调用大模型成功--role为assistant
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -145,6 +153,7 @@ cases:
 
 - name: 流式调用大模型成功--传递多组role
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -166,6 +175,7 @@ cases:
 
 - name: 流式调用大模型成功--传递top_k参数
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -220,6 +230,7 @@ cases:
 
 - name: 调用大模型失败--top_p类型不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -238,6 +249,7 @@ cases:
 
 - name: 调用大模型失败--top_p取值不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -257,6 +269,7 @@ cases:
 
 - name: 调用大模型失败--temperature类型不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -275,6 +288,7 @@ cases:
 
 - name: 调用大模型失败--temperature取值不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -294,6 +308,7 @@ cases:
 
 - name: 调用大模型失败--presence_penalty类型不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -312,6 +327,7 @@ cases:
 
 - name: 调用大模型失败--presence_penalty取值不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -331,6 +347,7 @@ cases:
 
 - name: 调用大模型失败--frequency_penalty类型不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [
@@ -349,6 +366,7 @@ cases:
 
 - name: 调用大模型失败--frequency_penalty取值不合法
   url: modelmanager_llm_chat
+  prepare_models: llm
   body_params: "{
   \"model\": \"${llm_config_name}\",
   \"messages\": [

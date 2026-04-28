@@ -4,6 +4,7 @@ switch: y
 cases:
 - name: 编辑大模型成功
   url: modelmanager_llm_edit
+  prepare_models: llm
   next_case: 删除大模型成功
   body_params: "{
   \"model_id\": \"${llm_config_id}\",
@@ -27,6 +28,7 @@ cases:
 
 - name: 编辑大模型失败--max_model_len传非整数
   url: modelmanager_llm_edit
+  prepare_models: llm
   body_params: "{
   \"model_id\": \"${llm_config_id}\",
   \"model_name\": \"test_model_${ts_uuid}\",
@@ -50,6 +52,7 @@ cases:
 
 - name: 编辑大模型失败--model_parameters传非整数
   url: modelmanager_llm_edit
+  prepare_models: llm
   body_params: "{
   \"model_id\": \"${llm_config_id}\",
   \"model_name\": \"test_model_${ts_uuid}\",
@@ -96,6 +99,7 @@ cases:
 
 - name: 编辑大模型失败--模型名称超过50字符
   url: modelmanager_llm_edit
+  prepare_models: llm
   body_params: "{
   \"model_id\": \"${llm_config_id}\",
   \"model_name\": \"我需要一个模型名称这个模型名称需要超过50个字符为了验证模型名称最大长度的场景我写完这句化就差不多了我去数一下看看\",
@@ -119,6 +123,7 @@ cases:
 
 - name: 编辑大模型失败--max_model_len参数缺失
   url: modelmanager_llm_edit
+  prepare_models: llm
   body_params: "{
   \"model_id\": \"${llm_config_id}\",
   \"model_name\": \"test_model_${ts_uuid}\",

@@ -24,9 +24,9 @@ fields:
     type: string | list
     required: false
     description: |
-      本用例发请求前是否向 mf-model-manager 注册小模型（配置来自 config.ini 的 embedding_info / rerank_info）。
-      可为字符串如 embedding、reranker、oss、embedding,reranker，或 YAML 列表 [embedding, reranker, oss]。
-      同一会话内同类型只实际请求一次。可与 prepare_embedding / prepare_reranker 布尔联用。
+      本用例发请求前是否向 mf-model-manager 注册前置模型（配置来自 config.ini 的 embedding_info / rerank_info / llm_info）。
+      可为字符串如 embedding、reranker、oss、llm、embedding,reranker，或 YAML 列表 [embedding, reranker, oss, llm]。
+      同一会话内同类型只实际请求一次。可与 prepare_embedding / prepare_reranker / prepare_oss / prepare_llm 布尔联用。
   - name: prepare_embedding
     type: boolean
     required: false
@@ -39,6 +39,10 @@ fields:
     type: boolean
     required: false
     description: 为 true 时等价于 prepare_models 含 oss（按 [oss_info] 注册存储配置）
+  - name: prepare_llm
+    type: boolean
+    required: false
+    description: 为 true 时等价于 prepare_models 含 llm（按 [llm_info] 注册大模型）
   - name: path_params
     type: string
     required: false
