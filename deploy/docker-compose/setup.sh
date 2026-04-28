@@ -104,6 +104,27 @@ if version < (2, 17, 0):
 PY
 fi
 
+read_secret_confirmed() {
+  local prompt="$1" first="" second=""
+  while true; do
+    read -r -s -p "$prompt" first </dev/tty
+    echo >&2
+    if [[ -z "$first" ]]; then
+      printf ''
+      return
+    fi
+
+    read -r -s -p "Confirm password: " second </dev/tty
+    echo >&2
+    if [[ "$first" == "$second" ]]; then
+      printf '%s' "$first"
+      return
+    fi
+
+    echo "Passwords do not match; please try again." >&2
+  done
+}
+
 # Shared password from env var fallback (only if --password was not given).
 SHARED_PW_ENV="${PASSWORD:-}"
 if ! $CLI_SHARED_PW_SET && [[ -z "$SHARED_PW_ENV" ]] && $INTERACTIVE && [[ -t 0 ]] \
@@ -111,8 +132,7 @@ if ! $CLI_SHARED_PW_SET && [[ -z "$SHARED_PW_ENV" ]] && $INTERACTIVE && [[ -t 0 
     && [[ -z "${MARIADB_ROOT_PASSWORD:-}" ]] \
     && [[ -z "${MARIADB_PASSWORD:-}" ]] \
     && [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
-  read -r -s -p "Enter a single password to use for MariaDB root, MariaDB '${MARIADB_USER:-adp}', and MinIO root [Enter to skip and configure each separately]: " entered </dev/tty
-  echo >&2
+  entered="$(read_secret_confirmed "Enter a single password to use for MariaDB root, MariaDB '${MARIADB_USER:-adp}', and MinIO root [Enter to skip and configure each separately]: ")"
   if [[ -n "$entered" ]]; then
     CLI_SHARED_PW="$entered"
     CLI_SHARED_PW_SET=true
@@ -201,8 +221,7 @@ resolve_pw() {
     else
       prompt_default=" [required]"
     fi
-    read -r -s -p "Enter ${key}${prompt_default}: " entered </dev/tty
-    echo >&2
+    entered="$(read_secret_confirmed "Enter ${key}${prompt_default}: ")"
     if [[ -n "$entered" ]]; then
       printf '%s' "$entered"
       return
