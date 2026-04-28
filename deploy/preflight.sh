@@ -42,10 +42,19 @@ usage() {
     echo "  --role=target|admin|both  Target = kubectl/helm only; admin = kweaver/node/npm; both = all (default)"
     echo "                              kweaver CLIs need Node.js ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (per @kweaver-ai/kweaver-sdk on npm; help/zh/install.md)"
     echo "  --no-recheck         Do not re-run full checks after applying fixes"
+    echo "  --lenient            Downgrade install-blocking [FAIL] items (sysctl, ip_forward, kernel modules,"
+    echo "                       containerd, kubectl, helm, swap, broken apt sources, missing k8s/containerd"
+    echo "                       install candidate, ulimit, inotify, vm.max_map_count, overlay) back to [WARN]."
+    echo "                       Same as PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false."
     echo "  --report=PATH        Append full log to a file"
     echo "  --skip=LIST          Comma-separated check names to skip (see source: preflight_checks.sh preflight_skip)"
     echo ""
-    echo "Environment: PREFLIGHT_ROOT=path/to/deploy  PREFLIGHT_CONFIG_YAML=...  PREFLIGHT_K8S_APT_MINOR=vX.YY"
+    echo "Environment:"
+    echo "  PREFLIGHT_ROOT=path/to/deploy            override deploy root (defaults to script dir)"
+    echo "  PREFLIGHT_CONFIG_YAML=path/to/config     override config.yaml"
+    echo "  PREFLIGHT_K8S_APT_MINOR=vX.YY            pin pkgs.k8s.io minor (default v1.28 / detected from kubeadm)"
+    echo "  PREFLIGHT_STRICT=true|false              [default true] install-blocking items as [FAIL] not [WARN]"
+    echo "  PREFLIGHT_STRICT_SOURCES=true|false      [default true] verify apt/yum can fetch kubeadm + containerd"
     echo ""
     echo "Exit codes: 0 = OK, 1 = FAIL present, 2 = only WARN (no FAIL)"
     echo ""
@@ -91,6 +100,11 @@ while [[ $# -gt 0 ]]; do
             PREFLIGHT_NO_RECHECK="true"
             shift
             ;;
+        --lenient)
+            PREFLIGHT_STRICT="false"
+            PREFLIGHT_STRICT_SOURCES="false"
+            shift
+            ;;
         --role=*)
             PREFLIGHT_ROLE="${1#*=}"
             shift
@@ -131,6 +145,7 @@ done
 export PREFLIGHT_CHECK_ONLY PREFLIGHT_REPORT_FILE PREFLIGHT_SKIP_SET
 export PREFLIGHT_ASSUME_YES PREFLIGHT_ASSUME_NO PREFLIGHT_FIX_ALLOW
 export PREFLIGHT_OUTPUT_JSON PREFLIGHT_ROLE PREFLIGHT_LIST_FIXES_ONLY PREFLIGHT_NO_RECHECK PREFLIGHT_ROOT
+export PREFLIGHT_STRICT PREFLIGHT_STRICT_SOURCES
 
 if [[ -n "${PREFLIGHT_REPORT_FILE}" ]]; then
     mkdir -p "$(dirname "${PREFLIGHT_REPORT_FILE}")" 2>/dev/null || true
@@ -213,6 +228,10 @@ preflight_compute_exit_code || exit_code=$?
 if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
     if [[ ${exit_code} -eq 1 ]]; then
         log_error "Preflight failed (see [FAIL] lines above)."
+        if [[ "${PREFLIGHT_STRICT:-true}" == "true" && "${PREFLIGHT_CHECK_ONLY}" == "true" ]]; then
+            log_info "Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo $0 --fix"
+            log_info "      Need to bypass strict severity (e.g. low-spec lab box)? sudo $0 --check-only --lenient"
+        fi
     elif [[ ${exit_code} -eq 2 ]]; then
         log_warn "Preflight completed with warnings only."
     else

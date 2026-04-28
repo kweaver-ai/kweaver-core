@@ -106,13 +106,22 @@ Common flags:
 | `--fix-allow=LIST` | Comma-separated fix names to auto-approve, others are skipped (e.g. `containerd-install,helm-v3,nodejs-npm,kweaver-sdk`) |
 | `--role=target\|admin\|both` | `target` = `kubectl`/`helm` only, `admin` = `kweaver` / Node / npm, `both` (default) covers all |
 | `--no-recheck` | Do not re-run full checks after fixes |
+| `--lenient` | Downgrade install-blocking `[FAIL]` items (sysctl / kernel modules / containerd / kubectl / helm / swap / broken apt sources / missing kubeadm or containerd install candidate / ulimit / inotify / vm.max_map_count / overlay) back to `[WARN]`. Same as `PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false`. |
 | `--skip=LIST` | Comma-separated check names to skip |
 | `--report=PATH` | Append the full log to this file |
 | `--output=json` | Emit JSON summary to stdout (human logs to stderr); requires `python3` |
 
+Common environment variables:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `PREFLIGHT_STRICT` | `true` | When `true`, install-blocking items that `--fix` can resolve are reported as `[FAIL]` (so `--check-only` exits `1`). Set `false` to revert to `[WARN]`. |
+| `PREFLIGHT_STRICT_SOURCES` | `true` | When `true`, also verify `apt-cache policy kubeadm` / `containerd.io` / `containerd` (and the `dnf`/`yum` equivalents) actually return install candidates — `apt-get update` succeeding alone is no longer enough. |
+| `PREFLIGHT_K8S_APT_MINOR` | auto | Pin the `pkgs.k8s.io` minor version (e.g. `v1.28`). Otherwise detected from installed `kubeadm`, falls back to `v1.28`. |
+
 Exit codes: **0** all OK · **1** any FAIL present · **2** only WARN (no FAIL).
 
-> Run preflight **before** every `deploy.sh kweaver-core install` on a new host. Re-running it is safe — already-satisfied checks are reported as `OK` and skipped.
+> Run preflight **before** every `deploy.sh kweaver-core install` on a new host. Re-running it is safe — already-satisfied checks are reported as `OK` and skipped. If you intentionally run on a low-spec lab box (memory / disk below recommendation, no Docker CE repo, etc.), use `--lenient` to keep the report informative without blocking install.
 
 ---
 
@@ -521,7 +530,23 @@ kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
 
 ## 🔧 Troubleshooting
 
-Use `kubectl` logs and deploy script output; follow the operations guide bundled with your release for a full checklist.
+For symptom-based recipes (CoreDNS not ready, image pull failures, missing/legacy Kubernetes apt or yum source, `containerd` cannot be installed, strict mode `[FAIL]` items, etc.) see [`deploy/README.md` → Troubleshooting](https://github.com/kweaver-ai/kweaver-core/blob/main/deploy/README.md#-troubleshooting).
+
+Most install-blocking issues that `preflight.sh` flags as `[FAIL]` can be auto-fixed:
+
+```bash
+sudo bash deploy/preflight.sh --fix -y                         # apply every fix non-interactively
+sudo bash deploy/preflight.sh --fix --fix-allow=k8s-apt-source # only configure / migrate the K8s package source
+sudo bash deploy/preflight.sh --fix --fix-allow=containerd-install
+sudo bash deploy/preflight.sh --check-only --lenient           # only WARN, never FAIL (lab-box mode)
+```
+
+When in doubt, also collect:
+
+```bash
+kubectl logs -n <namespace> <pod-name>
+kubectl get events -A --sort-by=.lastTimestamp | tail -50
+```
 
 ---
 

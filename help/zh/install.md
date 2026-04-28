@@ -107,13 +107,22 @@ sudo bash deploy/preflight.sh --help         # 全部参数
 | `--fix-allow=LIST` | 仅自动确认指定修复项（其余跳过），如 `containerd-install,helm-v3,nodejs-npm,kweaver-sdk` |
 | `--role=target\|admin\|both` | `target` = 仅 `kubectl`/`helm`；`admin` = `kweaver` / Node / npm；`both`（默认）= 全部 |
 | `--no-recheck` | 修复完不再重新跑一遍完整检查 |
+| `--lenient` | 把「会阻塞 install + `--fix` 能搞定」的 `[FAIL]` 项（sysctl / 内核模块 / containerd / kubectl / helm / swap / apt 源损坏 / 缺 kubeadm 或 containerd 安装候选 / ulimit / inotify / vm.max_map_count / overlay）降回 `[WARN]`。等同 `PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false`。 |
 | `--skip=LIST` | 跳过指定检查项 |
 | `--report=PATH` | 完整日志追加到该文件 |
 | `--output=json` | 以 JSON 输出到 stdout（人类日志到 stderr，需 `python3`） |
 
+常用环境变量：
+
+| 变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `PREFLIGHT_STRICT` | `true` | 为 `true` 时，`--fix` 能修复的「阻塞 install」项以 `[FAIL]` 报告（让 `--check-only` 退出码为 `1`）；设 `false` 退回 `[WARN]`。 |
+| `PREFLIGHT_STRICT_SOURCES` | `true` | 为 `true` 时，会额外验证 `apt-cache policy kubeadm` / `containerd.io` / `containerd`（以及 `dnf`/`yum` 等价命令）确实有安装候选——光 `apt-get update` 成功不算数。 |
+| `PREFLIGHT_K8S_APT_MINOR` | 自动 | 锁定 `pkgs.k8s.io` minor 版本（如 `v1.28`）。否则从已装的 `kubeadm` 推断，回退 `v1.28`。 |
+
 退出码：**0** 全 OK；**1** 有 FAIL；**2** 仅有 WARN（无 FAIL）。
 
-> 每台新主机在跑 `deploy.sh kweaver-core install` 前都建议跑一次 preflight；可重复执行——已经满足的项会按 `OK` 报告并跳过。
+> 每台新主机在跑 `deploy.sh kweaver-core install` 前都建议跑一次 preflight；可重复执行——已经满足的项会按 `OK` 报告并跳过。如果你**有意**在低配 lab 机器上跑（内存/磁盘低于推荐、没装 Docker CE 源等），用 `--lenient` 让报告依然能看，但不会因为这些项而阻塞 install。
 
 ---
 
@@ -524,7 +533,23 @@ kweaver call '/api/mf-model-manager/v1/small-model/list?page=1&size=50'
 
 ## 🔧 故障排查
 
-如遇安装或 Pod 异常，请结合 `kubectl` 日志与部署脚本输出排查；详细清单以随产品提供的运维文档为准。
+按症状索引（CoreDNS 不就绪、镜像拉不下来、Kubernetes apt / yum 源缺失或 404、`containerd` 装不上、严格模式 `[FAIL]` 项等）请看 [`deploy/README.zh.md` → Troubleshooting](https://github.com/kweaver-ai/kweaver-core/blob/main/deploy/README.zh.md#-troubleshooting)。
+
+`preflight.sh` 报的 `[FAIL]` 大多数都能自动修：
+
+```bash
+sudo bash deploy/preflight.sh --fix -y                         # 全部自动确认修
+sudo bash deploy/preflight.sh --fix --fix-allow=k8s-apt-source # 只配置 / 迁移 K8s 源
+sudo bash deploy/preflight.sh --fix --fix-allow=containerd-install
+sudo bash deploy/preflight.sh --check-only --lenient           # 只看 WARN，不 FAIL（lab 机模式）
+```
+
+定位问题时还可以收集：
+
+```bash
+kubectl logs -n <namespace> <pod-name>
+kubectl get events -A --sort-by=.lastTimestamp | tail -50
+```
 
 ---
 

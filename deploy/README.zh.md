@@ -182,16 +182,32 @@ curl -I https://swr.cn-east-3.myhuaweicloud.com
 cat /etc/containerd/config.toml
 ```
 
-### Kubernetes apt 源 404（Ubuntu/Debian）
+### Kubernetes apt / yum 源缺失或 404
 
-如果 `apt update` 报错，提示旧的 `packages.cloud.google.com` 仓库 404：
+`preflight.sh --check-only` 在**严格模式**（默认）下会报：
 
 ```text
-Err:7 https://packages.cloud.google.com/apt kubernetes-xenial Release
-  404  Not Found
+[FAIL] Deprecated Kubernetes apt source detected (packages.cloud.google.com) ...
+[FAIL] apt has no install candidate for kubeadm — Kubernetes apt source missing or unreachable.
+[FAIL] dnf/yum has no install candidate for kubeadm — Kubernetes yum repo missing or unreachable.
 ```
 
-旧版 Google 托管 apt 源已废弃，需要迁移到 `pkgs.k8s.io`：
+**推荐修复（一条命令搞定）：**
+
+```bash
+sudo bash deploy/preflight.sh --fix --fix-allow=k8s-apt-source
+# 也可以一次性把 containerd / helm / Node 等全准备好：
+sudo bash deploy/preflight.sh --fix -y
+```
+
+`preflight --fix → k8s-apt-source` 同时覆盖**两种**情况：
+
+- 检测到旧的 `packages.cloud.google.com` 源 → 自动迁移到 `pkgs.k8s.io`。
+- 完全没配置 K8s 源 → 直接写入 `/etc/apt/sources.list.d/kubernetes.list`（或 `/etc/yum.repos.d/kubernetes.repo`），指向 `pkgs.k8s.io/core:/stable:/<vX.Y>/deb|rpm/`。
+
+可用 `PREFLIGHT_K8S_APT_MINOR=v1.28` 锁定特定 minor 版本（默认从已安装的 `kubeadm` 推断，回退 `v1.28`）。
+
+**手动备选（Ubuntu/Debian）：**
 
 ```bash
 sudo apt-mark unhold kubeadm kubelet kubectl || true
@@ -209,6 +225,55 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt update
 sudo apt install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+**手动备选（RHEL/CentOS/openEuler）：**
+
+```bash
+sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+EOF
+
+sudo dnf install -y --disableexcludes=kubernetes kubeadm kubelet kubectl   # 或者 yum
+```
+
+### `containerd` 装不上（没有 `containerd.io` 候选）
+
+原版 Ubuntu 默认不带 Docker CE 源，preflight 会报：
+
+```text
+[FAIL] apt has no install candidate for containerd.io OR containerd.
+[FAIL] containerd not found ...
+```
+
+`preflight --fix → containerd-install` 现在会先试 `containerd.io`（Docker CE 源），失败时**自动回退**到发行版自带的 `containerd` 包：
+
+```bash
+sudo bash deploy/preflight.sh --fix --fix-allow=containerd-install
+```
+
+如果两者都失败，说明 apt/yum 源本身有问题——先把 `apt-get update` / `dnf repolist` 修好。
+
+### 严格模式与 `--lenient`
+
+`preflight.sh` 默认开启**严格模式**（`PREFLIGHT_STRICT=true`）。下面这些「会阻塞 install 且 `--fix` 能搞定」的项会报 `[FAIL]`（导致 `--check-only` 以退出码 `1` 退出），不再是 `[WARN]`：
+
+- `swap`、`net.ipv4.ip_forward`、`br_netfilter` / `overlay` 内核模块、`bridge-nf-call-*`
+- `vm.max_map_count`、`fs.inotify.*`、`ulimit -n soft`
+- `containerd` 未安装 / socket 缺失、`kubectl`、`helm`、`overlay` 文件系统
+- `apt-get update` 失败、`dnf/yum repolist` 失败、kubeadm / containerd 没有安装候选
+
+如果你**确实**接受风险（比如只是 lab 上的小机器跑个体验），可以临时降回 `[WARN]`：
+
+```bash
+sudo bash deploy/preflight.sh --check-only --lenient
+# 等价于 PREFLIGHT_STRICT=false PREFLIGHT_STRICT_SOURCES=false sudo bash deploy/preflight.sh
 ```
 
 ### 查看组件日志
