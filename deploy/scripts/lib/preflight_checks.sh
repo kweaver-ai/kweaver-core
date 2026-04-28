@@ -2172,12 +2172,35 @@ preflight_apply_safe_fixes() {
         fi
     fi
 
+    # Idempotency guards: only prompt when configure_system actually has work
+    # to do. Without these, system-tuning is asked on EVERY --fix run even when
+    # swap/ip_forward/modules are already in the desired state.
     if command -v configure_system &>/dev/null; then
-        if preflight_confirm_fix "system-tuning" \
-            "configure_system() (swap, sysctl, modules from k8s.sh)" \
-            "Disables swap, sets ip_forward, loads modules. Required for Kubernetes."; then
-            configure_system
-            preflight_fixed "Applied configure_system() (swap, sysctl, modules)"
+        local _st_needs=false
+        if swapon --show 2>/dev/null | grep -q .; then _st_needs=true; fi
+        if [[ "$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0)" != "1" ]]; then _st_needs=true; fi
+        if ! lsmod 2>/dev/null | awk '$1=="br_netfilter"{f=1} END{exit !f}'; then _st_needs=true; fi
+        if ! lsmod 2>/dev/null | awk '$1=="overlay"{f=1} END{exit !f}'; then _st_needs=true; fi
+        # Persisted on boot
+        if [[ ! -f /etc/modules-load.d/kubernetes.conf ]]; then _st_needs=true; fi
+        if [[ ! -f /etc/sysctl.d/99-kubernetes.conf ]]; then _st_needs=true; fi
+        if [[ "${_st_needs}" == "true" ]]; then
+            if preflight_confirm_fix "system-tuning" \
+                "configure_system() (swap, sysctl, modules from k8s.sh)" \
+                "Disables swap, sets ip_forward, loads modules. Required for Kubernetes."; then
+                configure_system
+                # configure_system() only persists 'br_netfilter' in
+                # /etc/modules-load.d/kubernetes.conf; without 'overlay' there,
+                # next reboot drops it and preflight will re-prompt forever.
+                if [[ -f /etc/modules-load.d/kubernetes.conf ]] \
+                    && ! grep -qx 'overlay' /etc/modules-load.d/kubernetes.conf; then
+                    echo 'overlay' >> /etc/modules-load.d/kubernetes.conf
+                fi
+                modprobe overlay 2>/dev/null || true
+                preflight_fixed "Applied configure_system() (swap, sysctl, modules); ensured 'overlay' is persisted in /etc/modules-load.d/kubernetes.conf"
+            fi
+        else
+            log_info "  -> skipping system-tuning: swap off, ip_forward=1, br_netfilter+overlay loaded, /etc/modules-load.d/kubernetes.conf and /etc/sysctl.d/99-kubernetes.conf in place"
         fi
     fi
 
@@ -2189,21 +2212,39 @@ preflight_apply_safe_fixes() {
         fi
     fi
 
-    if preflight_confirm_fix "kernel-limits" \
-        "Write /etc/sysctl.d/99-kweaver-preflight.conf (vm, inotify, pid_max)" \
-        "Persistent kernel tuning; remove file to revert."; then
-        preflight_fix_kernel_limits_sysctl
+    # Skip prompt if 99-kweaver-preflight.conf is in place AND every value it
+    # tunes already meets the threshold.
+    local _kl_needs=false
+    if [[ ! -f /etc/sysctl.d/99-kweaver-preflight.conf ]]; then _kl_needs=true; fi
+    if [[ "$(cat /proc/sys/vm/max_map_count 2>/dev/null || echo 0)" -lt 262144 ]]; then _kl_needs=true; fi
+    if [[ "$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0)" -lt 524288 ]]; then _kl_needs=true; fi
+    if [[ "$(cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo 0)" -lt 8192 ]]; then _kl_needs=true; fi
+    if [[ "${_kl_needs}" == "true" ]]; then
+        if preflight_confirm_fix "kernel-limits" \
+            "Write /etc/sysctl.d/99-kweaver-preflight.conf (vm, inotify, pid_max)" \
+            "Persistent kernel tuning; remove file to revert."; then
+            preflight_fix_kernel_limits_sysctl
+        fi
+    else
+        log_info "  -> skipping kernel-limits: /etc/sysctl.d/99-kweaver-preflight.conf in place; vm.max_map_count, fs.inotify.* already meet thresholds"
     fi
 
     # --- nofile limits (kubelet/containerd Too many open files) -------------
     # configure_system() in k8s.sh does not touch ulimit; this is the missing piece.
-    if [[ "$(ulimit -Sn 2>/dev/null || echo 0)" -lt 65536 ]] \
-        || [[ ! -f /etc/security/limits.d/99-kweaver-nofile.conf ]]; then
+    # Skip prompt when persistent config is already in place — current shell's
+    # ulimit -Sn stays at the old value until re-login, so checking just the
+    # in-shell value would re-prompt forever.
+    local _nl_needs=false
+    if [[ ! -f /etc/security/limits.d/99-kweaver-nofile.conf ]]; then _nl_needs=true; fi
+    if [[ ! -f /etc/systemd/system.conf.d/99-kweaver-nofile.conf ]]; then _nl_needs=true; fi
+    if [[ "${_nl_needs}" == "true" ]]; then
         if preflight_confirm_fix "nofile-limits" \
             "Write /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, kubelet+containerd LimitNOFILE drop-ins" \
             "Persistent nofile bump (soft=${PREFLIGHT_NOFILE_SOFT:-65536}, hard=${PREFLIGHT_NOFILE_HARD:-1048576}). New login sessions and restarted services pick it up; current shells keep their old soft limit until re-login."; then
             preflight_fix_nofile_limits
         fi
+    else
+        log_info "  -> skipping nofile-limits: /etc/security/limits.d/99-kweaver-nofile.conf and /etc/systemd/system.conf.d/99-kweaver-nofile.conf already in place (re-login or restart kubelet/containerd to see the new soft limit)"
     fi
 
     if command -v update-alternatives &>/dev/null && update-alternatives --display iptables 2>/dev/null | grep -qi 'current mode.*nf_tables'; then
@@ -2230,7 +2271,9 @@ preflight_apply_safe_fixes() {
 
     # --- Node / kweaver: first ask if THIS host will run ./onboard.sh (needs minimum Node + kweaver on PATH) ----
     local _ot_run=false
-    if preflight_onboard_tooling_needed; then
+    if [[ "${PREFLIGHT_ROLE:-both}" == "target" ]]; then
+        log_info "  -> skipping onboard-tooling / node-22 / kweaver-sdk / kweaver-admin: PREFLIGHT_ROLE=target (admin tooling lives on another host)"
+    elif preflight_onboard_tooling_needed; then
         if preflight_fix_allow_includes_onboard_step; then
             _ot_run=true
         elif preflight_confirm_fix "onboard-tooling" \
