@@ -359,9 +359,8 @@ def _patch_one_cm(namespace: str, name: str, dname: str) -> int:
     c.setdefault("server", {})
     c["server"]["defaultSmallModelEnabled"] = True
     c["server"]["defaultSmallModelName"] = dname
-    newyml = yaml.dump(
-        c, default_flow_style=False, allow_unicode=True, sort_keys=False
-    )
+    # Old PyYAML has no sort_keys= — omit for compatibility with CentOS 7-era packages.
+    newyml = yaml.dump(c, default_flow_style=False, allow_unicode=True)
     j["data"][usekey] = newyml
     if "metadata" in j:
         md = j["metadata"]

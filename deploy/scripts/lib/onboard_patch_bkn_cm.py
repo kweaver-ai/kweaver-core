@@ -132,9 +132,8 @@ def main(argv: List[str]) -> int:
         c.setdefault("server", {})
         c["server"]["defaultSmallModelEnabled"] = True
         c["server"]["defaultSmallModelName"] = dname
-        newyml = yaml.dump(
-            c, default_flow_style=False, allow_unicode=True, sort_keys=False
-        )
+        # Old PyYAML (e.g. on CentOS 7) has no sort_keys= — omit for compatibility.
+        newyml = yaml.dump(c, default_flow_style=False, allow_unicode=True)
 
     j["data"][usekey] = newyml
     j.pop("status", None)
