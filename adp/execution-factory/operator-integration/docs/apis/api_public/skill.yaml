@@ -1018,11 +1018,11 @@ paths:
         - $ref: "#/components/parameters/SkillID"
         - name: response_mode
           in: query
-          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文；auto 根据注册类型自动选择"
+          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文"
           required: false
           schema:
             type: string
-            enum: [url, content, auto]
+            enum: [url, content]
             default: url
       responses:
         "200":
@@ -1110,11 +1110,11 @@ paths:
         - $ref: "#/components/parameters/SkillID"
         - name: response_mode
           in: query
-          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文；auto 根据注册类型自动选择"
+          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文"
           required: false
           schema:
             type: string
-            enum: [url, content, auto]
+            enum: [url, content]
             default: url
       responses:
         "200":

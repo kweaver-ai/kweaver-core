@@ -115,21 +115,21 @@ type QuerySkillMarketListResp struct {
 
 // GetSkillDetailReq Skill 详情查询
 type GetSkillDetailReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
 
 // GetSkillMarketDetailReq Skill 市场详情查询
 type GetSkillMarketDetailReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
 
 // GetSkillContentReq Skill 内容查询
 type GetSkillContentReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }
@@ -144,7 +144,7 @@ type GetSkillContentResp struct {
 
 // ReadSkillFileReq 读取 Skill 文件请求
 type ReadSkillFileReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 	RelPath          string `json:"rel_path" validate:"required"`
@@ -265,7 +265,7 @@ type PublishSkillHistoryResp struct {
 
 // ExecuteSkillReq 执行 Skill 请求
 type ExecuteSkillReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 	EntryShell       string `json:"entry_shell" validate:"required"`
@@ -432,10 +432,10 @@ type SkillManagementReader interface {
 
 // GetManagementContentReq 管理态内容查询请求
 type GetManagementContentReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
-	ResponseMode     string `form:"response_mode"` // url(默认) | content | auto
+	ResponseMode     string `form:"response_mode"` // url(默认) | content
 }
 
 // GetManagementContentResp 管理态内容查询响应
@@ -454,7 +454,7 @@ type GetManagementContentResp struct {
 
 // ReadManagementFileReq 管理态文件读取请求
 type ReadManagementFileReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 	RelPath          string `json:"rel_path" validate:"required"`
@@ -472,7 +472,7 @@ type ReadManagementFileResp struct {
 
 // DownloadManagementSkillReq 管理态技能包下载请求
 type DownloadManagementSkillReq struct {
-	BusinessDomainID string `header:"x-business-domain" validate:"required"`
+	BusinessDomainID string `header:"x-business-domain"`
 	UserID           string `header:"user_id"`
 	SkillID          string `uri:"skill_id" validate:"required"`
 }

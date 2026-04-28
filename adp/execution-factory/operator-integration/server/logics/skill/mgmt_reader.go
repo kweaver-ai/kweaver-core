@@ -119,7 +119,6 @@ func (r *skillManagementReader) GetManagementContent(ctx context.Context, req *i
 	// 根据 response_mode 填充 Content:
 	//   url(默认) — Content 为空，客户端通过 URL 下载
 	//   content  — 优先用 DB 中的 skill_content，zip 类型从 OSS 下载 SKILL.md
-	//   auto     — 仅 content 注册类型填充（向后兼容）
 	switch req.ResponseMode {
 	case "content":
 		if skill.SkillContent != "" {
@@ -134,10 +133,6 @@ func (r *skillManagementReader) GetManagementContent(ctx context.Context, req *i
 			} else {
 				resp.Content = string(ossContent)
 			}
-		}
-	case "auto":
-		if resp.FileType == "content" {
-			resp.Content = skill.SkillContent
 		}
 		// default(""/"url"): Content 保持零值，omitempty 跳过
 	}

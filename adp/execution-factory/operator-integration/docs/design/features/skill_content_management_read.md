@@ -215,7 +215,7 @@ type GetManagementContentReq struct {
     BusinessDomainID string `header:"x-business-domain" validate:"required"`
     UserID           string `header:"user_id"`
     SkillID          string `uri:"skill_id" validate:"required"`
-    ResponseMode     string `form:"response_mode"`    // url(默认) | content | auto
+    ResponseMode     string `form:"response_mode"`    // url(默认) | content
 }
 
 type GetManagementContentResp struct {

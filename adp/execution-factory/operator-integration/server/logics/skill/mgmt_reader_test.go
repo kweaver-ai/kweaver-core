@@ -74,7 +74,7 @@ func TestSkillManagementReader(t *testing.T) {
 			So(len(resp.Files), ShouldEqual, 1)
 			So(resp.Files[0].RelPath, ShouldEqual, "scripts/main.py")
 			So(resp.Files[0].FileType, ShouldEqual, "script")
-			So(resp.Content, ShouldEqual, "")  // url(default) mode: content is empty
+			So(resp.Content, ShouldEqual, "") // url(default) mode: content is empty
 		})
 
 		Convey("GetManagementContent returns empty URL for content registration without OSS file", func() {
@@ -105,7 +105,7 @@ func TestSkillManagementReader(t *testing.T) {
 			resp, err := reader.GetManagementContent(context.Background(), &interfaces.GetManagementContentReq{
 				BusinessDomainID: "bd-1",
 				SkillID:          "skill-2",
-				ResponseMode:     "auto",
+				ResponseMode:     "content",
 			})
 
 			So(err, ShouldBeNil)
@@ -397,7 +397,7 @@ func TestSkillManagementReader(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resp, ShouldNotBeNil)
 			So(resp.URL, ShouldEqual, "")
-			So(resp.Content, ShouldEqual, "")  // url mode: content is empty
+			So(resp.Content, ShouldEqual, "") // url mode: content is empty
 			So(resp.FileType, ShouldEqual, "content")
 		})
 
