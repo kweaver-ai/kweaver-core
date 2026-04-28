@@ -68,7 +68,10 @@ chmod +x ./setup.sh ./compose.sh
 4. Run `python3 tools/manifest.py check-compose` to ensure `docker-compose.yml` services
    match `compose-manifest.yaml`.
 5. Backfill any missing `*_VERSION` (tagEnv) value in `.env` from `compose-manifest.yaml`
-   so version bumps in the manifest flow into `.env` automatically.
+   and run `python3 tools/manifest.py check-env .env` to warn if your `.env` pinned a
+   tag that no longer matches the manifest. `docker-compose.yml` references each tag as
+   `${X_VERSION:?...}`, so a missing version short-circuits `docker compose` with a clear
+   error pointing back to `setup.sh`.
 6. Run `tools/render_compose_configs.py`: substitute `configs/kweaver/**/*.tmpl` →
    `configs/generated/...` and merge per-service env files (`dataflow/flow-automation.env`,
    `coderunner/coderunner.env`, `coderunner/dataflowtools.env`, `sandbox/sandbox.env`).
@@ -170,6 +173,7 @@ python3 tools/manifest.py services --phase=app    # service list (used by compos
 python3 tools/manifest.py charts                  # <chart-folder>\t<out_sub> (used by extract)
 python3 tools/manifest.py env-defaults            # tagEnv defaults (used by setup.sh)
 python3 tools/manifest.py check-compose           # diff manifest vs docker-compose.yml
+python3 tools/manifest.py check-env [path]        # diff manifest tagEnv vs an .env file
 ```
 
 ## Remote lab (e.g. Ubuntu VM)

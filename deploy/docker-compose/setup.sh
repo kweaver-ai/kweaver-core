@@ -297,6 +297,11 @@ while IFS='=' read -r mkey mval; do
   fi
 done < <(python3 "${ROOT}/tools/manifest.py" env-defaults)
 
+# Warn (do not fail) when .env *_VERSION drifts from manifest — operators may
+# pin a custom tag locally; we only block missing values via :? in compose.
+python3 "${ROOT}/tools/manifest.py" check-env .env || \
+  echo "WARN: .env *_VERSION values differ from compose-manifest.yaml (see above)." >&2
+
 mkdir -p "${ROOT}/configs/generated"
 
 if ! python3 "${ROOT}/tools/render_compose_configs.py"; then

@@ -130,7 +130,7 @@ services:
       start_period: 15s
 
   kweaver-core-data-migrator:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/kweaver-core-data-migrator:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/kweaver-core-data-migrator:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: "no"
     networks:
       - kweaver-network
@@ -153,7 +153,7 @@ services:
       - ./configs/generated/kweaver-core-data-migrator/secret-kweaver-core-data-migrator-secret/secret-config.yaml:/etc/data-migrator/secret-config.yaml:ro
 
   bkn-backend:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/bkn-backend:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/bkn-backend:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -175,7 +175,7 @@ services:
       - ./configs/generated/bkn-backend/cm-bkn-backend-cm/dm_svc.conf:/opt/bkn-backend/config/dm_svc.conf:ro
 
   mf-model-manager:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-manager:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-manager:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -193,7 +193,7 @@ services:
       - ./configs/generated/mf-model-manager/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
 
   mf-model-api:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-api:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mf-model-api:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -211,7 +211,7 @@ services:
       - ./configs/generated/mf-model-api/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
 
   ontology-query:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/ontology-query:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/ontology-query:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -230,7 +230,7 @@ services:
       - ./configs/generated/ontology-query/cm-ontology-query-cm/ontology-query-config.yaml:/opt/ontology-query/config/ontology-query-config.yaml:ro
 
   vega-backend:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-backend:${KWEAVER_VERSION}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-backend:${KWEAVER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -251,7 +251,7 @@ services:
       - ./configs/generated/vega-backend/cm-vega-backend-cm/dm_svc.conf:/opt/vega-backend/config/dm_svc.conf:ro
 
   data-connection:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/data-connection:${DATA_CONNECTION_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/data-connection:${DATA_CONNECTION_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -268,7 +268,7 @@ services:
       - ./configs/generated/data-connection/cm-data-connection/application.yml:/opt/vega/config/application.yml:ro
 
   vega-gateway:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway:${VEGA_GATEWAY_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway:${VEGA_GATEWAY_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -284,7 +284,7 @@ services:
       - ./configs/generated/vega-gateway/cm-vega-gateway-deployment-cm/application.yml:/opt/virtual-engine/config/application.yml:ro
 
   vega-gateway-pro:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway-pro:${VEGA_GATEWAY_PRO_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/vega-gateway-pro:${VEGA_GATEWAY_PRO_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -301,7 +301,7 @@ services:
       - ./configs/generated/vega-gateway-pro/cm-vega-gateway-pro-cm/vega-gateway-pro-config.yaml:/opt/vega-gateway-pro/config/vega-gateway-pro-config.yaml:ro
 
   mdl-data-model:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model:${MDL_DATA_MODEL_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model:${MDL_DATA_MODEL_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -323,7 +323,7 @@ services:
       - ./configs/generated/mdl-data-model/cm-mdl-data-model-cm/dm_svc.conf:/opt/data-model/config/dm_svc.conf:ro
 
   mdl-uniquery:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-uniquery:${MDL_UNIQUERY_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-uniquery:${MDL_UNIQUERY_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -344,7 +344,7 @@ services:
       - ./configs/generated/mdl-uniquery/cm-mdl-uniquery-cm/dm_svc.conf:/opt/uniquery/config/dm_svc.conf:ro
 
   mdl-data-model-job:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model-job:${MDL_DATA_MODEL_JOB_VERSION:-0.6.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/mdl-data-model-job:${MDL_DATA_MODEL_JOB_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -364,7 +364,7 @@ services:
       - ./configs/generated/mdl-data-model-job/cm-mdl-data-model-job-cm/dm_svc.conf:/opt/data-model-job/config/dm_svc.conf:ro
 
   agent-operator-integration:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-operator-integration:${AGENT_OPERATOR_INTEGRATION_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-operator-integration:${AGENT_OPERATOR_INTEGRATION_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -386,7 +386,7 @@ services:
       - ./configs/generated/agent-operator-integration/secret-kw:/sysvol/secret:ro
 
   agent-retrieval:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-retrieval:${AGENT_RETRIEVAL_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-retrieval:${AGENT_RETRIEVAL_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -407,7 +407,7 @@ services:
       - ./configs/generated/agent-retrieval/secret-kw:/sysvol/secret:ro
 
   agent-backend:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-backend:${AGENT_BACKEND_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/agent-backend:${AGENT_BACKEND_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -437,7 +437,7 @@ services:
       - ./configs/generated/agent-backend/cm-agent-factory-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
 
   dataflow:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -469,7 +469,7 @@ services:
     command: ["/bin/bash", "-c", "cd /opt/flow-automation && ./flow-automation"]
 
   flow-stream-data-pipeline:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -487,14 +487,14 @@ services:
       MQ_TYPE: kafka
       DM_SVC_PATH: /opt/pipeline/config
       AUTH_ENABLED: "false"
-      SDP_PIPELINE_IMAGE: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:-0.7.0}
+      SDP_PIPELINE_IMAGE: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflow:${DATAFLOW_VERSION:?set by ./setup.sh from compose-manifest.yaml}
       SDP_PIPELINE_NAMESPACE: ${SDP_PIPELINE_NAMESPACE:-dip}
     volumes:
       - ./configs/generated/dataflow/cm-flow-stream-data-pipeline-cm:/opt/pipeline/config:ro
     command: ["/bin/bash", "-c", "cd /opt/pipeline && ./pipeline-mgmt-server"]
 
   dataflowtools:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflowtools:${DATAFLOWTOOLS_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/dataflowtools:${DATAFLOWTOOLS_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -513,7 +513,7 @@ services:
       - dataflowtools_tmp:/tmp
 
   coderunner:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/coderunner:${CODERUNNER_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/coderunner:${CODERUNNER_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -535,7 +535,7 @@ services:
     command: ["/bin/bash", "-c", "./init_site_packages.sh && python3 ./src/main.py"]
 
   doc-convert-gotenberg:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/gotenberg:${DOC_CONVERT_GOTENBERG_VERSION:-0.7.0-0a6213d.1799448}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/gotenberg:${DOC_CONVERT_GOTENBERG_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       kweaver-network:
@@ -546,14 +546,14 @@ services:
       - "9998"
 
   doc-convert-tika:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/tika:${DOC_CONVERT_TIKA_VERSION:-0.7.0-0a6213d.1799448}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/tika:${DOC_CONVERT_TIKA_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     network_mode: "service:doc-convert-gotenberg"
     depends_on:
       - doc-convert-gotenberg
 
   sandbox:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/sandbox-control-plane:${SANDBOX_VERSION:-0.3.3}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/sandbox-control-plane:${SANDBOX_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -573,7 +573,7 @@ services:
       - "${SANDBOX_HTTP_PORT:-8001}:8000"
 
   oss-gateway-backend:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/oss-gateway-backend:${OSS_GATEWAY_BACKEND_VERSION:-0.7.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/oss-gateway-backend:${OSS_GATEWAY_BACKEND_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -590,7 +590,7 @@ services:
       - ./configs/generated/oss-gateway-backend/cm-kw-yaml/dm_svc.conf:/tmp/rds_conf/dm_svc.conf:ro
 
   otelcol-contrib:
-    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/opentelemetry-collector-contrib:${OTELCOL_CONTRIB_VERSION:-0.148.0}
+    image: ${IMAGE_REGISTRY}/${DIP_NAMESPACE}/opentelemetry-collector-contrib:${OTELCOL_CONTRIB_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network
@@ -602,7 +602,7 @@ services:
       - ./configs/generated/otelcol-contrib/cm-kw-otelcol-contrib/collector-config.yaml:/conf/collector-config.yaml:ro
 
   agent-observability:
-    image: ${IMAGE_REGISTRY}/agent-observability:${AGENT_OBSERVABILITY_VERSION:-0.2.2}
+    image: ${IMAGE_REGISTRY}/agent-observability:${AGENT_OBSERVABILITY_VERSION:?set by ./setup.sh from compose-manifest.yaml}
     restart: unless-stopped
     networks:
       - kweaver-network

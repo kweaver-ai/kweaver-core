@@ -9,6 +9,7 @@ CLI:
     python3 tools/manifest.py charts          # one (folder, out_sub) per line
     python3 tools/manifest.py env-defaults    # KEY=VAL lines for tagEnv defaults
     python3 tools/manifest.py check-compose   # diff manifest vs docker-compose.yml
+    python3 tools/manifest.py check-env [path] # diff manifest tagEnv vs an .env file
 """
 from __future__ import annotations
 
@@ -141,6 +142,49 @@ def check_compose(manifest: dict) -> int:
     return rc
 
 
+def _read_env_file(path: Path) -> dict[str, str]:
+    out: dict[str, str] = {}
+    if not path.is_file():
+        return out
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        out[k.strip()] = v.strip()
+    return out
+
+
+def check_env(manifest: dict, env_path: Path) -> int:
+    expected = env_defaults(manifest)
+    if not env_path.is_file():
+        print(f"ERROR: env file missing: {env_path}", file=sys.stderr)
+        return 1
+    actual = _read_env_file(env_path)
+    missing: list[str] = []
+    drifted: list[tuple[str, str, str]] = []
+    for key, exp in expected.items():
+        cur = actual.get(key, "")
+        if not cur:
+            missing.append(key)
+        elif cur != exp:
+            drifted.append((key, cur, exp))
+    rc = 0
+    if missing:
+        print(f"{env_path}: missing tagEnv values from manifest:", file=sys.stderr)
+        for k in missing:
+            print(f"  - {k}={expected[k]}", file=sys.stderr)
+        rc = 1
+    if drifted:
+        print(f"{env_path}: tagEnv values drifted from manifest:", file=sys.stderr)
+        for k, cur, exp in drifted:
+            print(f"  - {k}: env={cur}  manifest={exp}", file=sys.stderr)
+        rc = 1
+    if rc == 0:
+        print(f"OK: {len(expected)} tagEnv values in {env_path.name} match manifest")
+    return rc
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="manifest.py")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -149,6 +193,8 @@ def main(argv: list[str]) -> int:
     sub.add_parser("charts")
     sub.add_parser("env-defaults")
     sub.add_parser("check-compose")
+    p_env = sub.add_parser("check-env")
+    p_env.add_argument("path", nargs="?", default=str(DEPLOY_COMPOSE_ROOT / ".env"))
     args = ap.parse_args(argv)
 
     m = load_manifest()
@@ -166,6 +212,8 @@ def main(argv: list[str]) -> int:
         return 0
     if args.cmd == "check-compose":
         return check_compose(m)
+    if args.cmd == "check-env":
+        return check_env(m, Path(args.path))
     return 2
 
 
