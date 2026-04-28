@@ -6,6 +6,9 @@
 
 # Last password for kweaver HTTP sign-in as test (set in this shell after reset-password or env).
 __ONBOARD_TEST_USER_KWEAVER_PASSWORD=""
+# Set to "true" once user [test] has been ensured (created/synced + roles + kweaver session as test) within this run.
+# Lets later steps (Context Loader impex) skip re-assigning roles and re-logging in.
+__ONBOARD_TEST_USER_PREPARED="false"
 
 # Match onboard.sh: ISF (full) install present.
 onboard_isf_full_install() {
@@ -108,8 +111,8 @@ onboard_set_test_user_password() {
         log_warn "Not a TTY: set ONBOARD_TEST_USER_PASSWORD=... or use  $0 -y  (default password ${_defp} for  test )"
         return 1
     fi
-    log_info "Set password for user test (default ${_defp} if you press Enter; same for kweaver impex)…"
-    read -r -s -p "  Password for user test (empty = ${_defp}): " __ONBOARD_TEST_USER_KWEAVER_PASSWORD
+    log_info "Set password for user [test] (press Enter to use the default ${_defp})…"
+    read -r -s -p "  Password for user test (Enter = ${_defp}): " __ONBOARD_TEST_USER_KWEAVER_PASSWORD
     echo
     __ONBOARD_TEST_USER_KWEAVER_PASSWORD="${__ONBOARD_TEST_USER_KWEAVER_PASSWORD:-${_defp}}"
     if ! kweaver-admin user reset-password -u test -p "${__ONBOARD_TEST_USER_KWEAVER_PASSWORD}" -y 2>/dev/null; then
@@ -121,7 +124,7 @@ onboard_set_test_user_password() {
 
 # Create login=test, set password, assign all roles in role list.
 onboard_create_test_user_with_all_roles() {
-    log_info "Create user test and assign all roles in kweaver-admin 'role list' (typically three business admin roles)…"
+    log_info "Creating user [test] and assigning all roles from kweaver-admin 'role list' (typically three business admin roles)…"
     local uerr
     uerr="$(mktemp 2>/dev/null || echo /tmp/onboard-uc.$$)"
     if ! kweaver-admin --json user create --login test >/dev/null 2> "${uerr}"; then
@@ -167,15 +170,16 @@ onboard_kweaver_relogin_isf_test() {
         echo
     fi
     _pw="${_pw:-${_defp}}"
-    log_info "kweaver auth: signing in as test (HTTP) for impex (token in ~/.kweaver)…"
+    log_info "Signing kweaver in as user [test] (token saved under ~/.kweaver)…"
     if ! kweaver auth login "${kurl}" -u test -p "${_pw}" --http-signin -k; then
-        log_warn "kweaver auth as test failed; fix password/URL or re-run: kweaver auth login ${kurl} -k"
+        log_warn "kweaver: sign-in as test failed. Re-run: kweaver auth login ${kurl} -u test -p '<password>' --http-signin -k"
         return 1
     fi
     return 0
 }
 
-# After user test is created or synced: sign kweaver SDK in as test (HTTP) for Context Loader and model/BKN steps (ISF).
+# After user test is created or synced: sign kweaver SDK in as test for the next steps.
+# Sets __ONBOARD_TEST_USER_PREPARED=true so Context Loader can skip the duplicate work.
 onboard_isf_relogin_kweaver_cli_as_test_for_downstream() {
     type onboard_isf_full_install &>/dev/null || return 0
     onboard_isf_full_install 2>/dev/null || return 0
@@ -185,11 +189,12 @@ onboard_isf_relogin_kweaver_cli_as_test_for_downstream() {
     fi
     local kurl=""
     type onboard_default_access_base_url &>/dev/null && kurl="$(onboard_default_access_base_url)"
-    log_info "kweaver CLI: re-authenticating as user test (HTTP, same as impex) for Context Loader and model registration — use the password set for test above."
+    log_info "Switching kweaver CLI to user [test] for the next steps (Context Loader and model registration)…"
     if ! onboard_kweaver_relogin_isf_test "${kurl}"; then
-        onboard_log_err "kweaver: sign-in as user test failed. Set ONBOARD_TEST_USER_PASSWORD, or: kweaver auth login ${kurl} -u test -p '...' --http-signin -k  then re-run: $0"
+        onboard_log_err "kweaver: could not sign in as test. Set ONBOARD_TEST_USER_PASSWORD or run: kweaver auth login ${kurl} -u test -p '<password>' --http-signin -k  then re-run: $0"
         exit 1
     fi
+    __ONBOARD_TEST_USER_PREPARED="true"
     return 0
 }
 
@@ -216,10 +221,10 @@ onboard_offer_isf_test_user() {
     fi
 
     if onboard_user_test_exists; then
-        log_info "User test already exists. Syncing 'role list' roles to test (for ADP / Context Loader impex)…"
+        log_info "User [test] already exists. Syncing roles from kweaver-admin 'role list'…"
         onboard_assign_all_listed_roles_to_user test || true
         ONBOARD_REPORT_ISF_TEST_USER="user test exists: synced all roles from role list (kweaver-admin user roles test)"
-        log_info "If you reset test's password, export ONBOARD_TEST_USER_PASSWORD for non-interactive kweaver impex, or enter it when asked during Context Loader import."
+        log_info "If you have changed test's password, set ONBOARD_TEST_USER_PASSWORD before re-running (or enter it when asked below)."
         onboard_isf_relogin_kweaver_cli_as_test_for_downstream
         return 0
     fi
@@ -256,27 +261,31 @@ onboard_offer_isf_test_user() {
     onboard_isf_relogin_kweaver_cli_as_test_for_downstream
 }
 
-# Before kweaver call (ADP impex), ISF: ensure user test + business roles, then kweaver session as test.
-# Requires onboard.sh: onboard_default_access_base_url. Returns 0 to proceed (no ISF: always 0).
+# Before Context Loader impex (ISF): make sure user [test] is ready and kweaver is signed in as test.
+# Skips role-sync + relogin if the test-user step already did them in this run.
+# Returns 0 to proceed (no ISF: always 0).
 onboard_ensure_isf_test_for_kweaver_impex() {
     type onboard_isf_full_install &>/dev/null || return 0
     onboard_isf_full_install 2>/dev/null || return 0
     if ! command -v kweaver &>/dev/null; then
         return 0
     fi
+    if [[ "${__ONBOARD_TEST_USER_PREPARED:-false}" == "true" ]]; then
+        return 0
+    fi
     if ! command -v kweaver-admin &>/dev/null; then
-        log_warn "ISF+impex: kweaver-admin not on PATH — cannot use user test for impex (admin  kweaver  session often returns 403). Install:  npm i -g @kweaver-ai/kweaver-admin  , then create user  test  and re-run this import."
+        log_warn "Context Loader (ISF): kweaver-admin not on PATH; cannot prepare user [test]. Install: npm i -g @kweaver-ai/kweaver-admin, then re-run."
         return 1
     fi
     if ! kweaver-admin --json user list --limit 1 &>/dev/null; then
-        log_warn "ISF+impex: kweaver-admin is not logged in. Run: kweaver-admin auth login <url> -u admin -p '...' -k ; ensure user test exists, then re-run import."
+        log_warn "Context Loader (ISF): kweaver-admin is not signed in. Run: kweaver-admin auth login <url> -u admin -p '<password>' -k, then re-run."
         return 1
     fi
     if ! onboard_user_test_exists; then
-        log_warn "ISF+impex: user  test  is missing. Create it first (onboard  test-user  step or  kweaver-admin user create --login test  + roles), then re-run."
+        log_warn "Context Loader (ISF): user [test] is missing. Create it first (test-user step or: kweaver-admin user create --login test + roles), then re-run."
         return 1
     fi
-    log_info "ISF+impex: sync role list to user test, then  kweaver auth  as test (built-in  admin  often cannot import toolboxes)…"
+    log_info "Context Loader (ISF): syncing roles to [test] and signing kweaver in as [test]…"
     onboard_assign_all_listed_roles_to_user test || true
     local _url=""
     if type onboard_default_access_base_url &>/dev/null; then
@@ -285,5 +294,6 @@ onboard_ensure_isf_test_for_kweaver_impex() {
     if ! onboard_kweaver_relogin_isf_test "${_url}"; then
         return 1
     fi
+    __ONBOARD_TEST_USER_PREPARED="true"
     return 0
 }

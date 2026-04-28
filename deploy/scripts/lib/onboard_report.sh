@@ -64,9 +64,9 @@ onboard_print_completion_report() {
         echo "  Next steps"
         echo "   • Verify:  kweaver bkn list -bd ${_bd} --pretty"
         if [[ "${_ctx}" == *"imported_ok"* ]]; then
-            echo "   • Toolbox: Context Loader ADP import was attempted; check earlier logs for HTTP 2xx / no error in body"
+            echo "   • Toolbox: Context Loader was imported (re-check above for HTTP 2xx and no error in body)."
         else
-            echo "   • Toolbox: To import: run deploy/onboard.sh or kweaver call impex (see -h and CONTEXT_LOADER_TOOLSET_ADP_PATH)"
+            echo "   • Toolbox: re-run deploy/onboard.sh to import Context Loader (or import manually with kweaver call impex; see ./onboard.sh -h)."
         fi
         echo "   • Docs:    https://github.com/kweaver-ai/kweaver-core/blob/main/help/README.md"
         echo "              https://github.com/kweaver-ai/kweaver-core/blob/main/help/en/README.md  (EN)"

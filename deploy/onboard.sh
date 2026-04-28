@@ -607,11 +607,6 @@ onboard_ensure_kweaver_admin_auth_for_isf() {
     fi
     _defu="$(onboard_default_access_base_url 2>/dev/null || true)"
     echo ""
-    read -r -p "Run kweaver-admin auth now (HTTP sign-in recommended; same as kweaver) [Y/n] (Enter = Y): " _go
-    if [[ -n "${_go}" && "${_go}" =~ ^[Nn] ]]; then
-        onboard_log_err "ISF: kweaver-admin must be signed in for onboard. When ready: kweaver-admin auth login <url> -u ${ONBOARD_DEFAULT_KWEAVER_USER:-admin} -p '...' -k  then: $0  again."
-        exit 1
-    fi
     read -r -p "kweaver-admin access base URL [Enter = ${_defu}]: " _url
     _url="${_url:-${_defu}}"
     if [[ -z "${_url}" ]]; then
