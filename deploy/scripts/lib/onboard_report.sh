@@ -61,10 +61,20 @@ onboard_print_completion_report() {
         echo "  User [test]    ${_isfu:-(not run or not recorded)}"
         echo "  Context Loader ${_ctx:-(not run or not recorded)}"
         echo "${_line}"
+        case "${_isfu}" in
+            created*)
+                echo -e "  ${GREEN}✓ User [test] was created for the first time on this platform.${NC}"
+                echo "${_line}"
+                ;;
+            ready*)
+                echo -e "  ${GREEN}✓ User [test] is ready on this platform (already existed; roles re-synced).${NC}"
+                echo "${_line}"
+                ;;
+        esac
         echo "  Next steps"
         case "${_isfu}" in
             ready*|created*)
-                echo "   • User test:  ready on this platform; default sign-in:  kweaver auth login ${_acurl} -u test -p '<password>' --http-signin -k"
+                echo "   • User test:  default sign-in:  kweaver auth login ${_acurl} -u test -p '<password>' --http-signin -k"
                 ;;
         esac
         echo "   • Verify:    kweaver bkn list -bd ${_bd} --pretty"
