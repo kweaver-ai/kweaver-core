@@ -192,21 +192,23 @@ Typical flags:
 
 | Flag | Meaning |
 | --- | --- |
-| *(none)* | Interactive: Node/kweaver install prompts (if needed), auth, then model/BKN prompts |
-| `-y` / `--yes` | Auto-accept many prompts; still requires **full ISF** preconditions for test user + Context Loader (see below) |
+| *(none)* | Interactive: walks through Node / `kweaver` / `kweaver-admin` install (if missing), auth (both CLIs), then model / BKN / Context Loader prompts |
+| `-y` / `--yes` | Auto-accept all prompts: bootstrap, ISF `kweaver` + `kweaver-admin` HTTP defaults (`admin` / `eisoo.com`), `test` user creation + role sync, `kweaver` relogin as `test`, Context Loader import. Skips interactive **model registration**; use `--config=models.yaml` for non-interactive model registration. |
 | `--config=models.yaml` | Non-interactive: register models (and optional BKN) via YAML; see `deploy/conf/models.yaml.example` |
 | `--enable-bkn-search` | BKN ConfigMap patch only (after probe) |
 | `--skip-context-loader` | Skip ADP Context Loader toolbox import |
 
-**Full ISF install (auth + business domain):** onboarding treats the cluster as “ISF” when related Helm releases or namespaces exist. Then the script expects, **in order**:
+**Full ISF install (auth + business domain):** onboarding treats the cluster as "ISF" when related Helm releases or namespaces exist. **`onboard.sh` then performs the following 5 steps automatically** (you do **not** need to run them by hand — they are listed here so you know what is happening, and what to fall back to if a step fails):
 
-1. **`kweaver auth login`** — session in `~/.kweaver` (HTTP sign-in or browser; default access URL can be this host’s IP).
-2. **`kweaver-admin`** on `PATH` — install with `npm i -g @kweaver-ai/kweaver-admin` if missing (script may offer this).
-3. **`kweaver-admin auth login`** — **separate token store** from `kweaver`, but the **same account** as step 1: user **`admin`**, password **`eisoo.com`** if the console is still on defaults. Use **`-u` / `-p` / `-k`** (HTTP `/oauth2/signin` is selected automatically; **no** `--http-signin` — that flag is **kweaver-sdk only**). You can still use a **browser** flow without `-u`/`-p`. Required so `user list` works for creating user **`test`** and assigning **all roles** from `kweaver-admin role list`.
-4. **User `test`** — create + password (default `111111` unless overridden) + role assignment. The script then runs **`kweaver auth login` as `test`** (HTTP) so the SDK session matches the business user for the next steps.
-5. **Context Loader & model import** — `kweaver call` impex and interactive model registration use **`~/.kweaver` as `test`** (console `admin` often gets `403` on impex).
+1. **`kweaver auth login`** (`onboard_ensure_kweaver_auth`) — session saved under `~/.kweaver`. HTTP defaults to `admin` / `eisoo.com` (or browser OAuth on a TTY); under `-y` HTTP defaults are used automatically.
+2. **`kweaver-admin` on `PATH`** (`onboard_ensure_kweaver_admin_for_isf`) — runs `npm i -g @kweaver-ai/kweaver-admin` if missing (interactive prompt, or auto under `-y`).
+3. **`kweaver-admin auth login`** (`onboard_ensure_kweaver_admin_auth_for_isf`) — **separate token store** from `kweaver`, but the **same account** as step 1 (`admin` / `eisoo.com` defaults). Uses `-u` / `-p` / `-k` (HTTP `/oauth2/signin` is selected automatically; **no** `--http-signin` — that flag is **kweaver-sdk only**). On a TTY a browser flow is also offered.
+4. **User `test`** (`onboard_offer_isf_test_user`) — created with password `111111` (override with `ONBOARD_TEST_USER_PASSWORD`), every role from `kweaver-admin role list` assigned, then **`kweaver auth login` as `test`** so the SDK session matches the business user for the next steps. If `test` already exists, only role-sync runs.
+5. **Context Loader + model registration** (`onboard_offer_context_loader_toolset` → `kweaver call impex`; then interactive / YAML model registration) — both use **`~/.kweaver` as `test`** (the console `admin` session usually returns `403` on impex).
 
-**Minimum install** (`--minimum`): only `kweaver auth` (often `--no-auth`); no `kweaver-admin` path.
+If any step fails, the script exits non-zero with a clear message; re-run `bash deploy/onboard.sh` after fixing the cause — earlier successful steps are detected and skipped (idempotent re-runs).
+
+**Minimum install** (`--minimum`): only `kweaver auth` (often `--no-auth`); the ISF-only steps 2–4 above are no-ops, and Context Loader (step 5) only runs if the operator deployment is present.
 
 At the end, an **English completion report** is printed unless `ONBOARD_NO_COMPLETION_REPORT=1`.
 

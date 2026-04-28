@@ -195,21 +195,23 @@ bash ./onboard.sh --help
 
 | 参数 | 含义 |
 | --- | --- |
-| 无参数 | 交互：必要时提示装 Node/kweaver，再认证、模型/BKN 等 |
-| `-y` / `--yes` | 自动确认多步；全量 ISF 下仍须满足 **kweaver-admin 已装且已登录** 等前置，见下文 |
+| 无参数 | 交互模式：按需引导安装 Node / `kweaver` / `kweaver-admin`，完成两个 CLI 的认证，再依次走模型 / BKN / Context Loader 提示 |
+| `-y` / `--yes` | 全部自动：bootstrap、ISF 下 `kweaver` + `kweaver-admin` 的 HTTP 默认登录（`admin` / `eisoo.com`）、`test` 用户创建 + 角色同步、`kweaver` 以 `test` 重登、Context Loader 导入。会**跳过交互式模型注册**；如需非交互注册模型，请用 `--config=models.yaml`。 |
 | `--config=xxx.yaml` | 非交互：按 YAML 注册模型与可选 BKN；参考 `deploy/conf/models.yaml.example` |
 | `--enable-bkn-search` | 仅做 BKN ConfigMap 类操作（仍先走 probe） |
 | `--skip-context-loader` | 跳过 ADP Context Loader 工具集导入 |
 
-**全量 ISF（启用 auth + business domain）**：脚本根据 Helm/命名空间判断为 ISF 后，建议按 **顺序** 完成：
+**全量 ISF（启用 auth + business domain）**：脚本根据 Helm/命名空间判断为 ISF 后，**会自动按以下 5 步执行**（你不需要手工逐条做——这里列出来只是让你知道脚本在干什么，以及某一步失败时该回到哪一步）：
 
-1. **`kweaver auth login`** — 会话在 `~/.kweaver`（HTTP 或浏览器；默认访问地址可为本机 IP 对应的 `https://…`）。
-2. **`kweaver-admin` 在 PATH** — 可通过 `npm i -g @kweaver-ai/kweaver-admin` 安装（脚本可提示安装）。
-3. **`kweaver-admin auth login`** — 与 `kweaver` **凭据/会话独立**，但**仍用与第 1 步相同的一套控制台账密**（**`admin` / `eisoo.com`** 未改密时）。在 **`kweaver-admin` 中请写：`-u`、`-p`、`-k`**（带上 `-u`/`-p` 即走 HTTP 登录，**没有** `--http-signin` 参数，该参数仅 **kweaver-sdk** 使用）。也可不用账密、走**浏览器** OAuth。须能 `user list`，再创建 **`test`** 并挂载 **role list** 中角色。
-4. **用户 `test`** — 创建、设密（默认可为 `111111`）、赋权。随后脚本会 **`kweaver auth login` 为 `test`（HTTP）**，使 SDK 会话切到业务用户，供后续步骤使用。
-5. **Context Loader 与模型注册** — ADP **impex** 及交互式模型流程使用 **以 `test` 登录的 `kweaver`（`~/.kweaver`）**；仅 **admin** 的 kweaver 会话对 impex 常见 **403**。
+1. **`kweaver auth login`**（`onboard_ensure_kweaver_auth`）— 会话写入 `~/.kweaver`。HTTP 默认 `admin` / `eisoo.com`（TTY 下也可改走浏览器 OAuth）；`-y` 模式直接走 HTTP 默认。
+2. **`kweaver-admin` 在 PATH**（`onboard_ensure_kweaver_admin_for_isf`）— 缺则自动 `npm i -g @kweaver-ai/kweaver-admin`（交互提示，或 `-y` 时自动安装）。
+3. **`kweaver-admin auth login`**（`onboard_ensure_kweaver_admin_auth_for_isf`）— 与 `kweaver` **token 文件独立**，但**用同一组控制台账密**（默认仍是 `admin` / `eisoo.com`）。命令是 `-u` / `-p` / `-k`（带上即走 HTTP `/oauth2/signin`，**没有** `--http-signin` 参数，该参数仅 **kweaver-sdk** 有）。TTY 下也支持浏览器 OAuth。
+4. **业务用户 `test`**（`onboard_offer_isf_test_user`）— 创建 `test`，密码 `111111`（可用 `ONBOARD_TEST_USER_PASSWORD` 覆盖），把 `kweaver-admin role list` 中**所有**角色都挂上，然后 **`kweaver auth login` 为 `test`**，让 SDK 会话切到业务用户，供后续步骤使用。若 `test` 已存在，则只做角色同步。
+5. **Context Loader + 模型注册**（`onboard_offer_context_loader_toolset` → `kweaver call impex`；随后是交互式或 YAML 模型注册）— 都使用**以 `test` 登录的 `kweaver`（`~/.kweaver`）**；仅 **admin** 的 `kweaver` 会话对 impex 常见 **403**。
 
-**最小化安装**：一般只需 `kweaver`（常为 `--no-auth`），**不需要** `kweaver-admin`。
+任何一步失败脚本都会非零退出并打印清楚原因；修好之后重跑 `bash deploy/onboard.sh` 即可——已成功的步骤会被检测并跳过（重复运行幂等）。
+
+**最小化安装**（`--minimum`）：通常只需 `kweaver`（常为 `--no-auth`）；上述 ISF 专属步骤 2–4 会被自动跳过，第 5 步的 Context Loader 仅在集群中确实有 operator deployment 时才执行。
 
 结束前会打印 **英文** 完成报告（可用 `ONBOARD_NO_COMPLETION_REPORT=1` 关闭）。
 
