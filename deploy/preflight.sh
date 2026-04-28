@@ -215,6 +215,16 @@ else
     if [[ -n "${PREFLIGHT_FAIL_COUNT_INITIAL}" ]]; then
         echo "  (initial [FAIL] before fix phase: ${PREFLIGHT_FAIL_COUNT_INITIAL})"
     fi
+    if [[ "${PREFLIGHT_CHECK_ONLY}" == "false" ]] \
+        && [[ "${PREFLIGHT_LIST_FIXES_ONLY}" != "true" ]] \
+        && [[ "${PREFLIGHT_FIXED_COUNT}" -eq 0 ]] \
+        && [[ "${PREFLIGHT_FAIL_COUNT_INITIAL:-0}" -gt 0 ]]; then
+        echo ""
+        echo "  Note: [FIXED]=0 means no successful fix ran. Most often: each [FIX?] defaulted to No (just press Enter),"
+        echo "        so sysctl/modules/containerd/k8s repo/kubectl steps were skipped. To auto-approve all:"
+        echo "          sudo ${0##*/} --fix -y"
+        echo "        Or answer  y  at prompts you want. Then re-run --check-only to verify."
+    fi
     if [[ "${PREFLIGHT_FAIL_COUNT}" -gt 0 && ${#PREFLIGHT_FAIL_SNAPSHOT[@]} -gt 0 ]]; then
         echo ""
         echo "  Outstanding [FAIL] items:"
