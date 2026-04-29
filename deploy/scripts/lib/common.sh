@@ -1261,6 +1261,12 @@ ensure_platform_prerequisites() {
         return 0
     fi
 
+    # Mac / bring-your-own-cluster: skip k3s/kubeadm + bundled data services (e.g. deploy/dev/mac.sh + kind).
+    if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]]; then
+        export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
+        return 0
+    fi
+
     case "${KUBE_DISTRO:-k3s}" in
         k3s)
             ensure_k3s || return 1

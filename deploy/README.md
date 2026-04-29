@@ -31,6 +31,20 @@ bash ./deploy.sh kweaver-core install --minimum
 
 Check status: `bash ./deploy.sh k3s status` — remove: `bash ./deploy.sh k3s uninstall`.
 
+### macOS (kind, dev validation)
+
+Local Kubernetes via **kind** — no `preflight.sh` / `k3s install`. Uses `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` so `deploy.sh` only runs Helm (same charts as Linux).
+
+```bash
+cd deploy   # repository deploy/ directory
+bash ./dev/mac.sh doctor
+bash ./dev/mac.sh cluster up
+bash ./dev/mac.sh -y kweaver-core install --minimum
+# optional: bash ./dev/mac.sh onboard -y
+```
+
+Config defaults: `dev/conf/mac-config.yaml`. `ISF` / `kweaver-dip` are not wired in `mac.sh` v1 (use Linux `deploy.sh`).
+
 ### kubeadm (legacy, unchanged)
 
 Existing single-node kubeadm flow is still **`bash ./deploy.sh k8s install`** (`deploy/scripts/services/k8s.sh` is unchanged). **`KUBE_DISTRO` defaults to `k3s`** (single-node k3s when modules auto-install the cluster). Use **`--distro=k8s`** or **`KUBE_DISTRO=k8s`** for the kubeadm path; legacy **`kubeadm`** is accepted as an alias for **`k8s`**.

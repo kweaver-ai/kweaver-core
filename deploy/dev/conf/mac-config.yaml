@@ -1,0 +1,94 @@
+# Minimal values for deploy/dev/mac.sh + kind.
+# - Matches kweaver-core default namespace (kweaver-ai).
+# - accessAddress targets NodePort/ingress on localhost (kind extraPortMappings).
+# - depServices.rds.source_type=external skips host-side SQL init (see install_core / init_core_databases).
+
+namespace: kweaver-ai
+replicaCount: 1
+mode: Community
+env:
+  language: en_US.UTF-8
+  timezone: UTC
+image:
+  registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
+accessAddress:
+  host: localhost
+  port: 80
+  scheme: http
+  path: /
+flowAutomation:
+  s3:
+    default: "default"
+    connections:
+      - name: default
+        endpoint: ""
+        region: us-east-1
+        accessKeyID: ""
+        secretAccessKey: ""
+        bucketName: ""
+        skipVerify: true
+        disableHTTPS: false
+dipStudio:
+  openClaw:
+    configHostPath: ''
+    workspaceHostPath: ''
+depServices:
+  mq:
+    auth:
+      mechanism: 'PLAIN'
+      username: 'kafkauser'
+      password: ''
+    mqHost: 'kafka.resource.svc.cluster.local'
+    mqLookupdHost: ""
+    mqLookupdPort: 0
+    mqPort: 9092
+    mqType: kafka
+  opensearch:
+    distribution: opensearch
+    host: 'opensearch-cluster-master.resource.svc.cluster.local'
+    user: 'admin'
+    password: ''
+    port: 9200
+    protocol: https
+    version: ""
+  mongodb:
+    source_type: internal
+    host: 'mongodb.resource.svc.cluster.local'
+    port: 28000
+    user: 'admin'
+    password: ''
+    replicaSet: 'rs0'
+    options:
+      authSource: 'admin'
+  rds:
+    admin_key: ''
+    host: '127.0.0.1'
+    hostRead: '127.0.0.1'
+    port: 3306
+    portRead: 3306
+    source_type: external
+    type: MariaDB
+    user: 'adp'
+    password: 'adp@123456'
+    database: 'adp'
+  redis:
+    connectInfo:
+      masterGroupName: mymaster
+      password: ''
+      sentinelHost: proton-redis-proton-redis-sentinel.resource.svc.cluster.local
+      sentinelPassword: ''
+      sentinelPort: 26379
+      sentinelUsername: root
+      username: root
+    connectType: sentinel
+    sourceType: internal
+  structure-extractor:
+    privateHost: 127.0.0.1
+    privatePort: 8089
+    outputDir: /output
+    backend: vlm-http-client
+    serverUrl: http://127.0.0.1:8089
+    fileHost: 127.0.0.1
+    filePort: 8090
+  class-443:
+    ingressClass: nginx

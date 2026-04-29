@@ -12,6 +12,8 @@ lib64/
 # Track deploy shell helpers (global `lib/` above would otherwise ignore this tree)
 !deploy/scripts/lib/
 !deploy/scripts/lib/**
+!deploy/dev/lib/
+!deploy/dev/lib/**
 deploy/scripts/lib/__pycache__/
 # Track example shell helpers
 !examples/*/lib/

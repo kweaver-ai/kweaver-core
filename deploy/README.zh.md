@@ -31,6 +31,20 @@ bash ./deploy.sh kweaver-core install --minimum
 
 查看状态：`bash ./deploy.sh k3s status`；卸载：`bash ./deploy.sh k3s uninstall`。
 
+### macOS（kind，本地验证）
+
+本机用 **kind** 起 Kubernetes，不跑 `preflight.sh` / `k3s install`。通过 `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` 让 `deploy.sh` 只执行 Helm 安装（与 Linux 使用同一套 chart）。
+
+```bash
+cd deploy   # 仓库的 deploy/ 目录
+bash ./dev/mac.sh doctor
+bash ./dev/mac.sh cluster up
+bash ./dev/mac.sh -y kweaver-core install --minimum
+# 可选：bash ./dev/mac.sh onboard -y
+```
+
+默认配置：`dev/conf/mac-config.yaml`。`ISF` / `kweaver-dip` 在 `mac.sh` v1 中未接入（请用 Linux `deploy.sh`）。
+
 ### kubeadm（旧路径，行为不变）
 
 单节点 kubeadm 流程仍是 **`bash ./deploy.sh k8s install`**（`deploy/scripts/services/k8s.sh` 不变）。**`KUBE_DISTRO` 默认为 `k3s`**（模块自动装集群时走单节点 k3s）。需要 kubeadm 路径时用 **`--distro=k8s`** 或 **`KUBE_DISTRO=k8s`**；历史写法 **`kubeadm`** 仍可作为 **`k8s`** 的别名。
