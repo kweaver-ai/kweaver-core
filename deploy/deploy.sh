@@ -722,14 +722,18 @@ main() {
 
         case "${action}" in
             install|init)
-                check_root
+                if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" != "true" ]]; then
+                    check_root
+                fi
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" install "$@"
                 ;;
             status)
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" status "$@"
                 ;;
             uninstall)
-                check_root
+                if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" != "true" ]]; then
+                    check_root
+                fi
                 CONFIG_FILE="${CONFIG_YAML_PATH}" bash "${etrino_script}" uninstall "$@"
                 ;;
             *)

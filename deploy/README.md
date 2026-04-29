@@ -6,6 +6,8 @@ One-click deployment of **KWeaver Core** onto a single-node Kubernetes cluster.
 
 This `deploy` directory provides scripts to install KWeaver Core along with its dependencies including Kubernetes, infrastructure services, and data services.
 
+**Platforms:** **Linux** is the recommended and fully documented install target (`preflight.sh`, k3s or kubeadm, data services). **macOS** is **optional** for **local development only** (Docker + kind + `dev/mac.sh`); see **[Mac install (dev)](dev/README.md)** — not a substitute for Linux production installs.
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
 ## Linux: k3s quickstart (recommended) vs kubeadm (legacy)
@@ -31,19 +33,22 @@ bash ./deploy.sh kweaver-core install --minimum
 
 Check status: `bash ./deploy.sh k3s status` — remove: `bash ./deploy.sh k3s uninstall`.
 
-### macOS (kind, dev validation)
+### macOS (optional — local dev with kind)
 
-Local Kubernetes via **kind** — no `preflight.sh` / `k3s install`. Uses `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` so `deploy.sh` only runs Helm (same charts as Linux).
+**Use this only for Mac validation; for real installs use Linux above.** Local Kubernetes via **kind** — no `preflight.sh` / `k3s` on the Mac host. Uses `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` so `deploy.sh` only runs Helm (same charts as Linux). **Apple Silicon:** kind nodes are **arm64**; use arm64/multi-arch images (see `dev/conf/mac-config.yaml`). **Step order and caveats:** [dev/README.md](dev/README.md).
 
 ```bash
 cd deploy   # repository deploy/ directory
 bash ./dev/mac.sh doctor
+# optional: install missing tools via Homebrew — bash ./dev/mac.sh doctor --fix (or -y doctor --fix to skip confirm)
 bash ./dev/mac.sh cluster up
-bash ./dev/mac.sh -y kweaver-core install --minimum
-# optional: bash ./dev/mac.sh onboard -y
+bash ./dev/mac.sh kweaver-core install --minimum
+# optional: bash ./dev/mac.sh kweaver-core download
+# optional: bash ./dev/mac.sh onboard
+# add leading -y for non-interactive (deploy.sh / onboard)
 ```
 
-Config defaults: `dev/conf/mac-config.yaml`. `ISF` / `kweaver-dip` are not wired in `mac.sh` v1 (use Linux `deploy.sh`).
+Config defaults: `dev/conf/mac-config.yaml`. `kweaver-dip` is not wired in `mac.sh` (use Linux `deploy.sh`); `isf` / `etrino` (`vega`) are delegated to `deploy.sh` — see [dev/README.md](dev/README.md).
 
 ### kubeadm (legacy, unchanged)
 

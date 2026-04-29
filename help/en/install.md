@@ -2,6 +2,8 @@
 
 This page covers **prerequisites**, **install steps**, and **post-install checks** for KWeaver Core.
 
+> **Platform:** **Linux** is the recommended install target for full stacks (`preflight.sh`, k3s/kubeadm, data services). **macOS** is supported only for **local dev validation** with Docker + kind — see **`deploy/dev/README.md`** and `deploy/dev/mac.sh` (no `preflight.sh` / production parity on the Mac host).
+
 > Use the `deploy.sh` script under the `deploy/` directory from your product bundle or build tree.
 
 > **`deploy.sh` global flags** (`--distro=k3s|k8s`, `-y`, `--force-upgrade`, `--config=…`, …) are parsed only when they appear **before** the module, e.g. `bash ./deploy.sh --distro=k8s kweaver-core install --minimum`. A trailing `... install --minimum --distro=k8s` is **not** applied as distro. Use `export KUBE_DISTRO=k8s` for the same effect, or move `--distro` forward (same rule as `-y` / `--force-upgrade`).

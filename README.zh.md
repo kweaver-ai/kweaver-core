@@ -38,7 +38,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 ## 🚀 快速开始
 
-1. **前置与规划** — 阅读 [部署文档](deploy/README.zh.md) 并满足其中前置条件。
+1. **前置与规划** — 阅读 [部署文档](deploy/README.zh.md) 并满足其中前置条件。**正式安装以 Linux 为主**；**macOS** 可选本机 kind 验证见 [Mac 安装（开发向）](deploy/dev/README.md)。
 2. **装机前自检 / 修复：`preflight.sh`**（推荐）
 
    在**安装目标主机**上，安装前先做一次系统体检：内核 / sysctl / containerd / `kubectl` / `helm` / Node / `kweaver` CLI 等，缺什么可按需修（每项默认 y/N 询问，`-y` 全自动）：

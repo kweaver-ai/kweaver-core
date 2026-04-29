@@ -38,7 +38,7 @@ Want to have an intuitive experience of the core functions of KWeaver DIP? Click
 
 ## 🚀 Quick Start
 
-1. **Prerequisites & planning** — read the [Deployment Guide](deploy/README.md) and satisfy its prerequisites.
+1. **Prerequisites & planning** — read the [Deployment Guide](deploy/README.md) and satisfy its prerequisites. **Linux** is the supported target for full installs; **macOS** local dev (kind) is optional — see [Mac install (dev)](deploy/dev/README.md).
 2. **Pre-install host check / fix with `preflight.sh`** (recommended)
 
    On the **target install host**, run a system check before `deploy.sh`. It verifies kernel / sysctl / containerd / `kubectl` / `helm` / Node / `kweaver` CLIs and can fix what's missing (each fix is opt-in unless `-y`):

@@ -6,6 +6,8 @@
 
 这个 `deploy` 目录提供脚本安装 KWeaver Core 及其依赖，包括 Kubernetes、基础设施服务和数据服务。
 
+**平台说明：** **Linux** 是推荐且文档最完整的目标环境（`preflight.sh`、k3s/kubeadm、数据服务等）。**macOS** 仅作**本机开发/验证**可选方案（Docker + kind + `dev/mac.sh`），详见 **[Mac 安装（开发向）](dev/README.md)**，**不能**替代 Linux 上的生产安装。
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
 ## Linux：k3s 快速上手（推荐）与 kubeadm（旧路径）
@@ -31,19 +33,21 @@ bash ./deploy.sh kweaver-core install --minimum
 
 查看状态：`bash ./deploy.sh k3s status`；卸载：`bash ./deploy.sh k3s uninstall`。
 
-### macOS（kind，本地验证）
+### macOS（可选 — 本机 kind 开发）
 
-本机用 **kind** 起 Kubernetes，不跑 `preflight.sh` / `k3s install`。通过 `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` 让 `deploy.sh` 只执行 Helm 安装（与 Linux 使用同一套 chart）。
+**仅供 Mac 上做验证；正式安装请以本文 Linux 章节为准。** 本机用 **kind** 起 Kubernetes，不在 Mac 上跑 `preflight.sh` / `k3s install`。通过 `KWEAVER_SKIP_PLATFORM_BOOTSTRAP` 让 `deploy.sh` 只执行 Helm 安装（与 Linux 使用同一套 chart）。**Apple Silicon：** kind 节点为 **arm64**，`dev/conf/mac-config.yaml` 里的镜像需支持 arm64/多架构。**步骤顺序与限制说明见 [dev/README.md](dev/README.md)。**
 
 ```bash
 cd deploy   # 仓库的 deploy/ 目录
 bash ./dev/mac.sh doctor
+# 可选：用 Homebrew 补全缺失工具 — bash ./dev/mac.sh doctor --fix（或 -y doctor --fix 跳过确认）
 bash ./dev/mac.sh cluster up
-bash ./dev/mac.sh -y kweaver-core install --minimum
-# 可选：bash ./dev/mac.sh onboard -y
+bash ./dev/mac.sh kweaver-core install --minimum
+# 可选：bash ./dev/mac.sh kweaver-core download   # 仅下载 chart
+# 可选：bash ./dev/mac.sh onboard；需非交互时在命令前加 -y
 ```
 
-默认配置：`dev/conf/mac-config.yaml`。`ISF` / `kweaver-dip` 在 `mac.sh` v1 中未接入（请用 Linux `deploy.sh`）。
+默认配置：`dev/conf/mac-config.yaml`。`kweaver-dip` 未在 `mac.sh` 接入（请用 Linux `deploy.sh`）；`isf` / `etrino`（`vega`）会转调 `deploy.sh` —— 见 [dev/README.md](dev/README.md)。
 
 ### kubeadm（旧路径，行为不变）
 

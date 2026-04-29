@@ -1,6 +1,6 @@
 # 🚀 Quick start
 
-This walkthrough assumes KWeaver Core is already [installed and deployed](install.md), including the post-install checks on that page.
+This walkthrough assumes KWeaver Core is already [installed and deployed](install.md), including the post-install checks on that page. **Full installs assume Linux**; optional **macOS** + kind flow: [`deploy/dev/README.md`](../../deploy/dev/README.md).
 
 > Before installing on a new host, run **`sudo bash deploy/preflight.sh`** (check / `--fix`) to validate kernel, sysctl, containerd, kubectl, helm, Node and the `kweaver` CLIs. After `deploy.sh kweaver-core install`, run **`bash deploy/onboard.sh`** to register an LLM + embedding, patch the BKN ConfigMap (only when the default actually changes), and on a full install create the business user **`test`** + import the Context Loader toolset. Both are documented in [Install — Pre-install host check / fix: `preflight.sh`](install.md#-pre-install-host-check--fix-preflightsh) and [Install — Post-install: `onboard.sh`](install.md#post-install-onboardsh).
 
