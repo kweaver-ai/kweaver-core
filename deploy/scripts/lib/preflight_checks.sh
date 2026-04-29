@@ -1769,8 +1769,13 @@ preflight_fix_docker_disable() {
         systemctl stop docker 2>/dev/null || true
         systemctl disable docker.socket 2>/dev/null || true
         systemctl disable docker 2>/dev/null || true
+        systemctl reset-failed docker.socket docker 2>/dev/null || true
     fi
-    preflight_fixed "Stopped and disabled docker.service and docker.socket (if present)"
+    # After stop/disable, some distros leave a stale docker.sock; preflight checks -S /var/run/docker.sock.
+    if ! systemctl is-active --quiet docker 2>/dev/null; then
+        rm -f /var/run/docker.sock 2>/dev/null || true
+    fi
+    preflight_fixed "Stopped and disabled docker.service and docker.socket; removed stale /var/run/docker.sock when docker was not active"
 }
 
 preflight_fix_kubeadm_reset() {
