@@ -33,12 +33,13 @@ mac_cluster_up() {
         mac_log_info "Namespace 'ingress-nginx' already exists; skipping ingress install."
     fi
 
-    mac_log_info "Waiting for ingress-nginx controller (ready)..."
-    if ! kubectl wait --namespace ingress-nginx \
-        --for=condition=ready pod \
-        --selector=app.kubernetes.io/component=controller \
-        --timeout=240s; then
-        mac_log_warn "ingress-nginx did not become ready in time; check: kubectl -n ingress-nginx get pods"
+    # Do not use `kubectl wait pod --selector=...` here: if no controller pod exists yet (common
+    # right after apply, e.g. while admission jobs run or RS creates pods), many kubectl versions
+    # fail immediately with "no matching resources found". Rollout status waits on the Deployment.
+    mac_log_info "Waiting for ingress-nginx controller rollout..."
+    if ! kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s; then
+        mac_log_warn "ingress-nginx controller did not become ready in time."
+        mac_log_warn "Check: kubectl -n ingress-nginx get pods && kubectl -n ingress-nginx describe pod -l app.kubernetes.io/component=controller"
         return 1
     fi
 

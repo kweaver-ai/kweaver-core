@@ -141,9 +141,9 @@ _dip_ensure_kweaver_core() {
     isf_dependency_version="$(_dip_resolve_isf_dependency_version)"
 
     local -a isf_release_names=()
-    mapfile -t isf_release_names < <(_dip_list_manifest_release_names "isf" "${isf_dependency_manifest}" "${isf_dependency_version}")
+    kweaver_mapfile_compat isf_release_names _dip_list_manifest_release_names "isf" "${isf_dependency_manifest}" "${isf_dependency_version}"
     local -a core_release_names=()
-    mapfile -t core_release_names < <(_dip_list_manifest_release_names "kweaver-core" "${core_dependency_manifest}" "${core_dependency_version}")
+    kweaver_mapfile_compat core_release_names _dip_list_manifest_release_names "kweaver-core" "${core_dependency_manifest}" "${core_dependency_version}"
 
     for release_name in "${isf_release_names[@]}"; do
         if _dip_helm_release_exists "${release_name}" "${namespace}"; then
@@ -271,7 +271,7 @@ _dip_release_names() {
     _dip_require_version_manifest || return 1
 
     local -a manifest_release_names=()
-    mapfile -t manifest_release_names < <(get_release_manifest_release_names "${DIP_VERSION_MANIFEST_FILE}" "kweaver-dip" "${HELM_CHART_VERSION:-}")
+    kweaver_mapfile_compat manifest_release_names get_release_manifest_release_names "${DIP_VERSION_MANIFEST_FILE}" "kweaver-dip" "${HELM_CHART_VERSION:-}"
 
     local stage
     local release_name
@@ -288,7 +288,7 @@ _dip_release_names() {
 
 _dip_release_names_reverse() {
     local -a ordered_release_names=()
-    mapfile -t ordered_release_names < <(_dip_release_names)
+    kweaver_mapfile_compat ordered_release_names _dip_release_names
 
     local i
     for ((i=${#ordered_release_names[@]}-1; i>=0; i--)); do

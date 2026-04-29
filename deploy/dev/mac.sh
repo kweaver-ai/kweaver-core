@@ -5,9 +5,9 @@
 #   1. doctor                 — optional; check docker / kind / kubectl / helm / node
 #   2. doctor --fix           — optional; install missing CLIs via Homebrew (prompts; -y skips)
 #   3. cluster up             — kind + ingress-nginx; context becomes kind-<KIND_CLUSTER_NAME>
-#   4. kweaver-core download  — optional; cache charts locally (no cluster install)
-#   5. kweaver-core install --minimum — Helm install Core (prefix -y to skip deploy.sh prompts)
-#   6. isf / etrino (vega)  — optional; same Helm path as Linux when cluster + config are ready
+#   4. kweaver-core download  — optional; cache charts locally (mac.sh defaults --minimum unless --full)
+#   5. kweaver-core install   — Helm install Core (mac.sh adds --minimum unless you pass --full)
+#   6. isf / etrino (vega)    — optional; same Helm path as Linux when cluster + config are ready
 #   7. onboard                — optional; needs kweaver CLI + Core up (add -y for non-interactive)
 #   Teardown: cluster down
 #   Full write-up: deploy/dev/README.md
@@ -18,7 +18,8 @@
 #   bash deploy/dev/mac.sh cluster up
 #   bash deploy/dev/mac.sh cluster down
 #   bash deploy/dev/mac.sh cluster status
-#   bash deploy/dev/mac.sh kweaver-core install --minimum
+#   bash deploy/dev/mac.sh kweaver-core install
+#   bash deploy/dev/mac.sh kweaver-core download
 #   bash deploy/dev/mac.sh isf install
 #   bash deploy/dev/mac.sh etrino install   # Vega stack (alias: vega)
 #   bash deploy/dev/mac.sh onboard
@@ -44,11 +45,11 @@ usage() {
     cat <<'EOF'
 KWeaver mac dev (kind) — thin wrapper around deploy/onboard.
 
-Typical order (shortest path: doctor? → cluster up → kweaver-core install --minimum):
+Typical order (shortest path: doctor? → cluster up → kweaver-core install):
   1) doctor                     optional toolchain check
   2) cluster up                 kind + ingress; kubectl context kind-<name>
-  3) kweaver-core download      optional; charts cache only (no install)
-  4) kweaver-core install ...   Helm install (often --minimum)
+  3) kweaver-core download      optional; charts cache only (minimum profile by default)
+  4) kweaver-core install ...   Helm install (--minimum implied by mac.sh; use --full to opt out)
   5) isf / etrino|vega          optional; deploy.sh modules (cluster + config must be ready)
   6) onboard                    optional; after Core is up
   cluster down                  delete kind cluster
@@ -68,7 +69,8 @@ Examples:
   bash deploy/dev/mac.sh -y doctor --fix           # no prompt (same as deploy.sh global -y)
   bash deploy/dev/mac.sh doctor --fix -y
   bash deploy/dev/mac.sh cluster up
-  bash deploy/dev/mac.sh kweaver-core install --minimum
+  bash deploy/dev/mac.sh kweaver-core install --full   # full manifest / ISF when manifest says so
+  bash deploy/dev/mac.sh kweaver-core install
   bash deploy/dev/mac.sh kweaver-core download
   bash deploy/dev/mac.sh isf install
   bash deploy/dev/mac.sh vega status
@@ -81,6 +83,8 @@ Environment:
   CONFIG_YAML_PATH        Default: deploy/dev/conf/mac-config.yaml when unset (kweaver-core|core|isf|etrino|vega)
 
 Note: Commands that delegate to deploy.sh run Helm chart logic only on mac (no host k3s / bundled data-service bootstrap). See deploy/dev/README.md.
+
+Mac default: **kweaver-core** / **core** add **--minimum** unless you pass **--minimum** / **--min** already or opt out with **--full**.
 
 EOF
 }
@@ -158,6 +162,11 @@ main() {
                 if mac_doctor; then
                     exit 0
                 fi
+                if [[ "${MAC_DOCTOR_DOCKER_DAEMON_DOWN:-0}" == "1" && "${MAC_DOCTOR_BREW_FIX_USEFUL:-0}" != "1" ]]; then
+                    mac_log_error "Docker engine is not running. Open Docker Desktop, wait until it is ready, then run doctor again."
+                    mac_log_error "doctor --fix only installs CLIs via Homebrew; it does not start Docker."
+                    exit 1
+                fi
                 mac_log_info "---"
                 if ! mac_doctor_confirm_fix; then
                     exit 1
@@ -180,7 +189,7 @@ main() {
             source "${SELF_DIR}/lib/mac_cluster.sh"
             mac_cluster_dispatch "$@"
             ;;
-        kweaver-core | core | isf)
+        kweaver-core | core)
             mac_require_darwin
             if ! mac_doctor; then
                 exit 1
@@ -192,7 +201,61 @@ main() {
                 export CONFIG_YAML_PATH="${MAC_DEV_ROOT}/conf/mac-config.yaml"
             fi
             export KWEAVER_SKIP_PLATFORM_BOOTSTRAP="${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-true}"
-            exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" "${cmd}" "$@"
+            # Default --minimum for Mac dev (skips ISF chart download/install when manifest ties ISF to auth).
+            # IMPORTANT: deploy.sh parses argv as  module  action  [flags...]  — never put --minimum before
+            # the action (e.g. download|install), or action becomes --minimum and flags are never parsed.
+            local -a _kw_pos=()
+            local _a _kw_saw_min=false _kw_saw_full=false
+            for _a in "$@"; do
+                case "${_a}" in
+                    --minimum | --min)
+                        _kw_saw_min=true
+                        _kw_pos+=("${_a}")
+                        ;;
+                    --full)
+                        _kw_saw_full=true
+                        ;;
+                    *)
+                        _kw_pos+=("${_a}")
+                        ;;
+                esac
+            done
+            local -a _kw_final=()
+            if [[ "${_kw_saw_full}" != "true" ]] && [[ "${_kw_saw_min}" != "true" ]]; then
+                if [[ ${#_kw_pos[@]} -eq 0 ]]; then
+                    mac_log_error "kweaver-core|core needs an action (e.g. download, install, status)."
+                    exit 1
+                fi
+                # Insert --minimum after deploy action (index 0), bash 3.2–safe (no ${arr[@]:1}).
+                _kw_final=("${_kw_pos[0]}" --minimum)
+                local _kw_i
+                for ((_kw_i = 1; _kw_i < ${#_kw_pos[@]}; _kw_i++)); do
+                    _kw_final+=("${_kw_pos[_kw_i]}")
+                done
+            else
+                _kw_final=("${_kw_pos[@]}")
+            fi
+            if [[ ${#global_flags[@]} -gt 0 ]]; then
+                exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" "${cmd}" "${_kw_final[@]}"
+            fi
+            exec bash "${DEPLOY_ROOT}/deploy.sh" "${cmd}" "${_kw_final[@]}"
+            ;;
+        isf)
+            mac_require_darwin
+            if ! mac_doctor; then
+                exit 1
+            fi
+            if ! mac_kube_context_guard; then
+                exit 1
+            fi
+            if [[ -z "${CONFIG_YAML_PATH:-}" ]]; then
+                export CONFIG_YAML_PATH="${MAC_DEV_ROOT}/conf/mac-config.yaml"
+            fi
+            export KWEAVER_SKIP_PLATFORM_BOOTSTRAP="${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-true}"
+            if [[ ${#global_flags[@]} -gt 0 ]]; then
+                exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" isf "$@"
+            fi
+            exec bash "${DEPLOY_ROOT}/deploy.sh" isf "$@"
             ;;
         etrino | vega)
             mac_require_darwin
@@ -206,7 +269,10 @@ main() {
                 export CONFIG_YAML_PATH="${MAC_DEV_ROOT}/conf/mac-config.yaml"
             fi
             export KWEAVER_SKIP_PLATFORM_BOOTSTRAP="${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-true}"
-            exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" etrino "$@"
+            if [[ ${#global_flags[@]} -gt 0 ]]; then
+                exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" etrino "$@"
+            fi
+            exec bash "${DEPLOY_ROOT}/deploy.sh" etrino "$@"
             ;;
         onboard)
             mac_require_darwin

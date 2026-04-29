@@ -1,7 +1,8 @@
 # Minimal values for deploy/dev/mac.sh + kind.
 # - Apple Silicon: kind nodes are linux/arm64; image.registry/tags must be arm64 or multi-arch.
 # - Matches kweaver-core default namespace (kweaver-ai).
-# - accessAddress targets NodePort/ingress on localhost (kind extraPortMappings).
+# - accessAddress: http://<auto IP>:80 — omit host below so install uses LAN IP detection on macOS/Linux;
+#   same-machine use still works; HTTPS adds TLS (certs); local dev often stays on HTTP to avoid warnings.
 # - depServices.rds.source_type=external skips host-side SQL init (see install_core / init_core_databases).
 
 namespace: kweaver-ai
@@ -13,7 +14,7 @@ env:
 image:
   registry: swr.cn-east-3.myhuaweicloud.com/kweaver-ai
 accessAddress:
-  host: localhost
+  host: 192.168.2.213
   port: 80
   scheme: http
   path: /

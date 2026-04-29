@@ -162,16 +162,42 @@ mac_doctor_apply_fixes() {
 # On failure, prints MAC_DOCTOR_FIX_CMD hint when set (e.g. by mac.sh).
 mac_doctor() {
     local fail=0
+    local brew_fix_useful=0
+    local docker_daemon_down=0
     local c
     local hint
+
+    export MAC_DOCTOR_DOCKER_DAEMON_DOWN=0
+    export MAC_DOCTOR_BREW_FIX_USEFUL=0
 
     mac_doctor_theme
     mac_log_info "Checking local toolchain (kind dev cluster on Mac)..."
 
     for c in docker kind kubectl helm; do
+        if [[ "${c}" == "docker" ]]; then
+            if ! mac_check_cmd docker; then
+                brew_fix_useful=1
+                hint="$(mac_doctor_hint_for_tool docker)"
+                printf '%b[FAIL]%b docker (CLI missing)\n' "${MAC_D_BAD}" "${MAC_D_RESET}"
+                printf '  %bto fix:%b %b%s%b\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${hint}" "${MAC_D_RESET}"
+                fail=1
+            elif ! docker info >/dev/null 2>&1; then
+                docker_daemon_down=1
+                printf '%b[FAIL]%b docker (CLI ok, engine not reachable — kind needs a running daemon)\n' "${MAC_D_BAD}" "${MAC_D_RESET}"
+                printf '  %bto fix:%b Open %bDocker Desktop%b, wait until it is running (whale icon), then run: %bdocker info%b\n' \
+                    "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}"
+                printf '  %bNote:%b %bdoctor --fix%b cannot start the Docker engine (Homebrew only installs the %bdocker%b CLI/cask).\n' \
+                    "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}"
+                fail=1
+            else
+                printf '%b[OK]%b docker\n' "${MAC_D_OK}" "${MAC_D_RESET}"
+            fi
+            continue
+        fi
         if mac_check_cmd "${c}"; then
             printf '%b[OK]%b %s\n' "${MAC_D_OK}" "${MAC_D_RESET}" "${c}"
         else
+            brew_fix_useful=1
             hint="$(mac_doctor_hint_for_tool "${c}")"
             printf '%b[FAIL]%b %s\n' "${MAC_D_BAD}" "${MAC_D_RESET}" "${c}"
             printf '  %bto fix:%b %b%s%b\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${hint}" "${MAC_D_RESET}"
@@ -182,29 +208,37 @@ mac_doctor() {
     if mac_doctor_node_ok; then
         printf '%b[OK]%b node %s\n' "${MAC_D_OK}" "${MAC_D_RESET}" "$(node -v 2>/dev/null || true)"
     elif command -v node >/dev/null 2>&1; then
+        brew_fix_useful=1
         hint="$(mac_doctor_hint_for_tool node)"
         printf '%b[WARNING]%b node (need major >= 22, found %s)\n' "${MAC_D_WARN}" "${MAC_D_RESET}" "$(node -v 2>/dev/null || true)"
         printf '  %bto fix:%b %b%s%b\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${hint}" "${MAC_D_RESET}"
         fail=1
     else
+        brew_fix_useful=1
         hint="$(mac_doctor_hint_for_tool node)"
         printf '%b[FAIL]%b node\n' "${MAC_D_BAD}" "${MAC_D_RESET}"
         printf '  %bto fix:%b %b%s%b\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${hint}" "${MAC_D_RESET}"
         fail=1
     fi
 
+    export MAC_DOCTOR_DOCKER_DAEMON_DOWN="${docker_daemon_down}"
+    export MAC_DOCTOR_BREW_FIX_USEFUL="${brew_fix_useful}"
+
     if [[ "${fail}" -ne 0 ]]; then
         printf '\n' >&2
         printf '%b[FAIL]%b doctor: toolchain not ready.\n' "${MAC_D_BAD}" "${MAC_D_RESET}" >&2
         printf '        %bNote:%b execute each %bto fix:%b command listed above.\n' \
             "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" >&2
-        if [[ -n "${MAC_DOCTOR_FIX_CMD:-}" ]]; then
+        if [[ "${brew_fix_useful}" == "1" ]] && [[ -n "${MAC_DOCTOR_FIX_CMD:-}" ]]; then
             printf '  %bOr run:%b %s\n' "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_DOCTOR_FIX_CMD}" >&2
             if [[ -n "${MAC_DOCTOR_FIX_CMD_AUTO:-}" ]]; then
                 printf '           %b(no prompt:%b %s)\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_DOCTOR_FIX_CMD_AUTO}" >&2
             fi
-        else
+        elif [[ "${brew_fix_useful}" == "1" ]] && [[ -z "${MAC_DOCTOR_FIX_CMD:-}" ]]; then
             printf '  %bOr run:%b %bdoctor --fix%b (Homebrew installs what is missing).\n' "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" >&2
+        elif [[ "${docker_daemon_down}" == "1" ]]; then
+            printf '  %bThen:%b run %bdoctor%b again (no need for %b--fix%b if nothing else is missing).\n' \
+                "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}" >&2
         fi
         return 1
     fi
@@ -213,7 +247,7 @@ mac_doctor() {
         printf '\n'
         printf '  %bNext:%b run from your %bdeploy/%b directory:\n' "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}"
         printf '    bash ./dev/mac.sh cluster up\n'
-        printf '    bash ./dev/mac.sh kweaver-core install --minimum\n'
+        printf '    bash ./dev/mac.sh kweaver-core install\n'
         printf '  %bOptional:%b bash ./dev/mac.sh onboard -y\n' "${MAC_D_DIM}" "${MAC_D_RESET}"
         printf '  %bGuide:%b deploy/dev/README.md\n' "${MAC_D_DIM}" "${MAC_D_RESET}"
     fi

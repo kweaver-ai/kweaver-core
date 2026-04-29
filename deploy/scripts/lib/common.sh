@@ -250,17 +250,33 @@ download_chart_to_cache() {
         --destination "${charts_dir}"
 }
 
+# Bash 3.2–safe substitute for mapfile -t arr < <(cmd) (mapfile needs bash 4+).
+# Usage: kweaver_mapfile_compat <array_name> <command> [args...]
+# Runs <command args...> and stores non-empty lines into the named array.
+kweaver_mapfile_compat() {
+    local _dst="$1"
+    shift
+    local _lines=()
+    local _l
+    while IFS= read -r _l || [[ -n "${_l}" ]]; do
+        [[ -n "${_l}" ]] && _lines+=("${_l}")
+    done < <("$@")
+    eval "${_dst}=(\"\${_lines[@]}\")"
+}
+
 # Ensure a Helm repo is registered and refreshed.
 # Args: <repo_name> <repo_url>
 ensure_helm_repo() {
     local repo_name="$1"
     local repo_url="$2"
-    helm repo add --force-update "${repo_name}" "${repo_url}" || true
-    helm repo update "${repo_name}" || true
+    # Avoid helm repo add --force-update (not supported on some Helm 4 / builds). Idempotent refresh.
+    helm repo remove "${repo_name}" 2>/dev/null || true
+    helm repo add "${repo_name}" "${repo_url}" || return 1
+    helm repo update 2>/dev/null || true
 }
 
-# Ensure helm is available AND is Helm v3 before running chart download / install.
-# All deploy charts use v3-only flags (e.g. --timeout=600s, duration syntax).
+# Ensure helm is available AND is Helm v3+ before running chart download / install.
+# All deploy charts use v3+ style flags (e.g. --timeout=600s, duration syntax).
 # A pre-existing Helm v2 on the host will explode with confusing errors like
 #   invalid argument "600s" for "--timeout" flag: strconv.ParseInt: parsing "600s": invalid syntax
 # So we explicitly upgrade out-of-spec installs (v2 or missing) to ${HELM_VERSION}.
@@ -273,11 +289,11 @@ ensure_helm_available() {
             existing="$(helm version --short --client 2>/dev/null | awk -F': ' 'NR==1{print $2}' | awk '{print $1}' | cut -d'+' -f1 || true)"
         fi
         case "${existing}" in
-            v3.*)
+            v3.*|v4.*)
                 return 0
                 ;;
             v2.*)
-                log_warn "Helm ${existing} detected; this deploy requires Helm v3 (charts use v3-only --timeout duration syntax). Re-installing ${HELM_VERSION}..."
+                log_warn "Helm ${existing} detected; this deploy requires Helm v3+ (charts use --timeout duration syntax). Re-installing ${HELM_VERSION}..."
                 install_helm
                 return $?
                 ;;

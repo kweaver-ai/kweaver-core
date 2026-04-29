@@ -237,7 +237,7 @@ install_isf() {
     # Install each release
     local install_failed=0
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     local release_version
     local chart_name
@@ -374,7 +374,7 @@ download_isf() {
     ensure_helm_repo "${HELM_CHART_REPO_NAME}" "${HELM_CHART_REPO_URL}"
 
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     local release_version
     local chart_name
@@ -396,7 +396,7 @@ uninstall_isf() {
     
     # Uninstall in reverse order
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     for ((i=${#release_names[@]}-1; i>=0; i--)); do
         local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
@@ -424,7 +424,7 @@ show_isf_status() {
     
     # Check each release
     local -a release_names=()
-    mapfile -t release_names < <(_isf_release_names)
+    kweaver_mapfile_compat release_names _isf_release_names
     local release_name
     for release_name in "${release_names[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then

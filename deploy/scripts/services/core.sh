@@ -228,7 +228,7 @@ init_core_databases() {
     fi
 
     local -a sql_modules=()
-    mapfile -t sql_modules < <(list_versioned_sql_modules "kweaver-core" "${HELM_CHART_VERSION:-}")
+    kweaver_mapfile_compat sql_modules list_versioned_sql_modules "kweaver-core" "${HELM_CHART_VERSION:-}"
     if [[ ${#sql_modules[@]} -eq 0 ]]; then
         log_info "Skipping KWeaver Core database initialization: no SQL module directories found in ${sql_base_dir}"
         return 0
@@ -268,25 +268,29 @@ download_core() {
     fi
 
     if [[ -n "${isf_dep_version}" ]]; then
-        log_info "ISF dependency found in manifest (version: ${isf_dep_version}), downloading ISF charts"
-        local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
-        local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
-        local original_chart_version="${HELM_CHART_VERSION:-}"
-        ISF_LOCAL_CHARTS_DIR="${charts_dir}"
-        HELM_CHART_VERSION="${isf_dep_version}"
-        ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
+        if is_dependency_enabled "${CORE_VERSION_MANIFEST_FILE}" "isf" "${CORE_SET_VALUES[@]}"; then
+            log_info "ISF dependency found in manifest (version: ${isf_dep_version}), downloading ISF charts"
+            local original_isf_charts_dir="${ISF_LOCAL_CHARTS_DIR:-}"
+            local original_isf_manifest_file="${ISF_VERSION_MANIFEST_FILE:-}"
+            local original_chart_version="${HELM_CHART_VERSION:-}"
+            ISF_LOCAL_CHARTS_DIR="${charts_dir}"
+            HELM_CHART_VERSION="${isf_dep_version}"
+            ISF_VERSION_MANIFEST_FILE="${isf_dep_manifest}"
 
-        download_isf
+            download_isf
 
-        ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
-        ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
-        HELM_CHART_VERSION="${original_chart_version}"
+            ISF_LOCAL_CHARTS_DIR="${original_isf_charts_dir}"
+            ISF_VERSION_MANIFEST_FILE="${original_isf_manifest_file}"
+            HELM_CHART_VERSION="${original_chart_version}"
+        else
+            log_info "ISF in manifest but disabled for this profile (e.g. --minimum); skipping ISF chart download"
+        fi
     else
         log_info "No ISF dependency declared in manifest, skipping ISF download"
     fi
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     local release_name
     local release_version
     local chart_name
@@ -513,7 +517,7 @@ install_core() {
     fi
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     local release_version
     for release_name in "${release_names[@]}"; do
         release_version="$(_core_resolve_release_version "${release_name}")"
@@ -558,7 +562,7 @@ uninstall_core() {
     namespace="${namespace:-${CORE_NAMESPACE}}"
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     for ((i=${#release_names[@]}-1; i>=0; i--)); do
         local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
@@ -590,7 +594,7 @@ show_core_status() {
     log_info ""
 
     local -a release_names=()
-    mapfile -t release_names < <(_core_release_names)
+    kweaver_mapfile_compat release_names _core_release_names
     for release_name in "${release_names[@]}"; do
         if helm status "${release_name}" -n "${namespace}" >/dev/null 2>&1; then
             local status

@@ -170,6 +170,28 @@ usage() {
 
 _detect_node_ip() {
     local node_ip
+    local os
+    os="$(uname -s 2>/dev/null || true)"
+    # macOS (kind / Docker Desktop): no hostname -I / ip addr; use default route interface.
+    if [[ "${os}" == "Darwin" ]]; then
+        local iface
+        iface="$(route -n get default 2>/dev/null | awk '/interface:/{print $2}' | head -1)"
+        if [[ -n "${iface}" ]]; then
+            node_ip="$(ipconfig getifaddr "${iface}" 2>/dev/null || true)"
+        fi
+        if [[ -z "${node_ip}" ]]; then
+            for iface in en0 en1; do
+                node_ip="$(ipconfig getifaddr "${iface}" 2>/dev/null || true)"
+                [[ -n "${node_ip}" ]] && break
+            done
+        fi
+        if [[ -z "${node_ip}" ]]; then
+            node_ip="127.0.0.1"
+        fi
+        echo "${node_ip}"
+        return 0
+    fi
+
     node_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | head -1 | tr -d '\n' || true)"
     if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
         node_ip="$(ip addr show 2>/dev/null | grep -oE 'inet [0-9]+(\.[0-9]+){3}' | awk '{print $2}' | grep -v '^127\.' | head -1 || true)"
