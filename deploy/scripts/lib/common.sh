@@ -46,11 +46,16 @@ kweaver_normalize_kube_distro() {
 KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k3s}")"
 export KUBE_DISTRO
 
-# Generate a random password
+# Generate a random password (alphanumeric). Uses openssl when available; avoids macOS/BSD
+# tr + urandom locale issues ("Illegal byte sequence") via LC_ALL=C.
 generate_random_password() {
     local length="${1:-16}"
-    # Use tr to get only alphanumeric characters and some safe special characters
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
+    local nbytes=$(( (length + 1) / 2 ))
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex "${nbytes}" 2>/dev/null | LC_ALL=C head -c "${length}"
+        return 0
+    fi
+    LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom 2>/dev/null | LC_ALL=C head -c "${length}"
 }
 
 # Check if component is already installed in Helm
@@ -1409,10 +1414,10 @@ get_dip_studio_openclaw_field() {
 
 random_password() {
     if command -v openssl >/dev/null 2>&1; then
-        openssl rand -base64 18 | tr -d '\n'
+        openssl rand -base64 18 2>/dev/null | LC_ALL=C tr -d '\n'
         return 0
     fi
-    head -c 32 /dev/urandom | base64 | tr -d '\n' | head -c 24
+    LC_ALL=C head -c 32 /dev/urandom 2>/dev/null | base64 | LC_ALL=C tr -d '\n' | LC_ALL=C head -c 24
 }
 
 # Quote a string for YAML single-quoted scalars.

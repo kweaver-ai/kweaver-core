@@ -10,12 +10,17 @@ install_kafka() {
     fi
 
     # Kafka password handling
-    local existing_pass=$(get_existing_password "kafka.password")
+    local existing_pass
+    existing_pass="$(get_existing_password "kafka.password")"
     if [[ -n "${existing_pass}" ]]; then
         KAFKA_CLIENT_PASSWORD="${existing_pass}"
         log_info "Using existing Kafka password from config.yaml"
     else
-        KAFKA_CLIENT_PASSWORD=$(generate_random_password 10)
+        KAFKA_CLIENT_PASSWORD="$(generate_random_password 10)"
+        if [[ -z "${KAFKA_CLIENT_PASSWORD}" ]]; then
+            log_error "Failed to generate Kafka password (install openssl or set kafka.password in config)."
+            return 1
+        fi
         log_info "Generated random 10-character Kafka password"
     fi
 

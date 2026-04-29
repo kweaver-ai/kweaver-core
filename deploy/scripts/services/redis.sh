@@ -48,6 +48,10 @@ install_redis_sentinel_local() {
     if [[ -z "${redis_password}" ]]; then
         redis_password="$(generate_random_password 10)"
     fi
+    if [[ -z "${redis_password}" ]]; then
+        log_error "Failed to generate Redis password (install openssl or set REDIS_PASSWORD)."
+        return 1
+    fi
     REDIS_PASSWORD="${redis_password}"
 
     local redis_sc
