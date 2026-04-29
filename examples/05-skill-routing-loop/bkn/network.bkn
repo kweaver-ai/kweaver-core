@@ -1,12 +1,12 @@
 ---
 type: knowledge_network
-id: ex04_skill_routing
-name: Example 04 - Skill Routing
+id: ex05_skill_routing
+name: Example 05 - Skill Routing
 tags: [example, skill-routing]
 business_domain: bd_public
 ---
 
-# Example 04 - Skill Routing
+# Example 05 - Skill Routing
 
 KN-driven Skill governance: Material → applicable_skill → Skills, plus
 Material → supplied_by → Supplier as DA reasoning evidence.

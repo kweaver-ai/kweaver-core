@@ -2,7 +2,7 @@
 type: object_type
 id: supplier
 name: Supplier
-tags: [example-04]
+tags: [example-05]
 ---
 
 ## ObjectType: Supplier

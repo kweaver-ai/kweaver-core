@@ -2,7 +2,7 @@
 type: relation_type
 id: applicable_skill
 name: Applicable skill
-tags: [example-04]
+tags: [example-05]
 ---
 
 ## RelationType: Applicable skill

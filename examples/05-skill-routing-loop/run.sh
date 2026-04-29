@@ -367,7 +367,7 @@ if [ "$BONUS" = "1" ]; then
         -d '{"sku":"MAT-002","bound_skill_id":"standard_replenish"}' | python3 -m json.tool
 
     echo ""
-    echo "[KN] rebuild to re-materialize applicable_skill edges"
+    echo "[KN] rebuild to refresh Vega's batch-mode resource snapshot"
     kweaver bkn build "$KN_ID" --wait --timeout 60 2>&1 | tail -2
 
     echo ""

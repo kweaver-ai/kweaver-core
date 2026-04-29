@@ -66,15 +66,20 @@ Run `./run.sh --bonus`. The script POSTs to the mock business backend's admin
 endpoint to re-bind MAT-002 from `supplier_expedite` to `standard_replenish`
 (updates `materials.bound_skill_id` in MySQL, which drives the
 `applicable_skill` direct-mapping FK), then triggers `kweaver bkn build` to
-re-materialize the relation edges, then re-asks the Agent about MAT-002.
-The Decision Agent's next `find_skills` call returns the new candidate set
-and it switches to `standard_replenish` — without any prompt edit or redeploy.
+refresh the underlying Vega resource snapshot, then re-asks the Agent about
+MAT-002. The Decision Agent's next `find_skills` call returns the new
+candidate set and it switches to `standard_replenish` — without any prompt
+edit or redeploy.
 
-> **Why the rebuild:** `applicable_skill` is a relation; its edges are
-> materialized into the BKN graph at build time, not live-mapped. ObjectType
-> data properties (e.g. `supplier.capability`) are read live from MySQL via
-> Vega, but relation edges need a build to refresh. The rebuild step makes
-> the loop explicit — business change → KN sync → AI sees new state.
+> **Why the rebuild — and why it's not a platform requirement:** This example
+> uses Vega's **batch-mode** dataview, which serves graph queries from a
+> snapshot taken at build time. Direct-mapping relations like
+> `applicable_skill` are computed live at query time, but the underlying data
+> is the snapshot — so MySQL UPDATEs only surface after the next build. Vega
+> also supports a **streaming-mode** resource (Debezium CDC over Kafka) where
+> updates propagate in seconds with no manual rebuild; that's the production
+> path. We use batch here so the demo runs with just one MySQL — no Kafka,
+> no Debezium, no extra infra.
 
 ## How it works (deeper read)
 

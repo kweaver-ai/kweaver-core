@@ -61,15 +61,17 @@ pip install -r tool_backend/requirements.txt
 `./run.sh --bonus` 会调 mock 业务系统的 admin 端点，把 MAT-002 的绑定 Skill
 从 `supplier_expedite` 改成 `standard_replenish`（直接 UPDATE
 `materials.bound_skill_id`，由 `applicable_skill` 的 direct-mapping FK 决定边），
-然后触发一次 `kweaver bkn build` 重新物化 `applicable_skill` 边，再让 Agent
-重新处理 MAT-002。Decision Agent 下一次 `find_skills` 拿到的就是新候选集，
+然后触发一次 `kweaver bkn build` 刷新底层 Vega 资源快照，再让 Agent 重新处理
+MAT-002。Decision Agent 下一次 `find_skills` 拿到的就是新候选集，
 自动切到 `standard_replenish`——**没改 prompt、没重新部署任何服务**。
 
-> **为什么需要重建：** `applicable_skill` 是关系（relation），它的边在
-> KN build 时物化进图，不是 live-mapped。ObjectType 的 data property
-> （比如 `supplier.capability`）是 Vega 直接 live-read MySQL 的，但
-> 关系边需要重新 build 才会刷新。把重建作为显式步骤写进脚本，
-> 让"业务变更 → KN 同步 → AI 跟随"的反馈环对学习者完整可见。
+> **为什么需要重建——以及为什么这不是平台限制：** 这个 example 用的是 Vega 的
+> **batch 模式** dataview，图查询读的是 build 时拍下的资源快照。像
+> `applicable_skill` 这样的 direct-mapping 关系在每次查询时实时计算——但底下
+> 的数据是快照，MySQL UPDATE 要到下一次 build 才会反映出来。Vega 也支持
+> **streaming 模式** 资源（基于 Debezium CDC + Kafka），业务变更秒级生效、
+> 无需手工 rebuild——那才是生产路径。这里用 batch 是为了让 demo 只靠一个
+> MySQL 跑通，不引 Kafka / Debezium / 额外基础设施依赖。
 
 ## 原理细节
 

@@ -2,7 +2,7 @@
 type: object_type
 id: skills
 name: Skills
-tags: [example-04, skills]
+tags: [example-05, skills]
 ---
 
 ## ObjectType: Skills
