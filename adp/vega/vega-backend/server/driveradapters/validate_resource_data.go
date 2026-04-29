@@ -211,6 +211,24 @@ func isAggregateQuery(params *interfaces.ResourceDataQueryParams) bool {
 	return params.Aggregation != nil || len(params.GroupBy) > 0 || params.Having != nil
 }
 
+// validateCalendarInterval 校验 calendar_interval 是否为有效的枚举值
+// 允许的值包括：minute, hour, day, week, month, quarter, year
+func validateCalendarInterval(ctx context.Context, calendarInterval string) error {
+	switch calendarInterval {
+	case interfaces.CALENDAR_UNIT_MINUTE,
+		interfaces.CALENDAR_UNIT_HOUR,
+		interfaces.CALENDAR_UNIT_DAY,
+		interfaces.CALENDAR_UNIT_WEEK,
+		interfaces.CALENDAR_UNIT_MONTH,
+		interfaces.CALENDAR_UNIT_QUARTER,
+		interfaces.CALENDAR_UNIT_YEAR:
+		return nil
+	default:
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_CalendarInterval).
+			WithErrorDetails(fmt.Sprintf("Invalid calendar_interval value: %s, must be one of: minute, hour, day, week, month, quarter, year", calendarInterval))
+	}
+}
+
 // validateAggregateParams 校验聚合查询参数
 func validateAggregateParams(ctx context.Context, params *interfaces.ResourceDataQueryParams) error {
 	// 校验aggregation
@@ -235,6 +253,13 @@ func validateAggregateParams(ctx context.Context, params *interfaces.ResourceDat
 		if groupByItem.Property == "" {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_GroupBy).
 				WithErrorDetails("GroupBy property cannot be empty")
+		}
+		// 校验calendar_interval
+		if groupByItem.CalendarInterval != "" {
+			err := validateCalendarInterval(ctx, groupByItem.CalendarInterval)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

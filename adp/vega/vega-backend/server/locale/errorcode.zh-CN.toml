@@ -63,6 +63,11 @@ Description = "无效的Having参数"
 Solution = "请检查Having参数"
 ErrorLink = "暂无"
 
+[VegaBackend.InvalidParameter.CalendarInterval]
+Description = "无效的日历间隔参数"
+Solution = "日历间隔必须是 minute, hour, day, week, month, quarter, year 之一"
+ErrorLink = "暂无"
+
 [VegaBackend.InvalidParameter.Direction]
 Description = "无效的排序方向参数"
 Solution = "请检查参数"
