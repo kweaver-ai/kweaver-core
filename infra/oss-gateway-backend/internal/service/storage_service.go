@@ -71,7 +71,7 @@ type CreateStorageRequest struct {
 	BucketName       string `json:"bucket_name" binding:"required"`
 	AccessKeyID      string `json:"access_key_id" binding:"required"`
 	AccessKeySecret  string `json:"access_key_secret" binding:"required"`
-	Region           string `json:"region"` // OSS和OBS必填，ECEPH非必填
+	Region           string `json:"region"` // OSS、OBS、TOS必填，ECEPH非必填
 	IsDefault        bool   `json:"is_default"`
 	InternalEndpoint string `json:"internal_endpoint"`
 	SiteID           string `json:"site_id"` // 站点ID，用于校验 bucket_name + siteId 唯一性
@@ -123,8 +123,8 @@ func (s *storageService) Create(ctx context.Context, req *CreateStorageRequest) 
 		}
 	}
 
-	// Region 校验：OSS和OBS必填，ECEPH非必填
-	if (req.VendorType == "OSS" || req.VendorType == "OBS") && req.Region == "" {
+	// Region 校验：OSS、OBS、TOS必填，ECEPH非必填
+	if (req.VendorType == "OSS" || req.VendorType == "OBS" || req.VendorType == "TOS") && req.Region == "" {
 		return "", fmt.Errorf("region is required for vendor type %s", req.VendorType)
 	}
 
@@ -488,7 +488,7 @@ func (s *storageService) toResponse(storage *model.StorageConfig) *StorageRespon
 
 func (s *storageService) isValidVendorType(vendorType string) bool {
 	switch vendorType {
-	case "OSS", "OBS", "ECEPH":
+	case "OSS", "OBS", "ECEPH", "TOS":
 		return true
 	default:
 		return false

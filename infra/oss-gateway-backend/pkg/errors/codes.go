@@ -125,7 +125,7 @@ var (
 		Code:        "400031110",
 		Message:     "Invalid vendor type",
 		Description: "Invalid vendor type: %s",
-		Solution:    "Supported vendor types: OSS, OBS, ECEPH",
+		Solution:    "Supported vendor types: OSS, OBS, ECEPH, TOS",
 	}
 
 	// InvalidEndpoint 400031111 - 无效的端点
