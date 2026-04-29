@@ -159,39 +159,34 @@ func (o *operatorIntegrationClient) CallMCPTool(ctx context.Context, req *interf
 }
 
 // SyncToolDependencyPackage 同步工具依赖包
-func (o *operatorIntegrationClient) SyncToolDependencyPackage(ctx context.Context, req *interfaces.SyncToolDependencyPackageRequest) (*interfaces.SyncToolDependencyPackageResponse, error) {
+func (o *operatorIntegrationClient) SyncToolDependencyPackage(ctx context.Context, req *interfaces.SyncToolDependencyPackageRequest) error {
 	url := fmt.Sprintf("%s%s", o.baseURL, syncToolDependencyPackageURI)
-	o.logger.WithContext(ctx).Debugf("[OperatorIntegration#SyncToolDependencyPackage] URL: %s, Mode: %s, PackageVersion: %s",
-		url, req.Mode, req.PackageVersion)
+	o.logger.WithContext(ctx).Debugf("[OperatorIntegration#SyncToolDependencyPackage] URL: %s, Mode: %s", url, req.Mode)
 
 	reqBody, contentType, err := buildToolDependencyMultipartRequest(req)
 	if err != nil {
 		o.logger.WithContext(ctx).Errorf("[OperatorIntegration#SyncToolDependencyPackage] Build multipart request failed, err: %v", err)
-		return nil, infraErr.DefaultHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("构建工具依赖导入请求失败: %v", err))
+		return infraErr.DefaultHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("构建工具依赖导入请求失败: %v", err))
 	}
 
 	headers := common.GetHeaderFromCtx(ctx)
 	headers["Content-Type"] = contentType
+	headers[string(interfaces.HeaderXBusinessDomain)] = interfaces.DefaultBusinessDomainID
+	if accountID, ok := headers[string(interfaces.HeaderXAccountID)]; !ok || accountID == "" {
+		headers[string(interfaces.HeaderXAccountID)] = interfaces.ADMIN_ACCOUNT_ID
+		headers[string(interfaces.HeaderXAccountType)] = interfaces.ADMIN_ACCOUNT_TYPE
+	}
 
 	respCode, respBody, err := o.httpClient.PostNoUnmarshal(ctx, url, headers, reqBody)
 	if err != nil {
 		o.logger.WithContext(ctx).Errorf("[OperatorIntegration#SyncToolDependencyPackage] Request failed, err: %v", err)
-		return nil, infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, fmt.Sprintf("工具依赖导入接口调用失败: %v", err))
+		return infraErr.DefaultHTTPError(ctx, http.StatusBadGateway, fmt.Sprintf("工具依赖导入接口调用失败: %v", err))
 	}
 	if respCode < http.StatusOK || respCode >= http.StatusMultipleChoices {
 		o.logger.WithContext(ctx).Errorf("[OperatorIntegration#SyncToolDependencyPackage] Request failed, status: %d, body: %s", respCode, string(respBody))
-		return nil, infraErr.DefaultHTTPError(ctx, respCode, fmt.Sprintf("工具依赖导入接口返回异常: %s", string(respBody)))
+		return infraErr.DefaultHTTPError(ctx, respCode, fmt.Sprintf("工具依赖导入接口返回异常: %s", string(respBody)))
 	}
-	if len(respBody) == 0 {
-		return &interfaces.SyncToolDependencyPackageResponse{}, nil
-	}
-
-	resp := &interfaces.SyncToolDependencyPackageResponse{}
-	if err = json.Unmarshal(respBody, resp); err != nil {
-		o.logger.WithContext(ctx).Errorf("[OperatorIntegration#SyncToolDependencyPackage] Unmarshal failed, body: %s, err: %v", string(respBody), err)
-		return nil, infraErr.DefaultHTTPError(ctx, http.StatusInternalServerError, fmt.Sprintf("解析工具依赖导入响应失败: %v", err))
-	}
-	return resp, nil
+	return nil
 }
 
 func buildToolDependencyMultipartRequest(req *interfaces.SyncToolDependencyPackageRequest) ([]byte, string, error) {
@@ -201,9 +196,6 @@ func buildToolDependencyMultipartRequest(req *interfaces.SyncToolDependencyPacka
 		if err := writer.WriteField("mode", req.Mode); err != nil {
 			return nil, "", err
 		}
-	}
-	if err := writer.WriteField("package_version", req.PackageVersion); err != nil {
-		return nil, "", err
 	}
 	part, err := writer.CreateFormFile("data", "execution_factory_tools.adp")
 	if err != nil {

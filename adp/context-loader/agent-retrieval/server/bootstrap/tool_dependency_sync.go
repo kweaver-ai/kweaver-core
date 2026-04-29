@@ -2,8 +2,7 @@ package bootstrap
 
 import (
 	"context"
-	"os"
-	"strings"
+	_ "embed"
 	"sync"
 	"time"
 
@@ -12,11 +11,16 @@ import (
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/interfaces"
 )
 
+type embeddedToolDependencyPackage struct {
+	name string
+	data []byte
+}
+
 type ToolDependencySync struct {
 	logger              interfaces.Logger
 	operatorIntegration interfaces.DrivenOperatorIntegration
 	config              config.ToolDependencySyncConfig
-	readFile            func(path string) ([]byte, error)
+	loadPackages        func() []embeddedToolDependencyPackage
 	wait                func(ctx context.Context, d time.Duration) bool
 }
 
@@ -25,10 +29,11 @@ var (
 	toolDependencySync     *ToolDependencySync
 )
 
-const (
-	toolDependencyPackagePath = "docs/release/tool-deps/execution_factory_tools.adp"
-	toolDependencyVersionPath = "VERSION"
-)
+//go:embed tool_dependencies/execution_factory_tools.adp
+var executionFactoryToolsData []byte
+
+//go:embed tool_dependencies/context_loader_toolset.adp
+var contextLoaderToolsetData []byte
 
 // NewToolDependencySync 创建 ToolDependencySync 实例
 // 该实例会自动启动工具依赖同步任务
@@ -39,7 +44,7 @@ func NewToolDependencySync() *ToolDependencySync {
 			logger:              cfg.GetLogger(),
 			operatorIntegration: drivenadapters.NewOperatorIntegrationClient(),
 			config:              cfg.ToolDependencySync,
-			readFile:            os.ReadFile,
+			loadPackages:        loadEmbeddedToolDependencyPackages,
 			wait:                waitWithContext,
 		}
 	})
@@ -54,11 +59,8 @@ func (s *ToolDependencySync) Start(ctx context.Context) {
 
 	delay := s.initialRetryDelay()
 	for {
-		resp, err := s.syncOnce(ctx)
+		err := s.syncOnce(ctx)
 		if err == nil {
-			if resp != nil {
-				s.logger.WithContext(ctx).Infof("[ToolDependencySync] sync completed, status: %s, message: %s", resp.Status, resp.Message)
-			}
 			return
 		}
 		s.logger.WithContext(ctx).Warnf("[ToolDependencySync] sync failed, retry after %s, err: %v", delay.String(), err)
@@ -69,22 +71,34 @@ func (s *ToolDependencySync) Start(ctx context.Context) {
 	}
 }
 
-func (s *ToolDependencySync) syncOnce(ctx context.Context) (*interfaces.SyncToolDependencyPackageResponse, error) {
-	packageData, err := s.readFile(toolDependencyPackagePath)
-	if err != nil {
-		return nil, err
-	}
-	versionData, err := s.readFile(toolDependencyVersionPath)
-	if err != nil {
-		return nil, err
-	}
+func (s *ToolDependencySync) syncOnce(ctx context.Context) error {
+	packages := s.loadPackages()
+	for _, pkg := range packages {
+		s.logger.WithContext(ctx).Infof("[ToolDependencySync] sync tool dependency package: %s", pkg.name)
 
-	req := &interfaces.SyncToolDependencyPackageRequest{
-		Mode:           "upsert",
-		PackageVersion: strings.TrimSpace(string(versionData)),
-		PackageData:    packageData,
+		req := &interfaces.SyncToolDependencyPackageRequest{
+			Mode:        "upsert",
+			PackageData: pkg.data,
+		}
+		if err := s.operatorIntegration.SyncToolDependencyPackage(ctx, req); err != nil {
+			return err
+		}
+		s.logger.WithContext(ctx).Infof("[ToolDependencySync] sync tool dependency package: %s completed", pkg.name)
 	}
-	return s.operatorIntegration.SyncToolDependencyPackage(ctx, req)
+	return nil
+}
+
+func loadEmbeddedToolDependencyPackages() []embeddedToolDependencyPackage {
+	return []embeddedToolDependencyPackage{
+		{
+			name: "tool_dependencies/execution_factory_tools.adp",
+			data: executionFactoryToolsData,
+		},
+		{
+			name: "tool_dependencies/context_loader_toolset.adp",
+			data: contextLoaderToolsetData,
+		},
+	}
 }
 
 func (s *ToolDependencySync) initialRetryDelay() time.Duration {

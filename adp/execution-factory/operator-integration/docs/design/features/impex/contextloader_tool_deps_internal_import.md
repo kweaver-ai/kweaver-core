@@ -76,7 +76,7 @@
 
 | 组件 | 职责 |
 |------|------|
-| Internal Impex Handler | 接收 `.adp` 文件并输出导入状态 |
+| Internal Impex Route | 提供内部 `.adp` 导入入口，底层复用公共导入逻辑 |
 | ComponentImpexManager | 复用现有 `impex` 解析与事务导入逻辑 |
 | Toolbox Query Service | 查询当前资源是否存在以及当前版本 |
 | Toolbox Import Service | 在需要更新时复用既有 toolbox/operator 依赖导入逻辑 |

@@ -315,7 +315,7 @@ func TestSyncToolDependencyPackage_Success(t *testing.T) {
 		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
 
 		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 		client := &operatorIntegrationClient{
 			logger:     mockLogger,
@@ -324,28 +324,56 @@ func TestSyncToolDependencyPackage_Success(t *testing.T) {
 		}
 
 		req := &interfaces.SyncToolDependencyPackageRequest{
-			Mode:           "upsert",
-			PackageVersion: "0.6.0",
-			PackageData:    []byte(`{"toolbox":{"configs":[]}}`),
+			Mode:        "upsert",
+			PackageData: []byte(`{"toolbox":{"configs":[]}}`),
 		}
 
 		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), "http://localhost:8080/api/agent-operator-integration/internal-v1/impex/intcomp/import/toolbox", gomock.Any(), gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ string, headers map[string]string, body interface{}) (int, []byte, error) {
 				convey.So(headers["Content-Type"], convey.ShouldStartWith, "multipart/form-data; boundary=")
+				convey.So(headers[string(interfaces.HeaderXAccountID)], convey.ShouldEqual, interfaces.ADMIN_ACCOUNT_ID)
+				convey.So(headers[string(interfaces.HeaderXAccountType)], convey.ShouldEqual, interfaces.ADMIN_ACCOUNT_TYPE)
+				convey.So(headers[string(interfaces.HeaderXBusinessDomain)], convey.ShouldEqual, interfaces.DefaultBusinessDomainID)
 				payload, ok := body.([]byte)
 				convey.So(ok, convey.ShouldBeTrue)
-				mode, packageVersion, fileContent := parseMultipartPayload(payload, headers["Content-Type"])
+				mode, fileContent := parseMultipartPayload(payload, headers["Content-Type"])
 				convey.So(mode, convey.ShouldEqual, "upsert")
-				convey.So(packageVersion, convey.ShouldEqual, "0.6.0")
 				convey.So(fileContent, convey.ShouldEqual, `{"toolbox":{"configs":[]}}`)
 				return 201, []byte(`{"status":"imported","type":"toolbox","resource_ids":["box_001"]}`), nil
 			})
 
-		resp, err := client.SyncToolDependencyPackage(context.Background(), req)
+		err := client.SyncToolDependencyPackage(context.Background(), req)
 		convey.So(err, convey.ShouldBeNil)
-		convey.So(resp, convey.ShouldNotBeNil)
-		convey.So(resp.Status, convey.ShouldEqual, "imported")
-		convey.So(resp.Type, convey.ShouldEqual, "toolbox")
+	})
+}
+
+func TestSyncToolDependencyPackage_EmptyResponse(t *testing.T) {
+	convey.Convey("TestSyncToolDependencyPackage_EmptyResponse", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockLogger := mocks.NewMockLogger(ctrl)
+		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
+
+		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+		client := &operatorIntegrationClient{
+			logger:     mockLogger,
+			baseURL:    "http://localhost:8080/api/agent-operator-integration",
+			httpClient: mockHTTPClient,
+		}
+
+		req := &interfaces.SyncToolDependencyPackageRequest{
+			Mode:        "upsert",
+			PackageData: []byte(`{"toolbox":{"configs":[]}}`),
+		}
+
+		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(201, nil, nil)
+
+		err := client.SyncToolDependencyPackage(context.Background(), req)
+		convey.So(err, convey.ShouldBeNil)
 	})
 }
 
@@ -358,7 +386,7 @@ func TestSyncToolDependencyPackage_HTTPError(t *testing.T) {
 		mockHTTPClient := mocks.NewMockHTTPClient(ctrl)
 
 		mockLogger.EXPECT().WithContext(gomock.Any()).Return(mockLogger).AnyTimes()
-		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
 
 		client := &operatorIntegrationClient{
@@ -368,15 +396,14 @@ func TestSyncToolDependencyPackage_HTTPError(t *testing.T) {
 		}
 
 		req := &interfaces.SyncToolDependencyPackageRequest{
-			Mode:           "upsert",
-			PackageVersion: "0.6.0",
-			PackageData:    []byte(`{"toolbox":{"configs":[]}}`),
+			Mode:        "upsert",
+			PackageData: []byte(`{"toolbox":{"configs":[]}}`),
 		}
 
 		mockHTTPClient.EXPECT().PostNoUnmarshal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(0, nil, errors.New("connection refused"))
 
-		_, err := client.SyncToolDependencyPackage(context.Background(), req)
+		err := client.SyncToolDependencyPackage(context.Background(), req)
 		convey.So(err, convey.ShouldNotBeNil)
 	})
 }
@@ -384,24 +411,22 @@ func TestSyncToolDependencyPackage_HTTPError(t *testing.T) {
 func TestBuildToolDependencyMultipartRequest(t *testing.T) {
 	convey.Convey("TestBuildToolDependencyMultipartRequest", t, func() {
 		body, contentType, err := buildToolDependencyMultipartRequest(&interfaces.SyncToolDependencyPackageRequest{
-			Mode:           "upsert",
-			PackageVersion: "0.6.0",
-			PackageData:    []byte("demo"),
+			Mode:        "upsert",
+			PackageData: []byte("demo"),
 		})
 
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(contentType, convey.ShouldStartWith, "multipart/form-data; boundary=")
-		mode, packageVersion, fileContent := parseMultipartPayload(body, contentType)
+		mode, fileContent := parseMultipartPayload(body, contentType)
 		convey.So(mode, convey.ShouldEqual, "upsert")
-		convey.So(packageVersion, convey.ShouldEqual, "0.6.0")
 		convey.So(fileContent, convey.ShouldEqual, "demo")
 	})
 }
 
-func parseMultipartPayload(body []byte, contentType string) (mode string, packageVersion string, fileContent string) {
+func parseMultipartPayload(body []byte, contentType string) (mode string, fileContent string) {
 	_, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		return "", "", ""
+		return "", ""
 	}
 	reader := multipart.NewReader(bytes.NewReader(body), params["boundary"])
 	for {
@@ -416,8 +441,6 @@ func parseMultipartPayload(body []byte, contentType string) (mode string, packag
 		switch part.FormName() {
 		case "mode":
 			mode = string(data)
-		case "package_version":
-			packageVersion = string(data)
 		case "data":
 			fileContent = string(data)
 		}

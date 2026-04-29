@@ -10,7 +10,7 @@ project:
 operator:
   import_file_size_limit: 100000000
   import_operator_max_count: 10
-  operator_description_length_limit: 255
+  operator_description_length_limit: 500
 mcp:
   conn_timeout: 10 # 单位:秒
   max_instances: 200
@@ -26,32 +26,33 @@ proxy_module:
   max_clients: 100
   client_lifetime: 300 # 单位:秒
 
-oauth: # 对应hydra服务
-  public_host: "hydra-public.anyshare"
+oauth:
+  # 对应hydra服务
+  public_host: "hydra-public.kweaver"
   public_port: 4444
   public_protocol: "http"
-  admin_host: "hydra-admin.anyshare"
+  admin_host: "hydra-admin.kweaver"
   admin_port: 4445
   admin_protocol: "http"
   admin_prefix: "/admin"
 user_management:
-  private_host: "user-management-private.anyshare"
+  private_host: "user-management-private.kweaver"
   private_port: 30980
   private_protocol: "http"
 authorization:
-  private_host: "authorization-private.anyshare"
+  private_host: "authorization-private.kweaver"
   private_port: 30920
   private_protocol: "http"
 agent-operator-app:
-  private_host: "agent-operator-app.anyshare"
+  private_host: "agent-operator-app.kweaver"
   private_port: 9000
   private_protocol: "http"
 mf-model-api:
-  private_host: "mf-model-api.anyshare"
+  private_host: "mf-model-api.kweaver"
   private_port: 9898
   private_protocol: "http"
 mf-model-manager:
-  private_host: "mf-model-manager.anyshare"
+  private_host: "mf-model-manager.kweaver"
   private_port: 9898
   private_protocol: "http"
 db:
@@ -61,15 +62,15 @@ db:
   max_open_conns: 30
   system_id: ""
 flow-automation:
-  private_host: "flow-automation-private.anyshare"
+  private_host: "flow-automation-private.kweaver"
   private_port: 8680
   private_protocol: "http"
 business-system-service:
-  private_host: "business-system-service.anyshare"
+  private_host: "business-system-service.kweaver"
   private_port: 80
   private_protocol: "http"
 sandbox-control-plane:
-  private_host: "sandbox-control-plane.anyshare"
+  private_host: "sandbox-control-plane.kweaver"
   private_port: 8000
   private_protocol: "http"
   template_id: "" # 模板ID
@@ -82,7 +83,7 @@ sandbox-control-plane:
   active_sessions: 1
   max_concurrent_tasks: 100
 vega-backend:
-  private_host: "vega-backend-svc.anyshare"
+  private_host: "vega-backend-svc.kweaver"
   private_port: 13014
   private_protocol: "http"
 
@@ -98,7 +99,7 @@ redis:
 # ai辅助相关配置
 ai_generation_config:
   # python代码生成系统提示词ID
-  python_function_generator_prompt_id: "2012060658484514816" # 如果为空或为找到，则使用默认提示词
+  python_function_generator_prompt_id: "" # 如果为空或为找到，则使用默认提示词
   metadata_param_generator_prompt_id: "" # 如果为空或为找到，则使用默认提示词
   llm:
     model: ""
@@ -110,41 +111,9 @@ ai_generation_config:
     presence_penalty: 0.1
 
 oss-gateway-backend:
-  private_host: "oss-gateway-backend.anyshare"
+  private_host: "oss-gateway-backend.kweaver"
   private_port: 8080
   private_protocol: "http"
   storage_id: ""
   internal_request: false
   expires: 3600
-
-trace:
-  enabled: false
-  type: "otlp" # 可选值: jaeger, otlp
-  exporter: "http" # trace 上报方式consle;http;grpc ;
-  endpoint: "http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events"
-  max_queue_size: 50000 # trace 队列最大长度
-log:
-  enabled: false
-  exporter: "consle" # log上报方式:consle;http
-  endpoint: "http://feed-ingester-service:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events"
-  load_internal: 1 # log 批量上报策略 -- 时间间隔，单位：秒
-  load_max_log: 10 # log 批量上报策略 -- 日志数量，单位： 个
-  # jaeger:
-  #   exporter: "grpc" # 可选值: grpc, http
-  #   endpoint: "jaeger-collector.jaeger.svc.cluster.local:4317"
-  # otlp:
-  #   logEnabled: false # 是否开启 log
-  #   traceEnabled: false # 是否开启 trace
-  #   metricEnabled: false # 是否开启 metric
-  #   logExporter: consle # log上报方式:consle;http
-  #   traceProvider: grpc # trace 上报方式consle;http;grpc
-  #   metricProvider: http # metric 上报方式consle;http
-  #   logLoadInternal: 1 # log 批量上报策略 -- 时间间隔，单位：秒
-  #   logLoadMaxLog: 10 # log 批量上报策略 -- 日志数量，单位： 个
-  #   traceMaxQueueSize: 50000 # trace 队列最大长度
-  #   metricIntervalSecond: 60 # metric 上报间隔，单位：秒
-  #   httpLogFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-log/events # log http 上报端点
-  #   httpTraceFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-trace/events # trace http 上报端点
-  #   httpMetricFeedIngesterUrl: http://192.168.232.15:13031/api/feed_ingester/v1/jobs/dip-o11y-metric/events # metric http 上报端点
-  #   grpcTraceFeedIngesterUrl: feed-ingester-service:30013 # trace grpc上报端点
-  #   grpcTraceJobId: dip-o11y-trace-grpc # trac grpc 上报任务ID

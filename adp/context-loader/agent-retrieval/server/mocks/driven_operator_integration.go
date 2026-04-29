@@ -88,12 +88,11 @@ func (mr *MockDrivenOperatorIntegrationMockRecorder) GetToolDetail(ctx, req any)
 }
 
 // SyncToolDependencyPackage mocks base method.
-func (m *MockDrivenOperatorIntegration) SyncToolDependencyPackage(ctx context.Context, req *interfaces.SyncToolDependencyPackageRequest) (*interfaces.SyncToolDependencyPackageResponse, error) {
+func (m *MockDrivenOperatorIntegration) SyncToolDependencyPackage(ctx context.Context, req *interfaces.SyncToolDependencyPackageRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SyncToolDependencyPackage", ctx, req)
-	ret0, _ := ret[0].(*interfaces.SyncToolDependencyPackageResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SyncToolDependencyPackage indicates an expected call of SyncToolDependencyPackage.

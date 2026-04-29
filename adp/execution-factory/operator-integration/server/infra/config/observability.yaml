@@ -1,6 +1,6 @@
 traceType: jaeger # 可选值: jaeger, otlp
-logEnabled: true # 是否开启 log
-traceEnabled: true # 是否开启 trace
+logEnabled: false # 是否开启 log
+traceEnabled: false # 是否开启 trace
 metricEnabled: false # 是否开启 metric
 logExporter: consle # log上报方式:consle;http
 traceProvider: grpc # trace 上报方式consle;http;grpc

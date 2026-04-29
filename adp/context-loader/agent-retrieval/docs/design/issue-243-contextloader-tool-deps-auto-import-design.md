@@ -29,7 +29,7 @@
 
 ## 1.2 目标
 
-- 让 `context-loader` 在服务启动后自动将 `execution_factory_tools.adp` 同步到执行工厂，不再依赖用户手工导入。
+- 让 `context-loader` 在服务启动后自动将 `execution_factory_tools.adp` 与 `context_loader_toolset.adp` 同步到执行工厂，不再依赖用户手工导入。
 - 明确采用“导入语义”而非“内置工具注册语义”，避免扩展 `CreateInternalToolBox` 支持 `.adp`。
 - 在执行工厂中新增面向内部服务的依赖包自动导入接口，底层复用现有 `impex import` 能力。
 - 建立基于版本的单向升级策略：仅当当前系统版本低于待导入版本时才执行更新。
@@ -110,7 +110,7 @@
 
 | 组件 | 职责 |
 |------|------|
-| Internal Impex Handler | 接收 `.adp` 包并返回导入状态 |
+| Internal Impex Route | 提供内部 `.adp` 导入入口，底层复用执行工厂公共导入逻辑 |
 | Impex Manager | 复用现有 `.adp` 解析与导入事务逻辑 |
 | Toolbox Query / Import Service | 读取当前版本并在必要时完成 toolbox/operator 依赖导入 |
 
@@ -130,8 +130,8 @@ sequenceDiagram
 
     CL->>CL: 启动 HTTP 服务
     CL->>REG: 异步启动依赖同步任务
-    REG->>REG: 读取 execution_factory_tools.adp
-    REG->>EF: 调用内部导入接口(type=toolbox, mode=upsert)
+    REG->>REG: 读取 execution_factory_tools.adp 与 context_loader_toolset.adp
+    REG->>EF: 逐个调用内部导入接口(type=toolbox, mode=upsert)
     EF->>EF: 解析 .adp 并提取待导入版本
     EF->>EF: 查询当前系统版本
     alt 当前版本 < 待导入版本
@@ -149,8 +149,8 @@ sequenceDiagram
     ContextLoader 启动
       → 启动 HTTP 服务
       → 异步触发 DependencyRegistrar
-      → 读取本地依赖包 execution_factory_tools.adp
-      → 调用执行工厂内部导入接口
+      → 读取本地依赖包 execution_factory_tools.adp 与 context_loader_toolset.adp
+      → 逐个调用执行工厂内部导入接口
       → 执行工厂解析 .adp 并读取当前系统版本
       → 仅当当前版本低于待导入版本时执行 import/upsert
       → 返回 imported / updated / skipped
@@ -233,24 +233,7 @@ sequenceDiagram
 | `data` | 是 | `.adp` 文件内容 |
 | `mode` | 否 | 导入模式，默认 `upsert` |
 
-**Response:**
-
-```json
-{
-  "status": "updated",
-  "type": "toolbox",
-  "resource_ids": [
-    "1a98d9e8-cfa6-4150-9c54-2ad8445d31a5"
-  ],
-  "message": "tool dependency package synchronized"
-}
-```
-
-**状态值约定：**
-
-- `imported`：首次导入成功
-- `updated`：当前系统版本低于待导入版本，更新成功
-- `skipped`：当前系统版本大于或等于待导入版本
+**Response:** 成功时以 HTTP 2xx 表示导入请求已被执行工厂接受并处理；当前复用公共导入 handler，通常返回 `201` 空响应体。`context-loader` 不依赖响应 body，只按 HTTP 状态判断成功或失败。
 
 ---
 
@@ -285,10 +268,10 @@ sequenceDiagram
 
 ### 文件定位
 
-镜像内固定路径：
+镜像内固定内容通过 `go:embed` 固化到二进制：
 
-- `/app/agent-retrieval/docs/release/tool-deps/execution_factory_tools.adp`
-- `/app/agent-retrieval/VERSION`
+- `server/bootstrap/tool_dependencies/execution_factory_tools.adp`
+- `server/bootstrap/tool_dependencies/context_loader_toolset.adp`
 
 ---
 
@@ -296,11 +279,11 @@ sequenceDiagram
 
 ### 版本来源
 
-首版由 `context-loader` 在启动时读取镜像内固定 `VERSION` 文件，并将该值作为 `package_version` 传给执行工厂内部导入接口。
+首版不额外传递 `package_version` 字段。`context-loader` 只向执行工厂内部导入接口提交 `.adp` 内容，待导入版本由执行工厂从 `.adp` 包内元数据或当前约定的 toolbox 命名中解析。
 
 执行工厂负责：
 
-1. 使用请求中的 `package_version` 作为待导入版本
+1. 从 `.adp` 包内解析待导入版本
 2. 查询当前系统中已存在 toolbox 的版本
 3. 仅在 `current_version < package_version` 时执行更新
 
@@ -374,8 +357,7 @@ sequenceDiagram
 
 ### ContextLoader 单测
 
-- 依赖包读取成功
-- 依赖包路径不存在
+- 内嵌依赖包加载成功
 - 内部导入接口调用成功
 - 网络失败后按策略重试
 - 配置关闭时不启动导入任务
@@ -406,7 +388,7 @@ sequenceDiagram
 建议涉及文件 / 模块：
 
 - `server/driveradapters/rest_private_handler.go`
-- 新增内部导入 handler
+- 新增内部导入路由
 - `server/logics/impex/index.go`
 - `server/logics/toolbox/` 查询当前资源版本所需能力
 
