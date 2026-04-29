@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 04-skill-routing-loop: KN-driven Skill governance end-to-end
+# 05-skill-routing-loop: KN-driven Skill governance end-to-end
 #
 # Flow: business DB → Vega → BKN → context-loader find_skills →
 #       Decision Agent → Skill execute → mock business backend → audit log
@@ -17,7 +17,7 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Options:
-  --bonus      Run the Bonus segment after main flow (changes SUP-2 capability)
+  --bonus      Run the Bonus segment after main flow (re-binds MAT-002 in the business system)
   -h, --help   Show this help
 USAGE
 }
@@ -47,9 +47,9 @@ DB_USER="${DB_USER:?Set DB_USER in .env}"
 DB_PASS="${DB_PASS:?Set DB_PASS in .env}"
 TOOL_BACKEND_PORT="${TOOL_BACKEND_PORT:-8765}"
 
-DS_NAME="ex04_ds_${TIMESTAMP}"
-KN_ID="ex04_skill_routing"   # fixed, must match network.bkn frontmatter
-TABLE_PREFIX="ex04_${TIMESTAMP}_"
+DS_NAME="ex05_ds_${TIMESTAMP}"
+KN_ID="ex05_skill_routing"   # fixed, must match network.bkn frontmatter
+TABLE_PREFIX="ex05_${TIMESTAMP}_"
 
 # Track resources for cleanup
 DS_ID="" TMP_KN_ID="" MCP_ID="" AGENT_ID=""
@@ -112,7 +112,7 @@ echo ""
 echo "=== Step 2: Import CSVs and provision Vega dataviews ==="
 TMP_KN_RAW=$(kweaver bkn create-from-csv "$DS_ID" \
     --files "$SCRIPT_DIR/data/*.csv" \
-    --name "ex04_tmp_${TIMESTAMP}" \
+    --name "ex05_tmp_${TIMESTAMP}" \
     --table-prefix "$TABLE_PREFIX" \
     --build --timeout 180 2>&1)
 TMP_KN_ID=$(echo "$TMP_KN_RAW" | python3 -c "
@@ -210,7 +210,7 @@ TOOL_BACKEND_URL="http://127.0.0.1:$TOOL_BACKEND_PORT"
 DB_HOST="$DB_HOST" DB_PORT="$DB_PORT" DB_NAME="$DB_NAME" \
 DB_USER="$DB_USER" DB_PASS="$DB_PASS" \
 TOOL_BACKEND_PORT="$TOOL_BACKEND_PORT" \
-SUPPLIERS_TABLE="${TABLE_PREFIX}suppliers" \
+MATERIALS_TABLE="${TABLE_PREFIX}materials" \
 python3 "$SCRIPT_DIR/tool_backend/server.py" >"$SCRIPT_DIR/.tool_backend.log" 2>&1 &
 TOOL_BACKEND_PID=$!
 for i in $(seq 1 15); do
@@ -264,7 +264,7 @@ import json
 print(json.dumps({
     'mode': 'stream',
     'url': '$PLATFORM_HOST/api/agent-retrieval/v1/mcp',
-    'name': 'ex04_ctx_loader_${TIMESTAMP}',
+    'name': 'ex05_ctx_loader_${TIMESTAMP}',
     'description': 'context-loader MCP for find_skills',
     'creation_type': 'custom',
     'headers': {'X-Kn-ID': '$KN_ID'},
@@ -314,7 +314,7 @@ echo "  ✓ agent.json rendered"
 # ── Step 10: Create + publish agent ──────────────────────────────────────────
 echo ""
 echo "=== Step 10: Create + publish Decision Agent ==="
-AGENT_NAME="ex04_skill_routing_${TIMESTAMP}"
+AGENT_NAME="ex05_skill_routing_${TIMESTAMP}"
 CREATE_RAW=$(kweaver agent create \
     --name "$AGENT_NAME" \
     --profile "Example 04 — KN-driven skill routing" \
@@ -358,18 +358,20 @@ done
 # ── Step 12: Bonus (optional via --bonus) ────────────────────────────────────
 if [ "$BONUS" = "1" ]; then
     echo ""
-    echo "=== Bonus: change SUP-2 capability → AI re-routes MAT-002 ==="
+    echo "=== Bonus: re-bind MAT-002 in the business system → AI follows ==="
 
     echo ""
-    echo "[business system] update SUP-2.capability: expedite → normal"
-    curl -s -X POST "$TOOL_BACKEND_URL/admin/supplier-capability" \
+    echo "[business system] update MAT-002.bound_skill_id: supplier_expedite → standard_replenish"
+    curl -s -X POST "$TOOL_BACKEND_URL/admin/material-binding" \
         -H "Content-Type: application/json" \
-        -d '{"supplier_id":"SUP-2","capability":"normal"}' | python3 -m json.tool
-
-    sleep 2  # let Vega see the new state (Step D in spec — verify in this run)
+        -d '{"sku":"MAT-002","bound_skill_id":"standard_replenish"}' | python3 -m json.tool
 
     echo ""
-    echo "--- MAT-002 (re-trigger after capability change) ---"
+    echo "[KN] rebuild to re-materialize applicable_skill edges"
+    kweaver bkn build "$KN_ID" --wait --timeout 60 2>&1 | tail -2
+
+    echo ""
+    echo "--- MAT-002 (re-trigger after binding change) ---"
     kweaver agent chat "$AGENT_ID" \
         -m "Material MAT-002 hit critical stock level again. Decide and report." \
         --stream 2>&1 \
@@ -378,7 +380,7 @@ if [ "$BONUS" = "1" ]; then
 
     echo ""
     echo ">>> Compare with the MAT-002 result above (Step 11)."
-    echo ">>> If business→AI propagation works: this run picks standard_replenish."
+    echo ">>> Expected: this run picks standard_replenish (matches the new binding)."
 fi
 
 echo ""

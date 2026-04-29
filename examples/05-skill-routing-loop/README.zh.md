@@ -8,8 +8,8 @@
 ## 故事
 
 续作 03 那位采购工程师：她现在看到每张告警单上已经写好了处置方案。3 个物料、
-3 条不同路径，**没改一行 prompt**。BKN 里的 `applicable_skill` 关系 +
-供应商节点的 `capability` 字段决定了这一切。
+3 条不同路径，**没改一行 prompt**。BKN 里的 `applicable_skill` 关系是 Skill 路由的
+**唯一真相源**——Agent 只能从 `find_skills` 返回的候选集里挑，没有别的杠杆。
 
 ## 这个 example 展示什么
 
@@ -37,7 +37,7 @@
 ## 快速开始
 
 ```bash
-cd examples/04-skill-routing-loop
+cd examples/05-skill-routing-loop
 cp env.sample .env
 vim .env                                    # 填 PLATFORM_HOST、LLM_ID、DB_*
 pip install -r tool_backend/requirements.txt
@@ -46,7 +46,7 @@ pip install -r tool_backend/requirements.txt
 ```
 
 > **并发注意：** 请不要同时运行两个 `./run.sh` 实例。脚本使用固定的 `KN_ID`
-> （`ex04_skill_routing`），第二个实例的清理逻辑会把第一个实例的 KN 一起删掉。
+> （`ex05_skill_routing`），第二个实例的清理逻辑会把第一个实例的 KN 一起删掉。
 
 ## 你会看到什么
 
@@ -56,12 +56,20 @@ pip install -r tool_backend/requirements.txt
 | MAT-002 | 绑定 `supplier_expedite`；SUP-2 capability=expedite | supplier_expedite | 供应商能加急 → POST 供应商门户 |
 | MAT-003 | 只绑定 `standard_replenish` | standard_replenish | 默认路径 → 走 ERP 下单 |
 
-## Bonus — 改业务，AI 跟着变
+## Bonus — 改业务 → KN 重建 → AI 跟着变
 
-`./run.sh --bonus` 会调 mock 业务系统的 admin 端点把 SUP-2 的 capability
-从 `expedite` 改为 `normal`，然后重新让 Agent 处理 MAT-002。Decision Agent
-通过 Vega 看到 BKN 的新状态，自动切到 `standard_replenish`——
-**没改 prompt、没重新部署任何服务**。
+`./run.sh --bonus` 会调 mock 业务系统的 admin 端点，把 MAT-002 的绑定 Skill
+从 `supplier_expedite` 改成 `standard_replenish`（直接 UPDATE
+`materials.bound_skill_id`，由 `applicable_skill` 的 direct-mapping FK 决定边），
+然后触发一次 `kweaver bkn build` 重新物化 `applicable_skill` 边，再让 Agent
+重新处理 MAT-002。Decision Agent 下一次 `find_skills` 拿到的就是新候选集，
+自动切到 `standard_replenish`——**没改 prompt、没重新部署任何服务**。
+
+> **为什么需要重建：** `applicable_skill` 是关系（relation），它的边在
+> KN build 时物化进图，不是 live-mapped。ObjectType 的 data property
+> （比如 `supplier.capability`）是 Vega 直接 live-read MySQL 的，但
+> 关系边需要重新 build 才会刷新。把重建作为显式步骤写进脚本，
+> 让"业务变更 → KN 同步 → AI 跟随"的反馈环对学习者完整可见。
 
 ## 原理细节
 

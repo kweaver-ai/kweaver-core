@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mock business backend for example 04.
+Mock business backend for example 05.
 
 Three business endpoints (called by Skills):
   POST /procurement/order          - standard_replenish
@@ -8,7 +8,8 @@ Three business endpoints (called by Skills):
   POST /supplier/expedite          - supplier_expedite
 
 One admin endpoint (called by Bonus):
-  POST /admin/supplier-capability  - simulate "業務系統 update SUP-X.capability"
+  POST /admin/material-binding     - simulate "ops re-binds a material's
+                                     applicable Skill in the business system"
 """
 import os
 import re
@@ -16,6 +17,8 @@ import sys
 
 import mysql.connector
 from flask import Flask, jsonify, request
+
+VALID_SKILL_IDS = ("standard_replenish", "substitute_swap", "supplier_expedite")
 
 app = Flask(__name__)
 PORT = int(os.environ.get("TOOL_BACKEND_PORT", "8765"))
@@ -27,10 +30,10 @@ DB_CONFIG = {
     "password": os.environ["DB_PASS"],
 }
 
-# run.sh imports CSVs with --table-prefix, so the real table is ex04_<ts>_suppliers.
-SUPPLIERS_TABLE = os.environ.get("SUPPLIERS_TABLE", "suppliers")
-if not re.fullmatch(r"[A-Za-z0-9_]+", SUPPLIERS_TABLE):
-    raise ValueError(f"Invalid SUPPLIERS_TABLE: {SUPPLIERS_TABLE!r}")
+# run.sh imports CSVs with --table-prefix, so the real table is ex05_<ts>_materials.
+MATERIALS_TABLE = os.environ.get("MATERIALS_TABLE", "materials")
+if not re.fullmatch(r"[A-Za-z0-9_]+", MATERIALS_TABLE):
+    raise ValueError(f"Invalid MATERIALS_TABLE: {MATERIALS_TABLE!r}")
 
 # ── Business endpoints ───────────────────────────────────────────────────────
 
@@ -60,30 +63,30 @@ def supplier_expedite():
 
 # ── Admin endpoint (Bonus) ───────────────────────────────────────────────────
 
-@app.post("/admin/supplier-capability")
-def admin_set_capability():
-    """Simulate business-system update; writes directly to MySQL.
+@app.post("/admin/material-binding")
+def admin_set_material_binding():
+    """Simulate ops re-binding a material's applicable Skill; writes to MySQL.
 
-    body: { "supplier_id": "SUP-2", "capability": "normal" }
+    body: { "sku": "MAT-002", "bound_skill_id": "standard_replenish" }
     """
     body = request.get_json(force=True)
-    supplier_id = body.get("supplier_id")
-    capability = body.get("capability")
-    if not supplier_id or capability not in ("normal", "expedite"):
+    sku = body.get("sku")
+    bound_skill_id = body.get("bound_skill_id")
+    if not sku or bound_skill_id not in VALID_SKILL_IDS:
         return jsonify({"error": "invalid request"}), 400
     conn = mysql.connector.connect(**DB_CONFIG)
     try:
         cur = conn.cursor()
         cur.execute(
-            f"UPDATE {SUPPLIERS_TABLE} SET capability=%s WHERE supplier_id=%s",
-            (capability, supplier_id),
+            f"UPDATE {MATERIALS_TABLE} SET bound_skill_id=%s WHERE sku=%s",
+            (bound_skill_id, sku),
         )
         affected = cur.rowcount
         conn.commit()
     finally:
         conn.close()
-    print(f"[admin] supplier {supplier_id} capability -> {capability} ({affected} rows)", file=sys.stderr)
-    return jsonify({"updated": affected, "supplier_id": supplier_id, "capability": capability})
+    print(f"[admin] material {sku} bound_skill_id -> {bound_skill_id} ({affected} rows)", file=sys.stderr)
+    return jsonify({"updated": affected, "sku": sku, "bound_skill_id": bound_skill_id})
 
 
 @app.get("/healthz")
