@@ -12,9 +12,43 @@ cases:
     code_check: "201"
     resp_values: '{"created_metric_group_id":"$.id"}'
 
+  - name: 创建指标模型分组_带备注
+    url: 创建指标模型分组
+    body_params: '{"name":"带备注分组_${ts_uuid}","comment":"这是带备注的指标模型分组，用于测试备注功能"}'
+    code_check: "201"
+
+  - name: 创建指标模型分组_长名称
+    url: 创建指标模型分组
+    body_params: '{"name":"长分组_${ts_uuid}","comment":"测试长名称分组"}'
+    code_check: "201"
+
   - name: 创建指标模型分组_空名称
     url: 创建指标模型分组
     body_params: '{"name":"","comment":"空名称分组"}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 创建指标模型分组_重复名称
+    url: 创建指标模型分组
+    body_params: '{"name":"重复测试分组_${ts_uuid}","comment":"测试重复名称"}'
+    code_check: "201"
+    resp_values: '{"duplicate_metric_group_name":"$.name"}'
+
+  - name: 创建指标模型分组_重复名称再次创建
+    url: 创建指标模型分组
+    body_params: '{"name":"${duplicate_metric_group_name}","comment":"测试重复名称"}'
+    code_check: "403"
+    tags: [negative]
+
+  - name: 创建指标模型分组_特殊字符
+    url: 创建指标模型分组
+    body_params: '{"name":"测试@#$%^&*()分组_${ts_uuid}","comment":"特殊字符分组"}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 创建指标模型分组_超长名称
+    url: 创建指标模型分组
+    body_params: '{"name":"这是一个超过四十个字符限制的指标模型分组名称这是一个超过四十个字符限制的指标模型分组名称_${ts_uuid}","comment":"测试超长名称"}'
     code_check: "400"
     tags: [negative]
 
@@ -23,9 +57,47 @@ cases:
     query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":10}'
     code_check: "200"
 
+  - name: 查询指标模型分组列表_降序
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"desc","offset":0,"limit":10}'
+    code_check: "200"
+
+  - name: 查询指标模型分组列表_分页
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":5,"limit":20}'
+    code_check: "200"
+
+  - name: 查询指标模型分组列表_不分页
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":-1}'
+    code_check: "200"
+
+  - name: 查询指标模型分组列表_最大分页
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":1000}'
+    code_check: "200"
+
   - name: 查询指标模型分组列表_无效排序字段
     url: 查询指标模型分组列表
     query_params: '{"sort":"invalid_field","direction":"asc","offset":0,"limit":10}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 查询指标模型分组列表_无效排序方向
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"invalid","offset":0,"limit":10}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 查询指标模型分组列表_负数偏移
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":-1,"limit":10}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 查询指标模型分组列表_分页超上限
+    url: 查询指标模型分组列表
+    query_params: '{"sort":"group_name","direction":"asc","offset":0,"limit":1001}'
     code_check: "400"
     tags: [negative]
 
@@ -36,11 +108,49 @@ cases:
     body_params: '{"name":"修改后的分组_${ts_uuid}","comment":"修改后的备注"}'
     code_check: "204"
 
+  - name: 更新指标模型分组_仅修改名称
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":"仅修改名称_${ts_uuid}"}'
+    code_check: "204"
+
+  - name: 更新指标模型分组_仅修改备注
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"comment":"仅修改备注的测试"}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 更新指标模型分组_长名称
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":"这是一个非常长的修改后的指标模型分组名称_${ts_uuid}","comment":"长名称测试"}'
+    code_check: "204"
+
   - name: 更新指标模型分组_空名称
     url: 更新指标模型分组
     prev_case: 创建指标模型分组_正常
     path_params: '{"group_id":"${created_metric_group_id}"}'
     body_params: '{"name":""}'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 更新指标模型分组_重复名称
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":"${duplicate_metric_group_name}"}'
+    code_check: "403"
+    tags: [negative]
+
+  - name: 更新指标模型分组_特殊字符名称
+    url: 更新指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}"}'
+    body_params: '{"name":"特殊字符@#$%^&*()名称_${ts_uuid}"}'
     code_check: "400"
     tags: [negative]
 
@@ -50,8 +160,21 @@ cases:
     path_params: '{"group_id":"${created_metric_group_id}","force":"${force_false}"}'
     code_check: "204"
 
+  - name: 删除指标模型分组_强制删除
+    url: 删除指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}","force":"${force_true}"}'
+    code_check: "204"
+
   - name: 删除指标模型分组_不存在
     url: 删除指标模型分组
     path_params: '{"group_id":"${metric_group_id_non_existent}","force":"${force_false}"}'
     code_check: "404"
+    tags: [negative]
+
+  - name: 删除指标模型分组_force参数无效
+    url: 删除指标模型分组
+    prev_case: 创建指标模型分组_正常
+    path_params: '{"group_id":"${created_metric_group_id}","force":"invalid"}'
+    code_check: "400"
     tags: [negative]

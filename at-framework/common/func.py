@@ -208,11 +208,15 @@ def load_case_by_suite(file_path: str):
         return []
 
     case_list = []
+    _enabled_values = ('y', 'Y', '1', 'ON', 'on', 'true', 'TRUE', 'True')
     for case in suite["cases"]:
+        case_switch = str(case.get("switch", suite.get("switch", "y"))).strip()
+        if case_switch not in _enabled_values:
+            continue
         case_info = {
             "feature": suite.get("feature"),
             "story": suite.get("story"),
-            "switch": suite.get("switch"),
+            "switch": case_switch,
             "description": suite.get("description"),
             "tags": suite.get("tags", []),
             "_suite_file": os.path.basename(file_path),

@@ -86,37 +86,3 @@
   method: GET
   headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
 
-- name: 查询视图列表
-  url: /api/data-connection/v1/views
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 创建视图
-  url: /api/data-connection/v1/views
-  method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 更新视图
-  url: /api/data-connection/v1/views/${id}
-  method: PUT
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 删除视图
-  url: /api/data-connection/v1/views/${id}
-  method: DELETE
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 同步视图元数据
-  url: /api/data-connection/v1/views/${id}/sync
-  method: POST
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 查询 OpenSearch 索引
-  url: /api/data-connection/v1/opensearch/indices
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
-
-- name: 获取 OpenSearch 字段映射
-  url: /api/data-connection/v1/opensearch/${index_name}/mapping
-  method: GET
-  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

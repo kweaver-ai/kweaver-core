@@ -164,24 +164,3 @@ variables:
 - name: mariadb_db_2
   description: from excel
   ref: ${mariadb_db_2}
-- name: bin_data_template_mysql
-  description: from excel
-  ref: ${bin_data_template_mysql}
-- name: bin_data_template_oracle
-  description: from excel
-  ref: ${bin_data_template_oracle}
-- name: bin_data_template_postgres
-  description: from excel
-  ref: ${bin_data_template_postgres}
-- name: bin_data_template_inceptor
-  description: from excel
-  ref: ${bin_data_template_inceptor}
-- name: bin_data_template_opensearch
-  description: from excel
-  ref: ${bin_data_template_opensearch}
-- name: bin_data_template_clickhouse
-  description: from excel
-  ref: ${bin_data_template_clickhouse}
-- name: bin_data_template_mariadb
-  description: from excel
-  ref: ${bin_data_template_mariadb}

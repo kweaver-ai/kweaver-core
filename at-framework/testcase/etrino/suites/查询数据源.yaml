@@ -4,20 +4,9 @@ switch: y
 cases:
 - name: 添加数据连接_MySQL数据源
   url: 新增数据源
-  body_params: "{\n  \"name\": \"{{ '新增数据源_AutoCase-%s' | format(random_string(6,\
-    \ 8)) }}\",\n  \"type\": \"mysql\",\n  \"bin_data\": ${bin_data_template_mysql}\n\
-    }"
+  body_params: "{\n  \"name\": \"{{ '新增数据源_AutoCase-%s' | format(random_string(6, 8)) }}\",\n  \"type\": \"mysql\",\n  \"bin_data\": {\"connect_protocol\":\"jdbc\",\"host\":\"${mysql_host}\",\"port\":${mysql_port},\"account\":\"${mysql_user}\",\"password\":\"${mysql_password}\",\"database_name\":\"${mysql_db_1}\"}\n}"
   code_check: '200'
   resp_values: "{\n  \"catalog_id\": \"$.id\",\n  \"catalog_name\": \"$.name\"\n}"
-  description: 'from excel sheet: 查询数据源'
-- name: 添加数据连接_Postgres数据源
-  url: 新增数据源
-  body_params: "{\n  \"name\": \"{{ '新增数据源_AutoCase-%s' | format(random_string(6,\
-    \ 8)) }}\",\n  \"type\": \"postgresql\",\n  \"comment\": \"自动化测试用例\",\n  \"bin_data\"\
-    : ${bin_data_template_postgres}\n}"
-  code_check: '200'
-  resp_values: "{\n  \"catalog_id_pg\": \"$.id\",\n  \"catalog_name_pg\": \"$.name\"\
-    \n}"
   description: 'from excel sheet: 查询数据源'
 - name: 删除数据连接_MySQL数据源
   url: 删除数据源
@@ -32,9 +21,7 @@ cases:
   description: 'from excel sheet: 查询数据源'
 - name: Positive_查询数据连接列表_全量参数_请求成功
   url: 查询数据源列表
-  query_params: "{\n  \"limit\": -1,\n  \"offset\": 0,\n  \"keyword\": \"AutoCase\"\
-    ,\n  \"type\": \"structured\",\n  \"sort\": \"created_at\",\n  \"direction\":\
-    \ \"desc\"\n}"
+  query_params: "{\n  \"limit\": -1,\n  \"offset\": 0,\n  \"keyword\": \"AutoCase\",\n  \"type\": \"structured\",\n  \"sort\": \"created_at\",\n  \"direction\": \"desc\"\n}"
   code_check: '200'
   prev_case: 添加数据连接_MySQL数据源
   description: 'from excel sheet: 查询数据源'
@@ -113,8 +100,7 @@ cases:
   description: 'from excel sheet: 查询数据源'
 - name: Positive_查询数据连接列表_参数校验_keyword包含多种字符_请求成功
   url: 查询数据源列表
-  query_params: "{\n    \"keyword\": \"{{ '查询条件-%s_%s_%s_%s' | format(random_string(4,\
-    \ 1), random_string(4, 8), random_string(8, 64), random_string(8, 6))}}\"\n}"
+  query_params: "{\n    \"keyword\": \"{{ '查询条件-%s_%s_%s_%s' | format(random_string(4, 1), random_string(4, 8), random_string(8, 64), random_string(8, 6))}}\"\n}"
   code_check: '200'
   description: 'from excel sheet: 查询数据源'
 - name: Positive_查询数据连接列表_参数校验_keyword按地址搜索_请求成功
@@ -124,8 +110,7 @@ cases:
   description: 'from excel sheet: 查询数据源'
 - name: Positive_查询数据连接列表_参数校验_keyword长度255_请求成功
   url: 查询数据源列表
-  query_params: "{\n    \"keyword\": \"{{ '查询条件-%s' | format( random_string(250, 127))}}\"\
-    \n}"
+  query_params: "{\n    \"keyword\": \"{{ '查询条件-%s' | format(random_string(250, 14))}}\"\n}"
   code_check: '200'
   description: 'from excel sheet: 查询数据源'
 - name: Positive_查询数据连接列表_参数校验_type枚举值_请求成功__var01

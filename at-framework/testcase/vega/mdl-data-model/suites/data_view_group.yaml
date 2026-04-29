@@ -12,6 +12,11 @@ cases:
     code_check: "201"
     resp_values: '{"created_group_id":"$.id"}'
 
+  - name: 创建数据视图分组_内置分组
+    url: 创建数据视图分组
+    body_params: '{"name":"内置测试分组_${ts_uuid}","builtin":true}'
+    code_check: "201"
+
   - name: 创建数据视图分组_空名称
     url: 创建数据视图分组
     body_params: '{"name":""}'

@@ -12,9 +12,27 @@ cases:
     code_check: "201"
     resp_values: '{"created_rule_id":"$[0].id"}'
 
+  - name: 创建行列权限规则_带过滤条件
+    url: 创建行列权限规则
+    body_params: '[{"name":"过滤规则_${ts_uuid}","view_id":"${view_id}","tags":["filter"],"comment":"带有过滤条件的权限规则","fields":["field1","field2","field3"],"row_filters":{"field":"status","display_name":"status","operation":"==","value_from":"const","value":"active"}}]'
+    code_check: "201"
+    resp_values: '{"created_rule_id_2":"$[0].id"}'
+
   - name: 创建行列权限规则_空名称
     url: 创建行列权限规则
     body_params: '[{"name":"","view_id":"${view_id}","tags":["test"],"comment":"测试权限规则","fields":["field1","field2"]}]'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 创建行列权限规则_空视图ID
+    url: 创建行列权限规则
+    body_params: '[{"name":"规则_${ts_uuid}","view_id":"","tags":["test"],"comment":"测试权限规则","fields":["field1","field2"]}]'
+    code_check: "400"
+    tags: [negative]
+
+  - name: 创建行列权限规则_缺少fields
+    url: 创建行列权限规则
+    body_params: '[{"name":"规则_${ts_uuid}","view_id":"${view_id}","tags":["test"],"comment":"测试权限规则"}]'
     code_check: "400"
     tags: [negative]
 
@@ -23,15 +41,31 @@ cases:
     query_params: '{"offset":0,"limit":10,"sort":"update_time","direction":"desc"}'
     code_check: "200"
 
+  - name: 查询行列权限规则列表_带参数
+    url: 查询行列权限规则列表
+    query_params: '{"name":"测试权限规则","offset":0,"limit":20,"sort":"name","direction":"desc"}'
+    code_check: "200"
+
   - name: 查询行列权限规则列表_按视图过滤
     url: 查询行列权限规则列表
     query_params: '{"offset":0,"limit":20,"sort":"name","direction":"desc","view_id":"${view_id}"}'
+    code_check: "200"
+
+  - name: 查询行列权限规则列表_按标签过滤
+    url: 查询行列权限规则列表
+    query_params: '{"tag":"test"}'
     code_check: "200"
 
   - name: 查询行列权限规则详情_单个
     url: 查询行列权限规则详情
     prev_case: 创建行列权限规则_单条
     path_params: '{"rule_ids":"${created_rule_id}"}'
+    code_check: "200"
+
+  - name: 查询行列权限规则详情_多个
+    url: 查询行列权限规则详情
+    prev_case: 创建行列权限规则_带过滤条件
+    path_params: '{"rule_ids":"${created_rule_id},${created_rule_id_2}"}'
     code_check: "200"
 
   - name: 查询行列权限规则详情_不存在
@@ -51,6 +85,12 @@ cases:
     url: 删除行列权限规则
     prev_case: 创建行列权限规则_单条
     path_params: '{"rule_ids":"${created_rule_id}"}'
+    code_check: "204"
+
+  - name: 删除行列权限规则_多个
+    url: 删除行列权限规则
+    prev_case: 创建行列权限规则_带过滤条件
+    path_params: '{"rule_ids":"${created_rule_id},${created_rule_id_2}"}'
     code_check: "204"
 
   - name: 删除行列权限规则_不存在

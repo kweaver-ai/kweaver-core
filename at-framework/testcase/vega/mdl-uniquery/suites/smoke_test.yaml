@@ -26,3 +26,12 @@ cases:
     tags:
       - smoke
       - preview
+
+  - name: 预览视图数据_带参数
+    url: 预览视图数据
+    body_params: '{"data_view_id": "${view_id}", "limit": 5, "offset": 0, "sort": [{"field": "@timestamp", "direction": "desc"}]}'
+    code_check: "200"
+    description: 对齐原 pytest 用例中的预览带参数场景
+    tags:
+      - smoke
+      - preview

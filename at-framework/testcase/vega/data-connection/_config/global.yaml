@@ -5,10 +5,10 @@
 datasource_id: "ds-test-001"
 datasource_name: "test-opensearch-ds"
 datasource_type: "opensearch"
-datasource_host: "10.4.111.209"
+datasource_host: "192.168.40.105"
 datasource_port: "9200"
 datasource_account: "admin"
-datasource_password: "test123"
+datasource_password: "Ax60MV+gnyhqj3phV5SNdRGHMz3sql+RjUAYvBlglQPBeqfJO3q4DwOROP3fDJpXTgAH0I7Us4b0Hye2mIa8vBu+w6joWTIRJ3I93Jjooh9L8xX5EBxI/yrUx92KdSsFxlH5maFu2SsA86ZziZL6CG6U5M3yXcnfuMwJjXbhxV9rxFCkjaMNva/nLvV/EdJYq+Q/uzbfO2KFvLB1Bb291aemWZTNP0Uq87DRThoRJgDD4JIFb29Th/Tftbl0VOgDUQpA19XYeMPKmqNh6jR+E8wO363zsksFaz5pxjIw3DhdQU2SeuAq0bxuoeufmOAOfQx8TGfisIKoMLawruPSVQ=="
 
 # 表/索引配置
 table_id: "tbl-test-001"
