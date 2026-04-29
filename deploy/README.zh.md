@@ -8,6 +8,37 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
+## Linux：k3s 快速上手（推荐）与 kubeadm（旧路径）
+
+两条路径都会得到可用的单节点 Kubernetes，下游命令一致（例如 `bash ./deploy.sh kweaver-core install --minimum`）。
+
+### k3s（Linux 上推荐）
+
+使用官方 k3s 安装脚本（禁用 Traefik；仍会安装 **ingress-nginx** 以保持与现有 chart/accessAddress 一致）。可通过 `K3S_INSTALL_URL`、`INSTALL_K3S_VERSION`、`INSTALL_K3S_MIRROR` 等环境变量切换镜像或版本。
+
+```bash
+cd kweaver-core/deploy
+
+# 安装 k3s + Helm + ingress-nginx
+bash ./deploy.sh k3s install
+
+# 或在产品模块自动补集群时走 k3s 而不是 kubeadm：
+bash ./deploy.sh --distro=k3s kweaver-core install --minimum
+# 等价于：
+# KUBE_DISTRO=k3s bash ./deploy.sh kweaver-core install --minimum
+```
+
+查看状态：`bash ./deploy.sh k3s status`；卸载：`bash ./deploy.sh k3s uninstall`。
+
+### kubeadm（旧路径，行为不变）
+
+单节点 kubeadm 流程仍是 **`bash ./deploy.sh k8s install`**（`deploy/scripts/services/k8s.sh` 不改）。默认 `KUBE_DISTRO=kubeadm`，老用户无感。
+
+```bash
+bash ./deploy.sh k8s install
+bash ./deploy.sh kweaver-core install --minimum
+```
+
 ## 🚀 Quick Start
 
 ### 主机前置条件
@@ -98,6 +129,7 @@ bash ./onboard.sh --help # 全部参数（--config=models.yaml、--enable-bkn-se
 | `swr.cn-east-3.myhuaweicloud.com` | KWeaver 应用镜像仓库 |
 | `repo.huaweicloud.com` | Helm 二进制下载 |
 | `kweaver-ai.github.io` | KWeaver Helm Chart 仓库 |
+| `rancher-mirror.rancher.cn` | k3s 安装脚本/二进制（k3s 快速路径；可用 `K3S_INSTALL_URL` 覆盖） |
 
 ## 📦 部署模型
 

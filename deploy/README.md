@@ -8,6 +8,37 @@ This `deploy` directory provides scripts to install KWeaver Core along with its 
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
+## Linux: k3s quickstart (recommended) vs kubeadm (legacy)
+
+Both paths provide a working single-node Kubernetes cluster for the same downstream commands (for example `bash ./deploy.sh kweaver-core install --minimum`).
+
+### k3s (recommended on Linux)
+
+Uses the upstream k3s installer (Traefik disabled; this stack still installs **ingress-nginx** for a consistent chart/accessAddress setup). Override `K3S_INSTALL_URL`, `INSTALL_K3S_VERSION`, or `INSTALL_K3S_MIRROR` if you need a mirror or air-gapped tuning.
+
+```bash
+cd kweaver-core/deploy
+
+# Install k3s + Helm + ingress-nginx
+bash ./deploy.sh k3s install
+
+# Or let product modules auto-bootstrap k3s instead of kubeadm:
+bash ./deploy.sh --distro=k3s kweaver-core install --minimum
+# equivalent:
+# KUBE_DISTRO=k3s bash ./deploy.sh kweaver-core install --minimum
+```
+
+Check status: `bash ./deploy.sh k3s status` — remove: `bash ./deploy.sh k3s uninstall`.
+
+### kubeadm (legacy, unchanged)
+
+Existing single-node kubeadm flow is still **`bash ./deploy.sh k8s install`** (`deploy/scripts/services/k8s.sh` is untouched). Default `KUBE_DISTRO` is `kubeadm`, so nothing changes for current users.
+
+```bash
+bash ./deploy.sh k8s install
+bash ./deploy.sh kweaver-core install --minimum
+```
+
 ## 🚀 Quick Start
 
 ### Host prerequisites
@@ -99,6 +130,7 @@ The deployment scripts need access to these domains:
 | `swr.cn-east-3.myhuaweicloud.com` | KWeaver application image registry |
 | `repo.huaweicloud.com` | Helm binary download |
 | `kweaver-ai.github.io` | KWeaver Helm chart repository |
+| `rancher-mirror.rancher.cn` | k3s install script / binary (k3s quickstart path; override with `K3S_INSTALL_URL`) |
 
 ## 📦 Deployment Model
 

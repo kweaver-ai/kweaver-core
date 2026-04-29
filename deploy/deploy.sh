@@ -22,6 +22,7 @@ HELM_INSTALL_SCRIPT_PATH="${SCRIPT_DIR}/conf/get-helm-3"
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
 source "${SCRIPT_DIR}/scripts/services/config.sh"
 source "${SCRIPT_DIR}/scripts/services/k8s.sh"
+source "${SCRIPT_DIR}/scripts/services/k3s.sh"
 source "${SCRIPT_DIR}/scripts/services/storage.sh"
 source "${SCRIPT_DIR}/scripts/services/mariadb.sh"
 source "${SCRIPT_DIR}/scripts/services/redis.sh"
@@ -43,6 +44,9 @@ usage() {
     echo "  k8s install                   Initialize K8s master node with CNI and DNS"
     echo "  k8s reset                     Reset Kubernetes cluster state (kubeadm reset -f + cleanup)"
     echo "  k8s status                    Show cluster status"
+    echo "  k3s install                   Install single-node k3s (Linux), Traefik disabled; uses ingress-nginx"
+    echo "  k3s uninstall                 Run k3s-uninstall.sh (removes k3s)"
+    echo "  k3s status                    Show cluster status (nodes and pods)"
     echo "  mariadb install               Install single-node MariaDB 11"
     echo "  mariadb uninstall             Uninstall MariaDB (optionally purge PVC)"
     echo "  redis install                 Install single-node Redis 7"
@@ -78,6 +82,8 @@ usage() {
     echo "  $0 k8s install                # Initialize K8s master node with default settings"
     echo "  $0 k8s reset                  # Reset cluster state before re-install"
     echo "  $0 k8s status                 # Show cluster status"
+    echo "  $0 k3s install                # Install single-node k3s + ingress-nginx (Linux)"
+    echo "  $0 --distro=k3s kweaver-core install --minimum  # Same as KUBE_DISTRO=k3s env (k3s not kubeadm)"
     echo "  POD_CIDR=10.0.0.0/16 $0 k8s install  # Initialize with custom POD_CIDR"
     echo "  $0 mariadb install            # Install MariaDB"
     echo "  $0 mariadb uninstall          # Uninstall MariaDB"
@@ -119,6 +125,8 @@ usage() {
     echo "  -y, --yes                     Skip all interactive prompts and use defaults"
     echo "  --force-upgrade               Always run helm upgrade even if installed chart version equals target."
     echo "                                Use this after editing config.yaml on a previously-installed cluster."
+    echo "  --distro=k3s|kubeadm          Cluster bootstrap when modules auto-ensure K8s (default: kubeadm)."
+    echo "                                Exported as KUBE_DISTRO=...; k3s uses single-node k3s instead of kubeadm."
     echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
     echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
     echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
@@ -352,6 +360,14 @@ main() {
         case "$1" in
             -y|--yes) ASSUME_YES="true"; shift ;;
             --force-upgrade) FORCE_UPGRADE="true"; shift ;;
+            --distro=k3s|--distro=kubeadm)
+                export KUBE_DISTRO="${1#*=}"
+                shift
+                ;;
+            --distro)
+                export KUBE_DISTRO="$2"
+                shift 2
+                ;;
             *) break ;;
         esac
     done
@@ -453,6 +469,37 @@ main() {
                 ;;
             *)
                 log_error "Unknown k8s action: ${action}"
+                usage
+                exit 1
+                ;;
+        esac
+        return 0
+    fi
+
+    # Handle k3s module (single-node k3s on Linux; kubeadm path unchanged in k8s module)
+    if [[ "${module}" == "k3s" ]]; then
+        case "${action}" in
+            install|init)
+                check_root
+                install_helm || exit 1
+                install_k3s || exit 1
+                if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+                    install_ingress_nginx || exit 1
+                fi
+                if [[ "${AUTO_GENERATE_CONFIG}" == "true" ]]; then
+                    generate_config_yaml || exit 1
+                fi
+                show_k3s_status
+                ;;
+            uninstall)
+                check_root
+                uninstall_k3s
+                ;;
+            status)
+                show_k3s_status
+                ;;
+            *)
+                log_error "Unknown k3s action: ${action}"
                 usage
                 exit 1
                 ;;

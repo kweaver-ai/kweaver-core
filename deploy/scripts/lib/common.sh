@@ -31,6 +31,9 @@ SHARED_CHARTS_DIR="${SHARED_CHARTS_DIR:-${SCRIPT_DIR}/.tmp/charts}"
 # Default namespace for infrastructure components (MariaDB/Redis/Kafka/OpenSearch, etc.)
 RESOURCE_NAMESPACE="${RESOURCE_NAMESPACE:-resource}"
 
+# Cluster bootstrap flavor for ensure_platform_prerequisites: kubeadm (default) or k3s (single-node Linux).
+KUBE_DISTRO="${KUBE_DISTRO:-kubeadm}"
+
 # Generate a random password
 generate_random_password() {
     local length="${1:-16}"
@@ -1149,6 +1152,37 @@ k8s_is_running() {
     return 1
 }
 
+# Idempotent single-node k3s path: Helm + k3s (built-in CNI/storage/DNS) + ingress-nginx.
+# Requires deploy.sh to source scripts/services/k3s.sh before this runs.
+ensure_k3s() {
+    if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    if k3s_is_running; then
+        log_info "k3s cluster detected, skipping k3s installation."
+        if [[ -f /root/.kube/config ]]; then
+            export KUBECONFIG=/root/.kube/config
+        elif [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        fi
+        export KWEAVER_K8S_ENSURED="true"
+        return 0
+    fi
+
+    log_info "No running k3s cluster detected. Installing k3s first..."
+    check_root
+    install_helm || return 1
+    install_k3s || return 1
+
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+        install_ingress_nginx || return 1
+    fi
+
+    export KWEAVER_K8S_ENSURED="true"
+    log_info "k3s-based platform bootstrap completed."
+}
+
 ensure_k8s() {
     if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
         return 0
@@ -1215,7 +1249,19 @@ ensure_platform_prerequisites() {
         return 0
     fi
 
-    ensure_k8s || return 1
+    case "${KUBE_DISTRO:-kubeadm}" in
+        k3s)
+            ensure_k3s || return 1
+            ;;
+        kubeadm)
+            ensure_k8s || return 1
+            ;;
+        *)
+            log_error "Unknown KUBE_DISTRO='${KUBE_DISTRO}'. Expected 'kubeadm' or 'k3s'."
+            return 1
+            ;;
+    esac
+
     ensure_data_services || return 1
 
     export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
