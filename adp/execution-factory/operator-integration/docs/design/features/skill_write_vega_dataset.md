@@ -104,7 +104,7 @@
 ## 6. Vega 初始化设计
 
 对接文档：
-- [vega-backend.yaml](/Users/chenshu/go/src/github.com/kweaver-ai/adp/docs/api/vega/vega-backend/vega-backend.yaml)
+- [common.yaml（OpenAPI 根）](/Users/chenshu/go/src/github.com/kweaver-ai/adp/docs/api/vega/vega-backend/common.yaml)
 
 ### 6.1 Create Catalog 接口
 

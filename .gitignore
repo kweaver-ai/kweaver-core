@@ -12,6 +12,9 @@ lib64/
 # Track deploy shell helpers (global `lib/` above would otherwise ignore this tree)
 !deploy/scripts/lib/
 !deploy/scripts/lib/**
+# Track example shell helpers
+!examples/*/lib/
+!examples/*/lib/**
 parts/
 sdist/
 var/
