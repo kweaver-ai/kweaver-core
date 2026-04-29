@@ -10,6 +10,8 @@ export PREFLIGHT_ROOT="${PREFLIGHT_ROOT:-${SCRIPT_DIR}}"
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
 # shellcheck source=scripts/services/k8s.sh
 source "${SCRIPT_DIR}/scripts/services/k8s.sh"
+# shellcheck source=scripts/services/k3s.sh
+source "${SCRIPT_DIR}/scripts/services/k3s.sh"
 # shellcheck source=scripts/lib/preflight_checks.sh
 source "${SCRIPT_DIR}/scripts/lib/preflight_checks.sh"
 
@@ -51,9 +53,16 @@ usage() {
     echo "                       Same as PREFLIGHT_FORGET_DECISIONS=true."
     echo "  --report=PATH        Append full log to a file"
     echo "  --skip=LIST          Comma-separated check names to skip (see source: preflight_checks.sh preflight_skip)"
+    echo "  --distro=k3s|k8s     Same as deploy.sh (default: k3s). k8s = kubeadm/package stack."
+    echo "                       Exported as KUBE_DISTRO (and PREFLIGHT_KUBE_DISTRO); legacy kubeadm = k8s."
+    echo "  deploy.sh note:      For deploy.sh, --distro must appear BEFORE the module (e.g. deploy.sh --distro=k8s"
+    echo "                       kweaver-core install --minimum). Trailing ... install --minimum --distro=k8s is ignored;"
+    echo "                       use KUBE_DISTRO=k8s or move the flag (same as -y, --force-upgrade)."
     echo ""
     echo "Environment:"
     echo "  PREFLIGHT_ROOT=path/to/deploy            override deploy root (defaults to script dir)"
+    echo "  KUBE_DISTRO=k3s|k8s                      same as deploy.sh (default k3s; legacy kubeadm = k8s)"
+    echo "  PREFLIGHT_KUBE_DISTRO=k3s|k8s          optional override; usually same as KUBE_DISTRO"
     echo "  PREFLIGHT_CONFIG_YAML=path/to/config     override config.yaml"
     echo "  PREFLIGHT_K8S_APT_MINOR=vX.YY            pin pkgs.k8s.io minor (default v1.28 / detected from kubeadm)"
     echo "  PREFLIGHT_STRICT=true|false              [default true] install-blocking items as [FAIL] not [WARN]"
@@ -144,6 +153,10 @@ while [[ $# -gt 0 ]]; do
             done
             shift
             ;;
+        --distro=k3s|--distro=k8s|--distro=kubeadm)
+            export KUBE_DISTRO="${1#*=}"
+            shift
+            ;;
         *)
             log_error "Unknown option: $1"
             usage
@@ -157,6 +170,8 @@ export PREFLIGHT_ASSUME_YES PREFLIGHT_ASSUME_NO PREFLIGHT_FIX_ALLOW
 export PREFLIGHT_OUTPUT_JSON PREFLIGHT_ROLE PREFLIGHT_LIST_FIXES_ONLY PREFLIGHT_NO_RECHECK PREFLIGHT_ROOT
 export PREFLIGHT_STRICT PREFLIGHT_STRICT_SOURCES
 export PREFLIGHT_REMEMBER_DECISIONS PREFLIGHT_FORGET_DECISIONS PREFLIGHT_DECISION_DIR
+export KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k3s}")"
+export PREFLIGHT_KUBE_DISTRO="$(kweaver_normalize_kube_distro "${PREFLIGHT_KUBE_DISTRO:-${KUBE_DISTRO}}")"
 
 # Wipe remembered "no" answers (onboard-tooling / node-22) before the run.
 if [[ "${PREFLIGHT_FORGET_DECISIONS:-false}" == "true" ]]; then

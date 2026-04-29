@@ -22,17 +22,20 @@ cd kweaver-core/deploy
 # 安装 k3s + Helm + ingress-nginx
 bash ./deploy.sh k3s install
 
-# 或在产品模块自动补集群时走 k3s 而不是 kubeadm：
-bash ./deploy.sh --distro=k3s kweaver-core install --minimum
-# 等价于：
-# KUBE_DISTRO=k3s bash ./deploy.sh kweaver-core install --minimum
+# 产品模块自动装集群（默认 distro 为 k3s）：
+bash ./deploy.sh kweaver-core install --minimum
+# 若需 kubeadm/包管理栈：
+# bash ./deploy.sh --distro=k8s kweaver-core install --minimum
+# KUBE_DISTRO=k8s bash ./deploy.sh kweaver-core install --minimum
 ```
 
 查看状态：`bash ./deploy.sh k3s status`；卸载：`bash ./deploy.sh k3s uninstall`。
 
 ### kubeadm（旧路径，行为不变）
 
-单节点 kubeadm 流程仍是 **`bash ./deploy.sh k8s install`**（`deploy/scripts/services/k8s.sh` 不改）。默认 `KUBE_DISTRO=kubeadm`，老用户无感。
+单节点 kubeadm 流程仍是 **`bash ./deploy.sh k8s install`**（`deploy/scripts/services/k8s.sh` 不变）。**`KUBE_DISTRO` 默认为 `k3s`**（模块自动装集群时走单节点 k3s）。需要 kubeadm 路径时用 **`--distro=k8s`** 或 **`KUBE_DISTRO=k8s`**；历史写法 **`kubeadm`** 仍可作为 **`k8s`** 的别名。
+
+**`deploy.sh` 全局参数**（`--distro`、`-y`、`--force-upgrade`、`--config` 等）必须写在**子模块名之前**。正确：`bash ./deploy.sh --distro=k8s kweaver-core install --minimum`。错误：`bash ./deploy.sh kweaver-core install --minimum --distro=k8s`（末尾的 `--distro` 不会按全局参数解析）。不想改命令顺序时可用：`export KUBE_DISTRO=k8s` 再执行 `bash ./deploy.sh kweaver-core install --minimum`。
 
 ```bash
 bash ./deploy.sh k8s install
@@ -72,10 +75,15 @@ sudo bash ./preflight.sh --fix          # 检查 + 交互修复
 sudo bash ./preflight.sh --fix -y       # 全部自动确认修复
 sudo bash ./preflight.sh --list-fixes   # 预览将会执行哪些修复，不改任何东西
 sudo bash ./preflight.sh --help         # 全部参数（--role、--skip、--report、--output=json 等）
+# 默认体检对齐 k3s；走 kubeadm/包管理栈时用：sudo bash ./preflight.sh --distro=k8s
+#（与 deploy 共用环境变量 KUBE_DISTRO=k8s）
 
 # 3. 安装 KWeaver Core
 # 最小化安装 — 首次体验推荐
 bash ./deploy.sh kweaver-core install --minimum
+# 若需 kubeadm 栈而非默认 k3s（--distro 须写在 kweaver-core 之前）：
+# bash ./deploy.sh --distro=k8s kweaver-core install --minimum
+# 或：export KUBE_DISTRO=k8s && bash ./deploy.sh kweaver-core install --minimum
 # 等价于:
 # bash ./deploy.sh kweaver-core install --set auth.enabled=false --set businessDomain.enabled=false
 

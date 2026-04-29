@@ -4,6 +4,8 @@
 
 > 📌 安装通过产品包或源码中的 `deploy/` 目录下的 `deploy.sh` 脚本完成。
 
+> **`deploy.sh` 全局参数**（`--distro=k3s|k8s`、`-y`、`--force-upgrade`、`--config=…` 等）只有写在**模块名之前**才会生效，例如 `bash ./deploy.sh --distro=k8s kweaver-core install --minimum`。写成 `... install --minimum --distro=k8s` **不会**按全局参数解析。可改用 `export KUBE_DISTRO=k8s` 再执行安装命令，或把 `--distro` 挪到前面（与 `-y`、`--force-upgrade` 一致）。
+
 ---
 
 ## 🧱 环境要求
@@ -123,11 +125,13 @@ sudo bash deploy/preflight.sh --help         # 全部参数
 | `--skip=LIST` | 跳过指定检查项 |
 | `--report=PATH` | 完整日志追加到该文件 |
 | `--output=json` | 以 JSON 输出到 stdout（人类日志到 stderr，需 `python3`） |
+| `--distro=k3s\|k8s` | 与 `deploy.sh` 对齐：**k3s**（默认）放宽 kubeadm 源/系统 containerd 等假设；**k8s** 走 kubeadm 向的严格检查。等同 `KUBE_DISTRO`。在 **`deploy.sh`** 上 `--distro` 须写在**模块名之前**（见本页开头说明）。 |
 
 常用环境变量：
 
 | 变量 | 默认 | 作用 |
 | --- | --- | --- |
+| `KUBE_DISTRO` | `k3s` | 与 `deploy.sh` 共用：**`k3s`** 与 **`k8s`**（kubeadm 栈）。历史值 **`kubeadm`** 仍可作为 **`k8s`** 的别名。若不能把 `deploy.sh` 的 `--distro` 写在模块前，可改用本变量。 |
 | `PREFLIGHT_STRICT` | `true` | 为 `true` 时，`--fix` 能修复的「阻塞 install」项以 `[FAIL]` 报告（让 `--check-only` 退出码为 `1`）；设 `false` 退回 `[WARN]`。 |
 | `PREFLIGHT_STRICT_SOURCES` | `true` | 为 `true` 时，会额外验证 `apt-cache policy kubeadm` / `containerd.io` / `containerd`（以及 `dnf`/`yum` 等价命令）确实有安装候选——光 `apt-get update` 成功不算数。 |
 | `PREFLIGHT_K8S_APT_MINOR` | 自动 | 锁定 `pkgs.k8s.io` minor 版本（如 `v1.28`）。否则从已装的 `kubeadm` 推断，回退 `v1.28`。 |

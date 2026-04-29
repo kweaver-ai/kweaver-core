@@ -4,6 +4,8 @@ This page covers **prerequisites**, **install steps**, and **post-install checks
 
 > Use the `deploy.sh` script under the `deploy/` directory from your product bundle or build tree.
 
+> **`deploy.sh` global flags** (`--distro=k3s|k8s`, `-y`, `--force-upgrade`, `--config=…`, …) are parsed only when they appear **before** the module, e.g. `bash ./deploy.sh --distro=k8s kweaver-core install --minimum`. A trailing `... install --minimum --distro=k8s` is **not** applied as distro. Use `export KUBE_DISTRO=k8s` for the same effect, or move `--distro` forward (same rule as `-y` / `--force-upgrade`).
+
 ---
 
 ## 🧱 Prerequisites
@@ -122,11 +124,13 @@ Common flags:
 | `--skip=LIST` | Comma-separated check names to skip |
 | `--report=PATH` | Append the full log to this file |
 | `--output=json` | Emit JSON summary to stdout (human logs to stderr); requires `python3` |
+| `--distro=k3s\|k8s` | Match `deploy.sh`: **k3s** (default) skips kubeadm-repo/containerd package assumptions; **k8s** runs the stricter kubeadm-oriented checks. Same as `KUBE_DISTRO`. On **`deploy.sh`**, `--distro` must come **before** the module (see the note at the top of this page). |
 
 Common environment variables:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
+| `KUBE_DISTRO` | `k3s` | Shared with `deploy.sh`: **`k3s`** vs **`k8s`** (kubeadm stack). Legacy `kubeadm` is accepted as an alias for **`k8s`**. Set this when you cannot place `--distro` before the module on `deploy.sh`. |
 | `PREFLIGHT_STRICT` | `true` | When `true`, install-blocking items that `--fix` can resolve are reported as `[FAIL]` (so `--check-only` exits `1`). Set `false` to revert to `[WARN]`. |
 | `PREFLIGHT_STRICT_SOURCES` | `true` | When `true`, also verify `apt-cache policy kubeadm` / `containerd.io` / `containerd` (and the `dnf`/`yum` equivalents) actually return install candidates — `apt-get update` succeeding alone is no longer enough. |
 | `PREFLIGHT_K8S_APT_MINOR` | auto | Pin the `pkgs.k8s.io` minor version (e.g. `v1.28`). Otherwise detected from installed `kubeadm`, falls back to `v1.28`. |

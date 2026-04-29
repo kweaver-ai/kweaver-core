@@ -36,6 +36,12 @@ PREFLIGHT_STRICT="${PREFLIGHT_STRICT:-true}"
 # PREFLIGHT_STRICT (any failure here is reported as [FAIL] when strict).
 PREFLIGHT_STRICT_SOURCES="${PREFLIGHT_STRICT_SOURCES:-true}"
 
+# k3s vs kubeadm: read at call time so deploy/preflight.sh can export after argv parse.
+_preflight_kube_distro_is_k3s() {
+    local d="${PREFLIGHT_KUBE_DISTRO:-${KUBE_DISTRO:-k3s}}"
+    case "${d}" in k3s|K3S) return 0 ;; *) return 1 ;; esac
+}
+
 # --- reporting helpers ---------------------------------------------------------
 preflight_reset_counters() {
     PREFLIGHT_OK_COUNT=0
@@ -602,6 +608,20 @@ preflight_check_kubeadm_deps() {
         preflight_warn "Optional kubeadm tools not found: ${miss[*]}. Not required by deploy.sh, but upstream Kubernetes docs recommend them (apt install conntrack socat ebtables ethtool ipset)"
     else
         preflight_ok "kubeadm dependency tools present (conntrack, socat, ebtables, ethtool, ipset, iptables)"
+    fi
+}
+
+# --- k3s path (KUBE_DISTRO=k3s): curl for installer ----------------------------
+preflight_check_k3s_prereqs() {
+    preflight_skip "k3s-prereqs" && return 0
+    if ! _preflight_kube_distro_is_k3s; then
+        return 0
+    fi
+    log_info "Checking k3s install prerequisites (KUBE_DISTRO=k3s)..."
+    if ! command -v curl &>/dev/null; then
+        preflight_strict_warn_or_fail "curl not found (k3s install uses curl|sh; e.g. apt-get install -y curl / dnf install -y curl)"
+    else
+        preflight_ok "curl present (required for k3s install script)"
     fi
 }
 
@@ -1194,10 +1214,24 @@ preflight_check_residue() {
     preflight_skip "residue" && return 0
     log_info "Checking for K3s / prior Kubernetes / CNI residue..."
 
-    if [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
-        preflight_fail "K3s binary found; remove or use k3s-killall.sh before this installer"
+    if _preflight_kube_distro_is_k3s; then
+        if type k3s_is_running &>/dev/null && k3s_is_running 2>/dev/null; then
+            preflight_ok "k3s cluster is healthy (KUBE_DISTRO=k3s); deploy will reuse it"
+        elif [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
+            if [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
+                preflight_fail "k3s is installed but the API is not usable (kubectl get nodes failed). Repair the cluster or: sudo preflight --fix with k3s-uninstall if switching away from k3s, then re-run deploy.sh k3s install"
+            else
+                preflight_warn "k3s binary present but /etc/rancher/k3s/k3s.yaml missing (incomplete install?)"
+            fi
+        else
+            preflight_ok "No k3s install yet (OK before first deploy.sh k3s install)"
+        fi
     else
-        preflight_ok "No K3s binary in PATH or /usr/local/bin/k3s"
+        if [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
+            preflight_fail "K3s binary found while preflight is aligned for k8s/kubeadm (KUBE_DISTRO=k8s). Remove k3s for that path (sudo preflight --fix → k3s-uninstall), or use default k3s: omit --distro or set KUBE_DISTRO=k3s."
+        else
+            preflight_ok "No K3s binary in PATH or /usr/local/bin/k3s"
+        fi
     fi
 
     if [[ -f /etc/kubernetes/admin.conf ]]; then
@@ -1228,7 +1262,11 @@ preflight_check_target_tools() {
         # On pure worker nodes kubectl is optional; on the install host it's required by deploy.sh.
         # Treat as strict (FAIL) by default — sudo preflight --fix runs k8s-pkgs-repo then
         # k8s-bins to actually install the binaries.
-        preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
+        if _preflight_kube_distro_is_k3s; then
+            preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it after k3s install; run: ./deploy.sh k3s install, or install k3s per README; kubeadm apt repo fixes do not apply to KUBE_DISTRO=k3s)"
+        else
+            preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
+        fi
     fi
 
     # sudo defaults (secure_path) often omit /usr/local/bin — install_helm lands there; fall back explicitly.
@@ -1371,6 +1409,19 @@ preflight_check_container_runtime() {
     preflight_skip "containerd" && return 0
     log_info "Checking container runtime (containerd)..."
 
+    if _preflight_kube_distro_is_k3s; then
+        if type k3s_is_running &>/dev/null && k3s_is_running 2>/dev/null; then
+            preflight_ok "KUBE_DISTRO=k3s: cluster up (k3s bundles containerd; no standalone containerd package required)"
+            return 0
+        fi
+        if [[ -S /run/k3s/containerd/containerd.sock ]] || [[ -S /var/run/k3s/containerd/containerd.sock ]]; then
+            preflight_ok "KUBE_DISTRO=k3s: k3s containerd socket present"
+            return 0
+        fi
+        preflight_ok "KUBE_DISTRO=k3s: skipping standalone containerd check (k3s install bundles containerd; install via ./deploy.sh k3s install)"
+        return 0
+    fi
+
     if command -v containerd &>/dev/null; then
         local cv
         cv="$(containerd --version 2>/dev/null | awk '{print $3}' || true)"
@@ -1462,6 +1513,11 @@ preflight_check_apt_install_candidates() {
     [[ "${PREFLIGHT_STRICT_SOURCES:-true}" == "true" ]] || return 0
     command -v apt-cache &>/dev/null || return 0
 
+    if _preflight_kube_distro_is_k3s; then
+        preflight_ok "KUBE_DISTRO=k3s: skipping apt kubeadm/containerd candidates (k3s bundles Kubernetes + containerd)"
+        return 0
+    fi
+
     local _apt_kubeadm_cand _apt_containerd_cand _apt_distro_containerd_cand
     _apt_kubeadm_cand="$(apt-cache policy kubeadm 2>/dev/null | awk '/Candidate:/{print $2; exit}' || true)"
     if [[ -n "${_apt_kubeadm_cand}" && "${_apt_kubeadm_cand}" != "(none)" ]]; then
@@ -1501,6 +1557,11 @@ preflight_check_yumdnf_install_candidates() {
     [[ "${PREFLIGHT_STRICT_SOURCES:-true}" == "true" ]] || return 0
     local pm="$1"
     command -v "${pm}" &>/dev/null || return 0
+
+    if _preflight_kube_distro_is_k3s; then
+        preflight_ok "KUBE_DISTRO=k3s: skipping ${pm} kubeadm/containerd candidates (k3s bundles Kubernetes + containerd)"
+        return 0
+    fi
 
     if _preflight_yumdnf_kubeadm_available "${pm}"; then
         preflight_ok "${pm} source can install kubeadm"
@@ -1979,7 +2040,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall, kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins (apt/dnf/yum install kubeadm/kubelet/kubectl after the source is primed), containerd-install (apt: containerd.io with fallback to distro containerd), helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh)"
+    log_info "  Suggested fix names: k3s-uninstall (k8s/kubeadm path only), kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins, containerd-install, helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh). Default distro is k3s; use --distro=k8s or KUBE_DISTRO=k8s for kubeadm-style checks/fixes."
     log_info "------------------------------------------------------------------"
 }
 
@@ -2102,12 +2163,14 @@ preflight_apply_safe_fixes() {
 
     log_info "Applying pre-install fixes (order: destructive cleanup first, then apt source, then packages; -y to auto-approve)..."
 
-    # --- 1) k3s uninstall ----------------------------------------------------
-    if [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
-        if preflight_confirm_fix "k3s-uninstall" \
-            "Run k3s-killall.sh and k3s-uninstall.sh" \
-            "Removes k3s data; destructive. Only if you intend to use kubeadm/this installer."; then
-            preflight_fix_k3s_uninstall
+    # --- 1) k3s uninstall (kubeadm path only; never prompt by default on KUBE_DISTRO=k3s) ---
+    if ! _preflight_kube_distro_is_k3s; then
+        if [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
+            if preflight_confirm_fix "k3s-uninstall" \
+                "Run k3s-killall.sh and k3s-uninstall.sh" \
+                "Removes k3s data; destructive. Only if you intend to use kubeadm/this installer."; then
+                preflight_fix_k3s_uninstall
+            fi
         fi
     fi
 
@@ -2125,11 +2188,12 @@ preflight_apply_safe_fixes() {
         fi
     fi
 
-    # --- 3) Kubernetes apt/yum source (BEFORE any apt/yum install) -----------
+    # --- 3) Kubernetes apt/yum source (kubeadm path only) -------------------
     # Run when EITHER (a) the deprecated packages.cloud.google.com source is
     # present (migrate), or (b) the package manager has no install candidate
     # for kubeadm at all (initialize). Without this, every later 'apt install
     # kubeadm/kubelet/kubectl' from deploy.sh fails.
+    if ! _preflight_kube_distro_is_k3s; then
     local k8s_apt_resolved
     k8s_apt_resolved="${PREFLIGHT_K8S_APT_MINOR:-$(preflight_resolve_k8s_apt_minor)}"
     if command -v apt-get &>/dev/null; then
@@ -2171,9 +2235,10 @@ preflight_apply_safe_fixes() {
             fi
         fi
     fi
+    fi
 
     # --- 4) containerd install -----------------------------------------------
-    if ! command -v containerd &>/dev/null; then
+    if ! _preflight_kube_distro_is_k3s && ! command -v containerd &>/dev/null; then
         if preflight_confirm_fix "containerd-install" \
             "install_containerd (or apt/dnf install containerd.io) + SystemdCgroup" \
             "Installs a system package and overwrites /etc/containerd/config.toml; may change runtime behavior."; then
@@ -2185,9 +2250,10 @@ preflight_apply_safe_fixes() {
     # Runs after k8s-pkgs-repo has primed the source. deploy.sh would also
     # install these later, but doing it here means preflight --check-only after
     # --fix shows OK instead of leaving a misleading [FAIL] for kubectl.
-    if ! command -v kubectl &>/dev/null \
+    if ! _preflight_kube_distro_is_k3s \
+        && { ! command -v kubectl &>/dev/null \
         || ! command -v kubeadm &>/dev/null \
-        || ! command -v kubelet &>/dev/null; then
+        || ! command -v kubelet &>/dev/null; }; then
         local _can_install=false
         if command -v apt-get &>/dev/null; then
             local _kbc
@@ -2468,6 +2534,9 @@ preflight_apply_safe_fixes() {
 
 # --- run all checks in order ---------------------------------------------------
 preflight_run_all_checks() {
+    if _preflight_kube_distro_is_k3s; then
+        log_info "Preflight: KUBE_DISTRO=k3s (kubeadm repo/binaries and standalone containerd checks are relaxed)"
+    fi
     preflight_check_os
     preflight_check_arch
     preflight_check_hardware
@@ -2483,6 +2552,7 @@ preflight_run_all_checks() {
     preflight_check_proxy
     preflight_check_dns
     preflight_check_kubeadm_deps
+    preflight_check_k3s_prereqs
     preflight_check_network
     preflight_check_k8s_version
     preflight_check_cidr_conflict
