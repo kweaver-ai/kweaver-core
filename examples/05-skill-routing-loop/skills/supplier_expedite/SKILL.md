@@ -13,6 +13,13 @@ Verify by reading supplier node in BKN before invoking.
 
 ## How to invoke
 
-POST `${TOOL_BACKEND_URL}/supplier/expedite` with body `{"sku": "<sku>", "supplier_id": "<sid>", "sla_hours": 36}`.
+Entry shell:
+
+```bash
+TOOL_BACKEND_URL={{TOOL_BACKEND_PUBLIC_URL}} SKU=<sku> SUPPLIER_ID=<sid> SLA_HOURS=36 python request_expedite.py
+```
+
+The script POSTs `${TOOL_BACKEND_URL}/supplier/expedite` with body
+`{"sku": "<sku>", "supplier_id": "<sid>", "sla_hours": 36}`.
 
 Returns `{status, sla_hours}`.

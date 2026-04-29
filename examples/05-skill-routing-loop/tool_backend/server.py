@@ -18,7 +18,15 @@ import sys
 import mysql.connector
 from flask import Flask, jsonify, request
 
-VALID_SKILL_IDS = ("standard_replenish", "substitute_swap", "supplier_expedite")
+VALID_SKILL_IDS = {
+    "standard_replenish",
+    "substitute_swap",
+    "supplier_expedite",
+    os.environ.get("STANDARD_REPLENISH_ID", ""),
+    os.environ.get("SUBSTITUTE_SWAP_ID", ""),
+    os.environ.get("SUPPLIER_EXPEDITE_ID", ""),
+}
+VALID_SKILL_IDS.discard("")
 
 app = Flask(__name__)
 PORT = int(os.environ.get("TOOL_BACKEND_PORT", "8765"))

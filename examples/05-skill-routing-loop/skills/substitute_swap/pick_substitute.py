@@ -50,6 +50,11 @@ def main():
 
     candidates = json.loads(os.environ.get("CANDIDATES", "[]"))
     if not candidates:
+        candidates = [
+            {"sku": "SUB-001A", "stock": 200, "compat_score": 0.95, "cost_delta_pct": 5, "lead_time_hours": 2},
+            {"sku": "SUB-001B", "stock": 80, "compat_score": 0.85, "cost_delta_pct": 2, "lead_time_hours": 4},
+        ]
+    if not candidates:
         print(json.dumps({"error": "no candidates provided"}), file=sys.stdout)
         sys.exit(1)
 

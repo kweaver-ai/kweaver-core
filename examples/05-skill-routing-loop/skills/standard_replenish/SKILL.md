@@ -13,6 +13,13 @@ in-stock substitute, supplier capability is `normal`).
 
 ## How to invoke
 
-POST `${TOOL_BACKEND_URL}/procurement/order` with body `{"sku": "<sku>", "qty": <integer>}`.
+Entry shell:
+
+```bash
+TOOL_BACKEND_URL={{TOOL_BACKEND_PUBLIC_URL}} SKU=<sku> QTY=<integer> python create_order.py
+```
+
+The script POSTs `${TOOL_BACKEND_URL}/procurement/order` with body
+`{"sku": "<sku>", "qty": <integer>}`.
 
 Returns `{po_number, status}`. Surface the PO number in the final answer.
