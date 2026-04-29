@@ -447,7 +447,10 @@ type Property struct {
                 "resource_id": "d7g5433kqlq74cujv3qg",
                 "distinct": false,
                 "filters": {}
-            }
+            },
+            "output_fields": [
+                "*"
+            ]
         },
         {
             "id": "node2",
