@@ -646,11 +646,6 @@ func (c *OracleConnector) ExecuteQuery(ctx context.Context, resource *interfaces
 	return nil, nil
 }
 
-// ExecuteJoinQuery 执行多表 JOIN 查询；Oracle 暂未实现
-func (c *OracleConnector) ExecuteJoinQuery(ctx context.Context, catalog *interfaces.Catalog, params *interfaces.JoinQueryParams) (*interfaces.QueryResult, error) {
-	return nil, fmt.Errorf("ExecuteJoinQuery not implemented for Oracle connector")
-}
-
 // GetMetadata returns the metadata for the catalog.
 func (c *OracleConnector) GetMetadata(ctx context.Context) (map[string]any, error) {
 	if err := c.Connect(ctx); err != nil {

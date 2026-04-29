@@ -27,7 +27,6 @@ import (
 	"vega-backend/logics/connector_type"
 	"vega-backend/logics/dataset"
 	"vega-backend/logics/discover_task"
-	"vega-backend/logics/query"
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data"
 	scheduled_discover_task "vega-backend/logics/scheduled_discover_task"
@@ -40,17 +39,16 @@ type RestHandler interface {
 }
 
 type restHandler struct {
-	appSetting        *common.AppSetting
-	as                interfaces.AuthService
-	cs                interfaces.CatalogService
-	rs                interfaces.ResourceService
-	ds                interfaces.DatasetService
-	cts               interfaces.ConnectorTypeService
-	dts               interfaces.DiscoverTaskService
-	sdtService        interfaces.ScheduledDiscoverTaskService
-	scheduler         *worker.Scheduler
-	rds               interfaces.ResourceDataService
-	querySessionStore interfaces.QuerySessionStore
+	appSetting *common.AppSetting
+	as         interfaces.AuthService
+	cs         interfaces.CatalogService
+	rs         interfaces.ResourceService
+	ds         interfaces.DatasetService
+	cts        interfaces.ConnectorTypeService
+	dts        interfaces.DiscoverTaskService
+	sdtService interfaces.ScheduledDiscoverTaskService
+	scheduler  *worker.Scheduler
+	rds        interfaces.ResourceDataService
 }
 
 // NewRestHandler creates a new RestHandler.
@@ -62,17 +60,16 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
 
 	return &restHandler{
-		appSetting:        appSetting,
-		as:                auth.NewAuthService(appSetting),
-		cs:                cs,
-		rs:                rs,
-		ds:                ds,
-		cts:               connector_type.NewConnectorTypeService(appSetting),
-		dts:               dts,
-		sdtService:        sdtService,
-		scheduler:         scheduler,
-		rds:               resource_data.NewResourceDataService(appSetting),
-		querySessionStore: query.NewMemorySessionStore(0),
+		appSetting: appSetting,
+		as:         auth.NewAuthService(appSetting),
+		cs:         cs,
+		rs:         rs,
+		ds:         ds,
+		cts:        connector_type.NewConnectorTypeService(appSetting),
+		dts:        dts,
+		sdtService: sdtService,
+		scheduler:  scheduler,
+		rds:        resource_data.NewResourceDataService(appSetting),
 	}
 }
 
@@ -144,10 +141,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		}
 
 		// Query APIs - External
-		queryGroup := apiV1.Group("/query")
-		{
-			queryGroup.POST("/execute", r.verifyJsonContentType(), r.QueryExecuteByEx)
-		}
 
 		// DiscoverTask APIs - External
 		discoverTasks := apiV1.Group("/discover-tasks")
@@ -207,10 +200,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		}
 
 		// Query APIs - Internal
-		queryGroup := apiInV1.Group("/query")
-		{
-			queryGroup.POST("/execute", r.verifyJsonContentType(), r.QueryExecuteByIn)
-		}
 		// DiscoverTask APIs - Internal
 		discoverTasks := apiInV1.Group("/discover-tasks")
 		{
