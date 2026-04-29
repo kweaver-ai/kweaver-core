@@ -177,7 +177,7 @@ sudo bash deploy/preflight.sh --help         # 全部参数
 **说明：**
 
 - **`[FIXED]` 为 0** 但一开始有 `[FAIL]`：常见于交互式 `--fix` 时**全部按了 Enter**，默认选项为 **「不应用该项修复」（N）**；需要 **`sudo bash deploy/preflight.sh --fix -y`**，或在每个提示处输入 **`y`**。
-- **常见 Outstanding [FAIL] 类别**（与修复名大致对应）：`system-tuning`（转发、swap、内核模块、`overlay` 等）、`kernel-limits`（`vm.max_map_count` / inotify）、`nofile-limits`（`ulimit -n`）、`k8s-pkgs-repo` + `k8s-bins`（Kubernetes 源与 `kubeadm`/`kubectl`）、`containerd-install`、`helm-v3`。RPM 系若 **`kubernetes.repo` 对 kube 包设置了 `exclude`**，安装侧需 **`--disableexcludes=kubernetes`**，preflight 与脚本的探测/安装语义已对齐）。
+- **常见 Outstanding [FAIL] 类别**（与修复名大致对应）：`docker-disable`（与 k3s / containerd 冲突时停 Docker）、`system-tuning`（转发、swap、内核模块、`overlay` 等）、`kernel-limits`（`vm.max_map_count` / inotify）、`nofile-limits`（`ulimit -n`）、`k8s-pkgs-repo` + `k8s-bins`（Kubernetes 源与 `kubeadm`/`kubectl`）、`containerd-install`、`helm-v3`。RPM 系若 **`kubernetes.repo` 对 kube 包设置了 `exclude`**，安装侧需 **`--disableexcludes=kubernetes`**，preflight 与脚本的探测/安装语义已对齐）。
 - **`--fix` 后务必再跑一次 `--check-only`**，确认关键项已为 `[OK]` 再执行 **`deploy.sh`**。
 
 更细的故障条目与手动兜底见 **`deploy/README.zh.md` → Troubleshooting**。

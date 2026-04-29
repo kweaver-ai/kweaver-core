@@ -815,9 +815,17 @@ preflight_check_docker_residue() {
     preflight_skip "docker" && return 0
     log_info "Checking Docker / dockershim residue vs containerd..."
     if systemctl is-active --quiet docker 2>/dev/null; then
-        preflight_fail "Docker service is active; stop/disable Docker when using containerd for Kubernetes (or remove duplicate runtime)"
+        if _preflight_kube_distro_is_k3s; then
+            preflight_fail "Docker service is active; k3s uses its own containerd. Stop/disable Docker before k3s install to avoid CRI conflicts (e.g. sudo systemctl stop docker && sudo systemctl disable docker), or uninstall Docker if you do not need it on this host."
+        else
+            preflight_fail "Docker service is active; stop/disable Docker when using containerd for Kubernetes (or remove duplicate runtime)"
+        fi
     elif [[ -S /var/run/docker.sock ]]; then
-        preflight_fail "Docker socket /var/run/docker.sock exists; remove Docker or the socket to avoid CRI conflicts"
+        if _preflight_kube_distro_is_k3s; then
+            preflight_fail "Docker socket /var/run/docker.sock exists; remove Docker or the socket before k3s install to avoid CRI conflicts."
+        else
+            preflight_fail "Docker socket /var/run/docker.sock exists; remove Docker or the socket to avoid CRI conflicts"
+        fi
     else
         preflight_ok "No active Docker service / docker.sock"
     fi
@@ -1259,12 +1267,14 @@ preflight_check_target_tools() {
     if command -v kubectl &>/dev/null; then
         preflight_ok "kubectl: $(command -v kubectl)"
     else
-        # On pure worker nodes kubectl is optional; on the install host it's required by deploy.sh.
-        # Treat as strict (FAIL) by default — sudo preflight --fix runs k8s-pkgs-repo then
-        # k8s-bins to actually install the binaries.
         if _preflight_kube_distro_is_k3s; then
-            preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it after k3s install; run: ./deploy.sh k3s install, or install k3s per README; kubeadm apt repo fixes do not apply to KUBE_DISTRO=k3s)"
+            if type k3s_is_running &>/dev/null && k3s_is_running 2>/dev/null; then
+                preflight_strict_warn_or_fail "kubectl not found on PATH but a Ready k3s cluster was detected — fix PATH or install kubectl (k3s normally provides kubectl)"
+            else
+                preflight_ok "kubectl not on PATH yet (normal before bootstrap). deploy.sh ensure_k3s installs k3s, which provides kubectl — run deploy then re-run preflight if you want to validate CLI paths."
+            fi
         else
+            # kubeadm path: strict (FAIL) by default — sudo preflight --fix runs k8s-pkgs-repo then k8s-bins.
             preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
         fi
     fi
@@ -1301,7 +1311,15 @@ preflight_check_target_tools() {
                 ;;
         esac
     else
-        preflight_strict_warn_or_fail "helm not found (deploy.sh kweaver-core install requires Helm v3; sudo preflight --fix → helm-v3 will install it)"
+        if _preflight_kube_distro_is_k3s; then
+            if type k3s_is_running &>/dev/null && k3s_is_running 2>/dev/null; then
+                preflight_strict_warn_or_fail "helm not found (k3s cluster is Ready but Helm v3 is required for chart deploy — sudo preflight --fix → helm-v3)"
+            else
+                preflight_ok "helm not on PATH yet (normal before bootstrap). deploy.sh ensure_k3s runs install_helm before k3s — no manual install required for the default k3s path."
+            fi
+        else
+            preflight_strict_warn_or_fail "helm not found (deploy.sh kweaver-core install requires Helm v3; sudo preflight --fix → helm-v3 will install it)"
+        fi
     fi
 
     # deploy/scripts/lib/onboard_*.py target CPython 3.6+ (e.g. CentOS 7); fail if PATH python3 is older.
@@ -1744,6 +1762,17 @@ preflight_fix_k3s_uninstall() {
     preflight_fixed "Attempted k3s-killall + k3s-uninstall (see logs if scripts missing)"
 }
 
+# Stop/disable Docker daemon + socket (conflicts with k3s or kubeadm+containerd on same host).
+preflight_fix_docker_disable() {
+    if command -v systemctl &>/dev/null; then
+        systemctl stop docker.socket 2>/dev/null || true
+        systemctl stop docker 2>/dev/null || true
+        systemctl disable docker.socket 2>/dev/null || true
+        systemctl disable docker 2>/dev/null || true
+    fi
+    preflight_fixed "Stopped and disabled docker.service and docker.socket (if present)"
+}
+
 preflight_fix_kubeadm_reset() {
     local droot="${PREFLIGHT_ROOT:-.}"
     if [[ -f "${droot}/deploy.sh" ]]; then
@@ -2040,7 +2069,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall (k8s/kubeadm path only), kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins, containerd-install, helm-v3, chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh). Default distro is k3s; use --distro=k8s or KUBE_DISTRO=k8s for kubeadm-style checks/fixes."
+    log_info "  Suggested fix names: k3s-uninstall (k8s/kubeadm path only), kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins, containerd-install, helm-v3, docker-disable (stop/disable docker.service + docker.socket — CRI conflict with k3s or containerd), chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh). Default distro is k3s; use --distro=k8s or KUBE_DISTRO=k8s for kubeadm-style checks/fixes."
     log_info "------------------------------------------------------------------"
 }
 
@@ -2310,6 +2339,15 @@ preflight_apply_safe_fixes() {
                 apt-get update -y 2>/dev/null && apt-get install -y chrony 2>/dev/null && systemctl enable --now chrony 2>/dev/null || true
                 preflight_fixed "Installed/ensured chrony via apt"
             fi
+        fi
+    fi
+
+    # --- 6b) Docker (CRI conflict with k3s or kubeadm+containerd) -------------
+    if systemctl is-active --quiet docker 2>/dev/null || [[ -S /var/run/docker.sock ]]; then
+        if preflight_confirm_fix "docker-disable" \
+            "systemctl stop + disable docker.service and docker.socket" \
+            "Docker often conflicts with k3s or stand-alone containerd for Kubernetes on the same host. This may break non-K8s container workloads that rely on Docker here."; then
+            preflight_fix_docker_disable
         fi
     fi
 
