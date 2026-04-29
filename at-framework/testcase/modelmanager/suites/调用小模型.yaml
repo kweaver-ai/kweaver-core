@@ -1,0 +1,99 @@
+feature: 小模型管理
+story: 调用小模型
+switch: y
+cases:
+- name: 调用embedding模型成功
+  url: modelmanager_small_model_runEmbedding
+  prepare_models: embedding
+  body_params: "{
+  \"model\": \"${embedding_config_name}\",
+  \"input\": [\"测试文本1\", \"测试文本2\"]
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.data\": \"type('array')\",
+  \"$.data[0].embedding\": \"exists\"
+}"
+  description: 测试调用embedding模型
+
+- name: 调用embedding模型失败--model不存在
+  url: modelmanager_small_model_runEmbedding
+  body_params: "{
+  \"model\": \"不存在的model\",
+  \"input\": [\"测试文本\"]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.Used.NameNotExist\",
+  \"$.detail\": \"模型名称或者模型id不存在\"
+}"
+  description: 测试model不存在
+
+- name: 调用embedding模型失败--input参数缺失
+  url: modelmanager_small_model_runEmbedding
+  prepare_models: embedding
+  body_params: "{
+  \"model\": \"${embedding_config_name}\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\",
+  \"$.detail\": \"input 参数缺失\"
+}"
+  description: 测试input参数缺失
+
+- name: 调用embedding模型失败--model和model_id都不传
+  url: modelmanager_small_model_runEmbedding
+  body_params: "{
+  \"input\": [\"测试文本\"]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\",
+  \"$.detail\": \"model或者model_id至少需要传递一个\"
+}"
+  description: 测试model和model_id都不传
+
+- name: 调用reranker模型成功
+  url: modelmanager_small_model_runReranker
+  prepare_models: reranker
+  body_params: "{
+  \"model\": \"${reranker_config_name}\",
+  \"query\": \"查询文本\",
+  \"documents\": [\"文档1\", \"文档2\", \"文档3\"]
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.results\": \"type('array')\",
+  \"$.results[0].relevance_score\": \"exists\"
+}"
+  description: 测试调用reranker模型
+
+- name: 调用reranker模型失败--model不存在
+  url: modelmanager_small_model_runReranker
+  body_params: "{
+  \"model\": \"不存在的model\",
+  \"query\": \"查询文本\",
+  \"documents\": [\"文档1\"]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.Used.NameNotExist\",
+  \"$.detail\": \"模型名称或者模型id不存在\"
+}"
+  description: 测试model不存在
+
+- name: 调用embedding模型失败--input传非数组
+  url: modelmanager_small_model_runEmbedding
+  prepare_models: embedding
+  body_params: "{
+  \"model\": \"${embedding_config_name}\",
+  \"input\": \"测试文本\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"value is not a valid list\"
+}"
+  description: 测试input传非数组类型
+

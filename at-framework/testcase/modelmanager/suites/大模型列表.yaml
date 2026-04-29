@@ -1,0 +1,41 @@
+feature: 大模型列表
+story: 大模型列表查询
+switch: y
+cases:
+- name: 获取大模型列表成功
+  url: modelmanager_llm_getList
+  query_params: "{\"page\": 1, \"size\": 100}"
+  code_check: '200'
+  resp_check: "{
+  \"$.data\": \"type('array')\",
+  \"$.count\": \">=0\"
+}"
+  description: 测试获取大模型列表功能
+
+- name: 获取大模型列表失败--page传负数
+  url: modelmanager_llm_getList
+  query_params: "{\"page\": -1, \"size\": 10}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMSource.ParameterError\"
+}"
+  description: 测试page传负数
+
+- name: 获取大模型列表失败--size传0
+  url: modelmanager_llm_getList
+  query_params: "{\"page\": 1, \"size\": 0}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMSource.ParameterError\"
+}"
+  description: 测试size传0
+
+- name: 获取大模型列表失败--page传字符串
+  url: modelmanager_llm_getList
+  query_params: "{\"page\": \"abc\", \"size\": 10}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMSource.ParameterError\"
+}"
+  description: 测试page传字符串
+

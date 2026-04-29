@@ -63,6 +63,7 @@
 - `case.url` 作为“API name”查本模块 `_config/apis.yaml`
 - 用 `global.yaml` 展开 `${变量}`，再执行 `prev_case` 的 `resp_values` 替换，最后对字符串做 Jinja2 渲染（替换顺序以 `case_schema.yaml` 的 `substitution_order` 为准）
 - `case.tags` 若为空则继承 suite 的 `tags`
+- 用例执行顺序：`prev_case`（前置）→ 当前用例 → `next_case`（后置）
 
 ### 3.2 path_scope_mapping 如何影响执行
 `path_scope_mapping.yaml` 不是直接生成 case，而是让你在执行时通过 `SCOPE=...` 间接筛选用例：

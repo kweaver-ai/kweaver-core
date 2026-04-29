@@ -1,0 +1,128 @@
+- name: modelmanager_llm_add
+  url: /api/mf-model-manager/v1/llm/add
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_edit
+  url: /api/mf-model-manager/v1/llm/edit
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_getInfo
+  url: /api/mf-model-manager/v1/llm/get
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_getList
+  url: /api/mf-model-manager/v1/llm/list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_delete
+  url: /api/mf-model-manager/v1/llm/delete
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_test
+  url: /api/mf-model-manager/v1/llm/test
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_chat
+  url: /api/mf-model-api/v1/chat/completions
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_encode
+  url: /api/mf-model-manager/v1/encode
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_llm_default
+  url: /api/mf-model-manager/v1/llm/default/edit
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_create
+  url: /api/mf-model-manager/v1/model-quota
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_getList
+  url: /api/mf-model-manager/v1/model-quota/list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_adduser
+  url: /api/mf-model-manager/v1/user-quota
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_userList
+  url: /api/mf-model-manager/v1/user-quota/list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_userDelete
+  url: /api/mf-model-manager/v1/user-quota/delete
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_quota_userRemain_check
+  url: /api/mf-model-manager/v1/user-quota/remain-check
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_add
+  url: /api/mf-model-manager/v1/small-model/add
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_edit
+  url: /api/mf-model-manager/v1/small-model/edit
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_getList
+  url: /api/mf-model-manager/v1/small-model/list
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_getInfo
+  url: /api/mf-model-manager/v1/small-model/get
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_delete
+  url: /api/mf-model-manager/v1/small-model/delete
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_runEmbedding
+  url: /api/mf-model-api/v1/small-model/embeddings
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_runReranker
+  url: /api/mf-model-api/v1/small-model/reranker
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_small_model_test
+  url: /api/mf-model-manager/v1/small-model/test
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_promptItem_add
+  url: /api/mf-model-manager/v1/prompt-item-add
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_promptItem_edit
+  url: /api/mf-model-manager/v1/prompt-item-edit
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_promptItem_getList
+  url: /api/mf-model-manager/v1/prompt-item-source
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_promptType_add
+  url: /api/mf-model-manager/v1/prompt-type-add
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_promptType_edit
+  url: /api/mf-model-manager/v1/prompt-type-edit
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_prompt_add
+  url: /api/mf-model-manager/v1/prompt-add
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_prompt_getList
+  url: /api/mf-model-manager/v1/prompt-source
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_prompt_getInfo
+  url: /api/mf-model-manager/v1/prompt
+  method: GET
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'
+- name: modelmanager_prompt_delete
+  url: /api/mf-model-manager/v1/delete-prompt
+  method: POST
+  headers: '{"Content-Type": "application/json", "Accept": "application/json"}'

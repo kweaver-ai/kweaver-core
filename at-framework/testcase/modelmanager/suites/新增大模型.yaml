@@ -1,0 +1,139 @@
+feature: 大模型管理
+story: 新增大模型
+switch: y
+cases:
+- name: 新增大模型成功--关闭配额
+  url: modelmanager_llm_add
+  next_case: 删除大模型成功
+  body_params: "{
+  \"model_name\": \"test_add_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_type\": \"llm\",
+  \"quota\": false
+  }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": \"ok\"\n}"
+  resp_values: "{\"llm_model_id\": \"$.id\"}"
+  description: 测试新增大模型功能--关闭配额
+
+- name: 新增大模型成功--开启配额
+  url: modelmanager_llm_add
+  next_case: 删除大模型成功
+  body_params: "{
+  \"model_name\": \"test_add_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_type\": \"llm\",
+  \"quota\": true
+  }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": \"ok\"\n}"
+  resp_values: "{\"llm_model_id\": \"$.id\"}"
+  description: 测试新增大模型功能--开启配额
+
+- name: 新增大模型失败--model_series传非有效值
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_qianwen\",
+  \"model_series\": \"qwen1\",
+  \"model_config\": {
+    \"api_url\": \"http://192.168.152.11:8303/v1/chat/completions\",
+    \"api_model\": \"Qwen2-72B-Chat\"
+  },
+  \"max_model_len\": 32,
+  \"model_parameters\": 72
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMAdd.ParameterError\",
+  \"$.detail\": \"参数model_series必须在['tome', 'qwen', 'openai', 'internlm', 'deepseek', 'qianxun', 'claude', 'chatglm', 'llama', 'others', 'baidu', 'baidu_tianchen']中\"
+}"
+  description: 测试model_series传非有效值
+
+- name: 新增大模型失败--model_series传空
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_qianwen\",
+  \"model_series\": \"\",
+  \"model_config\": {
+    \"api_url\": \"http://192.168.152.11:8303/v1/chat/completions\",
+    \"api_model\": \"Qwen2-72B-Chat\"
+  },
+  \"max_model_len\": 32,
+  \"model_parameters\": 72
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMAdd.ParameterError\",
+  \"$.detail\": \"参数model_series必须在['tome', 'qwen', 'openai', 'internlm', 'deepseek', 'qianxun', 'claude', 'chatglm', 'llama', 'others', 'baidu', 'baidu_tianchen']中\"
+}"
+  description: 测试model_series传空
+
+- name: 新增大模型失败--api_url传空
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_qianwen\",
+  \"model_series\": \"qwen\",
+  \"model_config\": {
+    \"api_url\": \"\",
+    \"api_model\": \"Qwen2-72B-Chat\"
+  },
+  \"max_model_len\": 32,
+  \"model_parameters\": 72
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMAdd.ParameterError\",
+  \"$.detail\": \"当前参数仅支持英文以及键盘上的特殊字符,且不超过400字符\"
+}"
+  description: 测试api_url传空
+
+- name: 新增大模型失败--max_model_len传非整数
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_qianwen\",
+  \"model_series\": \"qwen\",
+  \"model_config\": {
+    \"api_url\": \"http://192.168.152.11:8303/v1/chat/completions\",
+    \"api_model\": \"Qwen2-72B-Chat\"
+  },
+  \"max_model_len\": 32.0,
+  \"model_parameters\": 72
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMAdd.ParameterError\",
+  \"$.detail\": \"max_model_len必须为int类型且大于0\"
+}"
+  description: 测试max_model_len传非整数
+
+- name: 新增大模型失败--model_parameters传非整数
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_qianwen\",
+  \"model_series\": \"qwen\",
+  \"model_config\": {
+    \"api_url\": \"http://192.168.152.11:8303/v1/chat/completions\",
+    \"api_model\": \"Qwen2-72B-Chat\"
+  },
+  \"max_model_len\": 32,
+  \"model_parameters\": 72.0
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMAdd.ParameterError\",
+  \"$.detail\": \"model_parameters必须为int类型且大于0\"
+}"
+  description: 测试model_parameters传非整数
+

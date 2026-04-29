@@ -5,7 +5,7 @@ import pytest
 
 from common import at_env
 from common.func import load_sys_config, load_case, get_cases
-from common.hooks import load_session_clean_up
+from common.hooks import load_session_clean_up, load_session_setup
 
 config = load_sys_config("./config/config.ini")
 
@@ -97,18 +97,63 @@ def pytest_configure(config):
         os.environ["AT_ISF"] = str(opt_isf).strip()
 
 
-@pytest.fixture(scope="session", autouse=True)
-def clean_up(request):
-    print("\n========== CLEANUP FIXTURE STARTED ==========\n")
-    # 仅当本会话实际收集到 test_run 中的 API 用例时才执行（避免只跑 tests/ 时误连环境）
+def _should_run_hooks(request):
+    """判断是否应该运行会话级钩子：仅当收集到 test_run 中的 API 用例时才执行。"""
     try:
         items = request.session.items or []
-        if not any("test_run.py::" in getattr(i, "nodeid", "") or i.nodeid.startswith("test_run.py") for i in items):
-            print("No test_run items, skipping cleanup")
-            yield
-            return
+        has_test_run = any(
+            "test_run.py::" in getattr(i, "nodeid", "") or i.nodeid.startswith("test_run.py")
+            for i in items
+        )
+        if not has_test_run:
+            print("No test_run items, skipping session hooks")
+            return False
     except Exception as e:
         print(f"Error checking items: {e}")
+        return False
+    return True
+
+
+@pytest.fixture(scope="session", autouse=True)
+def session_setup_fixture(request):
+    """会话级前置钩子：在测试开始前执行 framework_hooks.session_setup。"""
+    if not _should_run_hooks(request):
+        yield
+        return
+
+    if not at_env.clean_up_enabled(config):
+        print("Session hooks disabled")
+        yield
+        return
+
+    clean_up_module = at_env.clean_up_module_name(config)
+    print(f"Module: {_module_name}, clean_up_module: {clean_up_module}")
+    if clean_up_module and clean_up_module != _module_name:
+        print("Module mismatch, skipping session hooks")
+        yield
+        return
+
+    import uuid
+    case_dir = os.path.abspath(_case_file)
+    session_id = str(uuid.uuid4())
+
+    setup_fn = load_session_setup(case_dir)
+    if setup_fn is not None:
+        print(f"Calling session_setup for: {_module_name}, session_id: {session_id}")
+        try:
+            setup_fn(session_id, config)
+        except Exception as e:
+            print(f"session_setup 异常: {e}")
+    else:
+        print(f"未注册 session_setup：模块 {_module_name} 无 framework_hooks.session_setup")
+
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clean_up(request):
+    """会话级清理钩子：在测试结束后执行 framework_hooks.session_clean_up。"""
+    if not _should_run_hooks(request):
         yield
         return
 
@@ -124,9 +169,7 @@ def clean_up(request):
         yield
         return
 
-    print("Tests will run now, cleanup after...\n")
     yield
-    print("\n========== TESTS FINISHED, STARTING CLEANUP ==========\n")
 
     case_dir = os.path.abspath(_case_file)
     fn = load_session_clean_up(case_dir)
@@ -138,4 +181,3 @@ def clean_up(request):
         return
     print(f"Calling session_clean_up for: {_module_name}")
     fn(config, allure)
-    print("\n========== CLEANUP FIXTURE COMPLETED ==========\n")

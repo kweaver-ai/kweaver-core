@@ -1,0 +1,49 @@
+feature: 大模型管理
+story: 获取大模型详情
+switch: y
+cases:
+- name: 获取大模型详情成功
+  url: modelmanager_llm_getInfo
+  query_params: "{
+  \"model_id\": \"${llm_config_id}\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.model_id\": \"exists\"
+}"
+  resp_values: "{\"llm_model_name\": \"$.model_name\"}"
+  description: 测试获取大模型详情功能
+
+- name: 获取大模型详情失败--model_id不存在
+  url: modelmanager_llm_getInfo
+  query_params: "{
+  \"model_id\": \"99999999999999\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMCheck.ParameterError\",
+  \"$.detail\": \"大模型不存在\"
+}"
+  description: 测试model_id不存在
+
+- name: 获取大模型详情失败--model_id不传
+  url: modelmanager_llm_getInfo
+  query_params: "{}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\",
+  \"$.detail\": \"model_id 参数缺失\"
+}"
+  description: 测试model_id不传
+
+- name: 获取大模型详情失败--model_id传空字符串
+  url: modelmanager_llm_getInfo
+  query_params: "{
+  \"model_id\": \"\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMCheck.ParameterError\",
+  \"$.detail\": \"大模型不存在\"
+}"
+  description: 测试model_id传空字符串

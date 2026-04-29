@@ -120,7 +120,7 @@ def _read_yaml(path):
 #             v["headers"] = "{}"
 #
 #     # 用例字段默认值（与 YAML case 结构一致，含 OpenAPI 对齐的 header/cookie/resp_headers）
-#     case_keys = ["name", "url", "prev_case", "path_params", "query_params", "header_params", "cookie_params",
+#     case_keys = ["name", "url", "prev_case", "next_case", "path_params", "query_params", "header_params", "cookie_params",
 #                  "body_params", "form_params", "resp_values", "code_check", "resp_headers_check",
 #                  "resp_schema", "resp_check", "description"]
 #

@@ -1,0 +1,481 @@
+feature: 大模型管理
+story: 大模型对话
+switch: y
+cases:
+- name: 非流式调用大模型成功--role为user
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"stream\": false,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试非流式调用大模型，role为user
+
+- name: 非流式调用大模型成功--role为system
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"system\",
+      \"content\": \"You are a helpful assistant\"
+    }
+  ],
+  \"stream\": false,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试非流式调用大模型，role为system
+
+- name: 非流式调用大模型成功--role为assistant
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"assistant\",
+      \"content\": \"Hello, I am an AI assistant\"
+    }
+  ],
+  \"stream\": false,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试非流式调用大模型，role为assistant
+
+- name: 非流式调用大模型成功--传递多组role
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"system\",
+      \"content\": \"You are a poet\"
+    },
+    {
+      \"role\": \"user\",
+      \"content\": \"Write a poem\"
+    }
+  ],
+  \"stream\": false,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试非流式调用大模型，传递多组role
+
+- name: 非流式调用大模型成功--传递top_k参数
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"stream\": false,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024,
+  \"top_k\": 50
+}"
+  code_check: '200'
+  description: 测试非流式调用大模型，传递top_k参数
+
+- name: 流式调用大模型成功--role为user
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"stream\": true,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试流式调用大模型，role为user
+
+- name: 流式调用大模型成功--role为system
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"system\",
+      \"content\": \"You are a helpful assistant\"
+    }
+  ],
+  \"stream\": true,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试流式调用大模型，role为system
+
+- name: 流式调用大模型成功--role为assistant
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"assistant\",
+      \"content\": \"Hello, I am an AI assistant\"
+    }
+  ],
+  \"stream\": true,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试流式调用大模型，role为assistant
+
+- name: 流式调用大模型成功--传递多组role
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"system\",
+      \"content\": \"You are a poet\"
+    },
+    {
+      \"role\": \"user\",
+      \"content\": \"Write a poem\"
+    }
+  ],
+  \"stream\": true,
+  \"temperature\": 0.7,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试流式调用大模型，传递多组role
+
+- name: 流式调用大模型成功--传递top_k参数
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"stream\": true,
+  \"temperature\": 0.7,
+  \"top_k\": 50,
+  \"max_tokens\": 1024
+}"
+  code_check: '200'
+  description: 测试流式调用大模型，传递top_k参数
+
+- name: 调用大模型失败--model类型不合法
+  url: modelmanager_llm_chat
+  body_params: "{
+  \"model\": 123,
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"str type expected\"
+}"
+  description: 测试model传整数类型
+
+- name: 调用大模型失败--model不存在
+  url: modelmanager_llm_chat
+  body_params: "{
+  \"model\": \"不存在的model\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.Used.NameNotExist\",
+  \"$.detail\": \"模型名称或者模型id不存在\"
+}"
+  description: 测试model不存在
+
+- name: 调用大模型失败--top_p类型不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"top_p\": \"string\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试top_p传字符串类型
+
+- name: 调用大模型失败--top_p取值不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"top_p\": 1.3
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"top_p must be an float and the range of values is 0 < top_p ≤ 1\"
+}"
+  description: 测试top_p取值超出0-1范围
+
+- name: 调用大模型失败--temperature类型不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"temperature\": \"string\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试temperature传字符串类型
+
+- name: 调用大模型失败--temperature取值不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"temperature\": 2.3
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"temperature must be an float and the range of values is 0 ≤ temperature ≤ 2\"
+}"
+  description: 测试temperature取值超出0-2范围
+
+- name: 调用大模型失败--presence_penalty类型不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"presence_penalty\": \"string\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试presence_penalty传字符串类型
+
+- name: 调用大模型失败--presence_penalty取值不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"presence_penalty\": 2.3
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"presence_penalty must be an float and the range of values is -2 ≤ presence_penalty ≤ 2\"
+}"
+  description: 测试presence_penalty取值超出-2-2范围
+
+- name: 调用大模型失败--frequency_penalty类型不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"frequency_penalty\": \"string\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试frequency_penalty传字符串类型
+
+- name: 调用大模型失败--frequency_penalty取值不合法
+  url: modelmanager_llm_chat
+  prepare_models: llm
+  body_params: "{
+  \"model\": \"${llm_config_name}\",
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": \"Hello\"
+    }
+  ],
+  \"frequency_penalty\": 2.3
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"frequency_penalty must be an float and the range of values is -2 ≤ frequency_penalty ≤ 2\"
+}"
+  description: 测试frequency_penalty取值超出-2-2范围
+
+- name: 前置用例--新增视觉理解模型成功
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"${vu_model_name}\",
+  \"model_series\": \"${vu_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${vu_api_url}\",
+    \"api_model\": \"${vu_model}\",
+    \"api_key\": \"${vu_api_key}\"
+  },
+  \"max_model_len\": ${vu_max_model_len},
+  \"model_type\": \"vu\",
+  \"quota\": false
+  }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": \"ok\"\n}"
+  resp_values: "{\"vu_model_id\": \"$.id\"}"
+  description: 测试新增视觉理解模型功能
+
+- name: 多模态调用大模型成功--理解图片
+  url: modelmanager_llm_chat
+  body_params: "{
+  \"model\": \"${vu_model_name}\",
+  \"temperature\": 1,
+  \"top_p\": 1,
+  \"presence_penalty\": 0,
+  \"frequency_penalty\": 0,
+  \"max_tokens\": 200,
+  \"messages\": [
+    {
+      \"role\": \"user\",
+      \"content\": [
+        {
+          \"type\": \"image_url\",
+          \"image_url\": {
+            \"url\": \"https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg\"
+          }
+        },
+        {
+          \"type\": \"image_url\",
+          \"image_url\": {
+            \"url\": \"https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png\"
+          }
+        },
+        {
+          \"type\": \"text\",
+          \"text\": \"这些图描绘了什么内容？\"
+        }
+      ]
+    }
+  ],
+  \"stream\": false
+}"
+  code_check: '200'
+  description: 测试多模态大模型理解图片
+
+- name: 多模态调用大模型成功--理解视频
+  url: modelmanager_llm_chat
+  body_params: "{
+  \"model\": \"${vu_model_name}\",
+  \"temperature\": 1,
+  \"top_p\": 1,
+  \"presence_penalty\": 0,
+  \"frequency_penalty\": 0,
+  \"max_tokens\": 200,
+  \"messages\": [
+    {
+      \"role\": \"system\",
+      \"content\": [
+        {
+          \"type\": \"text\",
+          \"text\": \"You are a helpful assistant.\"
+        }
+      ]
+    },
+    {
+      \"role\": \"user\",
+      \"content\": [
+        {
+          \"type\": \"video_url\",
+          \"video_url\": {
+            \"url\": \"https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241115/cqqkru/1.mp4\"
+          }
+        },
+        {
+          \"type\": \"text\",
+          \"text\": \"这段视频的内容是什么?\"
+        }
+      ]
+    }
+  ],
+  \"stream\": false
+}"
+  code_check: '200'
+  description: 测试多模态大模型理解视频

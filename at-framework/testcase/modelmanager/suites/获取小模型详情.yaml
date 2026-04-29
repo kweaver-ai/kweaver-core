@@ -1,0 +1,42 @@
+feature: 获取小模型详情
+story: 小模型详情查询
+switch: y
+cases:
+- name: 获取小模型详情成功
+  url: modelmanager_small_model_getInfo
+  prepare_models: embedding
+  query_params: "{\"model_id\": \"${embedding_config_id}\"}"
+  code_check: '200'
+  resp_check: "{
+  \"$.model_id\": \"exists\"
+}"
+  description: 测试获取小模型详情功能
+
+- name: 获取小模型详情失败--model_id不存在
+  url: modelmanager_small_model_getInfo
+  query_params: "{\"model_id\": \"99999999999999\"}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.GetInfo.IdNotExist\",
+  \"$.detail\": \"部分配置id不存在\"
+}"
+  description: 测试model_id不存在
+
+- name: 获取小模型详情失败--model_id不传
+  url: modelmanager_small_model_getInfo
+  query_params: "{}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\"
+}"
+  description: 测试model_id不传
+
+- name: 获取小模型详情失败--model_id传空字符串
+  url: modelmanager_small_model_getInfo
+  query_params: "{\"model_id\": \"\"}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.GetInfo.IdNotExist\",
+  \"$.detail\": \"部分配置id不存在\"
+}"
+  description: 测试model_id传空字符串

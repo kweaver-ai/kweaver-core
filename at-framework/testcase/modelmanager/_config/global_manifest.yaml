@@ -1,0 +1,10 @@
+variables:
+- name: llm_model_series
+  description: 大模型系列
+  ref: ${llm_model_series}
+- name: llm_api_url
+  description: 大模型API地址
+  ref: ${llm_api_url}
+- name: llm_api_key
+  description: 大模型API密钥
+  ref: ${llm_api_key}

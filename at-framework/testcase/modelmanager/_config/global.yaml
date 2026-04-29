@@ -1,0 +1,35 @@
+# 模型通用配置，包括llm、rlm、vu
+llm_model_series: others
+llm_api_url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+llm_api_key: sk-ebd5a3b1e9ff4672a1c96b8f9223c965
+
+# 新增大模型配置
+llm_model: qwen3-max
+llm_max_model_len: 1024
+
+# 备用大模型配置，删除大模型用例使用
+backup_model: qwen3-max
+backup_model_max_model_len: 1024
+
+# 多模态模型配置
+vu_model_name: test_vu_model
+vu_model_series: others
+vu_api_url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+vu_model: qwen3.6-plus
+vu_api_key: sk-ebd5a3b1e9ff4672a1c96b8f9223c965
+vu_model_type: vu
+vu_max_model_len: 256
+
+# embedding相关配置
+embedding_url: http://192.168.40.104:8302/v1/embeddings
+embedding_model: embedding
+embedding_dim: 768
+embedding_batch_size: 2048
+embedding_max_tokens: 512
+
+# reranker相关配置
+reranker_url: http://192.168.40.104:8343/v1/rerank
+reranker_model: reranker
+reranker_batch_size: 2048
+reranker_max_tokens: 512
+

@@ -56,6 +56,7 @@ SHEET_TITLE_MAPPING = {
             "name": "测试用例名称",
             "url": "调用接口",
             "prev_case": "前置用例",
+            "next_case": "后置用例",
             "query_params": "query参数",
             "body_params": "body参数",
             "form_params": "form参数",

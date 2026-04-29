@@ -94,9 +94,9 @@ def _resolve_authorization(case_info):
 
 def _parse_prepare_models(case_info):
     """
-    从单条用例读取前置小模型需求。
-    - prepare_models: 字符串 "embedding" / "reranker" / "oss" / 逗号组合 或 YAML 列表
-    - prepare_embedding / prepare_reranker / prepare_oss: 可选布尔，等价于列入 prepare_models
+    从单条用例读取前置模型需求。
+    - prepare_models: 字符串 "embedding" / "reranker" / "oss" / "llm" / 逗号组合 或 YAML 列表
+    - prepare_embedding / prepare_reranker / prepare_oss / prepare_llm: 可选布尔，等价于列入 prepare_models
     """
     names = []
     raw = case_info.get("prepare_models")
@@ -115,6 +115,8 @@ def _parse_prepare_models(case_info):
         parts.append("reranker")
     if _truthy(case_info.get("prepare_oss")):
         parts.append("oss")
+    if _truthy(case_info.get("prepare_llm")):
+        parts.append("llm")
 
     seen = set()
     for p in parts:
@@ -131,32 +133,39 @@ def _parse_prepare_models(case_info):
             if "oss" not in seen:
                 seen.add("oss")
                 names.append("oss")
+        elif pl in ("llm", "large"):
+            if "llm" not in seen:
+                seen.add("llm")
+                names.append("llm")
     return names
 
 
 def _run_prepare_models_for_case(case_info):
-    """按单条用例声明，向 mf-model-manager 注册所需小模型（配置仍来自 config.ini）。"""
+    """按单条用例声明，向 mf-model-manager 注册所需模型（配置仍来自 config.ini）。"""
     for kind in _parse_prepare_models(case_info):
         if kind == "embedding":
-            register_embedding_model(config)
+            embedding_id = register_embedding_model(config)
+            if embedding_id:
+                resp_values["embedding_config_id"] = str(embedding_id)
+            embedding_name = ((config.get("embedding_info") or {}).get("embedding_model_name") or "").strip()
+            if embedding_name:
+                resp_values["embedding_config_name"] = embedding_name
         elif kind == "reranker":
-            register_rerank_model(config)
+            reranker_id = register_rerank_model(config)
+            if reranker_id:
+                resp_values["reranker_config_id"] = str(reranker_id)
+            reranker_name = ((config.get("rerank_info") or {}).get("rerank_model_name") or "").strip()
+            if reranker_name:
+                resp_values["reranker_config_name"] = reranker_name
         elif kind == "oss":
             register_oss_storage(config)
-
-
-def _prepare_llm_id_for_case():
-    """
-    根据 config.ini 的 [llm_info] 动态获取 llm_config_id：
-    - 已存在则取 id
-    - 不存在则创建后取 id
-    """
-    llm_id = ensure_llm_model_and_get_id(config)
-    if llm_id:
-        resp_values["llm_config_id"] = str(llm_id)
-    llm_name = ((config.get("llm_info") or {}).get("llm_name") or "").strip()
-    if llm_name:
-        resp_values["llm_config_name"] = llm_name
+        elif kind == "llm":
+            llm_id = ensure_llm_model_and_get_id(config)
+            if llm_id:
+                resp_values["llm_config_id"] = str(llm_id)
+            llm_name = ((config.get("llm_info") or {}).get("llm_name") or "").strip()
+            if llm_name:
+                resp_values["llm_config_name"] = llm_name
 
 
 def _parse_check_expression(expected_value, actual_value, jsonpath_key=""):
@@ -555,9 +564,6 @@ def test_case(feature, story, case_name, case_info):
                     break
 
     with allure.step("加载用例参数"):
-        with allure.step("前置：大模型（llm_info）"):
-            _prepare_llm_id_for_case()
-
         # 更新前序用例提取的变量
         case_info = replace_params(case_info, **resp_values)
 
@@ -574,6 +580,9 @@ def test_case(feature, story, case_name, case_info):
 
         with allure.step("前置：小模型（prepare_models）"):
             _run_prepare_models_for_case(case_info)
+
+        # 小模型前置执行后，再次替换新增的变量（如 embedding_config_id）
+        case_info = replace_params(case_info, **resp_values)
 
         # 参数格式转换
         case_header_params = {
@@ -691,6 +700,21 @@ def test_case(feature, story, case_name, case_info):
     teardown_names = _parse_teardown_operator_names(case_info)
     if teardown_names:
         _teardown_delete_operators_by_names(teardown_names)
+
+    # 执行后置用例
+    if case_info.get("next_case", "") != '':
+        with allure.step("执行后置用例"):
+            for x in compute_case_list():
+                # 使用 _case_name（case原始name）进行匹配，避免被 api name 覆盖后匹配失败
+                target_name = x.get("_case_name") or x.get("name", "")
+                if target_name == case_info["next_case"]:
+                    try:
+                        test_case(x["feature"], x["story"], x.get("_case_name") or x.get("name"), x)
+                    except Exception as e:
+                        # 后置用例失败不影响当前用例结果，仅记录警告
+                        print("WARNING: next_case '%s' failed: %s" % (case_info["next_case"], e))
+                    # 若存在同名用例，仅执行第一个匹配项
+                    break
 
 
 if __name__ == '__main__':

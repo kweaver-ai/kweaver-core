@@ -49,6 +49,9 @@ embedding_model_type = embedding
 embedding_api_url = <EMBEDDING_API_URL>
 embedding_api_model = <EMBEDDING_API_MODEL>
 embedding_api_key = <EMBEDDING_API_KEY>
+embedding_batch_size = <EMBEDDING_BATCH_SIZE>
+embedding_dim = <EMBEDDING_DIM>
+embedding_max_tokens = <EMBEDDING_MAX_TOKENS>
 
 [llm_info]
 llm_name = <LLM_NAME>

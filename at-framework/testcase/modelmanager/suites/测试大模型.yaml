@@ -1,0 +1,56 @@
+feature: 大模型管理
+story: 测试大模型
+switch: y
+cases:
+- name: 通过模型id测试连接大模型成功
+  url: modelmanager_llm_test
+  prepare_models: llm
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试大模型连接功能
+
+- name: 通过模型配置测试连接大模型成功
+  url: modelmanager_llm_test
+  body_params: "{
+  \"model_name\": \"test_model\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_type\": \"llm\",
+  \"change\": \"true\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试通过模型配置连接大模型
+
+- name: 测试多模态大模型连接成功--通过配置测试
+  url: modelmanager_llm_test
+  body_params: "{
+  \"model_name\": \"test_vu_model_${ts_uuid}\",
+  \"model_series\": \"${vu_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${vu_api_url}\",
+    \"api_model\": \"${vu_model}\",
+    \"api_key\": \"${vu_api_key}\"
+  },
+  \"max_model_len\": ${vu_max_model_len},
+  \"model_type\": \"vu\",
+  \"change\": true
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试通过模型配置连接多模态大模型
+

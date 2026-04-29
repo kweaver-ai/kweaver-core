@@ -1,0 +1,209 @@
+feature: 小模型管理
+story: 新增小模型
+switch: y
+cases:
+- name: 新增小模型成功--embedding类型
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_embedding_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  resp_values: "{\"small_model_id\": \"$.id\"}"
+  description: 测试新增embedding类型小模型
+
+- name: 新增小模型成功--reranker类型
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_reranker_${ts_uuid}\",
+  \"model_type\": \"reranker\",
+  \"model_config\": {
+    \"api_url\": \"${reranker_url}\",
+    \"api_model\": \"${reranker_model}\"
+  },
+  \"max_tokens\": ${reranker_max_tokens},
+  \"batch_size\": ${reranker_batch_size}
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  resp_values: "{\"small_model_id\": \"$.id\"}"
+  description: 测试新增reranker类型小模型
+
+- name: 新增小模型失败--model_name缺失
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\"
+}"
+  description: 测试model_name缺失
+
+- name: 新增小模型失败--model_type缺失
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\"
+}"
+  description: 测试model_type缺失
+
+- name: 新增小模型失败--model_config缺失
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_config缺失
+
+- name: 新增小模型失败--model_type不合法
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": \"embedding121\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"string does not match regex \\\"^(reranker|embedding)$\\\"\"
+}"
+  description: 测试model_type不合法
+
+- name: 新增小模型失败--model_config传非对象
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": 1231,
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"value is not a valid dict\"
+}"
+  description: 测试model_config传非对象
+
+- name: 新增小模型失败--model_name重复
+  url: modelmanager_small_model_add
+  prepare_models: embedding
+  body_params: "{
+  \"model_name\": \"${embedding_config_name}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.AddModel.RepeatedNames\",
+  \"$.detail\": \"模型名称重复\"
+}"
+  description: 测试model_name重复
+
+- name: 新增小模型失败--model_type传整数
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": 12,
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.detail\": \"str type expected\"
+}"
+  description: 测试model_type传整数类型
+
+- name: 新增小模型失败--embedding_dim缺失
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\"
+}"
+  description: 测试embedding_dim缺失
+
+- name: 新增小模型失败--batch_size缺失
+  url: modelmanager_small_model_add
+  body_params: "{
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\"
+}"
+  description: 测试batch_size缺失
+
+

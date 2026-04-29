@@ -1,0 +1,46 @@
+feature: 小模型管理
+story: 编辑小模型
+switch: y
+cases:
+- name: 编辑小模型失败--模型名称重复
+  url: modelmanager_small_model_edit
+  prepare_models: embedding
+  prev_case: 新增小模型成功--embedding类型
+  body_params: "{
+  \"model_id\": \"${small_model_id}\",
+  \"model_name\": \"${embedding_config_name}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ExternalSmallModel.EditModel.RepeatedNames\",
+  \"$.detail\": \"模型名称重复\"
+}"
+  description: 测试模型名称重复
+
+- name: 编辑小模型成功--修改模型名称
+  url: modelmanager_small_model_edit
+  body_params: "{
+  \"model_id\": \"${embedding_config_id}\",
+  \"model_name\": \"${embedding_config_name}_updated\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size}
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试编辑小模型名称

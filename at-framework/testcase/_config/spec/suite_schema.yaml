@@ -30,7 +30,7 @@ fields:
   - name: cases
     type: list
     required: true
-    description: 用例数组，每项符合 case_schema.yaml；数组顺序即加载顺序，执行顺序由各 case 的 prev_case 依赖决定
+    description: 用例数组，每项符合 case_schema.yaml；数组顺序即加载顺序，执行顺序由各 case 的 prev_case / next_case 依赖决定
     item_ref: case_schema.yaml
 
 file_convention: "仅 .yaml / .yml 被加载；文件名建议与 story 一致，如 新增数据源.yaml"

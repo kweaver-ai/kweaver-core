@@ -1,0 +1,100 @@
+feature: 大模型管理
+story: 删除大模型
+switch: y
+cases:
+- name: 前置用例--新增大模型成功
+  url: modelmanager_llm_add
+  body_params: "{
+  \"model_name\": \"test_add_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_type\": \"llm\",
+  \"quota\": false
+  }"
+  code_check: '200'
+  resp_check: "{\n  \"$.status\": \"ok\"\n}"
+  resp_values: "{\"llm_model_id\": \"$.id\"}"
+  description: 测试新增大模型功能
+
+- name: 删除大模型成功
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": [\"${llm_model_id}\"]
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试删除大模型功能
+
+- name: 删除大模型失败--模型ID不存在
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": [\"9999999999999999999999999999999999\"]
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMRemove.ParameterError\",
+  \"$.detail\": \"部分模型不存在\"
+}"
+  description: 测试模型ID不存在
+
+- name: 删除大模型失败--model_ids传字符串
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": \"123\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_ids传字符串
+
+- name: 删除大模型失败--model_ids传浮点数
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": 12.23
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_ids传浮点数
+
+- name: 删除大模型失败--model_ids传布尔值
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": true
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_ids传布尔值
+
+- name: 删除大模型失败--model_ids传整数
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": 123
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_ids传整数
+
+- name: 删除大模型失败--model_ids传null
+  url: modelmanager_llm_delete
+  body_params: "{
+  \"model_ids\": null
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\"
+}"
+  description: 测试model_ids传null

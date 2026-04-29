@@ -26,6 +26,41 @@ from common import at_env
 _SESSION_MODEL_TYPES: set = set()
 _OSS_PORT_FORWARD_READY = False
 _SESSION_LLM_MODEL_ID: Optional[str] = None
+_SESSION_BEARER_TOKEN: Optional[str] = None
+
+
+def _get_bearer_token(config: Dict[str, Dict[str, str]]) -> str:
+    """
+    获取 Bearer token，参考 test_run.py 的 _default_bearer_auth 逻辑：
+    - AT_AUTH_SOURCE=login 时尝试 get_token
+    - 否则使用静态 token（API_ACCESS_TOKEN / test_data.application_token）
+    - 使用会话级缓存，避免每次请求都调用 get_token 产生多余报错
+    """
+    global _SESSION_BEARER_TOKEN
+    if _SESSION_BEARER_TOKEN is not None:
+        return _SESSION_BEARER_TOKEN
+
+    source = at_env.auth_token_source(config)
+    if source == "login":
+        try:
+            from src.common.token_provider import get_token, clear_token_cache
+
+            user, pwd = at_env.admin_credentials(config)
+            if user:
+                clear_token_cache(user)
+                tok = at_env.normalize_bearer_token_value(get_token(user, pwd, force_refresh=True) or "")
+                if tok:
+                    _SESSION_BEARER_TOKEN = "Bearer %s" % tok
+                    return _SESSION_BEARER_TOKEN
+        except Exception as ex:
+            print("[model_registry] get_token 异常: %s" % ex)
+
+    static_token = at_env.static_access_token(config)
+    if static_token:
+        _SESSION_BEARER_TOKEN = "Bearer %s" % static_token
+        return _SESSION_BEARER_TOKEN
+    _SESSION_BEARER_TOKEN = ""
+    return ""
 
 
 def _to_int(raw: Any, default: int) -> int:
@@ -204,15 +239,57 @@ def storage_urls(config: Dict[str, Dict[str, str]]) -> Tuple[Optional[str], Opti
     return add_url, list_url
 
 
+def _check_small_model_exists(
+    config: Dict[str, Dict[str, str]],
+    model_name: str,
+) -> Optional[str]:
+    """检查小模型是否仍然存在，存在返回 model_id，否则返回 None。"""
+    _, list_url = mf_model_manager_urls(config)
+    if not list_url:
+        return None
+    mm = config.get("model_manager") or {}
+    timeout = _to_int(mm.get("timeout", "20"), 20)
+    verify_ssl = _to_bool(mm.get("verify_ssl", "false"), False)
+    auth_header = _get_bearer_token(config)
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+    try:
+        resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
+        if 200 <= resp.status_code < 300:
+            try:
+                body = resp.json()
+            except Exception:
+                body = {}
+            candidates = []
+            if isinstance(body, list):
+                candidates = body
+            elif isinstance(body, dict):
+                for key in ("data", "items", "list", "models", "entries"):
+                    val = body.get(key)
+                    if isinstance(val, list):
+                        candidates = val
+                        break
+            for item in candidates:
+                if isinstance(item, dict) and item.get("model_name") == model_name:
+                    model_id = _extract_id_from_item(item)
+                    if model_id:
+                        return model_id
+    except Exception:
+        pass
+    return None
+
+
 def ensure_small_model(
     config: Dict[str, Dict[str, str]],
     model_name: str,
     payload: dict,
     log_prefix: str,
-) -> None:
+) -> Optional[str]:
     """
     add 前先查 small-model/list，同名已存在则跳过。
     list 非 2xx 时仍尝试 add。
+    返回 model_id，如果未找到则返回 None。
     """
     add_url, list_url = mf_model_manager_urls(config)
     if not add_url or not list_url:
@@ -220,14 +297,18 @@ def ensure_small_model(
             "[%s] Cannot resolve mf-model-manager URL from [server].base_url, skip"
             % log_prefix
         )
-        return
+        return None
 
     mm = config.get("model_manager") or {}
     timeout = _to_int(mm.get("timeout", "20"), 20)
     verify_ssl = _to_bool(mm.get("verify_ssl", "false"), False)
+    auth_header = _get_bearer_token(config)
+    headers = {"Content-Type": "application/json"}
+    if auth_header:
+        headers["Authorization"] = auth_header
 
     try:
-        list_resp = requests.get(list_url, timeout=timeout, verify=verify_ssl)
+        list_resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
         if 200 <= list_resp.status_code < 300:
             try:
                 body = list_resp.json()
@@ -242,14 +323,14 @@ def ensure_small_model(
                     if isinstance(val, list):
                         candidates = val
                         break
-            if any(
-                isinstance(x, dict) and x.get("model_name") == model_name
-                for x in candidates
-            ):
-                print(
-                    "[%s] Model already exists, skip add: %s" % (log_prefix, model_name)
-                )
-                return
+            for item in candidates:
+                if isinstance(item, dict) and item.get("model_name") == model_name:
+                    model_id = _extract_id_from_item(item)
+                    if model_id:
+                        print(
+                            "[%s] Model already exists, skip add: %s (id=%s)" % (log_prefix, model_name, model_id)
+                        )
+                        return model_id
         else:
             print(
                 "[%s] Query model list failed: status=%s body=%s"
@@ -258,34 +339,65 @@ def ensure_small_model(
 
         resp = requests.post(
             add_url,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             json=payload,
             timeout=timeout,
             verify=verify_ssl,
         )
         if 200 <= resp.status_code < 300:
             print("[%s] Add success: %s" % (log_prefix, model_name))
-            return
+            try:
+                body = resp.json()
+            except Exception:
+                body = {}
+            created_id = _extract_id_from_body(body)
+            if created_id:
+                return created_id
+            
+            fallback_resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
+            if 200 <= fallback_resp.status_code < 300:
+                try:
+                    fallback_body = fallback_resp.json()
+                except Exception:
+                    fallback_body = {}
+                for item in _extract_items(fallback_body):
+                    if isinstance(item, dict) and item.get("model_name") == model_name:
+                        fallback_id = _extract_id_from_item(item)
+                        if fallback_id:
+                            return fallback_id
+            
+            print("[%s] Add success but id not found in response/list" % log_prefix)
+            return None
+        
         print(
             "[%s] Add failed: status=%s body=%s"
             % (log_prefix, resp.status_code, resp.text[:1000])
         )
+        return None
     except Exception as e:
         print("[%s] Request error: %s" % (log_prefix, e))
+        return None
 
 
-def register_embedding_model(config: Dict[str, Dict[str, str]]) -> None:
+def register_embedding_model(config: Dict[str, Dict[str, str]]) -> Optional[str]:
     """
     读取 [embedding_info]，向 mf-model-manager 注册 embedding 模型。
+    返回 model_id，如果未找到则返回 None。
     """
-    if "embedding" in _SESSION_MODEL_TYPES:
-        return
     emb = config.get("embedding_info") or {}
     if not emb:
         print("[embedding_setup] Missing [embedding_info], skip add embedding")
-        return
+        return None
 
     model_name = (emb.get("embedding_model_name") or "").strip()
+    
+    if "embedding" in _SESSION_MODEL_TYPES:
+        existing_id = _check_small_model_exists(config, model_name)
+        if existing_id:
+            print("[embedding_setup] Model already exists, skip add: %s (id=%s)" % (model_name, existing_id))
+            return existing_id
+        print("[embedding_setup] Model was deleted, will re-register")
+        _SESSION_MODEL_TYPES.discard("embedding")
     model_type = (emb.get("embedding_model_type") or "").strip()
     api_url = (emb.get("embedding_api_url") or "").strip()
     api_model = (emb.get("embedding_api_model") or "").strip()
@@ -293,7 +405,7 @@ def register_embedding_model(config: Dict[str, Dict[str, str]]) -> None:
 
     if not all([model_name, model_type, api_url, api_model, api_key]):
         print("[embedding_setup] Incomplete embedding_info fields, skip add embedding")
-        return
+        return None
 
     payload = {
         "model_name": model_name,
@@ -303,26 +415,35 @@ def register_embedding_model(config: Dict[str, Dict[str, str]]) -> None:
             "api_model": api_model,
             "api_key": api_key,
         },
-        "batch_size": _to_int(emb.get("batch_size", "10"), 10),
-        "max_tokens": _to_int(emb.get("max_tokens", "8192"), 8192),
+        "batch_size": _to_int(emb.get("embedding_batch_size", "10"), 10),
+        "max_tokens": _to_int(emb.get("embedding_max_tokens", "8192"), 8192),
         "embedding_dim": _to_int(emb.get("embedding_dim", "1024"), 1024),
     }
-    ensure_small_model(config, model_name, payload, "embedding_setup")
-    _SESSION_MODEL_TYPES.add("embedding")
+    model_id = ensure_small_model(config, model_name, payload, "embedding_setup")
+    if model_id:
+        _SESSION_MODEL_TYPES.add("embedding")
+    return model_id
 
 
-def register_rerank_model(config: Dict[str, Dict[str, str]]) -> None:
+def register_rerank_model(config: Dict[str, Dict[str, str]]) -> Optional[str]:
     """
     读取 [rerank_info]，向 mf-model-manager 注册 reranker。
+    返回 model_id，如果未找到则返回 None。
     """
-    if "reranker" in _SESSION_MODEL_TYPES:
-        return
     rr = config.get("rerank_info") or {}
     if not rr:
         print("[rerank_setup] Missing [rerank_info], skip add reranker")
-        return
+        return None
 
     model_name = (rr.get("rerank_model_name") or "").strip()
+    
+    if "reranker" in _SESSION_MODEL_TYPES:
+        existing_id = _check_small_model_exists(config, model_name)
+        if existing_id:
+            print("[rerank_setup] Model already exists, skip add: %s (id=%s)" % (model_name, existing_id))
+            return existing_id
+        print("[rerank_setup] Model was deleted, will re-register")
+        _SESSION_MODEL_TYPES.discard("reranker")
     model_type = (rr.get("rerank_model_type") or "").strip()
     api_url = (rr.get("rerank_api_url") or "").strip()
     api_model = (rr.get("rerank_api_model") or "").strip()
@@ -330,7 +451,7 @@ def register_rerank_model(config: Dict[str, Dict[str, str]]) -> None:
 
     if not all([model_name, model_type, api_url, api_model]):
         print("[rerank_setup] Incomplete rerank_info fields, skip add reranker")
-        return
+        return None
 
     model_config = {"api_url": api_url, "api_model": api_model}
     if api_key:
@@ -342,8 +463,10 @@ def register_rerank_model(config: Dict[str, Dict[str, str]]) -> None:
         "model_config": model_config,
         "batch_size": _to_int(rr.get("rerank_batch_size", "2048"), 2048),
     }
-    ensure_small_model(config, model_name, payload, "rerank_setup")
-    _SESSION_MODEL_TYPES.add("reranker")
+    model_id = ensure_small_model(config, model_name, payload, "rerank_setup")
+    if model_id:
+        _SESSION_MODEL_TYPES.add("reranker")
+    return model_id
 
 
 def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
@@ -390,9 +513,13 @@ def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
 
     timeout = _to_int((oss.get("timeout") or "20"), 20)
     verify_ssl = _to_bool(oss.get("verify_ssl"), False)
+    auth_header = _get_bearer_token(config)
+    headers = {"Content-Type": "application/json"}
+    if auth_header:
+        headers["Authorization"] = auth_header
 
     try:
-        list_resp = requests.get(list_url, timeout=timeout, verify=verify_ssl)
+        list_resp = requests.get(list_url, headers=headers, timeout=timeout, verify=verify_ssl)
         if 200 <= list_resp.status_code < 300:
             try:
                 body = list_resp.json()
@@ -419,7 +546,7 @@ def register_oss_storage(config: Dict[str, Dict[str, str]]) -> None:
 
         resp = requests.post(
             add_url,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             json=payload,
             timeout=timeout,
             verify=verify_ssl,
@@ -485,6 +612,10 @@ def _find_llm_id_by_name(
     timeout = _to_int(mm.get("timeout", "20"), 20)
     verify_ssl = _to_bool(mm.get("verify_ssl", "false"), False)
     size = _to_int(mm.get("llm_list_size", "50"), 50)
+    auth_header = _get_bearer_token(config)
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
     params = {
         "name": model_name,
         "page": 1,
@@ -495,7 +626,7 @@ def _find_llm_id_by_name(
         "model_type": "llm",
     }
     try:
-        resp = requests.get(list_url, params=params, timeout=timeout, verify=verify_ssl)
+        resp = requests.get(list_url, params=params, headers=headers, timeout=timeout, verify=verify_ssl)
         if not (200 <= resp.status_code < 300):
             print(
                 "[llm_setup] Query llm list failed: status=%s body=%s"
@@ -526,7 +657,14 @@ def ensure_llm_model_and_get_id(config: Dict[str, Dict[str, str]]) -> Optional[s
     """
     global _SESSION_LLM_MODEL_ID
     if _SESSION_LLM_MODEL_ID:
-        return _SESSION_LLM_MODEL_ID
+        llm = config.get("llm_info") or {}
+        model_name = (llm.get("llm_name") or "").strip()
+        model_series = (llm.get("llm_series") or "").strip() or "all"
+        existing_id = _find_llm_id_by_name(config, model_name, model_series)
+        if existing_id:
+            return _SESSION_LLM_MODEL_ID
+        print("[llm_setup] LLM was deleted, will re-register")
+        _SESSION_LLM_MODEL_ID = None
 
     llm = config.get("llm_info") or {}
     model_name = (llm.get("llm_name") or "").strip()
@@ -553,6 +691,10 @@ def ensure_llm_model_and_get_id(config: Dict[str, Dict[str, str]]) -> Optional[s
     mm = config.get("model_manager") or {}
     timeout = _to_int(mm.get("timeout", "20"), 20)
     verify_ssl = _to_bool(mm.get("verify_ssl", "false"), False)
+    auth_header = _get_bearer_token(config)
+    headers = {"Content-Type": "application/json"}
+    if auth_header:
+        headers["Authorization"] = auth_header
     payload = {
         "model_config": {
             "api_model": api_model,
@@ -569,7 +711,7 @@ def ensure_llm_model_and_get_id(config: Dict[str, Dict[str, str]]) -> Optional[s
     try:
         resp = requests.post(
             add_url,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             json=payload,
             timeout=timeout,
             verify=verify_ssl,

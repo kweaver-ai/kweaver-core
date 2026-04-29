@@ -1,0 +1,213 @@
+feature: 大模型管理
+story: 编辑大模型
+switch: y
+cases:
+- name: 编辑大模型成功
+  url: modelmanager_llm_edit
+  prepare_models: llm
+  next_case: 删除大模型成功
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\",
+  \"model_name\": \"updated_model_name_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  resp_values: "{\"llm_model_id\": \"$.id\"}"
+  description: 测试编辑大模型功能
+
+- name: 编辑大模型失败--max_model_len传非整数
+  url: modelmanager_llm_edit
+  prepare_models: llm
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\",
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": 33.0,
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"max_model_len必须为int类型且大于0\"
+}"
+  description: 测试max_model_len传非整数
+
+- name: 编辑大模型失败--model_parameters传非整数
+  url: modelmanager_llm_edit
+  prepare_models: llm
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\",
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 70.0,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"model_parameters必须为int类型且大于0\"
+}"
+  description: 测试model_parameters传非整数
+
+- name: 编辑大模型失败--model_id传空
+  url: modelmanager_llm_edit
+  body_params: "{
+  \"model_id\": \"\",
+  \"model_name\": \"test_model\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"该模型不存在\"
+}"
+  description: 测试model_id传空
+
+- name: 编辑大模型失败--模型名称超过50字符
+  url: modelmanager_llm_edit
+  prepare_models: llm
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\",
+  \"model_name\": \"我需要一个模型名称这个模型名称需要超过50个字符为了验证模型名称最大长度的场景我写完这句化就差不多了我去数一下看看\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"当前参数仅支中英文以及键盘上的特殊字符,且不超过50字符\"
+}"
+  description: 测试模型名称超过50字符
+
+- name: 编辑大模型失败--max_model_len参数缺失
+  url: modelmanager_llm_edit
+  prepare_models: llm
+  body_params: "{
+  \"model_id\": \"${llm_config_id}\",
+  \"model_name\": \"test_model_${ts_uuid}\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\",
+  \"$.detail\": \"max_model_len 参数缺失\"
+}"
+  description: 测试max_model_len参数缺失
+
+- name: 编辑大模型失败--model_id不存在
+  url: modelmanager_llm_edit
+  body_params: "{
+  \"model_id\": \"9656646548\",
+  \"model_name\": \"test_model\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"该模型不存在\"
+}"
+  description: 测试model_id不存在
+
+- name: 编辑大模型失败--model_id不传
+  url: modelmanager_llm_edit
+  body_params: "{
+  \"model_name\": \"test_model\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.ParamMissing\",
+  \"$.detail\": \"model_id 参数缺失\"
+}"
+  description: 测试model_id不传
+
+- name: 编辑大模型失败--model_id传特殊字符
+  url: modelmanager_llm_edit
+  body_params: "{
+  \"model_id\": \"😊\",
+  \"model_name\": \"test_model\",
+  \"model_series\": \"${llm_model_series}\",
+  \"model_config\": {
+    \"api_url\": \"${llm_api_url}\",
+    \"api_model\": \"${llm_model}\",
+    \"api_key\": \"${llm_api_key}\"
+  },
+  \"max_model_len\": ${llm_max_model_len},
+  \"model_parameters\": 72,
+  \"model_type\": \"llm\",
+  \"quota\": \"false\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.ConnectController.LLMEdit.ParameterError\",
+  \"$.detail\": \"该模型不存在\"
+}"
+  description: 测试model_id传emoji等特殊字符

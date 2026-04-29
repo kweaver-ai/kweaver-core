@@ -1,0 +1,78 @@
+feature: 小模型管理
+story: 测试小模型
+switch: y
+cases:
+- name: 测试小模型连接成功--通过model_id测试
+  url: modelmanager_small_model_test
+  prepare_models: embedding
+  body_params: "{
+  \"model_id\": \"${embedding_config_id}\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 通过model_id测试小模型连接
+
+- name: 测试小模型连接成功--通过配置测试embedding模型
+  url: modelmanager_small_model_test
+  body_params: "{
+  \"model_name\": \"test_embedding\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size},
+  \"change\": \"true\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试embedding模型连接
+
+- name: 测试小模型连接成功--通过配置测试reranker模型
+  url: modelmanager_small_model_test
+  body_params: "{
+  \"model_name\": \"test_reranker\",
+  \"model_type\": \"reranker\",
+  \"model_config\": {
+    \"api_url\": \"${reranker_url}\",
+    \"api_model\": \"${reranker_model}\"
+  },
+  \"batch_size\": ${reranker_batch_size},
+  \"change\": \"true\"
+}"
+  code_check: '200'
+  resp_check: "{
+  \"$.status\": \"ok\"
+}"
+  description: 测试reranker模型连接
+
+- name: 测试小模型连接失败--同时传adapter和model_config
+  url: modelmanager_small_model_test
+  body_params: "{
+  \"model_name\": \"test_embedding_${ts_uuid}\",
+  \"model_type\": \"embedding\",
+  \"model_config\": {
+    \"api_url\": \"${embedding_url}\",
+    \"api_model\": \"${embedding_model}\"
+  },
+  \"embedding_dim\": ${embedding_dim},
+  \"max_tokens\": ${embedding_max_tokens},
+  \"batch_size\": ${embedding_batch_size},
+  \"adapter\": true,
+  \"adapter_code\": \"def adapter_func(): pass\",
+  \"change\": \"true\"
+}"
+  code_check: '400'
+  resp_check: "{
+  \"$.code\": \"ModelFactory.Router.ParamError.FormatError\",
+  \"$.description\": \"参数错误\",
+  \"$.detail\": \"model_config和adapter/adapter_code不能同时设置\"
+}"
+  description: 测试同时传adapter和model_config时报错
+
