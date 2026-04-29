@@ -77,6 +77,21 @@ mac_doctor_hint_for_tool() {
     esac
 }
 
+# Minimum Helm 3.x for Bitnami-embedded charts (Kafka data-services path).
+MAC_HELM_MIN_SEMVER="${MAC_HELM_MIN_SEMVER:-3.10.0}"
+
+mac_helm_client_semver() {
+    local raw
+    raw="$(helm version 2>/dev/null || true)"
+    printf '%s' "${raw}" | grep -oE 'Version:"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true
+}
+
+mac_helm_version_ok_for_charts() {
+    local cur="$1"
+    [[ -n "${cur}" ]] || return 1
+    [[ "$(printf '%s\n' "${MAC_HELM_MIN_SEMVER}" "${cur}" | sort -V | head -1)" == "${MAC_HELM_MIN_SEMVER}" ]]
+}
+
 # True if node is usable (present and major >= 22).
 mac_doctor_node_ok() {
     if ! command -v node >/dev/null 2>&1; then
@@ -195,7 +210,21 @@ mac_doctor() {
             continue
         fi
         if mac_check_cmd "${c}"; then
-            printf '%b[OK]%b %s\n' "${MAC_D_OK}" "${MAC_D_RESET}" "${c}"
+            if [[ "${c}" == "helm" ]]; then
+                local hv
+                hv="$(mac_helm_client_semver)"
+                if [[ -n "${hv}" ]] && ! mac_helm_version_ok_for_charts "${hv}"; then
+                    printf '%b[FAIL]%b %s (version %s; need >= %s for Kafka/Bitnami charts — e.g. %bbrew install helm%b or re-run %bget-helm-3%b with HELM_VERSION=v3.19.0)\n' \
+                        "${MAC_D_BAD}" "${MAC_D_RESET}" "${c}" "${hv}" "${MAC_HELM_MIN_SEMVER}" "${MAC_D_BOLD}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${MAC_D_RESET}"
+                    fail=1
+                else
+                    printf '%b[OK]%b %s' "${MAC_D_OK}" "${MAC_D_RESET}" "${c}"
+                    [[ -n "${hv:-}" ]] && printf ' %s' "${hv}"
+                    printf '\n'
+                fi
+            else
+                printf '%b[OK]%b %s\n' "${MAC_D_OK}" "${MAC_D_RESET}" "${c}"
+            fi
         else
             brew_fix_useful=1
             hint="$(mac_doctor_hint_for_tool "${c}")"

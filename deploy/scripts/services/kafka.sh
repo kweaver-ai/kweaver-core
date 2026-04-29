@@ -29,6 +29,10 @@ install_kafka() {
         return 1
     fi
 
+    if ! kweaver_require_helm_min_for_bitnami; then
+        return 1
+    fi
+
     if [[ -z "${KAFKA_IMAGE}" ]]; then
         KAFKA_IMAGE="$(image_from_registry "${KAFKA_IMAGE_REPOSITORY}" "${KAFKA_IMAGE_TAG}" "${KAFKA_IMAGE_FALLBACK}")"
     fi
@@ -111,9 +115,9 @@ EOF
         helm repo update
     fi
 
-    # Use a temporary values file for Kafka config overrides.
+    # Temporary values (XXXXXX must be at end of template for macOS mktemp)
     local tmp_values
-    tmp_values="$(mktemp /tmp/kafka-values.XXXXXX.yaml)"
+    tmp_values="$(mktemp "${TMPDIR:-/tmp}/kafka-values.XXXXXX")"
     
     # KRaft requires controller.quorum.voters (or --initial-controllers during storage format).
     # Without it, controller pods will CrashLoop with:
@@ -225,6 +229,8 @@ EOF
     else
         helm_args+=(--set controller.persistence.enabled=false --set broker.persistence.enabled=false)
     fi
+
+    kweaver_helm_uninstall_if_not_deployed "${KAFKA_RELEASE_NAME}" "${KAFKA_NAMESPACE}"
 
     local helm_out=""
     set +e

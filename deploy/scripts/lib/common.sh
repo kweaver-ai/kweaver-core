@@ -58,14 +58,67 @@ generate_random_password() {
     LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom 2>/dev/null | LC_ALL=C head -c "${length}"
 }
 
-# Check if component is already installed in Helm
+# True only when the release exists and Helm status is **deployed** (not failed/pending-install).
 is_helm_installed() {
     local release="$1"
     local ns="$2"
-    helm list -n "${ns}" --short | grep -q "^${release}$"
+    local out
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 1
+    fi
+    echo "${out}" | grep -q '^STATUS: deployed$'
 }
 
-# Get currently installed chart version for a release.
+# When a release is failed or pending-*, helm upgrade --install often errors with
+# "has no deployed releases". Uninstall the stuck release so install can proceed.
+# Does not set --wait; chart-managed Pods/STS may be removed; PVCs typically remain.
+kweaver_helm_uninstall_if_not_deployed() {
+    local release="$1"
+    local ns="$2"
+    local out st
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 0
+    fi
+    st="$(echo "${out}" | grep '^STATUS:' | head -1 | awk '{print $2}')"
+    if [[ "${st}" == "deployed" ]]; then
+        return 0
+    fi
+    log_warn "Helm release '${release}' in ${ns} is ${st:-unknown}; uninstalling so install can retry (data PVs are usually kept)."
+    helm uninstall "${release}" -n "${ns}" 2>/dev/null || true
+}
+
+# Bundled Bitnami charts (Kafka, etc.) embed bitnami/common templates that require a current Helm 3.x
+# (older clients may parse templates as empty → Helm error "no objects visited").
+KWEAVER_HELM_MIN_SEMVER="${KWEAVER_HELM_MIN_SEMVER:-3.10.0}"
+
+kweaver_semver_ge() {
+    local have="$1"
+    local need="$2"
+    [[ -n "${have}" && -n "${need}" ]] || return 1
+    [[ "$(printf '%s\n' "${need}" "${have}" | sort -V | head -1)" == "${need}" ]]
+}
+
+kweaver_helm_client_semver() {
+    local raw
+    raw="$(helm version 2>/dev/null || true)"
+    # Typical: version.BuildInfo{Version:"v3.19.0", ...}
+    printf '%s' "${raw}" | grep -oE 'Version:"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true
+}
+
+kweaver_require_helm_min_for_bitnami() {
+    local cur
+    cur="$(kweaver_helm_client_semver)"
+    if [[ -z "${cur}" ]]; then
+        log_error "Could not parse Helm client version. Install Helm ${KWEAVER_HELM_MIN_SEMVER}+ (e.g. macOS: brew upgrade helm)."
+        return 1
+    fi
+    if kweaver_semver_ge "${cur}" "${KWEAVER_HELM_MIN_SEMVER}"; then
+        return 0
+    fi
+    log_error "Helm ${cur} is too old for bundled data-service charts (Kafka/OpenSearch use Bitnami common; need >= ${KWEAVER_HELM_MIN_SEMVER})."
+    log_error "Fix (macOS): brew install helm && hash -r   — or put a newer helm before stale /usr/local/bin/helm in PATH."
+    return 1
+}
 # Args: <release_name> <namespace> [chart_name]
 get_installed_chart_version() {
     local release_name="$1"
