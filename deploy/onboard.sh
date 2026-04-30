@@ -32,6 +32,8 @@ INTERACTIVE="true"
 ONBOARD_ASSUME_YES="false"
 ONBOARD_SKIP_ISF_TEST_USER="${ONBOARD_SKIP_ISF_TEST_USER:-false}"
 ONBOARD_SKIP_CONTEXT_LOADER="${ONBOARD_SKIP_CONTEXT_LOADER:-false}"
+# Populated by onboard_kweaver_tls_insecure_args_to_array (usually empty or -k).
+declare -a ONBOARD_TLS_INSECURE_ARGS=()
 
 # kweaver auth: HTTP sign-in defaults (ISF / full install). Console account is usually  admin  /  eisoo.com  if not changed.
 # Override in CI. Used when you press Enter at username/password prompts.
@@ -135,22 +137,24 @@ onboard_default_access_base_url() {
     fi
 }
 
-# kweaver / kweaver-admin: append --insecure/-k only for HTTPS URLs (self-signed dev certs).
+# kweaver / kweaver-admin: optional --insecure/-k only for HTTPS URLs (self-signed dev certs).
 # For plain http:// bases, unconditional -k has been observed to break some login flows (--no-auth)
-# against HTTP-only ingress backends (404 Not Found).
+# against HTTP-only ingress backends (404 Not Found). Also: never emit trailing whitespace from
+# command substitution — Word-splitting turns it into an extra empty argv and confuses the CLI.
 # Override: ONBOARD_FORCE_INSECURE_LOGIN=true forces -k even for HTTP (rare; debugging only).
-onboard_kweaver_tls_insecure_args() {
+# Populate global array ONBOARD_TLS_INSECURE_ARGS (empty or (-k)).
+onboard_kweaver_tls_insecure_args_to_array() {
+    ONBOARD_TLS_INSECURE_ARGS=()
     local _base="$1"
     if [[ "${ONBOARD_FORCE_INSECURE_LOGIN:-false}" == "true" ]]; then
-        printf '%s' "-k "
-        return
+        ONBOARD_TLS_INSECURE_ARGS=(-k)
+        return 0
     fi
     case "${_base}" in
         https://*|HTTPS://*)
-            printf '%s' "-k "
+            ONBOARD_TLS_INSECURE_ARGS=(-k)
             ;;
         *)
-            return
             ;;
     esac
 }
@@ -458,31 +462,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 onboard_kweaver_auth_login_echo_cmd() {
-    local _cmd="kweaver auth login \"$1\""
+    local _url="$1"
     shift
-    local _arg
-    for _arg in "$@"; do
-        _cmd="${_cmd} ${_arg}"
-    done
-    onboard_log_info "Running: ${_cmd}"
+    onboard_log_info "Running: $(printf '%q ' kweaver auth login "${_url}" "$@")"
 }
 
 # After access URL is chosen: ISF → HTTP sign-in (defaults admin / eisoo.com if unchanged) or browser; no ISF → --no-auth (Enter) or HTTP.
 # Env: ONBOARD_DEFAULT_KWEAVER_USER, ONBOARD_DEFAULT_KWEAVER_PASSWORD, ONBOARD_ASSUME_YES (non-interactive: ISF=HTTP+defaults, min=--no-auth).
 onboard_kweaver_auth_login_for_url() {
     local _kurl="$1"
-    local _tls
     local _u _p _duser _dpass
     _duser="${ONBOARD_DEFAULT_KWEAVER_USER:-admin}"
     _dpass="${ONBOARD_DEFAULT_KWEAVER_PASSWORD:-eisoo.com}"
-    _tls="$(onboard_kweaver_tls_insecure_args "${_kurl}")"
+    onboard_kweaver_tls_insecure_args_to_array "${_kurl}"
     onboard_log_info "kweaver CLI: $(command -v kweaver 2>/dev/null || echo missing) ($(kweaver --version 2>/dev/null || echo '?')) CONFIG_YAML_PATH=${CONFIG_YAML_PATH:-unset}"
 
     if type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null; then
         if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
             onboard_log_info "kweaver auth: ISF detected — HTTP sign-in (defaults, -y): ${_duser}"
-            onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_duser}" -p '***' --http-signin ${_tls}
-            if ! kweaver auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" --http-signin ${_tls} ; then
+            onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_duser}" -p "***" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+            if ! kweaver auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
                 return 1
             fi
             return 0
@@ -495,15 +494,15 @@ onboard_kweaver_auth_login_for_url() {
             read -r -s -p "  Password [Enter = ${_dpass} if default unchanged on console] " _p
             echo
             _p="${_p:-${_dpass}}"
-            onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_u}" -p '***' --http-signin ${_tls}
-            if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin ${_tls} ; then
+            onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_u}" -p "***" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+            if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
                 return 1
             fi
             return 0
         fi
-        onboard_log_info "Using browser / device flow: kweaver auth login \"${_kurl}\" ${_tls}"
-        onboard_kweaver_auth_login_echo_cmd "${_kurl}" ${_tls}
-        if ! kweaver auth login "${_kurl}" ${_tls} ; then
+        onboard_log_info "Using browser / device flow: kweaver auth login \"${_kurl}\" ${ONBOARD_TLS_INSECURE_ARGS[*]:-}"
+        onboard_kweaver_auth_login_echo_cmd "${_kurl}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+        if ! kweaver auth login "${_kurl}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
             return 1
         fi
         return 0
@@ -511,8 +510,8 @@ onboard_kweaver_auth_login_for_url() {
 
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         onboard_log_info "kweaver auth: no ISF — --no-auth (default, -y)"
-        onboard_kweaver_auth_login_echo_cmd "${_kurl}" --no-auth ${_tls}
-        if ! kweaver auth login "${_kurl}" --no-auth ${_tls} ; then
+        onboard_kweaver_auth_login_echo_cmd "${_kurl}" --no-auth "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+        if ! kweaver auth login "${_kurl}" --no-auth "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
             return 1
         fi
         return 0
@@ -520,8 +519,8 @@ onboard_kweaver_auth_login_for_url() {
     echo ""
     read -r -p "No ISF (minimum install): use --no-auth (typical) [Y/n] (Enter = Y): " _mna
     if [[ -z "${_mna}" || ! "${_mna}" =~ ^[Nn] ]]; then
-        onboard_kweaver_auth_login_echo_cmd "${_kurl}" --no-auth ${_tls}
-        if ! kweaver auth login "${_kurl}" --no-auth ${_tls} ; then
+        onboard_kweaver_auth_login_echo_cmd "${_kurl}" --no-auth "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+        if ! kweaver auth login "${_kurl}" --no-auth "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
             return 1
         fi
         return 0
@@ -531,8 +530,8 @@ onboard_kweaver_auth_login_for_url() {
     read -r -s -p "  Password [Enter = ${_dpass} if default unchanged on console] " _p
     echo
     _p="${_p:-${_dpass}}"
-    onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_u}" -p '***' --http-signin ${_tls}
-    if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin ${_tls} ; then
+    onboard_kweaver_auth_login_echo_cmd "${_kurl}" -u "${_u}" -p "***" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"
+    if ! kweaver auth login "${_kurl}" -u "${_u}" -p "${_p}" --http-signin "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
         return 1
     fi
     return 0
@@ -541,16 +540,15 @@ onboard_kweaver_auth_login_for_url() {
 # kweaver-admin: -u/-p use HTTP /oauth2/signin (no --http-signin flag; unlike kweaver-sdk). Same defaults as kweaver. See ONBOARD_DEFAULT_KWEAVER_*.
 onboard_kweaver_admin_auth_login_for_url() {
     local _kurl="$1"
-    local _tls
     local _u _p _duser _dpass
     _duser="${ONBOARD_DEFAULT_KWEAVER_USER:-admin}"
     _dpass="${ONBOARD_DEFAULT_KWEAVER_PASSWORD:-eisoo.com}"
-    _tls="$(onboard_kweaver_tls_insecure_args "${_kurl}")"
+    onboard_kweaver_tls_insecure_args_to_array "${_kurl}"
 
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         onboard_log_info "kweaver-admin auth: ISF — HTTP sign-in (defaults, -y): ${_duser}"
-        onboard_log_info "Running: kweaver-admin auth login \"${_kurl}\" -u ${_duser} -p *** ${_tls}"
-        if ! kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" ${_tls} ; then
+        onboard_log_info "Running: $(printf '%q ' kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+        if ! kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
             return 1
         fi
         return 0
@@ -562,8 +560,8 @@ onboard_kweaver_admin_auth_login_for_url() {
     echo
     _p="${_p:-${_dpass}}"
     onboard_log_info "kweaver-admin: HTTP sign-in…"
-    onboard_log_info "Running: kweaver-admin auth login \"${_kurl}\" -u ${_u} -p *** ${_tls}"
-    if ! kweaver-admin auth login "${_kurl}" -u "${_u}" -p "${_p}" ${_tls} ; then
+    onboard_log_info "Running: $(printf '%q ' kweaver-admin auth login "${_kurl}" -u "${_u}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+    if ! kweaver-admin auth login "${_kurl}" -u "${_u}" -p "${_p}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" ; then
         return 1
     fi
     return 0
@@ -577,7 +575,8 @@ onboard_ensure_kweaver_auth() {
         fi
         if [[ "${INTERACTIVE}" != "true" ]]; then
             _durl="$(onboard_default_access_base_url)"
-            onboard_log_err "kweaver bkn list failed. Run: kweaver auth login ${_durl} $(onboard_kweaver_tls_insecure_args "${_durl}") (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
+            onboard_kweaver_tls_insecure_args_to_array "${_durl}"
+            onboard_log_err "kweaver bkn list failed. Run: $(printf '%q ' kweaver auth login "${_durl}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
             exit 1
         fi
         if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
