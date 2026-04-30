@@ -8,6 +8,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/common.sh
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
+
+# Prefer Mac dev values when running onboard directly: common.sh defaults CONFIG_YAML_PATH to
+# deploy/conf/config.yaml (often no accessAddress). If still on that default, use mac-config.yaml.
+_onboard_default_conf="${SCRIPT_DIR}/conf/config.yaml"
+_onboard_default_home="${HOME}/.kweaver-ai/config.yaml"
+_onboard_mac_cfg="${SCRIPT_DIR}/dev/conf/mac-config.yaml"
+if [[ "$(uname -s 2>/dev/null || true)" == "Darwin" ]] && [[ -f "${_onboard_mac_cfg}" ]]; then
+    if [[ "${CONFIG_YAML_PATH:-}" == "${_onboard_default_conf}" ]] || [[ "${CONFIG_YAML_PATH:-}" == "${_onboard_default_home}" ]]; then
+        export CONFIG_YAML_PATH="${_onboard_mac_cfg}"
+    fi
+fi
+
 # shellcheck source=scripts/lib/onboard_models.sh
 source "${SCRIPT_DIR}/scripts/lib/onboard_models.sh"
 
@@ -175,8 +187,11 @@ usage() {
     echo "                ONBOARD_NO_COMPLETION_REPORT=1  do not print the English completion report at the end"
     echo "                ONBOARD_FORCE_INSECURE_LOGIN=true  always pass -k (--insecure) to kweaver/kweaver-admin auth login (even for http:// bases; default false)"
     echo "                ONBOARD_SKIP_CONFIG_ACCESS_URL=true  do not derive default URL from CONFIG_YAML_PATH accessAddress"
-    echo "  Default KWeaver access URL (kweaver auth): accessAddress in CONFIG_YAML_PATH when present; else host primary IPv4 (ONBOARD_DEFAULT_ACCESS_SCHEME=https by default)"
-    echo "                Set ONBOARD_DEFAULT_ACCESS_BASE to force a URL; CONFIG_YAML_PATH / ONBOARD_DEFAULT_ACCESS_PORT override same as deploy.sh"
+    echo "  Default KWeaver access URL (kweaver auth): accessAddress in CONFIG_YAML_PATH when present;"
+    echo "                on macOS, if CONFIG_YAML_PATH is still deploy/conf/config.yaml or ~/.kweaver-ai/config.yaml,"
+    echo "                onboard uses deploy/dev/conf/mac-config.yaml when that file exists (same as mac.sh)."
+    echo "                Else host primary IPv4 + ONBOARD_DEFAULT_ACCESS_SCHEME (https by default)."
+    echo "                Set ONBOARD_DEFAULT_ACCESS_BASE to force a URL; ONBOARD_DEFAULT_ACCESS_PORT / SCHEME override fallback IP path."
     echo "  kweaver auth: you confirm URL. ISF+full: HTTP defaults user=admin pass=eisoo.com (if still default); override with ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD. Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
     echo "  kweaver-admin auth (ISF): use  auth login <url> -u admin -p <pass>  (append -k for https:// + self-signed) or browser-only flow; kweaver-admin has no --http-signin flag. Then kweaver re-logs in as user test for impex and model steps."
     echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."
