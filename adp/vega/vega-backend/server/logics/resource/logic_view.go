@@ -9,7 +9,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/dlclark/regexp2"
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
@@ -641,6 +643,11 @@ func validateSqlNode(ctx context.Context, rs *resourceService, node *interfaces.
 			WithErrorDetails("The logic definition sql config is invalid, sql must be set")
 	}
 
+	// 校验 SQL 语法是否正确
+	if err := validateSQLSyntax(ctx, cfg.SQL); err != nil {
+		return err
+	}
+
 	// 校验输出字段不能为空
 	if len(node.OutputFields) == 0 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -1100,4 +1107,110 @@ func fillMissingMetadata(target, source *interfaces.Property) {
 	if len(target.Features) == 0 {
 		target.Features = source.Features
 	}
+}
+
+// validateSQLSyntax 校验 SQL 语法是否正确
+// 1. 先将 SQL 中的变量（如 .node1）替换为占位符
+// 2. 再使用标准 SQL 语法规则校验
+func validateSQLSyntax(ctx context.Context, sql string) error {
+	if sql == "" {
+		return nil // 空 SQL 已在前面的校验中处理
+	}
+
+	// 步骤 1: 替换 SQL 中的变量（如 .node1, .node2 等）为占位符
+	// 匹配模式：点后跟标识符，例如 .node1, .my_table
+	nodeVarRegex := regexp.MustCompile(`\.[a-zA-Z_][a-zA-Z0-9_]*`)
+	cleanedSQL := nodeVarRegex.ReplaceAllString(sql, " placeholder_table ")
+
+	// 步骤 2: 标准 SQL 语法校验
+	// 2.1 检查是否以 SELECT 或 WITH 开头
+	trimmedSQL := strings.TrimSpace(strings.ToUpper(cleanedSQL))
+	if !strings.HasPrefix(trimmedSQL, "SELECT") && !strings.HasPrefix(trimmedSQL, "WITH") {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL must start with SELECT or WITH clause")
+	}
+
+	// 2.2 检查括号是否匹配
+	openParen := strings.Count(cleanedSQL, "(")
+	closeParen := strings.Count(cleanedSQL, ")")
+	if openParen != closeParen {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails(fmt.Sprintf("Unbalanced parentheses: %d opening vs %d closing", openParen, closeParen))
+	}
+
+	// 2.3 检查常见的语法错误
+	if err := checkCommonSQLErrors(ctx, cleanedSQL); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkCommonSQLErrors 检查常见的 SQL 语法错误
+func checkCommonSQLErrors(ctx context.Context, sql string) error {
+	upperSQL := strings.ToUpper(sql)
+	trimmedSQL := strings.TrimSpace(sql)
+
+	// 检查重复的关键字
+	duplicatePatterns := []struct {
+		pattern *regexp.Regexp
+		message string
+	}{
+		{regexp.MustCompile(`\bFROM\s+FROM\b`), "Duplicate FROM keyword"},
+		{regexp.MustCompile(`\bSELECT\s+SELECT\b`), "Duplicate SELECT keyword"},
+		{regexp.MustCompile(`\bWHERE\s+WHERE\b`), "Duplicate WHERE keyword"},
+		{regexp.MustCompile(`\bJOIN\s+JOIN\b`), "Duplicate JOIN keyword"},
+		{regexp.MustCompile(`\bGROUP\s+BY\s+BY\b`), "Duplicate BY in GROUP BY"},
+		{regexp.MustCompile(`\bORDER\s+BY\s+BY\b`), "Duplicate BY in ORDER BY"},
+	}
+
+	for _, dp := range duplicatePatterns {
+		if dp.pattern.MatchString(upperSQL) {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("SQL syntax error: %s", dp.message))
+		}
+	}
+
+	// 检查 FROM 后是否有表名（优先检查）
+	fromWithoutTable := regexp.MustCompile(`(?i)\bFROM\s*$`)
+	if fromWithoutTable.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: FROM clause must specify a table")
+	}
+
+	// 检查 SELECT 后是否有 FROM（简单检查）
+	if strings.HasPrefix(upperSQL, "SELECT") {
+		// 检查是否包含 FROM 关键字
+		if !strings.Contains(upperSQL, " FROM ") && !strings.HasSuffix(upperSQL, " FROM") {
+			// 检查是否是 SELECT * 或 SELECT 1 这种简单形式（不含 FROM）
+			simpleSelectRegex := regexp.MustCompile(`(?i)^SELECT\s+[*\d]+\s*$`)
+			if !simpleSelectRegex.MatchString(trimmedSQL) {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails("SQL syntax error: SELECT statement must contain a FROM clause")
+			}
+		}
+	}
+
+	// 检查 WHERE 后是否有条件
+	whereWithoutCondition := regexp.MustCompile(`(?i)\bWHERE\s*$`)
+	if whereWithoutCondition.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: WHERE clause must have a condition")
+	}
+
+	// 检查 GROUP BY 后是否有列名
+	groupByWithoutColumn := regexp.MustCompile(`(?i)\bGROUP\s+BY\s*$`)
+	if groupByWithoutColumn.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: GROUP BY must have at least one column")
+	}
+
+	// 检查 ORDER BY 后是否有列名
+	orderByWithoutColumn := regexp.MustCompile(`(?i)\bORDER\s+BY\s*$`)
+	if orderByWithoutColumn.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: ORDER BY must have at least one column")
+	}
+
+	return nil
 }
