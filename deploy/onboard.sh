@@ -578,6 +578,7 @@ onboard_kweaver_admin_output_is_blocked_initial_password() {
 onboard_kweaver_admin_hint_auth_change_password_cli() {
     local _url="$1" _user="${2:-admin}"
     onboard_log_warn "首登不可用初始密码直接 login（401001017）：请先改密—— $(printf '%q ' kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")（TTY 可交互输入；-o/-n 见 ISF / install 文档）。"
+    onboard_log_warn "须保留命令中的访问地址；若省略 URL，CLI 会用当前激活平台（可用  kweaver-admin auth list  查看），可能连错环境。"
 }
 
 # kweaver-admin: -u/-p use HTTP /oauth2/signin (no --http-signin flag; unlike kweaver-sdk). Same defaults as kweaver. See ONBOARD_DEFAULT_KWEAVER_*.
