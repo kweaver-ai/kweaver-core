@@ -316,7 +316,10 @@ main() {
                 mac_isf_patch_ingress_tls
                 exit 0
             fi
-            exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" isf "$@"
+            if [[ ${#global_flags[@]} -gt 0 ]]; then
+                exec bash "${DEPLOY_ROOT}/deploy.sh" "${global_flags[@]}" isf "$@"
+            fi
+            exec bash "${DEPLOY_ROOT}/deploy.sh" isf "$@"
             ;;
         etrino | vega)
             mac_require_darwin
