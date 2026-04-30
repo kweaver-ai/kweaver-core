@@ -1359,6 +1359,23 @@ ensure_data_services() {
     export KWEAVER_DATA_SERVICES_ENSURED="true"
 }
 
+# Uninstall bundled MariaDB / Redis / Kafka / ZooKeeper / OpenSearch (and ingress-nginx when
+# AUTO_INSTALL_INGRESS_NGINX is true), reverse of ensure_data_services. Continues past individual
+# failures so partially-missing installs still get cleaned up. Remaining argv is passed only to
+# mariadb uninstall (e.g. --delete-data / MARIADB_PURGE_PVC); other stacks use existing env knobs.
+uninstall_platform_data_services() {
+    log_info "Uninstalling bundled platform data services..."
+    uninstall_opensearch || true
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX:-true}" == "true" ]]; then
+        uninstall_ingress_nginx || true
+    fi
+    uninstall_kafka || true
+    uninstall_zookeeper || true
+    uninstall_redis || true
+    uninstall_mariadb "$@" || true
+    log_info "Bundled platform data services uninstall finished (PVC defaults unchanged; MariaDB accepts --delete-data)."
+}
+
 ensure_platform_prerequisites() {
     if [[ "${KWEAVER_PLATFORM_PREREQUISITES_DONE:-false}" == "true" ]]; then
         return 0

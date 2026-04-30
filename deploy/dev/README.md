@@ -33,7 +33,7 @@ Optional (same `deploy.sh` Helm paths as Linux; you need a working cluster + val
 
 **Minimal path:** `cluster up` → **`data-services install`** → `kweaver-core install` (mac wrapper implies `--minimum`). Skipping data services leaves no MySQL/Kafka/etc. in the cluster; **`kweaver-core-data-migrator`** pre-install hooks then fail (e.g. `BackoffLimitExceeded`).
 
-**Teardown:** `bash ./dev/mac.sh cluster down`.
+**Teardown:** Optionally `bash ./dev/mac.sh data-services uninstall` (tear down MariaDB/Redis/Kafka/ZK/OpenSearch Helm releases; keeps kind), then `bash ./dev/mac.sh cluster down` (deletes the cluster).
 
 Config: copy [`dev/conf/mac-config.yaml.example`](conf/mac-config.yaml.example) to **`dev/conf/mac-config.yaml`** (one-time). The real **`mac-config.yaml` is gitignored** so generated passwords are not committed; adjust `accessAddress` and registry as needed.  
 `kweaver-dip` is not wired in `mac.sh` (use Linux `deploy.sh`).
@@ -65,7 +65,7 @@ See also: top-of-file comments in [`mac.sh`](mac.sh), `bash ./dev/mac.sh -h`.
 **可选：**`bash ./dev/mac.sh isf ...`、`bash ./dev/mac.sh etrino ...`（Vega 三套件；**`vega` 为 `etrino` 别名**）。ISF 通常对数据库/配置有更多要求，请结合 Linux 侧 `deploy.sh` 与你的 `CONFIG_YAML_PATH`。**未接入：**`kweaver-dip`。
 
 **最短路径：**`cluster up` → **`data-services install`** → `kweaver-core install`（mac 封装默认带 **`--minimum`**）。若跳过数据层，集群里没有 MySQL 等，**`kweaver-core-data-migrator`** 的 pre-install Job 常会失败（如 `BackoffLimitExceeded`）。  
-**删除本机 kind：**`bash ./dev/mac.sh cluster down`。
+**删除本机 kind：**可先 `bash ./dev/mac.sh data-services uninstall`（只卸数据层 Helm，保留 kind），再 `bash ./dev/mac.sh cluster down`（删掉整个 kind 集群）。
 
 **架构：**Apple Silicon 上 kind 节点一般为 **linux/arm64**，镜像需支持 arm64/多架构（见上节及本地 `dev/conf/mac-config.yaml` / 示例中的 `image.registry`）。仅 amd64 的镜像在 arm64 节点上常会 *exec format error*。
 

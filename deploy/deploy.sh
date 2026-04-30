@@ -54,6 +54,7 @@ usage() {
     echo "  kafka install                 Install single-node Kafka"
     echo "  kafka uninstall               Uninstall Kafka (PVCs will be deleted by default)"
     echo "  data-services install         Install MariaDB, Redis, Kafka, Zookeeper, OpenSearch (cluster must exist)"
+    echo "  data-services uninstall       Uninstall those bundles (kafka→zk order; ingress only if AUTO_INSTALL_INGRESS_NGINX=true)"
     echo "  opensearch install            Install single-node OpenSearch"
     echo "  opensearch uninstall          Uninstall OpenSearch (optionally purge PVC)"
     echo "  zookeeper install             Install single-node Zookeeper"
@@ -98,6 +99,8 @@ usage() {
     echo "  $0 kafka uninstall                         # Uninstall Kafka (PVCs deleted by default)"
     echo "  KAFKA_PURGE_PVC=false $0 kafka uninstall   # Uninstall Kafka but keep PVCs"
     echo "  AUTO_INSTALL_INGRESS_NGINX=false $0 data-services install  # After kind/kubeadm + ingress already exist"
+    echo "  $0 data-services uninstall                        # Tear down bundled data-layer charts"
+    echo "  $0 data-services uninstall --delete-data           # Same; also purge MariaDB PVC (data loss!)"
     echo "  $0 opensearch install         # Install OpenSearch"
     echo "  $0 opensearch uninstall       # Uninstall OpenSearch"
     echo "  OPENSEARCH_PURGE_PVC=true $0 opensearch uninstall  # Uninstall OpenSearch and delete PVC (data loss!)"
@@ -554,6 +557,10 @@ main() {
             install|init)
                 require_root_for_helm_cluster_addons_only
                 ensure_data_services || exit 1
+                ;;
+            uninstall)
+                require_root_for_helm_cluster_addons_only
+                uninstall_platform_data_services "$@"
                 ;;
             *)
                 log_error "Unknown data-services action: ${action}"

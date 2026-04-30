@@ -75,7 +75,7 @@ Typical order (shortest path: doctor? → cluster up → data-services install �
 Commands:
   doctor [--fix] [-y|--yes]        Check toolchain; --fix runs brew after confirm (use -y to skip prompt)
   cluster up|down|status           kind cluster + ingress-nginx (kind manifest)
-  data-services install            Platform data layer into cluster (same as deploy.sh); run before kweaver-core on mac
+  data-services install|uninstall  Platform data layer (install before Core on mac); uninstall tears down bundled charts
   kweaver-core|core <action> ...   Delegates to deploy.sh (see deploy.sh help)
   isf <action> ...                 ISF via deploy.sh (install|download|uninstall|status)
   etrino|vega <action> ...         Vega charts (vega-hdfs/calculate/metadata) via deploy.sh; vega = alias of etrino
