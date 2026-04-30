@@ -430,7 +430,7 @@ preflight_check_swap_selinux() {
     log_info "Checking swap and SELinux..."
 
     if swapon --show 2>/dev/null | grep -q .; then
-        preflight_strict_warn_or_fail "Swap is active; kubelet refuses to start with swap on (sudo preflight --fix → system-tuning will run swapoff + remove swap from /etc/fstab)"
+        preflight_strict_warn_or_fail "Swap is active; kubelet refuses to start with swap on (sudo bash ./preflight.sh --fix → system-tuning will run swapoff + remove swap from /etc/fstab)"
     else
         preflight_ok "No active swap"
     fi
@@ -476,14 +476,14 @@ preflight_check_sysctl_modules() {
     if [[ "${ipf}" == "1" ]]; then
         preflight_ok "net.ipv4.ip_forward=1"
     else
-        preflight_strict_warn_or_fail "net.ipv4.ip_forward is ${ipf} (K8s needs forwarding; sudo preflight.sh --fix -y → system-tuning, or: sudo sysctl -w net.ipv4.ip_forward=1 && echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward)"
+        preflight_strict_warn_or_fail "net.ipv4.ip_forward is ${ipf} (K8s needs forwarding; sudo bash ./preflight.sh --fix -y → system-tuning, or: sudo sysctl -w net.ipv4.ip_forward=1 && echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward)"
     fi
 
     for mod in br_netfilter overlay; do
         if lsmod 2>/dev/null | awk -v m="${mod}" '$1==m {f=1} END{exit !f}'; then
             preflight_ok "Kernel module loaded: ${mod}"
         else
-            preflight_strict_warn_or_fail "Kernel module not loaded: ${mod} (required by containerd / kube-proxy; sudo preflight --fix → system-tuning will modprobe + persist via /etc/modules-load.d)"
+            preflight_strict_warn_or_fail "Kernel module not loaded: ${mod} (required by containerd / kube-proxy; sudo bash ./preflight.sh --fix → system-tuning will modprobe + persist via /etc/modules-load.d)"
         fi
     done
 }
@@ -636,7 +636,7 @@ preflight_check_bridge_sysctl() {
         if [[ "${b4}" == "1" && "${b6}" == "1" ]]; then
             preflight_ok "bridge-nf-call-iptables=1, bridge-nf-call-ip6tables=1"
         else
-            preflight_strict_warn_or_fail "bridge-nf: iptables=${b4} ip6tables=${b6} (expected 1/1; sudo preflight --fix → bridge-sysctl will set them)"
+            preflight_strict_warn_or_fail "bridge-nf: iptables=${b4} ip6tables=${b6} (expected 1/1; sudo bash ./preflight.sh --fix → bridge-sysctl will set them)"
         fi
     else
         preflight_ok "bridge sysctl paths not present yet (br_netfilter not loaded — OK if fresh host)"
@@ -659,17 +659,17 @@ preflight_check_kernel_limits() {
     if [[ "${read_max}" -ge 262144 ]]; then
         preflight_ok "vm.max_map_count=${read_max} (>= 262144 for OpenSearch/ES style workloads)"
     else
-        preflight_strict_warn_or_fail "vm.max_map_count=${read_max} (OpenSearch/ES require >= 262144; sudo preflight --fix → kernel-limits will persist it)"
+        preflight_strict_warn_or_fail "vm.max_map_count=${read_max} (OpenSearch/ES require >= 262144; sudo bash ./preflight.sh --fix → kernel-limits will persist it)"
     fi
     if [[ "${inow}" -ge 524288 ]]; then
         preflight_ok "fs.inotify.max_user_watches=${inow}"
     else
-        preflight_strict_warn_or_fail "fs.inotify.max_user_watches=${inow} (need >= 524288 on K8s nodes; sudo preflight --fix → kernel-limits will persist it)"
+        preflight_strict_warn_or_fail "fs.inotify.max_user_watches=${inow} (need >= 524288 on K8s nodes; sudo bash ./preflight.sh --fix → kernel-limits will persist it)"
     fi
     if [[ "${inoinst}" -ge 8192 ]]; then
         preflight_ok "fs.inotify.max_user_instances=${inoinst}"
     else
-        preflight_strict_warn_or_fail "fs.inotify.max_user_instances=${inoinst} (need >= 8192 on K8s nodes; default 128 causes 'Too many open files' for systemd/journalctl/kubelet/containerd; sudo preflight --fix → kernel-limits will persist it)"
+        preflight_strict_warn_or_fail "fs.inotify.max_user_instances=${inoinst} (need >= 8192 on K8s nodes; default 128 causes 'Too many open files' for systemd/journalctl/kubelet/containerd; sudo bash ./preflight.sh --fix → kernel-limits will persist it)"
     fi
     if [[ "${pidm}" -ge 4194304 ]]; then
         preflight_ok "kernel.pid_max=${pidm}"
@@ -715,7 +715,7 @@ preflight_check_ulimits() {
         if [[ "${_persist_soft}" -ge 65536 && "${_sysd_soft}" -ge 65536 ]]; then
             preflight_ok "ulimit -n soft=${soft} in this shell, but persistent config is set (limits.d soft=${_persist_soft}, systemd DefaultLimitNOFILE=${_sysd_soft}). New login sessions / restarted services will see the higher limit."
         else
-            preflight_strict_warn_or_fail "ulimit -n soft=${soft} (need >= 65536 for kubelet/containerd; sudo preflight --fix → nofile-limits will write /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, and kubelet/containerd LimitNOFILE drop-ins)"
+            preflight_strict_warn_or_fail "ulimit -n soft=${soft} (need >= 65536 for kubelet/containerd; sudo bash ./preflight.sh --fix → nofile-limits will write /etc/security/limits.d/99-kweaver-nofile.conf, /etc/systemd/system.conf.d/99-kweaver-nofile.conf, and kubelet/containerd LimitNOFILE drop-ins)"
         fi
     fi
     if [[ "${hard}" =~ ^[0-9]+$ ]] && [[ "${hard}" -ge 65536 ]]; then
@@ -1111,7 +1111,7 @@ preflight_check_overlayfs() {
     if [[ -f /proc/filesystems ]] && grep -q overlay /proc/filesystems; then
         preflight_ok "overlay fs available in /proc/filesystems"
     else
-        preflight_strict_warn_or_fail "overlay not listed in /proc/filesystems (containerd snapshotter needs overlay; sudo preflight --fix → system-tuning will modprobe overlay + persist it)"
+        preflight_strict_warn_or_fail "overlay not listed in /proc/filesystems (containerd snapshotter needs overlay; sudo bash ./preflight.sh --fix → system-tuning will modprobe overlay + persist it)"
     fi
 }
 
@@ -1227,7 +1227,7 @@ preflight_check_residue() {
             preflight_ok "k3s cluster is healthy (KUBE_DISTRO=k3s); deploy will reuse it"
         elif [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
             if [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
-                preflight_fail "k3s is installed but the API is not usable (kubectl get nodes failed). Repair the cluster or: sudo preflight --fix with k3s-uninstall if switching away from k3s, then re-run deploy.sh k3s install"
+                preflight_fail "k3s is installed but the API is not usable (kubectl get nodes failed). Repair the cluster or: sudo bash ./preflight.sh --fix with k3s-uninstall if switching away from k3s, then re-run deploy.sh k3s install"
             else
                 preflight_warn "k3s binary present but /etc/rancher/k3s/k3s.yaml missing (incomplete install?)"
             fi
@@ -1236,7 +1236,7 @@ preflight_check_residue() {
         fi
     else
         if [[ -x /usr/local/bin/k3s ]] || command -v k3s &>/dev/null; then
-            preflight_fail "K3s binary found while preflight is aligned for k8s/kubeadm (KUBE_DISTRO=k8s, the default). Remove k3s for the default path (sudo preflight --fix → k3s-uninstall), or opt into k3s explicitly: --distro=k3s or KUBE_DISTRO=k3s."
+            preflight_fail "K3s binary found while preflight is aligned for k8s/kubeadm (KUBE_DISTRO=k8s, the default). Remove k3s for the default path (sudo bash ./preflight.sh --fix → k3s-uninstall), or opt into k3s explicitly: --distro=k3s or KUBE_DISTRO=k3s."
         else
             preflight_ok "No K3s binary in PATH or /usr/local/bin/k3s"
         fi
@@ -1274,8 +1274,8 @@ preflight_check_target_tools() {
                 preflight_ok "kubectl not on PATH yet (normal before bootstrap). deploy.sh ensure_k3s installs k3s, which provides kubectl — run deploy then re-run preflight if you want to validate CLI paths."
             fi
         else
-            # kubeadm path: strict (FAIL) by default — sudo preflight --fix runs k8s-pkgs-repo then k8s-bins.
-            preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo preflight --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
+            # kubeadm path: strict (FAIL) by default — sudo bash ./preflight.sh --fix runs k8s-pkgs-repo then k8s-bins.
+            preflight_strict_warn_or_fail "kubectl not found (deploy.sh needs it; sudo bash ./preflight.sh --fix runs k8s-pkgs-repo then k8s-bins, which apt/dnf/yum installs kubeadm + kubelet + kubectl with apt-mark hold)"
         fi
     fi
 
@@ -1313,12 +1313,12 @@ preflight_check_target_tools() {
     else
         if _preflight_kube_distro_is_k3s; then
             if type k3s_is_running &>/dev/null && k3s_is_running 2>/dev/null; then
-                preflight_strict_warn_or_fail "helm not found (k3s cluster is Ready but Helm v3 is required for chart deploy — sudo preflight --fix → helm-v3)"
+                preflight_strict_warn_or_fail "helm not found (k3s cluster is Ready but Helm v3 is required for chart deploy — sudo bash ./preflight.sh --fix → helm-v3)"
             else
                 preflight_ok "helm not on PATH yet (normal before bootstrap). deploy.sh ensure_k3s runs install_helm before k3s — no manual install required for the k3s path."
             fi
         else
-            preflight_strict_warn_or_fail "helm not found (deploy.sh kweaver-core install requires Helm v3; sudo preflight --fix → helm-v3 will install it)"
+            preflight_strict_warn_or_fail "helm not found (deploy.sh kweaver-core install requires Helm v3; sudo bash ./preflight.sh --fix → helm-v3 will install it)"
         fi
     fi
 
@@ -1330,7 +1330,7 @@ preflight_check_target_tools() {
             preflight_strict_warn_or_fail "python3 is $(python3 -V 2>/dev/null); deploy/scripts/lib/onboard_*.py require CPython ${PREFLIGHT_MIN_PYTHON_MAJOR}.${PREFLIGHT_MIN_PYTHON_MINOR}+ — upgrade python3 on this host or run onboard from another machine with Python ${PREFLIGHT_MIN_PYTHON_MAJOR}.${PREFLIGHT_MIN_PYTHON_MINOR}+."
         fi
     else
-        preflight_warn "python3 not on PATH — required for sudo preflight --output=json; needed to run deploy/onboard helper scripts locally (Python ${PREFLIGHT_MIN_PYTHON_MAJOR}.${PREFLIGHT_MIN_PYTHON_MINOR}+)."
+        preflight_warn "python3 not on PATH — required for sudo bash ./preflight.sh --output=json; needed to run deploy/onboard helper scripts locally (Python ${PREFLIGHT_MIN_PYTHON_MAJOR}.${PREFLIGHT_MIN_PYTHON_MINOR}+)."
     fi
 }
 
@@ -1362,16 +1362,16 @@ preflight_check_admin_tools() {
         if [[ -n "${_nmj}" && $(( 10#${_nmj} )) -ge ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} ]]; then
             preflight_ok "node: $(node -v 2>/dev/null) (>= ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}; kweaver-sdk + onboard; this installer also uses the same for kweaver-admin)"
         else
-            preflight_warn "node: $(node -v 2>/dev/null) (need ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+. Not a hard failure. Fix: sudo preflight --fix → allow onboard-tooling, then accept node-22 (nvm/NodeSource), or upgrade Node yourself. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+            preflight_warn "node: $(node -v 2>/dev/null) (need ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+. Not a hard failure. Fix: sudo bash ./preflight.sh --fix → allow onboard-tooling, then accept node-22 (nvm/NodeSource), or upgrade Node yourself. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
         fi
     else
-        preflight_warn "node not in PATH (need Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ for CLIs / onboard. [WARN] only. Fix: sudo preflight --fix and opt in to nodejs-npm + node-22 when prompted. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+        preflight_warn "node not in PATH (need Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ for CLIs / onboard. [WARN] only. Fix: sudo bash ./preflight.sh --fix and opt in to nodejs-npm + node-22 when prompted. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
     fi
 
     if command -v npm &>/dev/null; then
         preflight_ok "npm: $(npm -v 2>/dev/null) ($(command -v npm))"
     else
-        preflight_warn "npm not in PATH (usually bundled with Node; sudo preflight --fix can offer nodejs-npm, then node-22)"
+        preflight_warn "npm not in PATH (usually bundled with Node; sudo bash ./preflight.sh --fix can offer nodejs-npm, then node-22)"
     fi
 
     if command -v kweaver &>/dev/null; then
@@ -1383,7 +1383,7 @@ preflight_check_admin_tools() {
             preflight_warn "kweaver on PATH, but Node is < ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} — prefer upgrading to Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (npm i -g and onboard expect that here). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
         fi
     else
-        preflight_warn "kweaver CLI not in PATH (npm i -g @kweaver-ai/kweaver-sdk; or sudo preflight --fix after Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+        preflight_warn "kweaver CLI not in PATH (npm i -g @kweaver-ai/kweaver-sdk; or sudo bash ./preflight.sh --fix after Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
     fi
 
     if command -v kweaver-admin &>/dev/null; then
@@ -1392,7 +1392,7 @@ preflight_check_admin_tools() {
         elif [[ -n "${_nmj}" && $(( 10#${_nmj} )) -ge ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} ]]; then
             preflight_ok "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -1 || echo ok)"
         else
-            preflight_warn "kweaver-admin on PATH, but Node is < ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} — this deploy path standardizes on ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (same as kweaver-sdk); upgrade via sudo preflight --fix → onboard-tooling + node-22 if you opt in. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+            preflight_warn "kweaver-admin on PATH, but Node is < ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} — this deploy path standardizes on ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ (same as kweaver-sdk); upgrade via sudo bash ./preflight.sh --fix → onboard-tooling + node-22 if you opt in. ${PREFLIGHT_OFFHOST_NODE22_HINT}"
         fi
     else
         if [[ "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *authentication* \
@@ -1401,9 +1401,9 @@ preflight_check_admin_tools() {
             || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *eacp* \
             || "${PREFLIGHT_KWEAVER_RELEASE_NAMES:-}" == *isfweb* ]]; then
             if ! command -v node &>/dev/null || [[ -z "${_nmj}" || $(( 10#${_nmj} )) -lt ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR} ]]; then
-                preflight_warn "kweaver-admin not in PATH; cluster has ISF-related components — get Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ first, then: npm i -g @kweaver-ai/kweaver-admin (or sudo preflight --fix: onboard-tooling → node-22 → kweaver-admin). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+                preflight_warn "kweaver-admin not in PATH; cluster has ISF-related components — get Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ first, then: npm i -g @kweaver-ai/kweaver-admin (or sudo bash ./preflight.sh --fix: onboard-tooling → node-22 → kweaver-admin). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
             else
-                preflight_warn "kweaver-admin not in PATH (ISF-related release detected; install: npm i -g @kweaver-ai/kweaver-admin, or sudo preflight --fix and approve kweaver-admin). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
+                preflight_warn "kweaver-admin not in PATH (ISF-related release detected; install: npm i -g @kweaver-ai/kweaver-admin, or sudo bash ./preflight.sh --fix and approve kweaver-admin). ${PREFLIGHT_OFFHOST_NODE22_HINT}"
             fi
         fi
     fi
@@ -1445,13 +1445,13 @@ preflight_check_container_runtime() {
         cv="$(containerd --version 2>/dev/null | awk '{print $3}' || true)"
         preflight_ok "containerd: $(command -v containerd) ${cv}"
     else
-        preflight_strict_warn_or_fail "containerd not found (CRI required for kubelet; sudo preflight --fix → containerd-install will apt/dnf install + write /etc/containerd/config.toml with SystemdCgroup=true)"
+        preflight_strict_warn_or_fail "containerd not found (CRI required for kubelet; sudo bash ./preflight.sh --fix → containerd-install will apt/dnf install + write /etc/containerd/config.toml with SystemdCgroup=true)"
     fi
 
     if [[ -S /run/containerd/containerd.sock ]] || [[ -S /var/run/containerd/containerd.sock ]]; then
         preflight_ok "containerd socket present"
     else
-        preflight_strict_warn_or_fail "containerd socket not present (sudo preflight --fix → containerd-install will run systemctl enable --now containerd)"
+        preflight_strict_warn_or_fail "containerd socket not present (sudo bash ./preflight.sh --fix → containerd-install will run systemctl enable --now containerd)"
     fi
 }
 
@@ -1477,7 +1477,7 @@ preflight_check_pkg_repos() {
             fi
         done
         if [[ ${#legacy_files[@]} -gt 0 ]]; then
-            preflight_fail "Deprecated Kubernetes apt source detected (packages.cloud.google.com) in: ${legacy_files[*]}. This 404s and breaks 'apt-get update'. Migrate to pkgs.k8s.io (sudo preflight --fix → k8s-pkgs-repo)."
+            preflight_fail "Deprecated Kubernetes apt source detected (packages.cloud.google.com) in: ${legacy_files[*]}. This 404s and breaks 'apt-get update'. Migrate to pkgs.k8s.io (sudo bash ./preflight.sh --fix → k8s-pkgs-repo)."
         else
             preflight_ok "No deprecated packages.cloud.google.com apt source"
         fi
@@ -1541,7 +1541,7 @@ preflight_check_apt_install_candidates() {
     if [[ -n "${_apt_kubeadm_cand}" && "${_apt_kubeadm_cand}" != "(none)" ]]; then
         preflight_ok "apt source can install kubeadm (Candidate: ${_apt_kubeadm_cand})"
     else
-        preflight_strict_warn_or_fail "apt has no install candidate for kubeadm — Kubernetes apt source missing or unreachable. sudo preflight --fix → k8s-pkgs-repo will write /etc/apt/sources.list.d/kubernetes.list pointing to pkgs.k8s.io."
+        preflight_strict_warn_or_fail "apt has no install candidate for kubeadm — Kubernetes apt source missing or unreachable. sudo bash ./preflight.sh --fix → k8s-pkgs-repo will write /etc/apt/sources.list.d/kubernetes.list pointing to pkgs.k8s.io."
     fi
 
     _apt_containerd_cand="$(apt-cache policy containerd.io 2>/dev/null | awk '/Candidate:/{print $2; exit}' || true)"
@@ -1551,7 +1551,7 @@ preflight_check_apt_install_candidates() {
     elif [[ -n "${_apt_distro_containerd_cand}" && "${_apt_distro_containerd_cand}" != "(none)" ]]; then
         preflight_ok "apt source can install containerd (distro package; Candidate: ${_apt_distro_containerd_cand}). containerd.io (Docker repo) not configured — fine."
     else
-        preflight_strict_warn_or_fail "apt has no install candidate for containerd.io OR containerd. Either main/universe is disabled, or the source list is broken. sudo preflight --fix → containerd-install will best-effort install; preferred fix is to repair the apt sources first."
+        preflight_strict_warn_or_fail "apt has no install candidate for containerd.io OR containerd. Either main/universe is disabled, or the source list is broken. sudo bash ./preflight.sh --fix → containerd-install will best-effort install; preferred fix is to repair the apt sources first."
     fi
 }
 
@@ -1594,7 +1594,7 @@ preflight_check_yumdnf_install_candidates() {
         || "${pm}" -q list installed containerd >/dev/null 2>&1; then
         preflight_ok "${pm} source can install containerd (distro package)"
     else
-        preflight_strict_warn_or_fail "${pm} has no install candidate for containerd.io OR containerd. Add the Docker CE repo for containerd.io, or enable AppStream / EPEL for containerd. sudo preflight --fix → containerd-install will best-effort install but cannot manufacture the repo."
+        preflight_strict_warn_or_fail "${pm} has no install candidate for containerd.io OR containerd. Add the Docker CE repo for containerd.io, or enable AppStream / EPEL for containerd. sudo bash ./preflight.sh --fix → containerd-install will best-effort install but cannot manufacture the repo."
     fi
 }
 
@@ -1728,7 +1728,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via apt and apt-mark hold (kubelet enabled; not started — kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "apt-get install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/apt/sources.list.d/kubernetes.list (legacy alias: --fix-allow=k8s-apt-source), then retry."
+            preflight_warn "apt-get install kubeadm kubelet kubectl failed. Run sudo bash ./preflight.sh --fix --fix-allow=k8s-pkgs-repo first to configure /etc/apt/sources.list.d/kubernetes.list (legacy alias: --fix-allow=k8s-apt-source), then retry."
         fi
     elif command -v dnf &>/dev/null; then
         if dnf install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
@@ -1736,7 +1736,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via dnf (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "dnf install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
+            preflight_warn "dnf install kubeadm kubelet kubectl failed. Run sudo bash ./preflight.sh --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
         fi
     elif command -v yum &>/dev/null; then
         if yum install -y --disableexcludes=kubernetes kubeadm kubelet kubectl 2>/dev/null; then
@@ -1744,7 +1744,7 @@ preflight_fix_k8s_bins() {
             systemctl enable kubelet 2>/dev/null || true
             preflight_fixed "Installed kubeadm/kubelet/kubectl via yum (kubelet enabled; kubeadm init runs during deploy.sh k8s install)"
         else
-            preflight_warn "yum install kubeadm kubelet kubectl failed. Run sudo preflight --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
+            preflight_warn "yum install kubeadm kubelet kubectl failed. Run sudo bash ./preflight.sh --fix --fix-allow=k8s-pkgs-repo first to configure /etc/yum.repos.d/kubernetes.repo (legacy alias: k8s-apt-source), then retry."
         fi
     else
         preflight_warn "No supported package manager (apt/dnf/yum) — install kubeadm/kubelet/kubectl manually."

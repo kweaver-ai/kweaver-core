@@ -226,7 +226,7 @@ usage() {
     echo "  kweaver auth: you confirm URL. ISF+full: HTTP defaults user=admin pass=eisoo.com (if still default); override with ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD. Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
     echo "  kweaver-admin auth (ISF): use  auth login <url> -u admin -p <pass>  (append -k for https:// + self-signed); optional  auth login <url> -k  without -u/-p for browser OAuth. If HTTP sign-in returns 401001017, a TTY prompts: [Enter]=run  auth change-password  then HTTP login; o=OAuth browser. Non-TTY / -y prints hints (change-password or  login … --new-password). Then kweaver re-logs in as user test for impex and model steps."
     echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."
-    echo "  (preflight on the server: sudo preflight --fix still optional; this script can install Node in your *user* account via nvm.)"
+    echo "  (preflight on the server: sudo bash ./preflight.sh --fix still optional; this script can install Node in your *user* account via nvm.)"
 }
 
 for _ob_arg in "$@"; do
@@ -326,7 +326,7 @@ onboard_install_node22_nvm() {
     return 0
 }
 
-# If not sudo preflight --fix, still help: offer (or with -y, run) nvm+Node 22 in this user.
+# If not sudo bash ./preflight.sh --fix, still help: offer (or with -y, run) nvm+Node 22 in this user.
 onboard_ensure_node_22() {
     local mj
     onboard_bootstrap_node_path
@@ -348,11 +348,11 @@ onboard_ensure_node_22() {
         echo ""
         read -r -p "Node.js ${ONBOARD_MIN_NODE_MAJOR}+ is required for kweaver/onboard. Install nvm and Node 22 in this user account now? [Y/n]: " _obn
         if [[ "${_obn}" =~ ^[Nn] ]]; then
-            log_error "Install Node ${ONBOARD_MIN_NODE_MAJOR}+ (e.g. nvm install 22), or use another machine with Node 22+ on PATH, or run: sudo preflight --fix on the host where you need system-wide Node."
+            log_error "Install Node ${ONBOARD_MIN_NODE_MAJOR}+ (e.g. nvm install 22), or use another machine with Node 22+ on PATH, or run: sudo bash ./preflight.sh --fix on the host where you need system-wide Node."
             exit 1
         fi
     else
-        log_error "Node ${ONBOARD_MIN_NODE_MAJOR}+ required (or missing). In a real terminal you get a Y/n prompt; without a TTY pass  $0 -y  (e.g. CI), or install Node / nvm first. Or: sudo preflight --fix (onboard-tooling) on a server."
+        log_error "Node ${ONBOARD_MIN_NODE_MAJOR}+ required (or missing). In a real terminal you get a Y/n prompt; without a TTY pass  $0 -y  (e.g. CI), or install Node / nvm first. Or: sudo bash ./preflight.sh --fix (onboard-tooling) on a server."
         exit 1
     fi
 

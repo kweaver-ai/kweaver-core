@@ -74,10 +74,10 @@ usage() {
     echo "Exit codes: 0 = OK, 1 = FAIL present, 2 = only WARN (no FAIL)"
     echo ""
     echo "Examples:"
-    echo "  sudo $0                            # check-only (default)"
-    echo "  sudo $0 --fix                      # check + interactive fixes"
-    echo "  sudo $0 --list-fixes"
-    echo "  sudo $0 --skip=network --report=/tmp/preflight.txt"
+    echo "  sudo bash ./preflight.sh              # check-only (default)"
+    echo "  sudo bash ./preflight.sh --fix        # check + interactive fixes"
+    echo "  sudo bash ./preflight.sh --list-fixes"
+    echo "  sudo bash ./preflight.sh --skip=network --report=/tmp/preflight.txt"
 }
 
 # Parse args
@@ -186,7 +186,7 @@ if [[ -n "${PREFLIGHT_REPORT_FILE}" ]]; then
 fi
 
 if [[ "${EUID}" -ne 0 ]]; then
-    log_error "Preflight must be run as root: sudo $0 [options]  (only -h / --help works without root)"
+    log_error "Preflight must be run as root: sudo bash ./preflight.sh [options]  (only -h / --help works without root)"
     exit 1
 fi
 
@@ -270,8 +270,8 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
     if [[ ${exit_code} -eq 1 ]]; then
         log_error "Preflight failed (see [FAIL] lines above)."
         if [[ "${PREFLIGHT_STRICT:-true}" == "true" && "${PREFLIGHT_CHECK_ONLY}" == "true" ]]; then
-            log_info "Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo $0 --fix"
-            log_info "      Need to bypass strict severity (e.g. low-spec lab box)? sudo $0 --check-only --lenient"
+            log_info "Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo bash ./preflight.sh --fix"
+            log_info "      Need to bypass strict severity (e.g. low-spec lab box)? sudo bash ./preflight.sh --check-only --lenient"
         fi
     elif [[ ${exit_code} -eq 2 ]]; then
         log_warn "Preflight completed with warnings only."
@@ -304,34 +304,34 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
         if [[ "${_pf_bad}" -eq 0 ]]; then
             echo ""
             echo "  Suggested next step (skip install, just configure / verify):"
-            echo "    - Node/kweaver on an admin host: default preflight is check-only; run sudo preflight --fix to opt in to help installing Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ and CLIs (y/N per step)"
+            echo "    - Node/kweaver on an admin host: default preflight is check-only; run sudo bash ./preflight.sh --fix to opt in to help installing Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ and CLIs (y/N per step)"
             echo "    - Configure models / BKN search:    ./onboard.sh"
-            echo "    - Check status:                     ./deploy.sh kweaver-core status"
-            echo "    - Only if you really want to upgrade: ./deploy.sh kweaver-core install --force-upgrade"
+            echo "    - Check status:                     sudo bash ./deploy.sh kweaver-core status"
+            echo "    - Only if you really want to upgrade: sudo bash ./deploy.sh kweaver-core install --force-upgrade"
         else
             echo ""
             echo "  However, ${_pf_bad}/${_pf_total} release(s) are NOT in 'deployed' state."
             echo "  Suggested next step:"
             echo "    - Inspect:  helm list -A | grep -iE 'kweaver|isf|dip'"
-            echo "    - Repair:   ./deploy.sh kweaver-core install --force-upgrade"
+            echo "    - Repair:   sudo bash ./deploy.sh kweaver-core install --force-upgrade"
         fi
     else
         if [[ ${exit_code} -eq 0 ]]; then
             echo "  No KWeaver releases detected. Environment looks ready for a first-time install:"
-            echo "    sudo ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
-            echo "    sudo ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
+            echo "    sudo bash ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
+            echo "    sudo bash ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
             echo ""
             echo "  After deploy: from this repo's deploy/ directory run ./onboard.sh (needs Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver CLI on that host)."
-            echo "  If this host still lacks Node/CLIs: sudo $0 --fix"
+            echo "  If this host still lacks Node/CLIs: sudo bash ./preflight.sh --fix"
         else
             echo "  No KWeaver releases detected, but preflight above is NOT all clear — fix that before treating deploy as ready."
             echo "  Typical loop:"
-            echo "    sudo $0 --fix          # applies safe fixes / opt-in tooling (y/N unless -y)"
-            echo "    sudo $0 --check-only   # re-check until blocking [FAIL] items are addressed (or sudo $0 --check-only --lenient if you accept the caveats)"
+            echo "    sudo bash ./preflight.sh --fix          # applies safe fixes / opt-in tooling (y/N unless -y)"
+            echo "    sudo bash ./preflight.sh --check-only   # re-check until blocking [FAIL] items are addressed (or sudo bash ./preflight.sh --check-only --lenient if you accept the caveats)"
             echo "  Only then install:"
-            echo "    sudo ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
-            echo "    sudo ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
-            echo "  Finally: ./onboard.sh from deploy/ (Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver on PATH; sudo $0 --fix helps install tooling on this machine)."
+            echo "    sudo bash ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
+            echo "    sudo bash ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
+            echo "  Finally: ./onboard.sh from deploy/ (Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps install tooling on this machine)."
         fi
     fi
     echo "${_PF_BAR}"

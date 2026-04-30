@@ -160,20 +160,20 @@ sudo bash deploy/preflight.sh --help         # 全部参数
     1. …（每条对应一项检查；说明里会写建议的修复名，如 system-tuning、kernel-limits …）
     …
 
-[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo ./preflight.sh --fix
-[INFO]       Need to bypass strict severity … ? sudo ./preflight.sh --check-only --lenient
+[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo bash ./preflight.sh --fix
+[INFO]       Need to bypass strict severity … ? sudo bash ./preflight.sh --check-only --lenient
 
 ================================================================
   Conclusion
 ================================================================
   No KWeaver releases detected, but preflight above is NOT all clear — fix that before treating deploy as ready.
   Typical loop:
-    sudo ./preflight.sh --fix          # …（默认每项 y/N；加 -y 全自动）
-    sudo ./preflight.sh --check-only   # 再检查直到关键 [FAIL] 消失（或配合 --lenient）
+    sudo bash ./preflight.sh --fix          # …（默认每项 y/N；加 -y 全自动）
+    sudo bash ./preflight.sh --check-only   # 再检查直到关键 [FAIL] 消失（或配合 --lenient）
   Only then install:
-    sudo ./deploy.sh kweaver-core install --minimum    # 体验 / 最小化
-    sudo ./deploy.sh kweaver-core install              # 完整安装
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo ./preflight.sh --fix helps …)
+    sudo bash ./deploy.sh kweaver-core install --minimum    # 体验 / 最小化
+    sudo bash ./deploy.sh kweaver-core install              # 完整安装
+  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
 ```
 
 **说明：**

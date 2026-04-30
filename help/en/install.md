@@ -159,20 +159,20 @@ After `--check-only` or `--fix`, preflight prints a **Summary** (counts per stat
     1. … (each line is one check; the text names the suggested fix, e.g. system-tuning, kernel-limits …)
     …
 
-[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo ./preflight.sh --fix
-[INFO]       Need to bypass strict severity … ? sudo ./preflight.sh --check-only --lenient
+[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo bash ./preflight.sh --fix
+[INFO]       Need to bypass strict severity … ? sudo bash ./preflight.sh --check-only --lenient
 
 ================================================================
   Conclusion
 ================================================================
   … preflight above is NOT all clear — fix that before treating deploy as ready.
   Typical loop:
-    sudo ./preflight.sh --fix          # … (per-item y/N unless -y)
-    sudo ./preflight.sh --check-only   # re-check until blocking [FAIL] are gone (or use --lenient)
+    sudo bash ./preflight.sh --fix          # … (per-item y/N unless -y)
+    sudo bash ./preflight.sh --check-only   # re-check until blocking [FAIL] are gone (or use --lenient)
   Only then install:
-    sudo ./deploy.sh kweaver-core install --minimum
-    sudo ./deploy.sh kweaver-core install
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo ./preflight.sh --fix helps …)
+    sudo bash ./deploy.sh kweaver-core install --minimum
+    sudo bash ./deploy.sh kweaver-core install
+  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
 ```
 
 **Notes:**

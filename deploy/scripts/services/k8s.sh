@@ -360,7 +360,7 @@ wait_for_dns() {
 }
 
 # Many distros configure sudo secure_path without /usr/local/bin while install_helm
-# places the binary under /usr/local/bin — sudo preflight then fails `command -v helm`.
+# places the binary under /usr/local/bin — sudo bash ./preflight.sh then fails `command -v helm`.
 # Same paths on Ubuntu and CentOS/RHEL (FHS); not package-manager-specific.
 _k8s_ensure_helm_usr_bin_copy() {
     [[ -x /usr/local/bin/helm ]] || return 0
