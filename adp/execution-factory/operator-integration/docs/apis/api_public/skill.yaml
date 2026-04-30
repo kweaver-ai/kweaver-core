@@ -1006,6 +1006,137 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /skills/{skill_id}/management/content:
+    get:
+      summary: "获取 Skill 管理态内容"
+      description: "读取当前编辑态的 SKILL.md 下载 URL 和文件清单"
+      tags:
+        - "Skill - Management Read"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/SkillID"
+        - name: response_mode
+          in: query
+          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文；auto 根据注册类型自动选择"
+          required: false
+          schema:
+            type: string
+            enum: [url, content, auto]
+            default: url
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetManagementContentResponse"
+        "400":
+          description: "参数错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "权限不足"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/management/files/read:
+    post:
+      summary: "读取管理态指定文件"
+      description: "读取当前编辑态的指定文件内容，返回 OSS 预签名下载 URL"
+      tags:
+        - "Skill - Management Read"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/SkillID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rel_path
+              properties:
+                rel_path:
+                  type: string
+                  description: "文件相对路径"
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadSkillFileResp"
+        "400":
+          description: "参数错误或路径非法"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "权限不足"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "文件或 Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /skills/{skill_id}/management/download:
+    get:
+      summary: "下载管理态 Skill 包"
+      description: "下载当前编辑态的完整 Skill 包（ZIP 格式）"
+      tags:
+        - "Skill - Management Read"
+      parameters:
+        - $ref: "#/components/parameters/BusinessDomain"
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/SkillID"
+        - name: response_mode
+          in: query
+          description: "响应模式。url(默认)返回 OSS 预签名 URL；content 返回内联正文；auto 根据注册类型自动选择"
+          required: false
+          schema:
+            type: string
+            enum: [url, content, auto]
+            default: url
+      responses:
+        "200":
+          description: "成功"
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: "权限不足"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "Skill 不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     Authorization:
@@ -1761,3 +1892,43 @@ components:
                   last_finished_time:
                     type: integer
                     format: int64
+
+    GetManagementContentResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/GetManagementContentData"
+
+    GetManagementContentData:
+      type: object
+      properties:
+        skill_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: ["unpublish", "published", "editing", "offline"]
+        source:
+          type: string
+        file_type:
+          type: string
+          enum: ["zip", "content"]
+        url:
+          type: string
+          description: "SKILL.md 的 OSS 预签名下载 URL"
+        content:
+          type: string
+          description: "content 注册类型的正文内容（zip 注册类型为空）"
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillFileSummary"

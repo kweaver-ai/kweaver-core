@@ -30,6 +30,7 @@ import (
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/logics/sandbox"
 	"github.com/kweaver-ai/adp/execution-factory/operator-integration/server/utils"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
+	"gopkg.in/yaml.v3"
 )
 
 type skillRegistry struct {
@@ -204,6 +205,11 @@ func (r *skillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces
 			fmt.Sprintf(" %s category not found", req.Category))
 	}
 
+	// FR-6: 判断元数据是否有变更，决定是否需要重写 OSS SKILL.md
+	nameChanged := req.Name != skill.Name
+	descChanged := req.Description != skill.Description
+	needsRewrite := nameChanged || descChanged
+
 	tx, err := r.dbTx.GetTx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get tx failed: %w", err)
@@ -217,6 +223,12 @@ func (r *skillRegistry) UpdateSkillMetadata(ctx context.Context, req *interfaces
 			commitErr := tx.Commit()
 			if commitErr != nil {
 				r.Logger.WithContext(ctx).Errorf("commit skill metadata update failed, skill_id=%s, err=%v", req.SkillID, commitErr)
+			}
+			// FR-6: 事务提交成功后，重写 OSS SKILL.md 的 frontmatter
+			if needsRewrite {
+				if rewriteErr := r.rewriteSkillMDFrontmatter(ctx, skill.SkillID, skill.Version, req.Name, req.Description); rewriteErr != nil {
+					r.Logger.WithContext(ctx).Errorf("rewrite SKILL.md frontmatter failed, skill_id=%s, err=%v", skill.SkillID, rewriteErr)
+				}
 			}
 		}
 	}()
@@ -1468,4 +1480,66 @@ func (r *skillRegistry) deletePublishedSkillSnapshot(ctx context.Context, tx *sq
 		return err
 	}
 	return nil
+}
+
+// ========== FR-6: OSS SKILL.md Frontmatter Rewrite ==========
+
+// rewriteSkillMDFrontmatter 重写 OSS 中 SKILL.md 的 name/description
+// 在 UpdateSkillMetadata 事务提交成功后调用
+// 失败只记录日志，不阻塞主流程
+func (r *skillRegistry) rewriteSkillMDFrontmatter(ctx context.Context, skillID, version, newName, newDesc string) error {
+	skillFile, err := r.fileRepo.SelectSkillFileByPath(ctx, nil, skillID, version, SkillMD)
+	if err != nil {
+		return fmt.Errorf("query SKILL.md file_index failed: %w", err)
+	}
+	if skillFile == nil {
+		return fmt.Errorf("SKILL.md not found in file_index: skill_id=%s, version=%s", skillID, version)
+	}
+
+	content, err := r.assetStore.Download(ctx, &interfaces.OssObject{
+		StorageID:  skillFile.StorageID,
+		StorageKey: skillFile.StorageKey,
+	})
+	if err != nil {
+		return fmt.Errorf("download SKILL.md from OSS failed: %w", err)
+	}
+
+	newContent, err := updateFrontmatterNameDesc(string(content), newName, newDesc)
+	if err != nil {
+		return fmt.Errorf("update SKILL.md frontmatter failed: %w", err)
+	}
+
+	_, _, err = r.assetStore.Upload(ctx, skillID, version, SkillMD, []byte(newContent))
+	if err != nil {
+		return fmt.Errorf("upload rewritten SKILL.md to OSS failed: %w", err)
+	}
+	return nil
+}
+
+// updateFrontmatterNameDesc 只替换 YAML frontmatter 中的 name 和 description
+// 其余所有自定义字段保持不动
+func updateFrontmatterNameDesc(rawMD, newName, newDesc string) (string, error) {
+	parts := strings.SplitN(rawMD, "---", 3)
+	if len(parts) < 3 {
+		return "", fmt.Errorf("invalid SKILL.md format: missing frontmatter")
+	}
+
+	frontmatter := make(map[string]interface{})
+	if err := yaml.Unmarshal([]byte(parts[1]), &frontmatter); err != nil {
+		return "", fmt.Errorf("failed to unmarshal frontmatter: %w", err)
+	}
+
+	if newName != "" {
+		frontmatter["name"] = newName
+	}
+	if newDesc != "" {
+		frontmatter["description"] = newDesc
+	}
+
+	newFrontmatter, err := yaml.Marshal(frontmatter)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal frontmatter: %w", err)
+	}
+
+	return "---\n" + string(newFrontmatter) + "---\n" + strings.TrimPrefix(parts[2], "\n"), nil
 }

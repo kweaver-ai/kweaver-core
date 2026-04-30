@@ -260,9 +260,13 @@ var (
 // NewConfigLoader 获取配置
 func NewConfigLoader() *Config {
 	once.Do(func() {
-		configFilePath := "/sysvol/config/agent-operator-integration.yaml"
-		secretFilePath := "/sysvol/secret/agent-operator-integration-secret.yaml"
-		mqConfigFilePath := "/sysvol/config/mq_config.yaml"
+		profileDir := os.Getenv("CONFIG_PROFILE")
+		if profileDir == "" {
+			profileDir = "/sysvol/config"
+		}
+		configFilePath := filepath.Join(profileDir, "agent-operator-integration.yaml")
+		secretFilePath := filepath.Join(profileDir, "agent-operator-integration-secret.yaml")
+		mqConfigFilePath := filepath.Join(profileDir, "mq_config.yaml")
 		// 设置默认配置
 		configLoader = &Config{
 			MQConfigFile: mqConfigFilePath,
@@ -369,7 +373,11 @@ func (conf *Config) initO11yAndLog() {
 	// 加载配置文件
 	viper.SetConfigName("observability")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("/sysvol/config/")
+	profileDir := os.Getenv("CONFIG_PROFILE")
+	if profileDir == "" {
+		profileDir = "/sysvol/config"
+	}
+	viper.AddConfigPath(profileDir)
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)
 	}

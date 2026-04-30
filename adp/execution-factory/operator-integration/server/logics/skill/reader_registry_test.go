@@ -370,6 +370,9 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			mockAuthService.EXPECT().CheckCreatePermission(gomock.Any(), gomock.Any(), interfaces.AuthResourceTypeSkill).Return(nil)
 			mockDBTx.EXPECT().GetTx(gomock.Any()).Return(tx, nil)
 			mockSkillRepo.EXPECT().InsertSkill(gomock.Any(), tx, gomock.Any()).Return("skill-registered", nil)
+			mockAssetStore.EXPECT().Upload(gomock.Any(), "skill-registered", gomock.Any(), "SKILL.md", gomock.Any()).
+				Return(&interfaces.OssObject{StorageID: "s1", StorageKey: "k1"}, "checksum", nil)
+			mockFileRepo.EXPECT().BatchInsertSkillFiles(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			mockBusinessDomainService.EXPECT().AssociateResource(gomock.Any(), "bd-1", "skill-registered", interfaces.AuthResourceTypeSkill).Return(nil)
 			mockAuthService.EXPECT().CreateOwnerPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -425,6 +428,8 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 
 		Convey("UpdateSkillMetadata moves published draft back to editing without changing version", func() {
 			mockSkillRepo := mocks.NewMockISkillRepository(ctrl)
+			mockFileRepo := mocks.NewMockISkillFileIndex(ctrl)
+			mockAssetStore := mocks.NewMockskillAssetStore(ctrl)
 			mockDBTx := mocks.NewMockDBTx(ctrl)
 			mockAuthService := mocks.NewMockIAuthorizationService(ctrl)
 			mockCategoryManager := mocks.NewMockCategoryManager(ctrl)
@@ -432,6 +437,8 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 			defer patchTxMethods()()
 			registry := &skillRegistry{
 				skillRepo:       mockSkillRepo,
+				fileRepo:        mockFileRepo,
+				assetStore:      mockAssetStore,
 				dbTx:            mockDBTx,
 				AuthService:     mockAuthService,
 				CategoryManager: mockCategoryManager,
@@ -457,6 +464,8 @@ func TestSkillReaderAndRegistry(t *testing.T) {
 					return nil
 				},
 			)
+			mockFileRepo.EXPECT().SelectSkillFileByPath(gomock.Any(), gomock.Nil(), "skill-meta-1", "v1", SkillMD).
+				Return(nil, nil)
 
 			resp, err := registry.UpdateSkillMetadata(context.Background(), &interfaces.UpdateSkillMetadataReq{
 				BusinessDomainID: "bd-1",
