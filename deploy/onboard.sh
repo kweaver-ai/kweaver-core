@@ -597,25 +597,26 @@ onboard_kweaver_admin_resolve_initial_password_blocked_interactive() {
     read -r -p "[onboard] Method? [Enter]=CLI auth change-password; o / oauth = OAuth (browser): " _ch
     case "$(printf '%s' "${_ch:-}" | LC_ALL=C tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" in
         o|oauth)
-            onboard_log_info "Running (OAuth): $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
-            if kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" \
-                && kweaver-admin --json user list --limit 1 &>/dev/null; then
+            onboard_log_info "Running (OAuth — complete flow in browser; waiting on callback may take time): $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+            # Trust auth login exit status; onboarding re-checks with user list once below (avoid doubling slow/hanging API probes).
+            if kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"; then
                 return 0
             fi
-            onboard_log_warn "OAuth login did not complete or user list failed — try CLI change-password (Enter default) next time."
+            onboard_log_warn "OAuth login did not complete — try CLI change-password ([Enter]) next time."
             return 1
             ;;
         *)
-            onboard_log_info "Running (CLI): $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+            onboard_log_info "Running (CLI): $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") — follow prompts (old/new); first request may take several seconds."
             if ! kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"; then
                 return 1
             fi
-            read -r -s -p "  New password for ${_user} (must match change-password above): " _pw
             echo ""
-            onboard_log_info "Signing in with HTTP after password change…"
+            onboard_log_info "HTTP sign-in next: type new password once (keyboard hidden)."
+            read -r -s -p "  New password for ${_user}: " _pw
+            echo ""
+            onboard_log_info "Signing in via HTTP…"
             onboard_log_info "Running: $(onboard_argv_q kweaver-admin auth login "${_url}" -u "${_user}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
-            if kweaver-admin auth login "${_url}" -u "${_user}" -p "${_pw}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" \
-                && kweaver-admin --json user list --limit 1 &>/dev/null; then
+            if kweaver-admin auth login "${_url}" -u "${_user}" -p "${_pw}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"; then
                 return 0
             fi
             return 1
