@@ -132,6 +132,8 @@ bash ./onboard.sh --help # all flags (--config=models.yaml, --enable-bkn-search,
 
 > Full preflight / onboard flow, ISF dual-CLI auth and Mermaid diagrams: see [help/en/install.md — Post-install: `onboard.sh`](../help/en/install.md#post-install-onboardsh).
 
+> **`onboard.sh` runtime messages** (including `kweaver-admin` recovery when sign-in hits **401001017**) are **English**. Chinese + English context: [`dev/README.md` — Onboard and `kweaver-admin`](../dev/README.md#onboard-and-kweaver-admin-full-isf); product docs [`help/zh/install.md`](../help/zh/install.md) / [`help/en/install.md`](../help/en/install.md).
+
 ## 📋 Prerequisites
 
 ### System requirements

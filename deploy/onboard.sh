@@ -207,7 +207,7 @@ usage() {
     echo ""
     echo "  Environment: ONBOARD_SKIP_NODE_INSTALL=true  skip nvm in onboard (fail if Node < ${ONBOARD_MIN_NODE_MAJOR})"
     echo "                ONBOARD_SKIP_KWEAVER_INSTALL=true  never run npm -g for kweaver in onboard"
-    echo "                ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL=true  on ISF: do not auto/offer  npm -g  kweaver-admin  ( -y  也不会装 )"
+    echo "                ONBOARD_SKIP_KWEAVER_ADMIN_INSTALL=true  on ISF: do not auto/offer  npm -g  kweaver-admin  (also skipped with  -y )"
     echo "                ONBOARD_SKIP_ISF_TEST_USER=true  same as --skip-isf-test-user"
     echo "                ONBOARD_SKIP_CONTEXT_LOADER=true  same as --skip-context-loader"
     echo "                IMPORT_CONTEXT_LOADER_TOOLSET=false  skip Context Loader (legacy name; same effect)"
@@ -574,14 +574,14 @@ onboard_kweaver_admin_output_is_blocked_initial_password() {
     grep -qE '401001017|401,001,017|无法使用初始密码|密码是初始密码' "${_f}" 2>/dev/null
 }
 
-# 401001017: HTTP /oauth2/signin + 初始口令会被拒；可走浏览器 OAuth login，或用 change-password / login --new-password。
+# 401001017: HTTP /oauth2/signin rejects factory default until changed; use browser OAuth, change-password, or login --new-password.
 onboard_kweaver_admin_hint_auth_change_password_cli() {
     local _url="$1" _user="${2:-admin}"
-    onboard_log_warn "初始密码无法用「HTTP 用户名密码登录」直连（401001017）。任选其一后继续 onboard："
-    onboard_log_warn "  • OAuth/浏览器：$(printf '%q ' kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")（不传 -u/-p，按提示在浏览器完成登录与首登改密）。"
-    onboard_log_warn "  • kweaver-admin HTTP：$(printf '%q ' kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")（EACP 改密；须带 URL）。"
-    onboard_log_warn "  • 或非交互一次完成 login：同上 URL/-k，追加 -u … -p '<初始密码>' --new-password '<新密码>'（onboard -y 时成功后再 export ONBOARD_DEFAULT_KWEAVER_PASSWORD）。"
-    onboard_log_warn "勿省略命令中的访问地址，否则会误用  kweaver-admin auth list  里当前激活平台。"
+    onboard_log_warn "Initial password cannot complete HTTP username/password sign-in (401001017). Pick one, then re-run onboard:"
+    onboard_log_warn "  • OAuth / browser: $(printf '%q ' kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (omit -u/-p; follow the browser flow for first login / password change)."
+    onboard_log_warn "  • kweaver-admin HTTP: $(printf '%q ' kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (EACP modifypassword; always pass the platform URL)."
+    onboard_log_warn "  • Non-interactive login: same URL and -k, add -u ... -p '<initial>' --new-password '<new>' (with  onboard -y , then  export ONBOARD_DEFAULT_KWEAVER_PASSWORD )."
+    onboard_log_warn "Do not omit the platform URL in these commands, or the CLI uses the active profile from  kweaver-admin auth list  (wrong environment)."
 }
 
 # kweaver-admin: -u/-p use HTTP /oauth2/signin (no --http-signin flag; unlike kweaver-sdk). Same defaults as kweaver. See ONBOARD_DEFAULT_KWEAVER_*.
@@ -625,7 +625,7 @@ onboard_kweaver_admin_auth_login_for_url() {
         if onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
             onboard_kweaver_admin_hint_auth_change_password_cli "${_kurl}" "${_u}"
         else
-            onboard_log_warn "kweaver-admin sign-in failed (attempt ${_attempt}/3). If the console password was changed from '${_dpass}', enter the new one. To reset: log into the web console as admin → 用户管理 → 改密码; or run 'kweaver-admin user reset-password -u admin --prompt-password -y' after one successful login."
+            onboard_log_warn "kweaver-admin sign-in failed (attempt ${_attempt}/3). If the console password was changed from '${_dpass}', enter the new one. To reset: log into the web console as admin → User management → change password; or run 'kweaver-admin user reset-password -u admin --prompt-password -y' after one successful login."
         fi
         rm -f "${_kad_out}"
     done
@@ -682,7 +682,7 @@ onboard_ensure_kweaver_auth() {
     done
 }
 
-# ISF 全量：无 kweaver-admin 则无法  user create / assign-role ；可选安装（交互 Y/n 或  -y  自动、或跳过）
+# Full ISF: kweaver-admin required for user create / assign-role; optional install (interactive Y/n, -y auto, or skip).
 onboard_ensure_kweaver_admin_for_isf() {
     if ! (type onboard_isf_full_install &>/dev/null && onboard_isf_full_install 2>/dev/null); then
         return 0

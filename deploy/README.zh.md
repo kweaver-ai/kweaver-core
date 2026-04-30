@@ -130,6 +130,8 @@ bash ./onboard.sh --help # 全部参数（--config=models.yaml、--enable-bkn-se
 
 > 完整的 preflight / onboard 流程、ISF 双 CLI 鉴权与 Mermaid 流程图见 [help/zh/install.md — Post-install：`onboard.sh`](../help/zh/install.md#post-installonboardsh安装后引导)。
 
+> **`onboard.sh` 终端输出**（含 **`kweaver-admin` 401001017** 时的恢复指引）使用**英文**。中英对照说明见 [`dev/README.md`](../dev/README.md)（**Onboard 与 `kweaver-admin`（全量 ISF）**）及产品文档 [`help/zh/install.md`](../help/zh/install.md)、[`help/en/install.md`](../help/en/install.md)。
+
 ## 📋 Prerequisites
 
 ### 系统要求

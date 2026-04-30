@@ -98,7 +98,20 @@ See also: top-of-file comments in [`mac.sh`](mac.sh), `bash ./dev/mac.sh -h`.
 
 - **`kweaver-core-data-migrator` / pre-install job `BackoffLimitExceeded`:** ensure the **data layer** is up (normally automatic with **`kweaver-core install`**; otherwise run **`bash ./dev/mac.sh data-services install`**). Ensure **`depServices.rds`** points at in-cluster MariaDB after install (`mac-config` loopback placeholders may be updated when MariaDB is installed). Remove a failed release if Helm left it pending: `helm uninstall kweaver-core-data-migrator -n <namespace>` then re-run `kweaver-core install`.
 
----
+### Onboard and `kweaver-admin` (full ISF)
+
+`bash ./dev/mac.sh onboard` runs **`onboard.sh`** with **`CONFIG_YAML_PATH`** (usually `dev/conf/mac-config.yaml`). On a **full** install with ISF, the script calls **`kweaver-admin auth login`** with HTTP `-u`/`-p`. **401001017** means the factory default cannot complete that sign-in until the password is changed — **`onboard.sh` prints recovery hints in English**. Options:
+
+| Approach | Typical command |
+|----------|-----------------|
+| OAuth / browser | `kweaver-admin auth login https://<access-address> -k` *(omit `-u` and `-p`)* |
+| HTTP change-password | `kweaver-admin auth change-password https://<access-address> -u admin -k` *(URL required)* |
+| Non-interactive | `kweaver-admin auth login … -p '<initial>' --new-password '<new>' -k`; then `export ONBOARD_DEFAULT_KWEAVER_PASSWORD` before `onboard -y` |
+
+**Always pass the platform base URL** on the CLI. If you omit it, `kweaver-admin` uses the saved **active profile** from `kweaver-admin auth list`, which may be a different cluster — **not** a Helm `accessAddress` misread.
+
+Details: [`help/en/install.md`](../../help/en/install.md) · [`help/zh/install.md`](../../help/zh/install.md) (administrator tool / 401001017).
+
 
 ## 中文说明
 
@@ -197,3 +210,17 @@ cd kweaver-core/deploy   # 在此目录执行 bash ./dev/mac.sh ...（与 deploy
 
 - **`cluster up` 报 Docker API / `docker.sock`：**多为 **CLI 已装但引擎未起**。请先启动 **Docker Desktop**，`docker info` 通过后重试。**`doctor --fix`** 不会拉起守护进程。
 - **`kweaver-core-data-migrator` / Job `BackoffLimitExceeded`：**确认数据层就绪（一般由 **`kweaver-core install` 自动安装**；否则 **`data-services install`**）。确认 **`depServices.rds`** 指向集群内 MariaDB；必要时 `helm uninstall kweaver-core-data-migrator -n <namespace>` 后再装 Core。
+
+### Onboard 与 `kweaver-admin`（全量 ISF）
+
+**`bash ./dev/mac.sh onboard`** 调用 **`onboard.sh`**（`CONFIG_YAML_PATH` 多为 **`dev/conf/mac-config.yaml`**）。**全量 + ISF** 时会用 HTTP **`-u`/`-p`** 执行 **`kweaver-admin auth login`**。返回 **401001017** 表示初始密码无法走该 HTTP 登录路径，须先完成改密——**脚本在终端里的提示语言为英文**；可选做法与上文英文 **Onboard and kweaver-admin** 小节一致：
+
+| 方式 | 命令要点 |
+|------|----------|
+| OAuth / 浏览器 | `kweaver-admin auth login https://<访问地址> -k`，**不要**加 `-u`/`-p` |
+| HTTP 改密 | `kweaver-admin auth change-password https://<访问地址> -u admin -k`，**必须写 URL** |
+| 非交互 | `kweaver-admin auth login … -p '<初始>' --new-password '<新>' -k`；`onboard -y` 前 **`export ONBOARD_DEFAULT_KWEAVER_PASSWORD`** |
+
+**务必在命令中写出平台访问基址**；省略时 CLI 使用 **`kweaver-admin auth list`** 里当前激活会话的地址，易连到其它环境，**并非** Helm 误读 `accessAddress`。
+
+详见 [`help/zh/install.md`](../../help/zh/install.md)、[`help/en/install.md`](../../help/en/install.md)（完整安装后的 `kweaver-admin` / 401001017）。
