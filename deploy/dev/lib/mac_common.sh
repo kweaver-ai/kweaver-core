@@ -173,6 +173,36 @@ mac_doctor_apply_fixes() {
     return 0
 }
 
+# Inspect Docker engine memory budget and warn when it is too low for KWeaver Core
+# + bundled data services (mariadb/redis/kafka/zookeeper/opensearch). Warning only —
+# does NOT set fail=1, since the user can still proceed (just slower / OOM-prone).
+# Threshold defaults are tuned for --minimum profile + data-services on kind:
+#   < MIN  -> WARNING (highly likely to OOM-loop, e.g. redis crash-restart)
+#   < REC  -> info note (works but tight)
+#   >= REC -> OK
+# Override via MAC_DOCTOR_MIN_MEM_GB / MAC_DOCTOR_REC_MEM_GB.
+mac_doctor_check_docker_memory() {
+    local mem_bytes mem_gb min_gb rec_gb
+    mem_bytes="$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)"
+    if [[ -z "${mem_bytes}" ]] || ! [[ "${mem_bytes}" =~ ^[0-9]+$ ]] || [[ "${mem_bytes}" -eq 0 ]]; then
+        return 0
+    fi
+    mem_gb="$(awk -v b="${mem_bytes}" 'BEGIN{printf "%.1f", b/1024/1024/1024}')"
+    min_gb="${MAC_DOCTOR_MIN_MEM_GB:-12}"
+    rec_gb="${MAC_DOCTOR_REC_MEM_GB:-16}"
+    if (( $(awk -v m="${mem_gb}" -v t="${min_gb}" 'BEGIN{print (m+0 < t+0)}') )); then
+        printf '%b[WARNING]%b docker memory %s GB < %s GB minimum (KWeaver Core + data-services likely to OOM; redis/bkn-backend will crash-restart)\n' \
+            "${MAC_D_WARN}" "${MAC_D_RESET}" "${mem_gb}" "${min_gb}"
+        printf '  %bto fix:%b Docker Desktop → Settings → Resources → %bMemory ≥ %s GB%b → Apply & restart\n' \
+            "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${rec_gb}" "${MAC_D_RESET}"
+    elif (( $(awk -v m="${mem_gb}" -v t="${rec_gb}" 'BEGIN{print (m+0 < t+0)}') )); then
+        printf '%b[OK]%b docker memory %s GB %b(recommend ≥ %s GB for full Core + data-services)%b\n' \
+            "${MAC_D_OK}" "${MAC_D_RESET}" "${mem_gb}" "${MAC_D_DIM}" "${rec_gb}" "${MAC_D_RESET}"
+    else
+        printf '%b[OK]%b docker memory %s GB\n' "${MAC_D_OK}" "${MAC_D_RESET}" "${mem_gb}"
+    fi
+}
+
 # Pretty status lines; missing/warn rows print only the fix that applies.
 # On failure, prints MAC_DOCTOR_FIX_CMD hint when set (e.g. by mac.sh).
 mac_doctor() {
@@ -206,6 +236,7 @@ mac_doctor() {
                 fail=1
             else
                 printf '%b[OK]%b docker\n' "${MAC_D_OK}" "${MAC_D_RESET}"
+                mac_doctor_check_docker_memory
             fi
             continue
         fi
