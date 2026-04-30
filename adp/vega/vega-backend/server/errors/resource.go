@@ -19,6 +19,7 @@ const (
 	VegaBackend_InvalidParameter_GroupBy            = "VegaBackend.InvalidParameter.GroupBy"
 	VegaBackend_InvalidParameter_OrderBy            = "VegaBackend.InvalidParameter.OrderBy"
 	VegaBackend_InvalidParameter_Having             = "VegaBackend.InvalidParameter.Having"
+	VegaBackend_InvalidParameter_CalendarInterval   = "VegaBackend.InvalidParameter.CalendarInterval"
 
 	// 403 Forbidden
 	VegaBackend_Resource_NotFound        = "VegaBackend.Resource.NotFound"
@@ -51,6 +52,7 @@ var ResourceErrCodeList = []string{
 	VegaBackend_InvalidParameter_GroupBy,
 	VegaBackend_InvalidParameter_OrderBy,
 	VegaBackend_InvalidParameter_Having,
+	VegaBackend_InvalidParameter_CalendarInterval,
 	VegaBackend_Resource_NotFound,
 	VegaBackend_Resource_NameExists,
 	VegaBackend_Resource_IDExists,

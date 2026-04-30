@@ -856,24 +856,104 @@ paths:
 definitions:
   interfaces.ResourceDataQueryParams:
     properties:
-      filter_condition: {}
+      filter_condition:
+        description: 过滤条件，支持多种操作符（==, !=, >, >=, <, <=, in, not_in, range, out_range, contain, not_contain, like, not_like, prefix, not_prefix, null, not_null, empty, not_empty, exist, not_exist, match, match_phrase, multi_match, before, current, knn_vector等）
+        type: object
       limit:
-        description: 返回结果的最大数量。对于AnyShare知识库类资源，limit不能大于100
+        description: 返回结果的最大数量。对于AnyShare知识库类资源，limit不能大于100。默认值为10，取值范围为[1, 10000]
         type: integer
+        minimum: 1
+        maximum: 10000
+        default: 10
       need_total:
         description: 是否返回总数。对于AnyShare知识库类资源，只有第一页(offset=0)会返回
         type: boolean
+        default: false
       offset:
+        description: 分页偏移量，用于指定从第几条数据开始返回
         type: integer
+        minimum: 0
+        default: 0
       output_fields:
         description: 指定输出的字段列表
         items:
           type: string
         type: array
       sort:
+        description: 排序字段列表
         items:
           $ref: common.yaml#/definitions/interfaces.SortField
         type: array
+      query_type:
+        description: 查询类型
+        type: string
+      aggregation:
+        description: 聚合度量配置，用于对指定字段进行聚合计算
+        type: object
+        properties:
+          property:
+            description: 被聚合的资源字段名
+            type: string
+          aggr:
+            description: 聚合函数，支持：count, count_distinct, sum, max, min, avg
+            type: string
+            enum:
+            - count
+            - count_distinct
+            - sum
+            - max
+            - min
+            - avg
+          alias:
+            description: 聚合结果的别名
+            type: string
+      group_by:
+        description: 分组维度列表
+        type: array
+        items:
+          type: object
+          properties:
+            property:
+              description: 分组维度字段名
+              type: string
+            description:
+              description: 维度描述（仅用于文档或调试）
+              type: string
+            calendar_interval:
+              description: date_histogram的calendar_interval参数，用于时间字段的分组，支持：minute, hour, day, week, month, quarter, year
+              type: string
+              enum:
+              - minute
+              - hour
+              - day
+              - week
+              - month
+              - quarter
+              - year
+      having:
+        description: 对聚合结果进行过滤的条件（HAVING子句）
+        type: object
+        properties:
+          field:
+            description: 聚合结果字段，固定为"__value"或"count(*)"
+            type: string
+          operation:
+            description: 过滤操作符，支持：==, !=, >, >=, <, <=, in, not_in, range, out_range
+            type: string
+            enum:
+            - "=="
+            - "!="
+            - ">"
+            - ">="
+            - "<"
+            - "<="
+            - in
+            - not_in
+            - range
+            - out_range
+          value:
+            description: 过滤值
+            type: object
     type: object
   interfaces.ResourceRequest:
     properties:

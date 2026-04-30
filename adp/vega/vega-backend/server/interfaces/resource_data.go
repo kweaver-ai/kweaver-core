@@ -16,14 +16,14 @@ const (
 
 	DEFAULT_DATA_LIMIT = 10
 
-	// 日历间隔常量
-	CALENDAR_STEP_MINUTE  = "1m"
-	CALENDAR_STEP_HOUR    = "1h"
-	CALENDAR_STEP_DAY     = "1d"
-	CALENDAR_STEP_WEEK    = "1w"
-	CALENDAR_STEP_MONTH   = "1M"
-	CALENDAR_STEP_QUARTER = "1q"
-	CALENDAR_STEP_YEAR    = "1y"
+	// 日历间隔常量 - 参照OpenSearch的calendar_interval枚举定义
+	CALENDAR_UNIT_MINUTE  = "minute"
+	CALENDAR_UNIT_HOUR    = "hour"
+	CALENDAR_UNIT_DAY     = "day"
+	CALENDAR_UNIT_WEEK    = "week"
+	CALENDAR_UNIT_MONTH   = "month"
+	CALENDAR_UNIT_QUARTER = "quarter"
+	CALENDAR_UNIT_YEAR    = "year"
 )
 
 // SortField represents a field to sort by.
@@ -43,7 +43,7 @@ type Aggregation struct {
 type GroupByItem struct {
 	Property         string `json:"property"`                    // 分组维度
 	Description      string `json:"description,omitempty"`       // 仅文档/调试
-	CalendarInterval string `json:"calendar_interval,omitempty"` // date_histogram 的 calendar_interval 参数，如 "1d", "1w", "1M", "1y" 等
+	CalendarInterval string `json:"calendar_interval,omitempty"` // date_histogram 的 calendar_interval 参数，支持：minute, hour, day, week, month, quarter, year
 }
 
 // HavingClause represents a HAVING clause for aggregation filtering.

@@ -514,8 +514,8 @@ func (c *PostgresqlConnector) ConvertFilterConditionBetween(ctx context.Context,
 
 		// 使用SqlExpr构建完整的WHERE条件表达式
 		return sq.Expr(
-			quoteColumnName(cond.Lfield.OriginalName)+" >= to_timestamp(?/1000000) AND "+
-				quoteColumnName(cond.Lfield.OriginalName)+" <= to_timestamp(?/1000000)",
+			quoteColumnName(cond.Lfield.OriginalName)+" >= to_timestamp(?/1000) AND "+
+				quoteColumnName(cond.Lfield.OriginalName)+" <= to_timestamp(?/1000)",
 			lowerTs, upperTs,
 		), nil
 	}
