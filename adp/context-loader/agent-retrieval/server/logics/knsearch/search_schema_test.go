@@ -264,6 +264,89 @@ func TestSearchSchema_LimitsObjectTypesWhenRelationTypesExcluded(t *testing.T) {
 	})
 }
 
+func TestSearchSchema_RelationEndpointsTakePriorityAndDirectObjectsFillRemainingBudget(t *testing.T) {
+	maxConcepts := 10
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_resource_project", ConceptName: "项目base_resource"},
+					{ConceptID: "ot_project", ConceptName: "项目"},
+					{ConceptID: "ot_requirement", ConceptName: "需求"},
+				},
+				RelationTypes: []*interfaces.KnSearchRelationType{
+					{ConceptID: "rt_requirement_project", ConceptName: "需求所属项目", SourceObjectTypeID: "ot_requirement", TargetObjectTypeID: "ot_project"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {
+		resp, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "项目",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+
+		if got := len(resp.ObjectTypes); got != 3 {
+			t.Fatalf("ObjectTypes len=%d, want 3 endpoint objects plus direct object fill", got)
+		}
+		wantIDs := []string{"ot_requirement", "ot_project", "ot_resource_project"}
+		for i, want := range wantIDs {
+			if got := resp.ObjectTypes[i].(map[string]any)["concept_id"]; got != want {
+				t.Fatalf("ObjectTypes[%d] concept_id=%v, want %s", i, got, want)
+			}
+		}
+	})
+}
+
+func TestSearchSchema_RelationEndpointsMayExceedMaxConceptsForCompleteness(t *testing.T) {
+	maxConcepts := 1
+	service := &knSearchService{
+		Logger: infraLogger.DefaultLogger(),
+		LocalSearch: &stubSearchSchemaLocalService{
+			resp: &interfaces.KnSearchLocalResponse{
+				ObjectTypes: []*interfaces.KnSearchObjectType{
+					{ConceptID: "ot_resource_project", ConceptName: "项目base_resource"},
+					{ConceptID: "ot_project", ConceptName: "项目"},
+					{ConceptID: "ot_requirement", ConceptName: "需求"},
+				},
+				RelationTypes: []*interfaces.KnSearchRelationType{
+					{ConceptID: "rt_requirement_project", ConceptName: "需求所属项目", SourceObjectTypeID: "ot_requirement", TargetObjectTypeID: "ot_project"},
+				},
+			},
+		},
+	}
+
+	withStubSearchSchemaBknBackend(&stubSearchSchemaBknBackend{}, func() {
+		resp, err := service.SearchSchema(context.Background(), &interfaces.SearchSchemaReq{
+			Query:       "项目",
+			KnID:        "kn-001",
+			MaxConcepts: &maxConcepts,
+		})
+		if err != nil {
+			t.Fatalf("SearchSchema returned error: %v", err)
+		}
+
+		if got := len(resp.RelationTypes); got != 1 {
+			t.Fatalf("RelationTypes len=%d, want 1", got)
+		}
+		if got := len(resp.ObjectTypes); got != 2 {
+			t.Fatalf("ObjectTypes len=%d, want both relation endpoint objects", got)
+		}
+		wantIDs := []string{"ot_requirement", "ot_project"}
+		for i, want := range wantIDs {
+			if got := resp.ObjectTypes[i].(map[string]any)["concept_id"]; got != want {
+				t.Fatalf("ObjectTypes[%d] concept_id=%v, want %s", i, got, want)
+			}
+		}
+	})
+}
+
 func TestSearchSchema_DefaultsIncludeMetricTypes(t *testing.T) {
 	maxConcepts := 10
 	backend := &stubSearchSchemaBknBackend{

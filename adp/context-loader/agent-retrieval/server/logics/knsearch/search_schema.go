@@ -129,7 +129,7 @@ func FilterSearchSchemaResp(resp *interfaces.KnSearchResp, metricTypes []any, sc
 	}
 	if scope.IncludeObjectTypes {
 		if scope.IncludeRelationTypes && len(relationTypes) > 0 {
-			objectTypes = filterObjectTypesByRelations(objectTypes, relationTypes)
+			objectTypes = mergeRelationEndpointObjectsWithDirectFill(objectTypes, relationTypes, maxConcepts)
 		} else {
 			objectTypes = limitAnySlice(objectTypes, maxConcepts)
 		}
@@ -332,43 +332,78 @@ func limitAnySlice(items []any, limit int) []any {
 	return items[:limit]
 }
 
-const relationReferencedObjectTypes = 2
-
-func filterObjectTypesByRelations(objectTypes, relationTypes []any) []any {
-	if len(objectTypes) == 0 || len(relationTypes) == 0 {
+func mergeRelationEndpointObjectsWithDirectFill(objectTypes, relationTypes []any, limit int) []any {
+	if len(objectTypes) == 0 {
 		return objectTypes
 	}
-
-	referenced := make(map[string]struct{}, len(relationTypes)*relationReferencedObjectTypes)
-	for _, rel := range relationTypes {
-		relMap, ok := rel.(map[string]any)
-		if !ok {
-			continue
-		}
-		if sourceID, ok := relMap["source_object_type_id"].(string); ok && sourceID != "" {
-			referenced[sourceID] = struct{}{}
-		}
-		if targetID, ok := relMap["target_object_type_id"].(string); ok && targetID != "" {
-			referenced[targetID] = struct{}{}
-		}
-	}
-	if len(referenced) == 0 {
-		return objectTypes
+	if len(relationTypes) == 0 {
+		return limitAnySlice(objectTypes, limit)
 	}
 
-	filtered := make([]any, 0, len(objectTypes))
+	objectByID := make(map[string]any, len(objectTypes))
 	for _, obj := range objectTypes {
 		objMap, ok := obj.(map[string]any)
 		if !ok {
 			continue
 		}
 		conceptID, ok := objMap["concept_id"].(string)
+		if !ok || conceptID == "" {
+			continue
+		}
+		objectByID[conceptID] = obj
+	}
+
+	seen := make(map[string]struct{}, len(objectTypes))
+	out := make([]any, 0, len(objectTypes))
+	appendObjectByID := func(conceptID string) {
+		if conceptID == "" {
+			return
+		}
+		if _, ok := seen[conceptID]; ok {
+			return
+		}
+		obj, ok := objectByID[conceptID]
+		if !ok {
+			return
+		}
+		seen[conceptID] = struct{}{}
+		out = append(out, obj)
+	}
+
+	for _, rel := range relationTypes {
+		relMap, ok := rel.(map[string]any)
 		if !ok {
 			continue
 		}
-		if _, keep := referenced[conceptID]; keep {
-			filtered = append(filtered, obj)
+		sourceID, _ := relMap["source_object_type_id"].(string)
+		targetID, _ := relMap["target_object_type_id"].(string)
+		appendObjectByID(sourceID)
+		appendObjectByID(targetID)
+	}
+
+	remaining := limit - len(out)
+	if remaining <= 0 {
+		return out
+	}
+	for _, obj := range objectTypes {
+		objMap, ok := obj.(map[string]any)
+		if !ok {
+			continue
+		}
+		conceptID, ok := objMap["concept_id"].(string)
+		if !ok || conceptID == "" {
+			continue
+		}
+		if _, ok := seen[conceptID]; ok {
+			continue
+		}
+		seen[conceptID] = struct{}{}
+		out = append(out, obj)
+		remaining--
+		if remaining == 0 {
+			break
 		}
 	}
-	return filtered
+
+	return out
 }
