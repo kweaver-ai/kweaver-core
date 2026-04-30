@@ -14,8 +14,15 @@
       },
       "search_scope": {
         "type": "object",
-        "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。",
+        "description": "Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。concept_groups 用于按 BKN 概念分组限定 Schema 召回范围。",
         "properties": {
+          "concept_groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "BKN 概念分组 ID 列表，用于限定对象类、关系类、动作类和指标类的 Schema 召回范围；不传或为空表示不限定分组。分组语义由 BKN 完成（ContextLoader 直接调用 BKN 分组搜索接口并把列表透传下去）。当传入的分组在该知识网络中不存在时，BKN 当前会返回 5xx 错误（如 'BknBackend.ObjectType.InternalError' 含 'all concept group not found ...'），本工具会直接向上透传该错误而不是返回空结果，调用方据此区分'分组不存在'与'分组合法但范围内无概念'。"
+          },
           "include_object_types": {
             "type": "boolean",
             "default": true,

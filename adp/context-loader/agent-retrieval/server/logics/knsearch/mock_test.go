@@ -52,43 +52,67 @@ func (m *mockLogger) Errorf(format string, args ...interface{}) {
 type mockBknBackend struct {
 	networkDetail      *interfaces.KnowledgeNetworkDetail
 	networkError       error
+	networkCalls       int
 	objectTypesResp    *interfaces.ObjectTypeConcepts
 	objectTypesError   error
+	objectTypesReq     *interfaces.QueryConceptsReq
+	objectDetailResp   []*interfaces.ObjectType
+	objectDetailError  error
+	objectDetailKnID   string
+	objectDetailIDs    []string
+	objectDetailCalls  int
 	relationTypesResp  *interfaces.RelationTypeConcepts
 	relationTypesError error
+	relationTypesReq   *interfaces.QueryConceptsReq
+	actionTypesResp    *interfaces.ActionTypeConcepts
+	actionTypesError   error
+	actionTypesReq     *interfaces.QueryConceptsReq
 }
 
 func (m *mockBknBackend) GetKnowledgeNetworkDetail(ctx context.Context, knID string) (*interfaces.KnowledgeNetworkDetail, error) {
+	m.networkCalls++
 	return m.networkDetail, m.networkError
 }
 
 func (m *mockBknBackend) SearchObjectTypes(ctx context.Context, req *interfaces.QueryConceptsReq) (*interfaces.ObjectTypeConcepts, error) {
+	m.objectTypesReq = req
 	return m.objectTypesResp, m.objectTypesError
 }
 
 func (m *mockBknBackend) SearchRelationTypes(ctx context.Context, req *interfaces.QueryConceptsReq) (*interfaces.RelationTypeConcepts, error) {
+	m.relationTypesReq = req
 	return m.relationTypesResp, m.relationTypesError
 }
 
 // 下面是接口中其他方法的空实现，满足接口定义
 func (m *mockBknBackend) GetObjectTypeDetail(ctx context.Context, knID string, otIds []string, includeDetail bool) ([]*interfaces.ObjectType, error) {
-	return nil, nil
+	m.objectDetailCalls++
+	m.objectDetailKnID = knID
+	m.objectDetailIDs = append([]string(nil), otIds...)
+	return m.objectDetailResp, m.objectDetailError
 }
+
 func (m *mockBknBackend) GetRelationTypeDetail(ctx context.Context, knID string, rtIDs []string, includeDetail bool) ([]*interfaces.RelationType, error) {
 	return nil, nil
 }
-func (m *mockBknBackend) SearchActionTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (actionTypes *interfaces.ActionTypeConcepts, err error) {
-	return nil, nil
+
+func (m *mockBknBackend) SearchActionTypes(ctx context.Context, req *interfaces.QueryConceptsReq) (actionTypes *interfaces.ActionTypeConcepts, err error) {
+	m.actionTypesReq = req
+	return m.actionTypesResp, m.actionTypesError
 }
+
 func (m *mockBknBackend) SearchMetricTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (*interfaces.MetricTypeConcepts, error) {
 	return nil, nil
 }
+
 func (m *mockBknBackend) GetActionTypeDetail(ctx context.Context, knID string, atIDs []string, includeDetail bool) ([]*interfaces.ActionType, error) {
 	return nil, nil
 }
+
 func (m *mockBknBackend) CreateFullBuildOntologyJob(ctx context.Context, knID string, req *interfaces.CreateFullBuildOntologyJobReq) (resp *interfaces.CreateJobResp, err error) {
 	return nil, nil
 }
+
 func (m *mockBknBackend) ListOntologyJobs(ctx context.Context, knID string, req *interfaces.ListOntologyJobsReq) (resp *interfaces.ListOntologyJobsResp, err error) {
 	return nil, nil
 }

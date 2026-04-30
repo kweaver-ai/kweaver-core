@@ -103,7 +103,8 @@ func (k *knRetrievalServiceImpl) AgentIntentRetrieval(ctx context.Context, req *
 
 // 根据意图中匹配的相关概念，获取概念详情,并组装概念结果候选集
 func (k *knRetrievalServiceImpl) intentRecallGetConceptResultsByIntent(ctx context.Context, knID string,
-	intent *interfaces.SemanticQueryIntent) (conceptResults []*interfaces.ConceptResult, err error) {
+	intent *interfaces.SemanticQueryIntent,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	if intent == nil || len(intent.RelatedConcepts) == 0 {
 		return
 	}
@@ -200,7 +201,8 @@ func (k *knRetrievalServiceImpl) intentRecallGetConceptResultsByIntent(ctx conte
 
 // 基于意图召回
 func (k *knRetrievalServiceImpl) intentRecall(ctx context.Context, req *interfaces.SemanticSearchRequest, intents []*interfaces.SemanticQueryIntent) (
-	conceptResults []*interfaces.ConceptResult, queryStrategys []*interfaces.SemanticQueryStrategy, err error) {
+	conceptResults []*interfaces.ConceptResult, queryStrategys []*interfaces.SemanticQueryStrategy, err error,
+) {
 	// 记录可观测
 	ctx, _ = o11y.StartInternalSpan(ctx)
 	defer o11y.EndSpan(ctx, err)

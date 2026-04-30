@@ -20,7 +20,8 @@ const (
 
 // parallelExecSemanticQueryStrategy 执行召回策略（并发）
 func (k *knRetrievalServiceImpl) parallelExecSemanticQueryStrategy(ctx context.Context,
-	knID string, strategys []*interfaces.SemanticQueryStrategy) ([]*interfaces.ConceptResult, error) {
+	knID string, strategys []*interfaces.SemanticQueryStrategy,
+) ([]*interfaces.ConceptResult, error) {
 	var wg sync.WaitGroup
 	resultChan := make(chan []*interfaces.ConceptResult, len(strategys))
 	errChan := make(chan error, len(strategys))
@@ -66,7 +67,8 @@ func (k *knRetrievalServiceImpl) parallelExecSemanticQueryStrategy(ctx context.C
 
 // execSemanticQueryStrategy 执行召回策略： 不同策略模版执行 --- 单策略执行
 func (k *knRetrievalServiceImpl) execSemanticQueryStrategy(ctx context.Context,
-	knID string, strategy *interfaces.SemanticQueryStrategy) (result []*interfaces.ConceptResult, err error) {
+	knID string, strategy *interfaces.SemanticQueryStrategy,
+) (result []*interfaces.ConceptResult, err error) {
 	switch strategy.StrategyType {
 	case interfaces.ConceptDiscoveryStrategy: // 概念发现
 		return k.execConceptDiscoveryStrategy(ctx, knID, strategy)
@@ -79,7 +81,8 @@ func (k *knRetrievalServiceImpl) execSemanticQueryStrategy(ctx context.Context,
 }
 
 func (k *knRetrievalServiceImpl) execObjectInstanceDiscoveryStrategy(ctx context.Context,
-	knID string, strategy *interfaces.SemanticQueryStrategy) (conceptResults []*interfaces.ConceptResult, err error) {
+	knID string, strategy *interfaces.SemanticQueryStrategy,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	if strategy.Filter == nil || strategy.Filter.ConceptID == "" {
 		return
 	}
@@ -117,7 +120,8 @@ func (k *knRetrievalServiceImpl) execObjectInstanceDiscoveryStrategy(ctx context
 
 // execConceptGetStrategy 概念获取策略
 func (k *knRetrievalServiceImpl) execConceptGetStrategy(ctx context.Context,
-	knID string, strategy *interfaces.SemanticQueryStrategy) (conceptResults []*interfaces.ConceptResult, err error) {
+	knID string, strategy *interfaces.SemanticQueryStrategy,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	if strategy.Filter == nil {
 		return
 	}
@@ -211,7 +215,8 @@ func (k *knRetrievalServiceImpl) execConceptGetStrategy(ctx context.Context,
 
 // execConceptDiscoveryStrategy 执行概念发现策略
 func (k *knRetrievalServiceImpl) execConceptDiscoveryStrategy(ctx context.Context,
-	knID string, strategy *interfaces.SemanticQueryStrategy) (conceptResults []*interfaces.ConceptResult, err error) {
+	knID string, strategy *interfaces.SemanticQueryStrategy,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	if strategy.Filter == nil {
 		return
 	}
@@ -274,7 +279,8 @@ func (k *knRetrievalServiceImpl) execConceptDiscoveryStrategy(ctx context.Contex
 
 // discoveryObjectConcepts 发现对象类概念
 func (k *knRetrievalServiceImpl) discoveryObjectConcepts(ctx context.Context,
-	queryConceptsReq *interfaces.QueryConceptsReq) (conceptResults []*interfaces.ConceptResult, err error) {
+	queryConceptsReq *interfaces.QueryConceptsReq,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	var objectTypes *interfaces.ObjectTypeConcepts
 	objectTypes, err = k.bknBackendAccess.SearchObjectTypes(ctx, queryConceptsReq)
 	if err != nil {
@@ -306,7 +312,8 @@ func (k *knRetrievalServiceImpl) discoveryObjectConcepts(ctx context.Context,
 
 // discoveryRelationTypeConcepts 发现关系类概念
 func (k *knRetrievalServiceImpl) discoveryRelationTypeConcepts(ctx context.Context,
-	queryConceptsReq *interfaces.QueryConceptsReq) (conceptResults []*interfaces.ConceptResult, err error) {
+	queryConceptsReq *interfaces.QueryConceptsReq,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	var relationTypes *interfaces.RelationTypeConcepts
 	relationTypes, err = k.bknBackendAccess.SearchRelationTypes(ctx, queryConceptsReq)
 	if err != nil {
@@ -338,7 +345,8 @@ func (k *knRetrievalServiceImpl) discoveryRelationTypeConcepts(ctx context.Conte
 
 // discoveryActionTypeConcepts 发现行动类概念
 func (k *knRetrievalServiceImpl) discoveryActionTypeConcepts(ctx context.Context,
-	queryConceptsReq *interfaces.QueryConceptsReq) (conceptResults []*interfaces.ConceptResult, err error) {
+	queryConceptsReq *interfaces.QueryConceptsReq,
+) (conceptResults []*interfaces.ConceptResult, err error) {
 	var actionTypes *interfaces.ActionTypeConcepts
 	actionTypes, err = k.bknBackendAccess.SearchActionTypes(ctx, queryConceptsReq)
 	if err != nil {
@@ -489,7 +497,8 @@ func (k *knRetrievalServiceImpl) buildConceptGetStrategy(conceptType interfaces.
 
 // buildConceptDiscoveryStrategy 构建概念发现查询策略
 func (k *knRetrievalServiceImpl) buildConceptDiscoveryStrategy(conceptType interfaces.KnConceptType,
-	query string, otherConds []*interfaces.QueryStrategyCondition) (queryStrategy *interfaces.SemanticQueryStrategy) {
+	query string, otherConds []*interfaces.QueryStrategyCondition,
+) (queryStrategy *interfaces.SemanticQueryStrategy) {
 	conds := []*interfaces.QueryStrategyCondition{}
 	// 根据原始Query切分的片段构建查询策略
 	if query != "" {

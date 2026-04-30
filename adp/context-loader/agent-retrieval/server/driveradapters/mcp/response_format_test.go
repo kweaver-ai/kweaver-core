@@ -8,7 +8,6 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/infra/rest"
-	"github.com/kweaver-ai/adp/context-loader/agent-retrieval/server/utils"
 )
 
 // helper to build a CallToolRequest with simple arguments
@@ -63,7 +62,6 @@ func TestBuildMCPToolResult_JSON(t *testing.T) {
 			"foo": "bar",
 			"num": 42,
 		}
-		expectedText := utils.ObjectToJSON(resp)
 
 		result, err := BuildMCPToolResult(resp, rest.FormatJSON)
 		convey.So(err, convey.ShouldBeNil)
@@ -72,10 +70,19 @@ func TestBuildMCPToolResult_JSON(t *testing.T) {
 		// StructuredContent should keep the original object
 		convey.So(result.StructuredContent, convey.ShouldResemble, resp)
 
-		// Fallback text should be the JSON string
+		// Fallback text should be valid JSON equivalent to the structured object.
+		convey.So(result.Content, convey.ShouldHaveLength, 1)
+		textContent, ok := mcp.AsTextContent(result.Content[0])
+		convey.So(ok, convey.ShouldBeTrue)
+		var fallback map[string]any
+		err = json.Unmarshal([]byte(textContent.Text), &fallback)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(fallback["foo"], convey.ShouldEqual, "bar")
+		convey.So(fallback["num"], convey.ShouldEqual, float64(42))
+
 		raw, err := json.Marshal(result)
 		convey.So(err, convey.ShouldBeNil)
-		convey.So(string(raw), convey.ShouldContainSubstring, expectedText)
+		convey.So(string(raw), convey.ShouldContainSubstring, "structuredContent")
 		convey.So(result.IsError, convey.ShouldBeFalse)
 	})
 }
