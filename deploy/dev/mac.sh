@@ -320,7 +320,7 @@ main() {
             if ! mac_kube_context_guard; then
                 exit 1
             fi
-            export NAMESPACE="${NAMESPACE:-kweaver-ai}"
+            export NAMESPACE="${NAMESPACE:-kweaver}"
             exec bash "${DEPLOY_ROOT}/onboard.sh" "$@"
             ;;
         kweaver-dip | dip)

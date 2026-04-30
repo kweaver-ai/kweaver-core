@@ -3,7 +3,7 @@
 # After `data-services install`, passwords are filled when AUTO_GENERATE_CONFIG is true.
 # File mac-config.yaml is gitignored — do not commit secrets.
 
-namespace: kweaver-ai
+namespace: kweaver
 env:
   language: en_US.UTF-8
   timezone: Asia/Shanghai
