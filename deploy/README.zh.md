@@ -130,7 +130,7 @@ bash ./onboard.sh --help # 全部参数（--config=models.yaml、--enable-bkn-se
 
 > 完整的 preflight / onboard 流程、ISF 双 CLI 鉴权与 Mermaid 流程图见 [help/zh/install.md — Post-install：`onboard.sh`](../help/zh/install.md#post-installonboardsh安装后引导)。
 
-> **`onboard.sh` 终端输出为英文**；在 ISF 收到 HTTP **401001017** 且 **stdin/stdout 为 TTY** 时，脚本会**自动执行**无 `-u`/`-p` 的 `kweaver-admin auth login <url> -k`（浏览器 OAuth）。中英说明见 [`dev/README.md`](../dev/README.md)，产品文档 [`help/zh/install.md`](../help/zh/install.md)、[`help/en/install.md`](../help/en/install.md)。
+> **`onboard.sh` 终端输出为英文**；ISF HTTP **401001017** 且 **stdin/stdout 为 TTY** 时脚本会**先询问**：（**默认回车**）**`auth change-password`**；（**o / oauth**）浏览器 **`auth login` -k**。说明见 [`dev/README.md`](../dev/README.md)。产品文档 [`help/zh/install.md`](../help/zh/install.md)、[`help/en/install.md`](../help/en/install.md)。
 
 ## 📋 Prerequisites
 

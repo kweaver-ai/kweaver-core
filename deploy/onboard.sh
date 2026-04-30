@@ -224,7 +224,7 @@ usage() {
     echo "                Else host primary IPv4 + ONBOARD_DEFAULT_ACCESS_SCHEME (https by default)."
     echo "                Set ONBOARD_DEFAULT_ACCESS_BASE to force a URL; ONBOARD_DEFAULT_ACCESS_PORT / SCHEME override fallback IP path."
     echo "  kweaver auth: you confirm URL. ISF+full: HTTP defaults user=admin pass=eisoo.com (if still default); override with ONBOARD_DEFAULT_KWEAVER_USER / _PASSWORD. Enter keeps defaults. Minimum: default --no-auth; Enter to accept."
-    echo "  kweaver-admin auth (ISF): use  auth login <url> -u admin -p <pass>  (append -k for https:// + self-signed); or  auth login <url> -k  without -u/-p for browser OAuth. If HTTP sign-in returns 401001017 (factory default password), onboard runs that OAuth login for you when stdin/stdout are a TTY; otherwise printed hints describe  auth change-password  and  login … --new-password. Then kweaver re-logs in as user test for impex and model steps."
+    echo "  kweaver-admin auth (ISF): use  auth login <url> -u admin -p <pass>  (append -k for https:// + self-signed); optional  auth login <url> -k  without -u/-p for browser OAuth. If HTTP sign-in returns 401001017, a TTY prompts: [Enter]=run  auth change-password  then HTTP login; o=OAuth browser. Non-TTY / -y prints hints (change-password or  login … --new-password). Then kweaver re-logs in as user test for impex and model steps."
     echo "  Node: onboard is not a login shell — it auto-loads nvm/fnm/asdf/Volta and Homebrew paths so an already-configured Node 22+ is found without re-asking. ONBOARD_SKIP_NVM_INIT=true skips that; ONBOARD_NVM_VERSION=22 (default) is used after  nvm.sh  load."
     echo "  (preflight on the server: sudo preflight --fix still optional; this script can install Node in your *user* account via nvm.)"
 }
@@ -585,24 +585,49 @@ onboard_kweaver_admin_output_is_blocked_initial_password() {
     grep -qE '401001017|401,001,017|无法使用初始密码|密码是初始密码' "${_f}" 2>/dev/null
 }
 
-# After HTTP /oauth2/signin returns 401001017: run browser/device OAuth (no -u/-p). Returns 0 if session can list users.
-onboard_kweaver_admin_try_oauth_login_after_initial_password_blocked() {
-    local _url="$1"
+# 401001017 on TTY: choose CLI change-password (default) or OAuth in browser (press o).
+# After successful change-password, prompt once for new password and run HTTP login.
+onboard_kweaver_admin_resolve_initial_password_blocked_interactive() {
+    local _url="$1" _user="$2"
+    local _ch _pw
     onboard_kweaver_tls_insecure_args_to_array "${_url}"
-    onboard_log_warn "401001017: HTTP username/password sign-in blocked — starting OAuth / browser login…"
-    onboard_log_info "Running: $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
-    if kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" \
-        && kweaver-admin --json user list --limit 1 &>/dev/null; then
-        return 0
-    fi
-    return 1
+    onboard_log_warn "401001017: Initial password blocks HTTP username/password sign-in."
+
+    echo ""
+    read -r -p "[onboard] Method? [Enter]=CLI auth change-password; o / oauth = OAuth (browser): " _ch
+    case "$(printf '%s' "${_ch:-}" | LC_ALL=C tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')" in
+        o|oauth)
+            onboard_log_info "Running (OAuth): $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+            if kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" \
+                && kweaver-admin --json user list --limit 1 &>/dev/null; then
+                return 0
+            fi
+            onboard_log_warn "OAuth login did not complete or user list failed — try CLI change-password (Enter default) next time."
+            return 1
+            ;;
+        *)
+            onboard_log_info "Running (CLI): $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+            if ! kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}"; then
+                return 1
+            fi
+            read -r -s -p "  New password for ${_user} (must match change-password above): " _pw
+            echo ""
+            onboard_log_info "Signing in with HTTP after password change…"
+            onboard_log_info "Running: $(onboard_argv_q kweaver-admin auth login "${_url}" -u "${_user}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+            if kweaver-admin auth login "${_url}" -u "${_user}" -p "${_pw}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" \
+                && kweaver-admin --json user list --limit 1 &>/dev/null; then
+                return 0
+            fi
+            return 1
+            ;;
+    esac
 }
 
-# If OAuth fails or stdin is not a TTY (-y automation): scripted alternatives.
+# Non-TTY / -y: no prompts; documented fallbacks only.
 onboard_kweaver_admin_hint_auth_change_password_cli() {
     local _url="$1" _user="${2:-admin}"
     onboard_kweaver_tls_insecure_args_to_array "${_url}"
-    onboard_log_warn "OAuth did not finish or non-interactive (-y): use $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") — or the same URL/-k with  auth login … -u … -p '<initial>' --new-password '<new>' (then export ONBOARD_DEFAULT_KWEAVER_PASSWORD). Always pass the URL (see kweaver-admin auth list if omitted)."
+    onboard_log_warn "Non-interactive (-y): use $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") interactively elsewhere, then re-run onboard; or  auth login  with $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") -u … -p '<initial>' --new-password '<new>', then export ONBOARD_DEFAULT_KWEAVER_PASSWORD. Always pass the URL (see kweaver-admin auth list if omitted)."
 }
 
 # kweaver-admin: -u/-p use HTTP /oauth2/signin (no --http-signin flag; unlike kweaver-sdk). Same defaults as kweaver. See ONBOARD_DEFAULT_KWEAVER_*.
@@ -622,7 +647,7 @@ onboard_kweaver_admin_auth_login_for_url() {
             return 0
         fi
         if onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
-            if onboard_is_bootstrap_tty && onboard_kweaver_admin_try_oauth_login_after_initial_password_blocked "${_kurl}"; then
+            if onboard_is_bootstrap_tty && onboard_kweaver_admin_resolve_initial_password_blocked_interactive "${_kurl}" "${_duser}"; then
                 rm -f "${_kad_out}"
                 return 0
             fi
@@ -648,7 +673,7 @@ onboard_kweaver_admin_auth_login_for_url() {
             return 0
         fi
         if onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
-            if onboard_is_bootstrap_tty && onboard_kweaver_admin_try_oauth_login_after_initial_password_blocked "${_kurl}"; then
+            if onboard_is_bootstrap_tty && onboard_kweaver_admin_resolve_initial_password_blocked_interactive "${_kurl}" "${_u}"; then
                 rm -f "${_kad_out}"
                 return 0
             fi

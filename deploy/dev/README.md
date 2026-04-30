@@ -100,7 +100,7 @@ See also: top-of-file comments in [`mac.sh`](mac.sh), `bash ./dev/mac.sh -h`.
 
 ### Onboard and `kweaver-admin` (full ISF)
 
-`bash ./dev/mac.sh onboard` runs **`onboard.sh`** with **`CONFIG_YAML_PATH`** (usually `dev/conf/mac-config.yaml`). On a **full** install with ISF, the script calls **`kweaver-admin auth login`** with HTTP `-u`/`-p`. When the backend returns **401001017** (factory-default password blocked for HTTP `/oauth2/signin`), **`onboard.sh` automatically invokes browser OAuth**: `kweaver-admin auth login https://<access-address> -k` without `-u`/`-p` whenever **stdin and stdout are both a terminal**. If OAuth does not succeed or onboarding has no TTY (e.g. full CI piping), **`onboard.sh` prints English fallback hints** for the scripted paths below (**all other onboard runtime hints are English**).
+`bash ./dev/mac.sh onboard` runs **`onboard.sh`** with **`CONFIG_YAML_PATH`** (usually `dev/conf/mac-config.yaml`). On a **full** install with ISF, the script calls **`kweaver-admin auth login`** with HTTP `-u`/`-p`. When the backend returns **401001017** (factory-default password blocked for HTTP `/oauth2/signin`), **if stdin and stdout are both a terminal**, **`onboard.sh` prompts** for the recovery method: **[Enter]** runs **`kweaver-admin auth change-password`** (CLI, default); **`o`** or **`oauth`** runs browser OAuth (**`auth login`** without `-u`/`-p`). After successful change-password, it asks once for the new password and retries HTTP **`auth login`**. **`onboard.sh` runtime hints stay English.**
 
 | Approach | Typical command |
 |----------|-----------------|
@@ -213,7 +213,7 @@ cd kweaver-core/deploy   # 在此目录执行 bash ./dev/mac.sh ...（与 deploy
 
 ### Onboard 与 `kweaver-admin`（全量 ISF）
 
-**`bash ./dev/mac.sh onboard`** 调用 **`onboard.sh`**（`CONFIG_YAML_PATH` 多为 **`dev/conf/mac-config.yaml`**）。**全量 + ISF** 时会用 HTTP **`-u`/`-p`** 执行 **`kweaver-admin auth login`**。若服务端返回 **401001017**，在 **标准输入与标准输出均为终端（交互 TTY）** 时，**脚本会直接再执行无 `-u`/`-p` 的 `kweaver-admin auth login <URL> -k`** 拉起浏览器 OAuth。若无 TTY（纯自动化）或 OAuth 未成功，**脚本再以英文打出备选说明**，下表的手工命令与上文英文一致。
+**`bash ./dev/mac.sh onboard`** 调用 **`onboard.sh`**（`CONFIG_YAML_PATH` 多为 **`dev/conf/mac-config.yaml`**）。**全量 + ISF** 时会用 HTTP **`-u`/`-p`** 执行 **`kweaver-admin auth login`**。若返回 **401001017**，在 **标准输入与标准输出均为终端** 时，**脚本会先询问方式**：（**默认回车**）执行 **`auth change-password`（CLI）**；输入 **`o` / `oauth`** 则用浏览器 OAuth（无 `-u`/`-p` 的 **`auth login`**）。CLI 改密成功后会再问一次新密码并重试 HTTP 登录。无 TTY（如纯 **`onboard -y` 流水线**）时只打印英文备选说明。**终端里脚本提示仍为英文。**
 
 | 方式 | 命令要点 |
 |------|----------|
