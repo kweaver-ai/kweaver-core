@@ -415,6 +415,12 @@ main() {
         esac
     done
 
+    # Non-interactive apt post-hooks (Ubuntu needrestart prompts on some lib upgrades)
+    if [[ "${ASSUME_YES}" == "true" ]]; then
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+    fi
+
     export KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k8s}")"
 
     local module="${1:-}"
