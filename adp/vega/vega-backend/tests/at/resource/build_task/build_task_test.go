@@ -531,3 +531,158 @@ func cleanupCatalogs(client *testutil.HTTPClient, t *testing.T) {
 		}
 	}
 }
+
+// TestDeleteResourceWithBuildTask 测试删除有buildtask的resource时失败
+// 测试编号前缀: DS2xx (Resource Build)
+func TestDeleteResourceWithBuildTask(t *testing.T) {
+	Convey("删除有buildtask的resource时失败 AT测试", t, func() {
+		var err error
+		config, err := setup.LoadTestConfig()
+		So(err, ShouldBeNil)
+		So(config, ShouldNotBeNil)
+
+		client := testutil.NewHTTPClient(config.VegaBackend.BaseURL)
+		err = client.CheckHealth()
+		So(err, ShouldBeNil)
+		t.Logf("✓ AT测试环境就绪，VEGA Manager: %s", config.VegaBackend.BaseURL)
+
+		cleanupResources(client, t)
+		cleanupCatalogs(client, t)
+
+		Convey("DS211: 删除有buildtask的resource时应该失败", func() {
+			catalogPayload := map[string]any{
+				"name":           generateUniqueName("test-mysql-catalog"),
+				"description":    "测试mysql catalog",
+				"tags":           []string{"test", "mysql", "catalog"},
+				"connector_type": "mysql",
+				"connector_config": map[string]any{
+					"host":     "localhost",
+					"port":     3330,
+					"username": "username",
+					"password": "password",
+					"database": "test",
+				},
+			}
+			catalogResp := client.POST("/api/vega-backend/v1/catalogs", catalogPayload)
+			So(catalogResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(catalogResp.Body["id"], ShouldNotBeEmpty)
+			catalogID := catalogResp.Body["id"].(string)
+
+			resourcePayload := map[string]any{
+				"catalog_id":        catalogID,
+				"name":              generateUniqueName("test-resource-delete"),
+				"tags":              []string{"test", "resource"},
+				"description":       "测试删除有buildtask的resource",
+				"category":          "table",
+				"status":            "active",
+				"database":          "test",
+				"source_identifier": "test.users",
+				"schema_definition": []map[string]any{
+					{"name": "id", "type": "keyword", "display_name": "ID", "original_name": "id", "description": "唯一标识符"},
+					{"name": "name", "type": "keyword", "display_name": "名称", "original_name": "name", "description": "用户名称"},
+					{"name": "address", "type": "text", "display_name": "地址", "original_name": "address", "description": "用户地址"},
+					{"name": "hobby", "type": "text", "display_name": "爱好", "original_name": "hobby", "description": "用户爱好"},
+				},
+			}
+			resourceResp := client.POST("/api/vega-backend/v1/resources", resourcePayload)
+			So(resourceResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(resourceResp.Body["id"], ShouldNotBeEmpty)
+			resourceID := resourceResp.Body["id"].(string)
+
+			buildResp := client.POST("/api/vega-backend/v1/resources/buildtask/"+resourceID, map[string]any{"mode": "batch", "embedding_fields": "", "embedding_model": "", "build_key_fields": "id"})
+			So(buildResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(buildResp.Body["task_id"], ShouldNotBeEmpty)
+
+			deleteResourceResp := client.DELETE("/api/vega-backend/v1/resources/" + resourceID)
+			So(deleteResourceResp.StatusCode, ShouldEqual, http.StatusBadRequest)
+
+			taskID := buildResp.Body["task_id"].(string)
+			deleteTaskResp := client.DELETE("/api/vega-backend/v1/resources/buildtask/" + taskID)
+			So(deleteTaskResp.StatusCode, ShouldEqual, http.StatusNoContent)
+
+			deleteResourceResp = client.DELETE("/api/vega-backend/v1/resources/" + resourceID)
+			So(deleteResourceResp.StatusCode, ShouldEqual, http.StatusNoContent)
+		})
+	})
+}
+
+// TestDeleteRunningBuildTask 测试buildtask任务启动后删除失败
+// 测试编号前缀: DS2xx (Resource Build)
+func TestDeleteRunningBuildTask(t *testing.T) {
+	Convey("buildtask任务启动后删除失败 AT测试", t, func() {
+		var err error
+		config, err := setup.LoadTestConfig()
+		So(err, ShouldBeNil)
+		So(config, ShouldNotBeNil)
+
+		client := testutil.NewHTTPClient(config.VegaBackend.BaseURL)
+		err = client.CheckHealth()
+		So(err, ShouldBeNil)
+		t.Logf("✓ AT测试环境就绪，VEGA Manager: %s", config.VegaBackend.BaseURL)
+
+		cleanupResources(client, t)
+		cleanupCatalogs(client, t)
+
+		Convey("DS212: buildtask任务启动后删除应该失败", func() {
+			catalogPayload := map[string]any{
+				"name":           generateUniqueName("test-mysql-catalog"),
+				"description":    "测试mysql catalog",
+				"tags":           []string{"test", "mysql", "catalog"},
+				"connector_type": "mysql",
+				"connector_config": map[string]any{
+					"host":     "localhost",
+					"port":     3330,
+					"username": "username",
+					"password": "password",
+					"database": "test",
+				},
+			}
+			catalogResp := client.POST("/api/vega-backend/v1/catalogs", catalogPayload)
+			So(catalogResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(catalogResp.Body["id"], ShouldNotBeEmpty)
+			catalogID := catalogResp.Body["id"].(string)
+
+			resourcePayload := map[string]any{
+				"catalog_id":        catalogID,
+				"name":              generateUniqueName("test-resource-build-delete"),
+				"tags":              []string{"test", "resource"},
+				"description":       "测试删除running状态的buildtask",
+				"category":          "table",
+				"status":            "active",
+				"database":          "test",
+				"source_identifier": "test.users",
+				"schema_definition": []map[string]any{
+					{"name": "id", "type": "keyword", "display_name": "ID", "original_name": "id", "description": "唯一标识符"},
+					{"name": "name", "type": "keyword", "display_name": "名称", "original_name": "name", "description": "用户名称"},
+					{"name": "address", "type": "text", "display_name": "地址", "original_name": "address", "description": "用户地址"},
+					{"name": "hobby", "type": "text", "display_name": "爱好", "original_name": "hobby", "description": "用户爱好"},
+				},
+			}
+			resourceResp := client.POST("/api/vega-backend/v1/resources", resourcePayload)
+			So(resourceResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(resourceResp.Body["id"], ShouldNotBeEmpty)
+			resourceID := resourceResp.Body["id"].(string)
+
+			buildResp := client.POST("/api/vega-backend/v1/resources/buildtask/"+resourceID, map[string]any{"mode": "batch", "embedding_fields": "", "embedding_model": "", "build_key_fields": "id"})
+			So(buildResp.StatusCode, ShouldEqual, http.StatusCreated)
+			So(buildResp.Body["task_id"], ShouldNotBeEmpty)
+			taskID := buildResp.Body["task_id"].(string)
+
+			updateResp := client.PUT("/api/vega-backend/v1/resources/buildtask/"+resourceID+"/"+taskID+"/status", map[string]any{"status": "running"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			time.Sleep(5 * time.Second)
+
+			deleteTaskResp := client.DELETE("/api/vega-backend/v1/resources/buildtask/" + taskID)
+			So(deleteTaskResp.StatusCode, ShouldEqual, http.StatusBadRequest)
+
+			updateResp = client.PUT("/api/vega-backend/v1/resources/buildtask/"+resourceID+"/"+taskID+"/status", map[string]any{"status": "stopped"})
+			So(updateResp.StatusCode, ShouldEqual, http.StatusOK)
+
+			time.Sleep(10 * time.Second)
+
+			deleteTaskResp = client.DELETE("/api/vega-backend/v1/resources/buildtask/" + taskID)
+			So(deleteTaskResp.StatusCode, ShouldEqual, http.StatusNoContent)
+		})
+	})
+}

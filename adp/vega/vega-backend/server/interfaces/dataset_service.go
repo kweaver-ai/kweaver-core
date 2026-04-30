@@ -13,7 +13,8 @@ import "context"
 type DatasetService interface {
 	Create(ctx context.Context, res *Resource) error
 	Update(ctx context.Context, res *Resource) error
-	Delete(ctx context.Context, res *Resource) error
+	Delete(ctx context.Context, id string) error
+	CheckExist(ctx context.Context, id string) (bool, error)
 
 	ListDocuments(ctx context.Context, indexName string, res *Resource, params *ResourceDataQueryParams) ([]map[string]any, int64, error)
 	GetDocument(ctx context.Context, id string, docID string) (map[string]any, error)

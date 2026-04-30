@@ -8,6 +8,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -17,10 +18,15 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
+	"github.com/segmentio/kafka-go"
 )
 
 func getIndexName(resourceID, buildTaskID string) string {
 	return interfaces.BUILD_PREFIX + "-" + resourceID + "-" + buildTaskID
+}
+
+func getEmbeddingTopic(resourceID, buildTaskID string) string {
+	return fmt.Sprintf("%s-%s-%s-embedding", interfaces.BUILD_PREFIX, resourceID, buildTaskID)
 }
 
 func getOldDocID(primaryKeyValues []interfaces.KeyValue) string {
@@ -53,7 +59,7 @@ func updateResourceIndexName(ctx context.Context, resource *interfaces.Resource,
 	}
 
 	if resource.LocalIndexName != indexName {
-		err := ds.Delete(ctx, resource)
+		err := ds.Delete(ctx, resource.LocalIndexName)
 		if err != nil {
 			return fmt.Errorf("delete local index failed: %w", err)
 		}
@@ -67,6 +73,13 @@ func updateResourceIndexName(ctx context.Context, resource *interfaces.Resource,
 func createLocalIndex(ctx context.Context, ds interfaces.DatasetService, buildTask *interfaces.BuildTask, resource *interfaces.Resource) error {
 	newResource := *resource
 	newResource.ID = getIndexName(resource.ID, buildTask.ID)
+	exist, err := ds.CheckExist(ctx, newResource.ID)
+	if err != nil {
+		return fmt.Errorf("check dataset exist failed: %w", err)
+	}
+	if exist {
+		return nil
+	}
 	if buildTask.EmbeddingFields != "" {
 		embeddingFields := strings.Split(buildTask.EmbeddingFields, ",")
 		var newSchema []*interfaces.Property
@@ -115,12 +128,42 @@ func sendEmbeddingTask(client *asynq.Client, taskID string) error {
 		embeddingTask := asynq.NewTask(interfaces.BuildTaskTypeEmbedding, payload)
 		_, err = client.Enqueue(embeddingTask,
 			asynq.Queue(interfaces.DefaultQueue),
+			asynq.TaskID(fmt.Sprintf("%s-%s", interfaces.BuildTaskTypeEmbedding, taskID)),
 			asynq.MaxRetry(interfaces.BUILD_TASK_MAX_RETRY_COUNT),
 			asynq.Timeout(math.MaxInt64),                                                  // 永不超时
 			asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)), // 永不过期
 		)
 		if err != nil {
-			return err
+			if !errors.Is(err, asynq.ErrTaskIDConflict) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// sendEmbeddingMessage sends a document ID to Kafka for embedding
+func sendEmbeddingMessage(ctx context.Context, writer *kafka.Writer, kafkaAccess interfaces.KafkaAccess, docIDs []string) error {
+	for _, docID := range docIDs {
+		// Create message
+		messageData := map[string]any{
+			"document_id": docID,
+		}
+		messageBytes, err := sonic.Marshal(messageData)
+		if err != nil {
+			return fmt.Errorf("failed to marshal message: %w", err)
+		}
+
+		// Write message to Kafka
+		// Use docID + timestamp as key to avoid conflicts even if document is modified multiple times
+		err = kafkaAccess.WriteMessages(ctx, writer, []kafka.Message{
+			{
+				Key:   []byte(fmt.Sprintf("%s-%d", docID, time.Now().UnixNano())),
+				Value: messageBytes,
+			},
+		}...)
+		if err != nil {
+			return fmt.Errorf("failed to write message to Kafka: %w", err)
 		}
 	}
 	return nil

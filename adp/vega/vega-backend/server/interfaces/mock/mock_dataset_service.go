@@ -85,18 +85,33 @@ func (mr *MockDatasetServiceMockRecorder) CreateDocuments(ctx, id, documents any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDocuments", reflect.TypeOf((*MockDatasetService)(nil).CreateDocuments), ctx, id, documents)
 }
 
-// Delete mocks base method.
-func (m *MockDatasetService) Delete(ctx context.Context, res *interfaces.Resource) error {
+// CheckExist mocks base method.
+func (m *MockDatasetService) CheckExist(ctx context.Context, id string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, res)
+	ret := m.ctrl.Call(m, "CheckExist", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckExist indicates an expected call of CheckExist.
+func (mr *MockDatasetServiceMockRecorder) CheckExist(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckExist", reflect.TypeOf((*MockDatasetService)(nil).CheckExist), ctx, id)
+}
+
+// Delete mocks base method.
+func (m *MockDatasetService) Delete(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockDatasetServiceMockRecorder) Delete(ctx, res any) *gomock.Call {
+func (mr *MockDatasetServiceMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDatasetService)(nil).Delete), ctx, res)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDatasetService)(nil).Delete), ctx, id)
 }
 
 // DeleteBuildTask mocks base method.

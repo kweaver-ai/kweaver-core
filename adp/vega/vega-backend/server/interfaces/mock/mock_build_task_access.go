@@ -115,6 +115,21 @@ func (mr *MockBuildTaskAccessMockRecorder) GetByResourceID(ctx, resourceID any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByResourceID", reflect.TypeOf((*MockBuildTaskAccess)(nil).GetByResourceID), ctx, resourceID)
 }
 
+// GetByCatalogID mocks base method.
+func (m *MockBuildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string) ([]*interfaces.BuildTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByCatalogID", ctx, catalogID)
+	ret0, _ := ret[0].([]*interfaces.BuildTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByCatalogID indicates an expected call of GetByCatalogID.
+func (mr *MockBuildTaskAccessMockRecorder) GetByCatalogID(ctx, catalogID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByCatalogID", reflect.TypeOf((*MockBuildTaskAccess)(nil).GetByCatalogID), ctx, catalogID)
+}
+
 // GetStatus mocks base method.
 func (m *MockBuildTaskAccess) GetStatus(ctx context.Context, id string) (string, error) {
 	m.ctrl.T.Helper()
