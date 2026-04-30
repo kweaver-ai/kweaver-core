@@ -574,6 +574,12 @@ onboard_kweaver_admin_output_is_blocked_initial_password() {
     grep -qE '401001017|401,001,017|无法使用初始密码|密码是初始密码' "${_f}" 2>/dev/null
 }
 
+# Same EACP flow as docs: change-password works without OAuth; login accepts --new-password for non-interactive first-time set.
+onboard_kweaver_admin_hint_auth_change_password_cli() {
+    local _url="$1" _user="${2:-admin}"
+    onboard_log_warn "首登不可用初始密码直接 login（401001017）：请先改密—— $(printf '%q ' kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")（TTY 可交互输入；-o/-n 见 ISF / install 文档）。"
+}
+
 # kweaver-admin: -u/-p use HTTP /oauth2/signin (no --http-signin flag; unlike kweaver-sdk). Same defaults as kweaver. See ONBOARD_DEFAULT_KWEAVER_*.
 onboard_kweaver_admin_auth_login_for_url() {
     local _kurl="$1"
@@ -589,6 +595,10 @@ onboard_kweaver_admin_auth_login_for_url() {
         if kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" 2>&1 | tee "${_kad_out}"; then
             rm -f "${_kad_out}"
             return 0
+        fi
+        if onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
+            onboard_kweaver_admin_hint_auth_change_password_cli "${_kurl}" "${_duser}"
+            onboard_log_warn "或保持 -y：在同一 login 命令追加 -p '<初始密码>' --new-password '<新密码>'，成功后 export ONBOARD_DEFAULT_KWEAVER_PASSWORD='<新密码>' 再重跑。"
         fi
         rm -f "${_kad_out}"
         return 1
@@ -609,7 +619,9 @@ onboard_kweaver_admin_auth_login_for_url() {
             rm -f "${_kad_out}"
             return 0
         fi
-        if ! onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
+        if onboard_kweaver_admin_output_is_blocked_initial_password "${_kad_out}"; then
+            onboard_kweaver_admin_hint_auth_change_password_cli "${_kurl}" "${_u}"
+        else
             onboard_log_warn "kweaver-admin sign-in failed (attempt ${_attempt}/3). If the console password was changed from '${_dpass}', enter the new one. To reset: log into the web console as admin → 用户管理 → 改密码; or run 'kweaver-admin user reset-password -u admin --prompt-password -y' after one successful login."
         fi
         rm -f "${_kad_out}"
