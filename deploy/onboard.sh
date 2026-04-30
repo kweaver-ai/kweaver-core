@@ -499,6 +499,16 @@ onboard_argv_q() {
     printf '%s' "${_out}"
 }
 
+# For [onboard] logs: absolute path + first line of --version (often semver only, e.g. 0.6.4).
+onboard_kweaver_admin_version_summary() {
+    local _bin _ver
+    _bin="$(command -v kweaver-admin 2>/dev/null)" || return 1
+    _ver="$(kweaver-admin --version 2>/dev/null | head -n1 | tr -d '\r')"
+    _ver="${_ver//$'\n'/ }"
+    [[ -z "${_ver}" ]] && _ver="?"
+    printf '%s' "${_bin} (version ${_ver})"
+}
+
 onboard_kweaver_auth_login_echo_cmd() {
     local _url="$1"
     shift
@@ -760,7 +770,7 @@ onboard_ensure_kweaver_admin_for_isf() {
         hash -r 2>/dev/null || true
         onboard_prepend_npm_global_bin_to_path
         if command -v kweaver-admin &>/dev/null; then
-            onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
+            onboard_log_info "kweaver-admin CLI: $(onboard_kweaver_admin_version_summary)"
         fi
         return 0
     fi
@@ -779,7 +789,7 @@ onboard_ensure_kweaver_admin_for_isf() {
     fi
     onboard_prepend_npm_global_bin_to_path
     if command -v kweaver-admin &>/dev/null; then
-        onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
+            onboard_log_info "kweaver-admin CLI: $(onboard_kweaver_admin_version_summary)"
     else
         onboard_log_warn "kweaver-admin still not on PATH. In this shell:  export PATH=\"\$(npm config get prefix 2>/dev/null)/bin:\$PATH\""
     fi
@@ -891,7 +901,7 @@ onboard_recommend_admin_cli() {
     if [[ "${has_isf}" == "true" ]]; then
         onboard_log_info "Detected ISF (full install) on this cluster${isf_releases:+ — releases: ${isf_releases}}"
         if command -v kweaver-admin &>/dev/null; then
-            onboard_log_info "kweaver-admin: $(kweaver-admin --version 2>/dev/null | head -n1)"
+            onboard_log_info "kweaver-admin CLI: $(onboard_kweaver_admin_version_summary)"
         else
             onboard_log_info "kweaver-admin: not on initial PATH; prepended npm global bin. If still missing, the next step may install or show hints. For full install user ops:  kweaver-admin auth login <url> -u admin -p '<password>' (-k only for https:// self-signed)."
         fi
