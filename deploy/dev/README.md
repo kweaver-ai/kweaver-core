@@ -44,7 +44,18 @@ Optional (same `deploy.sh` Helm paths as Linux; you need a working cluster + val
 
 **Minimal path:** `cluster up` → `kweaver-core install` (wrapper implies `--minimum` and runs **data-services** first). If you skip that bundle (`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`), you must provide reachable DB/Kafka/etc. yourself or run **`data-services install`** beforehand.
 
-**Teardown:** Optionally `bash ./dev/mac.sh data-services uninstall` (tear down MariaDB/Redis/Kafka/ZK/OpenSearch Helm releases; keeps kind), then `bash ./dev/mac.sh cluster down` (deletes the cluster).
+**Pause to save resources (keep the cluster):** Quit **Docker Desktop**. Kind uses Docker, so that stops the cluster without `kind delete`. Open Docker again when you want to keep working.
+
+If Docker should stay up, stop only the kind **node** container(s) (same effect for the cluster; not `kind delete`):
+
+```bash
+CLUSTER="${KIND_CLUSTER_NAME:-kweaver-dev}"
+docker stop $(docker ps -q --filter "label=io.x-k8s.kind.cluster=${CLUSTER}")
+```
+
+Resume: `docker start $(docker ps -aq --filter "label=io.x-k8s.kind.cluster=${CLUSTER}")` (reuse the same `CLUSTER`).
+
+**Teardown (delete the cluster):** Optionally `bash ./dev/mac.sh data-services uninstall` (tear down MariaDB/Redis/Kafka/ZK/OpenSearch Helm releases; keeps kind), then `bash ./dev/mac.sh cluster down` (runs `kind delete cluster`; destroys the cluster).
 
 Config: copy [`dev/conf/mac-config.yaml.example`](conf/mac-config.yaml.example) to **`dev/conf/mac-config.yaml`** (one-time). The real **`mac-config.yaml` is gitignored** so generated passwords are not committed; adjust `accessAddress` and registry as needed.  
 `kweaver-dip` is not wired in `mac.sh` (use Linux `deploy.sh`).
@@ -159,7 +170,18 @@ cd kweaver-core/deploy   # 在此目录执行 bash ./dev/mac.sh ...（与 deploy
 
 **最短路径：**`cluster up` → `kweaver-core install`（**`--minimum` + 先装数据层**）。若 **`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`**，须自备 DB/Kafka 等可达实例，或先执行 **`data-services install`**。
 
-**卸载：**可先 **`bash ./dev/mac.sh data-services uninstall`**（卸数据层 Helm，保留 kind），再 **`bash ./dev/mac.sh cluster down`**。
+**暂歇省资源（不删集群）：**退出 **Docker Desktop** 即可。kind 依赖 Docker，等于停掉本地集群，**不是** `cluster down`（不会 `kind delete`）。再用时重新打开 Docker。
+
+若 **Docker 要一直开着**，可以只停 kind **节点**容器（效果同样是集群不可用，未执行 `kind delete`）：
+
+```bash
+CLUSTER="${KIND_CLUSTER_NAME:-kweaver-dev}"
+docker stop $(docker ps -q --filter "label=io.x-k8s.kind.cluster=${CLUSTER}")
+```
+
+恢复：再执行 `docker start $(docker ps -aq --filter "label=io.x-k8s.kind.cluster=${CLUSTER}")`（`CLUSTER` 同上）。
+
+**卸载（删除集群）：**可先 **`bash ./dev/mac.sh data-services uninstall`**（卸数据层 Helm，保留 kind），再 **`bash ./dev/mac.sh cluster down`**（执行 `kind delete cluster`，销毁集群）。
 
 **配置：**[`mac-config.yaml.example`](conf/mac-config.yaml.example) → **`mac-config.yaml`**；**已被 .gitignore**，避免口令入库；按需调整 **`accessAddress`**、**`image.registry`**。
 
