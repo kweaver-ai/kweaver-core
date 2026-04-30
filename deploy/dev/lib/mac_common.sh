@@ -210,7 +210,7 @@ mac_doctor_apply_fixes() {
 # does NOT set fail=1, since the user can still proceed (just slower / OOM-prone).
 # Threshold defaults are tuned for --minimum profile + data-services on kind:
 #   < MIN  -> WARNING (highly likely to OOM-loop, e.g. redis crash-restart)
-#   < REC  -> info note (works but tight)
+#   < REC -> WARNING + hint (below recommended budget for full Core + data-services)
 #   >= REC -> OK
 # Override via MAC_DOCTOR_MIN_MEM_GB / MAC_DOCTOR_REC_MEM_GB.
 mac_doctor_check_docker_memory() {
@@ -228,8 +228,10 @@ mac_doctor_check_docker_memory() {
         printf '  %bto fix:%b Docker Desktop → Settings → Resources → %bMemory ≥ %s GB%b → Apply & restart\n' \
             "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${rec_gb}" "${MAC_D_RESET}"
     elif (( $(awk -v m="${mem_gb}" -v t="${rec_gb}" 'BEGIN{print (m+0 < t+0)}') )); then
-        printf '%b[OK]%b docker memory %s GB %b(recommend ≥ %s GB for full Core + data-services)%b\n' \
-            "${MAC_D_OK}" "${MAC_D_RESET}" "${mem_gb}" "${MAC_D_DIM}" "${rec_gb}" "${MAC_D_RESET}"
+        printf '%b[WARNING]%b docker memory %s GB — recommend ≥ %s GB for full Core + data-services\n' \
+            "${MAC_D_WARN}" "${MAC_D_RESET}" "${mem_gb}" "${rec_gb}"
+        printf '  %bto fix:%b Docker Desktop → Settings → Resources → %bMemory ≥ %s GB%b → Apply & restart\n' \
+            "${MAC_D_DIM}" "${MAC_D_RESET}" "${MAC_D_BOLD}" "${rec_gb}" "${MAC_D_RESET}"
     else
         printf '%b[OK]%b docker memory %s GB\n' "${MAC_D_OK}" "${MAC_D_RESET}" "${mem_gb}"
     fi
