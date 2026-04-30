@@ -578,16 +578,19 @@ uninstall_core() {
 
     local namespace
     namespace="$(_core_resolve_target_namespace)"
+    log_info "Helm target namespace: ${namespace}"
 
     local -a release_names=()
     kweaver_mapfile_compat release_names _core_release_names
     for ((i=${#release_names[@]}-1; i>=0; i--)); do
         local release_name="${release_names[$i]}"
         log_info "Uninstalling ${release_name}..."
-        if helm uninstall "${release_name}" -n "${namespace}" 2>/dev/null; then
+        local helm_err
+        if helm_err=$(helm uninstall "${release_name}" -n "${namespace}" 2>&1); then
             log_info "✓ ${release_name} uninstalled"
         else
-            log_warn "⚠ ${release_name} not found or already uninstalled"
+            # Do not confuse "wrong namespace / no Helm metadata" with a silent no-op:
+            log_warn "⚠ ${release_name} uninstall skipped: ${helm_err}"
         fi
     done
 
