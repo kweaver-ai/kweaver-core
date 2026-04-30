@@ -10,6 +10,7 @@
 | [02-csv-to-kn](./02-csv-to-kn/) | *HR 总监散落的表格变成了可以遍历和查询的知识网络* | CSV → 知识网络 → 子图遍历 → Agent 问答 |
 | [03-action-lifecycle](./03-action-lifecycle/) | *采购员 8 点到岗，今天的库存预警清单已经生成好了 — 知识网络在夜里自己完成了* | CSV → 知识网络 → 行动 → 调度 → 审计日志 |
 | [04-multi-agent-session-id](./04-multi-agent-session-id/) | *平台特性巡检：自定义入参完整地从父 agent 透传到子 agent 再到 SKILL，每一步都有据可查* | Dolphin 编排 → 多 agent → 自定义入参 → SKILL 调用 |
+| [05-skill-routing-loop](./05-skill-routing-loop/) | *3 个物料、3 条 critical 告警、3 条不同处置路径——每条都能在知识网络里找到依据* | MySQL → BKN (经 Vega) → find_skills → Decision Agent → Skill → Action |
 
 ## 快速开始
 

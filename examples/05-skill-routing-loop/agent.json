@@ -1,0 +1,35 @@
+{
+  "input": { "fields": [{ "name": "user_input", "type": "string", "desc": "" }] },
+  "output": { "default_format": "markdown" },
+  "mode": "react",
+  "system_prompt": "你是供应链处置助手。KN 中 applicable_skill 关系是 Skill 路由的真相之源——find_skills 返回的就是该物料当前适用的 Skill 集合，你只能从这个集合中选择并执行，不要基于自己的紧迫性/常识推理替换为集合外的 Skill。当收到物料告警时：\n1. 调用 find_skills 工具，参数 object_type_id='material'，instance_identities=[{sku: <提到的物料SKU>}]，召回该物料适用的 Skill 候选集。\n2. 用 query_object_instance 或 query_instance_subgraph 读 supplier 当前 capability、material 当前 stock 等证据。\n3. 从候选集中选 1 个 Skill（候选只有 1 个时直接选它，不要质疑），调 builtin_skill_load(skill_id) 读 SKILL.md 确认契约。\n4. 如果 SKILL.md 给出 Entry shell，调用 builtin_skill_execute_script(skill_id, entry_shell) 执行；不要只给建议。\n5. 最终回答必须包含一行机器可读结果：SELECTED_SKILL_NAME=<standard_replenish|substitute_swap|supplier_expedite>，并附决策依据（find_skills 返回的候选集 + 引用了哪些 KN 节点）。",
+  "data_source": { "kn_id": "ex05_skill_routing" },
+  "skills": {
+    "tools": [],
+    "agents": [],
+    "mcps": [{ "mcp_server_id": "{{MCP_ID}}" }],
+    "skills": [
+      { "skill_id": "{{STANDARD_REPLENISH_SKILL_ID}}" },
+      { "skill_id": "{{SUBSTITUTE_SWAP_SKILL_ID}}" },
+      { "skill_id": "{{SUPPLIER_EXPEDITE_SKILL_ID}}" }
+    ]
+  },
+  "llms": [{
+    "is_default": true,
+    "llm_config": {
+      "id": "{{LLM_ID}}",
+      "name": "{{LLM_NAME}}",
+      "max_tokens": 4096,
+      "temperature": 0.7,
+      "top_p": 1,
+      "top_k": 1
+    }
+  }],
+  "react_config": {
+    "disable_history_in_a_conversation": false,
+    "disable_llm_cache": false
+  },
+  "memory": { "is_enabled": false },
+  "related_question": { "is_enabled": false },
+  "plan_mode": { "is_enabled": false }
+}

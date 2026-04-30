@@ -1,0 +1,32 @@
+---
+type: object_type
+id: supplier
+name: Supplier
+tags: [example-05]
+---
+
+## ObjectType: Supplier
+
+Material supplier with delivery capability.
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| supplier_id | Supplier ID | string | PK | supplier_id |
+| name | Name | string | Display name | name |
+| capability | Capability | string | normal / expedite | capability |
+
+### Keys
+
+Primary Keys: supplier_id
+Display Key: name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| data_view | {{SUPPLIERS_DV_ID}} | {{SUPPLIERS_DV_NAME}} |
