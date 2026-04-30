@@ -12,15 +12,15 @@
 当前系统中的 catalog 健康检查机制是空壳实现，catalog 永远显示为 healthy 状态，缺乏真实的连接检测能力。这导致以下问题：
 
 1. 无法及时发现数据源连接故障
-2. 查询请求可能被发送到不可用的数据源，造成资源浪费和延迟
-3. 缺乏自动恢复机制，需要人工干预处理故障
+2. 查询请求发送到不可用的数据源后，缺乏自动恢复机制
+3. 查询成功后无法自动更新不正常的健康状态
 4. 系统整体可靠性降低
 
 ## 2. 设计目标
 
 1. **真实连接检测**：`/test-connection` 端点应真实调用 connector 的 `Ping()` 或 `TestConnection()` 方法进行连接检测
 2. **定期健康检查**：对启用了 `f_health_check_enabled` 的 catalog 实现后台定期健康检查
-3. **查询前检查**：在执行查询前检查 catalog 健康状态，对不健康的 catalog 做 fail-fast
+3. **查询与健康状态联动**：查询操作不受健康状态限制，查询成功后自动将不正常状态更新为正常状态
 
 ## 3. 核心设计
 
@@ -334,44 +334,83 @@ type HealthStatusStore struct {
    - SuccessCount >= `recovery_threshold`: 状态恢复为 healthy
 7. 将健康状态持久化到数据库
 
-### 3.3 查询前健康检查
+### 3.3 查询与健康状态联动机制
 
-#### 3.3.1 实现位置
+#### 3.3.1 设计原则
 
-在 catalog service 的查询入口处添加健康检查逻辑：
+查询操作与健康检查状态解耦，遵循以下原则：
+
+1. **查询不受健康状态限制**：无论 catalog 的健康状态如何（healthy/degraded/unhealthy/offline），都允许执行查询操作
+2. **查询成功自动恢复状态**：当查询操作成功执行时，如果 catalog 当前状态为不正常（unhealthy/offline），则自动将其状态更新为 healthy
+3. **查询失败不影响状态**：查询失败时，不更新健康状态，由定期健康检查机制负责状态管理
+
+#### 3.3.2 实现位置
+
+在 catalog service 的查询入口处添加健康状态联动逻辑：
 
 ```go
 func (s *CatalogService) Query(catalogID string, query string) (*QueryResult, error) {
-    // 1. 检查 catalog 健康状态
+    // 1. 获取 catalog 健康状态（仅用于记录日志和后续状态更新）
     status, err := s.statusStore.Get(catalogID)
     if err != nil {
-        return nil, fmt.Errorf("failed to get catalog health status: %v", err)
+        logger.Warnf("Failed to get catalog health status for %s: %v", catalogID, err)
     }
     
-    // 2. Fail-fast: 不健康的 catalog 直接返回错误
-    if status.Status == interfaces.CatalogHealthStatusUnhealthy ||
-       status.Status == interfaces.CatalogHealthStatusOffline {
-        return nil, fmt.Errorf("catalog %s is not healthy (status: %s)", catalogID, status.Status)
+    // 2. 记录当前状态日志（不阻止查询）
+    if status != nil {
+        if status.Status == interfaces.CatalogHealthStatusUnhealthy ||
+           status.Status == interfaces.CatalogHealthStatusOffline {
+            logger.Warnf("Querying catalog %s with non-healthy status: %s", catalogID, status.Status)
+        } else if status.Status == interfaces.CatalogHealthStatusDegraded {
+            logger.Warnf("Querying catalog %s in degraded state (latency: %dms)", catalogID, status.LastLatencyMs)
+        }
     }
     
-    // 3. degraded 状态记录警告日志
-    if status.Status == interfaces.CatalogHealthStatusDegraded {
-        logger.Warnf("catalog %s is in degraded state (latency: %dms)", catalogID, status.LastLatencyMs)
-    }
-    
-    // 4. 执行查询
+    // 3. 执行查询（不受健康状态限制）
     result, err := s.connector.Query(query)
     
+    // 4. 查询成功后，如果状态不正常，则自动更新为 healthy
+    if err == nil && status != nil {
+    
+        if status.Status == interfaces.CatalogHealthStatusUnhealthy ||
+           status.Status == interfaces.CatalogHealthStatusOffline {
+            logger.Infof("Catalog %s recovered automatically after successful query", catalogID)
+            
+            // 更新状态为 healthy
+            newStatus := *status
+            newStatus.Status = interfaces.CatalogHealthStatusHealthy
+            newStatus.LastSuccessTime = time.Now()
+            newStatus.FailureCount = 0
+            newStatus.SuccessCount++
+            
+            // 异步更新数据库，避免影响查询性能
+            go func() {
+                if err := s.statusStore.Update(catalogID, newStatus); err != nil {
+                    logger.Errorf("Failed to update catalog health status after successful query: %v", err)
+                }
+            }()
+        }
+    }
+
     return result, err
 }
 ```
 
-#### 3.3.2 Fail-fast 策略
+#### 3.3.3 状态更新策略
 
-1. 检查 catalog 健康状态，不健康（unhealthy/offline）则直接返回错误
-2. degraded 状态允许查询，但记录警告日志
-3. 查询失败时不需要立即更新健康状态（由定期健康检查机制处理）
-4. 查询成功时不需要立即更新健康状态（由定期健康检查机制维护）
+1. **查询成功**：
+   - 如果当前状态为 unhealthy 或 offline，则自动更新为 healthy
+   - 更新 LastSuccessTime 为当前时间
+   - 重置 FailureCount 为 0，递增 SuccessCount
+   - 异步更新数据库，避免影响查询性能
+
+2. **查询失败**：
+   - 不更新健康状态
+   - 由定期健康检查机制负责检测和更新状态
+
+3. **性能考虑**：
+   - 状态更新操作异步执行，不阻塞查询返回
+   - 状态更新失败不影响查询结果，仅记录错误日志
 
 
 
@@ -691,6 +730,6 @@ health_check:
 | Strategy | 检查策略，定义健康检查的间隔和超时时间 |
 | Thresholds | 状态判定阈值，包括延迟警告阈值、延迟严重阈值、失败阈值和恢复阈值 |
 | Retry | 重试策略，定义检查失败时的重试次数和退避策略 |
-| Fail-fast | 快速失败策略，在检测到数据源不可用时立即返回错误，避免无效等待 |
+| 状态联动 | 查询操作与健康状态解耦，查询成功后自动将不正常状态更新为正常状态 |
 | Worker Pool | 工作线程池，用于控制并发健康检查的数量 |
 | Latency | 延迟，表示健康检查的响应时间（毫秒）|
