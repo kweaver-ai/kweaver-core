@@ -1359,6 +1359,23 @@ ensure_data_services() {
     export KWEAVER_DATA_SERVICES_ENSURED="true"
 }
 
+# Delete Kubernetes Job objects in a namespace whose names match an ERE (grep -E).
+# Completed Helm hooks / migrator Jobs often keep pods until the Job is deleted when TTL is unset.
+kweaver_delete_jobs_name_match_ere_in_ns() {
+    local ns="$1"
+    local ere="$2"
+    [[ -z "${ns}" ]] || [[ -z "${ere}" ]] && return 0
+    if ! kubectl get namespace "${ns}" >/dev/null 2>&1; then
+        return 0
+    fi
+    local j
+    while IFS= read -r j; do
+        [[ -z "${j}" ]] && continue
+        log_info "Deleting leftover job '${j}' in namespace ${ns}"
+        kubectl delete job "${j}" -n "${ns}" --ignore-not-found >/dev/null 2>&1 || true
+    done < <(kubectl get jobs -n "${ns}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -E "${ere}" || true)
+}
+
 # Uninstall bundled MariaDB / Redis / Kafka / ZooKeeper / OpenSearch (and ingress-nginx when
 # AUTO_INSTALL_INGRESS_NGINX is true), reverse of ensure_data_services. Continues past individual
 # failures so partially-missing installs still get cleaned up. Remaining argv is passed only to
@@ -1373,6 +1390,8 @@ uninstall_platform_data_services() {
     uninstall_zookeeper || true
     uninstall_redis || true
     uninstall_mariadb "$@" || true
+    local rns="${RESOURCE_NAMESPACE:-resource}"
+    kweaver_delete_jobs_name_match_ere_in_ns "${rns}" '(^|[-/])(kafka|zookeeper|opensearch|mariadb|redis)(-|$)|migrator|data-migrator'
     log_info "Bundled platform data services uninstall finished (PVC defaults unchanged; MariaDB accepts --delete-data)."
 }
 

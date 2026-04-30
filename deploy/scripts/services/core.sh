@@ -600,6 +600,9 @@ uninstall_core() {
     log_warn "Deleting sandbox session pods (label: sandbox-type=execution)"
     kubectl delete pod -n "${namespace}" -l sandbox-type=execution --ignore-not-found >/dev/null 2>&1 || true
 
+    log_info "Deleting leftover Core Jobs in ${namespace} (e.g. data-migrator / chart hooks)"
+    kweaver_delete_jobs_name_match_ere_in_ns "${namespace}" 'migrator|data-migrator|mdl-data-model-job'
+
     log_info "KWeaver Core services uninstallation completed."
 }
 
