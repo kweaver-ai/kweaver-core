@@ -242,14 +242,20 @@ func (r *restHandler) UpdateConnectorType(c *gin.Context) {
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	if req.Type != "" && req.Type != tp {
+	if req.Type == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_ConnectorType_InvalidParameter_Type).
+			WithErrorDetails("body field 'type' is required and must equal path parameter")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if req.Type != tp {
 		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_ConnectorType_TypeMismatch).
 			WithErrorDetails(fmt.Sprintf("path type %q != body type %q", tp, req.Type))
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
-	req.Type = tp
 
 	if err := ValidateConnectorTypeReq(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)

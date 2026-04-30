@@ -80,16 +80,17 @@ func TestUpdateConnectorType_BodyTypeMatchesPath_OK(t *testing.T) {
 	}
 }
 
-// case 2：请求体省略 type → 跳过冲突，进入正常更新流程
-func TestUpdateConnectorType_BodyTypeOmitted_OK(t *testing.T) {
+// case 2：请求体省略 type → 400 InvalidParameter.Type（K8s 风格严格契约）
+func TestUpdateConnectorType_BodyTypeOmitted_400(t *testing.T) {
 	body := `{"name":"MySQL","mode":"local","category":"table"}`
 	w := putUpdateConnectorType(t, "mysql", body, func(m *mock_interfaces.MockConnectorTypeService) {
-		m.EXPECT().GetByType(gomock.Any(), "mysql").
-			Return(&interfaces.ConnectorType{Type: "mysql", Name: "MySQL", Mode: "local", Category: "table"}, nil)
-		m.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+		// 校验失败应在调用任何 service 方法前返回，此处无 EXPECT。
 	})
 
-	if w.Code != http.StatusNoContent {
-		t.Fatalf("expected 204, got %d, body=%s", w.Code, w.Body.String())
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d, body=%s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "VegaBackend.ConnectorType.InvalidParameter.Type") {
+		t.Fatalf("expected InvalidParameter.Type error_code, got body=%s", w.Body.String())
 	}
 }

@@ -103,37 +103,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ConnectorTypeReq"
-            examples:
-              register-mysql:
-                value:
-                  type: mysql
-                  name: MySQL
-                  tags:
-                    - rdbms
-                  description: MySQL 关系型数据库连接器
-                  mode: local
-                  category: table
-                  endpoint: ""
-                  enabled: true
-                  field_config:
-                    host:
-                      name: 主机
-                      type: string
-                      description: 数据库主机地址
-                      required: true
-                      encrypted: false
-                    port:
-                      name: 端口
-                      type: integer
-                      description: 数据库端口
-                      required: true
-                      encrypted: false
-                    password:
-                      name: 密码
-                      type: string
-                      description: 数据库密码
-                      required: true
-                      encrypted: true
       responses:
         "201":
           description: 创建成功
@@ -183,14 +152,17 @@ paths:
       description: |
         全量更新指定连接器类型。连接器类型由路径参数 `type` 唯一确定（主键不可改）。
 
-        请求体可省略 `type` 字段；若携带，则必须与路径参数完全一致，否则返回 409。
-        修改 `name` 时若新名称已被其它类型占用，同样返回 409。
+        请求体的 `type` 字段**必填**，且必须与路径参数完全一致：
+        - 缺失 → 400 `VegaBackend.ConnectorType.InvalidParameter.Type`。
+        - 不一致 → 409 `VegaBackend.ConnectorType.TypeMismatch`。
+
+        修改 `name` 时若新名称已被其它类型占用，返回 409 `VegaBackend.ConnectorType.NameExists`。
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ConnectorTypeUpdateReq"
+              $ref: "#/components/schemas/ConnectorTypeReq"
       responses:
         "204":
           description: 更新成功
@@ -419,7 +391,12 @@ components:
           items:
             type: string
     ConnectorTypeReq:
-      description: 注册连接器类型的请求体（POST）
+      description: |
+        连接器类型创建 / 更新请求体。
+
+        - `type` 在 POST 与 PUT 中都**必填**，且必须自描述资源主键。
+        - POST：全局唯一，已存在返回 409 `VegaBackend.ConnectorType.TypeExists`。
+        - PUT：必须与路径参数 `type` **完全一致**，缺失返回 400 `VegaBackend.ConnectorType.InvalidParameter.Type`，不一致返回 409 `VegaBackend.ConnectorType.TypeMismatch`。
       type: object
       required:
         - type
@@ -428,62 +405,7 @@ components:
         - category
       properties:
         type:
-          description: 连接器类型标识，全局唯一
-          type: string
-        name:
-          description: 连接器类型显示名
-          type: string
-        tags:
-          description: 标签
-          type: array
-          items:
-            type: string
-        description:
-          description: 类型描述
-          type: string
-        mode:
-          description: 运行模式
-          type: string
-          enum:
-            - local
-            - remote
-        category:
-          description: 分类
-          type: string
-          enum:
-            - table
-            - index
-            - topic
-            - file
-            - fileset
-            - metric
-            - api
-        endpoint:
-          description: 仅 remote 模式下的远程服务地址
-          type: string
-        field_config:
-          description: 字段配置（兼容 JSON Schema properties），key 为字段标识
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/ConnectorFieldConfig"
-        enabled:
-          description: 是否启用
-          type: boolean
-          default: false
-    ConnectorTypeUpdateReq:
-      description: |
-        更新连接器类型的请求体（PUT）。
-
-        连接器类型由路径参数 `type` 唯一确定（主键不可改）。`type` 字段可省略；
-        若携带，则必须与路径参数完全一致，否则返回 409 `VegaBackend.ConnectorType.TypeMismatch`。
-      type: object
-      required:
-        - name
-        - mode
-        - category
-      properties:
-        type:
-          description: 连接器类型标识；可省略，若携带必须与路径参数一致
+          description: 连接器类型标识；POST 与 PUT 都必填，PUT 时必须与路径参数一致
           type: string
         name:
           description: 连接器类型显示名
