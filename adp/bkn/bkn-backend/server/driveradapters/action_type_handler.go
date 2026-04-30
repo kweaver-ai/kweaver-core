@@ -660,7 +660,6 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 	// 获取分页参数
 	namePattern := c.Query("name_pattern")
 	tag := c.Query("tag")
-	groupID := c.Query("group_id")
 	objectTypeID := c.Query("object_type_id")
 	actionType := c.Query("action_type")
 	offset := c.DefaultQuery("offset", interfaces.DEFAULT_OFFEST)
@@ -693,7 +692,6 @@ func (r *restHandler) ListActionTypes(c *gin.Context, visitor hydra.Visitor) {
 		Tag:         tag,
 		Branch:      branch,
 		KNID:        knID,
-		GroupID:     groupID,
 		ActionType:  actionType,
 	}
 	if objectTypeID != "" {

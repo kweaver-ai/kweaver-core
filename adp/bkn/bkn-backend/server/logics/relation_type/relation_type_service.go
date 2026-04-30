@@ -427,43 +427,48 @@ func (rts *relationTypeService) GetRelationTypesByIDs(ctx context.Context, knID 
 		case interfaces.RELATION_TYPE_DATA_VIEW:
 			// 查视图或 vega Resource，翻译名称和桥梁字段显示名
 			mappingRules := relationType.MappingRules.(*interfaces.InDirectMapping)
-			backingType := mappingRules.BackingDataSource.Type
+			var backingType string
+			if mappingRules.BackingDataSource != nil {
+				backingType = mappingRules.BackingDataSource.Type
+			}
 			if backingType == "" {
 				backingType = interfaces.DATA_SOURCE_TYPE_DATA_VIEW
 			}
 			var fieldsMap map[string]*interfaces.ViewField
-			switch backingType {
-			case interfaces.DATA_SOURCE_TYPE_RESOURCE:
-				res, err := rts.vba.GetResourceByID(ctx, mappingRules.BackingDataSource.ID)
-				if err != nil {
-					return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-						berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
-						WithErrorDetails(err.Error())
-				}
-				if res == nil {
-					o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s backing vega Resource %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
-					if sourceObj == nil && targetObj == nil {
-						continue
+			if mappingRules.BackingDataSource != nil && mappingRules.BackingDataSource.ID != "" {
+				switch backingType {
+				case interfaces.DATA_SOURCE_TYPE_RESOURCE:
+					res, err := rts.vba.GetResourceByID(ctx, mappingRules.BackingDataSource.ID)
+					if err != nil {
+						return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+							berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
+							WithErrorDetails(err.Error())
 					}
-				} else {
-					relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = res.Name
-					fieldsMap = logics.VegaResourceSchemaToFieldsMap(res)
-				}
-			default:
-				dataView, err := rts.dva.GetDataViewByID(ctx, mappingRules.BackingDataSource.ID)
-				if err != nil {
-					return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
-						berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
-						WithErrorDetails(err.Error())
-				}
-				if dataView == nil {
-					o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
-					if sourceObj == nil && targetObj == nil {
-						continue
+					if res == nil {
+						o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s backing vega Resource %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+						if sourceObj == nil && targetObj == nil {
+							continue
+						}
+					} else {
+						relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = res.Name
+						fieldsMap = logics.VegaResourceSchemaToFieldsMap(res)
 					}
-				} else {
-					relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
-					fieldsMap = dataView.FieldsMap
+				default:
+					dataView, err := rts.dva.GetDataViewByID(ctx, mappingRules.BackingDataSource.ID)
+					if err != nil {
+						return []*interfaces.RelationType{}, rest.NewHTTPError(ctx, http.StatusInternalServerError,
+							berrors.BknBackend_RelationType_InternalError_GetDataViewByIDFailed).
+							WithErrorDetails(err.Error())
+					}
+					if dataView == nil {
+						o11y.Warn(ctx, fmt.Sprintf("Relation type [%s]'s Backing Data view %s not found", relationType.RTID, mappingRules.BackingDataSource.ID))
+						if sourceObj == nil && targetObj == nil {
+							continue
+						}
+					} else {
+						relationType.MappingRules.(*interfaces.InDirectMapping).BackingDataSource.Name = dataView.ViewName
+						fieldsMap = dataView.FieldsMap
+					}
 				}
 			}
 
