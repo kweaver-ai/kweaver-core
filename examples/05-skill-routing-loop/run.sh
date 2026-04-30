@@ -414,6 +414,15 @@ echo "  ✓ agent $AGENT_ID (published)"
 # ── Step 12: Trigger 3 critical-stock alerts; verify route + mock action ─────
 echo ""
 echo "=== Step 12: Trigger 3 alerts (one per material) ==="
+if [ "${DEBUG_KEEP:-0}" = "1" ]; then
+    trap - EXIT
+    set +e
+    echo "[DEBUG_KEEP=1] cleanup disabled; agent/kn/skill/ds will persist for debugging"
+    echo "  AGENT_ID=$AGENT_ID"
+    echo "  KN_ID=$KN_ID"
+    echo "  DS_ID=$DS_ID"
+    echo "  MCP_ID=$MCP_ID"
+fi
 execute_mock_action() {
     local sku="$1"
     local skill="$2"
