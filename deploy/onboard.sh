@@ -488,10 +488,21 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Bash 3.2 (macOS) printf has no %q; single-quote each arg for safe copy-paste in logs.
+onboard_argv_q() {
+    local _a _esc _out=""
+    for _a in "$@"; do
+        _esc="${_a//\'/\'\\\'\'}"
+        [[ -n "${_out}" ]] && _out+=" "
+        _out+="'${_esc}'"
+    done
+    printf '%s' "${_out}"
+}
+
 onboard_kweaver_auth_login_echo_cmd() {
     local _url="$1"
     shift
-    onboard_log_info "Running: $(printf '%q ' kweaver auth login "${_url}" "$@")"
+    onboard_log_info "Running: $(onboard_argv_q kweaver auth login "${_url}" "$@")"
 }
 
 # After access URL is chosen: ISF → HTTP sign-in (defaults admin / eisoo.com if unchanged) or browser; no ISF → --no-auth (Enter) or HTTP.
@@ -578,8 +589,8 @@ onboard_kweaver_admin_output_is_blocked_initial_password() {
 onboard_kweaver_admin_hint_auth_change_password_cli() {
     local _url="$1" _user="${2:-admin}"
     onboard_log_warn "Initial password cannot complete HTTP username/password sign-in (401001017). Pick one, then re-run onboard:"
-    onboard_log_warn "  • OAuth / browser: $(printf '%q ' kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (omit -u/-p; follow the browser flow for first login / password change)."
-    onboard_log_warn "  • kweaver-admin HTTP: $(printf '%q ' kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (EACP modifypassword; always pass the platform URL)."
+    onboard_log_warn "  • OAuth / browser: $(onboard_argv_q kweaver-admin auth login "${_url}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (omit -u/-p; follow the browser flow for first login / password change)."
+    onboard_log_warn "  • kweaver-admin HTTP: $(onboard_argv_q kweaver-admin auth change-password "${_url}" -u "${_user}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (EACP modifypassword; always pass the platform URL)."
     onboard_log_warn "  • Non-interactive login: same URL and -k, add -u ... -p '<initial>' --new-password '<new>' (with  onboard -y , then  export ONBOARD_DEFAULT_KWEAVER_PASSWORD )."
     onboard_log_warn "Do not omit the platform URL in these commands, or the CLI uses the active profile from  kweaver-admin auth list  (wrong environment)."
 }
@@ -594,7 +605,7 @@ onboard_kweaver_admin_auth_login_for_url() {
 
     if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
         onboard_log_info "kweaver-admin auth: ISF — HTTP sign-in (defaults, -y): ${_duser}"
-        onboard_log_info "Running: $(printf '%q ' kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+        onboard_log_info "Running: $(onboard_argv_q kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
         _kad_out="$(mktemp "${TMPDIR:-/tmp}/onboard-kad-login.XXXXXX")"
         if kweaver-admin auth login "${_kurl}" -u "${_duser}" -p "${_dpass}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" 2>&1 | tee "${_kad_out}"; then
             rm -f "${_kad_out}"
@@ -616,7 +627,7 @@ onboard_kweaver_admin_auth_login_for_url() {
         echo
         _p="${_p:-${_dpass}}"
         onboard_log_info "kweaver-admin: HTTP sign-in (attempt ${_attempt}/3)…"
-        onboard_log_info "Running: $(printf '%q ' kweaver-admin auth login "${_kurl}" -u "${_u}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
+        onboard_log_info "Running: $(onboard_argv_q kweaver-admin auth login "${_kurl}" -u "${_u}" -p "***" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}")"
         _kad_out="$(mktemp "${TMPDIR:-/tmp}/onboard-kad-login.XXXXXX")"
         if kweaver-admin auth login "${_kurl}" -u "${_u}" -p "${_p}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}" 2>&1 | tee "${_kad_out}"; then
             rm -f "${_kad_out}"
@@ -641,7 +652,7 @@ onboard_ensure_kweaver_auth() {
         if [[ "${INTERACTIVE}" != "true" ]]; then
             _durl="$(onboard_default_access_base_url)"
             onboard_kweaver_tls_insecure_args_to_array "${_durl}"
-            onboard_log_err "kweaver bkn list failed. Run: $(printf '%q ' kweaver auth login "${_durl}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
+            onboard_log_err "kweaver bkn list failed. Run: $(onboard_argv_q kweaver auth login "${_durl}" "${ONBOARD_TLS_INSECURE_ARGS[@]+"${ONBOARD_TLS_INSECURE_ARGS[@]}"}") (or set ONBOARD_DEFAULT_ACCESS_BASE=...)"
             exit 1
         fi
         if [[ "${ONBOARD_ASSUME_YES}" == "true" ]]; then
