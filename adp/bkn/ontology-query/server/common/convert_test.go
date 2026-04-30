@@ -7,9 +7,38 @@ package common
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func Test_ParseCalendarBucketToMillis_roundtrips_FormatTimeMiliis(t *testing.T) {
+	Convey("ParseCalendarBucketToMillis matches FormatTimeMiliis bucket keys", t, func() {
+		ts := time.Date(2024, 3, 15, 14, 30, 0, 0, time.UTC).UnixMilli()
+		steps := []string{
+			CALENDAR_STEP_MINUTE,
+			CALENDAR_STEP_HOUR,
+			CALENDAR_STEP_DAY,
+			CALENDAR_STEP_WEEK,
+			CALENDAR_STEP_MONTH,
+			CALENDAR_STEP_QUARTER,
+			CALENDAR_STEP_YEAR,
+		}
+		for _, step := range steps {
+			key := FormatTimeMiliis(ts, step)
+			ms, err := ParseCalendarBucketToMillis(key, step)
+			So(err, ShouldBeNil)
+			// Re-format must equal the same calendar bucket label
+			So(FormatTimeMiliis(ms, step), ShouldEqual, key)
+		}
+	})
+
+	Convey("day parses YYYY-MM-DD from resource date_histogram", t, func() {
+		ms, err := ParseCalendarBucketToMillis("2024-01-04", CALENDAR_STEP_DAY)
+		So(err, ShouldBeNil)
+		So(FormatTimeMiliis(ms, CALENDAR_STEP_DAY), ShouldEqual, "2024-01-04")
+	})
+}
 
 func Test_Convert_StringToStringSlice(t *testing.T) {
 	Convey("Test StringToStringSlice", t, func() {
