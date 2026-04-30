@@ -2,6 +2,9 @@
 # Default kweaver-core namespace
 CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
 
+# Set to true in parse_core_args when user passes --namespace/--namespace=… (overrides namespace: in YAML).
+CORE_NAMESPACE_FROM_CLI="${CORE_NAMESPACE_FROM_CLI:-false}"
+
 # Default local charts directory
 CORE_LOCAL_CHARTS_DIR="${CORE_LOCAL_CHARTS_DIR:-}"
 CORE_VERSION_MANIFEST_FILE="${CORE_VERSION_MANIFEST_FILE:-}"
@@ -74,10 +77,12 @@ parse_core_args() {
                 ;;
             --namespace=*)
                 CORE_NAMESPACE="${1#*=}"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift
                 ;;
             --namespace)
                 CORE_NAMESPACE="$2"
+                CORE_NAMESPACE_FROM_CLI="true"
                 shift 2
                 ;;
             --config=*)
@@ -131,6 +136,21 @@ parse_core_args() {
                 ;;
         esac
     done
+}
+
+# Target namespace: explicit --namespace overrides `namespace:` in CONFIG_YAML_PATH (avoids uninstall missing releases when YAML drifted from the cluster).
+_core_resolve_target_namespace() {
+    if [[ "${CORE_NAMESPACE_FROM_CLI:-false}" == true ]]; then
+        printf '%s' "${CORE_NAMESPACE}"
+        return 0
+    fi
+    local yaml_ns
+    yaml_ns=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+    if [[ -n "${yaml_ns}" ]]; then
+        printf '%s' "${yaml_ns}"
+    else
+        printf '%s' "${CORE_NAMESPACE}"
+    fi
 }
 
 # Resolve local charts directory for kweaver-core
@@ -442,8 +462,7 @@ install_core() {
     fi
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     kubectl create namespace "${namespace}" 2>/dev/null || true
 
@@ -558,8 +577,7 @@ uninstall_core() {
     log_info "Uninstalling KWeaver Core services..."
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     local -a release_names=()
     kweaver_mapfile_compat release_names _core_release_names
@@ -587,8 +605,7 @@ show_core_status() {
     log_info "KWeaver Core services status:"
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-${CORE_NAMESPACE}}"
+    namespace="$(_core_resolve_target_namespace)"
 
     log_info "Namespace: ${namespace}"
     log_info ""
