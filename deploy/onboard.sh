@@ -6,11 +6,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Same as deploy.sh: generated install config lives under $HOME/.kweaver-ai/config.yaml.
+# Prefer it when CONFIG_YAML_PATH is unset so accessAddress matches the machine that ran deploy
+# (vendored deploy/conf/config.yaml is only a template).
+if [[ -z "${CONFIG_YAML_PATH:-}" ]]; then
+    _ob_rt="${HOME}/.kweaver-ai/config.yaml"
+    if [[ -f "${_ob_rt}" ]]; then
+        export CONFIG_YAML_PATH="${_ob_rt}"
+    fi
+    unset _ob_rt
+fi
 # shellcheck source=scripts/lib/common.sh
 source "${SCRIPT_DIR}/scripts/lib/common.sh"
 
-# Prefer Mac dev values when running onboard directly: common.sh defaults CONFIG_YAML_PATH to
-# deploy/conf/config.yaml (often no accessAddress). If still on that default, use mac-config.yaml.
+# macOS kind dev: vendored deploy/conf lacks accessAddress; switch to mac-config when still using defaults.
 _onboard_default_conf="${SCRIPT_DIR}/conf/config.yaml"
 _onboard_default_home="${HOME}/.kweaver-ai/config.yaml"
 _onboard_mac_cfg="${SCRIPT_DIR}/dev/conf/mac-config.yaml"
@@ -189,6 +198,7 @@ onboard_kweaver_tls_insecure_args_to_array() {
 usage() {
     echo "Usage: $0 [options]"
     echo "  Requires: Node 22+ (see @kweaver-ai/kweaver-sdk on npm), kweaver, kubectl, python3; run from deploy/"
+    echo "  Config YAML: unset CONFIG_YAML_PATH and onboard uses \$HOME/.kweaver-ai/config.yaml when that file exists (same as deploy.sh); otherwise scripts/lib/common.sh default (deploy/conf/config.yaml)."
     echo "  (no flags)                Interactive: nvm+Node 22 and npm -g (Y/n) in your terminal, then models/BKN"
     echo "  -y, --yes                 Auto nvm+Node 22, npm -g, context-loader import, ISF [test] user+roles (no Y/n)"
     echo "  --config=PATH            YAML: deploy/conf/models.yaml.example; model prompts off, but nvm/kweaver still Y/n in a TTY (use -y to skip those asks)"
@@ -219,7 +229,7 @@ usage() {
     echo "                ONBOARD_FORCE_INSECURE_LOGIN=true  always pass -k (--insecure) to kweaver/kweaver-admin auth login (even for http:// bases; default false)"
     echo "                ONBOARD_SKIP_CONFIG_ACCESS_URL=true  do not derive default URL from CONFIG_YAML_PATH accessAddress"
     echo "  Default KWeaver access URL (kweaver auth): accessAddress in CONFIG_YAML_PATH when present;"
-    echo "                on macOS, if CONFIG_YAML_PATH is still deploy/conf/config.yaml or ~/.kweaver-ai/config.yaml,"
+    echo "                on macOS, if CONFIG_YAML_PATH is still deploy/conf/config.yaml (~/.kweaver-ai not used yet),"
     echo "                onboard uses deploy/dev/conf/mac-config.yaml when that file exists (same as mac.sh)."
     echo "                Else host primary IPv4 + ONBOARD_DEFAULT_ACCESS_SCHEME (https by default)."
     echo "                Set ONBOARD_DEFAULT_ACCESS_BASE to force a URL; ONBOARD_DEFAULT_ACCESS_PORT / SCHEME override fallback IP path."
