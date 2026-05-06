@@ -38,7 +38,7 @@ deploy/**                                  @sh00tg0a1 @tangkelu
 
 # ── Website / Docs ───────────────────────────────────────────
 website/**                                 @xforce-io
-help/**                                    @FennyXCHF @sh00tg0a1
+help/**                                    @FennyXCHF @sh00tg0a1 @xforce-io
 
 # ── CI / CD / GitHub config ─────────────────────────────────
 .github/**                                 @xforce-io @sh00tg0a1 @FennyXCHF
