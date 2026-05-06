@@ -2,6 +2,56 @@
 
 All new features and capabilities added in this branch (`feature/803264`) are documented below.
 
+## [0.4.0]
+
+### 🚀 New Features
+
+- **Multi-Language Sandbox Template**
+  - Added a built-in `multi-language` template for Python, Go, and Bash execution
+  - Added Go `1.25.2` to the multi-language runtime base and configured Go build/module caches under `/workspace/.cache`
+  - Updated executor shell isolation so `go` is available through Bubblewrap and subprocess execution paths
+
+- **Stable Runtime Base Image Layering**
+  - Added stable Python and multi-language runtime base images that contain system/runtime dependencies without executor application code
+  - Added final versioned executor/template images built from the stable bases, so template image tags follow the project `VERSION` while heavy runtime layers stay stable
+  - Added a shared executor template Dockerfile and removed legacy per-template Dockerfiles and the old direct executor Dockerfile
+
+- **Base Image Build and SWR Push Workflow**
+  - Extended `images/build.sh` with optional base-image builds, configurable Python and multi-language base tags, mirror options, platform selection, and `VERSION`-based template tags
+  - Added multi-arch SWR base image push support using Docker Buildx OCI archive export and `skopeo copy --all`
+  - Added configurable SWR registry, namespace, repository, credentials, builder, OCI output directory, and platform options
+
+### 🐛 Bug Fixes
+
+- **Template Image Version Resolution**
+  - Changed default seeded template image URLs to follow `VERSION`, `TEMPLATE_IMAGE_TAG`, or `PROJECT_VERSION` instead of hardcoded `v1.0.0` or `latest` values
+  - Added a default multi-language template seed entry and made create-session requests use `DEFAULT_TEMPLATE_ID` when `template_id` is omitted
+
+- **File Upload and Archive Extraction Safety**
+  - Made upload size validation use configured limits instead of a hardcoded 100 MB limit
+  - Added ZIP extraction limits for file count and total uncompressed size
+  - Rejected symlink entries during ZIP extraction to reduce unsafe archive handling risk
+
+### 🔧 Improvements
+
+- Updated the control-plane Docker build context so the image can include the repository `VERSION` file for default template tag resolution
+- Added `.dockerignore` coverage for common caches, local databases, build outputs, and development artifacts
+- Expanded unit coverage for default template image resolution, optional session template selection, Go shell execution path handling, and ZIP extraction safeguards
+
+### ⚠️ Breaking Changes
+
+- Default template images now use the project `VERSION` as their tag unless overridden by environment variables
+- The image build workflow now supports only the built-in `python-basic` and `multi-language` templates through the shared executor Dockerfile
+- Operators that build the control-plane image directly must use the repository root as the Docker build context so `VERSION` is available in the image
+
+### 📚 Documentation
+
+- Updated README, build documentation, project structure docs, deployment notes, and the multi-language Go execution design to describe the new image layering and SWR push workflow
+
+---
+
+*Released on 2026-05-06*
+
 ## [0.3.3]
 
 ### 🚀 New Features

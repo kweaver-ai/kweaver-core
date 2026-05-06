@@ -2,6 +2,56 @@
 
 本分支 (`feature/803264`) 中新增的所有功能和特性记录如下。
 
+## [0.4.0]
+
+### 🚀 新功能
+
+- **多语言沙箱模板**
+  - 新增内置 `multi-language` 模板，支持 Python、Go、Bash 复合执行环境
+  - 在 multi-language runtime base 中新增 Go `1.25.2`，并将 Go build/module 缓存配置到 `/workspace/.cache`
+  - 调整 executor shell 隔离环境，使 Bubblewrap 与 subprocess 执行路径中都可以直接使用 `go` 命令
+
+- **稳定 Runtime Base 镜像分层**
+  - 新增稳定 Python 与 multi-language runtime base 镜像，只包含系统依赖和语言运行时，不包含 executor 应用代码
+  - 新增基于稳定 base 构建的最终 executor/template 镜像，使最终模板镜像 tag 跟随项目 `VERSION`，重型 runtime 层保持稳定
+  - 新增共享 executor template Dockerfile，并移除旧的按模板拆分 Dockerfile 与旧的直接 executor Dockerfile
+
+- **Base 镜像构建与 SWR 推送流程**
+  - 扩展 `images/build.sh`，支持可选构建 base 镜像、配置 Python 与 multi-language base tag、镜像源、平台和基于 `VERSION` 的模板 tag
+  - 新增通过 Docker Buildx 导出 OCI archive 并使用 `skopeo copy --all` 推送多架构 base 镜像到 SWR 的能力
+  - 新增 SWR registry、namespace、repository、credentials、builder、OCI 输出目录和平台参数配置
+
+### 🐛 问题修复
+
+- **模板镜像版本解析**
+  - 将默认 seed 的模板镜像地址改为跟随 `VERSION`、`TEMPLATE_IMAGE_TAG` 或 `PROJECT_VERSION`，不再固定为 `v1.0.0` 或 `latest`
+  - 新增默认 multi-language 模板 seed 记录，并支持 create-session 请求未传 `template_id` 时使用 `DEFAULT_TEMPLATE_ID`
+
+- **文件上传与压缩包解压安全**
+  - 文件上传大小校验改为读取配置项，不再硬编码 100 MB 限制
+  - 为 ZIP 解压新增文件数量与总解压大小限制
+  - ZIP 解压时拒绝符号链接条目，降低不安全压缩包处理风险
+
+### 🔧 改进
+
+- 调整 control-plane Docker 构建上下文，使镜像内可包含仓库 `VERSION` 文件，用于默认模板 tag 解析
+- 新增 `.dockerignore`，覆盖常见缓存、本地数据库、构建输出和开发环境产物
+- 补充默认模板镜像解析、可选 session template、Go shell 执行路径和 ZIP 解压防护相关单元测试
+
+### ⚠️ 破坏性变更
+
+- 默认模板镜像现在会使用项目 `VERSION` 作为 tag，除非通过环境变量显式覆盖
+- 镜像构建流程现在通过共享 executor Dockerfile 支持内置 `python-basic` 与 `multi-language` 模板
+- 直接构建 control-plane 镜像的运维流程需要使用仓库根目录作为 Docker build context，确保镜像内存在 `VERSION` 文件
+
+### 📚 文档
+
+- 更新 README、构建文档、项目结构文档、部署说明和多语言 Go 执行设计文档，说明新的镜像分层和 SWR 推送流程
+
+---
+
+*发布于 2026-05-06*
+
 ## [0.3.3]
 
 ### 🚀 新功能
