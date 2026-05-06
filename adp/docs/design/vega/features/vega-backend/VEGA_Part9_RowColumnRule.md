@@ -453,20 +453,17 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant 用户
-    participant 前端界面
     participant vega-backend
     participant 权限服务
     participant 数据源
 
-    用户->>前端界面: 请求查询数据
-    前端界面->>vega-backend: API请求 + token
+    用户->>vega-backend: API请求 + token
     vega-backend->>vega-backend: 获取资源详情
     vega-backend->>权限服务: 检查基础权限(resource_id, 'view_detail')
     
     alt 无 view_detail 权限
         权限服务-->>vega-backend: 返回权限错误
-        vega-backend-->>前端界面: 返回权限错误
-        前端界面-->>用户: 显示"无权访问此数据资源"
+        vega-backend-->>用户: 返回权限错误
     else 有 view_detail 权限
         vega-backend->>权限服务: 检查数据查询权限(resource_id, 'data_query')
         
@@ -479,19 +476,16 @@ sequenceDiagram
                 权限服务-->>vega-backend: 返回规则 id 列表
                 vega-backend->>数据源: 执行规则过滤查询
                 数据源-->>vega-backend: 返回过滤后数据
-                vega-backend-->>前端界面: 返回结果
-                前端界面-->>用户: 显示规则过滤数据
+                vega-backend-->>用户: 返回结果
             else 无任何权限
                 权限服务-->>vega-backend: 返回 no_access
-                vega-backend-->>前端界面: 返回权限错误
-                前端界面-->>用户: 显示"无权访问"
+                vega-backend-->>用户: 返回权限错误
             end
         else 有 data_query 权限
             权限服务-->>vega-backend: 返回 true
             vega-backend->>数据源: 执行资源查询
             数据源-->>vega-backend: 返回数据
-            vega-backend-->>前端界面: 返回结果
-            前端界面-->>用户: 显示数据
+            vega-backend-->>用户: 返回结果
         end
     end
 ```
