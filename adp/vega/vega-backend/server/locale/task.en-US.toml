@@ -15,7 +15,7 @@ ErrorLink = "No solution"
 
 [VegaBackend.BuildTask.InvalidParameter.Mode]
 Description = "Invalid build task mode"
-Solution = "Mode must be one of: streaming, batch, embedding"
+Solution = "Mode must be one of: streaming, batch"
 ErrorLink = "No solution"
 
 [VegaBackend.BuildTask.InvalidStateTransition]

@@ -15,7 +15,7 @@ ErrorLink = "暂无"
 
 [VegaBackend.BuildTask.InvalidParameter.Mode]
 Description = "构建任务模式无效"
-Solution = "mode 必须为 streaming / batch / embedding 之一"
+Solution = "mode 必须为 streaming / batch 之一"
 ErrorLink = "暂无"
 
 [VegaBackend.BuildTask.InvalidStateTransition]
