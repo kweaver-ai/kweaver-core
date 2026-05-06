@@ -148,8 +148,15 @@ EOF
         helm_args+=(--set resources.limits.memory="${OPENSEARCH_MEMORY_LIMIT}")
     fi
 
+    kweaver_helm_uninstall_if_not_deployed "${OPENSEARCH_RELEASE_NAME}" "${OPENSEARCH_NAMESPACE}"
+
     helm "${helm_args[@]}"
+    local helm_ec=$?
     rm -f "${tmp_os_yml}" 2>/dev/null || true
+    if [[ "${helm_ec}" -ne 0 ]]; then
+        log_error "OpenSearch Helm install/upgrade failed (exit ${helm_ec})."
+        return 1
+    fi
 
     local service_name="${OPENSEARCH_CLUSTER_NAME}-${OPENSEARCH_NODE_GROUP}"
     log_info "OpenSearch installed successfully"

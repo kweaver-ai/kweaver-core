@@ -38,7 +38,7 @@ KWeaver Core 是面向企业决策智能体的治理优先（harness-first）基
 
 ## 🚀 快速开始
 
-1. **前置与规划** — 阅读 [部署文档](deploy/README.zh.md) 并满足其中前置条件。
+1. **前置与规划** — 阅读 [部署文档](deploy/README.zh.md) 并满足其中前置条件。**正式安装以 Linux 为主**；**macOS** 可选本机 kind 验证见 [Mac 安装（开发向）](deploy/dev/README.zh.md)。
 2. **装机前自检 / 修复：`preflight.sh`**（推荐）
 
    在**安装目标主机**上，安装前先做一次系统体检：内核 / sysctl / containerd / `kubectl` / `helm` / Node / `kweaver` CLI 等，缺什么可按需修（每项默认 y/N 询问，`-y` 全自动）：
@@ -96,9 +96,11 @@ kubectl get pods -A
 
 ```bash
 cd deploy
-bash ./onboard.sh        # 交互模式；或：bash ./onboard.sh -y
-bash ./onboard.sh --help # 所有参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
+sudo bash ./onboard.sh        # 交互模式；或：sudo bash ./onboard.sh -y
+sudo bash ./onboard.sh --help # 所有参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
 ```
+
+   > **为什么要 `sudo`？** `onboard.sh` 会读 `$HOME/.kweaver-ai/config.yaml`（由 `sudo deploy.sh` 写到 `/root/.kweaver-ai/` 下）并把 `kweaver` 认证 token 写到 `$HOME/.kweaver`。不加 `sudo` 会回退到仓库内模板 `deploy/conf/config.yaml`，可能解析出和安装时不一致的 access URL。**macOS 开发路径**（`bash deploy/dev/mac.sh onboard`）**不需要** `sudo`。
 
    可重复运行：脚本会先探测平台已有的模型与 ConfigMap 状态，已注册 / 已配置的会自动跳过。完整流程图、ISF 全量下 `kweaver` 与 `kweaver-admin` 双 CLI 的鉴权说明见 [help/zh/install.md — Post-install：`onboard.sh`](help/zh/install.md#post-installonboardsh安装后引导)。
 

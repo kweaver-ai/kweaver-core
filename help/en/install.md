@@ -2,7 +2,11 @@
 
 This page covers **prerequisites**, **install steps**, and **post-install checks** for KWeaver Core.
 
+> **Platform:** **Linux** is the recommended install target for full stacks (`preflight.sh`, k3s/kubeadm, data services). **macOS** is supported only for **local dev validation** with Docker + **kind** — see [`deploy/dev/README.md`](../../deploy/dev/README.md) ([`README.zh.md`](../../deploy/dev/README.zh.md) in Chinese) and `deploy/dev/mac.sh` (no `preflight.sh` / production parity on the Mac host). Typical flow: start **Docker Desktop** (or any engine that exposes the Docker API), **`bash ./dev/mac.sh cluster up`**, then **`bash ./dev/mac.sh kweaver-core install`** — `install_core` runs **`ensure_data_services`** first (same Helm bundle as `data-services install`) unless **`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`**.
+
 > Use the `deploy.sh` script under the `deploy/` directory from your product bundle or build tree.
+
+> **`deploy.sh` global flags** (`--distro=k3s|k8s`, `-y`, `--force-upgrade`, `--config=…`, …) are parsed only when they appear **before** the module, e.g. `bash ./deploy.sh --distro=k8s kweaver-core install --minimum`. A trailing `... install --minimum --distro=k8s` is **not** applied as distro. Use `export KUBE_DISTRO=k8s` for the same effect, or move `--distro` forward (same rule as `-y` / `--force-upgrade`).
 
 ---
 
@@ -122,11 +126,13 @@ Common flags:
 | `--skip=LIST` | Comma-separated check names to skip |
 | `--report=PATH` | Append the full log to this file |
 | `--output=json` | Emit JSON summary to stdout (human logs to stderr); requires `python3` |
+| `--distro=k8s\|k3s` | Match `deploy.sh`: **k8s** (default, kubeadm stack) runs the stricter kubeadm-oriented checks; **k3s** skips kubeadm-repo/containerd package assumptions. Same as `KUBE_DISTRO`. On **`deploy.sh`**, `--distro` must come **before** the module (see the note at the top of this page). |
 
 Common environment variables:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
+| `KUBE_DISTRO` | `k3s` | Shared with `deploy.sh`: **`k3s`** vs **`k8s`** (kubeadm stack). Legacy `kubeadm` is accepted as an alias for **`k8s`**. Set this when you cannot place `--distro` before the module on `deploy.sh`. |
 | `PREFLIGHT_STRICT` | `true` | When `true`, install-blocking items that `--fix` can resolve are reported as `[FAIL]` (so `--check-only` exits `1`). Set `false` to revert to `[WARN]`. |
 | `PREFLIGHT_STRICT_SOURCES` | `true` | When `true`, also verify `apt-cache policy kubeadm` / `containerd.io` / `containerd` (and the `dnf`/`yum` equivalents) actually return install candidates — `apt-get update` succeeding alone is no longer enough. |
 | `PREFLIGHT_K8S_APT_MINOR` | auto | Pin the `pkgs.k8s.io` minor version (e.g. `v1.28`). Otherwise detected from installed `kubeadm`, falls back to `v1.28`. |
@@ -153,26 +159,26 @@ After `--check-only` or `--fix`, preflight prints a **Summary** (counts per stat
     1. … (each line is one check; the text names the suggested fix, e.g. system-tuning, kernel-limits …)
     …
 
-[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo ./preflight.sh --fix
-[INFO]       Need to bypass strict severity … ? sudo ./preflight.sh --check-only --lenient
+[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo bash ./preflight.sh --fix
+[INFO]       Need to bypass strict severity … ? sudo bash ./preflight.sh --check-only --lenient
 
 ================================================================
   Conclusion
 ================================================================
   … preflight above is NOT all clear — fix that before treating deploy as ready.
   Typical loop:
-    sudo ./preflight.sh --fix          # … (per-item y/N unless -y)
-    sudo ./preflight.sh --check-only   # re-check until blocking [FAIL] are gone (or use --lenient)
+    sudo bash ./preflight.sh --fix          # … (per-item y/N unless -y)
+    sudo bash ./preflight.sh --check-only   # re-check until blocking [FAIL] are gone (or use --lenient)
   Only then install:
-    sudo ./deploy.sh kweaver-core install --minimum
-    sudo ./deploy.sh kweaver-core install
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo ./preflight.sh --fix helps …)
+    sudo bash ./deploy.sh kweaver-core install --minimum
+    sudo bash ./deploy.sh kweaver-core install
+  Finally: sudo bash ./onboard.sh from deploy/ (Linux; macOS dev uses plain bash. Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
 ```
 
 **Notes:**
 
 - **`[FIXED]` stays 0** while there were initial `[FAIL]`s: often means interactive `--fix` was run with **Enter on every prompt** — the default is **no** for each fix. Use **`sudo bash deploy/preflight.sh --fix -y`**, or answer **`y`** where you want a fix applied.
-- **Common Outstanding [FAIL] buckets** (map to fix names): `system-tuning` (forwarding, swap, kernel modules, `overlay`), `kernel-limits` (`vm.max_map_count` / inotify), `nofile-limits` (`ulimit -n`), `k8s-pkgs-repo` + `k8s-bins` (Kubernetes repo and `kubeadm`/`kubectl`), `containerd-install`, `helm-v3`. On **RPM** systems, if **`kubernetes.repo` excludes kube packages**, installs need **`--disableexcludes=kubernetes`**; preflight probes and `install_kubernetes` are aligned with that.
+- **Common Outstanding [FAIL] buckets** (map to fix names): `docker-disable` (stop Docker when it conflicts with k3s / containerd), `system-tuning` (forwarding, swap, kernel modules, `overlay`), `kernel-limits` (`vm.max_map_count` / inotify), `nofile-limits` (`ulimit -n`), `k8s-pkgs-repo` + `k8s-bins` (Kubernetes repo and `kubeadm`/`kubectl`), `containerd-install`, `helm-v3`. On **RPM** systems, if **`kubernetes.repo` excludes kube packages**, installs need **`--disableexcludes=kubernetes`**; preflight probes and `install_kubernetes` are aligned with that.
 - After **`--fix`**, run **`--check-only` again** and only then proceed to **`deploy.sh`**.
 
 For more troubleshooting and manual fallbacks, see **`deploy/README.md` → Troubleshooting**.
@@ -244,12 +250,14 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ## Post-install: `onboard.sh`
 
-After `deploy.sh kweaver-core install`, use **`deploy/onboard.sh`** on a machine with **Node 22+**, **`kubectl`** (cluster access), and **`kweaver`** (`npm i -g @kweaver-ai/kweaver-sdk`). Run from the `deploy/` directory:
+After `deploy.sh kweaver-core install`, use **`deploy/onboard.sh`** on a machine with **Node 22+**, **`kubectl`** (cluster access), and **`kweaver`** (`npm i -g @kweaver-ai/kweaver-sdk`). Run from the `deploy/` directory **with `sudo` on Linux** (matches `sudo deploy.sh`):
 
 ```bash
 cd deploy
-bash ./onboard.sh --help
+sudo bash ./onboard.sh --help
 ```
+
+> **Why `sudo`?** `onboard.sh` reads the install config at `$HOME/.kweaver-ai/config.yaml` (written by `sudo deploy.sh` into `/root/.kweaver-ai/`, mode 700) and writes `kweaver` auth state to `$HOME/.kweaver`. Without `sudo`, the current user's home is consulted instead — and falls back to the vendored template `deploy/conf/config.yaml` if that file does not exist, which may resolve a **different** access URL than the one used at install time. The script prints a yellow `[onboard][hint]` at startup whenever this mismatch is likely; silence with `ONBOARD_SUDO_HINT_DISABLED=1`. **macOS dev path** (`bash deploy/dev/mac.sh onboard`) must **not** use `sudo`: Docker Desktop / `kind` / `$HOME` (install config + `kweaver` token) all belong to the current user, and `sudo` redirects them to `/var/root` — splitting install from onboard. `deploy.sh` already short-circuits `check_root` on `Darwin`, so `sudo` adds nothing on macOS. See [`deploy/dev/README.md`](../../deploy/dev/README.md) · [`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md) for details.
 
 Typical flags:
 
@@ -269,7 +277,7 @@ Typical flags:
 4. **User `test`** (`onboard_offer_isf_test_user`) — created with password `111111` (override with `ONBOARD_TEST_USER_PASSWORD`), every role from `kweaver-admin role list` assigned, then **`kweaver auth login` as `test`** so the SDK session matches the business user for the next steps. If `test` already exists, only role-sync runs.
 5. **Context Loader + model registration** (`onboard_offer_context_loader_toolset` → `kweaver call impex`; then interactive / YAML model registration) — both use **`~/.kweaver` as `test`** (the console `admin` session usually returns `403` on impex).
 
-If any step fails, the script exits non-zero with a clear message; re-run `bash deploy/onboard.sh` after fixing the cause — earlier successful steps are detected and skipped (idempotent re-runs).
+If any step fails, the script exits non-zero with a clear message; re-run `sudo bash deploy/onboard.sh` (Linux) / `bash deploy/onboard.sh` (macOS dev) after fixing the cause — earlier successful steps are detected and skipped (idempotent re-runs).
 
 **Minimum install** (`--minimum`): only `kweaver auth` (often `--no-auth`); the ISF-only steps 2–4 above are no-ops, and Context Loader (step 5) only runs if the operator deployment is present.
 

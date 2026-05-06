@@ -21,6 +21,14 @@ CONF_DIR="${CONF_DIR:-${SCRIPT_DIR}/conf}"
 
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
 
+# Top-level Helm values key `namespace:` from a platform config YAML (same as generate_config_yaml / awk in config.sh).
+# Optional first argument overrides the file path (defaults to CONFIG_YAML_PATH).
+kweaver_values_namespace_from_config() {
+    local cfg="${1:-${CONFIG_YAML_PATH:-}}"
+    [[ -n "${cfg}" && -f "${cfg}" ]] || return 0
+    awk '$1=="namespace:"{print $2; exit}' "${cfg}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' | tr -d '\r'
+}
+
 AUTO_GENERATE_CONFIG="${AUTO_GENERATE_CONFIG:-true}"
 DEFAULT_SQL_VERSION="${DEFAULT_SQL_VERSION:-0.5.0}"
 
@@ -31,21 +39,94 @@ SHARED_CHARTS_DIR="${SHARED_CHARTS_DIR:-${SCRIPT_DIR}/.tmp/charts}"
 # Default namespace for infrastructure components (MariaDB/Redis/Kafka/OpenSearch, etc.)
 RESOURCE_NAMESPACE="${RESOURCE_NAMESPACE:-resource}"
 
-# Generate a random password
-generate_random_password() {
-    local length="${1:-16}"
-    # Use tr to get only alphanumeric characters and some safe special characters
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
+# Cluster bootstrap for ensure_platform_prerequisites (internal: kubeadm | k3s).
+# User-facing env/flags use k8s (default, = kubeadm packages + k8s module) or k3s (single-node lightweight).
+# Legacy: KUBE_DISTRO=kubeadm is still accepted and normalized to kubeadm.
+kweaver_normalize_kube_distro() {
+    local d="${1:-k8s}"
+    case "${d}" in
+        k3s|K3S) printf '%s' "k3s" ;;
+        k8s|K8S|kubeadm|kubernetes|KUBEADM) printf '%s' "kubeadm" ;;
+        *) printf '%s' "kubeadm" ;;
+    esac
 }
 
-# Check if component is already installed in Helm
+KUBE_DISTRO="$(kweaver_normalize_kube_distro "${KUBE_DISTRO:-k8s}")"
+export KUBE_DISTRO
+
+# Generate a random password (alphanumeric). Uses openssl when available; avoids macOS/BSD
+# tr + urandom locale issues ("Illegal byte sequence") via LC_ALL=C.
+generate_random_password() {
+    local length="${1:-16}"
+    local nbytes=$(( (length + 1) / 2 ))
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex "${nbytes}" 2>/dev/null | LC_ALL=C head -c "${length}"
+        return 0
+    fi
+    LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom 2>/dev/null | LC_ALL=C head -c "${length}"
+}
+
+# True only when the release exists and Helm status is **deployed** (not failed/pending-install).
 is_helm_installed() {
     local release="$1"
     local ns="$2"
-    helm list -n "${ns}" --short | grep -q "^${release}$"
+    local out
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 1
+    fi
+    echo "${out}" | grep -q '^STATUS: deployed$'
 }
 
-# Get currently installed chart version for a release.
+# When a release is failed or pending-*, helm upgrade --install often errors with
+# "has no deployed releases". Uninstall the stuck release so install can proceed.
+# Does not set --wait; chart-managed Pods/STS may be removed; PVCs typically remain.
+kweaver_helm_uninstall_if_not_deployed() {
+    local release="$1"
+    local ns="$2"
+    local out st
+    if ! out="$(helm status "${release}" -n "${ns}" 2>/dev/null)"; then
+        return 0
+    fi
+    st="$(echo "${out}" | grep '^STATUS:' | head -1 | awk '{print $2}')"
+    if [[ "${st}" == "deployed" ]]; then
+        return 0
+    fi
+    log_warn "Helm release '${release}' in ${ns} is ${st:-unknown}; uninstalling so install can retry (data PVs are usually kept)."
+    helm uninstall "${release}" -n "${ns}" 2>/dev/null || true
+}
+
+# Bundled Bitnami charts (Kafka, etc.) embed bitnami/common templates that require a current Helm 3.x
+# (older clients may parse templates as empty → Helm error "no objects visited").
+KWEAVER_HELM_MIN_SEMVER="${KWEAVER_HELM_MIN_SEMVER:-3.10.0}"
+
+kweaver_semver_ge() {
+    local have="$1"
+    local need="$2"
+    [[ -n "${have}" && -n "${need}" ]] || return 1
+    [[ "$(printf '%s\n' "${need}" "${have}" | sort -V | head -1)" == "${need}" ]]
+}
+
+kweaver_helm_client_semver() {
+    local raw
+    raw="$(helm version 2>/dev/null || true)"
+    # Typical: version.BuildInfo{Version:"v3.19.0", ...}
+    printf '%s' "${raw}" | grep -oE 'Version:"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true
+}
+
+kweaver_require_helm_min_for_bitnami() {
+    local cur
+    cur="$(kweaver_helm_client_semver)"
+    if [[ -z "${cur}" ]]; then
+        log_error "Could not parse Helm client version. Install Helm ${KWEAVER_HELM_MIN_SEMVER}+ (e.g. macOS: brew upgrade helm)."
+        return 1
+    fi
+    if kweaver_semver_ge "${cur}" "${KWEAVER_HELM_MIN_SEMVER}"; then
+        return 0
+    fi
+    log_error "Helm ${cur} is too old for bundled data-service charts (Kafka/OpenSearch use Bitnami common; need >= ${KWEAVER_HELM_MIN_SEMVER})."
+    log_error "Fix (macOS): brew install helm && hash -r   — or put a newer helm before stale /usr/local/bin/helm in PATH."
+    return 1
+}
 # Args: <release_name> <namespace> [chart_name]
 get_installed_chart_version() {
     local release_name="$1"
@@ -235,17 +316,33 @@ download_chart_to_cache() {
         --destination "${charts_dir}"
 }
 
+# Bash 3.2–safe substitute for mapfile -t arr < <(cmd) (mapfile needs bash 4+).
+# Usage: kweaver_mapfile_compat <array_name> <command> [args...]
+# Runs <command args...> and stores non-empty lines into the named array.
+kweaver_mapfile_compat() {
+    local _dst="$1"
+    shift
+    local _lines=()
+    local _l
+    while IFS= read -r _l || [[ -n "${_l}" ]]; do
+        [[ -n "${_l}" ]] && _lines+=("${_l}")
+    done < <("$@")
+    eval "${_dst}=(\"\${_lines[@]}\")"
+}
+
 # Ensure a Helm repo is registered and refreshed.
 # Args: <repo_name> <repo_url>
 ensure_helm_repo() {
     local repo_name="$1"
     local repo_url="$2"
-    helm repo add --force-update "${repo_name}" "${repo_url}" || true
-    helm repo update "${repo_name}" || true
+    # Avoid helm repo add --force-update (not supported on some Helm 4 / builds). Idempotent refresh.
+    helm repo remove "${repo_name}" 2>/dev/null || true
+    helm repo add "${repo_name}" "${repo_url}" || return 1
+    helm repo update 2>/dev/null || true
 }
 
-# Ensure helm is available AND is Helm v3 before running chart download / install.
-# All deploy charts use v3-only flags (e.g. --timeout=600s, duration syntax).
+# Ensure helm is available AND is Helm v3+ before running chart download / install.
+# All deploy charts use v3+ style flags (e.g. --timeout=600s, duration syntax).
 # A pre-existing Helm v2 on the host will explode with confusing errors like
 #   invalid argument "600s" for "--timeout" flag: strconv.ParseInt: parsing "600s": invalid syntax
 # So we explicitly upgrade out-of-spec installs (v2 or missing) to ${HELM_VERSION}.
@@ -258,11 +355,11 @@ ensure_helm_available() {
             existing="$(helm version --short --client 2>/dev/null | awk -F': ' 'NR==1{print $2}' | awk '{print $1}' | cut -d'+' -f1 || true)"
         fi
         case "${existing}" in
-            v3.*)
+            v3.*|v4.*)
                 return 0
                 ;;
             v2.*)
-                log_warn "Helm ${existing} detected; this deploy requires Helm v3 (charts use v3-only --timeout duration syntax). Re-installing ${HELM_VERSION}..."
+                log_warn "Helm ${existing} detected; this deploy requires Helm v3+ (charts use --timeout duration syntax). Re-installing ${HELM_VERSION}..."
                 install_helm
                 return $?
                 ;;
@@ -774,6 +871,34 @@ get_existing_password() {
     fi
 }
 
+# Name of the StorageClass marked default (storageclass.kubernetes.io/is-default-class=true), or empty.
+kweaver_kubectl_default_storage_class() {
+    if ! command -v kubectl >/dev/null 2>&1; then
+        return 0
+    fi
+    kubectl get storageclass -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}' 2>/dev/null || true
+}
+
+# proton-redis: honor REDIS_STORAGE_CLASS; otherwise prefer cluster default SC (matches kind/docker-desktop),
+# then "local-path" only if that StorageClass exists (rancher/k3s-style).
+kweaver_resolve_redis_storage_class() {
+    if [[ -n "${REDIS_STORAGE_CLASS:-}" ]]; then
+        printf '%s' "${REDIS_STORAGE_CLASS}"
+        return 0
+    fi
+    local def
+    def="$(kweaver_kubectl_default_storage_class)"
+    if [[ -n "${def}" ]]; then
+        printf '%s' "${def}"
+        return 0
+    fi
+    if kubectl get storageclass local-path &>/dev/null 2>&1; then
+        printf '%s' 'local-path'
+        return 0
+    fi
+    printf '%s' 'local-path'
+}
+
 resolve_sql_version() {
     local requested_version="${1:-}"
     if [[ -n "${requested_version}" ]]; then
@@ -951,6 +1076,7 @@ REDIS_IMAGE_REGISTRY="${REDIS_IMAGE_REGISTRY:-}"
 REDIS_IMAGE_REPOSITORY="${REDIS_IMAGE_REPOSITORY:-proton/proton-redis}"
 REDIS_IMAGE_TAG="${REDIS_IMAGE_TAG:-1.11.2-20251029.2.169ac3c0}"
 REDIS_PERSISTENCE_ENABLED="${REDIS_PERSISTENCE_ENABLED:-true}"
+# Empty: pick cluster default StorageClass (e.g. kind "standard"); else local-path if that SC exists; else local-path.
 REDIS_STORAGE_CLASS="${REDIS_STORAGE_CLASS:-}"
 REDIS_PURGE_PVC="${REDIS_PURGE_PVC:-true}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-}"
@@ -958,6 +1084,61 @@ REDIS_STORAGE_SIZE="${REDIS_STORAGE_SIZE:-5Gi}"
 REDIS_MASTER_GROUP_NAME="${REDIS_MASTER_GROUP_NAME:-mymaster}"
 REDIS_REPLICA_COUNT="${REDIS_REPLICA_COUNT:-1}"
 REDIS_SENTINEL_QUORUM="${REDIS_SENTINEL_QUORUM:-1}"
+# Auto-patch StatefulSet to self-heal ACL drift on Pod restart; set false to opt out.
+REDIS_AUTO_PATCH_ACL="${REDIS_AUTO_PATCH_ACL:-true}"
+# Resource overrides for the proton-redis chart. Empty = don't pass --set, keep chart defaults
+# (chart default: redis.maxmemory=4GB, resources.requests=cpu 100m/memory 512Mi, no limits).
+# Lower defaults for resource-constrained environments are layered on top:
+#   - mac dev: see deploy/dev/lib/mac_common.sh (mac_common_init)
+#   - k3s    : see kweaver_apply_k3s_lightweight_defaults below (KUBE_DISTRO=k3s)
+# Note: only the `redis` container gets these resources; the chart template does not wire
+# `resources` into the sentinel/exporter sidecars.
+REDIS_MAXMEMORY="${REDIS_MAXMEMORY:-}"
+REDIS_MEMORY_REQUEST="${REDIS_MEMORY_REQUEST:-}"
+REDIS_MEMORY_LIMIT="${REDIS_MEMORY_LIMIT:-}"
+REDIS_CPU_REQUEST="${REDIS_CPU_REQUEST:-}"
+REDIS_CPU_LIMIT="${REDIS_CPU_LIMIT:-}"
+
+# Apply lightweight defaults for single-node k3s (only fills values the user has not set).
+# Called once below so k8s/kubeadm path is untouched.
+kweaver_apply_k3s_lightweight_defaults() {
+    [[ "${KUBE_DISTRO}" == "k3s" ]] || return 0
+    # redis (chart default 4GB / 512Mi req)
+    : "${REDIS_MAXMEMORY:=1gb}"
+    : "${REDIS_MEMORY_REQUEST:=256Mi}"
+    : "${REDIS_MEMORY_LIMIT:=512Mi}"
+    : "${REDIS_CPU_REQUEST:=50m}"
+    # opensearch (k8s default below: req=512Mi, lim=2048Mi)
+    : "${OPENSEARCH_MEMORY_REQUEST:=512Mi}"
+    : "${OPENSEARCH_MEMORY_LIMIT:=1024Mi}"
+    # zookeeper (k8s default below: req cpu=500m mem=1Gi, lim cpu=1 mem=2Gi, jvm 500m)
+    # Note: chart hard-codes a zookeeper-exporter sidecar at req/lim 100m/100Mi (no knob).
+    : "${ZOOKEEPER_RESOURCES_REQUESTS_CPU:=50m}"
+    : "${ZOOKEEPER_RESOURCES_REQUESTS_MEMORY:=128Mi}"
+    : "${ZOOKEEPER_RESOURCES_LIMITS_CPU:=500m}"
+    : "${ZOOKEEPER_RESOURCES_LIMITS_MEMORY:=384Mi}"
+    : "${ZOOKEEPER_JVMFLAGS:=-Xms128m -Xmx192m}"
+    # kweaver-core app services (chart defaults: limits=4-8Gi, mostly request=0)
+    # Loose ceiling so heavier services (agent-retrieval, ontology-query) still have headroom.
+    : "${KWEAVER_CORE_REQ_CPU:=100m}"
+    : "${KWEAVER_CORE_REQ_MEM:=128Mi}"
+    : "${KWEAVER_CORE_LIM_CPU:=2}"
+    : "${KWEAVER_CORE_LIM_MEM:=2Gi}"
+    # ISF (Information Security Fabric) charts (chart defaults: limits 1-8Gi, some unset).
+    # Same uniform ceiling as core; auth-heavy services rarely need more in dev.
+    : "${KWEAVER_ISF_REQ_CPU:=100m}"
+    : "${KWEAVER_ISF_REQ_MEM:=128Mi}"
+    : "${KWEAVER_ISF_LIM_CPU:=2}"
+    : "${KWEAVER_ISF_LIM_MEM:=2Gi}"
+    export REDIS_MAXMEMORY REDIS_MEMORY_REQUEST REDIS_MEMORY_LIMIT REDIS_CPU_REQUEST \
+           OPENSEARCH_MEMORY_REQUEST OPENSEARCH_MEMORY_LIMIT \
+           ZOOKEEPER_RESOURCES_REQUESTS_CPU ZOOKEEPER_RESOURCES_REQUESTS_MEMORY \
+           ZOOKEEPER_RESOURCES_LIMITS_CPU ZOOKEEPER_RESOURCES_LIMITS_MEMORY \
+           ZOOKEEPER_JVMFLAGS \
+           KWEAVER_CORE_REQ_CPU KWEAVER_CORE_REQ_MEM KWEAVER_CORE_LIM_CPU KWEAVER_CORE_LIM_MEM \
+           KWEAVER_ISF_REQ_CPU KWEAVER_ISF_REQ_MEM KWEAVER_ISF_LIM_CPU KWEAVER_ISF_LIM_MEM
+}
+kweaver_apply_k3s_lightweight_defaults
 
 # Kafka Configuration
 KAFKA_NAMESPACE="${KAFKA_NAMESPACE:-${RESOURCE_NAMESPACE}}"
@@ -1149,6 +1330,37 @@ k8s_is_running() {
     return 1
 }
 
+# Idempotent single-node k3s path: Helm + k3s (built-in CNI/storage/DNS) + ingress-nginx.
+# Requires deploy.sh to source scripts/services/k3s.sh before this runs.
+ensure_k3s() {
+    if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    if k3s_is_running; then
+        log_info "k3s cluster detected, skipping k3s installation."
+        if [[ -f /root/.kube/config ]]; then
+            export KUBECONFIG=/root/.kube/config
+        elif [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        fi
+        export KWEAVER_K8S_ENSURED="true"
+        return 0
+    fi
+
+    log_info "No running k3s cluster detected. Installing k3s first..."
+    check_root
+    install_helm || return 1
+    install_k3s || return 1
+
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX}" == "true" ]]; then
+        install_ingress_nginx || return 1
+    fi
+
+    export KWEAVER_K8S_ENSURED="true"
+    log_info "k3s-based platform bootstrap completed."
+}
+
 ensure_k8s() {
     if [[ "${KWEAVER_K8S_ENSURED:-false}" == "true" ]]; then
         return 0
@@ -1210,12 +1422,66 @@ ensure_data_services() {
     export KWEAVER_DATA_SERVICES_ENSURED="true"
 }
 
+# Delete Kubernetes Job objects in a namespace whose names match an ERE (grep -E).
+# Completed Helm hooks / migrator Jobs often keep pods until the Job is deleted when TTL is unset.
+kweaver_delete_jobs_name_match_ere_in_ns() {
+    local ns="$1"
+    local ere="$2"
+    [[ -z "${ns}" ]] || [[ -z "${ere}" ]] && return 0
+    if ! kubectl get namespace "${ns}" >/dev/null 2>&1; then
+        return 0
+    fi
+    local j
+    while IFS= read -r j; do
+        [[ -z "${j}" ]] && continue
+        log_info "Deleting leftover job '${j}' in namespace ${ns}"
+        kubectl delete job "${j}" -n "${ns}" --ignore-not-found >/dev/null 2>&1 || true
+    done < <(kubectl get jobs -n "${ns}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -E "${ere}" || true)
+}
+
+# Uninstall bundled MariaDB / Redis / Kafka / ZooKeeper / OpenSearch (and ingress-nginx when
+# AUTO_INSTALL_INGRESS_NGINX is true), reverse of ensure_data_services. Continues past individual
+# failures so partially-missing installs still get cleaned up. Remaining argv is passed only to
+# mariadb uninstall (e.g. --delete-data / MARIADB_PURGE_PVC); other stacks use existing env knobs.
+uninstall_platform_data_services() {
+    log_info "Uninstalling bundled platform data services..."
+    uninstall_opensearch || true
+    if [[ "${AUTO_INSTALL_INGRESS_NGINX:-true}" == "true" ]]; then
+        uninstall_ingress_nginx || true
+    fi
+    uninstall_kafka || true
+    uninstall_zookeeper || true
+    uninstall_redis || true
+    uninstall_mariadb "$@" || true
+    local rns="${RESOURCE_NAMESPACE:-resource}"
+    kweaver_delete_jobs_name_match_ere_in_ns "${rns}" '(^|[-/])(kafka|zookeeper|opensearch|mariadb|redis)(-|$)|migrator|data-migrator'
+    log_info "Bundled platform data services uninstall finished (PVC defaults unchanged; MariaDB accepts --delete-data)."
+}
+
 ensure_platform_prerequisites() {
     if [[ "${KWEAVER_PLATFORM_PREREQUISITES_DONE:-false}" == "true" ]]; then
         return 0
     fi
 
-    ensure_k8s || return 1
+    # Mac / bring-your-own-cluster: skip k3s/kubeadm + bundled data services (e.g. deploy/dev/mac.sh + kind).
+    if [[ "${KWEAVER_SKIP_PLATFORM_BOOTSTRAP:-false}" == "true" ]]; then
+        export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
+        return 0
+    fi
+
+    case "${KUBE_DISTRO:-kubeadm}" in
+        k3s)
+            ensure_k3s || return 1
+            ;;
+        kubeadm)
+            ensure_k8s || return 1
+            ;;
+        *)
+            log_error "Unknown KUBE_DISTRO='${KUBE_DISTRO}' after normalization. Expected internal 'kubeadm' (default) or 'k3s' (set KUBE_DISTRO=k8s or k3s)."
+            return 1
+            ;;
+    esac
+
     ensure_data_services || return 1
 
     export KWEAVER_PLATFORM_PREREQUISITES_DONE="true"
@@ -1248,6 +1514,16 @@ get_access_address_base_url() {
     fi
 
     scheme="${scheme:-https}"
+
+    # Omit default ports in the canonical base URL — some ingress backends and CLI
+    # flows treat ":80"/":443" differently from implicit defaults (routing / probes).
+    if [[ -n "${port}" ]] && [[ "${scheme}" =~ ^[Hh][Tt][Tt][Pp]$ ]] && [[ "${port}" == "80" ]]; then
+        port=""
+    fi
+    if [[ -n "${port}" ]] && [[ "${scheme}" =~ ^[Hh][Tt][Tt][Pp][Ss]$ ]] && [[ "${port}" == "443" ]]; then
+        port=""
+    fi
+
     path="${path:-/}"
     if [[ "${path}" != /* ]]; then
         path="/${path}"
@@ -1300,10 +1576,10 @@ get_dip_studio_openclaw_field() {
 
 random_password() {
     if command -v openssl >/dev/null 2>&1; then
-        openssl rand -base64 18 | tr -d '\n'
+        openssl rand -base64 18 2>/dev/null | LC_ALL=C tr -d '\n'
         return 0
     fi
-    head -c 32 /dev/urandom | base64 | tr -d '\n' | head -c 24
+    LC_ALL=C head -c 32 /dev/urandom 2>/dev/null | base64 | LC_ALL=C tr -d '\n' | LC_ALL=C head -c 24
 }
 
 # Quote a string for YAML single-quoted scalars.

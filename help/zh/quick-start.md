@@ -1,8 +1,8 @@
 # 🚀 快速开始
 
-以下步骤假设 KWeaver Core 已按 [安装与部署](install.md) 文档完成安装及文中的安装后检查。
+以下步骤假设 KWeaver Core 已按 [安装与部署](install.md) 文档完成安装及文中的安装后检查。**完整安装以 Linux 为主**；可选 **macOS** + kind 流程见 [`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md)（[English](../../deploy/dev/README.md)）。
 
-> 新主机安装前，先在目标机上跑 **`sudo bash deploy/preflight.sh`**（仅检查 / 加 `--fix`）确认内核、sysctl、containerd、kubectl、helm、Node 与 `kweaver` CLI 都齐了；`deploy.sh kweaver-core install` 之后，再跑 **`bash deploy/onboard.sh`** 完成 LLM + embedding 注册、按需 patch BKN ConfigMap（仅在默认变化时执行），完整安装下还会建好业务用户 **`test`** 并导入 Context Loader 工具集。两者详见 [安装与部署 — 装机前体检：`preflight.sh`](install.md#-装机前体检--修复preflightsh) 与 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
+> 新主机安装前，先在目标机上跑 **`sudo bash deploy/preflight.sh`**（仅检查 / 加 `--fix`）确认内核、sysctl、containerd、kubectl、helm、Node 与 `kweaver` CLI 都齐了；`deploy.sh kweaver-core install` 之后，再跑 **`sudo bash deploy/onboard.sh`**（Linux，与 `sudo deploy.sh` 对齐；macOS 开发路径用普通 `bash`）完成 LLM + embedding 注册、按需 patch BKN ConfigMap（仅在默认变化时执行），完整安装下还会建好业务用户 **`test`** 并导入 Context Loader 工具集。两者详见 [安装与部署 — 装机前体检：`preflight.sh`](install.md#-装机前体检--修复preflightsh) 与 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
 
 ---
 
@@ -28,9 +28,12 @@ npm install -g @kweaver-ai/kweaver-sdk
 
 ```bash
 cd deploy
-bash ./onboard.sh        # 交互模式
-bash ./onboard.sh -y     # 非交互（按默认）
+sudo bash ./onboard.sh        # 交互模式（Linux，与 sudo deploy.sh 对齐）
+sudo bash ./onboard.sh -y     # 非交互（按默认）
+# macOS 开发路径： bash ./dev/mac.sh onboard       # 无需 sudo
 ```
+
+> 加 `sudo` 是为了让 `onboard.sh` 读到 `sudo deploy.sh` 写到 `/root/.kweaver-ai/config.yaml` 的同一份 `$HOME/.kweaver-ai/config.yaml`，并把 `kweaver` 认证状态写到同一个 `$HOME/.kweaver`；macOS dev 用普通 `bash` 即可。详见 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
 
 跑完之后通常**什么都不用再做**，直接进入下节「[登录平台](#-登录平台)」；只需在新机器上重新登录即可。完整流程见 [安装与部署 — Post-install：`onboard.sh`](install.md#post-installonboardsh安装后引导)。
 
@@ -99,7 +102,7 @@ kweaver call '/api/agent-operator-integration/v1/tool-box/list?name=contextloade
 
 **不配模型也能走完数据源接入、知识网络创建和条件查询。** 语义搜索和 Agent 对话分别需要 Embedding 和 LLM。
 
-**推荐路径**：跑 `bash deploy/onboard.sh`，它会**交互式**询问你要不要注册 LLM / Embedding，并在新增 Embedding 时按需 patch BKN ConfigMap 自动启用语义搜索；非交互场景用 `bash deploy/onboard.sh --config=models.yaml`（参考 `deploy/conf/models.yaml.example`）。已存在的模型会自动跳过，可重复运行。
+**推荐路径**：跑 `sudo bash deploy/onboard.sh`（macOS dev：`bash deploy/dev/mac.sh onboard`），它会**交互式**询问你要不要注册 LLM / Embedding，并在新增 Embedding 时按需 patch BKN ConfigMap 自动启用语义搜索；非交互场景用 `sudo bash deploy/onboard.sh --config=models.yaml`（参考 `deploy/conf/models.yaml.example`）。已存在的模型会自动跳过，可重复运行。
 
 **手工方式**：见 [模型管理](model.md)，注册 Embedding 后还需 [启用 BKN 语义搜索](model.md#启用-bkn-语义搜索)。
 

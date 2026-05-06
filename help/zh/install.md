@@ -2,7 +2,11 @@
 
 本页说明 KWeaver Core 的**环境要求**、**部署步骤**与**安装后检查**。
 
+> **平台：** **Linux** 是完整安装（`preflight.sh`、k3s/kubeadm、数据服务等）的**推荐**目标环境。**macOS** 仅适合用 Docker + **kind** 做**本机开发/验证** —— 见 **[`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md)**（[English](../../deploy/dev/README.md)）与 `deploy/dev/mac.sh`（Mac 上不跑 `preflight.sh`，也与生产环境不对齐）。常见顺序：先起 **Docker Desktop**（或任意提供 Docker API 的引擎），再 **`bash ./dev/mac.sh cluster up`**，然后 **`bash ./dev/mac.sh kweaver-core install`**；当前 **`kweaver-core install` 会先执行 `ensure_data_services`**（与单独 **`data-services install`** 一致），除非设置 **`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`**。
+
 > 📌 安装通过产品包或源码中的 `deploy/` 目录下的 `deploy.sh` 脚本完成。
+
+> **`deploy.sh` 全局参数**（`--distro=k3s|k8s`、`-y`、`--force-upgrade`、`--config=…` 等）只有写在**模块名之前**才会生效，例如 `bash ./deploy.sh --distro=k8s kweaver-core install --minimum`。写成 `... install --minimum --distro=k8s` **不会**按全局参数解析。可改用 `export KUBE_DISTRO=k8s` 再执行安装命令，或把 `--distro` 挪到前面（与 `-y`、`--force-upgrade` 一致）。
 
 ---
 
@@ -123,11 +127,13 @@ sudo bash deploy/preflight.sh --help         # 全部参数
 | `--skip=LIST` | 跳过指定检查项 |
 | `--report=PATH` | 完整日志追加到该文件 |
 | `--output=json` | 以 JSON 输出到 stdout（人类日志到 stderr，需 `python3`） |
+| `--distro=k8s\|k3s` | 与 `deploy.sh` 对齐：**k8s**（默认，kubeadm 栈）走 kubeadm 向的严格检查；**k3s** 放宽 kubeadm 源/系统 containerd 等假设。等同 `KUBE_DISTRO`。在 **`deploy.sh`** 上 `--distro` 须写在**模块名之前**（见本页开头说明）。 |
 
 常用环境变量：
 
 | 变量 | 默认 | 作用 |
 | --- | --- | --- |
+| `KUBE_DISTRO` | `k3s` | 与 `deploy.sh` 共用：**`k3s`** 与 **`k8s`**（kubeadm 栈）。历史值 **`kubeadm`** 仍可作为 **`k8s`** 的别名。若不能把 `deploy.sh` 的 `--distro` 写在模块前，可改用本变量。 |
 | `PREFLIGHT_STRICT` | `true` | 为 `true` 时，`--fix` 能修复的「阻塞 install」项以 `[FAIL]` 报告（让 `--check-only` 退出码为 `1`）；设 `false` 退回 `[WARN]`。 |
 | `PREFLIGHT_STRICT_SOURCES` | `true` | 为 `true` 时，会额外验证 `apt-cache policy kubeadm` / `containerd.io` / `containerd`（以及 `dnf`/`yum` 等价命令）确实有安装候选——光 `apt-get update` 成功不算数。 |
 | `PREFLIGHT_K8S_APT_MINOR` | 自动 | 锁定 `pkgs.k8s.io` minor 版本（如 `v1.28`）。否则从已装的 `kubeadm` 推断，回退 `v1.28`。 |
@@ -154,26 +160,26 @@ sudo bash deploy/preflight.sh --help         # 全部参数
     1. …（每条对应一项检查；说明里会写建议的修复名，如 system-tuning、kernel-limits …）
     …
 
-[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo ./preflight.sh --fix
-[INFO]       Need to bypass strict severity … ? sudo ./preflight.sh --check-only --lenient
+[INFO] Hint: most install-blocking [FAIL] items are auto-fixable — re-run: sudo bash ./preflight.sh --fix
+[INFO]       Need to bypass strict severity … ? sudo bash ./preflight.sh --check-only --lenient
 
 ================================================================
   Conclusion
 ================================================================
   No KWeaver releases detected, but preflight above is NOT all clear — fix that before treating deploy as ready.
   Typical loop:
-    sudo ./preflight.sh --fix          # …（默认每项 y/N；加 -y 全自动）
-    sudo ./preflight.sh --check-only   # 再检查直到关键 [FAIL] 消失（或配合 --lenient）
+    sudo bash ./preflight.sh --fix          # …（默认每项 y/N；加 -y 全自动）
+    sudo bash ./preflight.sh --check-only   # 再检查直到关键 [FAIL] 消失（或配合 --lenient）
   Only then install:
-    sudo ./deploy.sh kweaver-core install --minimum    # 体验 / 最小化
-    sudo ./deploy.sh kweaver-core install              # 完整安装
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo ./preflight.sh --fix helps …)
+    sudo bash ./deploy.sh kweaver-core install --minimum    # 体验 / 最小化
+    sudo bash ./deploy.sh kweaver-core install              # 完整安装
+  Finally: sudo bash ./onboard.sh from deploy/ (Linux；macOS dev 用普通 bash。Node 22+ + kweaver on PATH；sudo bash ./preflight.sh --fix helps …)
 ```
 
 **说明：**
 
 - **`[FIXED]` 为 0** 但一开始有 `[FAIL]`：常见于交互式 `--fix` 时**全部按了 Enter**，默认选项为 **「不应用该项修复」（N）**；需要 **`sudo bash deploy/preflight.sh --fix -y`**，或在每个提示处输入 **`y`**。
-- **常见 Outstanding [FAIL] 类别**（与修复名大致对应）：`system-tuning`（转发、swap、内核模块、`overlay` 等）、`kernel-limits`（`vm.max_map_count` / inotify）、`nofile-limits`（`ulimit -n`）、`k8s-pkgs-repo` + `k8s-bins`（Kubernetes 源与 `kubeadm`/`kubectl`）、`containerd-install`、`helm-v3`。RPM 系若 **`kubernetes.repo` 对 kube 包设置了 `exclude`**，安装侧需 **`--disableexcludes=kubernetes`**，preflight 与脚本的探测/安装语义已对齐）。
+- **常见 Outstanding [FAIL] 类别**（与修复名大致对应）：`docker-disable`（与 k3s / containerd 冲突时停 Docker）、`system-tuning`（转发、swap、内核模块、`overlay` 等）、`kernel-limits`（`vm.max_map_count` / inotify）、`nofile-limits`（`ulimit -n`）、`k8s-pkgs-repo` + `k8s-bins`（Kubernetes 源与 `kubeadm`/`kubectl`）、`containerd-install`、`helm-v3`。RPM 系若 **`kubernetes.repo` 对 kube 包设置了 `exclude`**，安装侧需 **`--disableexcludes=kubernetes`**，preflight 与脚本的探测/安装语义已对齐）。
 - **`--fix` 后务必再跑一次 `--check-only`**，确认关键项已为 `[OK]` 再执行 **`deploy.sh`**。
 
 更细的故障条目与手动兜底见 **`deploy/README.zh.md` → Troubleshooting**。
@@ -247,12 +253,14 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ## Post-install：`onboard.sh`（安装后引导）
 
-在 `deploy.sh kweaver-core install` 之后，可在能访问集群的机器上运行 **`deploy/onboard.sh`**，需 **Node 22+**、**kubectl**、**kweaver**（`npm i -g @kweaver-ai/kweaver-sdk`）。在 **`deploy/`** 目录执行：
+在 `deploy.sh kweaver-core install` 之后，可在能访问集群的机器上运行 **`deploy/onboard.sh`**，需 **Node 22+**、**kubectl**、**kweaver**（`npm i -g @kweaver-ai/kweaver-sdk`）。在 **`deploy/`** 目录执行，**Linux 上需要 `sudo`**（与 `sudo deploy.sh` 对齐）：
 
 ```bash
 cd deploy
-bash ./onboard.sh --help
+sudo bash ./onboard.sh --help
 ```
+
+> **为什么要 `sudo`？** `onboard.sh` 读安装期写下的 `$HOME/.kweaver-ai/config.yaml`（`sudo deploy.sh` 会写到 `/root/.kweaver-ai/`，权限 700），并把 `kweaver` 认证状态写到 `$HOME/.kweaver`。不加 `sudo` 时读到的是当前用户的 home——若该用户没有这个文件就会回退到仓库内模板 `deploy/conf/config.yaml`，**可能解析出和安装时不一致的 access URL**。命中此路径时脚本启动会打印黄色的 `[onboard][hint]`；可用 `ONBOARD_SUDO_HINT_DISABLED=1` 关闭。**macOS 开发路径**（`bash deploy/dev/mac.sh onboard`）**不要**加 `sudo`：Docker Desktop / `kind` / `$HOME` 都属于当前用户，`sudo` 会把它们重定向到 `/var/root` 并割裂安装与 onboard；`deploy.sh` 在 `Darwin` 上已跳过 root 检查。详见 [`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md) · [`deploy/dev/README.md`](../../deploy/dev/README.md)。
 
 常用参数：
 
@@ -272,7 +280,7 @@ bash ./onboard.sh --help
 4. **业务用户 `test`**（`onboard_offer_isf_test_user`）— 创建 `test`，密码 `111111`（可用 `ONBOARD_TEST_USER_PASSWORD` 覆盖），把 `kweaver-admin role list` 中**所有**角色都挂上，然后 **`kweaver auth login` 为 `test`**，让 SDK 会话切到业务用户，供后续步骤使用。若 `test` 已存在，则只做角色同步。
 5. **Context Loader + 模型注册**（`onboard_offer_context_loader_toolset` → `kweaver call impex`；随后是交互式或 YAML 模型注册）— 都使用**以 `test` 登录的 `kweaver`（`~/.kweaver`）**；仅 **admin** 的 `kweaver` 会话对 impex 常见 **403**。
 
-任何一步失败脚本都会非零退出并打印清楚原因；修好之后重跑 `bash deploy/onboard.sh` 即可——已成功的步骤会被检测并跳过（重复运行幂等）。
+任何一步失败脚本都会非零退出并打印清楚原因；修好之后重跑 `sudo bash deploy/onboard.sh`（Linux）/ `bash deploy/onboard.sh`（macOS dev）即可——已成功的步骤会被检测并跳过（重复运行幂等）。
 
 **最小化安装**（`--minimum`）：通常只需 `kweaver`（常为 `--no-auth`）；上述 ISF 专属步骤 2–4 会被自动跳过，第 5 步的 Context Loader 仅在集群中确实有 operator deployment 时才执行。
 

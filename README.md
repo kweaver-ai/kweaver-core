@@ -38,7 +38,7 @@ Want to have an intuitive experience of the core functions of KWeaver DIP? Click
 
 ## 🚀 Quick Start
 
-1. **Prerequisites & planning** — read the [Deployment Guide](deploy/README.md) and satisfy its prerequisites.
+1. **Prerequisites & planning** — read the [Deployment Guide](deploy/README.md) and satisfy its prerequisites. **Linux** is the supported target for full installs; **macOS** local dev (kind) is optional — see [Mac install (dev)](deploy/dev/README.md) ([中文](deploy/dev/README.zh.md)).
 2. **Pre-install host check / fix with `preflight.sh`** (recommended)
 
    On the **target install host**, run a system check before `deploy.sh`. It verifies kernel / sysctl / containerd / `kubectl` / `helm` / Node / `kweaver` CLIs and can fix what's missing (each fix is opt-in unless `-y`):
@@ -97,9 +97,11 @@ kubectl get pods -A
 
 ```bash
 cd deploy
-bash ./onboard.sh        # interactive; or:  bash ./onboard.sh -y
-bash ./onboard.sh --help # all flags (--config=models.yaml, --enable-bkn-search, --skip-context-loader, …)
+sudo bash ./onboard.sh        # interactive; or:  sudo bash ./onboard.sh -y
+sudo bash ./onboard.sh --help # all flags (--config=models.yaml, --enable-bkn-search, --skip-context-loader, …)
 ```
+
+   > **Why `sudo`?** `onboard.sh` reads `$HOME/.kweaver-ai/config.yaml` (written by `sudo deploy.sh` into `/root/.kweaver-ai/`) and writes the `kweaver` auth token to `$HOME/.kweaver`. Running it without `sudo` falls back to the in-repo template `deploy/conf/config.yaml` and may resolve a different access URL. **macOS dev path** (`bash deploy/dev/mac.sh onboard`) does **not** need `sudo`.
 
    Re-runs are safe: existing models / BKN defaults are detected and skipped. For the full sequence, the Mermaid flow, and the `kweaver` / `kweaver-admin` two-CLI authentication notes (full ISF), see [help/en/install.md — Post-install: `onboard.sh`](help/en/install.md#post-install-onboardsh).
 

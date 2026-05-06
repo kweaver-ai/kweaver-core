@@ -212,11 +212,41 @@ onboard_offer_context_loader_toolset() {
         log_info "Context Loader: not a TTY — skipping import. Re-run: ./onboard.sh -y  or run manually (see help)."
         return 0
     fi
+
+    # Pre-flight list check (same box_id/bd as importer): avoids a redundant "Import now?" when the toolbox already exists.
+    local _pre_meta _pre_bid _pre_bname _pre_list_rc bd_probe
+    bd_probe="${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
+    _pre_list_rc=-1
+    if _pre_meta="$(onboard_context_loader_adp_meta "${adp}")" && [[ -n "${_pre_meta}" ]]; then
+        _pre_bid="${_pre_meta%%	*}"
+        _pre_bname="${_pre_meta#*	}"
+        if onboard_context_loader_already_imported "${_pre_bid}"; then
+            _pre_list_rc=0
+        else
+            _pre_list_rc=$?
+        fi
+    fi
+
+    if [[ "${_pre_list_rc}" -eq 0 ]]; then
+        log_info "Context Loader: toolbox from this ADP is already registered (box_id=${_pre_bid}${_pre_bname:+, ${_pre_bname}}). Skip import, or proceed to re-import (upsert)."
+        onboard_context_loader_import_via_kweaver
+        return 0
+    fi
+    if [[ "${_pre_list_rc}" -eq 2 ]]; then
+        onboard_log_warn "Context Loader: could not verify existing toolboxes via kweaver call (fix auth/network or -bd bd). Tried list with -bd ${bd_probe}; set DEPLOY_BUSINESS_DOMAIN if wrong."
+    elif [[ "${_pre_list_rc}" -eq 1 ]]; then
+        log_info "Context Loader: this ADP toolbox (box_id=${_pre_bid}) is not in the list API result — typical first-time import."
+    fi
+
     echo ""
     read -r -p "Import Context Loader (ADP) now? (ISF: user test must already exist; kweaver will sign in as test for impex) [Y/n]: " _clm
     if [[ "${_clm}" =~ ^[Nn] ]]; then
         ONBOARD_REPORT_CONTEXT_LOADER="skipped: user declined import (run kweaver call impex later)"
         log_info "Skipped. Manual: kweaver call '/api/agent-operator-integration/v1/impex/import/toolbox' -X POST -F data=@'${adp}' -F mode=upsert -bd ${DEPLOY_BUSINESS_DOMAIN:-bd_public}"
+        # Declining ADP import does not exit onboard: main flow continues (-y / --config shorten or replace the next steps).
+        if [[ "${INTERACTIVE:-}" == "true" ]] && [[ "${ONBOARD_ASSUME_YES:-false}" != "true" ]] && [[ -z "${CONFIG_FILE:-}" ]]; then
+            onboard_log_info "Continuing: interactive Namespace / LLM / embedding prompts next (empty line skips a section)."
+        fi
         return 0
     fi
     onboard_context_loader_import_via_kweaver
