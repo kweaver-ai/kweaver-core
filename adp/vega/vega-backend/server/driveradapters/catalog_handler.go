@@ -356,6 +356,21 @@ func (r *restHandler) updateCatalog(c *gin.Context, ctx context.Context, span tr
 		return
 	}
 
+	if req.ID == "" {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InvalidParameter_ID).
+			WithErrorDetails("body field 'id' is required and must equal path parameter")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+	if req.ID != id {
+		httpErr := rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_Catalog_IDMismatch).
+			WithErrorDetails(fmt.Sprintf("path id %q != body id %q", id, req.ID))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	if err := ValidateCatalogRequest(ctx, &req); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -673,12 +688,19 @@ func (r *restHandler) testConnection(c *gin.Context, ctx context.Context, span t
 		return
 	}
 
-	result, err := r.cs.TestConnection(ctx, catalog)
+	status, err := r.cs.TestConnection(ctx, catalog)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
+	}
+
+	// 映射缓存的健康状态为对外契约：
+	// 严格 healthy = success=true，其它（degraded / unhealthy / offline / disabled）= false。
+	result := map[string]any{
+		"success": status.HealthCheckStatus == interfaces.CatalogHealthStatusHealthy,
+		"message": status.HealthCheckResult,
 	}
 
 	logger.Debug("Handler TestConnection Success")

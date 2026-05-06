@@ -48,6 +48,11 @@ Description = "Connector type name already exists"
 Solution = "Please use a different name"
 ErrorLink = "None"
 
+[VegaBackend.ConnectorType.TypeMismatch]
+Description = "The connector type in the request body does not match the path"
+Solution = "Omit the type field in the body, or make it match the path parameter"
+ErrorLink = "None"
+
 [VegaBackend.ConnectorType.InternalError]
 Description = "Connector type internal error"
 Solution = "Please contact the administrator"

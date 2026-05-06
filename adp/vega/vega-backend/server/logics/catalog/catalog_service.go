@@ -125,11 +125,11 @@ func (cs *catalogService) Create(ctx context.Context, req *interfaces.CatalogReq
 			logger.Errorf("Failed to test connection to data source: %v", err)
 			o11y.Error(ctx, fmt.Sprintf("Failed to test connection to data source: %v", err))
 			span.SetStatus(codes.Error, "Connection failed")
-			connector.Close(ctx)
+			_ = connector.Close(ctx)
 			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_TestConnectionFailed).
 				WithErrorDetails(err.Error())
 		}
-		defer connector.Close(ctx)
+		defer func() { _ = connector.Close(ctx) }()
 	}
 
 	now := time.Now().UnixMilli()
@@ -476,11 +476,11 @@ func (cs *catalogService) Update(ctx context.Context, id string, req *interfaces
 			logger.Errorf("Failed to test connection to data source: %v", err)
 			o11y.Error(ctx, fmt.Sprintf("Failed to test connection to data source: %v", err))
 			span.SetStatus(codes.Error, "Connection failed")
-			connector.Close(ctx)
+			_ = connector.Close(ctx)
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Catalog_InternalError_TestConnectionFailed).
 				WithErrorDetails(err.Error())
 		}
-		defer connector.Close(ctx)
+		defer func() { _ = connector.Close(ctx) }()
 
 		// req.ConnectorConfig 已在 validateAndDecryptSensitiveFields 中加上 ENC: 前缀
 		catalog.ConnectorCfg = req.ConnectorCfg

@@ -106,9 +106,25 @@ components:
       type: object
       description: |
         Schema 探索范围。至少需要开启一种概念类型；不传时默认四类全开。
+        `concept_groups` 用于按 BKN 概念分组限定 Schema 召回范围。
+        `concept_groups` 只作用于概念层发现，不作为实例数据过滤条件。
         `search_scope` 仅约束响应输出，不阻断系统内部使用相关线索辅助召回。
         四个资源开关不能同时为 `false`；若同时为 `false`，接口返回参数错误。
       properties:
+        concept_groups:
+          type: array
+          items:
+            type: string
+          description: |
+            BKN 概念分组 ID 列表。用于限定 object_types、relation_types、
+            action_types 与 metric_types 的 Schema 召回范围；分组语义实际由 BKN
+            完成（ContextLoader 直接调用 BKN 的分组搜索接口并把该列表透传下去）。
+            不传或为空数组时不限定分组。
+            未知分组：BKN 当前对不存在的分组返回 5xx 错误（如
+            `BknBackend.ObjectType.InternalError` 含 `error_details` 描述
+            "all concept group not found ..."）。本接口直接透传该错误，不会
+            把它包装为成功的空结果；调用方可据此区分 "分组不存在" 与
+            "分组合法但范围内无概念"。
         include_object_types:
           type: boolean
           default: true

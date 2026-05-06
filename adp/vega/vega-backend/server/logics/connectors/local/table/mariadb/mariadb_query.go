@@ -238,7 +238,7 @@ func (c *MariaDBConnector) ExecuteQuery(ctx context.Context, resource *interface
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -353,26 +353,25 @@ func formatInValues(value any) string {
 }
 
 // buildDateFormat 根据 calendar_interval 构建 date_format 表达式
+// 支持 OpenSearch 的 calendar_interval 枚举值：minute, hour, day, week, month, quarter, year
+// 注意：calendar_interval 的有效性已经在 validate_resource_data.go 中的 validateCalendarInterval 方法中验证过
 func (c *MariaDBConnector) buildDateFormat(alias, dateField, calendarInterval string) string {
 	var dateFmt string
 	switch calendarInterval {
-	case interfaces.CALENDAR_STEP_MINUTE:
+	case interfaces.CALENDAR_UNIT_MINUTE:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y-%m-%d %H:%i`)
-	case interfaces.CALENDAR_STEP_HOUR:
+	case interfaces.CALENDAR_UNIT_HOUR:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y-%m-%d %H`)
-	case interfaces.CALENDAR_STEP_DAY:
+	case interfaces.CALENDAR_UNIT_DAY:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y-%m-%d`)
-	case interfaces.CALENDAR_STEP_WEEK:
+	case interfaces.CALENDAR_UNIT_WEEK:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%x-%v`)
-	case interfaces.CALENDAR_STEP_MONTH:
+	case interfaces.CALENDAR_UNIT_MONTH:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y-%m`)
-	case interfaces.CALENDAR_STEP_QUARTER:
+	case interfaces.CALENDAR_UNIT_QUARTER:
 		dateFmt = fmt.Sprintf(`format('%%d-Q%%d',year(%s),quarter(%s))`, dateField, dateField)
-	case interfaces.CALENDAR_STEP_YEAR:
+	case interfaces.CALENDAR_UNIT_YEAR:
 		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y`)
-	default:
-		// 默认按天分组
-		dateFmt = fmt.Sprintf(`date_format(%s,'%s')`, dateField, `%Y-%m-%d`)
 	}
 	return dateFmt
 }

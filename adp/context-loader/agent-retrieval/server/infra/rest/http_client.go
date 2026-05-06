@@ -231,7 +231,8 @@ func (c *httpClient) generateURL(rawURL string, queryValues url.Values) (*url.UR
 }
 
 func (c *httpClient) generateReq(ctx context.Context, httpMethod, url string,
-	headers map[string]string, reqParam interface{}) (req *http.Request, err error) {
+	headers map[string]string, reqParam interface{},
+) (req *http.Request, err error) {
 	if reqParam != nil {
 		var reader *bytes.Reader
 		if v, ok := reqParam.([]byte); ok {

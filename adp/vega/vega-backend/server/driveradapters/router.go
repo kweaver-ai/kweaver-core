@@ -93,16 +93,27 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
 			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByEx)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByEx)
+
+			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
+
+			// 资源列表
+			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByEx)
+
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
 			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByEx)
 			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByEx)
 			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByEx)
-			//adp.t_discover_task
+		}
 
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByEx)
+		// DiscoverTask APIs - External
+		discoverTasks := apiV1.Group("/discover-tasks")
+		{
+			discoverTasks.GET("", r.ListDiscoverTasks)
+			discoverTasks.GET("/by-id/:id", r.GetDiscoverTask)
+			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleId)
 		}
 
 		// Resource APIs - External
@@ -137,18 +148,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			connectorTypes.GET("/:type", r.GetConnectorType)
 			connectorTypes.PUT("/:type", r.verifyJsonContentType(), r.UpdateConnectorType)
 			connectorTypes.DELETE("/:type", r.DeleteConnectorType)
-			connectorTypes.POST("/:type/enabled", r.SetConnectorTypeEnabled)
-		}
-
-		// Query APIs - External
-
-		// DiscoverTask APIs - External
-		discoverTasks := apiV1.Group("/discover-tasks")
-		{
-			discoverTasks.GET("", r.ListDiscoverTasks)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTask)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleId)
-
+			connectorTypes.POST("/:type/enable", r.EnableConnectorType)
+			connectorTypes.POST("/:type/disable", r.DisableConnectorType)
 		}
 	}
 
@@ -165,14 +166,27 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
 			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByIn)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByIn)
+
+			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
+
+			//
+			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByIn)
+
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByIn)
 			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByIn)
 			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByIn)
 			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByIn)
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByIn)
+		}
+
+		// DiscoverTask APIs - Internal
+		discoverTasks := apiInV1.Group("/discover-tasks")
+		{
+			discoverTasks.GET("", r.ListDiscoverTasksByIn)
+			discoverTasks.GET("/by-id/:id", r.GetDiscoverTaskByIn)
+			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleIdByIn)
 		}
 
 		// Resource APIs - Internal
@@ -197,15 +211,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
 			resources.GET("/buildtask", r.ListBuildTasksByIn)
 			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByIn)
-		}
-
-		// Query APIs - Internal
-		// DiscoverTask APIs - Internal
-		discoverTasks := apiInV1.Group("/discover-tasks")
-		{
-			discoverTasks.GET("", r.ListDiscoverTasksByIn)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTaskByIn)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleIdByIn)
 		}
 	}
 

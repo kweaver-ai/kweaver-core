@@ -565,7 +565,7 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 
 	for _, resource := range resources {
 		switch resource.Category {
-		case interfaces.ResourceCategoryDataset:
+		case interfaces.ResourceCategoryTable:
 			// Check if dataset has build tasks
 			buildTask, err := rs.bta.GetByResourceID(ctx, resource.ID)
 			if err != nil {
@@ -576,8 +576,17 @@ func (rs *resourceService) DeleteByIDs(ctx context.Context, ids []string) error 
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_Exist).
 					WithErrorDetails("Cannot delete dataset, please delete build task first")
 			}
+			if resource.LocalIndexName != "" {
+				// 删除本地索引
+				err := rs.ds.Delete(ctx, resource.LocalIndexName)
+				if err != nil {
+					logger.Errorf("Delete local index failed: %v", err)
+					// 索引删除失败不影响资源删除，只记录错误
+				}
+			}
+		case interfaces.ResourceCategoryDataset:
 			// Delete dataset
-			if err := rs.ds.Delete(ctx, resource); err != nil {
+			if err := rs.ds.Delete(ctx, resource.ID); err != nil {
 				logger.Errorf("Delete dataset failed: %v", err)
 				// 数据集删除失败不影响资源删除，只记录错误
 			}
@@ -814,6 +823,21 @@ func (rs *resourceService) CreateBuildTask(ctx context.Context, id string, req *
 			WithErrorDetails("Resource already has a build task")
 	}
 
+	// check table has primary key for streaming mode
+	if req.Mode == interfaces.BuildTaskModeStreaming {
+		primaryKeys := []any{}
+		if resource.SourceMetadata != nil {
+			if v, ok := resource.SourceMetadata["primary_keys"]; ok {
+				primaryKeys = v.([]any)
+			}
+		}
+		if len(primaryKeys) == 0 {
+			span.SetStatus(codes.Error, "Resource has no primary key for build task")
+			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InternalError_CreateFailed).
+				WithErrorDetails("Resource has no primary key")
+		}
+	}
+
 	// Get account info from context
 	accountInfo := interfaces.AccountInfo{}
 	if v := ctx.Value(interfaces.ACCOUNT_INFO_KEY); v != nil {
@@ -837,6 +861,7 @@ func (rs *resourceService) CreateBuildTask(ctx context.Context, id string, req *
 	buildTask := &interfaces.BuildTask{
 		ID:              xid.New().String(),
 		ResourceID:      id,
+		CatalogID:       resource.CatalogID,
 		Status:          interfaces.BuildTaskStatusInit,
 		Mode:            req.Mode,
 		TotalCount:      0,

@@ -13,6 +13,11 @@ Description = "无效的目录名称"
 Solution = "请检查参数"
 ErrorLink = "暂无"
 
+[VegaBackend.Catalog.InvalidParameter.ID]
+Description = "请求体缺少 id 字段"
+Solution = "请在请求体中携带 id 字段，且与路径参数保持一致"
+ErrorLink = "暂无"
+
 [VegaBackend.Catalog.InvalidParameter.ConnectorType]
 Description = "无效的连接类型"
 Solution = "请检查参数"
@@ -41,6 +46,11 @@ ErrorLink = "暂无"
 [VegaBackend.Catalog.NameExists]
 Description = "目录名称已存在"
 Solution = "请使用其他名称"
+ErrorLink = "暂无"
+
+[VegaBackend.Catalog.IDMismatch]
+Description = "请求体中的目录 id 与路径不一致"
+Solution = "请使请求体中的 id 字段与路径参数保持一致"
 ErrorLink = "暂无"
 
 [VegaBackend.Catalog.IDExists]

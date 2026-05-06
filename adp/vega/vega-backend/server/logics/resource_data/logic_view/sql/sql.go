@@ -32,6 +32,7 @@ type logicViewSQLGenerator struct {
 	sqls          map[string]cachedSql
 	nodeFieldsMap map[string]map[string]*interfaces.ViewProperty
 	RefResources  map[string]*interfaces.Resource
+	viewFieldMap  map[string]*interfaces.Property
 }
 
 // NewlogicViewSQLGenerator 创建SQL生成器
@@ -45,12 +46,19 @@ func NewlogicDefinitionSQLGenerator(view *interfaces.LogicView) *logicViewSQLGen
 			outputNode = nodes[i]
 		}
 	}
+
+	viewFieldMap := make(map[string]*interfaces.Property)
+	for _, field := range view.SchemaDefinition {
+		viewFieldMap[field.Name] = field
+	}
+
 	return &logicViewSQLGenerator{
 		nodes:         nodeMap,
 		outputNode:    outputNode,
 		sqls:          make(map[string]cachedSql),
 		nodeFieldsMap: make(map[string]map[string]*interfaces.ViewProperty),
 		RefResources:  view.RefResources,
+		viewFieldMap:  viewFieldMap,
 	}
 }
 
@@ -298,7 +306,7 @@ func (g *logicViewSQLGenerator) buildJoinNodeSQL(ctx context.Context, node *inte
 	allArgs = append(allArgs, leftArgs...)
 	allArgs = append(allArgs, rightArgs...)
 
-	sqlStr := fmt.Sprintf("SELECT %s FROM (%s) AS l %s JOIN (%s) AS r ON %s",
+	sqlStr := fmt.Sprintf("SELECT %s FROM ((%s) AS l %s JOIN (%s) AS r ON %s)",
 		strings.Join(fields, ", "), leftSQL, joinType, rightSQL, joinOn)
 
 	// 处理 Join 节点自身的过滤条件
@@ -504,7 +512,14 @@ func (g *logicViewSQLGenerator) buildSqlNodeSQL(ctx context.Context, node *inter
 		return "", nil, fmt.Errorf("failed to execute SQL template for node %s: %w", node.ID, err)
 	}
 
-	return result.String(), allArgs, nil
+	// 去除 SQL 结尾的分号（可能有多个分号或空格）
+	finalSQL := strings.TrimSpace(result.String())
+	for strings.HasSuffix(finalSQL, ";") {
+		finalSQL = strings.TrimSuffix(finalSQL, ";")
+		finalSQL = strings.TrimSpace(finalSQL)
+	}
+
+	return finalSQL, allArgs, nil
 }
 
 // sanitizeAlias 清理节点 ID 生成合法的 SQL 别名
@@ -587,15 +602,56 @@ func (g *logicViewSQLGenerator) buildOutputNodeSQL(ctx context.Context, node *in
 		return "", nil, fmt.Errorf("output node %s requires exactly one input node", node.ID)
 	}
 
-	// 维护状态
+	// 构建 SELECT 字段列表
+	var fields []string
 	outputFieldsMap := make(map[string]*interfaces.ViewProperty)
-	for _, field := range node.OutputFields {
-		outputFieldsMap[field.Name] = field
+	if len(node.OutputFields) > 0 {
+		fields = make([]string, 0, len(node.OutputFields))
+
+		// 先构建上游节点的 SQL，以便获取上游节点的输出字段映射
+		upstreamNodeID := node.Inputs[0]
+		_, _, err := g.buildNodeSQL(ctx, upstreamNodeID, depth)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to build upstream node SQL for output node %s: %w", node.ID, err)
+		}
+
+		// 从上游节点的输出字段映射中获取字段信息
+		upstreamFieldsMap, hasUpstreamFields := g.nodeFieldsMap[upstreamNodeID]
+
+		for _, f := range node.OutputFields {
+			outputFieldsMap[f.Name] = f // 维护状态
+
+			// 尝试从上游节点的输出字段中查找
+			var sourceField *interfaces.ViewProperty
+			if hasUpstreamFields {
+				sourceField = upstreamFieldsMap[f.Name]
+			}
+
+			if sourceField == nil {
+				// 如果上游没有字段映射，直接使用字段名
+				fields = append(fields, QuotationMark(f.Name))
+			} else {
+				// 使用上游节点的输出字段名（可能已经被重命名）
+				// sourceField.Name 是上游节点输出的字段名（别名）
+				// f.Name 是当前节点期望的输出字段名
+				if sourceField.Name != f.Name {
+					// 字段名不同，需要别名
+					fields = append(fields, fmt.Sprintf("%s AS %s",
+						QuotationMark(sourceField.Name),
+						QuotationMark(f.Name)))
+				} else {
+					// 字段名相同，直接使用
+					fields = append(fields, QuotationMark(f.Name))
+				}
+			}
+		}
+	} else {
+		fields = []string{"*"}
 	}
 	g.nodeFieldsMap[node.ID] = outputFieldsMap
 
-	inputNodeID := node.Inputs[0]
-	return g.buildNodeSQL(ctx, inputNodeID, depth)
+	sql, args, err := g.buildNodeSQL(ctx, node.Inputs[0], depth)
+	return "SELECT " + strings.Join(fields, ", ") + " FROM (" + sql + ") AS " + sanitizeAlias(node.ID), args, err
 }
 
 // 构建sort
@@ -609,7 +665,7 @@ func buildSQLSortParams(sort []*interfaces.SortField) string {
 		if i > 0 {
 			sortSql.WriteString(", ")
 		}
-		sortSql.WriteString(fmt.Sprintf("%s %s", QuotationMark(sortParam.Field), sortParam.Direction))
+		fmt.Fprintf(&sortSql, "%s %s", QuotationMark(sortParam.Field), sortParam.Direction)
 	}
 
 	return sortSql.String()

@@ -23,22 +23,31 @@ type logicViewDSLGenerator struct {
 	nodes         map[string]*interfaces.LogicDefinitionNode
 	outputNode    *interfaces.LogicDefinitionNode
 	nodeFieldsMap map[string]map[string]*interfaces.ViewProperty
+	viewFieldMap  map[string]*interfaces.Property
 }
 
 // NewlogicViewSQLGenerator 创建SQL生成器
-func NewlogicViewDSLGenerator(nodes []*interfaces.LogicDefinitionNode) *logicViewDSLGenerator {
+func NewlogicViewDSLGenerator(view *interfaces.LogicView) *logicViewDSLGenerator {
 	nodeMap := make(map[string]*interfaces.LogicDefinitionNode)
 	var outputNode *interfaces.LogicDefinitionNode
+	nodes := view.LogicDefinition
 	for i := range nodes {
 		nodeMap[nodes[i].ID] = nodes[i]
 		if nodes[i].Type == interfaces.LogicDefinitionNodeType_Output {
 			outputNode = nodes[i]
 		}
 	}
+
+	viewFieldMap := make(map[string]*interfaces.Property)
+	for _, field := range view.SchemaDefinition {
+		viewFieldMap[field.Name] = field
+	}
+
 	return &logicViewDSLGenerator{
 		nodes:         nodeMap,
 		outputNode:    outputNode,
 		nodeFieldsMap: make(map[string]map[string]*interfaces.ViewProperty),
+		viewFieldMap:  viewFieldMap,
 	}
 }
 
@@ -65,7 +74,7 @@ func (g *logicViewDSLGenerator) BuildDSL(ctx context.Context, query interfaces.R
 			}
 
 			sortFieldName := sp.Field
-			sortField, ok := view.FieldsMap[sp.Field]
+			sortField, ok := g.viewFieldMap[sp.Field]
 
 			if ok {
 				if sortField.Type == interfaces.DataType_Binary {
@@ -122,7 +131,7 @@ func (g *logicViewDSLGenerator) BuildDSL(ctx context.Context, query interfaces.R
 	dsl.Query = queryDSL.Query
 
 	// 添加全局过滤条件，全局过滤条件的字段应该在视图字段列表里
-	dsl, err = addGlobalFiltersToDSL(ctx, dsl, query.FilterCondCfg, view.FieldsMap)
+	dsl, err = addGlobalFiltersToDSL(ctx, dsl, query.FilterCondCfg, g.viewFieldMap)
 	if err != nil {
 		return dsl, rest.NewHTTPError(ctx, http.StatusInternalServerError,
 			rest.PublicError_InternalServerError).
@@ -182,7 +191,7 @@ func (g *logicViewDSLGenerator) buildResourceQuery(ctx context.Context, node *in
 
 // 添加全局过滤条件到DSL
 func addGlobalFiltersToDSL(ctx context.Context, dsl interfaces.DSLCfg, filters *interfaces.FilterCondCfg,
-	fieldsMap map[string]*interfaces.ViewProperty) (interfaces.DSLCfg, error) {
+	fieldsMap map[string]*interfaces.Property) (interfaces.DSLCfg, error) {
 	// condStr, needScore, err := buildDSLCondition(ctx, filters, fieldsMap)
 	// if err != nil {
 	// 	return dsl, err
@@ -311,12 +320,12 @@ func completeDSLSortParams(sort []*interfaces.SortField, queryType string) []*in
 }
 
 // 检查字段是否为 text 类型
-func IsTextType(fieldInfo *interfaces.ViewProperty) bool {
+func IsTextType(fieldInfo *interfaces.Property) bool {
 	return fieldInfo != nil && fieldInfo.Type == interfaces.DataType_Text
 }
 
 // 检查字段特征是否包含指定特征
-func HasFeature(fieldInfo *interfaces.ViewProperty, feature string) bool {
+func HasFeature(fieldInfo *interfaces.Property, feature string) bool {
 	for _, f := range fieldInfo.Features {
 		if f.FeatureType == feature {
 			return true

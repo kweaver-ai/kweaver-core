@@ -538,13 +538,24 @@ func appendMetricValue(ctx context.Context, v any, values *[]any) (float64, erro
 	return f, nil
 }
 
-// entryTimeToMillis supports numeric buckets (ms) and RFC3339 strings (resource / Vega may use either).
-func entryTimeToMillis(v any) (int64, error) {
+// entryTimeToMillis supports numeric buckets (ms), calendar bucket strings for calendarStep (same layouts as FormatTimeMiliis),
+// and RFC3339 strings when calendar parsing does not apply or fails.
+func entryTimeToMillis(v any, calendarStep *string) (int64, error) {
 	if v == nil {
 		return 0, fmt.Errorf("time field is nil")
 	}
-	if s, ok := v.(string); ok {
-		t, err := time.ParseInLocation(time.RFC3339, s, common.APP_LOCATION)
+	if cs, ok := v.(string); ok {
+		s := strings.TrimSpace(cs)
+		loc := common.AppLocationOrUTC()
+		if calendarStep != nil {
+			step := strings.TrimSpace(*calendarStep)
+			if step != "" {
+				if ms, err := common.ParseCalendarBucketToMillis(s, step); err == nil {
+					return ms, nil
+				}
+			}
+		}
+		t, err := time.ParseInLocation(time.RFC3339, s, loc)
 		if err != nil {
 			return 0, err
 		}
@@ -972,6 +983,14 @@ func convert2TimeSeries(ctx context.Context, def interfaces.MetricDefinition, da
 	valueField := interfaces.VALUE_FIELD
 	timeResField := trend.timeResField
 
+	var calStep *string
+	if query != nil && query.Time != nil && query.Time.Step != nil {
+		calStep = query.Time.Step
+	} else if trend != nil && strings.TrimSpace(trend.step) != "" {
+		st := strings.TrimSpace(trend.step)
+		calStep = &st
+	}
+
 	var allTimes []any
 	var allTimeStrs []string
 	if fillNull {
@@ -1013,7 +1032,7 @@ func convert2TimeSeries(ctx context.Context, def interfaces.MetricDefinition, da
 			return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_Metric_InternalError_QueryFailed).
 				WithErrorDetails("missing time bucket field in resource entry")
 		}
-		timei, err := entryTimeToMillis(timeRaw)
+		timei, err := entryTimeToMillis(timeRaw, calStep)
 		if err != nil {
 			return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, oerrors.OntologyQuery_Metric_InternalError_QueryFailed).
 				WithErrorDetails(fmt.Sprintf("time field: %v", err))

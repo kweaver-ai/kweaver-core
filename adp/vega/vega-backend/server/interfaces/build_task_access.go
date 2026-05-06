@@ -17,6 +17,8 @@ type BuildTaskAccess interface {
 	GetByID(ctx context.Context, id string) (*BuildTask, error)
 	// GetByResourceID retrieves a build task by resource ID.
 	GetByResourceID(ctx context.Context, resourceID string) (*BuildTask, error)
+	// GetByCatalogID retrieves build tasks by catalog ID.
+	GetByCatalogID(ctx context.Context, catalogID string) ([]*BuildTask, error)
 	// GetAll retrieves all build tasks with pagination.
 	GetAll(ctx context.Context, offset, limit int) ([]*BuildTask, int64, error)
 	// UpdateStatus updates a build task's status and other fields.

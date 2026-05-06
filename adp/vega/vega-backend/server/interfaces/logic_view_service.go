@@ -82,9 +82,8 @@ var (
 
 type LogicView struct {
 	Resource
-	FieldsMap      map[string]*ViewProperty `json:"fields_map,omitempty" mapstructure:"-"`
-	IsSingleSource bool                     `json:"is_single_source,omitempty" mapstructure:"-"`
-	RefResources   map[string]*Resource     `json:"ref_resources,omitempty" mapstructure:"-"`
+	IsSingleSource bool                 `json:"is_single_source,omitempty" mapstructure:"-"`
+	RefResources   map[string]*Resource `json:"ref_resources,omitempty" mapstructure:"-"`
 }
 
 // LogicDefinitionNode 表示图中的节点

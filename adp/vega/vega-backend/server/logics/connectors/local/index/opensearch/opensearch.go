@@ -68,7 +68,7 @@ func (c *OpenSearchConnector) ExecuteQueryWithDsl(ctx context.Context, resourceN
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("search failed: %s", resp.String())
@@ -236,7 +236,7 @@ func (c *OpenSearchConnector) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.IsError() {
 		return fmt.Errorf("ping failed: %s", resp.String())
 	}
@@ -274,7 +274,7 @@ func (c *OpenSearchConnector) GetMetadata(ctx context.Context) (map[string]any, 
 		return nil, err
 	}
 	// 确保响应体被关闭，以释放资源
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	// 检查响应是否包含错误
 	if resp.IsError() {
 		return nil, fmt.Errorf("get metadata failed: %s", resp.String())
@@ -308,7 +308,7 @@ func (c *OpenSearchConnector) ListIndexes(ctx context.Context) ([]*interfaces.In
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to list indices: %s", resp.String())
@@ -381,7 +381,7 @@ func (c *OpenSearchConnector) fetchMappings(ctx context.Context, index *interfac
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -454,7 +454,7 @@ func (c *OpenSearchConnector) fetchSettings(ctx context.Context, index *interfac
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -495,7 +495,7 @@ func (c *OpenSearchConnector) fetchMappingsForQuery(ctx context.Context, indexNa
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("opensearch API error: %s", resp.String())
@@ -558,7 +558,7 @@ func (c *OpenSearchConnector) ExecuteRawQuery(ctx context.Context, index string,
 	if err != nil {
 		return nil, fmt.Errorf("execute query failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("opensearch API error: %s", resp.String())
@@ -815,7 +815,7 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute aggregate search: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.IsError() {
 			return nil, fmt.Errorf("aggregate search failed: %s", resp.String())
@@ -971,7 +971,7 @@ func (c *OpenSearchConnector) ExecuteQuery(ctx context.Context, indexName string
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("search failed: %s", resp.String())
@@ -1387,7 +1387,7 @@ func (c *OpenSearchConnector) Create(ctx context.Context, name string, schemaDef
 	if err != nil {
 		return err
 	}
-	defer createResp.Body.Close()
+	defer func() { _ = createResp.Body.Close() }()
 
 	if createResp.IsError() {
 		return fmt.Errorf("failed to create index: %s", createResp.String())
@@ -1435,7 +1435,7 @@ func (c *OpenSearchConnector) Update(ctx context.Context, name string, schemaDef
 	if err != nil {
 		return err
 	}
-	defer updateResp.Body.Close()
+	defer func() { _ = updateResp.Body.Close() }()
 
 	if updateResp.IsError() {
 		return fmt.Errorf("failed to update index mapping: %s", updateResp.String())
@@ -1467,7 +1467,7 @@ func (c *OpenSearchConnector) Delete(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	defer deleteResp.Body.Close()
+	defer func() { _ = deleteResp.Body.Close() }()
 
 	if deleteResp.IsError() {
 		return fmt.Errorf("failed to delete index: %s", deleteResp.String())
@@ -1521,7 +1521,7 @@ func (c *OpenSearchConnector) CreateDocuments(ctx context.Context, name string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to create documents: %s", resp.String())
@@ -1578,7 +1578,7 @@ func (c *OpenSearchConnector) GetDocument(ctx context.Context, name string, docI
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to get document: %s", resp.String())
@@ -1614,7 +1614,7 @@ func (c *OpenSearchConnector) DeleteDocument(ctx context.Context, name string, d
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete document: %s", resp.String())
@@ -1669,7 +1669,7 @@ func (c *OpenSearchConnector) UpsertDocuments(ctx context.Context, name string, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return nil, fmt.Errorf("failed to update documents: %s", resp.String())
@@ -1747,7 +1747,7 @@ func (c *OpenSearchConnector) DeleteDocuments(ctx context.Context, name string, 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete documents: %s", resp.String())
@@ -1794,7 +1794,7 @@ func (c *OpenSearchConnector) DeleteDocumentsByQuery(ctx context.Context, name s
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to delete documents: %s", resp.String())
@@ -1813,7 +1813,7 @@ func (c *OpenSearchConnector) indexExist(ctx context.Context, name string) (bool
 	if err != nil {
 		return false, err
 	}
-	defer existsResp.Body.Close()
+	defer func() { _ = existsResp.Body.Close() }()
 
 	return existsResp.StatusCode == 200, nil
 }

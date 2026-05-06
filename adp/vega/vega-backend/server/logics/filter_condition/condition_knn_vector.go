@@ -42,8 +42,7 @@ func (c *KnnVectorCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	if field.Type != interfaces.DataType_Vector {
 		return nil, fmt.Errorf("condition [knn_vector] left field '%s' type must be vector", cfg.Name)
 	}
-
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [knn_vector] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 

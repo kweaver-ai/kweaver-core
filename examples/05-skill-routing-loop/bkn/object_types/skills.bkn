@@ -1,0 +1,33 @@
+---
+type: object_type
+id: skills
+name: Skills
+tags: [example-05, skills]
+---
+
+## ObjectType: Skills
+
+Platform-required ObjectType id is `skills` (find_skills SkillsObjectTypeID).
+skill_id values reference packages registered in execution-factory.
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| skill_id | Skill ID | string | execution-factory skill package id (PK) | skill_id |
+| name | Name | string | Human-readable name | name |
+| description | Description | string | Usage hint | description |
+
+### Keys
+
+Primary Keys: skill_id
+Display Key: name
+Incremental Key:
+
+### Logic Properties
+
+### Data Source
+
+| Type | ID | Name |
+|------|-----|------|
+| data_view | {{SKILLS_DV_ID}} | {{SKILLS_DV_NAME}} |

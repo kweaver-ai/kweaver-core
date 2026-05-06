@@ -50,6 +50,7 @@ type BuildTask struct {
 	BuildKeyFields  string      `json:"build_key_fields"`           // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
 	EmbeddingModel  string      `json:"embedding_model,omitempty"`  // 嵌入模型
 	ModelDimensions int         `json:"model_dimensions,omitempty"` // 模型维度
+	CatalogID       string      `json:"catalog_id"`
 }
 
 // BuildTaskRequest represents create build task request.

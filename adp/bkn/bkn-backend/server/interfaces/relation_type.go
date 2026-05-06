@@ -79,7 +79,6 @@ type RelationTypesQueryParams struct {
 	Tag                 string
 	Branch              string
 	KNID                string
-	GroupID             string
 	SourceObjectTypeIDs []string
 	TargetObjectTypeIDs []string
 	BoundObjectTypeIDs  []string

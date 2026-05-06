@@ -297,7 +297,7 @@ func (da *discoverTaskAccess) GetByScheduledID(ctx context.Context, scheduledID 
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tasks []*interfaces.DiscoverTask
 	for rows.Next() {
@@ -414,7 +414,7 @@ func (da *discoverTaskAccess) List(ctx context.Context, params interfaces.Discov
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	tasks := make([]*interfaces.DiscoverTask, 0)
 	for rows.Next() {

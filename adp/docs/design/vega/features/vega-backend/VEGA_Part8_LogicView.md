@@ -432,7 +432,7 @@ type Property struct {
                 "node3"
             ],
             "config": {
-                "sql": "SELECT \n channel AS '渠道',\n    COUNT(order_id) AS '总订单量',\n    SUM(revenue) AS '总销售额',\n    ROUND(SUM(revenue) / COUNT(order_id), 2) AS '平均客单价'\nFROM (\n    SELECT order_no AS order_id, amount AS revenue, '商城' AS channel FROM {{.node1}} AS u1 \n    UNION ALL\n    SELECT pdd_id AS order_id, price AS revenue, '拼多多' AS channel FROM {{.node2}} AS u2\n    UNION ALL\n    SELECT dy_code AS order_id, total_fee AS revenue, '抖音' AS channel FROM {{.node3}} AS u3\n) AS all_sales \nGROUP BY channel WITH ROLLUP;"
+                "sql": "SELECT \n channel AS '渠道',\n    COUNT(order_id) AS '总订单量',\n    SUM(revenue) AS '总销售额',\n    ROUND(SUM(revenue) / COUNT(order_id), 2) AS '平均客单价'\nFROM (\n    SELECT order_no AS order_id, amount AS revenue, '商城' AS channel FROM {{.node1}} \n    UNION ALL\n    SELECT pdd_id AS order_id, price AS revenue, '拼多多' AS channel FROM {{.node2}} \n    UNION ALL\n    SELECT dy_code AS order_id, total_fee AS revenue, '抖音' AS channel FROM {{.node3}} \n) AS all_sales \nGROUP BY channel WITH ROLLUP;"
             },
             "output_fields": [
                "*"
@@ -447,7 +447,10 @@ type Property struct {
                 "resource_id": "d7g5433kqlq74cujv3qg",
                 "distinct": false,
                 "filters": {}
-            }
+            },
+            "output_fields": [
+                "*"
+            ]
         },
         {
             "id": "node2",

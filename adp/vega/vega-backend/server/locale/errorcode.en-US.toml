@@ -63,6 +63,11 @@ Description = "Invalid having parameter"
 Solution = "Please check the having parameter"
 ErrorLink = "None"
 
+[VegaBackend.InvalidParameter.CalendarInterval]
+Description = "Invalid calendar interval parameter"
+Solution = "Calendar interval must be one of: minute, hour, day, week, month, quarter, year"
+ErrorLink = "None"
+
 [VegaBackend.InvalidParameter.Direction]
 Description = "Invalid direction parameter"
 Solution = "Please check the parameter"

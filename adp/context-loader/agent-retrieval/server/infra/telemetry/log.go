@@ -42,42 +42,49 @@ func (l *SamplerLogger) Debug(v ...interface{}) {
 	}
 	s.Debug(v...)
 }
+
 func (l *SamplerLogger) Info(v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Info(v...)
 }
+
 func (l *SamplerLogger) Warn(v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Warn(v...)
 }
+
 func (l *SamplerLogger) Error(v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Error(v...)
 }
+
 func (l *SamplerLogger) Debugf(format string, v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Debugf(format, v...)
 }
+
 func (l *SamplerLogger) Infof(format string, v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Infof(format, v...)
 }
+
 func (l *SamplerLogger) Warnf(format string, v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
 	}
 	s.Warnf(format, v...)
 }
+
 func (l *SamplerLogger) Errorf(format string, v ...interface{}) {
 	s := &spanLogger{
 		maker: l,
@@ -108,6 +115,7 @@ func (s *spanLogger) Debug(v ...interface{}) {
 	}
 	o11y.SystemLogger.Debug(msg)
 }
+
 func (s *spanLogger) Info(v ...interface{}) {
 	s.maker.DefaultLogger.Info(v...)
 	msg := fmt.Sprint(v...)
@@ -117,6 +125,7 @@ func (s *spanLogger) Info(v ...interface{}) {
 	}
 	o11y.SystemLogger.Info(msg)
 }
+
 func (s *spanLogger) Warn(v ...interface{}) {
 	s.maker.DefaultLogger.Warn(v...)
 
@@ -127,6 +136,7 @@ func (s *spanLogger) Warn(v ...interface{}) {
 	}
 	o11y.SystemLogger.Warn(msg)
 }
+
 func (s *spanLogger) Error(v ...interface{}) {
 	s.maker.DefaultLogger.Error(v...)
 
@@ -137,6 +147,7 @@ func (s *spanLogger) Error(v ...interface{}) {
 	}
 	o11y.SystemLogger.Error(msg)
 }
+
 func (s *spanLogger) Debugf(format string, v ...interface{}) {
 	s.maker.DefaultLogger.Debugf(format, v...)
 
@@ -147,6 +158,7 @@ func (s *spanLogger) Debugf(format string, v ...interface{}) {
 	}
 	o11y.SystemLogger.Debug(msg)
 }
+
 func (s *spanLogger) Infof(format string, v ...interface{}) {
 	s.maker.DefaultLogger.Infof(format, v...)
 
@@ -157,6 +169,7 @@ func (s *spanLogger) Infof(format string, v ...interface{}) {
 	}
 	o11y.SystemLogger.Info(msg)
 }
+
 func (s *spanLogger) Warnf(format string, v ...interface{}) {
 	s.maker.DefaultLogger.Warnf(format, v...)
 
@@ -167,6 +180,7 @@ func (s *spanLogger) Warnf(format string, v ...interface{}) {
 	}
 	o11y.SystemLogger.Warn(msg)
 }
+
 func (s *spanLogger) Errorf(format string, v ...interface{}) {
 	s.maker.DefaultLogger.Errorf(format, v...)
 

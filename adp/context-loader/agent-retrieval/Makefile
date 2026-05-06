@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help generate-mock lint vet test test-cover ci dev
+.PHONY: help generate-mock wsl fmt lint ciLint ciLintFix vet test test-cover ci dev
 
 PKG_LIST_CMD = go list ./server/... | grep -v '/server/tests/' | grep -v '/server/mocks'
 SHELL_STRICT = set -eu; set -o pipefail 2>/dev/null || true;
@@ -9,7 +9,11 @@ CONFIG_PROFILE ?= $(CURDIR)/server/infra/config
 help:
 	@echo "可用目标:"
 	@echo "  generate-mock\t生成mock代码"
-	@echo "  lint\t\t运行 golangci-lint"
+	@echo "  wsl\t\t运行 wsl 空白格式修复"
+	@echo "  fmt\t\t运行 gofumpt + goimports 格式化"
+	@echo "  lint\t\t运行 wsl + fmt + golangci-lint（含自动修复）"
+	@echo "  ciLint\t运行 golangci-lint 检查（不修复）"
+	@echo "  ciLintFix\t运行 golangci-lint 检查并自动修复"
 	@echo "  vet\t\t运行 go vet 快速检查"
 	@echo "  test\t\t执行单元测试"
 	@echo "  test-cover\t执行单元测试并生成覆盖率报告"
@@ -20,10 +24,27 @@ generate-mock:
 	@echo "==== 生成mock代码 ===="
 	go generate ./...
 
+wsl:
+	@wsl --fix ./... >/dev/null 2>&1 || true
+	@echo "wsl done"
+
+fmt:
+	@gofumpt -w .
+	@goimports -w ./**/*.go
+	@echo "fmt done"
+
+ciLint:
+	golangci-lint run --out-format=colored-line-number ./... --exclude-dirs=server/tests --exclude-dirs=server/mocks
+	@echo "ciLint done"
+
+ciLintFix:
+	@golangci-lint run --out-format=colored-line-number ./... --exclude-dirs=server/tests --exclude-dirs=server/mocks --fix
+	@echo "ciLintFix done"
+
 lint:
-	@echo "==== golangci-lint ===="
-	@$(SHELL_STRICT) \
-	golangci-lint run ./... --exclude-dirs=server/tests --exclude-dirs=server/mocks
+	$(MAKE) wsl
+	$(MAKE) fmt
+	$(MAKE) ciLintFix
 
 vet:
 	@echo "==== go vet ===="

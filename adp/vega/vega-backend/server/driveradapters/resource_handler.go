@@ -958,6 +958,6 @@ func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span
 	}
 
 	logger.Debug("Handler DeleteBuildTasks Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, nil)
+	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	rest.ReplyOK(c, http.StatusNoContent, nil)
 }

@@ -1,0 +1,6 @@
+.env
+*.log
+*.zip
+__pycache__/
+.rendered-data/
+.rendered-*

@@ -116,9 +116,10 @@ func (c *AnyShareConnector) getEntryDocLib(ctx context.Context) ([]entryDocLibDT
 	q := url.Values{}
 	q.Set("sort", "doc_lib_name")
 	q.Set("direction", "asc")
-	if c.config.DocLibType == docLibTypeKnowledge {
+	switch c.config.DocLibType {
+	case docLibTypeKnowledge:
 		q.Set("type", "knowledge_doc_lib")
-	} else if c.config.DocLibType == docLibTypeDocument {
+	case docLibTypeDocument:
 		q.Set("type", "custom_doc_lib")
 		q.Set("subtype_id", customDocLibSubTypeDocumentId)
 	}
@@ -148,7 +149,7 @@ func (c *AnyShareConnector) getDocIDByPath(ctx context.Context, namepath string)
 	if err != nil {
 		return info, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return info, err
@@ -192,7 +193,7 @@ func (c *AnyShareConnector) getJSON(ctx context.Context, reqURL string, out any)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err

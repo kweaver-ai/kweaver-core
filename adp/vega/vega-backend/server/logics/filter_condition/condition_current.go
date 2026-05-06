@@ -62,10 +62,10 @@ func (c *CurrentCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		return nil, fmt.Errorf("condition [current] left field is not a date field: %s:%s", field.Name, field.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [current] does not support value_from type '%s'", cfg.ValueFrom)
 	}
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [current] right value should be string")
 	}

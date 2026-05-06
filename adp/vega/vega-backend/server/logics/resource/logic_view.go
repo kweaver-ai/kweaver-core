@@ -9,6 +9,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/dlclark/regexp2"
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
@@ -51,6 +54,12 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 	refResourceMap := make(map[string]*interfaces.Resource)
 
 	for _, node := range view.LogicDefinition {
+		// 节点不能自引用
+		if slices.Contains(node.Inputs, node.ID) {
+			return "", rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Node '%s' cannot reference itself: %s", node.ID, node.ID))
+		}
+
 		switch node.Type {
 		case interfaces.LogicDefinitionNodeType_Resource:
 			// 校验资源节点
@@ -61,22 +70,22 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 
 			resourceNodeCount++
 		case interfaces.LogicDefinitionNodeType_Join:
-			err := validateJoinNode(ctx, node, nodeMap)
+			err := validateJoinNode(ctx, rs, node, view.LogicDefinition, nodeMap)
 			if err != nil {
 				return "", err
 			}
 		case interfaces.LogicDefinitionNodeType_Union:
-			err := validateUnionNode(ctx, view.Category, node, nodeMap)
+			err := validateUnionNode(ctx, rs, view.Category, node, view.LogicDefinition, nodeMap)
 			if err != nil {
 				return "", err
 			}
 		case interfaces.LogicDefinitionNodeType_Sql:
-			err := validateSqlNode(ctx, node, nodeMap)
+			err := validateSqlNode(ctx, rs, node, view.LogicDefinition, nodeMap)
 			if err != nil {
 				return "", err
 			}
 		case interfaces.LogicDefinitionNodeType_Output:
-			err := validateOutputNode(ctx, node, nodeMap)
+			err := validateOutputNode(ctx, rs, node, view.LogicDefinition, nodeMap)
 			if err != nil {
 				return "", err
 			}
@@ -89,11 +98,8 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 		}
 	}
 
-	// 如果只有一个资源节点和一个输出节点，则为衍生视图
-	logicType := interfaces.LogicType_Composite
-	if len(view.LogicDefinition) == 2 && resourceNodeCount == 1 && outputNodeCount == 1 {
-		logicType = interfaces.LogicType_Derived
-	}
+	// 判断视图类型：衍生视图还是组合视图
+	logicType := determineLogicType(view.LogicDefinition)
 
 	var refResourceCategory string
 	refResourceCategoryMap := make(map[string]struct{})
@@ -117,6 +123,152 @@ func (rs *resourceService) validateLogicDefinition(ctx context.Context, view *in
 
 	span.SetStatus(codes.Ok, "")
 	return logicType, nil
+}
+
+// determineLogicType 判断视图类型：衍生视图还是组合视图
+// 衍生视图：输出节点只引用一个资源节点（没有经过 Join/Union/SQL 等多源处理节点）
+// 组合视图：输出节点引用了多个资源节点，或经过了 Join/Union/SQL 等处理节点
+func determineLogicType(nodes []*interfaces.LogicDefinitionNode) string {
+	// 默认是组合视图
+	logicType := interfaces.LogicType_Composite
+
+	// 找到输出节点
+	var outputNode *interfaces.LogicDefinitionNode
+	for _, node := range nodes {
+		if node.Type == interfaces.LogicDefinitionNodeType_Output {
+			outputNode = node
+			break
+		}
+	}
+
+	if outputNode != nil && len(outputNode.Inputs) == 1 {
+		// 输出节点只有一个输入，检查是否只引用了一个资源节点
+		// 递归追踪输入节点，看是否最终只引用了一个资源节点，且没有经过 Join/Union/SQL 节点
+		hasProcessingNode := false
+		resourceNodeIDs := make(map[string]struct{})
+
+		// 使用 BFS 遍历所有上游节点
+		visited := make(map[string]struct{})
+		queue := []string{outputNode.Inputs[0]}
+		visited[outputNode.Inputs[0]] = struct{}{}
+
+		for len(queue) > 0 {
+			currentID := queue[0]
+			queue = queue[1:]
+
+			// 找到当前节点
+			var currentNode *interfaces.LogicDefinitionNode
+			for _, n := range nodes {
+				if n.ID == currentID {
+					currentNode = n
+					break
+				}
+			}
+
+			if currentNode == nil {
+				continue
+			}
+
+			// 检查节点类型
+			switch currentNode.Type {
+			case interfaces.LogicDefinitionNodeType_Resource:
+				// 记录资源节点
+				resourceNodeIDs[currentNode.ID] = struct{}{}
+			case interfaces.LogicDefinitionNodeType_Join,
+				interfaces.LogicDefinitionNodeType_Union,
+				interfaces.LogicDefinitionNodeType_Sql:
+				// 遇到处理节点，标记为组合视图
+				hasProcessingNode = true
+			case interfaces.LogicDefinitionNodeType_Output:
+				// 不应该出现，但忽略
+				// break
+			}
+
+			// 将输入节点加入队列
+			for _, inputID := range currentNode.Inputs {
+				if _, ok := visited[inputID]; !ok {
+					visited[inputID] = struct{}{}
+					queue = append(queue, inputID)
+				}
+			}
+		}
+
+		// 如果只有一个资源节点且没有经过处理节点，则为衍生视图
+		if !hasProcessingNode && len(resourceNodeIDs) == 1 {
+			logicType = interfaces.LogicType_Derived
+		}
+	}
+
+	return logicType
+}
+
+// 获取节点的输出字段映射（用于校验字段是否存在）
+func getNodeOutputFieldsMap(ctx context.Context, rs *resourceService, nodeID string,
+	allNodes []*interfaces.LogicDefinitionNode, nodeCache map[string]map[string]*interfaces.Property) (map[string]*interfaces.Property, error) {
+
+	// 如果已经计算过，直接返回缓存结果
+	if cached, ok := nodeCache[nodeID]; ok {
+		return cached, nil
+	}
+
+	// 找到节点
+	var node *interfaces.LogicDefinitionNode
+	for _, n := range allNodes {
+		if n.ID == nodeID {
+			node = n
+			break
+		}
+	}
+	if node == nil {
+		return nil, fmt.Errorf("node %s not found", nodeID)
+	}
+
+	fieldsMap := make(map[string]*interfaces.Property)
+
+	switch node.Type {
+	case interfaces.LogicDefinitionNodeType_Resource:
+		// Resource 节点：从资源获取字段列表
+		var cfg interfaces.ResourceNodeCfg
+		if err := mapstructure.Decode(node.Config, &cfg); err != nil {
+			return nil, err
+		}
+		resource, err := rs.GetByID(ctx, cfg.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		for _, field := range resource.SchemaDefinition {
+			fieldsMap[field.Name] = field
+		}
+	default:
+		// 其他节点：从 output_fields 中获取字段列表
+		for _, field := range node.OutputFields {
+			if field.Name == "*" {
+				// 通配符模式：需要从上游节点获取所有字段
+				for _, inputID := range node.Inputs {
+					// 递归获取输入节点的字段
+					inputFieldsMap, err := getNodeOutputFieldsMap(ctx, rs, inputID, allNodes, nodeCache)
+					if err != nil {
+						return nil, err
+					}
+					for name, f := range inputFieldsMap {
+						fieldsMap[name] = f
+					}
+				}
+			} else {
+				// 非通配符：直接使用字段定义
+				prop := &interfaces.Property{
+					Name:        field.Name,
+					Type:        field.Type,
+					DisplayName: field.DisplayName,
+				}
+				fieldsMap[field.Name] = prop
+			}
+		}
+	}
+
+	// 缓存结果
+	nodeCache[nodeID] = fieldsMap
+	return fieldsMap, nil
 }
 
 func validateResourceNode(ctx context.Context, dvs *resourceService, node *interfaces.LogicDefinitionNode,
@@ -176,11 +328,25 @@ func validateResourceNode(ctx context.Context, dvs *resourceService, node *inter
 		}
 	}
 
-	// 校验输出字段是否在视图字段列表里
+	// 校验输出字段格式：resource节点支持通配符模式和投影模式
 	for _, field := range node.OutputFields {
+		// 通配符模式：只允许 "*"
 		if field.Name == "*" {
+			// 通配符模式下，不应有其他字段配置
+			if field.Type != "" || field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails("Wildcard field '*' should not have additional configuration")
+			}
 			continue
 		}
+
+		// 投影模式：只允许字段名，不应有映射或对齐配置
+		if field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Resource node output field '%s' should not have from, from_node or from_list configuration", field.Name))
+		}
+
+		// 校验字段是否存在于资源字段列表中
 		if _, ok := fieldsMap[field.Name]; !ok {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, rest.PublicError_BadRequest).
 				WithErrorDetails(fmt.Sprintf("The field '%s' is not in the view '%s' field list", field.Name, atomicView.Name))
@@ -190,7 +356,8 @@ func validateResourceNode(ctx context.Context, dvs *resourceService, node *inter
 	return nil
 }
 
-func validateJoinNode(ctx context.Context, node *interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
+func validateJoinNode(ctx context.Context, rs *resourceService, node *interfaces.LogicDefinitionNode,
+	allNodes []*interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
 	// 仅支持两个视图join
 	if len(node.Inputs) != 2 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -249,10 +416,73 @@ func validateJoinNode(ctx context.Context, node *interfaces.LogicDefinitionNode,
 		}
 	}
 
+	// 校验输出字段不能为空
+	if len(node.OutputFields) == 0 {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("Join node must have output fields")
+	}
+
+	// 校验输出字段格式：join节点只支持映射模式
+	// 先获取所有输入节点的输出字段
+	nodeCache := make(map[string]map[string]*interfaces.Property)
+	inputFieldsMap := make(map[string]map[string]*interfaces.Property)
+	for _, inputID := range node.Inputs {
+		fieldsMap, err := getNodeOutputFieldsMap(ctx, rs, inputID, allNodes, nodeCache)
+		if err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Failed to get output fields from input node '%s': %v", inputID, err))
+		}
+		inputFieldsMap[inputID] = fieldsMap
+	}
+
+	// 校验每个输出字段
+	for _, field := range node.OutputFields {
+		// Join节点不支持通配符模式
+		if field.Name == "*" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails("Join node does not support wildcard field '*'")
+		}
+
+		// 映射模式：必须指定 from 和 from_node
+		if field.From == "" || field.FromNode == "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Join node output field '%s' must have 'from' and 'from_node' configuration", field.Name))
+		}
+
+		// 映射模式：不应有 FromList 配置
+		if len(field.FromList) > 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Join node output field '%s' should not have 'from_list' configuration", field.Name))
+		}
+
+		// 校验 from_node 是否在输入节点中
+		found := false
+		for _, inputNode := range node.Inputs {
+			if inputNode == field.FromNode {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Join node output field '%s' references non-existent input node '%s'", field.Name, field.FromNode))
+		}
+
+		// 校验 from 字段是否存在于源节点中
+		if sourceFields, ok := inputFieldsMap[field.FromNode]; ok {
+			if _, exists := sourceFields[field.From]; !exists {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails(fmt.Sprintf("Join node output field '%s' references non-existent field '%s' in node '%s'",
+						field.Name, field.From, field.FromNode))
+			}
+		}
+	}
+
 	return nil
 }
 
-func validateUnionNode(ctx context.Context, category string, node *interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
+func validateUnionNode(ctx context.Context, rs *resourceService, category string, node *interfaces.LogicDefinitionNode,
+	allNodes []*interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
 	// 当前仅支持两个视图union
 	if len(node.Inputs) < 2 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -290,7 +520,7 @@ func validateUnionNode(ctx context.Context, category string, node *interfaces.Lo
 			WithErrorDetails("The logic definition union config is invalid, union_type must be all, distinct")
 	}
 
-	// TODO 如果查询类型是DSL或索引基类，只允许union all
+	// 如果是索引resource，只允许union all
 	if category == interfaces.ResourceCategoryIndex {
 		if cfg.UnionType != interfaces.UnionType_All {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -298,13 +528,74 @@ func validateUnionNode(ctx context.Context, category string, node *interfaces.Lo
 		}
 	}
 
-	// TODO 校验 output_fields 中每个字段的 FromList 长度是否与 inputs 长度一致
-	if category == interfaces.ResourceCategoryTable {
-		for _, field := range node.OutputFields {
-			if len(field.FromList) != len(node.Inputs) {
+	// 校验输出字段不能为空
+	if len(node.OutputFields) == 0 {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("Union node must have output fields")
+	}
+
+	// 校验输出字段格式：union节点只支持对齐模式
+	// 先获取所有输入节点的输出字段
+	nodeCache := make(map[string]map[string]*interfaces.Property)
+	inputFieldsMap := make(map[string]map[string]*interfaces.Property)
+	for _, inputID := range node.Inputs {
+		fieldsMap, err := getNodeOutputFieldsMap(ctx, rs, inputID, allNodes, nodeCache)
+		if err != nil {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Failed to get output fields from input node '%s': %v", inputID, err))
+		}
+		inputFieldsMap[inputID] = fieldsMap
+	}
+
+	for _, field := range node.OutputFields {
+		// Union节点不支持通配符模式
+		if field.Name == "*" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails("Union node does not support wildcard field '*'")
+		}
+
+		// 对齐模式：必须有 FromList 配置
+		if len(field.FromList) == 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Union node output field '%s' must have 'from_list' configuration", field.Name))
+		}
+
+		// 对齐模式：不应有单独的 from 和 from_node 配置（除非在FromList中使用）
+		if field.From != "" || field.FromNode != "" {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Union node output field '%s' should not have 'from' or 'from_node' at field level, use 'from_list' instead", field.Name))
+		}
+
+		// 校验 FromList 长度是否与 inputs 长度一致
+		if len(field.FromList) != len(node.Inputs) {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("The union output field '%s' from list count (%d) not equal inputs count (%d)",
+					field.Name, len(field.FromList), len(node.Inputs)))
+		}
+
+		// 校验 FromList 中的每个引用是否都指向有效的输入节点和字段
+		for _, ref := range field.FromList {
+			found := false
+			for _, inputNode := range node.Inputs {
+				if inputNode == ref.FromNode {
+					found = true
+					break
+				}
+			}
+			if !found {
 				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
-					WithErrorDetails(fmt.Sprintf("The union output field '%s' from list count (%d) not equal inputs count (%d)",
-						field.Name, len(field.FromList), len(node.Inputs)))
+					WithErrorDetails(fmt.Sprintf("Union node output field '%s' references non-existent input node '%s' in from_list", field.Name, ref.FromNode))
+			}
+
+			// 校验 from 字段是否存在于源节点中
+			if ref.From != "" {
+				if sourceFields, ok := inputFieldsMap[ref.FromNode]; ok {
+					if _, exists := sourceFields[ref.From]; !exists {
+						return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+							WithErrorDetails(fmt.Sprintf("Union node output field '%s' references non-existent field '%s' in node '%s'",
+								field.Name, ref.From, ref.FromNode))
+					}
+				}
 			}
 		}
 	}
@@ -312,7 +603,8 @@ func validateUnionNode(ctx context.Context, category string, node *interfaces.Lo
 	return nil
 }
 
-func validateSqlNode(ctx context.Context, node *interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
+func validateSqlNode(ctx context.Context, rs *resourceService, node *interfaces.LogicDefinitionNode,
+	allNodes []*interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
 	// 输入节点不能为空
 	if len(node.Inputs) == 0 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -351,10 +643,41 @@ func validateSqlNode(ctx context.Context, node *interfaces.LogicDefinitionNode, 
 			WithErrorDetails("The logic definition sql config is invalid, sql must be set")
 	}
 
+	// 校验 SQL 语法是否正确
+	if err := validateSQLSyntax(ctx, cfg.SQL); err != nil {
+		return err
+	}
+
+	// 校验输出字段不能为空
+	if len(node.OutputFields) == 0 {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL node must have output fields")
+	}
+
+	// 校验输出字段格式：sql节点支持定义模式和通配符模式
+	for _, field := range node.OutputFields {
+		// 通配符模式：只允许 "*"
+		if field.Name == "*" {
+			// 通配符模式下，不应有其他字段配置（但允许 type 用于类型推断）
+			if field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails("Wildcard field '*' in SQL node should not have from, from_node or from_list configuration")
+			}
+			continue
+		}
+
+		// 定义模式：不应有映射或对齐配置（SQL节点自行定义字段）
+		if field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("SQL node output field '%s' should not have from, from_node or from_list configuration", field.Name))
+		}
+	}
+
 	return nil
 }
 
-func validateOutputNode(ctx context.Context, node *interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
+func validateOutputNode(ctx context.Context, rs *resourceService, node *interfaces.LogicDefinitionNode,
+	allNodes []*interfaces.LogicDefinitionNode, nodeMap map[string]struct{}) error {
 	// 输入节点只能有一个
 	if len(node.Inputs) != 1 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -368,15 +691,47 @@ func validateOutputNode(ctx context.Context, node *interfaces.LogicDefinitionNod
 			WithErrorDetails(fmt.Sprintf("The output node input '%s' is not exist", inputNode))
 	}
 
-	// 如果没传fields字段列表，默认使用output节点的输出字段
 	if len(node.OutputFields) == 0 {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
 			WithErrorDetails("The output node must have output fields")
 	}
 
+	// 校验输出字段格式：output节点支持通配符模式和投影模式
+	// 获取输入节点的输出字段
+	nodeCache := make(map[string]map[string]*interfaces.Property)
+	inputNodeID := node.Inputs[0]
+	inputFieldsMap, err := getNodeOutputFieldsMap(ctx, rs, inputNodeID, allNodes, nodeCache)
+	if err != nil {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails(fmt.Sprintf("Failed to get output fields from input node '%s': %v", inputNodeID, err))
+	}
+
+	for _, field := range node.OutputFields {
+		// 通配符模式：只允许 "*"
+		if field.Name == "*" {
+			// 通配符模式下，不应有其他字段配置
+			if field.Type != "" || field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails("Wildcard field '*' should not have additional configuration")
+			}
+			continue
+		}
+
+		// 投影模式：只允许字段名，不应有映射或对齐配置
+		if field.From != "" || field.FromNode != "" || len(field.FromList) > 0 {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Output node field '%s' should not have from, from_node or from_list configuration", field.Name))
+		}
+
+		// 校验字段是否存在于输入节点中
+		if _, ok := inputFieldsMap[field.Name]; !ok {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("Output node field '%s' is not in the input node '%s' output fields", field.Name, inputNodeID))
+		}
+	}
+
 	// 校验name不能重复，display_name 不能重复
 	nameMap := make(map[string]struct{})
-	// originalNameMap := make(map[string]struct{})
 	displayNameMap := make(map[string]struct{})
 	for _, field := range node.OutputFields {
 		if _, ok := nameMap[field.Name]; ok {
@@ -384,12 +739,6 @@ func validateOutputNode(ctx context.Context, node *interfaces.LogicDefinitionNod
 				WithErrorDetails("The output node field name is repeated")
 		}
 		nameMap[field.Name] = struct{}{}
-
-		// if _, ok := originalNameMap[field.OriginalName]; ok {
-		// 	return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
-		// 		WithErrorDetails("The output node field original_name is repeated")
-		// }
-		// originalNameMap[field.OriginalName] = struct{}{}
 
 		if _, ok := displayNameMap[field.DisplayName]; ok {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
@@ -758,4 +1107,110 @@ func fillMissingMetadata(target, source *interfaces.Property) {
 	if len(target.Features) == 0 {
 		target.Features = source.Features
 	}
+}
+
+// validateSQLSyntax 校验 SQL 语法是否正确
+// 1. 先将 SQL 中的变量（如 .node1）替换为占位符
+// 2. 再使用标准 SQL 语法规则校验
+func validateSQLSyntax(ctx context.Context, sql string) error {
+	if sql == "" {
+		return nil // 空 SQL 已在前面的校验中处理
+	}
+
+	// 步骤 1: 替换 SQL 中的变量（如 .node1, .node2 等）为占位符
+	// 匹配模式：点后跟标识符，例如 .node1, .my_table
+	nodeVarRegex := regexp.MustCompile(`\.[a-zA-Z_][a-zA-Z0-9_]*`)
+	cleanedSQL := nodeVarRegex.ReplaceAllString(sql, " placeholder_table ")
+
+	// 步骤 2: 标准 SQL 语法校验
+	// 2.1 检查是否以 SELECT 或 WITH 开头
+	trimmedSQL := strings.TrimSpace(strings.ToUpper(cleanedSQL))
+	if !strings.HasPrefix(trimmedSQL, "SELECT") && !strings.HasPrefix(trimmedSQL, "WITH") {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL must start with SELECT or WITH clause")
+	}
+
+	// 2.2 检查括号是否匹配
+	openParen := strings.Count(cleanedSQL, "(")
+	closeParen := strings.Count(cleanedSQL, ")")
+	if openParen != closeParen {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails(fmt.Sprintf("Unbalanced parentheses: %d opening vs %d closing", openParen, closeParen))
+	}
+
+	// 2.3 检查常见的语法错误
+	if err := checkCommonSQLErrors(ctx, cleanedSQL); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkCommonSQLErrors 检查常见的 SQL 语法错误
+func checkCommonSQLErrors(ctx context.Context, sql string) error {
+	upperSQL := strings.ToUpper(sql)
+	trimmedSQL := strings.TrimSpace(sql)
+
+	// 检查重复的关键字
+	duplicatePatterns := []struct {
+		pattern *regexp.Regexp
+		message string
+	}{
+		{regexp.MustCompile(`\bFROM\s+FROM\b`), "Duplicate FROM keyword"},
+		{regexp.MustCompile(`\bSELECT\s+SELECT\b`), "Duplicate SELECT keyword"},
+		{regexp.MustCompile(`\bWHERE\s+WHERE\b`), "Duplicate WHERE keyword"},
+		{regexp.MustCompile(`\bJOIN\s+JOIN\b`), "Duplicate JOIN keyword"},
+		{regexp.MustCompile(`\bGROUP\s+BY\s+BY\b`), "Duplicate BY in GROUP BY"},
+		{regexp.MustCompile(`\bORDER\s+BY\s+BY\b`), "Duplicate BY in ORDER BY"},
+	}
+
+	for _, dp := range duplicatePatterns {
+		if dp.pattern.MatchString(upperSQL) {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+				WithErrorDetails(fmt.Sprintf("SQL syntax error: %s", dp.message))
+		}
+	}
+
+	// 检查 FROM 后是否有表名（优先检查）
+	fromWithoutTable := regexp.MustCompile(`(?i)\bFROM\s*$`)
+	if fromWithoutTable.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: FROM clause must specify a table")
+	}
+
+	// 检查 SELECT 后是否有 FROM（简单检查）
+	if strings.HasPrefix(upperSQL, "SELECT") {
+		// 检查是否包含 FROM 关键字
+		if !strings.Contains(upperSQL, " FROM ") && !strings.HasSuffix(upperSQL, " FROM") {
+			// 检查是否是 SELECT * 或 SELECT 1 这种简单形式（不含 FROM）
+			simpleSelectRegex := regexp.MustCompile(`(?i)^SELECT\s+[*\d]+\s*$`)
+			if !simpleSelectRegex.MatchString(trimmedSQL) {
+				return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+					WithErrorDetails("SQL syntax error: SELECT statement must contain a FROM clause")
+			}
+		}
+	}
+
+	// 检查 WHERE 后是否有条件
+	whereWithoutCondition := regexp.MustCompile(`(?i)\bWHERE\s*$`)
+	if whereWithoutCondition.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: WHERE clause must have a condition")
+	}
+
+	// 检查 GROUP BY 后是否有列名
+	groupByWithoutColumn := regexp.MustCompile(`(?i)\bGROUP\s+BY\s*$`)
+	if groupByWithoutColumn.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: GROUP BY must have at least one column")
+	}
+
+	// 检查 ORDER BY 后是否有列名
+	orderByWithoutColumn := regexp.MustCompile(`(?i)\bORDER\s+BY\s*$`)
+	if orderByWithoutColumn.MatchString(trimmedSQL) {
+		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_LogicView_InvalidParameter_LogicDefinition).
+			WithErrorDetails("SQL syntax error: ORDER BY must have at least one column")
+	}
+
+	return nil
 }

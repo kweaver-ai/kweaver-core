@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: supplied_by
+name: Supplied by
+tags: [example-05]
+---
+
+## RelationType: Supplied by
+
+Material → Supplier, used by DA to read supplier capability as evidence.
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| material | supplier | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| supplier_id | supplier_id |

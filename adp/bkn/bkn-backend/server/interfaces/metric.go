@@ -290,7 +290,6 @@ type MetricsListQueryParams struct {
 	PaginationQueryParameters
 	NamePattern string
 	Tag         string
-	GroupID     string
 	Branch      string
 	KNID        string
 	ScopeType   string

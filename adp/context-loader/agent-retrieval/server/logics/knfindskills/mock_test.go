@@ -57,24 +57,31 @@ func (m *testBknBackend) GetObjectTypeDetail(ctx context.Context, knID string, o
 func (m *testBknBackend) GetKnowledgeNetworkDetail(ctx context.Context, knID string) (*interfaces.KnowledgeNetworkDetail, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) SearchObjectTypes(ctx context.Context, req *interfaces.QueryConceptsReq) (*interfaces.ObjectTypeConcepts, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) GetRelationTypeDetail(ctx context.Context, knID string, rtIDs []string, includeDetail bool) ([]*interfaces.RelationType, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) SearchActionTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (*interfaces.ActionTypeConcepts, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) SearchMetricTypes(ctx context.Context, query *interfaces.QueryConceptsReq) (*interfaces.MetricTypeConcepts, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) GetActionTypeDetail(ctx context.Context, knID string, atIDs []string, includeDetail bool) ([]*interfaces.ActionType, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) CreateFullBuildOntologyJob(ctx context.Context, knID string, req *interfaces.CreateFullBuildOntologyJobReq) (*interfaces.CreateJobResp, error) {
 	return nil, nil
 }
+
 func (m *testBknBackend) ListOntologyJobs(ctx context.Context, knID string, req *interfaces.ListOntologyJobsReq) (*interfaces.ListOntologyJobsResp, error) {
 	return nil, nil
 }

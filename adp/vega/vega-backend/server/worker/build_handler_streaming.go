@@ -8,12 +8,12 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -56,27 +56,19 @@ type streamingBuildHandler struct {
 	client      *asynq.Client
 	httpClient  rest.HTTPClient
 	kafkaAccess interfaces.KafkaAccess
-	// 记录已启动的订阅，避免重复启动
-	runningSubscriptions map[string]bool // key: resource ID
-	// 记录每个resource对应的cancel函数，用于取消订阅
-	subscriptionCancels map[string]context.CancelFunc // key: resource ID
-	// 用于保护 runningSubscriptions 和 subscriptionCancels 的互斥锁
-	subscriptionMutex sync.Mutex
 }
 
 // NewStreamingBuildHandler creates a new build handler.
 func NewStreamingBuildHandler(appSetting *common.AppSetting) *streamingBuildHandler {
 	return &streamingBuildHandler{
-		appSetting:           appSetting,
-		taskAccess:           taskAccess.NewBuildTaskAccess(appSetting),
-		resAccess:            resourceAccess.NewResourceAccess(appSetting),
-		cs:                   catalog.NewCatalogService(appSetting),
-		ds:                   dataset.NewDatasetService(appSetting),
-		client:               asynqAccess.NewAsynqAccess(appSetting).CreateClient(context.Background()),
-		httpClient:           common.NewHTTPClient(),
-		kafkaAccess:          kafkaAccess.NewKafkaAccess(appSetting),
-		runningSubscriptions: make(map[string]bool),
-		subscriptionCancels:  make(map[string]context.CancelFunc),
+		appSetting:  appSetting,
+		taskAccess:  taskAccess.NewBuildTaskAccess(appSetting),
+		resAccess:   resourceAccess.NewResourceAccess(appSetting),
+		cs:          catalog.NewCatalogService(appSetting),
+		ds:          dataset.NewDatasetService(appSetting),
+		client:      asynqAccess.NewAsynqAccess(appSetting).CreateClient(context.Background()),
+		httpClient:  common.NewHTTPClient(),
+		kafkaAccess: kafkaAccess.NewKafkaAccess(appSetting),
 	}
 }
 
@@ -116,26 +108,61 @@ func (sh *streamingBuildHandler) HandleTask(ctx context.Context, task *asynq.Tas
 		return nil
 	}
 
-	if buildTaskInfo.Status == interfaces.BuildTaskStatusInit {
-		err := createLocalIndex(ctx, sh.ds, buildTaskInfo, resource)
+	// Get catalog for MySQL connection
+	catalog, err := sh.cs.GetByID(ctx, resource.CatalogID, true)
+	if err != nil {
+		return fmt.Errorf("get catalog failed: %w", err)
+	}
+	if catalog == nil {
+		logger.Errorf("Catalog not found for task %s, catalogID: %s", buildTaskInfo.ID, resource.CatalogID)
+		err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "catalog not found"})
 		if err != nil {
-			return fmt.Errorf("create local index failed: %w", err)
+			return fmt.Errorf("update build task status failed: %w", err)
 		}
-		if buildTaskInfo.EmbeddingFields != "" {
-			// first time, send embedding task to queue first
-			err = sendEmbeddingTask(sh.client, taskID)
-			if err != nil {
-				return fmt.Errorf("send embedding task failed: %w", err)
-			}
-			logger.Infof("Embedding task sent for task %s", taskID)
+		// Catalog not found, return nil to stop the task
+		return nil
+	}
+	if catalog.ConnectorType != interfaces.ConnectorTypeMySQL && catalog.ConnectorType != interfaces.ConnectorTypePostgreSQL {
+		logger.Errorf("Streaming build only supports MySQL and PostgreSQL connectors. Unsupported connector type: %s", catalog.ConnectorType)
+		err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "unsupported connector type"})
+		if err != nil {
+			return fmt.Errorf("update build task status failed: %w", err)
 		}
+		// Catalog not found, return nil to stop the task
+		return nil
+	}
+
+	database := catalog.ConnectorCfg["database"]
+	if database == nil || database == "" {
+		database = resource.Database
+	}
+	sourceId, err := sh.formatTableName(resource.SourceIdentifier, catalog.ConnectorType, database)
+	if err != nil {
+		logger.Errorf("Failed to format table name: %v", err)
+		err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": err.Error()})
+		if err != nil {
+			return fmt.Errorf("update build task status failed: %w", err)
+		}
+		return nil
+	}
+
+	err = createLocalIndex(ctx, sh.ds, buildTaskInfo, resource)
+	if err != nil {
+		return fmt.Errorf("create local index failed: %w", err)
+	}
+	if buildTaskInfo.EmbeddingFields != "" {
+		err = sendEmbeddingTask(sh.client, taskID)
+		if err != nil {
+			return fmt.Errorf("send embedding task failed: %w", err)
+		}
+		logger.Infof("Embedding task sent for task %s", taskID)
 	}
 
 	// Update task status to running
 	_ = sh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"status": interfaces.BuildTaskStatusRunning})
 
 	// Execute build
-	err = sh.executeBuild(ctx, resource, buildTaskInfo)
+	err = sh.executeBuild(ctx, catalog, resource, buildTaskInfo, database, sourceId)
 	if err != nil {
 		// Update task status to failed
 		_ = sh.taskAccess.UpdateStatus(ctx, taskID, map[string]interface{}{"errorMsg": err.Error()})
@@ -146,23 +173,21 @@ func (sh *streamingBuildHandler) HandleTask(ctx context.Context, task *asynq.Tas
 	return nil
 }
 
-// subscribeToKafkaMessages subscribes to Kafka messages for the specified resource
-func (sh *streamingBuildHandler) subscribeToKafkaMessages(ctx context.Context, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask, sourceId string) {
-	resourceID := resource.ID
+// executeBuild executes the build logic
+func (sh *streamingBuildHandler) executeBuild(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask, database any, sourceId string) error {
 	// Use the connector name as the Kafka topic prefix
-	topic := fmt.Sprintf("%s-%s.%s", interfaces.BUILD_PREFIX, resourceID, sourceId)
-	groupID := fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, resourceID)
+	topic := fmt.Sprintf("%s-%s.%s", interfaces.BUILD_PREFIX, catalog.ID, sourceId)
+	groupID := fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, resource.ID)
+
+	// Create Kafka topic if it doesn't exist
+	if err := sh.kafkaAccess.CreateTopic(ctx, topic); err != nil {
+		return fmt.Errorf("failed to create Kafka topic %s: %w", topic, err)
+	}
 
 	// Create Kafka reader
 	reader, err := sh.kafkaAccess.NewReader(ctx, topic, groupID)
 	if err != nil {
-		logger.Errorf("Failed to create Kafka reader for topic %s: %v", topic, err)
-		// Remove the resource from runningSubscriptions if creation fails
-		sh.subscriptionMutex.Lock()
-		delete(sh.runningSubscriptions, resourceID)
-		sh.subscriptionMutex.Unlock()
-		logger.Infof("Kafka subscription for resource %s has been stopped due to creation failure", resourceID)
-		return
+		return fmt.Errorf("failed to create Kafka reader for topic %s: %w", topic, err)
 	}
 	defer sh.kafkaAccess.CloseReader(reader)
 
@@ -174,35 +199,90 @@ func (sh *streamingBuildHandler) subscribeToKafkaMessages(ctx context.Context, r
 	}
 
 	// Create embedding topic if needed
-	embeddingTopic := ""
+	var writer *kafka.Writer
 	if buildTaskInfo.EmbeddingFields != "" {
-		embeddingTopic = fmt.Sprintf("%s-%s-embedding", interfaces.BUILD_PREFIX, resourceID)
-		// Create Kafka topic if it doesn't exist
-		if err := sh.kafkaAccess.CreateTopic(ctx, embeddingTopic); err != nil {
-			logger.Errorf("Failed to create embedding Kafka topic: %v", err)
+		topic := getEmbeddingTopic(resource.ID, buildTaskInfo.ID)
+		// Create Kafka writer
+		writer, err = sh.kafkaAccess.NewWriter(ctx, topic)
+		if err != nil {
+			logger.Errorf("failed to create Kafka writer: %v", err)
 		}
+		// Create Kafka topic if it doesn't exist
+		if err := sh.kafkaAccess.CreateTopic(ctx, topic); err != nil {
+			logger.Errorf("Failed to create Kafka topic %s failed: %v", topic, err)
+		}
+		defer sh.kafkaAccess.CloseWriter(writer)
 	}
 
-	indexName := getIndexName(resourceID, buildTaskInfo.ID)
+	err = sh.createKafkaConnector(ctx, catalog, resource, database, sourceId)
+	if err != nil {
+		return fmt.Errorf("create kafka connector failed: %w", err)
+	}
+
+	indexName := getIndexName(resource.ID, buildTaskInfo.ID)
 	retryInterval := interfaces.BUILD_TASK_RETRY_INTERVAL * time.Second
+	updatedIndexName := false
+	lastUpdateTime := time.Now()
+	syncedCount := buildTaskInfo.SyncedCount
 	// Message processing loop
 	for {
+		// Check task status before each batch
+		taskStatus, err := sh.taskAccess.GetStatus(ctx, buildTaskInfo.ID)
+		if err != nil {
+			logger.Errorf("Failed to get task status: %v", err)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		// Handle stopping status
+		if taskStatus == interfaces.BuildTaskStatusStopping {
+			needStop, err := sh.checkConnectorNeedToStop(ctx, catalog.ID)
+			if err != nil {
+				logger.Errorf("Failed to check connector need to stop: %v", err)
+				time.Sleep(retryInterval)
+				continue
+			}
+			if needStop {
+				_, _, _ = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/stop",
+					fmt.Sprintf("%s://%s:%d/connectors", sh.appSetting.KafkaConnectSetting.Protocol, sh.appSetting.KafkaConnectSetting.Host, sh.appSetting.KafkaConnectSetting.Port),
+					fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, catalog.ID)),
+					map[string]string{interfaces.CONTENT_TYPE_NAME: interfaces.CONTENT_TYPE_JSON},
+					map[string]interface{}{})
+			}
+			logger.Infof("Task %s is stopping, exiting...", buildTaskInfo.ID)
+			err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusStopped, "syncedCount": syncedCount})
+			if err != nil {
+				return fmt.Errorf("update build task status failed: %w", err)
+			}
+
+			return nil
+		}
+
 		select {
 		case <-ctx.Done():
 			logger.Infof("Kafka subscription context canceled, exiting")
-
-			// Remove the resource from runningSubscriptions when subscription ends
-			sh.subscriptionMutex.Lock()
-			delete(sh.runningSubscriptions, resourceID)
-			sh.subscriptionMutex.Unlock()
-			logger.Infof("Kafka subscription for resource %s has been stopped", resourceID)
-			return
+			err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"syncedCount": syncedCount})
+			if err != nil {
+				return fmt.Errorf("update build task status failed: %w", err)
+			}
 		default:
 			// Read message from Kafka
-			msg, err := sh.kafkaAccess.ReadMessage(ctx, reader)
+			// 创建带超时的上下文，避免ReadMessage一直阻塞
+			timeoutCtx, cancel := context.WithTimeout(context.Background(), retryInterval)
+			defer cancel()
+			msg, err := sh.kafkaAccess.ReadMessage(timeoutCtx, reader)
 			if err != nil {
-				logger.Errorf("Streaming task Failed to read message from Kafka: %v", err)
-				time.Sleep(retryInterval)
+				if errors.Is(err, context.DeadlineExceeded) {
+					// 超时，检查是否需要更新任务状态
+					if syncedCount > buildTaskInfo.SyncedCount && time.Since(lastUpdateTime) > retryInterval {
+						_ = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"syncedCount": syncedCount})
+						buildTaskInfo.SyncedCount = syncedCount
+						lastUpdateTime = time.Now()
+					}
+				} else {
+					logger.Errorf("Streaming task Failed to read message from Kafka: %v", err)
+					time.Sleep(retryInterval)
+				}
 				continue
 			}
 			// 打印消息的基本信息和内容
@@ -252,46 +332,23 @@ func (sh *streamingBuildHandler) subscribeToKafkaMessages(ctx context.Context, r
 						continue
 					} else if buildTaskInfo.EmbeddingFields != "" && len(docIDs) > 0 {
 						// Send document ID to Kafka for embedding
-						docID := docIDs[0]
-						// Create Kafka writer for embedding
-						writer, err := sh.kafkaAccess.NewWriter(ctx, embeddingTopic)
+						err = sendEmbeddingMessage(ctx, writer, sh.kafkaAccess, docIDs)
 						if err != nil {
-							logger.Errorf("Failed to create Kafka writer for embedding: %v", err)
-						} else {
-							// Create message
-							messageData := map[string]any{
-								"document_id": docID,
-							}
-							messageBytes, err := sonic.Marshal(messageData)
-							if err != nil {
-								logger.Errorf("Failed to marshal message: %v", err)
-							} else {
-								// Write message to Kafka
-								// Use docID + timestamp as key to avoid conflicts even if document is modified multiple times
-								err = sh.kafkaAccess.WriteMessages(ctx, writer, []kafka.Message{
-									{
-										Key:   []byte(fmt.Sprintf("%s-%d", docID, time.Now().UnixNano())),
-										Value: messageBytes,
-									},
-								}...)
-								if err != nil {
-									logger.Errorf("Failed to write message to Kafka: %v", err)
-								}
-							}
-							// Close writer
-							sh.kafkaAccess.CloseWriter(writer)
+							logger.Errorf(err.Error())
+							time.Sleep(retryInterval)
+							continue
 						}
 					}
 				case "u":
 					// Update operation
-					if err := sh.handleUpdateOperation(ctx, keyMap, after, fieldMap, indexName, embeddingTopic, retryInterval, buildTaskInfo, resource); err != nil {
+					if err := sh.handleUpdateOperation(ctx, keyMap, after, indexName, buildTaskInfo, writer); err != nil {
 						logger.Errorf("Failed to handle update operation: %v", err)
 						time.Sleep(retryInterval)
 						continue
 					}
 				case "d":
 					// Delete operation
-					if err := sh.handleDeleteOperation(ctx, keyMap, indexName, resource, retryInterval); err != nil {
+					if err := sh.handleDeleteOperation(ctx, keyMap, indexName); err != nil {
 						logger.Errorf("Failed to handle delete operation: %v", err)
 						time.Sleep(retryInterval)
 						continue
@@ -301,34 +358,29 @@ func (sh *streamingBuildHandler) subscribeToKafkaMessages(ctx context.Context, r
 					time.Sleep(retryInterval)
 					continue
 				}
+
+				if !updatedIndexName && op != "r" {
+					// Full snapshot is completed, update index name in resource
+					if err := updateResourceIndexName(ctx, resource, sh.resAccess, sh.ds, indexName); err != nil {
+						logger.Errorf("Failed to update resource index name: %v", err)
+					} else {
+						updatedIndexName = true
+					}
+				}
 			}
 
 			// Commit the message
 			if err := sh.kafkaAccess.CommitMessages(ctx, reader, msg); err != nil {
 				logger.Errorf("Failed to commit message: %v", err)
 			}
-			buildTaskInfo.SyncedCount++
+			syncedCount++
 		}
 	}
 }
 
-// executeBuild executes the build logic
-func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *interfaces.Resource, buildTaskInfo *interfaces.BuildTask) error {
-	// Get catalog for MySQL connection
-	catalog, err := sh.cs.GetByID(ctx, resource.CatalogID, true)
-	if err != nil {
-		return fmt.Errorf("get catalog failed: %w", err)
-	}
-	if catalog == nil {
-		logger.Errorf("Catalog not found for task %s, catalogID: %s", buildTaskInfo.ID, resource.CatalogID)
-		err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "catalog not found"})
-		if err != nil {
-			return fmt.Errorf("update build task status failed: %w", err)
-		}
-		// Catalog not found, return nil to  stop the task
-		return nil
-	}
-
+// createKafkaConnector creates a Kafka connector for the build task
+func (sh *streamingBuildHandler) createKafkaConnector(ctx context.Context, catalog *interfaces.Catalog, resource *interfaces.Resource, database any, sourceId string) error {
+	// get connector
 	kafkaConnectSetting := sh.appSetting.KafkaConnectSetting
 	// connector name 和 catalog 绑定，catalog 下多个 resource 公有一个 connector，各自订阅自己的表的 topic
 	connectorName := fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, catalog.ID)
@@ -337,184 +389,74 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, resource *int
 	headers := map[string]string{
 		interfaces.CONTENT_TYPE_NAME: interfaces.CONTENT_TYPE_JSON,
 	}
-
-	retryInterval := interfaces.BUILD_TASK_RETRY_INTERVAL * time.Second
-	for {
-		// Check task status before each batch
-		taskStatus, err := sh.taskAccess.GetStatus(ctx, buildTaskInfo.ID)
+	respCode, _, err := sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s", connectorUrl, connectorName), nil, headers)
+	if err != nil {
+		return fmt.Errorf("failed to get kafka connector: %w", err)
+	}
+	switch respCode {
+	case http.StatusNotFound:
+		connectorBody := sh.buildConnectorConfig(connectorName, catalog, database, sourceId)
+		respCode, respBody, err := sh.httpClient.Post(ctx, connectorUrl, headers, connectorBody)
 		if err != nil {
-			logger.Errorf("Failed to get task status: %v", err)
-			time.Sleep(retryInterval)
-			continue
+			return fmt.Errorf("failed to create kafka connector: %w", err)
+		}
+		if respCode != http.StatusCreated {
+			return fmt.Errorf("create kafka connector %s failed, status code: %d, body: %v", connectorName, respCode, respBody)
 		}
 
-		// Handle stopping status
-		if taskStatus == interfaces.BuildTaskStatusStopping {
-			// Task is stopping, notify the kafka connector to stop
-			// only stop kafka subscription now, stop connector need get connector config first
-			// TODO
-			// _, _, err := sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/stop", connectorUrl, connectorName), headers, map[string]interface{}{})
-			// // _, _, err := sh.httpClient.Delete(ctx, fmt.Sprintf("%s/%s", connectorUrl, connectorName), headers)
-			// if err != nil {
-			// 	logger.Errorf("Failed to stop kafka connector: %v", err)
-			// 	time.Sleep(retryInterval)
-			// 	continue
-			// }
-			logger.Infof("Task %s is stopping, exiting...", buildTaskInfo.ID)
-			err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusStopped, "syncedCount": buildTaskInfo.SyncedCount})
+		logger.Infof("Create kafka connector %s success", connectorName)
+	case http.StatusOK:
+		// Connector found
+		/*config := respBody.(map[string]any)["config"].(map[string]any)
+		tableIncludeList, ok := config["table.include.list"].(string)
+		if !ok {
+			return fmt.Errorf("Invalid table.include.list type: %T", config["table.include.list"])
+		}
+		table_lists := strings.Split(tableIncludeList, ",")
+		tableExist := false
+		for _, table := range table_lists {
+			if strings.TrimSpace(table) == sourceId {
+				tableExist = true
+				break
+			}
+		}
+		if !tableExist {
+			// update kafka connector config
+			newTableList := tableIncludeList
+			if newTableList != "" {
+				newTableList += ","
+			}
+			newTableList += sourceId
+			config["table.include.list"] = newTableList
+			_, _, err = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/config", connectorUrl, connectorName), headers, config)
 			if err != nil {
-				return fmt.Errorf("update build task status failed: %w", err)
+				return fmt.Errorf("Failed to update kafka connector config: %w", err)
 			}
-
-			// Cancel Kafka subscription
-			sh.subscriptionMutex.Lock()
-			if cancelFn, exists := sh.subscriptionCancels[resource.ID]; exists {
-				cancelFn()
-				delete(sh.subscriptionCancels, resource.ID)
-				logger.Infof("Canceled Kafka subscription for resource %s", resource.ID)
-			}
-			sh.subscriptionMutex.Unlock()
-
-			return nil
-		}
-
-		database := catalog.ConnectorCfg["database"]
-		if database == nil || database == "" {
-			database = resource.Database
-		}
-		sourceId, err := sh.formatTableName(resource.SourceIdentifier, catalog.ConnectorType, database)
+			logger.Infof("Updated kafka connector config to include table: %s", sourceId)
+		}*/
+		// check kafka connector status
+		_, respBody, err := sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s/status", connectorUrl, connectorName), nil, headers)
 		if err != nil {
-			logger.Errorf("Failed to format table name: %v", err)
-			err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": err.Error()})
-			if err != nil {
-				return fmt.Errorf("update build task status failed: %w", err)
-			}
-			return nil
+			return fmt.Errorf("failed to get kafka connector status: %w", err)
 		}
-		// get connector
-		respCode, respBody, err := sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s", connectorUrl, connectorName), nil, headers)
-		if err != nil {
-			logger.Errorf("Failed to get kafka connector: %v", err)
-			time.Sleep(retryInterval)
-			continue
-		}
-		if respCode == http.StatusNotFound {
-			connectorBody, sourceId, err := sh.buildConnectorConfig(connectorName, catalog, resource, database, sourceId)
-			if err != nil {
-				logger.Errorf("Failed to build connector config: %v", err)
-				err = sh.taskAccess.UpdateStatus(ctx, buildTaskInfo.ID, map[string]interface{}{"status": interfaces.BuildTaskStatusFailed, "errorMsg": "resource not found"})
-				if err != nil {
-					return fmt.Errorf("update build task status failed: %w", err)
-				}
-				return nil
-			}
-			respCode, respBody, err := sh.httpClient.Post(ctx, connectorUrl, headers, connectorBody)
-			if err != nil {
-				logger.Errorf("Failed to create kafka connector: %v", err)
-				time.Sleep(retryInterval)
-				continue
-			}
-			if respCode != http.StatusCreated {
-				logger.Errorf("Create kafka connector %s failed, status code: %d, body: %v", connectorName, respCode, respBody)
-				time.Sleep(retryInterval)
-				continue
-			}
-
-			logger.Infof("Create kafka connector %s success", connectorName)
-			time.Sleep(retryInterval)
-
-			// Start a goroutine to subscribe to Kafka messages if not already running
-			sh.subscriptionMutex.Lock()
-			if !sh.runningSubscriptions[resource.ID] {
-				sh.runningSubscriptions[resource.ID] = true
-				subCtx, cancel := context.WithCancel(context.Background())
-				sh.subscriptionCancels[resource.ID] = cancel
-				sh.subscriptionMutex.Unlock()
-				go sh.subscribeToKafkaMessages(subCtx, resource, buildTaskInfo, sourceId)
-			} else {
-				sh.subscriptionMutex.Unlock()
-			}
-		} else if respCode == http.StatusOK {
-			// Connector found
-			config := respBody.(map[string]any)["config"].(map[string]any)
-			tableIncludeList, ok := config["table.include.list"].(string)
-			if !ok {
-				logger.Errorf("Invalid table.include.list type: %T", config["table.include.list"])
-				time.Sleep(retryInterval)
-				continue
-			}
-			table_lists := strings.Split(tableIncludeList, ",")
-			tableExist := false
-			for _, table := range table_lists {
-				if strings.TrimSpace(table) == sourceId {
-					tableExist = true
-					break
-				}
-			}
-			if !tableExist {
-				// update kafka connector config
-				newTableList := tableIncludeList
-				if newTableList != "" {
-					newTableList += ","
-				}
-				newTableList += sourceId
-				config["table.include.list"] = newTableList
-				_, _, err = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/config", connectorUrl, connectorName), headers, config)
-				if err != nil {
-					logger.Errorf("Failed to update kafka connector config: %v", err)
-					time.Sleep(retryInterval)
-					continue
-				}
-				logger.Infof("Updated kafka connector config to include table: %s", sourceId)
-			}
-
-			// check kafka connector status
-			_, respBody, err = sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s/status", connectorUrl, connectorName), nil, headers)
-			if err != nil {
-				logger.Errorf("Failed to get kafka connector status: %v", err)
-				time.Sleep(retryInterval)
-				continue
-			}
-			// Type assertion for respBody
-			if statusBody, ok := respBody.(map[string]any); ok {
-				// Type assertion for connector field
-				if connector, ok := statusBody["connector"].(map[string]any); ok {
-					if state, ok := connector["state"].(string); ok && state != "RUNNING" {
-						_, _, err = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/resume", connectorUrl, connectorName), headers, map[string]interface{}{})
-						if err != nil {
-							logger.Errorf("Failed to resume kafka connector: %v", err)
-							time.Sleep(retryInterval)
-							continue
-						}
-					} else {
-						if tasks, ok := statusBody["tasks"].([]interface{}); ok {
-							for _, task := range tasks {
-								if taskMap, ok := task.(map[string]any); ok {
-									if taskState, ok := taskMap["state"].(string); ok && taskState != "RUNNING" {
-										if idFloat, ok := taskMap["id"].(float64); ok {
-											_, _, err = sh.httpClient.Post(ctx, fmt.Sprintf("%s/%s/tasks/%d/restart", connectorUrl, connectorName, int(idFloat)), headers, map[string]interface{}{})
-											if err != nil {
-												logger.Errorf("Failed to restart task: %v", err)
-											}
-										}
-									}
-								}
-							}
-						}
+		// Type assertion for respBody
+		if statusBody, ok := respBody.(map[string]any); ok {
+			// Type assertion for connector field
+			if connector, ok := statusBody["connector"].(map[string]any); ok {
+				if state, ok := connector["state"].(string); ok && state != "RUNNING" {
+					_, _, err = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/resume", connectorUrl, connectorName), headers, map[string]interface{}{})
+					if err != nil {
+						return fmt.Errorf("failed to resume kafka connector: %w", err)
 					}
-					time.Sleep(retryInterval * 2) // for task status check
 				}
-			} else {
-				logger.Errorf("Invalid respBody type: %T", respBody)
-				time.Sleep(retryInterval)
-				continue
 			}
 		}
 	}
+	return nil
 }
 
 // buildConnectorConfig builds the connector configuration
-func (sh *streamingBuildHandler) buildConnectorConfig(connectorName string, catalog *interfaces.Catalog, resource *interfaces.Resource, database any, sourceId string) (map[string]any, string, error) {
+func (sh *streamingBuildHandler) buildConnectorConfig(connectorName string, catalog *interfaces.Catalog, database any, sourceId string) map[string]any {
 	// Connector not found, create connector
 	mqSetting := sh.appSetting.MQSetting
 	connectorBody := map[string]any{
@@ -530,7 +472,9 @@ func (sh *streamingBuildHandler) buildConnectorConfig(connectorName string, cata
 			"schema.history.internal.kafka.bootstrap.servers": fmt.Sprintf("%s:%d", mqSetting.MQHost, mqSetting.MQPort),
 			"schema.history.internal.kafka.topic":             fmt.Sprintf("%s-schema-changes", interfaces.BUILD_PREFIX),
 			"include.schema.changes":                          "true",
-			"topic.prefix":                                    fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, resource.ID),
+			"topic.prefix":                                    fmt.Sprintf("%s-%s", interfaces.BUILD_PREFIX, catalog.ID),
+			//"table.include.list":                              sourceId, // 同-catalog下多resource构建，公用一个connector，但是如果加了table.include.list，其他resource就没有全量快照，除非一开始就设置到table.include.list中
+			//"snapshot.mode":                                   "when_needed",
 		},
 	}
 
@@ -542,27 +486,25 @@ func (sh *streamingBuildHandler) buildConnectorConfig(connectorName string, cata
 		connectorBody["config"].(map[string]any)["schema.history.internal.producer.security.protocol"] = "SASL_PLAINTEXT"
 		connectorBody["config"].(map[string]any)["schema.history.internal.producer.sasl.mechanism"] = mqSetting.Auth.Mechanism
 		connectorBody["config"].(map[string]any)["schema.history.internal.producer.sasl.jaas.config"] = jaasConfig
-		connectorBody["config"].(map[string]any)["table.include.list"] = sourceId
 	}
 	switch catalog.ConnectorType {
-	case "mysql":
+	case interfaces.ConnectorTypeMySQL:
 		connectorBody["config"].(map[string]any)["database.server.id"] = fmt.Sprintf("%d", getServerID(connectorName))
 		connectorBody["config"].(map[string]any)["database.server.name"] = getServerName(fmt.Sprintf("%v", catalog.ConnectorCfg["host"]))
 		connectorBody["config"].(map[string]any)["database.include.list"] = database
-	case "postgresql":
+		connectorBody["config"].(map[string]any)["schema.history.internal.store.only.captured.databases.ddl"] = true
+		//connectorBody["config"].(map[string]any)["schema.history.internal.store.only.captured.tables.ddl"] = true
+	case interfaces.ConnectorTypePostgreSQL:
 		connectorBody["config"].(map[string]any)["database.dbname"] = database
 		//connectorBody["config"].(map[string]any)["schema.include.list"] = "public" //一般用不上，table.include.list包含schema信息
 		connectorBody["config"].(map[string]any)["plugin.name"] = "pgoutput"
-	default:
-		logger.Errorf("Unsupported connector type: %s", catalog.ConnectorType)
-		return nil, "", fmt.Errorf("Unsupported connector type: %s", catalog.ConnectorType)
 	}
 
-	return connectorBody, sourceId, nil
+	return connectorBody
 }
 
 // handleUpdateOperation 处理更新操作
-func (sh *streamingBuildHandler) handleUpdateOperation(ctx context.Context, keyMap, after map[string]any, fieldMap map[string]*interfaces.Property, indexName, embeddingTopic string, retryInterval time.Duration, buildTaskInfo *interfaces.BuildTask, resource *interfaces.Resource) error {
+func (sh *streamingBuildHandler) handleUpdateOperation(ctx context.Context, keyMap, after map[string]any, indexName string, buildTaskInfo *interfaces.BuildTask, writer *kafka.Writer) error {
 	primaryKeyValues := getPrimaryKeyValue(keyMap)
 	if primaryKeyValues == nil {
 		return fmt.Errorf("failed to extract unique key values from keyMap")
@@ -588,32 +530,9 @@ func (sh *streamingBuildHandler) handleUpdateOperation(ctx context.Context, keyM
 		return fmt.Errorf("failed to update document in dataset: %w", err)
 	} else if buildTaskInfo.EmbeddingFields != "" {
 		// Send document ID to Kafka for embedding
-		// Create Kafka writer for embedding
-		writer, err := sh.kafkaAccess.NewWriter(ctx, embeddingTopic)
+		err = sendEmbeddingMessage(ctx, writer, sh.kafkaAccess, []string{newDocID})
 		if err != nil {
-			return fmt.Errorf("failed to create Kafka writer for embedding: %w", err)
-		}
-		defer sh.kafkaAccess.CloseWriter(writer)
-
-		// Create message
-		messageData := map[string]any{
-			"document_id": newDocID,
-		}
-		messageBytes, err := sonic.Marshal(messageData)
-		if err != nil {
-			return fmt.Errorf("failed to marshal message: %w", err)
-		}
-
-		// Write message to Kafka
-		// Use docID + timestamp as key to avoid conflicts even if document is modified multiple times
-		err = sh.kafkaAccess.WriteMessages(ctx, writer, []kafka.Message{
-			{
-				Key:   []byte(fmt.Sprintf("%s-%d", newDocID, time.Now().UnixNano())),
-				Value: messageBytes,
-			},
-		}...)
-		if err != nil {
-			return fmt.Errorf("failed to write message to Kafka: %w", err)
+			return err
 		}
 	}
 
@@ -621,7 +540,7 @@ func (sh *streamingBuildHandler) handleUpdateOperation(ctx context.Context, keyM
 }
 
 // handleDeleteOperation 处理删除操作
-func (sh *streamingBuildHandler) handleDeleteOperation(ctx context.Context, keyMap map[string]any, indexName string, resource *interfaces.Resource, retryInterval time.Duration) error {
+func (sh *streamingBuildHandler) handleDeleteOperation(ctx context.Context, keyMap map[string]any, indexName string) error {
 	primaryKeyValues := getPrimaryKeyValue(keyMap)
 	if primaryKeyValues == nil {
 		return fmt.Errorf("failed to extract unique key values from keyMap")
@@ -638,14 +557,17 @@ func (sh *streamingBuildHandler) handleDeleteOperation(ctx context.Context, keyM
 
 // 格式化table名称
 func (sh *streamingBuildHandler) formatTableName(sourceIdentifier string, connectorType string, database any) (string, error) {
+	if database == nil || database == "" {
+		return "", fmt.Errorf("database is empty or nil")
+	}
 	sourceId := sourceIdentifier
 	switch connectorType {
-	case "mysql":
+	case interfaces.ConnectorTypeMySQL:
 		// 如果不是 db.table 格式，前面加上 dbname.
 		if !strings.Contains(sourceIdentifier, ".") {
 			sourceId = fmt.Sprintf("%v", database) + "." + sourceIdentifier
 		}
-	case "postgresql":
+	case interfaces.ConnectorTypePostgreSQL:
 		// 如果是 db.schema.table 格式，去掉 db.
 		if strings.Count(sourceIdentifier, ".") >= 2 {
 			parts := strings.Split(sourceIdentifier, ".")
@@ -657,6 +579,20 @@ func (sh *streamingBuildHandler) formatTableName(sourceIdentifier string, connec
 		return "", fmt.Errorf("connector type %s is not supported", connectorType)
 	}
 	return sourceId, nil
+}
+
+// check connector need to be stop
+func (sh *streamingBuildHandler) checkConnectorNeedToStop(ctx context.Context, catalogID string) (bool, error) {
+	tasks, err := sh.taskAccess.GetByCatalogID(ctx, catalogID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get tasks: %w", err)
+	}
+	for _, task := range tasks {
+		if task.Status == interfaces.BuildTaskStatusRunning {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // getPrimaryKeyValue 获取主键值
