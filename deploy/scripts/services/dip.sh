@@ -1,6 +1,6 @@
 
 # Default DIP namespace
-DIP_NAMESPACE="${DIP_NAMESPACE:-kweaver}"
+DIP_NAMESPACE="${DIP_NAMESPACE:-kweaver-ai}"
 
 # Default local DIP charts directory (relative to deploy root)
 DIP_LOCAL_CHARTS_DIR="${DIP_LOCAL_CHARTS_DIR:-}"
@@ -120,7 +120,7 @@ _dip_ensure_kweaver_core() {
 
     local namespace
     namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver}"
+    namespace="${namespace:-kweaver-ai}"
 
     log_info "Checking kweaver-core dependencies for KWeaver DIP..."
 

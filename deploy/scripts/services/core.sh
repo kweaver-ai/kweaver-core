@@ -1,6 +1,6 @@
 
 # Default kweaver-core namespace
-CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver}"
+CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
 
 # Set to true in parse_core_args when user passes --namespace/--namespace=… (overrides namespace: in YAML).
 CORE_NAMESPACE_FROM_CLI="${CORE_NAMESPACE_FROM_CLI:-false}"
