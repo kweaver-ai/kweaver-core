@@ -43,11 +43,10 @@ func (c *NotInCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 			OriginalName: cfg.Name,
 		}
 	}
-
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [not_in] does not support value_from type '%s'", cfg.ValueFrom)
 	}
-	val, ok := cfg.ValueOptCfg.Value.([]any)
+	val, ok := cfg.Value.([]any)
 	if !ok {
 		return nil, fmt.Errorf("condition [not_in] right value should be an array")
 	}

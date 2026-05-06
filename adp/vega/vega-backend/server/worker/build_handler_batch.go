@@ -181,7 +181,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 	if err := connector.Connect(ctx); err != nil {
 		return fmt.Errorf("connect failed: %w", err)
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 	tableConnector, ok := connector.(connectors.TableConnector)
 	if !ok {
 		return fmt.Errorf("connector is not a table connector")
@@ -352,7 +352,7 @@ func (bh *batchBuildHandler) executeBuild(ctx context.Context, resource *interfa
 		// Update resource index name
 		err = updateResourceIndexName(ctx, resource, bh.resAccess, bh.ds, indexName)
 		if err != nil {
-			return fmt.Errorf("Failed to update resource index name: %v", err)
+			return fmt.Errorf("failed to update resource index name: %v", err)
 		}
 
 		// Update task status to completed

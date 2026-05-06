@@ -45,14 +45,14 @@ func (c *GtCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		}
 	}
 
-	if IsSlice(cfg.ValueOptCfg.Value) {
+	if IsSlice(cfg.Value) {
 		return nil, fmt.Errorf("condition [gt] only supports single value")
 	}
 
 	cond := &GtCond{
 		Cfg:    cfg,
 		Lfield: field,
-		Value:  cfg.ValueOptCfg.Value,
+		Value:  cfg.Value,
 	}
 
 	if cfg.ValueFrom == interfaces.ValueFrom_Field {

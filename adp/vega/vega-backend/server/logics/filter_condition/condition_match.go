@@ -33,7 +33,7 @@ func (c *MatchCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 	fieldsMap map[string]*interfaces.Property) (interfaces.FilterCondition, error) {
 
 	fields := make([]*interfaces.Property, 0)
-	
+
 	// 优先从 RemainCfg 中获取 fields 数组
 	if cfgFields, ok := cfg.RemainCfg["fields"].([]any); ok {
 		if len(cfgFields) == 1 && cfgFields[0].(string) == interfaces.AllField {
@@ -72,7 +72,7 @@ func (c *MatchCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		}
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [match] does not support value_from type '%s'", cfg.ValueFrom)
 	}
 

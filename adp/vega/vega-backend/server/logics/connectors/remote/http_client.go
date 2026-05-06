@@ -71,7 +71,7 @@ func (c *Client) Request(ctx context.Context, method, url string, body any) ([]b
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

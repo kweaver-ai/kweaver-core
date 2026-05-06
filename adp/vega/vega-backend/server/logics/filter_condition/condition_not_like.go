@@ -42,10 +42,10 @@ func (c *NotLikeCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		return nil, fmt.Errorf("condition [not_like] left field is not a string/text field: %s:%s", cfg.Name, field.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [not_like] does not support value_from type '%s'", cfg.ValueFrom)
 	}
-	val, ok := cfg.ValueOptCfg.Value.(string)
+	val, ok := cfg.Value.(string)
 	if !ok {
 		return nil, fmt.Errorf("condition [not_like] right value is not a string value: %v", cfg.Value)
 	}

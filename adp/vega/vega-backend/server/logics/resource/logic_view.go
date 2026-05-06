@@ -181,7 +181,7 @@ func determineLogicType(nodes []*interfaces.LogicDefinitionNode) string {
 				hasProcessingNode = true
 			case interfaces.LogicDefinitionNodeType_Output:
 				// 不应该出现，但忽略
-				break
+				// break
 			}
 
 			// 将输入节点加入队列
