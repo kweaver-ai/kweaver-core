@@ -123,10 +123,12 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 #    注册 LLM + embedding（已有则跳过）；只有当默认 embedding 实际变更时才会 patch BKN ConfigMap；
 #    在 ISF 全量下还会创建业务用户 `test`、把 `kweaver-admin role list` 中所有角色都挂上、
 #    切换 `kweaver` 到该用户身份，并导入 Context Loader 工具集。
-bash ./onboard.sh        # 交互模式
-bash ./onboard.sh -y     # 非交互模式（按默认）
-bash ./onboard.sh --help # 全部参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
+sudo bash ./onboard.sh        # 交互模式
+sudo bash ./onboard.sh -y     # 非交互模式（按默认）
+sudo bash ./onboard.sh --help # 全部参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
 ```
+
+> **为什么要 `sudo`？** `onboard.sh` 会读 `$HOME/.kweaver-ai/config.yaml`（由 `sudo deploy.sh` 写到 `/root/.kweaver-ai/` 下）并把 `kweaver` 认证 token 写到 `$HOME/.kweaver`。不加 `sudo` 会回退到仓库内模板 `deploy/conf/config.yaml`，可能解析出和安装时不一致的 access URL。**macOS 开发路径**（`bash ./dev/mac.sh onboard`）**不需要** `sudo`。脚本启动时也会打印这条提示；可用 `ONBOARD_SUDO_HINT_DISABLED=1` 关闭。
 
 > 完整的 preflight / onboard 流程、ISF 双 CLI 鉴权与 Mermaid 流程图见 [help/zh/install.md — Post-install：`onboard.sh`](../help/zh/install.md#post-installonboardsh安装后引导)。
 

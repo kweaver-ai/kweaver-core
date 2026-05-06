@@ -6,6 +6,8 @@ English | [中文](#中文说明)
 
 Local Kubernetes with **kind** plus the same Helm charts as Linux `deploy.sh`. No host `preflight` / k3s / kubeadm.
 
+> ⚠️ **Do not use `sudo` on macOS.** Run every command with plain `bash`. Docker Desktop / `kind` / `$HOME` (config + `kweaver` token) all belong to your user; `sudo` redirects them to `/var/root` and breaks the flow. `deploy.sh` already short-circuits root checks on `Darwin`, so `sudo` adds nothing.
+
 ### Repository (clone first)
 
 Scripts and vendored manifests live in the repo tree — **`mac.sh` is not a standalone installer.** Clone **[kweaver-ai/kweaver-core](https://github.com/kweaver-ai/kweaver-core)** (check out the branch you deploy from, e.g. `feature/deploy/k3s-module`), then **`cd`** into **`deploy/`** before any command below:
@@ -131,6 +133,8 @@ Details: [`help/en/install.md`](../../help/en/install.md) · [`help/zh/install.m
 **读者：**可与文首英文 **Audience** 相同：**macOS 开发者**作快速验证；**生产环境与主文档以 Linux 为准** —— [`deploy/README.zh.md`](../README.zh.md)、[`help/zh/install.md`](../../help/zh/install.md)。
 
 本机 **kind** 起 Kubernetes，与 Linux `deploy.sh` 使用同一套 Helm Chart；宿主机不跑 **`preflight` / k3s / kubeadm**。
+
+> ⚠️ **macOS 上不要用 `sudo`。** 本节所有命令一律用普通 `bash`。Docker Desktop / `kind` / `$HOME`（含安装配置与 `kweaver` token）都属于当前用户，`sudo` 会把它们重定向到 `/var/root` 并割裂安装与 onboard。`deploy.sh` 已识别 `Darwin` 并跳过 root 检查，`sudo` 在 Mac 上无任何额外作用。
 
 ### 克隆仓库（先做好）
 

@@ -96,9 +96,11 @@ kubectl get pods -A
 
 ```bash
 cd deploy
-bash ./onboard.sh        # 交互模式；或：bash ./onboard.sh -y
-bash ./onboard.sh --help # 所有参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
+sudo bash ./onboard.sh        # 交互模式；或：sudo bash ./onboard.sh -y
+sudo bash ./onboard.sh --help # 所有参数（--config=models.yaml、--enable-bkn-search、--skip-context-loader 等）
 ```
+
+   > **为什么要 `sudo`？** `onboard.sh` 会读 `$HOME/.kweaver-ai/config.yaml`（由 `sudo deploy.sh` 写到 `/root/.kweaver-ai/` 下）并把 `kweaver` 认证 token 写到 `$HOME/.kweaver`。不加 `sudo` 会回退到仓库内模板 `deploy/conf/config.yaml`，可能解析出和安装时不一致的 access URL。**macOS 开发路径**（`bash deploy/dev/mac.sh onboard`）**不需要** `sudo`。
 
    可重复运行：脚本会先探测平台已有的模型与 ConfigMap 状态，已注册 / 已配置的会自动跳过。完整流程图、ISF 全量下 `kweaver` 与 `kweaver-admin` 双 CLI 的鉴权说明见 [help/zh/install.md — Post-install：`onboard.sh`](help/zh/install.md#post-installonboardsh安装后引导)。
 

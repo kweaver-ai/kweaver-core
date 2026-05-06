@@ -216,9 +216,11 @@ onboard_kweaver_tls_insecure_args_to_array() {
 }
 
 usage() {
-    echo "Usage: $0 [options]"
+    echo "Usage: sudo bash ./onboard.sh [options]   # Linux (matches sudo deploy.sh)"
+    echo "       bash ./dev/mac.sh onboard           # macOS dev (kind path; no sudo)"
     echo "  Requires: Node 22+ (see @kweaver-ai/kweaver-sdk on npm), kweaver, kubectl, python3; run from deploy/"
     echo "  Config YAML: unset CONFIG_YAML_PATH and onboard uses \$HOME/.kweaver-ai/config.yaml when that file exists (same as deploy.sh); otherwise scripts/lib/common.sh default (deploy/conf/config.yaml)."
+    echo "  Why sudo on Linux: deploy.sh runs as root and writes \$HOME/.kweaver-ai/config.yaml under /root/.kweaver-ai/ (mode 700); onboard.sh also writes \$HOME/.kweaver auth state. sudo keeps both pointing at the same root home (silence the startup hint with ONBOARD_SUDO_HINT_DISABLED=1; not needed on macOS dev)."
     echo "  (no flags)                Interactive: nvm+Node 22 and npm -g (Y/n) in your terminal, then models/BKN"
     echo "  -y, --yes                 Auto nvm+Node 22, npm -g, context-loader import, ISF [test] user+roles (no Y/n)"
     echo "  --config=PATH            YAML: deploy/conf/models.yaml.example; model prompts off, but nvm/kweaver still Y/n in a TTY (use -y to skip those asks)"

@@ -173,7 +173,7 @@ sudo bash deploy/preflight.sh --help         # 全部参数
   Only then install:
     sudo bash ./deploy.sh kweaver-core install --minimum    # 体验 / 最小化
     sudo bash ./deploy.sh kweaver-core install              # 完整安装
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
+  Finally: sudo bash ./onboard.sh from deploy/ (Linux；macOS dev 用普通 bash。Node 22+ + kweaver on PATH；sudo bash ./preflight.sh --fix helps …)
 ```
 
 **说明：**
@@ -253,12 +253,14 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ## Post-install：`onboard.sh`（安装后引导）
 
-在 `deploy.sh kweaver-core install` 之后，可在能访问集群的机器上运行 **`deploy/onboard.sh`**，需 **Node 22+**、**kubectl**、**kweaver**（`npm i -g @kweaver-ai/kweaver-sdk`）。在 **`deploy/`** 目录执行：
+在 `deploy.sh kweaver-core install` 之后，可在能访问集群的机器上运行 **`deploy/onboard.sh`**，需 **Node 22+**、**kubectl**、**kweaver**（`npm i -g @kweaver-ai/kweaver-sdk`）。在 **`deploy/`** 目录执行，**Linux 上需要 `sudo`**（与 `sudo deploy.sh` 对齐）：
 
 ```bash
 cd deploy
-bash ./onboard.sh --help
+sudo bash ./onboard.sh --help
 ```
+
+> **为什么要 `sudo`？** `onboard.sh` 读安装期写下的 `$HOME/.kweaver-ai/config.yaml`（`sudo deploy.sh` 会写到 `/root/.kweaver-ai/`，权限 700），并把 `kweaver` 认证状态写到 `$HOME/.kweaver`。不加 `sudo` 时读到的是当前用户的 home——若该用户没有这个文件就会回退到仓库内模板 `deploy/conf/config.yaml`，**可能解析出和安装时不一致的 access URL**。命中此路径时脚本启动会打印黄色的 `[onboard][hint]`；可用 `ONBOARD_SUDO_HINT_DISABLED=1` 关闭。**macOS 开发路径**（`bash deploy/dev/mac.sh onboard`）**不要**加 `sudo`：Docker Desktop / `kind` / `$HOME` 都属于当前用户，`sudo` 会把它们重定向到 `/var/root` 并割裂安装与 onboard；`deploy.sh` 在 `Darwin` 上已跳过 root 检查。详见 [`deploy/dev/README.md`](../../deploy/dev/README.md#中文说明)。
 
 常用参数：
 
@@ -278,7 +280,7 @@ bash ./onboard.sh --help
 4. **业务用户 `test`**（`onboard_offer_isf_test_user`）— 创建 `test`，密码 `111111`（可用 `ONBOARD_TEST_USER_PASSWORD` 覆盖），把 `kweaver-admin role list` 中**所有**角色都挂上，然后 **`kweaver auth login` 为 `test`**，让 SDK 会话切到业务用户，供后续步骤使用。若 `test` 已存在，则只做角色同步。
 5. **Context Loader + 模型注册**（`onboard_offer_context_loader_toolset` → `kweaver call impex`；随后是交互式或 YAML 模型注册）— 都使用**以 `test` 登录的 `kweaver`（`~/.kweaver`）**；仅 **admin** 的 `kweaver` 会话对 impex 常见 **403**。
 
-任何一步失败脚本都会非零退出并打印清楚原因；修好之后重跑 `bash deploy/onboard.sh` 即可——已成功的步骤会被检测并跳过（重复运行幂等）。
+任何一步失败脚本都会非零退出并打印清楚原因；修好之后重跑 `sudo bash deploy/onboard.sh`（Linux）/ `bash deploy/onboard.sh`（macOS dev）即可——已成功的步骤会被检测并跳过（重复运行幂等）。
 
 **最小化安装**（`--minimum`）：通常只需 `kweaver`（常为 `--no-auth`）；上述 ISF 专属步骤 2–4 会被自动跳过，第 5 步的 Context Loader 仅在集群中确实有 operator deployment 时才执行。
 

@@ -172,7 +172,7 @@ After `--check-only` or `--fix`, preflight prints a **Summary** (counts per stat
   Only then install:
     sudo bash ./deploy.sh kweaver-core install --minimum
     sudo bash ./deploy.sh kweaver-core install
-  Finally: ./onboard.sh from deploy/ (Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
+  Finally: sudo bash ./onboard.sh from deploy/ (Linux; macOS dev uses plain bash. Node 22+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps …)
 ```
 
 **Notes:**
@@ -250,12 +250,14 @@ export INGRESS_NGINX_HTTPS_PORT=8443
 
 ## Post-install: `onboard.sh`
 
-After `deploy.sh kweaver-core install`, use **`deploy/onboard.sh`** on a machine with **Node 22+**, **`kubectl`** (cluster access), and **`kweaver`** (`npm i -g @kweaver-ai/kweaver-sdk`). Run from the `deploy/` directory:
+After `deploy.sh kweaver-core install`, use **`deploy/onboard.sh`** on a machine with **Node 22+**, **`kubectl`** (cluster access), and **`kweaver`** (`npm i -g @kweaver-ai/kweaver-sdk`). Run from the `deploy/` directory **with `sudo` on Linux** (matches `sudo deploy.sh`):
 
 ```bash
 cd deploy
-bash ./onboard.sh --help
+sudo bash ./onboard.sh --help
 ```
+
+> **Why `sudo`?** `onboard.sh` reads the install config at `$HOME/.kweaver-ai/config.yaml` (written by `sudo deploy.sh` into `/root/.kweaver-ai/`, mode 700) and writes `kweaver` auth state to `$HOME/.kweaver`. Without `sudo`, the current user's home is consulted instead — and falls back to the vendored template `deploy/conf/config.yaml` if that file does not exist, which may resolve a **different** access URL than the one used at install time. The script prints a yellow `[onboard][hint]` at startup whenever this mismatch is likely; silence with `ONBOARD_SUDO_HINT_DISABLED=1`. **macOS dev path** (`bash deploy/dev/mac.sh onboard`) must **not** use `sudo`: Docker Desktop / `kind` / `$HOME` (install config + `kweaver` token) all belong to the current user, and `sudo` redirects them to `/var/root` — splitting install from onboard. `deploy.sh` already short-circuits `check_root` on `Darwin`, so `sudo` adds nothing on macOS. See [`deploy/dev/README.md`](../../deploy/dev/README.md) for details.
 
 Typical flags:
 
@@ -275,7 +277,7 @@ Typical flags:
 4. **User `test`** (`onboard_offer_isf_test_user`) — created with password `111111` (override with `ONBOARD_TEST_USER_PASSWORD`), every role from `kweaver-admin role list` assigned, then **`kweaver auth login` as `test`** so the SDK session matches the business user for the next steps. If `test` already exists, only role-sync runs.
 5. **Context Loader + model registration** (`onboard_offer_context_loader_toolset` → `kweaver call impex`; then interactive / YAML model registration) — both use **`~/.kweaver` as `test`** (the console `admin` session usually returns `403` on impex).
 
-If any step fails, the script exits non-zero with a clear message; re-run `bash deploy/onboard.sh` after fixing the cause — earlier successful steps are detected and skipped (idempotent re-runs).
+If any step fails, the script exits non-zero with a clear message; re-run `sudo bash deploy/onboard.sh` (Linux) / `bash deploy/onboard.sh` (macOS dev) after fixing the cause — earlier successful steps are detected and skipped (idempotent re-runs).
 
 **Minimum install** (`--minimum`): only `kweaver auth` (often `--no-auth`); the ISF-only steps 2–4 above are no-ops, and Context Loader (step 5) only runs if the operator deployment is present.
 

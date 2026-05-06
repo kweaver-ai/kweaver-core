@@ -305,7 +305,7 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
             echo ""
             echo "  Suggested next step (skip install, just configure / verify):"
             echo "    - Node/kweaver on an admin host: default preflight is check-only; run sudo bash ./preflight.sh --fix to opt in to help installing Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ and CLIs (y/N per step)"
-            echo "    - Configure models / BKN search:    ./onboard.sh"
+            echo "    - Configure models / BKN search:    sudo bash ./onboard.sh   (Linux; macOS dev: bash ./dev/mac.sh onboard)"
             echo "    - Check status:                     sudo bash ./deploy.sh kweaver-core status"
             echo "    - Only if you really want to upgrade: sudo bash ./deploy.sh kweaver-core install --force-upgrade"
         else
@@ -321,7 +321,7 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
             echo "    sudo bash ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
             echo "    sudo bash ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
             echo ""
-            echo "  After deploy: from this repo's deploy/ directory run ./onboard.sh (needs Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver CLI on that host)."
+            echo "  After deploy: from this repo's deploy/ directory run sudo bash ./onboard.sh (Linux; macOS dev uses plain bash; needs Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver CLI on that host)."
             echo "  If this host still lacks Node/CLIs: sudo bash ./preflight.sh --fix"
         else
             echo "  No KWeaver releases detected, but preflight above is NOT all clear — fix that before treating deploy as ready."
@@ -331,7 +331,7 @@ if [[ "${PREFLIGHT_OUTPUT_JSON}" != "true" ]]; then
             echo "  Only then install:"
             echo "    sudo bash ./deploy.sh kweaver-core install --minimum    # try first / for evaluation"
             echo "    sudo bash ./deploy.sh kweaver-core install              # full install (auth + business-domain)"
-            echo "  Finally: ./onboard.sh from deploy/ (Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps install tooling on this machine)."
+            echo "  Finally: sudo bash ./onboard.sh from deploy/ (Linux; macOS dev uses plain bash. Node ${PREFLIGHT_KWEAVER_MIN_NODE_MAJOR}+ + kweaver on PATH; sudo bash ./preflight.sh --fix helps install tooling on this machine)."
         fi
     fi
     echo "${_PF_BAR}"
