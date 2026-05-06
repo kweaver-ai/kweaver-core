@@ -369,7 +369,7 @@ preflight_check_os() {
     log_info "Checking OS and kernel..."
 
     if [[ ! -f /etc/os-release ]]; then
-        preflight_warn "No /etc/os-release (expected on RHEL/Debian/openEuler; macOS/others: run on Linux target host)"
+        preflight_warn "No /etc/os-release (expected on RHEL/Debian/openEuler/HCE; macOS/others: run on Linux target host)"
         return
     fi
     # shellcheck source=/dev/null
@@ -379,14 +379,16 @@ preflight_check_os() {
     local ok_os="no"
     case "${ID:-}" in
         centos|rhel|almalinux|rocky) [[ "${VERSION_ID%%.*}" -ge 8 ]] 2>/dev/null && ok_os="yes" || true ;;
-        openeuler) [[ "${VERSION_ID%%.*}" -ge 23 ]] 2>/dev/null && ok_os="yes" || true ;;
+        # Huawei Cloud EulerOS: os-release VERSION_ID is product series (e.g. 2.0), not el major
+        hce) [[ "${VERSION_ID%%.*}" -ge 2 ]] 2>/dev/null && ok_os="yes" || true ;;
+        openEuler|openeuler) [[ "${VERSION_ID%%.*}" -ge 23 ]] 2>/dev/null && ok_os="yes" || true ;;
         ubuntu) [[ "${VERSION_ID%%.*}" -ge 22 ]] 2>/dev/null && ok_os="yes" || true ;;
         *) true ;;
     esac
     if [[ "${ok_os}" == "yes" ]]; then
         preflight_ok "OS: ${ID:-unknown} ${VERSION_ID:-} (in supported set)"
     else
-        preflight_warn "OS: ${ID:-unknown} ${VERSION_ID:-} (expected CentOS 8+ / openEuler 23+ / Ubuntu 22.04+); verify before production"
+        preflight_warn "OS: ${ID:-unknown} ${VERSION_ID:-} (expected CentOS 8+ / HCE 2+ / openEuler 23+ / Ubuntu 22.04+); verify before production"
     fi
 
     local kver

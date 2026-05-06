@@ -473,12 +473,16 @@ install_containerd() {
         log_info "Replacing Docker official URLs with Tsinghua mirror..."
         sed -i 's+https://download.docker.com+https://mirrors.tuna.tsinghua.edu.cn/docker-ce+g' /etc/yum.repos.d/docker-ce.repo
         
-        # Fix for openEuler: replace $releasever with 9 in repo file
+        # Fix distros whose $releasever does not match Docker CE repo layout
         if [[ -f /etc/os-release ]]; then
             source /etc/os-release
             if [[ "${ID}" == "openEuler" ]] || [[ "${ID}" == "openeuler" ]]; then
                 log_info "Detected openEuler system, fixing Docker CE repo paths..."
                 sed -i 's|\$releasever|9|g' /etc/yum.repos.d/docker-ce.repo
+            elif [[ "${ID}" == "hce" ]]; then
+                # Huawei Cloud EulerOS 2.x is el8-compatible; Docker mirrors expect 8 not VERSION_ID (e.g. 2.0)
+                log_info "Detected Huawei Cloud EulerOS (hce), fixing Docker CE repo paths for el8..."
+                sed -i 's|\$releasever|8|g' /etc/yum.repos.d/docker-ce.repo
             fi
         fi
         
@@ -568,6 +572,10 @@ install_containerd() {
             
             # Default to 8 if version detection fails
             if [[ -z "${rhel_version}" ]]; then
+                rhel_version="8"
+            fi
+            # HCE VERSION_ID is product series (2.0), not RHEL major; use el8 packages
+            if [[ "${os_id}" == "hce" ]]; then
                 rhel_version="8"
             fi
             
