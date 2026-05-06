@@ -250,6 +250,124 @@ Resource 权限点列表（加粗为新增）：
 ### 4.3 业务角色初始化配置
 
 数据平台业务角色权限初始化配置需为 `resource` 类型添加 `rule_manage` 和 `rule_authorize` 权限。
+```json
+[
+    {
+        "expires_at": "1970-01-01T08:00:00+08:00",
+        "resource": {
+            "id": "*",
+            "type": "data_view",
+            "name": "数据视图"
+        },
+        "accessor": {
+            "id": "00990824-4bf7-11f0-8fa7-865d5643e61f",
+            "type": "role",
+            "name": "数据管理员"
+        },
+        "operation": {
+            "allow": [
+                {
+                    "id": "view_detail"
+                },
+                {
+                    "id": "create"
+                },
+                {
+                    "id": "modify"
+                },
+                {
+                    "id": "delete"
+                },
+                {
+                    "id": "data_query"
+                },
+                {
+                    "id": "authorize"
+                },
+                {
+                    "id": "import"
+                },
+                {
+                    "id": "export"
+                },
+                {
+                    "id": "rule_manage"
+                },
+                {
+                    "id": "rule_authorize"
+                }
+            ],
+            "deny": []
+        }
+    },
+    {
+        "expires_at": "1970-01-01T08:00:00+08:00",
+        "resource": {
+            "id": "*",
+            "type": "data_view",
+            "name": "数据视图"
+        },
+        "accessor": {
+            "id": "3fb94948-5169-11f0-b662-3a7bdba2913f",
+            "type": "role",
+            "name": "AI管理员"
+        },
+        "operation": {
+            "allow": [
+                {
+                    "id": "view_detail"
+                },
+                {
+                    "id": "create"
+                },
+                {
+                    "id": "data_query"
+                },
+                {
+                    "id": "import"
+                },
+                {
+                    "id": "export"
+                }
+            ],
+            "deny": []
+        }
+    },
+    {
+        "expires_at": "1970-01-01T08:00:00+08:00",
+        "resource": {
+            "id": "*",
+            "type": "data_view",
+            "name": "数据视图"
+        },
+        "accessor": {
+            "id": "1572fb82-526f-11f0-bde6-e674ec8dde71",
+            "type": "role",
+            "name": "应用管理员"
+        },
+        "operation": {
+            "allow": [
+                {
+                    "id": "view_detail"
+                },
+                {
+                    "id": "create"
+                },
+                {
+                    "id": "data_query"
+                },
+                {
+                    "id": "import"
+                },
+                {
+                    "id": "export"
+                }
+            ],
+            "deny": []
+        }
+    }
+]
+```
 
 ---
 
@@ -263,7 +381,7 @@ Resource 权限点列表（加粗为新增）：
 | name | string | 行列规则名称 | 唯一；长度不超过40字符 | |
 | resource_id | string | 资源 id | 必填 | |
 | tags | []string | 标签 | | |
-| comment | string | 备注 | | |
+| description | string | 备注 | | |
 | fields | []string | 列 | 字段name列表 | |
 | row_filters | condCfg | 行过滤规则 | 支持单层及多层嵌套 | 见下文示例 |
 
@@ -352,7 +470,7 @@ Resource 权限点列表（加粗为新增）：
 | name | string | 行列规则名称 |
 | resource_id | string | 资源 id |
 | tags | []string | 标签 |
-| comment | string | 备注 |
+| description | string | 备注 |
 | fields | []string | 列 |
 | row_filters | condCfg | 过滤条件 |
 
@@ -384,19 +502,21 @@ USE vega;
 
 -- 资源行列规则表
 CREATE TABLE IF NOT EXISTS t_resource_row_column_rule (
-    f_rule_id varchar(40) NOT NULL DEFAULT '' COMMENT '资源行列规则 id',
-    f_rule_name varchar(255) NOT NULL COMMENT '资源行列规则名称',
-    f_resource_id varchar(40) NOT NULL COMMENT '资源 id',
-    f_tags varchar(255) NOT NULL DEFAULT '' COMMENT '标签',
-    f_comment varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
-    f_fields longtext NOT NULL COMMENT '列',
-    f_row_filters text NOT NULL COMMENT '行过滤规则',
-    f_create_time bigint(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
-    f_update_time bigint(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
-    f_creator char(36) NOT NULL COMMENT '创建人id',
-    f_updater char(36) NOT NULL COMMENT '更新人id',
-    PRIMARY KEY (f_rule_id),
-    UNIQUE KEY uk_f_rule_name (f_rule_name, f_resource_id),
+    f_id VARCHAR(40) NOT NULL DEFAULT '' COMMENT '资源行列规则 id',
+    f_name VARCHAR(255) NOT NULL COMMENT '资源行列规则名称',
+    f_resource_id VARCHAR(40) NOT NULL COMMENT '资源 id',
+    f_tags VARCHAR(255) NOT NULL DEFAULT '' COMMENT '标签',
+    f_description VARCHAR(1000) NOT NULL DEFAULT '' COMMENT '备注',
+    f_fields TEXT NOT NULL COMMENT '列',
+    f_row_filters TEXT NOT NULL COMMENT '行过滤规则',
+    f_creator VARCHAR(128) NOT NULL DEFAULT '' COMMENT '创建者id',
+    f_creator_type VARCHAR(20) NOT NULL DEFAULT '' COMMENT '创建者类型',
+    f_create_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '创建时间',
+    f_updater VARCHAR(128) NOT NULL DEFAULT '' COMMENT '更新者id',
+    f_updater_type VARCHAR(20) NOT NULL DEFAULT '' COMMENT '更新者类型',
+    f_update_time BIGINT(20) NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (f_id),
+    UNIQUE KEY uk_f_name (f_name, f_resource_id),
     INDEX idx_f_resource_id (f_resource_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '资源行列规则';
 ```
