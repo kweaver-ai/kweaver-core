@@ -8,9 +8,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "500M"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "120"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: {{ .Values.service.agentFactory.ingress.proxyConnectTimeout | default 120 | quote }}
+    nginx.ingress.kubernetes.io/proxy-read-timeout: {{ .Values.service.agentFactory.ingress.proxyReadTimeout | default 1800 | quote }}
+    nginx.ingress.kubernetes.io/proxy-send-timeout: {{ .Values.service.agentFactory.ingress.proxySendTimeout | default 1800 | quote }}
 spec:
   ingressClassName: {{ index .Values.depServices "class-443" "ingressClass" }}
   rules:

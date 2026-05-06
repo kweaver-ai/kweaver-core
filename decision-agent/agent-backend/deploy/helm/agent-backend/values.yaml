@@ -33,6 +33,12 @@ service:
           - /api/agent-factory/v2
           - /api/agent-factory/v3
           - /api/agent-app/v1
+      # nginx ingress 代理超时（秒）。LLM agent chat 单次调用可能长达数十分钟，
+      # 默认 1800s（30min）覆盖常见复杂智能体任务。若部署环境仍不够，可通过
+      # --set service.agentFactory.ingress.proxyReadTimeout=3600 等方式覆盖。
+      proxyConnectTimeout: 120
+      proxyReadTimeout: 1800
+      proxySendTimeout: 1800
   agentApp:
     port: 30777
     nodePort: 31023
