@@ -431,6 +431,31 @@ install_helm() {
     log_info "Helm 3 installed successfully"
 }
 
+# Docker CE .repo uses $releasever in paths. On HCE/openEuler, DNF expands that
+# from /etc/os-release to a product version (e.g. 2.0) instead of el major — Docker
+# mirrors only host centos/8,9,... Pin the .repo file to a valid tree.
+_fix_docker_ce_repo_releasever_for_distro() {
+    local repo_file="/etc/yum.repos.d/docker-ce.repo"
+    [[ -f "${repo_file}" ]] || return 0
+    [[ -f /etc/os-release ]] || return 0
+    # shellcheck source=/dev/null
+    . /etc/os-release
+    case "${ID:-}" in
+        openEuler|openeuler)
+            log_info "Pinning Docker CE repo paths for openEuler..."
+            sed -i 's|\$releasever|9|g' "${repo_file}"
+            ;;
+        hce)
+            log_info "Pinning Docker CE repo paths for Huawei Cloud EulerOS (el8, not VERSION_ID)..."
+            sed -i 's|\$releasever|8|g' "${repo_file}"
+            # If the file was ever expanded or edited to literal HCE VERSION_ID paths, fix those too
+            sed -i 's|/linux/centos/2\.[0-9]*/|/linux/centos/8/|g' "${repo_file}"
+            sed -i 's|/linux/centos/2/|/linux/centos/8/|g' "${repo_file}"
+            ;;
+        *) ;;
+    esac
+}
+
 # Install containerd container runtime
 install_containerd() {
     log_info "Checking containerd installation..."
@@ -472,19 +497,8 @@ install_containerd() {
         # Replace official Docker download URLs with Tsinghua mirror
         log_info "Replacing Docker official URLs with Tsinghua mirror..."
         sed -i 's+https://download.docker.com+https://mirrors.tuna.tsinghua.edu.cn/docker-ce+g' /etc/yum.repos.d/docker-ce.repo
-        
-        # Fix distros whose $releasever does not match Docker CE repo layout
-        if [[ -f /etc/os-release ]]; then
-            source /etc/os-release
-            if [[ "${ID}" == "openEuler" ]] || [[ "${ID}" == "openeuler" ]]; then
-                log_info "Detected openEuler system, fixing Docker CE repo paths..."
-                sed -i 's|\$releasever|9|g' /etc/yum.repos.d/docker-ce.repo
-            elif [[ "${ID}" == "hce" ]]; then
-                # Huawei Cloud EulerOS 2.x is el8-compatible; Docker mirrors expect 8 not VERSION_ID (e.g. 2.0)
-                log_info "Detected Huawei Cloud EulerOS (hce), fixing Docker CE repo paths for el8..."
-                sed -i 's|\$releasever|8|g' /etc/yum.repos.d/docker-ce.repo
-            fi
-        fi
+
+        _fix_docker_ce_repo_releasever_for_distro
         
         # Clean and makecache for the new repo
         ${PKG_MANAGER} clean all
@@ -523,24 +537,27 @@ install_containerd() {
             fi
         fi
         
-        # Configure Docker CE repo if not exists (Aliyun mirror only)
+        # Configure Docker CE repo (create if missing; always pin $releasever for HCE/openEuler)
         if [[ ! -f /etc/yum.repos.d/docker-ce.repo ]]; then
             log_info "Configuring Docker CE yum repo: ${DOCKER_CE_REPO_URL}"
             configure_docker_repo "${DOCKER_CE_REPO_URL}"
-            
-            set +e
-            ${PKG_MANAGER_UPDATE}
-            local update_rc=$?
-            set -e
+        else
+            log_info "Docker CE repo file already exists; applying distro-specific path fixes if needed"
+            _fix_docker_ce_repo_releasever_for_distro
+        fi
 
-            if [[ ${update_rc} -ne 0 ]]; then
-                log_error "Failed to update package metadata with Docker CE repo."
-                log_error "Please ensure network connectivity and try again, or manually install containerd.io package."
-                log_info "You can manually install containerd using one of these methods:"
-                log_info "  1. dnf install -y containerd.io (after configuring Docker repo)"
-                log_info "  2. Download and install RPM: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/"
-                return 1
-            fi
+        set +e
+        ${PKG_MANAGER_UPDATE}
+        local update_rc=$?
+        set -e
+
+        if [[ ${update_rc} -ne 0 ]]; then
+            log_error "Failed to update package metadata with Docker CE repo."
+            log_error "Please ensure network connectivity and try again, or manually install containerd.io package."
+            log_info "You can manually install containerd using one of these methods:"
+            log_info "  1. dnf install -y containerd.io (after configuring Docker repo)"
+            log_info "  2. Download and install RPM: https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/"
+            return 1
         fi
 
         # Attempt installation with both base and docker-ce repos for CentOS 7
