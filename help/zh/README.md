@@ -6,7 +6,7 @@ KWeaver Core 为**纯后台**平台，请通过 CLI、各语言 SDK 或 HTTP API
 
 ## 🚀 入门
 
-**部署：** 完整安装以 **Linux** 为主；**macOS** 仅可选本机 kind 验证 — 见 [`deploy/dev/README.md`](../../deploy/dev/README.md)。
+**部署：** 完整安装以 **Linux** 为主；**macOS** 仅可选本机 kind 验证 — 见 [`deploy/dev/README.zh.md`](../../deploy/dev/README.zh.md)（[English](../../deploy/dev/README.md)）。
 
 | 文档 | 说明 |
 | --- | --- |

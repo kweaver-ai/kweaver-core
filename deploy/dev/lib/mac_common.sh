@@ -343,7 +343,7 @@ mac_doctor() {
         printf '    bash ./dev/mac.sh cluster up\n'
         printf '    bash ./dev/mac.sh kweaver-core install\n'
         printf '  %bOptional:%b bash ./dev/mac.sh onboard -y\n' "${MAC_D_DIM}" "${MAC_D_RESET}"
-        printf '  %bGuide:%b deploy/dev/README.md\n' "${MAC_D_DIM}" "${MAC_D_RESET}"
+        printf '  %bGuide:%b deploy/dev/README.md · README.zh.md\n' "${MAC_D_DIM}" "${MAC_D_RESET}"
     fi
     return 0
 }

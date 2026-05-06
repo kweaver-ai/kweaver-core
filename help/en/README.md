@@ -6,7 +6,7 @@ KWeaver Core is a **backend-only** platform. Use the CLI, SDKs, or HTTP APIs to 
 
 ## Getting started
 
-**Deploy:** **Linux** is recommended for full installs. **macOS** (optional): local validation with kind — [`deploy/dev/README.md`](../../deploy/dev/README.md).
+**Deploy:** **Linux** is recommended for full installs. **macOS** (optional): local validation with kind — [`deploy/dev/README.md`](../../deploy/dev/README.md) ([中文](../../deploy/dev/README.zh.md)).
 
 | Doc | Description |
 | --- | --- |

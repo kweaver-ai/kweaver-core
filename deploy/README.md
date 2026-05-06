@@ -6,7 +6,7 @@ One-click deployment of **KWeaver Core** onto a single-node Kubernetes cluster.
 
 This `deploy` directory provides scripts to install KWeaver Core along with its dependencies including Kubernetes, infrastructure services, and data services.
 
-**Platforms:** **Linux** is the recommended and fully documented install target (`preflight.sh`, k3s or kubeadm, data services). **macOS** is **optional** for **local development only** (Docker + kind + `dev/mac.sh`); see **[Mac install (dev)](dev/README.md)** — not a substitute for Linux production installs.
+**Platforms:** **Linux** is the recommended and fully documented install target (`preflight.sh`, k3s or kubeadm, data services). **macOS** is **optional** for **local development only** (Docker + kind + `dev/mac.sh`); see **[Mac install (dev)](dev/README.md)** ([中文](dev/README.zh.md)) — not a substitute for Linux production installs.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE.txt)
 
@@ -140,7 +140,7 @@ sudo bash ./onboard.sh --help # all flags (--config=models.yaml, --enable-bkn-se
 
 > Full preflight / onboard flow, ISF dual-CLI auth and Mermaid diagrams: see [help/en/install.md — Post-install: `onboard.sh`](../help/en/install.md#post-install-onboardsh).
 
-> **`onboard.sh` runtime messages** are **English**; on ISF HTTP **401001017**, a **TTY** prompts (**Enter**=`auth change-password` default; **`o`**=OAuth browser). Chinese + English context: [`dev/README.md`](../dev/README.md#onboard-and-kweaver-admin-full-isf); product docs [`help/zh/install.md`](../help/zh/install.md) / [`help/en/install.md`](../help/en/install.md).
+> **`onboard.sh` runtime messages** are **English**; on ISF HTTP **401001017**, a **TTY** prompts (**Enter**=`auth change-password` default; **`o`**=OAuth browser). Chinese + English context: [`dev/README.md`](../dev/README.md#onboard-and-kweaver-admin-full-isf) · [`dev/README.zh.md`](../dev/README.zh.md); product docs [`help/zh/install.md`](../help/zh/install.md) / [`help/en/install.md`](../help/en/install.md).
 
 ## 📋 Prerequisites
 

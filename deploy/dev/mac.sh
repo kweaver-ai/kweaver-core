@@ -11,7 +11,7 @@
 #   7. isf / etrino (vega)    — optional; same Helm path as Linux when cluster + config are ready
 #   8. onboard                — optional; needs kweaver CLI + Core up (add -y for non-interactive)
 #   Teardown: cluster down
-#   Full write-up: deploy/dev/README.md
+#   Full write-up: deploy/dev/README.md (EN) · deploy/dev/README.zh.md (中文)
 #
 # Usage:
 #   bash deploy/dev/mac.sh doctor
@@ -31,7 +31,7 @@
 #
 # Commands that delegate to deploy.sh run Helm chart logic only on mac
 # (no host k3s / bundled data-service bootstrap) unless you run **data-services install**
-# (or individual mariadb/redis/… via deploy.sh). See deploy/dev/README.md.
+# (or individual mariadb/redis/… via deploy.sh). See deploy/dev/README.md / README.zh.md.
 #
 # doctor --fix prompts before running brew unless you pass -y / --yes (globally before doctor, or after --fix).
 #
