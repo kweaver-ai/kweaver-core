@@ -60,11 +60,12 @@ func NewBuildTaskService(appSetting *common.AppSetting) interfaces.BuildTaskServ
 	return btsInst
 }
 
-// CreateBuildTask creates a new build task for a resource.
-func (s *buildTaskService) CreateBuildTask(ctx context.Context, resourceID string, req *interfaces.BuildTaskRequest) (string, error) {
+// CreateBuildTask creates a new build task. resource_id is taken from req.
+func (s *buildTaskService) CreateBuildTask(ctx context.Context, req *interfaces.CreateBuildTaskRequest) (string, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Create build task")
 	defer span.End()
 
+	resourceID := req.ResourceID
 	resource, err := s.ra.GetByID(ctx, resourceID)
 	if err != nil {
 		span.SetStatus(codes.Error, "Get resource failed")

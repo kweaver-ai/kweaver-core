@@ -11,8 +11,8 @@ import "context"
 
 // BuildTaskService defines build task business logic interface.
 type BuildTaskService interface {
-	// CreateBuildTask creates a new build task for a resource.
-	CreateBuildTask(ctx context.Context, resourceID string, req *BuildTaskRequest) (string, error)
+	// CreateBuildTask creates a new build task. resource_id and mode come from req.
+	CreateBuildTask(ctx context.Context, req *CreateBuildTaskRequest) (string, error)
 	// GetBuildTaskByID retrieves a build task by ID.
 	GetBuildTaskByID(ctx context.Context, id string) (*BuildTask, error)
 	// GetBuildTaskByResourceID retrieves a build task by resource ID.

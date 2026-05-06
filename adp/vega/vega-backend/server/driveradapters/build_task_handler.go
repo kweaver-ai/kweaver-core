@@ -59,7 +59,10 @@ func (r *restHandler) CreateBuildTaskByIn(c *gin.Context) {
 }
 
 func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
@@ -117,7 +120,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 		}
 	}
 
-	taskID, err := r.bts.CreateBuildTask(ctx, req.ResourceID, &req.BuildTaskRequest)
+	taskID, err := r.bts.CreateBuildTask(ctx, &req)
 	if err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
@@ -437,4 +440,3 @@ func isValidBuildTaskMode(m string) bool {
 	}
 	return false
 }
-
