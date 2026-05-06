@@ -19,6 +19,7 @@ const (
 
 	BuildTaskModeStreaming string = "streaming" // 流式
 	BuildTaskModeBatch     string = "batch"     // 批量
+	BuildTaskModeEmbedding string = "embedding" // 向量化
 
 	BuildTaskExecuteTypeIncremental string = "incremental" // 增量
 	BuildTaskExecuteTypeFull        string = "full"        // 全量
@@ -55,17 +56,45 @@ type BuildTask struct {
 
 // BuildTaskRequest represents create build task request.
 type BuildTaskRequest struct {
-	Mode            string `json:"mode" binding:"required,oneof=streaming batch"` // 任务模式：streaming/batch
-	EmbeddingFields string `json:"embedding_fields,omitempty"`                    // 需向量化嵌入字段
-	BuildKeyFields  string `json:"build_key_fields"`                              // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
-	EmbeddingModel  string `json:"embedding_model,omitempty"`                     // 嵌入模型
-	ModelDimensions int    `json:"model_dimensions,omitempty"`                    // 模型维度
+	Mode            string `json:"mode" binding:"required,oneof=streaming batch embedding"` // 任务模式：streaming/batch/embedding
+	EmbeddingFields string `json:"embedding_fields,omitempty"`                              // 需向量化嵌入字段
+	BuildKeyFields  string `json:"build_key_fields"`                                        // 构建中依赖的特殊键字段，如批量构建依赖的有时序性的字段，流式构建依赖的唯一标识某行的字段
+	EmbeddingModel  string `json:"embedding_model,omitempty"`                               // 嵌入模型
+	ModelDimensions int    `json:"model_dimensions,omitempty"`                              // 模型维度
+}
+
+// CreateBuildTaskRequest represents the HTTP body for POST /build-tasks.
+// Embeds BuildTaskRequest and adds the resource binding.
+type CreateBuildTaskRequest struct {
+	ResourceID       string `json:"resource_id" binding:"required"`
+	BuildTaskRequest `json:",inline"`
 }
 
 // UpdateBuildTaskStatusRequest represents update build task status request.
 type UpdateBuildTaskStatusRequest struct {
 	Status      string `json:"status" binding:"required,oneof=running stopped"` // 修改任务状态，只允许 running 和 stopped
 	ExecuteType string `json:"execute_type,omitempty"`                          // 执行类型,for batch mode, default is "incremental"
+}
+
+// StartBuildTaskRequest represents the optional body for POST /build-tasks/{id}/start.
+type StartBuildTaskRequest struct {
+	ExecuteType string `json:"execute_type,omitempty"` // incremental / full; default incremental
+}
+
+// BuildTasksQueryParams holds filter + pagination parameters for listing build tasks.
+type BuildTasksQueryParams struct {
+	PaginationQueryParams
+	ResourceID string
+	CatalogID  string
+	Status     string
+	Mode       string
+}
+
+// BatchDeleteFailedItem describes a single failed entry in batch delete response.
+type BatchDeleteFailedItem struct {
+	ID      string `json:"id"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 type KeyValue struct {

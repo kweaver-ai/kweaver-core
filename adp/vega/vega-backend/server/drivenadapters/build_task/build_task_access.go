@@ -493,6 +493,107 @@ func (bta *buildTaskAccess) GetAll(ctx context.Context, offset, limit int) ([]*i
 	return buildTasks, totalCount, nil
 }
 
+// GetAllWithFilters retrieves build tasks with optional filters and pagination.
+func (bta *buildTaskAccess) GetAllWithFilters(ctx context.Context, params interfaces.BuildTasksQueryParams) ([]*interfaces.BuildTask, int64, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Get build tasks with filters", trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	whereClauses := []string{}
+	args := []interface{}{}
+	if params.ResourceID != "" {
+		whereClauses = append(whereClauses, "f_resource_id = ?")
+		args = append(args, params.ResourceID)
+	}
+	if params.CatalogID != "" {
+		whereClauses = append(whereClauses, "f_catalog_id = ?")
+		args = append(args, params.CatalogID)
+	}
+	if params.Status != "" {
+		whereClauses = append(whereClauses, "f_status = ?")
+		args = append(args, params.Status)
+	}
+	if params.Mode != "" {
+		whereClauses = append(whereClauses, "f_mode = ?")
+		args = append(args, params.Mode)
+	}
+	whereClause := ""
+	if len(whereClauses) > 0 {
+		whereClause = "WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	var totalCount int64
+	countQuery := `SELECT COUNT(*) FROM ` + BUILD_TASK_TABLE_NAME + ` ` + whereClause
+	if err := bta.db.QueryRowContext(ctx, countQuery, args...).Scan(&totalCount); err != nil {
+		logger.Errorf("Count build tasks failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Count build tasks failed: %v", err))
+		span.SetStatus(codes.Error, "Count build tasks failed")
+		return nil, 0, err
+	}
+
+	orderBy := "f_update_time"
+	switch params.Sort {
+	case "create_time":
+		orderBy = "f_create_time"
+	case "update_time":
+		orderBy = "f_update_time"
+	case "status":
+		orderBy = "f_status"
+	case "mode":
+		orderBy = "f_mode"
+	}
+	direction := "DESC"
+	if params.Direction == interfaces.ASC_DIRECTION {
+		direction = "ASC"
+	}
+
+	query := `
+		SELECT
+			f_id, f_resource_id, f_catalog_id, f_status, f_mode, f_total_count, f_synced_count, f_vectorized_count, f_synced_mark, f_error_msg,
+			f_creator_id, f_creator_type, f_create_time, f_updater_id, f_updater_type, f_update_time, f_embedding_fields, f_build_key_fields, f_embedding_model, f_model_dimensions
+		FROM ` + BUILD_TASK_TABLE_NAME + ` ` + whereClause + `
+		ORDER BY ` + orderBy + ` ` + direction + `
+		LIMIT ? OFFSET ?
+	`
+	queryArgs := append(args, params.Limit, params.Offset)
+	rows, err := bta.db.QueryContext(ctx, query, queryArgs...)
+	if err != nil {
+		logger.Errorf("Get build tasks with filters failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Get build tasks with filters failed: %v", err))
+		span.SetStatus(codes.Error, "Get build tasks with filters failed")
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	buildTasks := []*interfaces.BuildTask{}
+	for rows.Next() {
+		buildTask := &interfaces.BuildTask{}
+		var creatorID, creatorType, updaterID, updaterType string
+		if err := rows.Scan(
+			&buildTask.ID, &buildTask.ResourceID, &buildTask.CatalogID, &buildTask.Status, &buildTask.Mode,
+			&buildTask.TotalCount, &buildTask.SyncedCount, &buildTask.VectorizedCount, &buildTask.SyncedMark, &buildTask.ErrorMsg,
+			&creatorID, &creatorType, &buildTask.CreateTime, &updaterID, &updaterType, &buildTask.UpdateTime,
+			&buildTask.EmbeddingFields, &buildTask.BuildKeyFields, &buildTask.EmbeddingModel, &buildTask.ModelDimensions,
+		); err != nil {
+			logger.Errorf("Scan build task row failed: %v", err)
+			o11y.Error(ctx, fmt.Sprintf("Scan build task row failed: %v", err))
+			span.SetStatus(codes.Error, "Scan build task row failed")
+			return nil, 0, err
+		}
+		buildTask.Creator = interfaces.AccountInfo{ID: creatorID, Type: creatorType}
+		buildTask.Updater = interfaces.AccountInfo{ID: updaterID, Type: updaterType}
+		buildTasks = append(buildTasks, buildTask)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Errorf("Rows iteration failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Rows iteration failed: %v", err))
+		span.SetStatus(codes.Error, "Rows iteration failed")
+		return nil, 0, err
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return buildTasks, totalCount, nil
+}
+
 // Delete deletes a build task by ID.
 func (bta *buildTaskAccess) Delete(ctx context.Context, id string) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build task", trace.WithSpanKind(trace.SpanKindClient))
