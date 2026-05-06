@@ -876,6 +876,64 @@ EOF
     log_info "crictl installed successfully"
 }
 
+# kubernetes-cni (RPM/apt) or containernetworking/plugins tarball provides
+# /opt/cni/bin/{loopback,bridge,...}. If only kubeadm/kubelet were pre-installed,
+# this directory is empty and kubelet fails with: failed to find plugin "loopback".
+_k8s_ensure_cni_bin_plugins() {
+    if [[ -x /opt/cni/bin/loopback ]]; then
+        return 0
+    fi
+
+    log_warn "Missing /opt/cni/bin/loopback — installing CNI plugins for kubelet pod sandbox"
+    detect_package_manager
+
+    if [[ "${PKG_MANAGER}" == "dnf" ]] || [[ "${PKG_MANAGER}" == "yum" ]]; then
+        log_info "Trying package kubernetes-cni..."
+        if [[ "${PKG_MANAGER}" == "dnf" ]]; then
+            dnf install -y --disableexcludes=kubernetes kubernetes-cni 2>/dev/null \
+                || dnf install -y kubernetes-cni \
+                || true
+        else
+            yum install -y --disableexcludes=kubernetes kubernetes-cni 2>/dev/null \
+                || yum install -y kubernetes-cni \
+                || true
+        fi
+    elif [[ "${PKG_MANAGER}" == "apt" ]]; then
+        ${PKG_MANAGER_INSTALL} kubernetes-cni 2>/dev/null || true
+    fi
+
+    if [[ -x /opt/cni/bin/loopback ]]; then
+        log_info "CNI plugins available under /opt/cni/bin"
+        return 0
+    fi
+
+    local v="${CNI_PLUGINS_VERSION:-v1.4.0}"
+    local arch=""
+    case "$(uname -m)" in
+        x86_64|amd64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        *)
+            log_error "No loopback CNI and unsupported arch for tarball fallback: $(uname -m)"
+            return 1
+            ;;
+    esac
+
+    local tgz="cni-plugins-linux-${arch}-${v}.tgz"
+    local url="https://github.com/containernetworking/plugins/releases/download/${v}/${tgz}"
+    log_info "Fetching ${tgz} into /opt/cni/bin..."
+    mkdir -p /opt/cni/bin
+    if curl -fsSL "${url}" | tar -C /opt/cni/bin -xzf -; then
+        chmod a+x /opt/cni/bin/* 2>/dev/null || true
+        if [[ -x /opt/cni/bin/loopback ]]; then
+            log_info "Installed CNI plugins from containernetworking/plugins ${v}"
+            return 0
+        fi
+    fi
+
+    log_error "Still no /opt/cni/bin/loopback. Install kubernetes-cni (RPM/apt) or unpack CNI plugins there, then restart kubelet."
+    return 1
+}
+
 # Install Kubernetes components (kubeadm, kubelet, kubectl)
 install_kubernetes() {
     log_info "Installing Kubernetes components..."
@@ -923,6 +981,8 @@ EOF
     else
         log_info "Kubernetes components are already installed"
     fi
+
+    _k8s_ensure_cni_bin_plugins || return 1
     
     # Install crictl (always install, even if K8s components already exist)
     install_crictl
