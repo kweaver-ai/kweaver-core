@@ -42,7 +42,8 @@ generate_config_yaml() {
         # If no valid IP found, try alternative methods
         if [[ -z "${node_ip}" ]] || [[ "${node_ip}" == "127.0.0.1" ]]; then
             # Try to get IP from ip command (more reliable)
-            node_ip="$(ip addr show 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '^127\.' | head -1 || true)"
+            # BSD grep (macOS) has no -P; match deploy.sh _detect_node_ip fallback.
+            node_ip="$(ip addr show 2>/dev/null | grep -oE 'inet [0-9]+(\.[0-9]+){3}' | awk '{print $2}' | grep -v '^127\.' | head -1 || true)"
         fi
         # Final fallback
         if [[ -z "${node_ip}" ]]; then
