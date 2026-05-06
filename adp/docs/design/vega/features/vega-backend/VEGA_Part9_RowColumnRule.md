@@ -40,12 +40,12 @@
 
 #### 2.1.2 权限点设计
 
-Resource 权限点列表（红色为新增）：
+Resource 权限点列表（加粗为新增）：
 - 新建、编辑、删除、查看、权限管理、数据查询、导入、导出、**行列规则管理**、**行列规则授权**
 
 #### 2.1.3 规则应用范围
 
-创建行列规则时授权范围可选择任意 Resource，支持复制已有行列规则模板功能。
+创建行列规则时授权范围可选择 Resource，支持复制已有行列规则模板功能。
 
 ---
 
@@ -78,7 +78,7 @@ Resource 权限点列表（红色为新增）：
 
 | 菜单 | 模块 | 资源类型中文名 | 资源类型id | 备注 |
 |------|------|----------------|------------|------|
-| 数据资源 | 数据资源 | 数据资源 | resource | 涵盖 table、index、topic、logicview、dataset 等类别 |
+| 数据资源 | 数据资源 | 数据资源 | resource | 涵盖 table、index、file、fileset、logicview 等类别 |
 | \-- | \-- | 资源行列规则 | resource_row_column_rule | 资源行列规则在单独的授权页面，不会在信息安全管理的菜单显示 |
 
 ### 3.3 资源类型初始化
@@ -432,7 +432,6 @@ CREATE TABLE IF NOT EXISTS t_resource_row_column_rule (
 ### 9.1 功能性目标
 
 - 数据资源支持行列级权限管控
-- 支持多种资源类别（table、index、topic、logicview、dataset）
 
 ### 9.2 非功能性目标
 
@@ -462,9 +461,3 @@ CREATE TABLE IF NOT EXISTS t_resource_row_column_rule (
 
 - [VEGA 资源管理层级关系](resource-management-hierarchy.md)
 - [VEGA Part 1: Top Level Design](VEGA_Part1_TopLevelDesign.md)
-
----
-
-**文档版本**: 2.0  
-**最后更新**: 2025-02-05  
-**维护者**: VEGA Team
