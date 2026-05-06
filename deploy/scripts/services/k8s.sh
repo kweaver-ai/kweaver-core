@@ -330,9 +330,16 @@ install_cni() {
     local dns_attempts=0
     local dns_max_attempts=60
     while [[ ${dns_attempts} -lt ${dns_max_attempts} ]]; do
-        # Count ready pods using simple parsing
-        local ready_count
-        ready_count=$(kubectl get pods -n kube-system -l k8s-app=kube-dns --no-headers 2>/dev/null | grep -c "1/1.*Running" || echo "0")
+        # Count CoreDNS pods fully ready (N/N) and Running. grep -c exits 1 with 0
+        # matches — do not use `|| echo 0` or command substitution captures "0\n0".
+        # CoreDNS may be 1/1 or 2/2 (e.g. readiness sidecar) depending on cluster version.
+        ready_count=$(kubectl get pods -n kube-system -l k8s-app=kube-dns --no-headers 2>/dev/null | awk '
+            $3 == "Running" {
+                n = split($2, r, "/")
+                if (n == 2 && r[1] == r[2] && r[1] ~ /^[0-9]+$/ && r[1] > 0) c++
+            }
+            END { print c + 0 }
+        ')
         
         if [[ ${ready_count} -ge 2 ]]; then
             log_info "CoreDNS is ready (${ready_count} pods running)"
