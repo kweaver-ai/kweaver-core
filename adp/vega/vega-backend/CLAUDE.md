@@ -71,6 +71,18 @@ server/
 | Resource 操作 | GET `/resources/:id/schema`, POST `/resources/:id/enable\|disable\|sync` |
 | 健康检查 | GET `/health` |
 
+#### 端点设计规则
+
+**禁止新增"嵌套列表"端点**：不要为"列出某个父资源下的子资源"再开 `GET /{parent}/{parent_id}/{children}` 这种端点。
+
+- 正确做法：在 `/{children}` 列表端点上加 query 过滤，如 `GET /build-tasks?resource_id={id}` 而不是 `GET /resources/{id}/build-tasks`。
+- 理由：(1) 子资源的列表语义已由 `/{children}` 承载，嵌套形态会让同一查询暴露在两个端点，OpenAPI / SDK 表达分裂；(2) 父资源的存在性校验属于"过滤参数指向不存在实体"——这种情况 list 端点应当返回空列表，而不是 404；如果真要做存在性校验，那它是动作类语义而非列表，应另设端点。
+- 例外：动作端点保留嵌套形态（`POST /catalogs/:id/discover`、`POST /build-tasks/:id/start`），因为它们对父资源做操作，不是单纯的列表视图。
+
+**列表端点的过滤参数命名**：`?{singular_parent}_id=` 或 `?{filter}_id=`，单值。要支持多值过滤时使用 `?{singular_parent}_ids=a,b,c`（逗号分隔）或 query 重复 `?id=a&id=b`，不要走 path。
+
+**批量删除走 path**：`DELETE /{resource}/{ids}`（逗号分隔，单条即长度 1 的退化），与 `/catalogs/:ids`、`/resources/:ids` 对齐；不要用 `?ids=` query 形态。语义：整体事务，任一预校验失败整批不删。可选 `?ignore_missing=true` 放宽不存在性检查；状态类拦截（如 running task）不可绕过。
+
 ## Database
 
 MariaDB/MySQL 8.0+，主要表:

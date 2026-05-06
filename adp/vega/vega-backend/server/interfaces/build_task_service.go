@@ -25,6 +25,7 @@ type BuildTaskService interface {
 	StartBuildTask(ctx context.Context, taskID string, executeType string) (*BuildTask, error)
 	// StopBuildTask transitions a task from running to stopping (asynchronous; status persisted by worker).
 	StopBuildTask(ctx context.Context, taskID string) (*BuildTask, error)
-	// DeleteBuildTask deletes a build task by ID (rejects running/stopping with 409).
-	DeleteBuildTask(ctx context.Context, taskID string) error
+	// DeleteBuildTasks atomically deletes build tasks by IDs.
+	// Pre-validates: any missing id returns 404 unless ignoreMissing=true; any running/stopping id returns 409 (cannot be skipped).
+	DeleteBuildTasks(ctx context.Context, ids []string, ignoreMissing bool) error
 }

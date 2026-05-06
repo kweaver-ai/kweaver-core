@@ -90,13 +90,6 @@ type BuildTasksQueryParams struct {
 	Mode       string
 }
 
-// BatchDeleteFailedItem describes a single failed entry in batch delete response.
-type BatchDeleteFailedItem struct {
-	ID      string `json:"id"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
 type KeyValue struct {
 	Key   string
 	Value any

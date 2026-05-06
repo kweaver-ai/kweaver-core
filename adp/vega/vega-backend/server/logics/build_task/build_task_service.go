@@ -389,32 +389,59 @@ func (s *buildTaskService) StopBuildTask(ctx context.Context, taskID string) (*i
 	return buildTask, nil
 }
 
-// DeleteBuildTask deletes a build task by ID.
-func (s *buildTaskService) DeleteBuildTask(ctx context.Context, taskID string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build task")
+// DeleteBuildTasks atomically deletes build tasks by IDs after pre-validating existence and status.
+//
+// Behavior:
+//   - Loads each id; if any missing, returns 404 BuildTask.NotFound with {missing_ids: [...]}
+//     unless ignoreMissing=true (then missing ids are dropped from the delete set).
+//   - If any task is in running/stopping status, returns 409 HasRunningExecution with {running_ids: [...]}.
+//     This check cannot be bypassed.
+//   - Deletes pass-through tasks one-by-one. Mid-loop errors return 500 (rare, bounded by pre-validation).
+func (s *buildTaskService) DeleteBuildTasks(ctx context.Context, ids []string, ignoreMissing bool) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "Delete build tasks")
 	defer span.End()
 
-	buildTask, err := s.bta.GetByID(ctx, taskID)
-	if err != nil {
-		span.SetStatus(codes.Error, "Get build task failed")
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
-			WithErrorDetails(err.Error())
+	toDelete := make([]string, 0, len(ids))
+	missingIDs := make([]string, 0)
+	runningIDs := make([]string, 0)
+
+	for _, id := range ids {
+		buildTask, err := s.bta.GetByID(ctx, id)
+		if err != nil {
+			span.SetStatus(codes.Error, "Get build task failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
+				WithErrorDetails(err.Error())
+		}
+		if buildTask == nil {
+			missingIDs = append(missingIDs, id)
+			continue
+		}
+		if buildTask.Status == interfaces.BuildTaskStatusRunning || buildTask.Status == interfaces.BuildTaskStatusStopping {
+			runningIDs = append(runningIDs, id)
+			continue
+		}
+		toDelete = append(toDelete, id)
 	}
-	if buildTask == nil {
-		span.SetStatus(codes.Error, "Build task not found")
-		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_BuildTask_NotFound)
-	}
-	if buildTask.Status == interfaces.BuildTaskStatusRunning || buildTask.Status == interfaces.BuildTaskStatusStopping {
-		span.SetStatus(codes.Error, "Cannot delete running or stopping task")
+
+	if len(runningIDs) > 0 {
+		span.SetStatus(codes.Error, "Some tasks are running or stopping")
 		return rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_BuildTask_HasRunningExecution).
-			WithErrorDetails("Cannot delete running or stopping task; stop it first")
+			WithErrorDetails(map[string]any{"running_ids": runningIDs})
 	}
-	if err := s.bta.Delete(ctx, taskID); err != nil {
-		logger.Errorf("Delete build task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Delete build task failed: %v", err))
-		span.SetStatus(codes.Error, "Delete build task failed")
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_DeleteFailed).
-			WithErrorDetails(err.Error())
+	if len(missingIDs) > 0 && !ignoreMissing {
+		span.SetStatus(codes.Error, "Some build tasks not found")
+		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_BuildTask_NotFound).
+			WithErrorDetails(map[string]any{"missing_ids": missingIDs})
+	}
+
+	for _, id := range toDelete {
+		if err := s.bta.Delete(ctx, id); err != nil {
+			logger.Errorf("Delete build task %s failed: %v", id, err)
+			o11y.Error(ctx, fmt.Sprintf("Delete build task %s failed: %v", id, err))
+			span.SetStatus(codes.Error, "Delete build task failed")
+			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_DeleteFailed).
+				WithErrorDetails(err.Error())
+		}
 	}
 
 	span.SetStatus(codes.Ok, "")

@@ -101,9 +101,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
 
-			// 资源列表
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByEx)
-
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
@@ -136,9 +133,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
-
-			// Convenience read view: list build tasks for a specific resource.
-			resources.GET("/:id/build-tasks", r.ListResourceBuildTasksByEx)
 		}
 
 		// BuildTask APIs - External
@@ -146,9 +140,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByEx)
 			buildTasks.GET("", r.ListBuildTasksByEx)
-			buildTasks.DELETE("", r.BatchDeleteBuildTasksByEx)
 			buildTasks.GET("/:id", r.GetBuildTaskByEx)
-			buildTasks.DELETE("/:id", r.DeleteBuildTaskByEx)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByEx)
 			buildTasks.POST("/:id/start", r.StartBuildTaskByEx)
 			buildTasks.POST("/:id/stop", r.StopBuildTaskByEx)
 		}
@@ -183,9 +176,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
 
-			//
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByIn)
-
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByIn)
@@ -218,9 +208,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
-
-			// Convenience read view: list build tasks for a specific resource.
-			resources.GET("/:id/build-tasks", r.ListResourceBuildTasksByIn)
 		}
 
 		// BuildTask APIs - Internal
@@ -228,9 +215,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByIn)
 			buildTasks.GET("", r.ListBuildTasksByIn)
-			buildTasks.DELETE("", r.BatchDeleteBuildTasksByIn)
 			buildTasks.GET("/:id", r.GetBuildTaskByIn)
-			buildTasks.DELETE("/:id", r.DeleteBuildTaskByIn)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByIn)
 			buildTasks.POST("/:id/start", r.StartBuildTaskByIn)
 			buildTasks.POST("/:id/stop", r.StopBuildTaskByIn)
 		}

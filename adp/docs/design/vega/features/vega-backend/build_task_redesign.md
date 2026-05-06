@@ -59,18 +59,13 @@ BuildTask 是 Resource 的子任务（每条 task 关联 1 个 resource），但
 POST   /api/vega-backend/v1/build-tasks                         # 创建（body 含 resource_id、mode 等）
 GET    /api/vega-backend/v1/build-tasks                         # ?resource_id= ?catalog_id= ?status= ?mode= 过滤
 GET    /api/vega-backend/v1/build-tasks/{id}                    # 详情
-DELETE /api/vega-backend/v1/build-tasks/{id}                    # 删除单条
-DELETE /api/vega-backend/v1/build-tasks                         # ?ids=a,b,c 批量删除
+DELETE /api/vega-backend/v1/build-tasks/{ids}                   # 删除（逗号分隔，单条即 ids 长度=1；?ignore_missing=true 放宽）
 
 POST   /api/vega-backend/v1/build-tasks/{id}/start              # 启动（init / stopped → running）
 POST   /api/vega-backend/v1/build-tasks/{id}/stop               # 停止（running → stopping）
 ```
 
-便利只读视图：
-
-```
-GET    /api/vega-backend/v1/resources/{id}/build-tasks          # 等价 /build-tasks?resource_id={id}
-```
+不提供"嵌套列表"形态的便利视图（如 `/resources/{id}/build-tasks`）；要按父资源过滤一律走 `GET /build-tasks?resource_id={id}`。详见 [vega-backend/CLAUDE.md](../../../../vega/vega-backend/CLAUDE.md) 的"端点设计规则"。
 
 #### 弃用
 
@@ -109,14 +104,29 @@ GET    /api/vega-backend/v1/resources/{id}/build-tasks          # 等价 /build-
 | `mode` | `streaming` / `batch` / `embedding` |
 | `offset / limit / sort / direction` | 分页与排序 |
 
-#### GET `/build-tasks/{id}`、DELETE `/build-tasks/{id}`、DELETE `/build-tasks?ids=...`
+#### GET `/build-tasks/{id}`
 
-- GET：404 `VegaBackend.BuildTask.NotFound` 当不存在。
-- DELETE 单条：
-  - 204：成功
-  - 404 `VegaBackend.BuildTask.NotFound`：不存在
-  - 409 `VegaBackend.BuildTask.HasRunningExecution`：task 当前 status ∈ {`running`, `stopping`}，需先 stop
-- DELETE 批量：返回 200 + `{ affected: N, ids: [实际删除的], failed: [{ id, code, message }] }`。部分不存在或处于 running 等不可删状态时**不抛 4xx**，但必须把失败原因放进 `failed` 数组返回——失败原因不能被服务端吞掉。
+- 404 `VegaBackend.BuildTask.NotFound` 当不存在。
+
+#### DELETE `/build-tasks/{ids}`
+
+`{ids}` 为逗号分隔的 task id 列表（单条即长度为 1 的退化情形）。**整体事务语义**：所有 id 都通过预校验后才进入删除阶段；任一预校验失败则整批不删。
+
+预校验顺序与失败码：
+
+| 条件 | HTTP | errcode | error_details |
+|---|---|---|---|
+| 任一 id 处于 `running` / `stopping` | 409 | `VegaBackend.BuildTask.HasRunningExecution` | `{ running_ids: [...] }` |
+| 任一 id 不存在（且 `ignore_missing` 未启用） | 404 | `VegaBackend.BuildTask.NotFound` | `{ missing_ids: [...] }` |
+| 全部通过 | 204 | — | — |
+
+可选 query 参数：
+
+- `ignore_missing=true`：忽略不存在的 id（视为已删除），其它存在的 id 正常删。**不影响** `running/stopping` 的拦截——状态问题不可静默跳过。
+
+`running/stopping` 的检查**先于**缺失检查，且**没有**对应的忽略开关；要删 running 任务必须先 stop。
+
+响应：成功 204（无 body）；失败 4xx + `error_details` 如上表。
 
 #### POST `/build-tasks/{id}/start`
 
@@ -276,7 +286,7 @@ GET    /api/vega-backend/v1/resources/{id}/build-tasks          # 等价 /build-
 
 ## 7. 已决定事项（原开放问题）
 
-1. **批量删除路径形态**：定为 `DELETE /build-tasks?ids=a,b,c`（query string）。响应 `{ affected, ids, failed: [{id, code, message}] }`，失败原因不能吞。
+1. **批量删除路径形态**：定为 `DELETE /build-tasks/{ids}`（path 含逗号分隔列表）。与项目存量约定（`/catalogs/:ids`、`/resources/:ids`）一致。语义为**整体事务 + 204**：单条与批量同一端点同一响应码；任一预校验失败整批不删。可选 `?ignore_missing=true` 放宽不存在检查；`running/stopping` 的拦截不可绕过。响应失败时 `error_details` 携带 `missing_ids` 或 `running_ids` 数组。
 
 2. **start / stop 幂等性**：**非幂等**。对已 running 的 task 再 start 返回 409 `InvalidStateTransition`；对已非 running 的 task 再 stop 同理。
 

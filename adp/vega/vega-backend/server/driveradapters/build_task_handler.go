@@ -257,111 +257,68 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 	rest.ReplyOK(c, http.StatusOK, gin.H{"entries": tasks, "total_count": total})
 }
 
-// =========================== DELETE /build-tasks/:id ===========================
+// =========================== DELETE /build-tasks/:ids ===========================
 
-func (r *restHandler) DeleteBuildTaskByEx(c *gin.Context) {
+// DeleteBuildTasksByEx handles DELETE /build-tasks/:ids (External).
+// `ids` is a comma-separated list. Optional query: ?ignore_missing=true
+func (r *restHandler) DeleteBuildTasksByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteBuildTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+		"DeleteBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
 	if err != nil {
 		return
 	}
-	r.deleteBuildTask(c, ctx, span, visitor)
+	r.deleteBuildTasks(c, ctx, span, visitor)
 }
 
-func (r *restHandler) DeleteBuildTaskByIn(c *gin.Context) {
+func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteBuildTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
+		"DeleteBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	visitor := GenerateVisitor(c)
-	r.deleteBuildTask(c, ctx, span, visitor)
+	r.deleteBuildTasks(c, ctx, span, visitor)
 }
 
-func (r *restHandler) deleteBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
 	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	taskID := c.Param("id")
-	if err := r.bts.DeleteBuildTask(ctx, taskID); err != nil {
+	idsStr := c.Param("ids")
+	ids := make([]string, 0)
+	for _, id := range strings.Split(idsStr, ",") {
+		id = strings.TrimSpace(id)
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("ids path parameter is required")
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
+	ignoreMissing := strings.EqualFold(c.Query("ignore_missing"), "true")
+
+	if err := r.bts.DeleteBuildTasks(ctx, ids, ignoreMissing); err != nil {
 		httpErr := err.(*rest.HTTPError)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
-		interfaces.GenerateResourceAuditObject(taskID, ""), audit.SUCCESS, "")
-
-	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
-	rest.ReplyOK(c, http.StatusNoContent, nil)
-}
-
-// =========================== DELETE /build-tasks?ids=... ===========================
-
-func (r *restHandler) BatchDeleteBuildTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"BatchDeleteBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
-	if err != nil {
-		return
-	}
-	r.batchDeleteBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) BatchDeleteBuildTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"BatchDeleteBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor := GenerateVisitor(c)
-	r.batchDeleteBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) batchDeleteBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	idsStr := c.Query("ids")
-	if idsStr == "" {
-		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
-			WithErrorDetails("ids query parameter is required")
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	deleted := make([]string, 0)
-	failed := make([]interfaces.BatchDeleteFailedItem, 0)
-	for _, taskID := range strings.Split(idsStr, ",") {
-		taskID = strings.TrimSpace(taskID)
-		if taskID == "" {
-			continue
-		}
-		if err := r.bts.DeleteBuildTask(ctx, taskID); err != nil {
-			code, msg := extractHTTPErrorParts(err)
-			failed = append(failed, interfaces.BatchDeleteFailedItem{ID: taskID, Code: code, Message: msg})
-			continue
-		}
-		deleted = append(deleted, taskID)
-	}
-
-	for _, id := range deleted {
+	for _, id := range ids {
 		audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
 			interfaces.GenerateResourceAuditObject(id, ""), audit.SUCCESS, "")
 	}
 
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, gin.H{
-		"affected": len(deleted),
-		"ids":      deleted,
-		"failed":   failed,
-	})
+	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
 
 // =========================== POST /build-tasks/:id/start ===========================
@@ -456,84 +413,6 @@ func (r *restHandler) stopBuildTask(c *gin.Context, ctx context.Context, span tr
 	rest.ReplyOK(c, http.StatusOK, buildTask)
 }
 
-// =========================== GET /resources/:id/build-tasks ===========================
-
-func (r *restHandler) ListResourceBuildTasksByEx(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListResourceBuildTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor, err := r.verifyOAuth(ctx, c)
-	if err != nil {
-		return
-	}
-	r.listResourceBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) ListResourceBuildTasksByIn(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListResourceBuildTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	visitor := GenerateVisitor(c)
-	r.listResourceBuildTasks(c, ctx, span, visitor)
-}
-
-func (r *restHandler) listResourceBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	resourceID := c.Param("id")
-	exists, err := r.rs.CheckExistByID(ctx, resourceID)
-	if err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	if !exists {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Resource_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	var q buildTaskListQuery
-	if err := c.ShouldBindQuery(&q); err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	if q.Limit == 0 {
-		q.Limit = 20
-	}
-	if q.Sort == "" {
-		q.Sort = "update_time"
-	}
-	if q.Direction == "" {
-		q.Direction = interfaces.DESC_DIRECTION
-	}
-
-	params := interfaces.BuildTasksQueryParams{
-		PaginationQueryParams: q.PaginationQueryParams,
-		ResourceID:            resourceID,
-		Status:                q.Status,
-		Mode:                  q.Mode,
-	}
-	tasks, total, err := r.bts.ListBuildTasks(ctx, params)
-	if err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, gin.H{"entries": tasks, "total_count": total})
-}
-
 // =========================== helpers ===========================
 
 func isValidBuildTaskStatus(s string) bool {
@@ -559,14 +438,3 @@ func isValidBuildTaskMode(m string) bool {
 	return false
 }
 
-// extractHTTPErrorParts pulls the errcode + message from a *rest.HTTPError; falls back to err.Error().
-func extractHTTPErrorParts(err error) (string, string) {
-	if httpErr, ok := err.(*rest.HTTPError); ok {
-		msg := httpErr.BaseError.Description
-		if details, ok := httpErr.BaseError.ErrorDetails.(string); ok && details != "" {
-			msg = details
-		}
-		return httpErr.BaseError.ErrorCode, msg
-	}
-	return verrors.VegaBackend_BuildTask_InternalError_DeleteFailed, err.Error()
-}
