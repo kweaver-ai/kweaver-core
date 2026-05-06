@@ -4,6 +4,7 @@
 使用 SQLAlchemy 实现模板仓储接口。
 按照数据表命名规范使用 f_ 前缀字段名。
 """
+
 import re
 import json
 import time
@@ -38,18 +39,18 @@ class SqlTemplateRepository(ITemplateRepository):
                 return 512  # 默认值
 
             # 提取数字部分
-            numeric_str = re.sub(r'[^0-9.]', '', value)
+            numeric_str = re.sub(r"[^0-9.]", "", value)
             if not numeric_str:
                 return 512
 
             numeric = float(numeric_str)
 
             # 根据单位转换
-            if 'Gi' in value or 'GB' in value or 'G' in value:
+            if "Gi" in value or "GB" in value or "G" in value:
                 return int(numeric * 1024)
-            elif 'Mi' in value or 'MB' in value or 'M' in value:
+            elif "Mi" in value or "MB" in value or "M" in value:
                 return int(numeric)
-            elif 'Ki' in value or 'KB' in value or 'K' in value:
+            elif "Ki" in value or "KB" in value or "K" in value:
                 return int(numeric / 1024)
             else:
                 # 如果没有单位，假设是 MB
@@ -61,13 +62,21 @@ class SqlTemplateRepository(ITemplateRepository):
             model.f_description = ""
             model.f_image_url = template.image
             model.f_base_image = template.base_image
-            model.f_pre_installed_packages = json.dumps(template.pre_installed_packages, ensure_ascii=False) if template.pre_installed_packages else "[]"
+            model.f_pre_installed_packages = (
+                json.dumps(template.pre_installed_packages, ensure_ascii=False)
+                if template.pre_installed_packages
+                else "[]"
+            )
             model.f_runtime_type = "python3.11"  # Default, should be from entity
             model.f_default_cpu_cores = Decimal(template.default_resources.cpu)
             model.f_default_memory_mb = parse_mb_value(template.default_resources.memory)
             model.f_default_disk_mb = parse_mb_value(template.default_resources.disk)
             model.f_default_timeout_sec = template.default_timeout_sec
-            model.f_security_context = json.dumps(template.security_context, ensure_ascii=False) if template.security_context else "{}"
+            model.f_security_context = (
+                json.dumps(template.security_context, ensure_ascii=False)
+                if template.security_context
+                else "{}"
+            )
             model.f_updated_at = now_ms
         else:
             # 创建新记录
@@ -90,12 +99,7 @@ class SqlTemplateRepository(ITemplateRepository):
 
     async def find_all(self, offset: int = 0, limit: int = 100) -> List[Template]:
         """查找所有模板"""
-        stmt = (
-            select(TemplateModel)
-            .offset(offset)
-            .limit(limit)
-            .order_by(TemplateModel.f_name)
-        )
+        stmt = select(TemplateModel).offset(offset).limit(limit).order_by(TemplateModel.f_name)
         result = await self._session.execute(stmt)
         return [model.to_entity() for model in result.scalars().all()]
 

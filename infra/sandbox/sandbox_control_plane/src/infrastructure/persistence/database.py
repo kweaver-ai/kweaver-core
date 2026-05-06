@@ -3,6 +3,7 @@
 
 配置和管理 SQLAlchemy 异步引擎和会话。
 """
+
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncGenerator
@@ -11,7 +12,12 @@ from urllib.parse import urlparse, urlunparse
 import aiomysql
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncEngine
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+    AsyncEngine,
+)
 from sqlalchemy.orm import DeclarativeBase
 
 from src.infrastructure.config.settings import get_settings
@@ -20,6 +26,7 @@ from src.infrastructure.logging import get_logger
 
 class Base(DeclarativeBase):
     """SQLAlchemy 基类"""
+
     pass
 
 
@@ -327,16 +334,12 @@ class DatabaseManager:
                 column=column_name,
                 action="add_column",
             )
-            await conn.execute(
-                text(
-                    """
+            await conn.execute(text("""
                     ALTER TABLE `t_sandbox_session`
                     ADD COLUMN `f_python_package_index_url` varchar(512) NOT NULL
                     DEFAULT 'https://pypi.org/simple/'
                     AFTER `f_completed_at`
-                    """
-                )
-            )
+                    """))
             logger.info(
                 "Startup schema migration applied successfully",
                 table=table_name,
@@ -346,14 +349,12 @@ class DatabaseManager:
     async def _mariadb_table_exists(self, conn, table_name: str) -> bool:
         """检查 MariaDB 表是否存在。"""
         result = await conn.execute(
-            text(
-                """
+            text("""
                 SELECT COUNT(*)
                 FROM information_schema.TABLES
                 WHERE TABLE_SCHEMA = DATABASE()
                   AND TABLE_NAME = :table_name
-                """
-            ),
+                """),
             {"table_name": table_name},
         )
         return bool(result.scalar())
@@ -361,24 +362,19 @@ class DatabaseManager:
     async def _mariadb_column_exists(self, conn, table_name: str, column_name: str) -> bool:
         """检查 MariaDB 列是否存在。"""
         result = await conn.execute(
-            text(
-                """
+            text("""
                 SELECT COUNT(*)
                 FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = DATABASE()
                   AND TABLE_NAME = :table_name
                   AND COLUMN_NAME = :column_name
-                """
-            ),
+                """),
             {"table_name": table_name, "column_name": column_name},
         )
         return bool(result.scalar())
 
     async def initialize_with_seed(
-        self,
-        create_tables: bool = False,
-        seed_data: bool = False,
-        force_seed: bool = False
+        self, create_tables: bool = False, seed_data: bool = False, force_seed: bool = False
     ) -> dict:
         """
         初始化数据库并可选地创建表和种子数据
@@ -391,11 +387,7 @@ class DatabaseManager:
         Returns:
             包含初始化结果的字典
         """
-        result = {
-            "tables_created": False,
-            "seeded": False,
-            "seed_stats": {}
-        }
+        result = {"tables_created": False, "seeded": False, "seed_stats": {}}
 
         if create_tables:
             await self.create_tables()
@@ -403,6 +395,7 @@ class DatabaseManager:
 
         if seed_data:
             from src.infrastructure.persistence.seed.seeder import seed_default_data
+
             stats = await seed_default_data(force=force_seed)
             result["seeded"] = True
             result["seed_stats"] = stats

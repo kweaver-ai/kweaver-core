@@ -32,13 +32,17 @@ All new features and capabilities added in this branch (`feature/803264`) are do
   - Added ZIP extraction limits for file count and total uncompressed size
   - Rejected symlink entries during ZIP extraction to reduce unsafe archive handling risk
 
+- **Session Dependency Install Timeout**
+  - Added `install_timeout` support to manual session dependency installation requests
+  - Propagated per-request dependency install timeouts to executor session-config sync calls, preventing long installs from being limited by the default executor client timeout
+
 ### 🔧 Improvements
 
 - Updated the control-plane Docker build context so the image can include the repository `VERSION` file for default template tag resolution
 - Added `image.defaultTemplates.pythonBasic` and `image.defaultTemplates.multiLanguage` Helm values so deployments can override the two built-in template image versions independently
 - Renamed the self-contained Helm chart from `sandbox_local` to `sandbox_standalone` to better describe its deployment scope
 - Added `.dockerignore` coverage for common caches, local databases, build outputs, and development artifacts
-- Expanded unit coverage for default template image resolution, optional session template selection, Go shell execution path handling, and ZIP extraction safeguards
+- Expanded unit coverage for default template image resolution, optional session template selection, Go shell execution path handling, ZIP extraction safeguards, and dependency install timeout propagation
 
 ### ⚠️ Breaking Changes
 

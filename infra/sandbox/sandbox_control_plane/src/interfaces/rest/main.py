@@ -3,6 +3,7 @@ FastAPI 主应用
 
 沙箱控制中心的 FastAPI 应用入口。
 """
+
 import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -37,7 +38,6 @@ from src.interfaces.rest.api.v1 import (
 )
 from src.interfaces.rest.schemas.response import HealthResponse
 
-
 # 应用启动时间
 _start_time = time.time()
 
@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 初始化依赖注入
     from src.infrastructure.dependencies import initialize_dependencies, get_storage_service
+
     initialize_dependencies(app)
     logger.info("Dependencies initialized")
 
@@ -92,11 +93,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info(
             "Default data initialized",
             runtime_nodes=seed_stats["runtime_nodes"],
-            templates=seed_stats["templates"]
+            templates=seed_stats["templates"],
         )
 
     # ============= 启动时状态同步 =============
     from src.infrastructure.dependencies import get_state_sync_service
+
     state_sync_service = get_state_sync_service()
     try:
         sync_stats = await state_sync_service.sync_on_startup()
@@ -131,7 +133,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # 注册会话清理任务（每 5 分钟）
     from src.application.services.session_cleanup_service import SessionCleanupService
     from src.infrastructure.dependencies import get_docker_scheduler_service, get_storage_service
-    from src.infrastructure.persistence.repositories.sql_session_repository import SqlSessionRepository
+    from src.infrastructure.persistence.repositories.sql_session_repository import (
+        SqlSessionRepository,
+    )
     from src.infrastructure.persistence.database import db_manager
 
     async def session_cleanup_task():
@@ -198,6 +202,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 清理依赖项（包括关闭数据库连接）
     from src.infrastructure.dependencies import cleanup_dependencies
+
     await cleanup_dependencies(app)
     await db_manager.close()
 
@@ -247,10 +252,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
     from src.shared.errors.domain import NotFoundError, ValidationError
 
     @app.exception_handler(NotFoundError)
-    async def not_found_exception_handler(
-        request: Request,
-        exc: NotFoundError
-    ) -> JSONResponse:
+    async def not_found_exception_handler(request: Request, exc: NotFoundError) -> JSONResponse:
         """404 异常处理"""
         logger.warning(
             "Resource not found",
@@ -268,10 +270,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(ValidationError)
-    async def validation_exception_handler(
-        request: Request,
-        exc: ValidationError
-    ) -> JSONResponse:
+    async def validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
         """409 Conflict 异常处理"""
         logger.warning(
             "Validation error (conflict)",
@@ -289,10 +288,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def global_exception_handler(
-        request: Request,
-        exc: Exception
-    ) -> JSONResponse:
+    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """全局异常处理"""
         logger.error(
             "Unhandled exception",

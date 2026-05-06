@@ -4,6 +4,7 @@
 用于在 BIGINT 毫秒时间戳和 datetime 对象之间进行转换。
 按照数据表命名规范，时间戳字段使用 BIGINT 存储毫秒级时间戳。
 """
+
 import time
 from datetime import datetime
 from typing import Optional

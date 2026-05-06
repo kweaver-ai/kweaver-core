@@ -3,10 +3,10 @@
 
 用于处理 Python 依赖包的格式转换和解析。
 """
+
 import json
 import re
 from typing import List, Optional, Union
-
 
 DEFAULT_PYTHON_PACKAGE_INDEX_URL = "https://pypi.org/simple/"
 
@@ -79,7 +79,9 @@ def parse_dependencies_to_pip_specs(dependencies: Optional[List[Union[str, dict]
     return pip_specs
 
 
-def format_dependencies_for_script(dependencies: Optional[List[Union[str, dict]]]) -> tuple[str, str]:
+def format_dependencies_for_script(
+    dependencies: Optional[List[Union[str, dict]]],
+) -> tuple[str, str]:
     """
     格式化依赖列表用于 shell 脚本
 
@@ -141,7 +143,9 @@ fi
 """
 
 
-def format_dependency_install_script_for_shell(dependencies: Optional[List[Union[str, dict]]]) -> str:
+def format_dependency_install_script_for_shell(
+    dependencies: Optional[List[Union[str, dict]]],
+) -> str:
     """
     格式化依赖安装脚本用于 shell 执行
 

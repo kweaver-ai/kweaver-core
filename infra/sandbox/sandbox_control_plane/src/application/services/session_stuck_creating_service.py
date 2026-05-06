@@ -4,6 +4,7 @@
 负责定期检测处于 creating 状态超过阈值的会话，并将其标记为 failed。
 这解决了 executor 容器初始化失败（如依赖安装失败）导致会话永久处于 creating 状态的问题。
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
@@ -53,11 +54,7 @@ class SessionStuckCreatingService:
                 - marked_failed: 标记为 failed 的会话数
                 - errors: 错误列表
         """
-        stats = {
-            "total_checked": 0,
-            "marked_failed": 0,
-            "errors": []
-        }
+        stats = {"total_checked": 0, "marked_failed": 0, "errors": []}
 
         try:
             now = datetime.now()
@@ -81,7 +78,7 @@ class SessionStuckCreatingService:
                             session,
                             reason="creating_timeout",
                             detail=f"Session stuck in 'creating' status for {(now - session.created_at).total_seconds():.0f} seconds "
-                                   f"(timeout: {self._timeout.total_seconds():.0f}s)"
+                            f"(timeout: {self._timeout.total_seconds():.0f}s)",
                         )
                         stats["marked_failed"] += 1
                     else:
@@ -112,12 +109,7 @@ class SessionStuckCreatingService:
 
         return stats
 
-    async def _mark_session_as_failed(
-        self,
-        session: Session,
-        reason: str,
-        detail: str
-    ) -> None:
+    async def _mark_session_as_failed(self, session: Session, reason: str, detail: str) -> None:
         """
         标记会话为失败状态
 

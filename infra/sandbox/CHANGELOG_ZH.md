@@ -32,13 +32,17 @@
   - 为 ZIP 解压新增文件数量与总解压大小限制
   - ZIP 解压时拒绝符号链接条目，降低不安全压缩包处理风险
 
+- **Session 依赖安装超时**
+  - 为手动增量安装 session 依赖请求新增 `install_timeout` 支持
+  - 将单次请求的依赖安装超时时间透传到 executor session-config sync 调用，避免长时间安装被 executor client 默认超时限制
+
 ### 🔧 改进
 
 - 调整 control-plane Docker 构建上下文，使镜像内可包含仓库 `VERSION` 文件，用于默认模板 tag 解析
 - 新增 `image.defaultTemplates.pythonBasic` 与 `image.defaultTemplates.multiLanguage` Helm values，支持部署时分别覆盖两个内置模板镜像版本
 - 将自包含 Helm Chart 从 `sandbox_local` 重命名为 `sandbox_standalone`，更准确表达其独立部署范围
 - 新增 `.dockerignore`，覆盖常见缓存、本地数据库、构建输出和开发环境产物
-- 补充默认模板镜像解析、可选 session template、Go shell 执行路径和 ZIP 解压防护相关单元测试
+- 补充默认模板镜像解析、可选 session template、Go shell 执行路径、ZIP 解压防护和依赖安装超时透传相关单元测试
 
 ### ⚠️ 破坏性变更
 

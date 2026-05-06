@@ -3,6 +3,7 @@
 
 编排文件上传下载相关的用例。
 """
+
 import io
 import mimetypes
 import re
@@ -41,7 +42,7 @@ class FileService:
         session_id: str,
         path: str,
         content: bytes,
-        content_type: str = "application/octet-stream"
+        content_type: str = "application/octet-stream",
     ) -> str:
         """
         上传文件用例
@@ -63,9 +64,7 @@ class FileService:
 
         s3_path = f"{session.workspace_path}/{normalized_path}"
         await self._storage_service.upload_file(
-            s3_path=s3_path,
-            content=content,
-            content_type=content_type
+            s3_path=s3_path, content=content, content_type=content_type
         )
 
         return normalized_path
@@ -112,11 +111,13 @@ class FileService:
                 if total_uncompressed_size > self._max_extracted_total_size_bytes:
                     raise ValidationError("ZIP archive uncompressed size exceeds limit")
 
-                entries.append((
-                    zip_info,
-                    entry_path,
-                    self._join_paths(extract_path, entry_path),
-                ))
+                entries.append(
+                    (
+                        zip_info,
+                        entry_path,
+                        self._join_paths(extract_path, entry_path),
+                    )
+                )
 
             extracted_file_count = 0
             skipped_file_count = 0
@@ -186,10 +187,7 @@ class FileService:
         }
 
     async def list_files(
-        self,
-        session_id: str,
-        path: str = None,
-        limit: int = 1000
+        self, session_id: str, path: str = None, limit: int = 1000
     ) -> List[Dict[str, Any]]:
         """
         列出 session 下的文件
@@ -235,7 +233,7 @@ class FileService:
             # key 格式: sessions/{session_id}/conversation-1231/uploads/temparea/test.csv
             # s3_key_prefix 格式: sessions/{session_id}/
             if key.startswith(s3_key_prefix):
-                relative_path = key[len(s3_key_prefix):].lstrip("/")
+                relative_path = key[len(s3_key_prefix) :].lstrip("/")
             else:
                 relative_path = key.lstrip("/")
 
@@ -246,13 +244,15 @@ class FileService:
             # 容器内挂载路径: /workspace/{relative_path}
             container_path = f"/workspace/{relative_path}"
 
-            result.append({
-                "name": relative_path,
-                "container_path": container_path,
-                "size": file["size"],
-                "modified_time": file.get("last_modified"),
-                "etag": file.get("etag")
-            })
+            result.append(
+                {
+                    "name": relative_path,
+                    "container_path": container_path,
+                    "size": file["size"],
+                    "modified_time": file.get("last_modified"),
+                    "etag": file.get("etag"),
+                }
+            )
 
         return result
 

@@ -3,6 +3,7 @@
 
 定义容器操作的抽象接口。
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
@@ -11,6 +12,7 @@ from typing import Optional, Dict, Any
 @dataclass(frozen=True)
 class ControlPlaneOwnerContext:
     """当前 control plane Pod 的 owner 上下文。"""
+
     pod_name: str
     pod_uid: str
 
@@ -18,6 +20,7 @@ class ControlPlaneOwnerContext:
 @dataclass(frozen=True)
 class ContainerOwnershipInfo:
     """容器/POD 当前归属信息。"""
+
     owner_pod_name: Optional[str]
     owner_pod_uid: Optional[str]
     annotations: Dict[str, str]
@@ -27,6 +30,7 @@ class ContainerOwnershipInfo:
 @dataclass
 class ContainerConfig:
     """容器配置"""
+
     image: str
     name: str
     env_vars: Dict[str, str]
@@ -42,6 +46,7 @@ class ContainerConfig:
 @dataclass
 class ContainerInfo:
     """容器信息"""
+
     id: str
     name: str
     image: str
@@ -56,6 +61,7 @@ class ContainerInfo:
 @dataclass
 class ContainerResult:
     """容器执行结果"""
+
     status: str
     stdout: str
     stderr: str
@@ -70,10 +76,7 @@ class IContainerScheduler(ABC):
     """
 
     @abstractmethod
-    async def create_container(
-        self,
-        config: ContainerConfig
-    ) -> str:
+    async def create_container(self, config: ContainerConfig) -> str:
         """
         创建容器
 
@@ -87,36 +90,22 @@ class IContainerScheduler(ABC):
         pass
 
     @abstractmethod
-    async def stop_container(
-        self,
-        container_id: str,
-        timeout: int = 10
-    ) -> None:
+    async def stop_container(self, container_id: str, timeout: int = 10) -> None:
         """停止容器"""
         pass
 
     @abstractmethod
-    async def remove_container(
-        self,
-        container_id: str,
-        force: bool = True
-    ) -> None:
+    async def remove_container(self, container_id: str, force: bool = True) -> None:
         """删除容器"""
         pass
 
     @abstractmethod
-    async def get_container_status(
-        self,
-        container_id: str
-    ) -> ContainerInfo:
+    async def get_container_status(self, container_id: str) -> ContainerInfo:
         """获取容器状态"""
         pass
 
     @abstractmethod
-    async def is_container_running(
-        self,
-        container_id: str
-    ) -> bool:
+    async def is_container_running(self, container_id: str) -> bool:
         """
         检查容器是否正在运行
 
@@ -133,19 +122,14 @@ class IContainerScheduler(ABC):
 
     @abstractmethod
     async def get_container_logs(
-        self,
-        container_id: str,
-        tail: int = 100,
-        since: Optional[str] = None
+        self, container_id: str, tail: int = 100, since: Optional[str] = None
     ) -> str:
         """获取容器日志"""
         pass
 
     @abstractmethod
     async def wait_container(
-        self,
-        container_id: str,
-        timeout: Optional[int] = None
+        self, container_id: str, timeout: Optional[int] = None
     ) -> ContainerResult:
         """等待容器执行完成"""
         pass

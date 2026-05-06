@@ -4,6 +4,7 @@
 SQLAlchemy 模型定义，用于数据库持久化。
 按照数据表命名规范: t_{module}_{entity}, f_{field_name}
 """
+
 from datetime import datetime
 
 from sqlalchemy import Column, String, Integer, BigInteger, Text, Index
@@ -21,6 +22,7 @@ class SessionModel(Base):
     这是基础设施层的实现细节，映射到数据库表。
     按照照数据表命名规范实现。
     """
+
     __tablename__ = "t_sandbox_session"
 
     # Primary fields
@@ -60,7 +62,9 @@ class SessionModel(Base):
     # Dependency installation fields
     f_requested_dependencies = Column(Text, nullable=False, default="")
     f_installed_dependencies = Column(Text, nullable=False, default="")
-    f_dependency_install_status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    f_dependency_install_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending"
+    )
     f_dependency_install_error = Column(Text, nullable=False, default="")
     f_dependency_install_started_at = Column(BigInteger, nullable=False, default=0)
     f_dependency_install_completed_at = Column(BigInteger, nullable=False, default=0)
@@ -99,7 +103,7 @@ class SessionModel(Base):
                 cpu=self.f_resources_cpu,
                 memory=self.f_resources_memory,
                 disk=self.f_resources_disk,
-                max_processes=128  # Default value
+                max_processes=128,  # Default value
             ),
             workspace_path=self.f_workspace_path or "",
             runtime_type=self.f_runtime_type,
@@ -113,7 +117,8 @@ class SessionModel(Base):
             completed_at=self._millis_to_datetime(self.f_completed_at),
             last_activity_at=self._millis_to_datetime(self.f_last_activity_at) or datetime.now(),
             # 依赖安装字段
-            python_package_index_url=self.f_python_package_index_url or DEFAULT_PYTHON_PACKAGE_INDEX_URL,
+            python_package_index_url=self.f_python_package_index_url
+            or DEFAULT_PYTHON_PACKAGE_INDEX_URL,
             requested_dependencies=self._parse_json(self.f_requested_dependencies) or [],
             dependency_install_status=self.f_dependency_install_status or "pending",
             dependency_install_error=self.f_dependency_install_error or None,
@@ -129,14 +134,19 @@ class SessionModel(Base):
         if self.f_installed_dependencies:
             try:
                 import json
+
                 deps_list = json.loads(self.f_installed_dependencies)
                 session.installed_dependencies = [
                     InstalledDependency(
                         name=dep.get("name"),
                         version=dep.get("version"),
                         install_location=dep.get("install_location", "/workspace/.venv/"),
-                        install_time=datetime.fromisoformat(dep["install_time"]) if dep.get("install_time") else datetime.now(),
-                        is_from_template=dep.get("is_from_template", False)
+                        install_time=(
+                            datetime.fromisoformat(dep["install_time"])
+                            if dep.get("install_time")
+                            else datetime.now()
+                        ),
+                        is_from_template=dep.get("is_from_template", False),
                     )
                     for dep in (deps_list if isinstance(deps_list, list) else [])
                 ]
@@ -185,21 +195,41 @@ class SessionModel(Base):
             f_env_vars=json.dumps(session.env_vars, ensure_ascii=False) if session.env_vars else "",
             f_timeout=session.timeout,
             f_python_package_index_url=session.python_package_index_url,
-            f_completed_at=int(session.completed_at.timestamp() * 1000) if session.completed_at else 0,
-            f_last_activity_at=int(session.last_activity_at.timestamp() * 1000) if session.last_activity_at else now_ms,
+            f_completed_at=(
+                int(session.completed_at.timestamp() * 1000) if session.completed_at else 0
+            ),
+            f_last_activity_at=(
+                int(session.last_activity_at.timestamp() * 1000)
+                if session.last_activity_at
+                else now_ms
+            ),
             # 依赖安装字段
-            f_requested_dependencies=json.dumps(session.requested_dependencies, ensure_ascii=False) if session.requested_dependencies else "",
+            f_requested_dependencies=(
+                json.dumps(session.requested_dependencies, ensure_ascii=False)
+                if session.requested_dependencies
+                else ""
+            ),
             f_installed_dependencies=installed_dependencies_json,
             f_dependency_install_status=session.dependency_install_status,
             f_dependency_install_error=session.dependency_install_error or "",
-            f_dependency_install_started_at=int(session.dependency_install_started_at.timestamp() * 1000)
-            if session.dependency_install_started_at else 0,
-            f_dependency_install_completed_at=int(session.dependency_install_completed_at.timestamp() * 1000)
-            if session.dependency_install_completed_at else 0,
+            f_dependency_install_started_at=(
+                int(session.dependency_install_started_at.timestamp() * 1000)
+                if session.dependency_install_started_at
+                else 0
+            ),
+            f_dependency_install_completed_at=(
+                int(session.dependency_install_completed_at.timestamp() * 1000)
+                if session.dependency_install_completed_at
+                else 0
+            ),
             # 审计字段
-            f_created_at=int(session.created_at.timestamp() * 1000) if session.created_at else now_ms,
+            f_created_at=(
+                int(session.created_at.timestamp() * 1000) if session.created_at else now_ms
+            ),
             f_created_by="",
-            f_updated_at=int(session.updated_at.timestamp() * 1000) if session.updated_at else now_ms,
+            f_updated_at=(
+                int(session.updated_at.timestamp() * 1000) if session.updated_at else now_ms
+            ),
             f_updated_by="",
             f_deleted_at=0,
             f_deleted_by="",
@@ -211,6 +241,7 @@ class SessionModel(Base):
             return None
         try:
             import json
+
             return json.loads(value)
         except (json.JSONDecodeError, ValueError):
             return None

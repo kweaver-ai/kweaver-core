@@ -3,12 +3,14 @@
 
 定义 Executor 调用的内部 API 的 Pydantic 模型。
 """
+
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 
 class ExecutionMetrics(BaseModel):
     """执行性能指标"""
+
     duration_ms: float = Field(..., description="墙钟耗时（毫秒）")
     cpu_time_ms: Optional[float] = Field(None, description="CPU 时间（毫秒）")
     peak_memory_mb: Optional[float] = Field(None, description="内存峰值（MB）")
@@ -18,6 +20,7 @@ class ExecutionMetrics(BaseModel):
 
 class ArtifactMetadata(BaseModel):
     """文件元数据"""
+
     path: str = Field(..., description="相对于 workspace 的文件路径")
     size: int = Field(..., description="文件大小（字节）")
     mime_type: str = Field(..., description="MIME 类型")
@@ -31,6 +34,7 @@ class ExecutionResultReport(BaseModel):
 
     由 Executor 调用，上报执行结果到控制平面。
     """
+
     status: str = Field(..., description="执行状态: success, failed, timeout, crashed")
     stdout: str = Field("", description="标准输出")
     stderr: str = Field("", description="标准错误")
@@ -43,11 +47,13 @@ class ExecutionResultReport(BaseModel):
 
 class InternalAPIResponse(BaseModel):
     """内部 API 标准响应"""
+
     message: str = Field(..., description="响应消息")
 
 
 class ContainerReadyRequest(BaseModel):
     """容器就绪请求"""
+
     container_id: str = Field(..., description="容器 ID")
     pod_name: Optional[str] = Field(None, description="Pod 名称（Kubernetes）")
     executor_port: int = Field(8080, description="执行器 HTTP API 端口")

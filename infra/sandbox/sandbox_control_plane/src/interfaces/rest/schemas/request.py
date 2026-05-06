@@ -3,6 +3,7 @@ REST API 请求模式
 
 定义 FastAPI 的请求 Pydantic 模型。
 """
+
 import re
 from pathlib import PurePosixPath
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -16,6 +17,7 @@ class DependencySpec(BaseModel):
     用于指定会话创建时需要安装的 Python 包。
     按照 sandbox-design-v2.1.md 章节 5.3.1 设计。
     """
+
     name: str = Field(..., min_length=1, max_length=100, description="包名称")
     version: Optional[str] = Field(None, description="版本约束 (如: ==2.31.0, >=1.0)")
 
@@ -83,8 +85,13 @@ class CreateSessionRequest(BaseModel):
 
     按照 sandbox-design-v2.1.md 章节 5.3.1 设计，扩展支持依赖安装。
     """
-    id: Optional[str] = Field(None, min_length=1, max_length=64, description="会话 ID（可选，手动指定时需确保唯一性）")
-    template_id: Optional[str] = Field(None, min_length=1, max_length=64, description="模板 ID；未传时使用默认模板配置")
+
+    id: Optional[str] = Field(
+        None, min_length=1, max_length=64, description="会话 ID（可选，手动指定时需确保唯一性）"
+    )
+    template_id: Optional[str] = Field(
+        None, min_length=1, max_length=64, description="模板 ID；未传时使用默认模板配置"
+    )
     timeout: int = Field(300, ge=1, le=3600, description="超时时间（秒）")
     cpu: str = Field("1", description="CPU 核心数")
     memory: str = Field("512Mi", description="内存限制")
@@ -94,28 +101,15 @@ class CreateSessionRequest(BaseModel):
 
     # 依赖安装相关字段（新增）
     dependencies: List[DependencySpec] = Field(
-        default_factory=list,
-        max_length=50,
-        description="会话级依赖包列表"
+        default_factory=list, max_length=50, description="会话级依赖包列表"
     )
-    install_timeout: int = Field(
-        300,
-        ge=30,
-        le=1800,
-        description="依赖安装超时时间（秒）"
-    )
-    fail_on_dependency_error: bool = Field(
-        True,
-        description="依赖安装失败时是否终止会话创建"
-    )
+    install_timeout: int = Field(300, ge=30, le=1800, description="依赖安装超时时间（秒）")
+    fail_on_dependency_error: bool = Field(True, description="依赖安装失败时是否终止会话创建")
     allow_version_conflicts: bool = Field(
-        False,
-        description="是否允许版本冲突（Template 预装包 vs 用户请求包）"
+        False, description="是否允许版本冲突（Template 预装包 vs 用户请求包）"
     )
     python_package_index_url: Optional[str] = Field(
-        None,
-        max_length=512,
-        description="Python 软件包仓库地址，默认 https://pypi.org/simple/"
+        None, max_length=512, description="Python 软件包仓库地址，默认 https://pypi.org/simple/"
     )
 
     @field_validator("cpu")
@@ -130,20 +124,18 @@ class CreateSessionRequest(BaseModel):
 
 class ExecuteCodeRequest(BaseModel):
     """执行代码请求"""
+
     code: str = Field(
         ...,
         min_length=1,
         max_length=102400,
-        description="要执行的代码。language=python 时需符合 AWS Lambda handler 格式；language=shell 时表示 shell 脚本内容。"
+        description="要执行的代码。language=python 时需符合 AWS Lambda handler 格式；language=shell 时表示 shell 脚本内容。",
     )
-    language: Literal["python", "javascript", "shell"] = Field(
-        ..., description="编程语言"
-    )
+    language: Literal["python", "javascript", "shell"] = Field(..., description="编程语言")
     timeout: int = Field(30, ge=1, le=3600, description="执行超时（秒）")
     event: Optional[Dict] = Field(None, description="事件数据")
     working_directory: Optional[str] = Field(
-        None,
-        description="可选执行目录，相对于 workspace 根目录；未传时默认使用 workspace 根目录。"
+        None, description="可选执行目录，相对于 workspace 根目录；未传时默认使用 workspace 根目录。"
     )
 
     @field_validator("working_directory")
@@ -176,25 +168,21 @@ class ExecuteCodeRequest(BaseModel):
                     "code": 'def handler(event):\n    name = event.get("name", "World")\n    return {"message": f"Hello, {name}!"}',
                     "language": "python",
                     "timeout": 10,
-                    "event": {"name": "World"}
+                    "event": {"name": "World"},
                 },
                 {
                     "code": 'def handler(event):\n    name = event.get("name", "World")\n    age = event.get("age", 0)\n    return {"message": f"Hello, {name}!", "age_doubled": age * 2}',
                     "language": "python",
                     "timeout": 30,
-                    "event": {"name": "Alice", "age": 25}
+                    "event": {"name": "Alice", "age": 25},
                 },
+                {"code": "pwd && ls -la", "language": "shell", "timeout": 30},
                 {
-                    "code": 'pwd && ls -la',
-                    "language": "shell",
-                    "timeout": 30
-                },
-                {
-                    "code": 'bash run.sh && python tools/build.py',
+                    "code": "bash run.sh && python tools/build.py",
                     "language": "shell",
                     "timeout": 30,
-                    "working_directory": "skill/mini-wiki"
-                }
+                    "working_directory": "skill/mini-wiki",
+                },
             ]
         }
     )
@@ -202,6 +190,7 @@ class ExecuteCodeRequest(BaseModel):
 
 class TerminateSessionRequest(BaseModel):
     """终止会话请求"""
+
     reason: Optional[str] = Field(None, description="终止原因")
 
 
@@ -219,10 +208,17 @@ class InstallSessionDependenciesRequest(BaseModel):
         max_length=50,
         description="本次增量安装的依赖列表",
     )
+    install_timeout: int = Field(
+        300,
+        ge=30,
+        le=1800,
+        description="本次依赖安装超时时间（秒）",
+    )
 
 
 class CreateTemplateRequest(BaseModel):
     """创建模板请求"""
+
     id: str = Field(..., min_length=1, max_length=64, description="模板 ID")
     name: str = Field(..., min_length=1, max_length=255, description="模板名称")
     image_url: str = Field(..., min_length=1, max_length=512, description="镜像 URL")
@@ -238,6 +234,7 @@ class CreateTemplateRequest(BaseModel):
 
 class UpdateTemplateRequest(BaseModel):
     """更新模板请求"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="模板名称")
     image_url: Optional[str] = Field(None, min_length=1, max_length=512, description="镜像 URL")
     default_cpu_cores: Optional[float] = Field(None, ge=0.1, le=4.0, description="默认 CPU 核心数")

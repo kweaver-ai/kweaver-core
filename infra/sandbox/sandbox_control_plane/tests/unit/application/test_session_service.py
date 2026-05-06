@@ -3,6 +3,7 @@
 
 测试 SessionService 的用例编排逻辑。
 """
+
 import pytest
 from types import SimpleNamespace
 from datetime import datetime, timezone
@@ -100,7 +101,7 @@ class TestSessionService:
             id="python-datascience",
             name="Python Data Science",
             image="python:3.11-datascience",
-            base_image="python:3.11-slim"
+            base_image="python:3.11-slim",
         )
         template_repo.find_by_id.return_value = template
 
@@ -113,15 +114,13 @@ class TestSessionService:
             mem_usage=0.6,
             session_count=5,
             max_sessions=100,
-            cached_templates=["python-datascience"]
+            cached_templates=["python-datascience"],
         )
         scheduler.schedule.return_value = runtime_node
 
         # 执行命令
         command = CreateSessionCommand(
-            template_id="python-datascience",
-            timeout=300,
-            resource_limit=ResourceLimit.default()
+            template_id="python-datascience", timeout=300, resource_limit=ResourceLimit.default()
         )
 
         result = await service.create_session(command)
@@ -137,10 +136,7 @@ class TestSessionService:
         """测试模板不存在"""
         template_repo.find_by_id.return_value = None
 
-        command = CreateSessionCommand(
-            template_id="non-existent",
-            timeout=300
-        )
+        command = CreateSessionCommand(template_id="non-existent", timeout=300)
 
         with pytest.raises(NotFoundError, match="Template not found"):
             await service.create_session(command)
@@ -199,11 +195,12 @@ class TestSessionService:
             status=SessionStatus.RUNNING,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://sandbox-workspace/sessions/sess_20240115_abc123",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = session
 
         from src.application.queries.get_session import GetSessionQuery
+
         query = GetSessionQuery(session_id="sess_20240115_abc123")
 
         result = await service.get_session(query)
@@ -217,6 +214,7 @@ class TestSessionService:
         session_repo.find_by_id.return_value = None
 
         from src.application.queries.get_session import GetSessionQuery
+
         query = GetSessionQuery(session_id="non-existent")
 
         with pytest.raises(NotFoundError, match="Session not found"):
@@ -231,7 +229,7 @@ class TestSessionService:
             status=SessionStatus.RUNNING,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://sandbox-workspace/sessions/sess_20240115_abc123",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = session
 
@@ -249,7 +247,7 @@ class TestSessionService:
             status=SessionStatus.TERMINATED,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://sandbox-workspace/sessions/sess_20240115_abc123",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = session
 
@@ -268,7 +266,7 @@ class TestSessionService:
             status=SessionStatus.RUNNING,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://sandbox-workspace/sessions/sess_20240115_abc123",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = session
 
@@ -295,13 +293,12 @@ class TestSessionService:
         session_repo.delete.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_create_session_with_manual_id(self, service, template_repo, scheduler, session_repo):
+    async def test_create_session_with_manual_id(
+        self, service, template_repo, scheduler, session_repo
+    ):
         """测试使用手动指定 ID 创建会话"""
         template = Template(
-            id="python-test",
-            name="Python Test",
-            image="python:3.11",
-            base_image="python:3.11-slim"
+            id="python-test", name="Python Test", image="python:3.11", base_image="python:3.11-slim"
         )
         template_repo.find_by_id.return_value = template
 
@@ -314,7 +311,7 @@ class TestSessionService:
             mem_usage=0.6,
             session_count=5,
             max_sessions=100,
-            cached_templates=["python-test"]
+            cached_templates=["python-test"],
         )
         scheduler.schedule.return_value = runtime_node
 
@@ -325,7 +322,7 @@ class TestSessionService:
             id="custom-session-id",
             template_id="python-test",
             timeout=300,
-            resource_limit=ResourceLimit.default()
+            resource_limit=ResourceLimit.default(),
         )
 
         result = await service.create_session(command)
@@ -395,13 +392,79 @@ class TestSessionService:
             )
 
     @pytest.mark.asyncio
-    async def test_create_session_with_duplicate_id(self, service, template_repo, scheduler, session_repo):
+    async def test_install_session_dependencies_uses_default_install_timeout(
+        self,
+        service,
+        session_repo,
+        executor_client,
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://sandbox-workspace/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="sandbox-sess_1",
+        )
+        session_repo.find_by_id.return_value = session
+        executor_client.sync_session_config.return_value = ExecutorSyncSessionConfigResponse(
+            status="completed",
+            installed_dependencies=[],
+            started_at="2026-03-09T12:00:00+00:00",
+            completed_at="2026-03-09T12:00:05+00:00",
+        )
+
+        await service.install_session_dependencies(
+            InstallSessionDependenciesCommand(
+                session_id="sess_1",
+                dependencies=["requests==2.31.0"],
+            )
+        )
+
+        assert executor_client.sync_session_config.call_args.kwargs["executor_timeout"] == 300
+
+    @pytest.mark.asyncio
+    async def test_install_session_dependencies_uses_custom_install_timeout(
+        self,
+        service,
+        session_repo,
+        executor_client,
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://sandbox-workspace/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="sandbox-sess_1",
+        )
+        session_repo.find_by_id.return_value = session
+        executor_client.sync_session_config.return_value = ExecutorSyncSessionConfigResponse(
+            status="completed",
+            installed_dependencies=[],
+            started_at="2026-03-09T12:00:00+00:00",
+            completed_at="2026-03-09T12:00:05+00:00",
+        )
+
+        await service.install_session_dependencies(
+            InstallSessionDependenciesCommand(
+                session_id="sess_1",
+                dependencies=["requests==2.31.0"],
+                install_timeout=900,
+            )
+        )
+
+        assert executor_client.sync_session_config.call_args.kwargs["executor_timeout"] == 900
+
+    @pytest.mark.asyncio
+    async def test_create_session_with_duplicate_id(
+        self, service, template_repo, scheduler, session_repo
+    ):
         """测试使用重复 ID 创建会话"""
         template = Template(
-            id="python-test",
-            name="Python Test",
-            image="python:3.11",
-            base_image="python:3.11-slim"
+            id="python-test", name="Python Test", image="python:3.11", base_image="python:3.11-slim"
         )
         template_repo.find_by_id.return_value = template
 
@@ -411,17 +474,16 @@ class TestSessionService:
             status=SessionStatus.RUNNING,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://bucket/sessions/existing",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = existing_session
 
         command = CreateSessionCommand(
-            id="existing-session-id",
-            template_id="python-test",
-            timeout=300
+            id="existing-session-id", template_id="python-test", timeout=300
         )
 
         from src.shared.errors.domain import ConflictError
+
         with pytest.raises(ConflictError, match="already exists"):
             await service.create_session(command)
 
@@ -436,10 +498,7 @@ class TestSessionService:
     ):
         """测试创建带依赖的会话"""
         template = Template(
-            id="python-test",
-            name="Python Test",
-            image="python:3.11",
-            base_image="python:3.11-slim"
+            id="python-test", name="Python Test", image="python:3.11", base_image="python:3.11-slim"
         )
         template_repo.find_by_id.return_value = template
 
@@ -452,7 +511,7 @@ class TestSessionService:
             mem_usage=0.6,
             session_count=5,
             max_sessions=100,
-            cached_templates=["python-test"]
+            cached_templates=["python-test"],
         )
         scheduler.schedule.return_value = runtime_node
 
@@ -480,7 +539,7 @@ class TestSessionService:
                 status=SessionStatus.RUNNING,
                 resource_limit=ResourceLimit.default(),
                 workspace_path="s3://bucket/sessions/sess_1",
-                runtime_type="docker"
+                runtime_type="docker",
             ),
             Session(
                 id="sess_2",
@@ -488,8 +547,8 @@ class TestSessionService:
                 status=SessionStatus.TERMINATED,
                 resource_limit=ResourceLimit.default(),
                 workspace_path="s3://bucket/sessions/sess_2",
-                runtime_type="docker"
-            )
+                runtime_type="docker",
+            ),
         ]
         session_repo.find_sessions = AsyncMock(return_value=sessions)
         session_repo.count_sessions = AsyncMock(return_value=2)
@@ -509,7 +568,7 @@ class TestSessionService:
                 status=SessionStatus.RUNNING,
                 resource_limit=ResourceLimit.default(),
                 workspace_path="s3://bucket/sessions/sess_1",
-                runtime_type="docker"
+                runtime_type="docker",
             )
         ]
         session_repo.find_sessions = AsyncMock(return_value=sessions)
@@ -538,7 +597,7 @@ class TestSessionService:
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://bucket/sessions/sess_123",
             runtime_type="docker",
-            container_id="container-123"
+            container_id="container-123",
         )
         session_repo.find_by_id.return_value = session
 
@@ -556,7 +615,7 @@ class TestSessionService:
             status=SessionStatus.RUNNING,
             resource_limit=ResourceLimit.default(),
             workspace_path="s3://bucket/sessions/sess_123",
-            runtime_type="docker"
+            runtime_type="docker",
         )
         session_repo.find_by_id.return_value = session
 
@@ -570,7 +629,7 @@ class TestSessionService:
                 session_id="sess_123",
                 state=execution_state,
                 code="print('hello')",
-                language="python"
+                language="python",
             )
         ]
         execution_repo.find_by_session_id.return_value = executions
@@ -581,7 +640,9 @@ class TestSessionService:
         execution_repo.find_by_session_id.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_session_executions_session_not_found(self, service, session_repo, execution_repo):
+    async def test_get_session_executions_session_not_found(
+        self, service, session_repo, execution_repo
+    ):
         """测试获取不存在会话的执行记录"""
         # list_executions 不检查会话是否存在，直接查询执行记录
         execution_repo.find_by_session_id.return_value = []

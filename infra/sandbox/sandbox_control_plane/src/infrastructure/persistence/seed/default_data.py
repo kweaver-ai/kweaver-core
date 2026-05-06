@@ -5,6 +5,7 @@
 所有默认数据的集中定义，方便维护和修改。
 按照数据表命名规范使用 f_ 前缀字段名。
 """
+
 from __future__ import annotations
 
 import os
@@ -67,8 +68,7 @@ def get_default_template_image_url() -> str:
     """
     image_url = os.getenv("DEFAULT_TEMPLATE_IMAGE", build_template_image_url("python-basic"))
     logger.info(
-        "Getting default template image URL from environment",
-        DEFAULT_TEMPLATE_IMAGE=image_url
+        "Getting default template image URL from environment", DEFAULT_TEMPLATE_IMAGE=image_url
     )
     return image_url
 

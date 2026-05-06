@@ -8,6 +8,7 @@ Docker 容器调度器
 
 支持 Python 依赖安装：按照 sandbox-design-v2.1.md 章节 5 设计。
 """
+
 import asyncio
 import json
 import os
@@ -25,7 +26,10 @@ from src.infrastructure.container_scheduler.base import (
 )
 from src.infrastructure.config.settings import get_settings
 from src.infrastructure.logging import get_logger
-from src.shared.utils.dependencies import format_dependencies_for_script, format_dependency_install_script_for_shell
+from src.shared.utils.dependencies import (
+    format_dependencies_for_script,
+    format_dependency_install_script_for_shell,
+)
 
 logger = get_logger(__name__)
 
@@ -99,7 +103,7 @@ class DockerScheduler(IContainerScheduler):
         parsed = urlparse(workspace_path)
         return {
             "bucket": parsed.netloc,
-            "prefix": parsed.path.lstrip('/'),
+            "prefix": parsed.path.lstrip("/"),
         }
 
     def _build_s3_mount_entrypoint(
@@ -292,9 +296,7 @@ exec python -m executor.interfaces.http.rest
                 "MemorySwap": memory_bytes,
             },
             "Labels": config.labels,
-            "ExposedPorts": {
-                "8080/tcp": {}
-            },
+            "ExposedPorts": {"8080/tcp": {}},
         }
 
         logger.debug(
@@ -378,7 +380,7 @@ exec python -m executor.interfaces.http.rest
                 {
                     "PathOnHost": "/dev/fuse",
                     "PathInContainer": "/dev/fuse",
-                    "CgroupPermissions": "rwm"
+                    "CgroupPermissions": "rwm",
                 }
             ]
 
@@ -401,9 +403,7 @@ exec python -m executor.interfaces.http.rest
                 )
             else:
                 # 无依赖时使用较小的 tmpfs
-                container_config["HostConfig"]["Tmpfs"] = {
-                    "/tmp": "size=100M,mode=1777"
-                }
+                container_config["HostConfig"]["Tmpfs"] = {"/tmp": "size=100M,mode=1777"}
 
             # 添加 S3 相关环境变量
             s3_env_vars = {
@@ -557,11 +557,7 @@ exec python -m executor.interfaces.http.rest
             )
             raise
 
-    async def stop_container(
-        self,
-        container_id: str,
-        timeout: int = 10
-    ) -> None:
+    async def stop_container(self, container_id: str, timeout: int = 10) -> None:
         """停止容器"""
         docker = await self._ensure_docker()
         try:
@@ -572,11 +568,7 @@ exec python -m executor.interfaces.http.rest
             logger.error(f"Failed to stop container {container_id}: {e}")
             raise
 
-    async def remove_container(
-        self,
-        container_id: str,
-        force: bool = True
-    ) -> None:
+    async def remove_container(self, container_id: str, force: bool = True) -> None:
         """删除容器"""
         docker = await self._ensure_docker()
         try:
@@ -638,10 +630,7 @@ exec python -m executor.interfaces.http.rest
             return False
 
     async def get_container_logs(
-        self,
-        container_id: str,
-        tail: int = 100,
-        since: Optional[str] = None
+        self, container_id: str, tail: int = 100, since: Optional[str] = None
     ) -> str:
         """获取容器日志"""
         docker = await self._ensure_docker()
@@ -658,9 +647,7 @@ exec python -m executor.interfaces.http.rest
             raise
 
     async def wait_container(
-        self,
-        container_id: str,
-        timeout: Optional[int] = None
+        self, container_id: str, timeout: Optional[int] = None
     ) -> ContainerResult:
         """等待容器执行完成"""
         docker = await self._ensure_docker()
@@ -669,10 +656,7 @@ exec python -m executor.interfaces.http.rest
 
             if timeout:
                 # 使用 asyncio.wait_for 实现超时
-                result = await asyncio.wait_for(
-                    container.wait(),
-                    timeout=timeout
-                )
+                result = await asyncio.wait_for(container.wait(), timeout=timeout)
             else:
                 result = await container.wait()
 
