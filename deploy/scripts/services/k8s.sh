@@ -440,6 +440,12 @@ _fix_docker_ce_repo_releasever_for_distro() {
     [[ -f /etc/os-release ]] || return 0
     # shellcheck source=/dev/null
     . /etc/os-release
+    local is_hce="no"
+    [[ "${ID:-}" == "hce" ]] && is_hce="yes"
+    if [[ "${is_hce}" == "no" ]] && { [[ "${NAME:-}" == *"Huawei Cloud EulerOS"* ]] || [[ "${PRETTY_NAME:-}" == *"Huawei Cloud EulerOS"* ]]; }; then
+        is_hce="yes"
+    fi
+
     case "${ID:-}" in
         openEuler|openeuler)
             log_info "Pinning Docker CE repo paths for openEuler..."
@@ -452,7 +458,14 @@ _fix_docker_ce_repo_releasever_for_distro() {
             sed -i 's|/linux/centos/2\.[0-9]*/|/linux/centos/8/|g' "${repo_file}"
             sed -i 's|/linux/centos/2/|/linux/centos/8/|g' "${repo_file}"
             ;;
-        *) ;;
+        *)
+            if [[ "${is_hce}" == "yes" ]]; then
+                log_info "Pinning Docker CE repo paths for Huawei Cloud EulerOS (detected via NAME/PRETTY_NAME)..."
+                sed -i 's|\$releasever|8|g' "${repo_file}"
+                sed -i 's|/linux/centos/2\.[0-9]*/|/linux/centos/8/|g' "${repo_file}"
+                sed -i 's|/linux/centos/2/|/linux/centos/8/|g' "${repo_file}"
+            fi
+            ;;
     esac
 }
 
@@ -616,7 +629,19 @@ install_containerd() {
             set +e
             if curl -fsSLo "${rpm_file}" "${rpm_url}"; then
                 log_info "Downloaded RPM successfully, installing..."
-                ${PKG_MANAGER_INSTALL} "${rpm_file}"
+                # dnf still refreshes all *enabled* repos before a local RPM install; a broken
+                # docker-ce-stable (HCE $releasever→2.0) would fail the transaction — disable all
+                # docker-ce* repoids from the repo file while resolving deps from OS base repos.
+                local -a _dce_disable=()
+                if [[ -f /etc/yum.repos.d/docker-ce.repo ]]; then
+                    while IFS= read -r _line || [[ -n "${_line}" ]]; do
+                        if [[ "${_line}" =~ ^\[([^][]+)\] ]]; then
+                            _dce_disable+=( "--disablerepo=${BASH_REMATCH[1]}" )
+                        fi
+                    done < /etc/yum.repos.d/docker-ce.repo
+                fi
+                _fix_docker_ce_repo_releasever_for_distro
+                ${PKG_MANAGER_INSTALL} "${_dce_disable[@]}" --nogpgcheck "${rpm_file}"
                 install_rc=$?
                 rm -f "${rpm_file}"
                 
@@ -641,7 +666,7 @@ install_containerd() {
             log_error ""
             log_info "  Option 1: Download and install RPM directly"
             log_info "    curl -fsSLo /tmp/containerd.io.rpm https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/\$(rpm -E %rhel)/\$(uname -m)/stable/Packages/containerd.io-1.6.32-3.1.el\$(rpm -E %rhel).\$(uname -m).rpm"
-            log_info "    dnf install -y /tmp/containerd.io.rpm"
+            log_info "    dnf install -y --disablerepo=docker-ce-stable --disablerepo=docker-ce-test /tmp/containerd.io.rpm"
             log_error ""
             log_info "  Option 2: Install from Aliyun mirror"
             log_info "    dnf config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
