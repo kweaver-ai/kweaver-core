@@ -41,6 +41,12 @@ bash ./deploy.sh --distro=k3s kweaver-core install --minimum
 
 查看状态：`bash ./deploy.sh k3s status`；卸载：`bash ./deploy.sh k3s uninstall`。
 
+### `accessAddress` 与 Kubernetes API（`kubeconfig`）
+
+**安装配置里的 `accessAddress`** 是用户通过 Ingress 访问的 **HTTP(S) 基址**（常见为公网 IP 或域名，端口 **80/443**），与 **`kubectl` / `helm` 连接控制面（6443）** 的方式**无关**。
+
+在 **与 k3s 同一台 Linux 主机** 上跑 **`kubectl` / `helm`** 时，请使用 **`/etc/rancher/k3s/k3s.yaml`**（拷贝到 `~/.kube/config` 并修正属主后，通常 **`server: https://127.0.0.1:6443`**）。**不要**仅为「统一成公网」而把 API 的 `server:` 改成弹性公网 IP：未正确开放 **6443**、未配 **tls-san** 或存在 **回环/NAT（hairpin）** 时，很容易出现 **`dial tcp …6443: i/o timeout`**。若从**机房外**管理集群，再在确认安全组与证书的前提下使用可访问的 `server:`。
+
 ### macOS（可选 — 本机 kind 开发）
 
 **仅供 Mac 上做验证；正式安装请以本文 Linux 章节为准。** 本机用 **kind** 起 Kubernetes，不在 Mac 上跑 `preflight.sh` / `k3s install`。**`mac.sh` 设置 `KWEAVER_SKIP_PLATFORM_BOOTSTRAP`**。**`kweaver-core install` 会先执行 `ensure_data_services`**（与单独跑 `data-services install` 一致：MariaDB、Redis、Kafka、Zookeeper、OpenSearch）；**`mac.sh` 默认 `AUTO_INSTALL_INGRESS_NGINX=false`**，避免重复装 ingress。需要跳过自带数据层时使用 **`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`**（高级用法 / 外接中间件）。仍可单独执行 **`data-services install`** 只做数据层或刷新。**Apple Silicon：** kind 节点为 **arm64**；**步骤见 [dev/README.md](dev/README.md)。**

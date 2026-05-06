@@ -21,6 +21,14 @@ CONF_DIR="${CONF_DIR:-${SCRIPT_DIR}/conf}"
 
 CONFIG_YAML_PATH="${CONFIG_YAML_PATH:-${CONF_DIR}/config.yaml}"
 
+# Top-level Helm values key `namespace:` from a platform config YAML (same as generate_config_yaml / awk in config.sh).
+# Optional first argument overrides the file path (defaults to CONFIG_YAML_PATH).
+kweaver_values_namespace_from_config() {
+    local cfg="${1:-${CONFIG_YAML_PATH:-}}"
+    [[ -n "${cfg}" && -f "${cfg}" ]] || return 0
+    awk '$1=="namespace:"{print $2; exit}' "${cfg}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' | tr -d '\r'
+}
+
 AUTO_GENERATE_CONFIG="${AUTO_GENERATE_CONFIG:-true}"
 DEFAULT_SQL_VERSION="${DEFAULT_SQL_VERSION:-0.5.0}"
 

@@ -135,8 +135,9 @@ usage() {
     echo "                                Use this after editing config.yaml on a previously-installed cluster."
     echo "  --distro=k8s|k3s              Cluster bootstrap when modules auto-ensure K8s (default: k8s = kubeadm stack)."
     echo "                                Same as env KUBE_DISTRO=k8s|k3s (legacy: kubeadm means k8s). Use k3s for single-node lightweight."
-    echo "  --config=<path>               Specify config.yaml path (values file for helm installs)"
-    echo "                                (default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var)"
+    echo "  --config=<path>               Specify config.yaml path (values file for helm installs). May appear"
+    echo "                                before <module> (global) or on the module command line (e.g. kweaver-core)."
+    echo "                                Default: ~/.kweaver-ai/config.yaml or \$CONFIG_YAML_PATH env var"
     echo "  --charts_dir=<path>           Use a specific local chart directory for download/install"
     echo "                                install only uses local charts when this option is explicitly set"
     echo "  --version_file=<path>         Use an aggregate release manifest to resolve exact chart versions"
@@ -280,6 +281,11 @@ confirm_access_address_before_install() {
         config_missing_before="true"
     fi
     if [[ "${confirm_switch}" == "false" ]]; then
+        # Still materialize CONFIG_YAML_PATH when missing so installs read namespace/accessAddress from one file.
+        if [[ "${config_missing_before}" == "true" ]] && [[ "${AUTO_GENERATE_CONFIG:-true}" == "true" ]]; then
+            log_info "Config not found, generating: ${CONFIG_YAML_PATH}"
+            generate_config_yaml
+        fi
         return 0
     fi
 
@@ -403,6 +409,14 @@ main() {
         case "$1" in
             -y|--yes) ASSUME_YES="true"; shift ;;
             --force-upgrade) FORCE_UPGRADE="true"; shift ;;
+            --config=*)
+                CONFIG_YAML_PATH="${1#*=}"
+                shift
+                ;;
+            --config)
+                CONFIG_YAML_PATH="$2"
+                shift 2
+                ;;
             --distro=k3s|--distro=k8s|--distro=kubeadm)
                 export KUBE_DISTRO="${1#*=}"
                 shift

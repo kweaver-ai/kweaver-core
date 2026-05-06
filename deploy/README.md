@@ -41,6 +41,12 @@ bash ./deploy.sh --distro=k3s kweaver-core install --minimum
 
 Check status: `bash ./deploy.sh k3s status` — remove: `bash ./deploy.sh k3s uninstall`.
 
+### `accessAddress` vs Kubernetes API (`kubeconfig`)
+
+**`accessAddress` in your install config** is the **HTTP(S) base URL** users hit through Ingress (often a public IP or DNS on **80/443**). It does **not** have to match how **`kubectl` / `helm`** talk to the control plane (**`6443`**).
+
+On the **same Linux host as k3s**, use the file **`/etc/rancher/k3s/k3s.yaml`** for **`kubectl`** / **`helm`** (usually **`server: https://127.0.0.1:6443`** after copying to `~/.kube/config` with correct ownership). **Do not** rewrite the API `server:` to your Elastic IP / public address for on-host use unless you mean to call the API through the public interface with **6443** open and matching **tls-san** — hairpin/NAT setups often cause **`dial tcp …6443: i/o timeout`**. Remote admins may use a reachable `server:` if the API is exposed and trusted.
+
 ### macOS (optional — local dev with kind)
 
 **Use this only for Mac validation; for real installs use Linux above.** Local Kubernetes via **kind** — no `preflight.sh` / `k3s` on the Mac host. **`mac.sh` sets `KWEAVER_SKIP_PLATFORM_BOOTSTRAP`** (no host k3s/kubeadm bootstrap). **`kweaver-core install` now runs `ensure_data_services` first** — same Helm layer as **`data-services install`** (MariaDB, Redis, Kafka, ZooKeeper, OpenSearch); **`mac.sh` defaults `AUTO_INSTALL_INGRESS_NGINX=false`** so kind’s existing ingress is not duplicated. Set **`KWEAVER_SKIP_DATA_SERVICES_BUNDLE=true`** to skip bundled data installs (advanced / external infra). **`data-services install`** alone remains useful to pre-stage or refresh the data layer. **Apple Silicon:** kind nodes are **arm64**; use arm64/multi-arch images (see `dev/conf/mac-config.yaml`). **Step order:** [dev/README.md](dev/README.md).

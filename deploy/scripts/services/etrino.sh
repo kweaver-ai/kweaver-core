@@ -60,7 +60,7 @@ parse_args() {
 load_namespace_from_config() {
     if [[ -f "${CONFIG_FILE}" ]]; then
         local config_namespace
-        config_namespace=$(grep "^namespace:" "${CONFIG_FILE}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+        config_namespace="$(awk '$1=="namespace:"{print $2; exit}' "${CONFIG_FILE}" 2>/dev/null | sed -e 's/^["'\'']//; s/["'\'']$//' | tr -d '\r')"
         NAMESPACE="${config_namespace:-${NAMESPACE}}"
     fi
 }

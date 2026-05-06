@@ -1,6 +1,6 @@
 
 # Default kweaver-core namespace
-CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver-ai}"
+CORE_NAMESPACE="${CORE_NAMESPACE:-kweaver}"
 
 # Set to true in parse_core_args when user passes --namespace/--namespace=… (overrides namespace: in YAML).
 CORE_NAMESPACE_FROM_CLI="${CORE_NAMESPACE_FROM_CLI:-false}"
@@ -145,7 +145,7 @@ _core_resolve_target_namespace() {
         return 0
     fi
     local yaml_ns
-    yaml_ns=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+    yaml_ns="$(kweaver_values_namespace_from_config)"
     if [[ -n "${yaml_ns}" ]]; then
         printf '%s' "${yaml_ns}"
     else

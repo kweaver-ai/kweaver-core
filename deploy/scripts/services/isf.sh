@@ -209,8 +209,8 @@ install_isf() {
     fi
 
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     # Create namespace if not exists
     kubectl create namespace "${namespace}" 2>/dev/null || true
@@ -409,8 +409,8 @@ uninstall_isf() {
     _isf_require_version_manifest || return 1
     
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     # Uninstall in reverse order
     local -a release_names=()
@@ -434,8 +434,8 @@ show_isf_status() {
     _isf_require_version_manifest || return 1
     
     # Get namespace from config.yaml
-    local namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    local namespace=$(kweaver_values_namespace_from_config)
+    namespace="${namespace:-kweaver}"
     
     log_info "Namespace: ${namespace}"
     log_info ""

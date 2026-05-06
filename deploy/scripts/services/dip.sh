@@ -1,6 +1,6 @@
 
 # Default DIP namespace
-DIP_NAMESPACE="${DIP_NAMESPACE:-kweaver-ai}"
+DIP_NAMESPACE="${DIP_NAMESPACE:-kweaver}"
 
 # Default local DIP charts directory (relative to deploy root)
 DIP_LOCAL_CHARTS_DIR="${DIP_LOCAL_CHARTS_DIR:-}"
@@ -119,8 +119,8 @@ _dip_ensure_kweaver_core() {
     _dip_require_version_manifest || return 1
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
-    namespace="${namespace:-kweaver-ai}"
+    namespace="$(kweaver_values_namespace_from_config)"
+    namespace="${namespace:-kweaver}"
 
     log_info "Checking kweaver-core dependencies for KWeaver DIP..."
 
@@ -800,7 +800,7 @@ install_dip() {
 
     # Resolve namespace
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+    namespace="$(kweaver_values_namespace_from_config)"
     namespace="${namespace:-${DIP_NAMESPACE}}"
 
     # Create namespace if not exists
@@ -1017,7 +1017,7 @@ uninstall_dip() {
     _dip_require_version_manifest || return 1
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+    namespace="$(kweaver_values_namespace_from_config)"
     namespace="${namespace:-${DIP_NAMESPACE}}"
 
     # Uninstall in reverse install order
@@ -1041,7 +1041,7 @@ show_dip_status() {
     _dip_require_version_manifest || return 1
 
     local namespace
-    namespace=$(grep "^namespace:" "${CONFIG_YAML_PATH}" 2>/dev/null | head -1 | awk '{print $2}' | tr -d "'\"")
+    namespace="$(kweaver_values_namespace_from_config)"
     namespace="${namespace:-${DIP_NAMESPACE}}"
 
     log_info "Namespace: ${namespace}"
