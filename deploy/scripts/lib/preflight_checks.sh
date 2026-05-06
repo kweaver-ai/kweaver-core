@@ -613,6 +613,28 @@ preflight_check_kubeadm_deps() {
     fi
 }
 
+# --- P0: CNI plugins for kubelet pod sandbox (/opt/cni/bin/loopback) -------------
+preflight_check_cni_bin_plugins() {
+    preflight_skip "cni-bin" && return 0
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        preflight_ok "CNI bin plugins (skip on non-Linux)"
+        return
+    fi
+    if _preflight_kube_distro_is_k3s; then
+        preflight_ok "CNI bin plugins: skip (k3s bundles cluster networking)"
+        return
+    fi
+    if ! command -v kubelet &>/dev/null; then
+        preflight_ok "CNI bin plugins: skip (kubelet not installed yet)"
+        return
+    fi
+    if [[ -x /opt/cni/bin/loopback ]]; then
+        preflight_ok "CNI plugins present (/opt/cni/bin/loopback)"
+        return
+    fi
+    preflight_strict_warn_or_fail "kubelet is installed but /opt/cni/bin/loopback is missing (pods fail with FailedCreatePodSandBox loopback; sudo bash ./preflight.sh --fix → kubernetes-cni), or re-run deploy install_kubernetes"
+}
+
 # --- k3s path (KUBE_DISTRO=k3s): curl for installer ----------------------------
 preflight_check_k3s_prereqs() {
     preflight_skip "k3s-prereqs" && return 0
@@ -1753,6 +1775,20 @@ preflight_fix_k8s_bins() {
     fi
 }
 
+preflight_fix_kubernetes_cni() {
+    if ! declare -F _k8s_ensure_cni_bin_plugins &>/dev/null; then
+        preflight_warn "_k8s_ensure_cni_bin_plugins not defined — run deploy/preflight.sh (sources k8s.sh)"
+        return 1
+    fi
+    if _k8s_ensure_cni_bin_plugins; then
+        systemctl restart kubelet 2>/dev/null || true
+        preflight_fixed "Ensured /opt/cni/bin CNI plugins (_k8s_ensure_cni_bin_plugins); kubelet restarted"
+        return 0
+    fi
+    preflight_warn "_k8s_ensure_cni_bin_plugins failed (install kubernetes-cni or add CNI plugins tarball manually)"
+    return 1
+}
+
 # Optional fixes (called from preflight_apply_safe_fixes) --------------------
 preflight_fix_k3s_uninstall() {
     if [[ -x /usr/local/bin/k3s-killall.sh ]]; then
@@ -2076,7 +2112,7 @@ preflight_print_fix_preview() {
     for line in "${PREFLIGHT_FAIL_SNAPSHOT[@]}"; do
         log_info "  * ${line}"
     done
-    log_info "  Suggested fix names: k3s-uninstall (k8s/kubeadm path only), kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins, containerd-install, helm-v3, docker-disable (stop/disable docker.service + docker.socket — CRI conflict with k3s or containerd), chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh). Default distro is k8s (kubeadm); use --distro=k3s or KUBE_DISTRO=k3s for single-node k3s checks/fixes."
+    log_info "  Suggested fix names: k3s-uninstall (k8s/kubeadm path only), kubeadm-reset, k8s-pkgs-repo (writes apt OR yum/dnf pkgs.k8s.io repo; legacy name k8s-apt-source still works in --fix-allow), k8s-bins, kubernetes-cni (/opt/cni/bin loopback for kubelet pod sandbox), containerd-install, helm-v3, docker-disable (stop/disable docker.service + docker.socket — CRI conflict with k3s or containerd), chrony, firewalld, ufw, selinux, system-tuning, bridge-sysctl, kernel-limits, nofile-limits (writes /etc/security/limits.d + systemd LimitNOFILE drop-ins), iptables-legacy, etc-hosts, onboard-tooling, nodejs-npm, node-22, kweaver-sdk, kweaver-admin (opt-in; bundle onboard-tooling asks if this host will run ./onboard.sh). Default distro is k8s (kubeadm); use --distro=k3s or KUBE_DISTRO=k3s for single-node k3s checks/fixes."
     log_info "------------------------------------------------------------------"
 }
 
@@ -2308,6 +2344,17 @@ preflight_apply_safe_fixes() {
             fi
         else
             log_info "  -> skipping k8s-bins: package manager has no candidate for kubeadm yet (run k8s-pkgs-repo first)"
+        fi
+    fi
+
+    # --- 4c) CNI plugins (/opt/cni/bin) for kubeadm + containerd ----------------
+    if ! _preflight_kube_distro_is_k3s \
+        && command -v kubelet &>/dev/null \
+        && [[ ! -x /opt/cni/bin/loopback ]]; then
+        if preflight_confirm_fix "kubernetes-cni" \
+            "_k8s_ensure_cni_bin_plugins (kubernetes-cni RPM/apt or CNI plugins tarball → /opt/cni/bin)" \
+            "Writes CNI binaries under /opt/cni/bin; restarts kubelet. Required for pod sandboxes when kube* was installed without kubernetes-cni."; then
+            preflight_fix_kubernetes_cni
         fi
     fi
 
@@ -2597,6 +2644,7 @@ preflight_run_all_checks() {
     preflight_check_proxy
     preflight_check_dns
     preflight_check_kubeadm_deps
+    preflight_check_cni_bin_plugins
     preflight_check_k3s_prereqs
     preflight_check_network
     preflight_check_k8s_version
