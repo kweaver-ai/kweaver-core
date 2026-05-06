@@ -15,6 +15,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
+	libCommon "github.com/kweaver-ai/kweaver-go-lib/common"
 	libdb "github.com/kweaver-ai/kweaver-go-lib/db"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"go.opentelemetry.io/otel/codes"
@@ -67,6 +68,7 @@ func scanMetricFromRow(scanner interface {
 	metric := &interfaces.MetricDefinition{}
 	var (
 		timeDim, calcFormula, analysisDim sql.NullString
+		tags                              sql.NullString
 	)
 	err := scanner.Scan(
 		&metric.ID,
@@ -74,6 +76,10 @@ func scanMetricFromRow(scanner interface {
 		&metric.Branch,
 		&metric.Name,
 		&metric.Comment,
+		&tags,
+		&metric.Icon,
+		&metric.Color,
+		&metric.BKNRawContent,
 		&metric.UnitType,
 		&metric.Unit,
 		&metric.MetricType,
@@ -94,6 +100,10 @@ func scanMetricFromRow(scanner interface {
 			logger.Errorf("metric row scan error: %v", err)
 		}
 		return nil, err
+	}
+
+	if tags.Valid {
+		metric.Tags = libCommon.TagString2TagSlice(tags.String)
 	}
 
 	if timeDim.Valid && timeDim.String != "" {
@@ -126,6 +136,7 @@ func (ma *metricAccess) CreateMetric(ctx context.Context, tx *sql.Tx, def *inter
 	td := jsonOrNull(def.TimeDimension)
 	cf := jsonOrNull(def.CalculationFormula)
 	ad := jsonOrNull(def.AnalysisDimensions)
+	tagsStr := libCommon.TagSlice2TagString(def.Tags)
 
 	sqlStr, vals, err := sq.Insert(METRIC_TABLE_NAME).
 		Columns(
@@ -134,6 +145,10 @@ func (ma *metricAccess) CreateMetric(ctx context.Context, tx *sql.Tx, def *inter
 			"f_branch",
 			"f_name",
 			"f_comment",
+			"f_tags",
+			"f_icon",
+			"f_color",
+			"f_bkn_raw_content",
 			"f_unit_type",
 			"f_unit",
 			"f_metric_type",
@@ -155,6 +170,10 @@ func (ma *metricAccess) CreateMetric(ctx context.Context, tx *sql.Tx, def *inter
 			def.Branch,
 			def.Name,
 			def.Comment,
+			tagsStr,
+			def.Icon,
+			def.Color,
+			def.BKNRawContent,
 			def.UnitType,
 			def.Unit,
 			def.MetricType,
@@ -255,6 +274,10 @@ func metricSelectColumns() []string {
 		"f_branch",
 		"f_name",
 		"f_comment",
+		"f_tags",
+		"f_icon",
+		"f_color",
+		"f_bkn_raw_content",
 		"f_unit_type",
 		"f_unit",
 		"f_metric_type",
@@ -447,6 +470,10 @@ func (ma *metricAccess) UpdateMetric(ctx context.Context, tx *sql.Tx, metric *in
 
 	data := map[string]any{
 		"f_comment":             metric.Comment,
+		"f_tags":                libCommon.TagSlice2TagString(metric.Tags),
+		"f_icon":                metric.Icon,
+		"f_color":               metric.Color,
+		"f_bkn_raw_content":     metric.BKNRawContent,
 		"f_unit_type":           metric.UnitType,
 		"f_unit":                metric.Unit,
 		"f_metric_type":         metric.MetricType,

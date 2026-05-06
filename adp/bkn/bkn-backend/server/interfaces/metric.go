@@ -251,12 +251,12 @@ type MetricAnalysisDimension struct {
 
 // MetricDefinition is the persisted metric entity (DESIGN §3.2.1, bkn-metrics.yaml MetricDefinition).
 type MetricDefinition struct {
-	ID      string   `json:"id" mapstructure:"id"`
-	KnID    string   `json:"kn_id" mapstructure:"kn_id"`
-	Branch  string   `json:"branch,omitempty" mapstructure:"branch"`
-	Name    string   `json:"name" mapstructure:"name"`
-	Comment string   `json:"comment,omitempty" mapstructure:"comment"`
-	Tags    []string `json:"tags,omitempty" mapstructure:"tags"`
+	ID     string `json:"id" mapstructure:"id"`
+	Name   string `json:"name" mapstructure:"name"`
+	KnID   string `json:"kn_id" mapstructure:"kn_id"`
+	Branch string `json:"branch,omitempty" mapstructure:"branch"`
+
+	CommonInfo `mapstructure:",squash"`
 
 	UnitType           string                    `json:"unit_type,omitempty" mapstructure:"unit_type"`
 	Unit               string                    `json:"unit,omitempty" mapstructure:"unit"`
@@ -275,9 +275,6 @@ type MetricDefinition struct {
 
 	Vector []float32 `json:"_vector,omitempty"`
 	Score  *float64  `json:"_score,omitempty"`
-
-	// BKNRawContent is used only for concept index embedding text (not returned in API JSON).
-	BKNRawContent string `json:"-" mapstructure:"-"`
 }
 
 // ReqMetrics is the batch-create body for POST .../metrics with x-http-method-override: POST (bkn-metrics.yaml ReqMetrics).

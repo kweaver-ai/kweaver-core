@@ -148,6 +148,9 @@ func metricUpdatePayloadEmpty(m *interfaces.MetricDefinition) bool {
 	if len(m.Tags) > 0 {
 		return false
 	}
+	if strings.TrimSpace(m.Icon) != "" || strings.TrimSpace(m.Color) != "" {
+		return false
+	}
 	if strings.TrimSpace(m.UnitType) != "" || strings.TrimSpace(m.Unit) != "" {
 		return false
 	}

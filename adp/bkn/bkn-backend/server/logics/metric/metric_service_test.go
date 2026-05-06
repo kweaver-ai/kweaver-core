@@ -313,11 +313,13 @@ func Test_metricService_UpdateMetric(t *testing.T) {
 			So(errBegin, ShouldBeNil)
 
 			req := &interfaces.MetricDefinition{
-				ID:      "mid1",
-				KnID:    "kn1",
-				Branch:  interfaces.MAIN_BRANCH,
-				Name:    "n1",
-				Comment: "c",
+				ID:     "mid1",
+				KnID:   "kn1",
+				Branch: interfaces.MAIN_BRANCH,
+				Name:   "n1",
+				CommonInfo: interfaces.CommonInfo{
+					Comment: "c",
+				},
 				CalculationFormula: &interfaces.MetricCalculationFormula{
 					Aggregation: interfaces.MetricAggregation{Property: "p", Aggr: interfaces.MetricAggrSum},
 				},
@@ -514,12 +516,12 @@ func Test_metricService_SearchMetrics(t *testing.T) {
 			cga.EXPECT().GetConceptIDsByConceptGroupIDs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]string{"ot_keep"}, nil)
 
 			inDoc := map[string]any{
-				"id":         "metric_drop",
-				"kn_id":      "kn1",
-				"branch":     interfaces.MAIN_BRANCH,
+				"id":          "metric_drop",
+				"kn_id":       "kn1",
+				"branch":      interfaces.MAIN_BRANCH,
 				"module_type": interfaces.MODULE_TYPE_METRIC,
-				"name":       "x",
-				"scope_ref":  "ot_other",
+				"name":        "x",
+				"scope_ref":   "ot_other",
 			}
 			keepDoc := map[string]any{
 				"id":          "metric_keep",
