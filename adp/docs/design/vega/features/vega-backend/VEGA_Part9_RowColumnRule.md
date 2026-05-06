@@ -29,21 +29,19 @@
 
 ## 二、设计方案
 
-### 2.1 业务逻辑设计
-
-#### 2.1.1 授权概念定义
+### 2.1 授权概念定义
 
 | 概念 | 描述 |
 |------|------|
 | **授权** | 能够授权给别人行列规则、查看行列规则、新建、编辑、删除已有的行列规则。 |
 | **授权仅分配** | 能够授权给别人行列规则、查看行列规则、不能新建、编辑、删除已有的行列规则。 |
 
-#### 2.1.2 权限点设计
+### 2.2 权限点设计
 
 Resource 权限点列表（加粗为新增）：
 - 新建、编辑、删除、查看、权限管理、数据查询、导入、导出、**行列规则管理**、**行列规则授权**
 
-#### 2.1.3 规则应用范围
+### 2.3 规则应用范围
 
 创建行列规则时授权范围可选择 Resource，支持复制已有行列规则模板功能。
 
@@ -544,47 +542,8 @@ sequenceDiagram
 **POST** `/api/vega-backend/v1/resources/{resource_id}/data`
 
 **请求体**：
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| offset | int | 偏移量（可选） |
-| limit | int | 限制数量（可选，默认10，最大10000） |
-| sort | []SortField | 排序字段（可选） |
-| filter_condition | any | 过滤条件（可选） |
-| output_fields | []string | 指定输出的字段列表（可选） |
-| need_total | bool | 是否需要总数（可选） |
-| search_after | []any | OpenSearch search after参数（可选） |
-| query_type | string | 查询类型（可选） |
-| aggregation | Aggregation | 聚合度量（可选） |
-| group_by | []GroupByItem | 分组维度（可选） |
-| having | HavingClause | 对聚合结果过滤（HAVING）（可选） |
-| row_column_rules | []object | 行列规则过滤条件（可选） |
-
-**SortField 结构**：
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| field | string | 排序字段名 |
-| direction | string | 排序方向（asc/desc） |
-
-**Aggregation 结构**：
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| property | string | 被聚合的资源字段名 |
-| aggr | string | 聚合函数：count, count_distinct, sum, max, min, avg |
-| alias | string | 别名（可选） |
-
-**GroupByItem 结构**：
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| property | string | 分组维度 |
-| description | string | 描述（可选） |
-| calendar_interval | string | date_histogram的时间间隔（可选，支持：minute, hour, day, week, month, quarter, year） |
-
-**HavingClause 结构**：
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| field | string | 固定为 "__value" |
-| operation | string | 操作符：==, !=, >, >=, <, <=, in, not_in, range, out_range |
-| value | any | 过滤值 |
+和当前资源数据查询请求体相同，查询时会根据资源下的所有行列规则进行过滤。
+详细接口可参考 [当前资源数据查询接口](https://github.com/kweaver-ai/kweaver-core/blob/feature/315-issue/adp/docs/api/vega/vega-backend/resource.yaml)。
 
 **返回体**：
 ```json
