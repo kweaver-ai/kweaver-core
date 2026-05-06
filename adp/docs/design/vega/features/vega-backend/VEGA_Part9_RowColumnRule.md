@@ -256,8 +256,8 @@ Resource 权限点列表（加粗为新增）：
         "expires_at": "1970-01-01T08:00:00+08:00",
         "resource": {
             "id": "*",
-            "type": "data_view",
-            "name": "数据视图"
+            "type": "resource",
+            "name": "数据资源"
         },
         "accessor": {
             "id": "00990824-4bf7-11f0-8fa7-865d5643e61f",
@@ -304,8 +304,8 @@ Resource 权限点列表（加粗为新增）：
         "expires_at": "1970-01-01T08:00:00+08:00",
         "resource": {
             "id": "*",
-            "type": "data_view",
-            "name": "数据视图"
+            "type": "resource",
+            "name": "数据资源"
         },
         "accessor": {
             "id": "3fb94948-5169-11f0-b662-3a7bdba2913f",
@@ -337,8 +337,8 @@ Resource 权限点列表（加粗为新增）：
         "expires_at": "1970-01-01T08:00:00+08:00",
         "resource": {
             "id": "*",
-            "type": "data_view",
-            "name": "数据视图"
+            "type": "resource",
+            "name": "数据资源"
         },
         "accessor": {
             "id": "1572fb82-526f-11f0-bde6-e674ec8dde71",
@@ -378,7 +378,7 @@ Resource 权限点列表（加粗为新增）：
 | 字段 | 类型 | 描述 | 备注 | 格式示例 |
 |------|------|------|------|----------|
 | id | string | 行列规则 id | 支持自定义，若未自定义系统自动生成；新建后不可更改；只能包含小写英文字母、数字、下划线、连字符，且不能以下划线和连字符开头 | |
-| name | string | 行列规则名称 | 唯一；长度不超过40字符 | |
+| name | string | 行列规则名称 | 唯一；长度不超过255字符 | |
 | resource_id | string | 资源 id | 必填 | |
 | tags | []string | 标签 | | |
 | description | string | 备注 | | |
@@ -392,7 +392,7 @@ Resource 权限点列表（加粗为新增）：
 {
     "operation": "==",
     "field": "f4",
-    "value_from": "user",
+    "value_from": "const",
     "value": "group"
 }
 ```
@@ -422,7 +422,7 @@ Resource 权限点列表（加粗为新增）：
         {
             "operation": "==",
             "field": "f4",
-            "value_from": "user",
+            "value_from": "const",
             "value": "group"
         }
     ]
@@ -431,14 +431,71 @@ Resource 权限点列表（加粗为新增）：
 
 ### 5.2 规则管理流程图
 
-```
-用户 → 验证权限(rule_manage) → 创建/编辑/删除规则 → 保存到数据库 → 更新权限系统
+```mermaid
+flowchart TD
+    A[用户请求规则管理] --> B{检查数据资源 view_detail 权限}
+    B -->|否| C[拒绝访问]
+    C --> D[显示权限不足]
+    B -->|是| E{检查 rule_manage 权限}
+    E -->|否| F[拒绝规则管理]
+    F --> D
+    E -->|是| G[允许规则管理操作]
+    G --> H[创建规则]
+    G --> I[编辑规则]
+    G --> J[删除规则]
+    G --> K[查看规则详情]
+    H --> L[规则创建成功]
+    I --> M[规则更新成功]
+    J --> N[规则删除成功]
+    K --> O[显示规则详情]
 ```
 
 ### 5.3 数据查询时序图
 
-```
-用户 → 数据查询请求 → 权限检查 → 获取行列规则 → 应用规则过滤 → 返回结果
+```mermaid
+sequenceDiagram
+    participant 用户
+    participant 前端界面
+    participant vega-backend
+    participant 权限服务
+    participant 数据源
+
+    用户->>前端界面: 请求查询数据
+    前端界面->>vega-backend: API请求 + token
+    vega-backend->>vega-backend: 获取资源详情
+    vega-backend->>权限服务: 检查基础权限(resource_id, 'view_detail')
+    
+    alt 无 view_detail 权限
+        权限服务-->>vega-backend: 返回权限错误
+        vega-backend-->>前端界面: 返回权限错误
+        前端界面-->>用户: 显示"无权访问此数据资源"
+    else 有 view_detail 权限
+        vega-backend->>权限服务: 检查数据查询权限(resource_id, 'data_query')
+        
+        alt 无 data_query 权限
+            权限服务-->>vega-backend: 返回 false
+            vega-backend->>vega-backend: 获取资源下的所有行列规则
+            vega-backend->>权限服务: 决策用户有 rule_apply 权限的规则
+            
+            alt 有 apply 权限的规则
+                权限服务-->>vega-backend: 返回规则 id 列表
+                vega-backend->>数据源: 执行规则过滤查询
+                数据源-->>vega-backend: 返回过滤后数据
+                vega-backend-->>前端界面: 返回结果
+                前端界面-->>用户: 显示规则过滤数据
+            else 无任何权限
+                权限服务-->>vega-backend: 返回 no_access
+                vega-backend-->>前端界面: 返回权限错误
+                前端界面-->>用户: 显示"无权访问"
+            end
+        else 有 data_query 权限
+            权限服务-->>vega-backend: 返回 true
+            vega-backend->>数据源: 执行资源查询
+            数据源-->>vega-backend: 返回数据
+            vega-backend-->>前端界面: 返回结果
+            前端界面-->>用户: 显示数据
+        end
+    end
 ```
 
 **规则应用逻辑**：多个行列规则之间是 `OR` 的关系。
@@ -486,10 +543,68 @@ Resource 权限点列表（加粗为新增）：
 
 **POST** `/api/vega-backend/v1/resources/{resource_id}/data`
 
-**请求体新增字段**：
+**请求体**：
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| row_column_rules | []object | 行列规则过滤条件 |
+| offset | int | 偏移量（可选） |
+| limit | int | 限制数量（可选，默认10，最大10000） |
+| sort | []SortField | 排序字段（可选） |
+| filter_condition | any | 过滤条件（可选） |
+| output_fields | []string | 指定输出的字段列表（可选） |
+| need_total | bool | 是否需要总数（可选） |
+| search_after | []any | OpenSearch search after参数（可选） |
+| query_type | string | 查询类型（可选） |
+| aggregation | Aggregation | 聚合度量（可选） |
+| group_by | []GroupByItem | 分组维度（可选） |
+| having | HavingClause | 对聚合结果过滤（HAVING）（可选） |
+| row_column_rules | []object | 行列规则过滤条件（可选） |
+
+**SortField 结构**：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| field | string | 排序字段名 |
+| direction | string | 排序方向（asc/desc） |
+
+**Aggregation 结构**：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| property | string | 被聚合的资源字段名 |
+| aggr | string | 聚合函数：count, count_distinct, sum, max, min, avg |
+| alias | string | 别名（可选） |
+
+**GroupByItem 结构**：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| property | string | 分组维度 |
+| description | string | 描述（可选） |
+| calendar_interval | string | date_histogram的时间间隔（可选，支持：minute, hour, day, week, month, quarter, year） |
+
+**HavingClause 结构**：
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| field | string | 固定为 "__value" |
+| operation | string | 操作符：==, !=, >, >=, <, <=, in, not_in, range, out_range |
+| value | any | 过滤值 |
+
+**返回体**：
+```json
+{
+    "entries": [
+        {
+            "field1": "value1",
+            "field2": "value2"
+        }
+    ],
+    "total_count": 1000
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| entries | []map[string]any | 查询结果数据列表 |
+| total_count | int64 | 总数（仅当 need_total=true 时返回） |
+
+**状态码**：200 OK
 
 ---
 
@@ -538,31 +653,22 @@ CREATE TABLE IF NOT EXISTS t_resource_row_column_rule (
 
 ---
 
-## 八、交互设计要求
 
-1. 在可授权的资源列表里，可对具体的某个资源进行授权、以及该资源的行列规则进行授权。
-2. 根据用户是否有当前资源的 `rule_manage` 权限来控制让用户是否能增删改查资源行列规则。
-3. 根据用户是否有当前资源的 `rule_authorize` 权限控制让用户能否给资源行列规则授权。
-4. 可预览加规则后的数据。
+## 八、质量目标
 
----
-
-## 九、质量目标
-
-### 9.1 功能性目标
+### 8.1 功能性目标
 
 - 数据资源支持行列级权限管控
 
-### 9.2 非功能性目标
+### 8.2 非功能性目标
 
 - 兼容性：支持 x64 和 arm64
 - 安全性：接口鉴权，镜像无高级及以上漏洞
 
 ---
 
-## 十、部署需求说明
+## 九、部署需求说明
 
-### 10.1 交付物
 
 | 交付物名字 | 部署方式 | 交付方式 |
 |------------|----------|----------|
@@ -571,13 +677,13 @@ CREATE TABLE IF NOT EXISTS t_resource_row_column_rule (
 
 ---
 
-## 十一、技术限制说明
+## 十、技术限制说明
 
 无
 
 ---
 
-## 十二、参考资料
+## 十一、参考资料
 
 - [VEGA 资源管理层级关系](resource-management-hierarchy.md)
 - [VEGA Part 1: Top Level Design](VEGA_Part1_TopLevelDesign.md)
