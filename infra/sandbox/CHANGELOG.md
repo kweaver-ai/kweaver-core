@@ -35,6 +35,8 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 ### 🔧 Improvements
 
 - Updated the control-plane Docker build context so the image can include the repository `VERSION` file for default template tag resolution
+- Added `image.defaultTemplates.pythonBasic` and `image.defaultTemplates.multiLanguage` Helm values so deployments can override the two built-in template image versions independently
+- Renamed the self-contained Helm chart from `sandbox_local` to `sandbox_standalone` to better describe its deployment scope
 - Added `.dockerignore` coverage for common caches, local databases, build outputs, and development artifacts
 - Expanded unit coverage for default template image resolution, optional session template selection, Go shell execution path handling, and ZIP extraction safeguards
 
@@ -47,6 +49,8 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 ### 📚 Documentation
 
 - Updated README, build documentation, project structure docs, deployment notes, and the multi-language Go execution design to describe the new image layering and SWR push workflow
+- Added `deploy/helm/README.md` to explain the difference between the Kweaver Core component chart and the standalone Sandbox chart
+- Rewrote the Helm chart READMEs so `deploy/helm/sandbox` documents the Core component deployment and `deploy/helm/sandbox_standalone` documents the self-contained stack with Web, MariaDB, and MinIO
 
 ---
 
@@ -80,7 +84,7 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 ### 📚 Documentation
 
 - Added PRD and design docs for control-plane and executor lifecycle binding during restart and upgrade scenarios
-- Added a `sandbox_local` Helm chart with local deployment templates, component metadata, RBAC, and operational documentation for packaging and environment setup
+- Added a `sandbox_standalone` Helm chart with standalone deployment templates, component metadata, RBAC, and operational documentation for packaging and environment setup
 
 ---
 

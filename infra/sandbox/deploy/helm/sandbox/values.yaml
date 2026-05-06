@@ -8,6 +8,16 @@ image:
     repository: dip/sandbox-control-plane
     tag: "latest"
     pullPolicy: IfNotPresent
+  defaultTemplates:
+    pythonBasic:
+      repository: dip/sandbox-template-python-basic
+      tag: "latest"
+      pullPolicy: IfNotPresent
+    multiLanguage:
+      repository: dip/sandbox-template-multi-language
+      tag: "latest"
+      pullPolicy: IfNotPresent
+  # Deprecated: use image.defaultTemplates.pythonBasic instead.
   defaultTemplate:
     repository: dip/sandbox-template-python-basic
     tag: "latest"

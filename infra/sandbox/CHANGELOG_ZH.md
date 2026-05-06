@@ -35,6 +35,8 @@
 ### 🔧 改进
 
 - 调整 control-plane Docker 构建上下文，使镜像内可包含仓库 `VERSION` 文件，用于默认模板 tag 解析
+- 新增 `image.defaultTemplates.pythonBasic` 与 `image.defaultTemplates.multiLanguage` Helm values，支持部署时分别覆盖两个内置模板镜像版本
+- 将自包含 Helm Chart 从 `sandbox_local` 重命名为 `sandbox_standalone`，更准确表达其独立部署范围
 - 新增 `.dockerignore`，覆盖常见缓存、本地数据库、构建输出和开发环境产物
 - 补充默认模板镜像解析、可选 session template、Go shell 执行路径和 ZIP 解压防护相关单元测试
 
@@ -47,6 +49,8 @@
 ### 📚 文档
 
 - 更新 README、构建文档、项目结构文档、部署说明和多语言 Go 执行设计文档，说明新的镜像分层和 SWR 推送流程
+- 新增 `deploy/helm/README.md`，说明 Kweaver Core 组件 Chart 与 Sandbox 独立部署 Chart 的区别
+- 重写 Helm Chart README，使 `deploy/helm/sandbox` 明确说明 Core 组件部署方式，`deploy/helm/sandbox_standalone` 明确说明包含 Web、MariaDB、MinIO 的自包含部署方式
 
 ---
 
@@ -80,7 +84,7 @@
 ### 📚 文档
 
 - 新增 control-plane 与 executor 生命周期绑定在重启、升级场景下的 PRD 和设计文档
-- 新增 `sandbox_local` Helm Chart，补充本地部署模板、组件元数据、RBAC 配置与运维说明，便于本地打包和环境初始化
+- 新增 `sandbox_standalone` Helm Chart，补充独立部署模板、组件元数据、RBAC 配置与运维说明，便于独立打包和环境初始化
 
 ---
 

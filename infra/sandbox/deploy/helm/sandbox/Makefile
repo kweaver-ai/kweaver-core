@@ -2,7 +2,7 @@
 
 # Default target
 help:
-	@echo "Sandbox Platform Helm Chart"
+	@echo "Sandbox Core Component Helm Chart"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make [TARGET]"
@@ -19,49 +19,47 @@ help:
 
 # Lint the Helm chart
 lint:
-	helm lint ./sandbox
+	helm lint .
 
 # Generate the template YAML
 template:
-	helm template sandbox ./sandbox > helm-template-gen.yaml
+	helm template sandbox . > helm-template-gen.yaml
 	@echo "Template generated: helm-template-gen.yaml"
 
 # Install the Helm chart
 install:
-	helm install sandbox ./sandbox --namespace sandbox-system --create-namespace
+	helm install sandbox . --namespace anyshare --create-namespace
 
 # Install with custom values
 install-dev:
-	helm install sandbox ./sandbox --namespace sandbox-system --create-namespace --set controlPlane.env.ENVIRONMENT=development
+	helm install sandbox . --namespace anyshare --create-namespace --set controlPlane.env.ENVIRONMENT=development
 
 # Install with local images
 install-local:
-	helm install sandbox ./sandbox --namespace sandbox-system --create-namespace \
+	helm install sandbox . --namespace anyshare --create-namespace \
 		--set image.registry= \
 		--set image.controlPlane.repository=sandbox-control-plane \
-		--set image.controlPlane.tag=latest \
-		--set image.web.repository=sandbox-web \
-		--set image.web.tag=latest
+		--set image.controlPlane.tag=latest
 
 # Upgrade the Helm chart
 upgrade:
-	helm upgrade sandbox ./sandbox --namespace sandbox-system
+	helm upgrade sandbox . --namespace anyshare
 
 # Upgrade with custom values
 upgrade-dev:
-	helm upgrade sandbox ./sandbox --namespace sandbox-system --set controlPlane.env.ENVIRONMENT=development
+	helm upgrade sandbox . --namespace anyshare --set controlPlane.env.ENVIRONMENT=development
 
 # Uninstall the Helm chart
 uninstall:
-	helm uninstall sandbox --namespace sandbox-system
+	helm uninstall sandbox --namespace anyshare
 
 # Test the Helm chart with dry-run
 test:
-	helm install sandbox ./sandbox --namespace sandbox-system --dry-run --debug
+	helm install sandbox . --namespace anyshare --dry-run --debug
 
 # Show values
 show-values:
-	helm show values ./sandbox
+	helm show values .
 
 # Clean generated files
 clean:

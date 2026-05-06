@@ -38,8 +38,24 @@ def test_default_template_images_can_use_template_image_tag(monkeypatch):
     assert template_map["multi-language"].f_image_url == "sandbox-template-multi-language:9.9.9"
 
 
+def test_default_template_images_can_be_overridden_independently(monkeypatch):
+    """测试部署时可分别覆盖两个默认模板镜像。"""
+    monkeypatch.setenv("DEFAULT_TEMPLATE_IMAGE", "registry.local/python-basic:dev")
+    monkeypatch.setenv(
+        "DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE",
+        "registry.local/multi-language:dev",
+    )
+
+    templates = get_default_templates()
+    template_map = {template.f_id: template for template in templates}
+
+    assert template_map["python-basic"].f_image_url == "registry.local/python-basic:dev"
+    assert template_map["multi-language"].f_image_url == "registry.local/multi-language:dev"
+
+
 def test_default_templates_include_multi_language(monkeypatch):
     """测试默认模板包含多语言复合模板。"""
+    monkeypatch.delenv("DEFAULT_TEMPLATE_IMAGE", raising=False)
     monkeypatch.setenv(
         "DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE",
         "custom-multi-language:latest",

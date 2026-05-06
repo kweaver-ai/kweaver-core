@@ -1,6 +1,3 @@
-# Default values for sandbox-platform Helm chart
-
-# Global configuration
 namespace: sandbox-system
 imagePullPolicy: IfNotPresent
 image:
@@ -9,26 +6,35 @@ image:
     repository: sandbox-control-plane
     tag: "latest"
     pullPolicy: IfNotPresent
+  defaultTemplates:
+    pythonBasic:
+      repository: sandbox-template-python-basic
+      tag: "latest"
+      pullPolicy: IfNotPresent
+    multiLanguage:
+      repository: sandbox-template-multi-language
+      tag: "latest"
+      pullPolicy: IfNotPresent
+  # Deprecated: use image.defaultTemplates.pythonBasic instead.
   defaultTemplate:
     repository: sandbox-template-python-basic
-    tag: "v1.0.0"
-    pullPolicy: IfNotPresent
-  web:
-    repository: sandbox-web
     tag: "latest"
-    pullPolicy: IfNotPresent
-  mariadb:
-    repository: mariadb
-    tag: "11.2"
     pullPolicy: IfNotPresent
   minio:
     repository: quay.io/minio/minio
     tag: "RELEASE.2025-09-07T16-13-09Z"
     pullPolicy: IfNotPresent
+
 # Control Plane configuration
 controlPlane:
   enabled: true
   replicaCount: 1
+
+  image:
+    registry: ""
+    repository: sandbox-control-plane
+    tag: "latest"
+    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -98,6 +104,12 @@ web:
   enabled: true
   replicaCount: 1
 
+  image:
+    registry: ""
+    repository: sandbox-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
   service:
     type: ClusterIP
     port: 80
@@ -129,6 +141,12 @@ mariadb:
   enabled: true
   replicaCount: 1
 
+  image:
+    registry: ""
+    repository: mariadb
+    tag: "11.2"
+    pullPolicy: IfNotPresent
+
   service:
     type: ClusterIP
     port: 3306
@@ -150,7 +168,7 @@ mariadb:
 
   auth:
     rootPassword: "password"
-    database: "sandbox"
+    database: "kweaver"
     username: ""
     password: ""
 
@@ -161,6 +179,12 @@ mariadb:
 minio:
   enabled: true
   replicaCount: 1
+
+  image:
+    registry: ""
+    repository: quay.io/minio/minio
+    tag: "latest"
+    pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
@@ -246,13 +270,13 @@ depServices:
   # 数据库连接配置
   rds:
     type: MYSQL
-    host: mariadb-mariadb-cluster.resource
-    port: 3330
-    hostRead: mariadb-mariadb-cluster.resource
-    portRead: 3330
-    user: anyshare
-    password: xxx
-    database: adp
+    host: mariadb.sandbox-system
+    port: 3306
+    hostRead: mariadb.sandbox-system
+    portRead: 3306
+    user: root
+    password: password
+    database: kweaver
     maxConnections: 30
     maxReadConnections: 30
     dbCharset: utf8mb4

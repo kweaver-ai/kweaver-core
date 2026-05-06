@@ -240,6 +240,11 @@ spec:
                 configMapKeyRef:
                   name: {{ .Values.configMap.name }}
                   key: DEFAULT_TEMPLATE_IMAGE
+            - name: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configMap.name }}
+                  key: DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE
             - name: CONTROL_PLANE_URL
               valueFrom:
                 configMapKeyRef:
