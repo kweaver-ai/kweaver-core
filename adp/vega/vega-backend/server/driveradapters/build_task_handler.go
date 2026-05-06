@@ -452,8 +452,7 @@ func isValidBuildTaskStatus(s string) bool {
 func isValidBuildTaskMode(m string) bool {
 	switch m {
 	case interfaces.BuildTaskModeStreaming,
-		interfaces.BuildTaskModeBatch,
-		interfaces.BuildTaskModeEmbedding:
+		interfaces.BuildTaskModeBatch:
 		return true
 	}
 	return false
