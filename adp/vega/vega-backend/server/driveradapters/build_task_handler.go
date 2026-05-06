@@ -133,7 +133,7 @@ func (r *restHandler) createBuildTask(c *gin.Context, ctx context.Context, span 
 
 	logger.Debug("Handler CreateBuildTask Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusCreated)
-	rest.ReplyOK(c, http.StatusCreated, gin.H{
+	rest.ReplyOK(c, http.StatusCreated, map[string]any{
 		"id":          taskID,
 		"resource_id": req.ResourceID,
 		"status":      interfaces.BuildTaskStatusInit,
@@ -164,7 +164,10 @@ func (r *restHandler) GetBuildTaskByIn(c *gin.Context) {
 }
 
 func (r *restHandler) getBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
@@ -205,7 +208,10 @@ func (r *restHandler) ListBuildTasksByIn(c *gin.Context) {
 }
 
 func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
@@ -257,7 +263,10 @@ func (r *restHandler) listBuildTasks(c *gin.Context, ctx context.Context, span t
 		return
 	}
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, gin.H{"entries": tasks, "total_count": total})
+	rest.ReplyOK(c, http.StatusOK, map[string]any{
+		"entries":     tasks,
+		"total_count": total,
+	})
 }
 
 // =========================== DELETE /build-tasks/:ids ===========================
@@ -286,7 +295,10 @@ func (r *restHandler) DeleteBuildTasksByIn(c *gin.Context) {
 }
 
 func (r *restHandler) deleteBuildTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
@@ -348,7 +360,10 @@ func (r *restHandler) StartBuildTaskByIn(c *gin.Context) {
 }
 
 func (r *restHandler) startBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
@@ -396,7 +411,10 @@ func (r *restHandler) StopBuildTaskByIn(c *gin.Context) {
 }
 
 func (r *restHandler) stopBuildTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
-	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	accountInfo := interfaces.AccountInfo{
+		ID:   visitor.ID,
+		Type: string(visitor.Type),
+	}
 	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
