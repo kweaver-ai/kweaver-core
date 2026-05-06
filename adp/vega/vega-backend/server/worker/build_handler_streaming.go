@@ -187,7 +187,7 @@ func (sh *streamingBuildHandler) executeBuild(ctx context.Context, catalog *inte
 	// Create Kafka reader
 	reader, err := sh.kafkaAccess.NewReader(ctx, topic, groupID)
 	if err != nil {
-		return fmt.Errorf("Failed to create Kafka reader for topic %s: %w", topic, err)
+		return fmt.Errorf("failed to create Kafka reader for topic %s: %w", topic, err)
 	}
 	defer sh.kafkaAccess.CloseReader(reader)
 
@@ -391,20 +391,21 @@ func (sh *streamingBuildHandler) createKafkaConnector(ctx context.Context, catal
 	}
 	respCode, _, err := sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s", connectorUrl, connectorName), nil, headers)
 	if err != nil {
-		return fmt.Errorf("Failed to get kafka connector: %w", err)
+		return fmt.Errorf("failed to get kafka connector: %w", err)
 	}
-	if respCode == http.StatusNotFound {
+	switch respCode {
+	case http.StatusNotFound:
 		connectorBody := sh.buildConnectorConfig(connectorName, catalog, database, sourceId)
 		respCode, respBody, err := sh.httpClient.Post(ctx, connectorUrl, headers, connectorBody)
 		if err != nil {
-			return fmt.Errorf("Failed to create kafka connector: %w", err)
+			return fmt.Errorf("failed to create kafka connector: %w", err)
 		}
 		if respCode != http.StatusCreated {
-			return fmt.Errorf("Create kafka connector %s failed, status code: %d, body: %v", connectorName, respCode, respBody)
+			return fmt.Errorf("create kafka connector %s failed, status code: %d, body: %v", connectorName, respCode, respBody)
 		}
 
 		logger.Infof("Create kafka connector %s success", connectorName)
-	} else if respCode == http.StatusOK {
+	case http.StatusOK:
 		// Connector found
 		/*config := respBody.(map[string]any)["config"].(map[string]any)
 		tableIncludeList, ok := config["table.include.list"].(string)
@@ -436,7 +437,7 @@ func (sh *streamingBuildHandler) createKafkaConnector(ctx context.Context, catal
 		// check kafka connector status
 		_, respBody, err := sh.httpClient.Get(ctx, fmt.Sprintf("%s/%s/status", connectorUrl, connectorName), nil, headers)
 		if err != nil {
-			return fmt.Errorf("Failed to get kafka connector status: %w", err)
+			return fmt.Errorf("failed to get kafka connector status: %w", err)
 		}
 		// Type assertion for respBody
 		if statusBody, ok := respBody.(map[string]any); ok {
@@ -445,7 +446,7 @@ func (sh *streamingBuildHandler) createKafkaConnector(ctx context.Context, catal
 				if state, ok := connector["state"].(string); ok && state != "RUNNING" {
 					_, _, err = sh.httpClient.Put(ctx, fmt.Sprintf("%s/%s/resume", connectorUrl, connectorName), headers, map[string]interface{}{})
 					if err != nil {
-						return fmt.Errorf("Failed to resume kafka connector: %w", err)
+						return fmt.Errorf("failed to resume kafka connector: %w", err)
 					}
 				}
 			}

@@ -172,7 +172,7 @@ func (rds *resourceDataService) QueryData(ctx context.Context, resource *interfa
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to connect to data source: %v", err))
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 
 	switch resource.Category {
 	case interfaces.ResourceCategoryTable:

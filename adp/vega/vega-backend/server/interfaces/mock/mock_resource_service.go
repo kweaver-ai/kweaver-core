@@ -101,6 +101,35 @@ func (mr *MockResourceServiceMockRecorder) Create(ctx, req any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockResourceService)(nil).Create), ctx, req)
 }
 
+// CreateBuildTask mocks base method.
+func (m *MockResourceService) CreateBuildTask(ctx context.Context, id string, req *interfaces.BuildTaskRequest) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBuildTask", ctx, id, req)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBuildTask indicates an expected call of CreateBuildTask.
+func (mr *MockResourceServiceMockRecorder) CreateBuildTask(ctx, id, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBuildTask", reflect.TypeOf((*MockResourceService)(nil).CreateBuildTask), ctx, id, req)
+}
+
+// DeleteBuildTask mocks base method.
+func (m *MockResourceService) DeleteBuildTask(ctx context.Context, taskID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBuildTask", ctx, taskID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBuildTask indicates an expected call of DeleteBuildTask.
+func (mr *MockResourceServiceMockRecorder) DeleteBuildTask(ctx, taskID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBuildTask", reflect.TypeOf((*MockResourceService)(nil).DeleteBuildTask), ctx, taskID)
+}
+
 // DeleteByIDs mocks base method.
 func (m *MockResourceService) DeleteByIDs(ctx context.Context, ids []string) error {
 	m.ctrl.T.Helper()
@@ -113,6 +142,52 @@ func (m *MockResourceService) DeleteByIDs(ctx context.Context, ids []string) err
 func (mr *MockResourceServiceMockRecorder) DeleteByIDs(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByIDs", reflect.TypeOf((*MockResourceService)(nil).DeleteByIDs), ctx, ids)
+}
+
+// GetBuildTaskByID mocks base method.
+func (m *MockResourceService) GetBuildTaskByID(ctx context.Context, id string) (*interfaces.BuildTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTaskByID", ctx, id)
+	ret0, _ := ret[0].(*interfaces.BuildTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuildTaskByID indicates an expected call of GetBuildTaskByID.
+func (mr *MockResourceServiceMockRecorder) GetBuildTaskByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTaskByID", reflect.TypeOf((*MockResourceService)(nil).GetBuildTaskByID), ctx, id)
+}
+
+// GetBuildTaskByResourceID mocks base method.
+func (m *MockResourceService) GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*interfaces.BuildTask, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTaskByResourceID", ctx, resourceID)
+	ret0, _ := ret[0].(*interfaces.BuildTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBuildTaskByResourceID indicates an expected call of GetBuildTaskByResourceID.
+func (mr *MockResourceServiceMockRecorder) GetBuildTaskByResourceID(ctx, resourceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTaskByResourceID", reflect.TypeOf((*MockResourceService)(nil).GetBuildTaskByResourceID), ctx, resourceID)
+}
+
+// GetBuildTasks mocks base method.
+func (m *MockResourceService) GetBuildTasks(ctx context.Context, offset, limit int) ([]*interfaces.BuildTask, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBuildTasks", ctx, offset, limit)
+	ret0, _ := ret[0].([]*interfaces.BuildTask)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetBuildTasks indicates an expected call of GetBuildTasks.
+func (mr *MockResourceServiceMockRecorder) GetBuildTasks(ctx, offset, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuildTasks", reflect.TypeOf((*MockResourceService)(nil).GetBuildTasks), ctx, offset, limit)
 }
 
 // GetByCatalogID mocks base method.
@@ -219,6 +294,20 @@ func (m *MockResourceService) Update(ctx context.Context, id string, req *interf
 func (mr *MockResourceServiceMockRecorder) Update(ctx, id, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockResourceService)(nil).Update), ctx, id, req)
+}
+
+// UpdateBuildTaskStatus mocks base method.
+func (m *MockResourceService) UpdateBuildTaskStatus(ctx context.Context, taskID string, req *interfaces.UpdateBuildTaskStatusRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBuildTaskStatus", ctx, taskID, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBuildTaskStatus indicates an expected call of UpdateBuildTaskStatus.
+func (mr *MockResourceServiceMockRecorder) UpdateBuildTaskStatus(ctx, taskID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBuildTaskStatus", reflect.TypeOf((*MockResourceService)(nil).UpdateBuildTaskStatus), ctx, taskID, req)
 }
 
 // UpdateResource mocks base method.

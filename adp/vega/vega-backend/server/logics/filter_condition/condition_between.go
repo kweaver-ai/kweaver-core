@@ -50,10 +50,10 @@ func (c *BetweenCond) New(ctx context.Context, cfg *interfaces.FilterCondCfg,
 		return nil, fmt.Errorf("condition [between] left field is not a date or number field: %s:%s", cfg.Name, field.Type)
 	}
 
-	if cfg.ValueOptCfg.ValueFrom != interfaces.ValueFrom_Const {
+	if cfg.ValueFrom != interfaces.ValueFrom_Const {
 		return nil, fmt.Errorf("condition [between] does not support value_from type '%s'", cfg.ValueFrom)
 	}
-	val, ok := cfg.ValueOptCfg.Value.([]any)
+	val, ok := cfg.Value.([]any)
 	if !ok {
 		return nil, fmt.Errorf("condition [between] right value should be an array")
 	}

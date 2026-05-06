@@ -33,8 +33,8 @@ func getOldDocID(primaryKeyValues []interfaces.KeyValue) string {
 	// 将primaryKeyValues中的所有值拼接成id
 	var idBuilder strings.Builder
 	for _, item := range primaryKeyValues {
-		idBuilder.WriteString(fmt.Sprintf("%v", item.Value))
-		idBuilder.WriteString("-")
+		fmt.Fprintf(&idBuilder, "%v", item.Value)
+		fmt.Fprintf(&idBuilder, "-")
 	}
 	return idBuilder.String()
 }
@@ -44,8 +44,8 @@ func getNewDocID(primaryKeyValues []interfaces.KeyValue, document map[string]any
 	var newDocIDBuilder strings.Builder
 	for _, item := range primaryKeyValues {
 		if value, ok := document[item.Key]; ok {
-			newDocIDBuilder.WriteString(fmt.Sprintf("%v", value))
-			newDocIDBuilder.WriteString("-")
+			fmt.Fprintf(&newDocIDBuilder, "%v", value)
+			fmt.Fprintf(&newDocIDBuilder, "-")
 		}
 	}
 	return newDocIDBuilder.String()

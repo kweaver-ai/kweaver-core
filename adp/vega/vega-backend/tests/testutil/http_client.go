@@ -54,7 +54,7 @@ func (c *HTTPClient) CheckHealth() error {
 	if err != nil {
 		return fmt.Errorf("健康检查失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("健康检查返回状态码 %d", resp.StatusCode)
@@ -121,7 +121,7 @@ func (c *HTTPClient) doRequest(method, path string, payload any) HTTPResponse {
 			Error:      &ErrorResponse{ErrorCode: "network_error", ErrorDetails: err.Error()},
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return c.parseResponse(resp)
 }

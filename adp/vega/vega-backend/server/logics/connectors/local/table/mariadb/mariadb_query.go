@@ -238,7 +238,7 @@ func (c *MariaDBConnector) ExecuteQuery(ctx context.Context, resource *interface
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

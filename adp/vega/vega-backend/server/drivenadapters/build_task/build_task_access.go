@@ -251,7 +251,7 @@ func (bta *buildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string
 		span.SetStatus(codes.Error, "Get build tasks by catalog ID failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	buildTasks := []*interfaces.BuildTask{}
 	for rows.Next() {
@@ -432,7 +432,7 @@ func (bta *buildTaskAccess) GetAll(ctx context.Context, offset, limit int) ([]*i
 		span.SetStatus(codes.Error, "Get all build tasks failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	buildTasks := []*interfaces.BuildTask{}
 	for rows.Next() {

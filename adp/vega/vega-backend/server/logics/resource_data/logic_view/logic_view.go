@@ -402,7 +402,7 @@ func executeIndexQuery(ctx context.Context, catalog *interfaces.Catalog, resourc
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to connect to data source: %v", err))
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 
 	indexConnector, ok := connector.(connectors.IndexConnector)
 	if !ok {
@@ -438,7 +438,7 @@ func executeTableQuery(ctx context.Context, catalog *interfaces.Catalog, resourc
 		return nil, 0, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Resource_InternalError).
 			WithErrorDetails(fmt.Sprintf("failed to connect to data source: %v", err))
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 
 	tableConnector, ok := connector.(connectors.TableConnector)
 	if !ok {

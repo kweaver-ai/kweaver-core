@@ -178,7 +178,7 @@ func (c *MariaDBConnector) Connect(ctx context.Context) error {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return err
 	}
 
@@ -231,7 +231,7 @@ func (c *MariaDBConnector) validateDatabases(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to list databases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	existingDBs := make(map[string]bool)
 	for rows.Next() {
@@ -267,7 +267,7 @@ func (c *MariaDBConnector) ExecuteRawSQL(ctx context.Context, sql string) (*inte
 	if err != nil {
 		return nil, fmt.Errorf("execute query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

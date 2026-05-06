@@ -141,7 +141,7 @@ func (dh *discoverHandler) discoverCatalog(ctx context.Context, catalog *interfa
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to data source: %w", err)
 	}
-	defer connector.Close(ctx)
+	defer func() { _ = connector.Close(ctx) }()
 
 	// Update catalog metadata
 	if meta, err := connector.GetMetadata(ctx); err == nil {

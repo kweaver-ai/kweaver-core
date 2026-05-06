@@ -28,7 +28,7 @@ func (c *MariaDBConnector) ListDatabases(ctx context.Context) ([]string, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list databases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var databases []string
 	for rows.Next() {
@@ -81,7 +81,7 @@ func (c *MariaDBConnector) ListTables(ctx context.Context) ([]*interfaces.TableM
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []*interfaces.TableMeta
 	for rows.Next() {
@@ -292,7 +292,7 @@ func (c *MariaDBConnector) fetchColumns(ctx context.Context, table *interfaces.T
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var columns []interfaces.TableColumnMeta
 	var pkColumns []string
@@ -370,7 +370,7 @@ func (c *MariaDBConnector) fetchIndexes(ctx context.Context, table *interfaces.T
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	indexMap := make(map[string]*interfaces.TableIndexMeta)
 
@@ -429,7 +429,7 @@ func (c *MariaDBConnector) fetchForeignKeys(ctx context.Context, table *interfac
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	fkMap := make(map[string]*interfaces.TableForeignKeyMeta)
 
@@ -509,7 +509,7 @@ func (c *MariaDBConnector) GetMetadata(ctx context.Context) (map[string]any, err
 		// But for now, we return error to be safe
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	metadata := make(map[string]any)
 	for rows.Next() {

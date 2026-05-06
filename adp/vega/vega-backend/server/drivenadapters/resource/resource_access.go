@@ -311,7 +311,7 @@ func (ra *resourceAccess) GetByIDs(ctx context.Context, ids []string) ([]*interf
 		span.SetStatus(codes.Error, "Query failed")
 		return []*interfaces.Resource{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -412,7 +412,7 @@ func (ra *resourceAccess) GetByIDsBasic(ctx context.Context, ids []string) ([]*i
 		span.SetStatus(codes.Error, "Query failed")
 		return []*interfaces.Resource{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -583,7 +583,7 @@ func (ra *resourceAccess) ListIDs(ctx context.Context, params interfaces.Resourc
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -672,7 +672,7 @@ func (ra *resourceAccess) List(ctx context.Context, params interfaces.ResourcesQ
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -820,7 +820,7 @@ func (ra *resourceAccess) GetByCatalogID(ctx context.Context, catalogID string) 
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	resources := make([]*interfaces.Resource, 0)
 	for rows.Next() {
@@ -962,7 +962,7 @@ func (ra *resourceAccess) ListResourceSrcsIDs(ctx context.Context, params interf
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	ids := make([]string, 0)
 	for rows.Next() {
@@ -1004,7 +1004,7 @@ func (ra *resourceAccess) ListResourceSrcsByIDs(ctx context.Context, ids []strin
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListResourceEntry, 0)
 	for rows.Next() {
@@ -1077,7 +1077,7 @@ func (ra *resourceAccess) ListResourceSrcs(ctx context.Context, params interface
 		span.SetStatus(codes.Error, "Query failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	entries := make([]*interfaces.ListResourceEntry, 0)
 	for rows.Next() {
