@@ -85,6 +85,22 @@ func (mr *MockBuildTaskAccessMockRecorder) GetAll(ctx, offset, limit any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockBuildTaskAccess)(nil).GetAll), ctx, offset, limit)
 }
 
+// GetAllWithFilters mocks base method.
+func (m *MockBuildTaskAccess) GetAllWithFilters(ctx context.Context, params interfaces.BuildTasksQueryParams) ([]*interfaces.BuildTask, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllWithFilters", ctx, params)
+	ret0, _ := ret[0].([]*interfaces.BuildTask)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAllWithFilters indicates an expected call of GetAllWithFilters.
+func (mr *MockBuildTaskAccessMockRecorder) GetAllWithFilters(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllWithFilters", reflect.TypeOf((*MockBuildTaskAccess)(nil).GetAllWithFilters), ctx, params)
+}
+
 // GetByCatalogID mocks base method.
 func (m *MockBuildTaskAccess) GetByCatalogID(ctx context.Context, catalogID string) ([]*interfaces.BuildTask, error) {
 	m.ctrl.T.Helper()
