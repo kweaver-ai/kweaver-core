@@ -381,6 +381,7 @@ def initialize_dependencies(app: FastAPI):
 
     # 注意：数据库管理器的初始化现在是异步的，需要在 lifespan 中调用
     # 这里不再同步调用 initialize()
+    settings = get_settings()
 
     # 创建仓储实例（根据配置选择 Mock 或 SQL）
     if USE_SQL_REPOSITORIES:
@@ -431,6 +432,8 @@ def initialize_dependencies(app: FastAPI):
         file_service = FileService(
             session_repo=session_repo,
             storage_service=storage_service,
+            max_extracted_file_count=settings.max_extracted_file_count,
+            max_extracted_total_size_mb=settings.max_extracted_total_size_mb,
         )
 
         # 存储到应用状态
@@ -850,9 +853,12 @@ def get_file_service_db(
     storage_service = Depends(get_storage_service),
 ) -> FileService:
     """获取文件服务（使用数据库仓储）"""
+    settings = get_settings()
     return FileService(
         session_repo=session_repo,
         storage_service=storage_service,
+        max_extracted_file_count=settings.max_extracted_file_count,
+        max_extracted_total_size_mb=settings.max_extracted_total_size_mb,
     )
 
 

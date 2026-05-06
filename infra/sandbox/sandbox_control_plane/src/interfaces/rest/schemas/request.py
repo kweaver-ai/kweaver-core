@@ -84,7 +84,7 @@ class CreateSessionRequest(BaseModel):
     按照 sandbox-design-v2.1.md 章节 5.3.1 设计，扩展支持依赖安装。
     """
     id: Optional[str] = Field(None, min_length=1, max_length=64, description="会话 ID（可选，手动指定时需确保唯一性）")
-    template_id: str = Field(..., min_length=1, max_length=64, description="模板 ID")
+    template_id: Optional[str] = Field(None, min_length=1, max_length=64, description="模板 ID；未传时使用默认模板配置")
     timeout: int = Field(300, ge=1, le=3600, description="超时时间（秒）")
     cpu: str = Field("1", description="CPU 核心数")
     memory: str = Field("512Mi", description="内存限制")

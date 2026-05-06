@@ -84,12 +84,13 @@ async def seed_templates(force: bool = False) -> int:
                     existing_template = existing_template_map[template_id]
                     # 更新镜像地址和其他可能变化的字段
                     if existing_template.f_image_url != default_template.f_image_url:
+                        old_image_url = existing_template.f_image_url
                         existing_template.f_image_url = default_template.f_image_url
                         updated_count += 1
                         logger.info(
                             "Updated template image URL",
                             template_id=template_id,
-                            old_image=existing_template.f_image_url,
+                            old_image=old_image_url,
                             new_image=default_template.f_image_url
                         )
 

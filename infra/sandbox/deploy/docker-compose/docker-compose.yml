@@ -3,8 +3,8 @@ version: '3.8'
 services:
   control-plane:
     build:
-      context: ../../sandbox_control_plane
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: sandbox_control_plane/Dockerfile
     container_name: sandbox-control-plane
     ports:
       - "8000:8000" # Map to host for testing

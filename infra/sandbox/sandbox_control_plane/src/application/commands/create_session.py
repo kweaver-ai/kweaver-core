@@ -18,7 +18,7 @@ class CreateSessionCommand:
 
     扩展支持 Python 依赖安装功能。
     """
-    template_id: str
+    template_id: Optional[str] = None
     timeout: int = 300
     resource_limit: ResourceLimit | None = None
     env_vars: Dict[str, str] | None = None

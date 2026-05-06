@@ -47,7 +47,7 @@ async def create_session(
     """
     创建会话
 
-    - **template_id**: 模板 ID
+    - **template_id**: 模板 ID；未传时使用 DEFAULT_TEMPLATE_ID 配置
     - **timeout**: 超时时间（秒），默认 300，最大 3600
     - **cpu**: CPU 核心数，如 "1", "2"
     - **memory**: 内存限制，如 "512Mi", "1Gi"

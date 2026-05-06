@@ -4,6 +4,7 @@
 测试 SessionService 的用例编排逻辑。
 """
 import pytest
+from types import SimpleNamespace
 from datetime import datetime, timezone
 from unittest.mock import Mock, AsyncMock
 
@@ -143,6 +144,51 @@ class TestSessionService:
 
         with pytest.raises(NotFoundError, match="Template not found"):
             await service.create_session(command)
+
+    @pytest.mark.asyncio
+    async def test_create_session_uses_default_template_when_omitted(
+        self,
+        service,
+        template_repo,
+        scheduler,
+        session_repo,
+        monkeypatch,
+    ):
+        """测试未指定模板时使用默认模板配置"""
+        monkeypatch.setattr(
+            "src.application.services.session_service.get_settings",
+            lambda: SimpleNamespace(
+                default_template_id="multi-language",
+                s3_bucket="sandbox-workspace",
+            ),
+        )
+        template = Template(
+            id="multi-language",
+            name="Multi Language Basic",
+            image="sandbox-template-multi-language:test",
+            base_image="sandbox-multi-executor-base:go1.25-python3.11-v1",
+        )
+        template_repo.find_by_id.return_value = template
+        runtime_node = RuntimeNode(
+            id="node-1",
+            type="docker",
+            url="http://node-1:2375",
+            status="healthy",
+            cpu_usage=0.5,
+            mem_usage=0.6,
+            session_count=5,
+            max_sessions=100,
+            cached_templates=["multi-language"],
+        )
+        scheduler.schedule.return_value = runtime_node
+
+        command = CreateSessionCommand(timeout=300, resource_limit=ResourceLimit.default())
+
+        result = await service.create_session(command)
+
+        assert result.template_id == "multi-language"
+        template_repo.find_by_id.assert_awaited_once_with("multi-language")
+        assert command.template_id == "multi-language"
 
     @pytest.mark.asyncio
     async def test_get_session_success(self, service, session_repo):

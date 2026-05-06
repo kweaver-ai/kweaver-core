@@ -121,7 +121,7 @@ export interface InstalledDependencyResponse {
 
 /** 创建会话请求 */
 export interface CreateSessionRequest {
-  template_id: string;
+  template_id?: string;
   timeout?: number;
   cpu?: string;
   memory?: string;

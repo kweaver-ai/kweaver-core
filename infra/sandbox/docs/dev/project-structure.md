@@ -307,23 +307,17 @@ sandbox/
 │   │   │
 │   │   ├── pyproject.toml        # 执行器模块配置
 │   │   ├── requirements.txt      # Python依赖
-│   │   ├── Dockerfile            # 执行器Docker镜像
 │   │   └── README.md             # 执行器文档
 │   │
 │   ├── docker_runtime.py         # Docker运行时适配器
 │   └── k8s_runtime.py            # Kubernetes运行时适配器
 │
 ├── images/                       # 镜像定义
-│   ├── base/                     # 基础镜像
-│   │   └── Dockerfile            # sandbox-base（执行器 + Bubblewrap）
-│   │
-│   └── templates/                # 模板镜像（继承基础镜像）
-│       ├── python-basic/         # Python 基础环境
-│       │   └── Dockerfile
-│       ├── python-datascience/   # Python 数据科学环境
-│       │   └── Dockerfile
-│       └── nodejs-basic/         # Node.js 基础环境
-│           └── Dockerfile
+│   ├── bases/                    # 稳定 runtime base，不包含 executor 代码
+│   │   ├── python/
+│   │   └── multi-language/
+│   └── templates/
+│       └── executor/             # 最终 executor/template 镜像 Dockerfile
 │
 └── docs/                         # 项目文档
     ├── PROJECT_STRUCTURE.md      # 本文档
@@ -784,19 +778,23 @@ async def create_session(
 ### 镜像构建流程
 
 ```bash
-# 1. 构建基础镜像（包含执行器 + Bubblewrap）
-cd images/base
-docker build -t sandbox-base:latest .
-
-# 2. 构建模板镜像（继承基础镜像，添加语言依赖）
-cd images/templates/python-datascience
-docker build -t sandbox-python-datascience:v1.0.0 \
-  --build-arg BASE_IMAGE=sandbox-base:latest .
-
-# 或使用统一构建脚本
+# 1. 基础依赖变化时，构建稳定 runtime base（不包含 executor 代码）
 cd images
+./build.sh --build-bases
+
+# 2. 每次版本发布时，构建随 VERSION 打 tag 的最终 executor/template 镜像
+./build.sh
+
+# 3. 发布到镜像仓库
 ./build.sh --push --registry registry.example.com
 ```
+
+镜像分层：
+
+- `sandbox-python-executor-base:python3.11-v1`：稳定 Python runtime base，不包含 executor 代码。
+- `sandbox-multi-executor-base:go1.25-python3.11-v1`：稳定 Python、Go、Bash runtime base，不包含 executor 代码。
+- `sandbox-template-python-basic:<VERSION>`：最终 Python executor/template 镜像，包含 executor 代码。
+- `sandbox-template-multi-language:<VERSION>`：最终多语言 executor/template 镜像，包含 executor 代码。
 
 ### 执行器生命周期
 
@@ -894,13 +892,9 @@ pytest -m unit              # 仅单元测试
 pytest -m integration       # 仅集成测试
 pytest -m contract          # 仅契约测试
 
-# 构建并测试容器镜像
-docker build -t sandbox-executor:test -f runtime/executor/Dockerfile .
-docker run -p 8080:8080 \
-  -e WORKSPACE_PATH=/workspace \
-  -e CONTROL_PLANE_URL=http://host.docker.internal:8000 \
-  -v $(pwd)/test_workspace:/workspace \
-  sandbox-executor:test
+# 构建默认 executor/template 镜像
+cd images
+./build.sh
 ```
 
 ### 测试策略

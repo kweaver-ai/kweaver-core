@@ -168,7 +168,7 @@ flowchart TD
 
 ### 构建镜像
 
-启动服务前，需要构建执行器基础镜像和模板镜像：
+启动服务前，需要构建随项目版本发布的 executor/template 镜像：
 
 ```bash
 cd images
@@ -176,8 +176,15 @@ cd images
 ```
 
 构建脚本将创建：
-- `sandbox-executor-base:latest` - 执行器基础镜像
-- `sandbox-template-python-basic:latest` - Python 基础模板
+- `sandbox-template-python-basic:<VERSION>` - Python 执行器模板
+- `sandbox-template-multi-language:<VERSION>` - Python、Go、Bash 多语言执行器模板
+
+稳定 runtime base 镜像仅在基础依赖变化时构建：
+
+```bash
+cd images
+./build.sh --build-bases
+```
 
 
 ### 使用镜像源（可选）
@@ -185,13 +192,13 @@ cd images
 如果在网络受限的环境下构建镜像（如中国大陆），可以使用镜像源：
 
 ```bash
-# 使用镜像源构建执行器镜像
+# 使用镜像源构建 executor/template 镜像
 cd images
 USE_MIRROR=true ./build.sh
 
-# 使用镜像源构建控制平面
-cd ../sandbox_control_plane
-docker build --build-arg USE_MIRROR=true -t sandbox-control-plane .
+# 从仓库根目录使用镜像源构建控制平面，确保 VERSION 文件被包含进镜像
+cd ..
+docker build -f sandbox_control_plane/Dockerfile --build-arg USE_MIRROR=true -t sandbox-control-plane .
 
 # 使用镜像源构建 Web 控制台
 cd ../sandbox_web
@@ -200,6 +207,8 @@ docker build --build-arg USE_MIRROR=true -t sandbox-web .
 
 可用的镜像源：
 - **默认**：中科大镜像（Debian/APT、Alpine/APK、Python/pip）
+- **Python 基础镜像**：`--use-mirror` 会将 `python:3.11-slim` 切换为 `docker.m.daocloud.io/library/python:3.11-slim`
+- **Go 安装包**：`--use-mirror` 会将 Go 下载源从 `https://go.dev/dl` 切换为 `https://mirrors.ustc.edu.cn/golang`
 - **自定义**：使用 `--build-arg APT_MIRROR=your-mirror` 指定自定义镜像
 
 ### 启动服务

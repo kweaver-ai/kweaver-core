@@ -84,6 +84,10 @@ class SessionService:
         6. 创建 Docker 容器
         7. 更新会话状态为 running
         """
+        if not command.template_id:
+            settings = get_settings()
+            command.template_id = settings.default_template_id
+
         logger.info(
             "Creating session",
             template_id=command.template_id,

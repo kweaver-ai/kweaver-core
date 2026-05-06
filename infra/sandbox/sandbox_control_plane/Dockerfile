@@ -44,7 +44,7 @@ RUN if [ "$USE_MIRROR" = "true" ]; then \
 WORKDIR /app
 
 # Copy dependency files first (better layer caching)
-COPY pyproject.toml uv.lock README.md ./
+COPY sandbox_control_plane/pyproject.toml sandbox_control_plane/uv.lock sandbox_control_plane/README.md ./
 
 # Install Python dependencies using uv (faster, uses lock file)
 RUN if [ "$USE_MIRROR" = "true" ]; then \
@@ -80,8 +80,11 @@ WORKDIR /app
 # Copy Python virtual environment from builder stage
 COPY --from=builder /app/.venv ./.venv
 
+# Copy project version for default template image tag generation
+COPY VERSION ./VERSION
+
 # Copy source code (dockerignore will exclude unnecessary files)
-COPY src/ ./src/
+COPY sandbox_control_plane/src/ ./src/
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

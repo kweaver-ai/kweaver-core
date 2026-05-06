@@ -123,6 +123,15 @@ class TestNormalizeShellCode:
 
         assert normalized == "python scripts/analyze_project.py"
 
+    def test_normalize_strips_bash_prefix_for_go_command(self):
+        """Test stripping accidental bash prefix before a Go command."""
+        normalized = normalize_shell_code(
+            "bash go version",
+            Path("/workspace/skill/mini-wiki"),
+        )
+
+        assert normalized == "go version"
+
     def test_normalize_strips_multiple_segments(self):
         """Test stripping accidental bash prefix across chained commands."""
         normalized = normalize_shell_code(

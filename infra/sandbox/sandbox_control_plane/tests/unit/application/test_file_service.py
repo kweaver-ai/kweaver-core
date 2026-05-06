@@ -4,6 +4,7 @@
 测试 FileService 的用例编排逻辑。
 """
 import io
+import stat
 import zipfile
 import pytest
 from unittest.mock import Mock, AsyncMock
@@ -248,6 +249,89 @@ class TestFileService:
                 content=archive_buffer.getvalue(),
                 overwrite=False,
             )
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_rejects_symlink_entry(
+        self,
+        service,
+        session_repo,
+        active_session,
+    ):
+        """测试 ZIP 含符号链接 entry 时拒绝解压"""
+        session_repo.find_by_id.return_value = active_session
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            info = zipfile.ZipInfo("link-to-secret")
+            info.external_attr = (stat.S_IFLNK | 0o777) << 16
+            archive.writestr(info, "../secret")
+
+        with pytest.raises(ValidationError, match="Invalid ZIP entry path"):
+            await service.upload_and_extract_zip(
+                session_id="sess_123",
+                path="input",
+                content=archive_buffer.getvalue(),
+                overwrite=False,
+            )
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_rejects_too_many_files(
+        self,
+        session_repo,
+        storage_service,
+        active_session,
+    ):
+        """测试 ZIP 文件数量超过限制时拒绝解压"""
+        service = FileService(
+            session_repo=session_repo,
+            storage_service=storage_service,
+            max_extracted_file_count=1,
+            max_extracted_total_size_mb=1,
+        )
+        session_repo.find_by_id.return_value = active_session
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("a.txt", "hello")
+            archive.writestr("b.txt", "world")
+
+        with pytest.raises(ValidationError, match="too many files"):
+            await service.upload_and_extract_zip(
+                session_id="sess_123",
+                path="input",
+                content=archive_buffer.getvalue(),
+                overwrite=False,
+            )
+        storage_service.upload_file.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_upload_and_extract_zip_rejects_uncompressed_size_limit(
+        self,
+        session_repo,
+        storage_service,
+        active_session,
+    ):
+        """测试 ZIP 解压后总大小超过限制时拒绝解压"""
+        service = FileService(
+            session_repo=session_repo,
+            storage_service=storage_service,
+            max_extracted_file_count=10,
+            max_extracted_total_size_mb=1,
+        )
+        session_repo.find_by_id.return_value = active_session
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("large.bin", b"x" * (1024 * 1024 + 1))
+
+        with pytest.raises(ValidationError, match="uncompressed size exceeds limit"):
+            await service.upload_and_extract_zip(
+                session_id="sess_123",
+                path="input",
+                content=archive_buffer.getvalue(),
+                overwrite=False,
+            )
+        storage_service.upload_file.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_upload_and_extract_zip_invalid_archive(self, service, session_repo, active_session):

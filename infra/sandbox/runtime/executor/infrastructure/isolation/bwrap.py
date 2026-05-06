@@ -24,6 +24,8 @@ from executor.infrastructure.isolation.result_parser import remove_markers_from_
 
 logger = structlog.get_logger(__name__)
 
+EXECUTION_PATH = "/usr/local/go/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
 
 def check_bwrap_available() -> bool:
     """
@@ -121,7 +123,7 @@ class BubblewrapRunner:
             "--new-session",
             # Environment
             "--clearenv",
-            "--setenv", "PATH", "/usr/local/bin:/usr/bin:/bin",
+            "--setenv", "PATH", EXECUTION_PATH,
             "--setenv", "HOME", "/workspace",
             "--setenv", "TMPDIR", "/tmp",
             # Security (Note: --cap-drop and --no-new-privs not available in bwrap 0.11.0)

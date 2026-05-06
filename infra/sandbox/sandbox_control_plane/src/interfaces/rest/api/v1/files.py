@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from typing import Optional
 
 from src.application.services.file_service import FileService
+from src.infrastructure.config.settings import get_settings
 from src.interfaces.rest.schemas.response import ErrorResponse
 from src.infrastructure.dependencies import get_file_service_db
 from src.shared.errors.domain import NotFoundError, ValidationError
@@ -67,11 +68,13 @@ async def upload_file(
     """
     try:
         # 验证文件大小
+        settings = get_settings()
         content = await file.read()
-        if len(content) > 100 * 1024 * 1024:  # 100MB
+        max_upload_bytes = settings.max_upload_file_size_mb * 1024 * 1024
+        if len(content) > max_upload_bytes:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="File size exceeds 100MB limit"
+                detail=f"File size exceeds {settings.max_upload_file_size_mb}MB limit"
             )
 
         if extract:

@@ -117,6 +117,11 @@ class Settings(BaseSettings):
     default_cpu: str = Field(default="1")
     default_memory: str = Field(default="512Mi")
     default_disk: str = Field(default="1Gi")
+    default_template_id: str = Field(default="python-basic")
+    default_multi_language_template_image: str = Field(default="")
+    max_upload_file_size_mb: int = Field(default=100, ge=1)
+    max_extracted_file_count: int = Field(default=10000, ge=1)
+    max_extracted_total_size_mb: int = Field(default=512, ge=1)
     disable_bwrap: bool = Field(default=False)  # 禁用 Bubblewrap（本地开发环境）
     control_plane_url: str | None = Field(default=None)  # Control Plane URL for executor callback (None = auto-generate from namespace)
 

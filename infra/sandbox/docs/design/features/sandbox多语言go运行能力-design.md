@@ -104,7 +104,8 @@ flowchart LR
 | Sandbox Web | React + TypeScript | 现有管理界面。本期不新增完整 UI，仅可继续调用既有 API。 |
 | Sandbox Control Plane | FastAPI + SQLAlchemy | 模板注册、默认模板 seed、会话创建、文件上传、执行请求编排、执行结果持久化。 |
 | Runtime Executor | FastAPI + Python | 在 session 容器中接收执行请求，通过隔离 runner 执行 shell/Python/JavaScript。 |
-| Template Images | Dockerfile | 提供 `python-basic`、`nodejs-basic`、新增 `multi-language` 等模板镜像。 |
+| Runtime Base Images | Dockerfile | 提供稳定的 `sandbox-python-executor-base` 和 `sandbox-multi-executor-base`，只包含系统依赖、语言运行时和工具链，不包含 executor 代码。 |
+| Template Images | Dockerfile | 提供随项目 `VERSION` 发布的 `sandbox-template-python-basic`、`sandbox-template-multi-language` 等最终 executor/template 镜像。 |
 | Workspace Storage | S3 或本地挂载 | 保存上传文件、ZIP 解压内容和执行产物。 |
 | Go Module Source | Go proxy / VCS | 为 `go run <module>@<version>` 和 `go mod download` 提供模块下载来源。 |
 
@@ -549,8 +550,8 @@ erDiagram
 
 ### 默认多语言模板注册与使用
 
-1. 新增多语言模板 Dockerfile，基于现有 executor/template 基础模式安装 Python、Go、Bash。
-2. 构建并推送镜像，例如 `sandbox-template-multi-language:v1.0.0`。
+1. 新增稳定 runtime base：`sandbox-python-executor-base:python3.11-v1` 和 `sandbox-multi-executor-base:go1.25-python3.11-v1`，base 只包含 Python、Go、Bash、git、curl、ca-certificates、Bubblewrap、s3fs 等基础依赖，不包含 executor 代码。
+2. 基于稳定 runtime base 构建随项目 `VERSION` 发布的最终模板镜像，例如 `sandbox-template-multi-language:<VERSION>`，该镜像复制 executor 代码并安装 executor Python 依赖。
 3. 在默认 seed 中新增模板 `multi-language`，`image_url` 读取 `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE`，缺省为本地镜像名。
 4. 新增或复用默认模板配置：
    - 镜像地址：`DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE`。
@@ -650,8 +651,11 @@ erDiagram
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
 | DEFAULT_TEMPLATE_ID | python-basic | 新建 session 的默认模板 ID。若 CreateSession 保持必填，则该配置供上层默认选择使用。 |
-| DEFAULT_TEMPLATE_IMAGE | sandbox-template-python-basic:v1.0.0 | 现有 python-basic 模板镜像地址。 |
-| DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE | sandbox-template-multi-language:v1.0.0 | 新增 multi-language 模板镜像地址。 |
+| DEFAULT_TEMPLATE_IMAGE | sandbox-template-python-basic:<VERSION> | 当前发布版本的 python-basic 最终模板镜像地址。 |
+| DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE | sandbox-template-multi-language:<VERSION> | 当前发布版本的 multi-language 最终模板镜像地址。 |
+| PYTHON_BASE_IMAGE_TAG | python3.11-v1 | 稳定 Python runtime base 镜像 tag，仅在 Python 或系统基础依赖变化时升级。 |
+| MULTI_BASE_IMAGE_TAG | go1.25-python3.11-v1 | 稳定多语言 runtime base 镜像 tag，仅在 Go、Python、Bash 或系统基础依赖变化时升级。 |
+| TEMPLATE_IMAGE_TAG | VERSION 文件内容 | 最终 executor/template 镜像 tag，随项目版本发布变化。 |
 | GO_PROXY | 待确认 | Go 模块代理配置，可作为模板镜像环境变量或 runtime env 注入。 |
 | GONOSUMDB | 待确认 | Go 校验数据库绕过配置，按企业网络策略决定。 |
 | GOPRIVATE | 待确认 | 私有模块域名配置。 |
@@ -717,18 +721,20 @@ erDiagram
 # 📅 6. 发布与回滚（Release Plan）
 
 ### 发布步骤
-1. 构建并推送 `sandbox-template-multi-language:v1.0.0` 镜像。
-2. 在测试环境注册或 seed `multi-language` 模板，保持 `python-basic` 不变。
-3. 配置 `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` 指向新镜像。
-4. 在测试环境显式使用 `template_id=multi-language` 跑通验收用例。
-5. 将 `DEFAULT_TEMPLATE_ID` 在灰度环境配置为 `multi-language`。
-6. 观察 session 创建成功率、执行成功率、Go 命令失败率、镜像启动耗时。
-7. 灰度稳定后推广到目标环境。
+1. 基础依赖变化时执行 `./images/build.sh --build-bases`，构建并推送稳定 runtime base 镜像。
+2. 每次项目版本发布时执行 `./images/build.sh`，构建并推送 `sandbox-template-python-basic:<VERSION>` 和 `sandbox-template-multi-language:<VERSION>`。
+3. 在测试环境注册或 seed `multi-language` 模板，保持 `python-basic` 不变。
+4. 配置 `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` 指向当前发布版本的最终多语言模板镜像。
+5. 在测试环境显式使用 `template_id=multi-language` 跑通验收用例。
+6. 将 `DEFAULT_TEMPLATE_ID` 在灰度环境配置为 `multi-language`。
+7. 观察 session 创建成功率、执行成功率、Go 命令失败率、镜像启动耗时。
+8. 灰度稳定后推广到目标环境。
 
 ### 回滚方案
 - 将 `DEFAULT_TEMPLATE_ID` 回滚为 `python-basic`。
 - 保留 `multi-language` 模板记录但设置为非默认；如影响模板列表展示，可将其置为 inactive。
-- 若新镜像导致 executor 启动失败，回滚镜像 tag 或恢复旧环境变量。
+- 若最终模板镜像导致 executor 启动失败，回滚 `DEFAULT_MULTI_LANGUAGE_TEMPLATE_IMAGE` 到上一业务版本镜像 tag。
+- 若 runtime base 变更导致系统依赖或语言运行时异常，回滚 `MULTI_BASE_IMAGE_TAG` 并重新构建最终模板镜像。
 - API 层保持兼容，Go 命令通过 shell 执行，不需要客户端 schema 回滚。
 
 ---

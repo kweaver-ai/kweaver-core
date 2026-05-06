@@ -75,7 +75,7 @@ detect_k8s_env() {
 # 构建 Docker 镜像
 build_image() {
     step "Building Docker image..."
-    docker build -t sandbox-control-plane:latest ../../.
+    docker build -f ../../sandbox_control_plane/Dockerfile -t sandbox-control-plane:latest ../../.
     info "Docker image built successfully"
 }
 

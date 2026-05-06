@@ -41,16 +41,13 @@ Before running tests, build the required Docker images:
 ```bash
 cd /path/to/sandbox
 
-# Build all executor and template images
+# Build default executor/template images
 bash images/build.sh
-
-# Or build manually
-docker build -t sandbox-executor-base:latest -f runtime/executor/Dockerfile .
 ```
 
 This builds:
-- `sandbox-executor-base:latest` - Base executor image
-- `sandbox-template-python-basic:latest` - Python template
+- `sandbox-template-python-basic:<VERSION>` - Python template
+- `sandbox-template-multi-language:<VERSION>` - Multi-language template
 
 ### 2. Start Services
 
