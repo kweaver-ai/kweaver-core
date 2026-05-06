@@ -41,8 +41,8 @@ website/**                                 @xforce-io
 help/**                                    @FennyXCHF @sh00tg0a1
 
 # ── CI / CD / GitHub config ─────────────────────────────────
-.github/**                                 @xforce-io @sh00tg0a1
-rules/**                                   @sh00tg0a1 @xforce-io
+.github/**                                 @xforce-io @sh00tg0a1 @FennyXCHF
+rules/**                                   @sh00tg0a1 @xforce-io @FennyXCHF
 
 # ── Release notes ────────────────────────────────────────────
-release-notes/**                           @sh00tg0a1 @xforce-io
+release-notes/**                           @sh00tg0a1 @xforce-io @FennyXCHF
