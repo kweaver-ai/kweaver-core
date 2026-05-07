@@ -1,0 +1,98 @@
+
+cases:
+  - name: "创建catalog_逻辑资源"
+    url: "创建catalog"
+    body_params: >-
+      {
+       "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}"
+      }
+    resp_values: >-
+      {
+       "catalog_id": "$.id"
+      }
+    code_check: "201"
+  - name: "创建catalog_MySQL数据源"
+    url: "创建catalog"
+    body_params: >-
+      {
+       "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+       "connector_type": "mysql",
+       "connector_config": ${connector_config_mysql}
+      }
+    resp_values: >-
+      {
+       "catalog_id": "$.id"
+      }
+    code_check: "201"
+  - name: "创建catalog_MySQL数据源_指定多个数据库"
+    url: "创建catalog"
+    body_params: >-
+      {
+       "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+       "connector_type": "mysql",
+       "description": "自动化测试用例",
+       "tags": [
+        "AT",
+        "catalog"
+       ],
+       "connector_config": {
+        "databases": [
+         "${mysql_db_1}",
+         "${mysql_db_2}"
+        ],
+        "options": {
+         "timeout": "300s"
+        }
+       }
+      }
+    resp_values: >-
+      {
+       "catalog_id_2": "$.id"
+      }
+    code_check: "201"
+  - name: "Positive_删除catalog_逻辑资源_请求成功"
+    url: "删除catalog"
+    prev_case: "创建catalog_逻辑资源"
+    path_params: >-
+      {
+        "ids": "${catalog_id}"
+      }
+    code_check: "204"
+  - name: "Positive_删除catalog_MySQL数据源_请求成功"
+    url: "删除catalog"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id}"
+      }
+    code_check: "204"
+  - name: "Negative_删除catalog_id不存在_请求失败"
+    url: "删除catalog"
+    path_params: >-
+      {
+        "ids": "00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Negative_删除catalog_id已删除_请求失败"
+    url: "删除catalog"
+    path_params: >-
+      {
+        "ids": "${catalog_id}"
+      }
+    code_check: "400"
+  - name: "Negative_删除catalog_删除多个资源_部分id不存在_请求失败"
+    url: "删除catalog"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+       "ids": "${catalog_id},00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_删除catalog_删除多个资源_请求成功"
+    url: "删除catalog"
+    prev_case: "创建catalog_MySQL数据源_指定多个数据库"
+    path_params: >-
+      {
+       "ids": "${catalog_id},${catalog_id_2}"
+      }
+    code_check: "204"

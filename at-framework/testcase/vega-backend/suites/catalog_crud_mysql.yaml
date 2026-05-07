@@ -1,9 +1,10 @@
 feature: vega-backend
-story: catalog_manager
+story: catalog
 switch: y
 tags:
-    - smoke
+    - vega-backend
     - catalog
+    - smoke
     - mysql
 
 cases:
@@ -61,13 +62,11 @@ cases:
               "connector_type": "mysql",
               "description": "自动化测试用例",
               "connector_config": {
-                  {
-                      "host": "${mysql_host}",
-                      "port": ${mysql_port},
-                      "username": "${mysql_user}",
-                      "password": "${mysql_password}",
-                      "databases": ["${mysql_db_1}, ${mysql_db_2}"]
-                  }
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password}",
+                  "databases": ["${mysql_db_1}", "${mysql_db_2}"]
               }
           }
       resp_values: >-
@@ -75,6 +74,114 @@ cases:
               "catalog_id_2": "$.id"
           }
       code_check: "201"
+
+    - name: "Negative_创建catalog_连接类型不匹配_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "postgresql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password}"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_数据库地址错误_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_MySQL-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "127.0.0.1",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password}"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_数据库地址错误_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": 3000,
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password}"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_用户名密码错误_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "unknown",
+                  "password": "${mysql_password}"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_用户名密码错误_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "unknown"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_密码加密_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password_ciphertext}"
+              }
+          }
+      code_check: "400"
+
+    - name: "Negative_创建catalog_数据库不存在_请求失败"
+      url: "创建catalog"
+      body_params: >-
+          {
+              "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+              "connector_type": "mysql",
+              "connector_config": {
+                  "host": "${mysql_host}",
+                  "port": ${mysql_port},
+                  "username": "${mysql_user}",
+                  "password": "${mysql_password}",
+                  "databases": [
+                      "unknown"
+                  ]
+              }
+          }
+      code_check: "400"
 
     - name: "Positive_查看catalog详情_MySQL数据源_请求成功"
       url: "查看catalog详情"
@@ -160,7 +267,7 @@ cases:
                   "port": ${mysql_port},
                   "username": "${mysql_user}",
                   "password": "${mysql_password}",
-                  "databases": ["${mysql_db_1}"],
+                  "databases": ["${mysql_db_1}"]
               }
           }
       code_check: "400"

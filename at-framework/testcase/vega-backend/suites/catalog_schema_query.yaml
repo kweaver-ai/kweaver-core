@@ -1,0 +1,393 @@
+
+cases:
+  - name: "创建catalog_逻辑资源"
+    url: "创建catalog"
+    body_params: >-
+      {
+       "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}"
+      }
+    resp_values: >-
+      {
+       "catalog_id_logic": "$.id"
+      }
+    code_check: "201"
+  - name: "创建catalog_MySQL数据源"
+    url: "创建catalog"
+    body_params: >-
+      {
+       "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}",
+       "connector_type": "mysql",
+       "connector_config": ${connector_config_mysql}
+      }
+    resp_values: >-
+      {
+       "catalog_id_db": "$.id"
+      }
+    code_check: "201"
+  - name: "删除catalog_MySQL数据源"
+    url: "删除catalog"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "204"
+  - name: "Positive_查询catalog列表_参数缺省_请求成功"
+    url: "查询catalog列表"
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数缺省_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "tag": "",
+       "type": "",
+       "health_check_status": "",
+       "offset": "",
+       "limit": "",
+       "sort": "",
+       "direction": ""
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_全量参数_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "tag": "AT",
+       "type": "mysql",
+       "health_check_status": "healthy",
+       "offset": "0",
+       "limit": "20",
+       "sort": "name",
+       "direction": "desc"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_按名称正序_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "sort": "name",
+       "direction": "asc"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_按名称倒序_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "sort": "name",
+       "direction": "desc"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_按更新时间正序_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "sort": "update_time",
+       "direction": "asc"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_按更新时间倒序_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "sort": "update_time",
+       "direction": "desc"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_tag不存在_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "tag": "unknown"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_tag包含特殊字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "tag": "{{ '查询测试_tag-%s' | format(random_string(30, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_tag为长字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "tag": "{{ '查询测试_tag-%s' | format(random_string(100, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_type为未定义的类型_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "type": "undefined"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_type包含特殊字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "type": "{{ '查询测试_type-%s' | format(random_string(30, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_type为长字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "type": "{{ '查询测试_type-%s' | format(random_string(100, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_health为未定义的类型_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "health_check_status": "undefined"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_health包含特殊字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "health_check_status": "{{ '查询测试_health-%s' | format(random_string(30, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_health为长字符_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "health_check_status": "{{ '查询测试_health-%s' | format(random_string(100, 73)) }}"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_offset=1000_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "offset": "1000"
+      }
+    code_check: "200"
+  - name: "Negative_查询catalog列表_参数校验_offset=-1_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "offset": "-1"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_offset非整数_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "offset": "1.2"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_offset非整数_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "offset": "abc"
+      }
+    code_check: "400"
+  - name: "Positive_查询catalog列表_参数校验_limit=-1_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "-1"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_limit=1_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "1"
+      }
+    code_check: "200"
+  - name: "Positive_查询catalog列表_参数校验_limit=1000_请求成功"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "1000"
+      }
+    code_check: "200"
+  - name: "Negative_查询catalog列表_参数校验_limit=1001_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "1001"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_limit=-2_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "-2"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_limit=0_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "0"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_limit非整数_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "1.2"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_limit非整数_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "limit": "abc"
+      }
+    code_check: "400"
+  - name: "Negative_查询catalog列表_参数校验_sort为未定义的类型_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "sort": "undefined"
+      }
+    code_check: "200"
+  - name: "Negative_查询catalog列表_参数校验_direction为未定义的类型_请求失败"
+    url: "查询catalog列表"
+    query_params: >-
+      {
+       "direction": "undefined"
+      }
+    code_check: "200"
+  - name: "Positive_查看catalog详情_逻辑资源_请求成功"
+    url: "查看catalog详情"
+    prev_case: "创建catalog_逻辑资源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_logic}"
+      }
+    code_check: "200"
+  - name: "Positive_查看catalog详情_MySQL数据源_请求成功"
+    url: "查看catalog详情"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog详情_id已删除_请求失败"
+    url: "查看catalog详情"
+    prev_case: "删除catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "400"
+  - name: "Negative_查看catalog详情_id不存在_请求失败"
+    url: "查看catalog详情"
+    path_params: >-
+      {
+        "ids": "00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_查看catalog详情_查看多个资源_请求成功"
+    url: "查看catalog详情"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog详情_查看多个资源_部分id不存在_请求失败"
+    url: "查看catalog详情"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_查看catalog关联资源_逻辑资源_请求成功"
+    url: "查看catalog关联资源"
+    prev_case: "创建catalog_逻辑资源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_logic}"
+      }
+    code_check: "200"
+  - name: "Positive_查看catalog关联资源_MySQL数据源_请求成功"
+    url: "查看catalog关联资源"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog关联资源_id已删除_请求失败"
+    url: "查看catalog关联资源"
+    prev_case: "删除catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "400"
+  - name: "Negative_查看catalog关联资源_id不存在_请求失败"
+    url: "查看catalog关联资源"
+    path_params: >-
+      {
+        "ids": "00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_查看catalog关联资源_查看多个资源_请求成功"
+    url: "查看catalog关联资源"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog关联资源_查看多个资源_部分id不存在_请求失败"
+    url: "查看catalog关联资源"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_查看catalog状态_逻辑资源_请求成功"
+    url: "检查catalog状态"
+    prev_case: "创建catalog_逻辑资源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_logic}"
+      }
+    code_check: "200"
+  - name: "Positive_查看catalog状态_MySQL数据源_请求成功"
+    url: "检查catalog状态"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog状态_id已删除_请求失败"
+    url: "检查catalog状态"
+    prev_case: "删除catalog_MySQL数据源"
+    path_params: >-
+      {
+        "ids": "${catalog_id_db}"
+      }
+    code_check: "400"
+  - name: "Negative_查看catalog状态_id不存在_请求失败"
+    url: "检查catalog状态"
+    path_params: >-
+      {
+        "ids": "00000000000000000000"
+      }
+    code_check: "400"
+  - name: "Positive_查看catalog状态_查看多个资源_请求成功"
+    url: "检查catalog状态"
+    prev_case: "创建catalog_MySQL数据源"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},${catalog_id_db}"
+      }
+    code_check: "200"
+  - name: "Negative_查看catalog状态_查看多个资源_部分id不存在_请求失败"
+    url: "检查catalog状态"
+    path_params: >-
+      {
+       "ids": "${catalog_id_logic},00000000000000000000"
+      }
+    code_check: "400"
