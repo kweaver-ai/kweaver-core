@@ -27,10 +27,10 @@ import (
 
 // =========================== GET /discover-tasks ===========================
 
-// ListDiscoverTasks handles GET /api/vega-backend/v1/discover-tasks (External)
-func (r *restHandler) ListDiscoverTasks(c *gin.Context) {
+// ListDiscoverTasksByEx handles GET /api/vega-backend/v1/discover-tasks (External)
+func (r *restHandler) ListDiscoverTasksByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverTasks", trace.WithSpanKind(trace.SpanKindServer))
+		"ListDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -84,7 +84,7 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 		return
 	}
 
-	logger.Debug("Handler ListDiscoverTasks Success")
+	logger.Debug("Handler ListDiscoverTasksByEx Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, gin.H{
 		"entries":     tasks,
@@ -94,10 +94,10 @@ func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, spa
 
 // =========================== GET /discover-tasks/:id ===========================
 
-// GetDiscoverTask handles GET /api/vega-backend/v1/discover-tasks/:id (External)
-func (r *restHandler) GetDiscoverTask(c *gin.Context) {
+// GetDiscoverTaskByEx handles GET /api/vega-backend/v1/discover-tasks/:id (External)
+func (r *restHandler) GetDiscoverTaskByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTask", trace.WithSpanKind(trace.SpanKindServer))
+		"GetDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -145,11 +145,11 @@ func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span 
 
 // =========================== DELETE /discover-tasks/:ids ===========================
 
-// DeleteDiscoverTasks handles DELETE /api/vega-backend/v1/discover-tasks/:ids (External).
+// DeleteDiscoverTasksByEx handles DELETE /api/vega-backend/v1/discover-tasks/:ids (External).
 // `ids` is comma-separated. Optional query: ?ignore_missing=true
-func (r *restHandler) DeleteDiscoverTasks(c *gin.Context) {
+func (r *restHandler) DeleteDiscoverTasksByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"DeleteDiscoverTasks", trace.WithSpanKind(trace.SpanKindServer))
+		"DeleteDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	visitor, err := r.verifyOAuth(ctx, c)
@@ -204,7 +204,7 @@ func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, s
 			interfaces.GenerateResourceAuditObject(id, ""), audit.SUCCESS, "")
 	}
 
-	logger.Debug("Handler DeleteDiscoverTasks Success")
+	logger.Debug("Handler DeleteDiscoverTasksByEx Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
 	rest.ReplyOK(c, http.StatusNoContent, nil)
 }
