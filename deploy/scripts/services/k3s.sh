@@ -6,6 +6,8 @@ K3S_INSTALL_URL="${K3S_INSTALL_URL:-https://rancher-mirror.rancher.cn/k3s/k3s-in
 INSTALL_K3S_MIRROR="${INSTALL_K3S_MIRROR:-cn}"
 INSTALL_K3S_VERSION="${INSTALL_K3S_VERSION:-v1.30.6+k3s1}"
 INSTALL_K3S_EXEC="${INSTALL_K3S_EXEC:-server --disable=traefik --write-kubeconfig-mode=644}"
+# Passed to rancher k3s-install.sh. Empty = auto (see install_k3s); set true/false to force.
+INSTALL_K3S_SKIP_SELINUX_RPM="${INSTALL_K3S_SKIP_SELINUX_RPM:-}"
 
 _export_k3s_kubeconfig() {
     if [[ -f /root/.kube/config ]]; then
@@ -69,10 +71,38 @@ install_k3s() {
     log_info "INSTALL_K3S_MIRROR=${INSTALL_K3S_MIRROR}"
     log_info "INSTALL_K3S_EXEC=${INSTALL_K3S_EXEC}"
 
+    # k3s-install.sh maps HCE VERSION_ID (e.g. 2.0) to el9 k3s-selinux, which requires
+    # container-selinux >= 3:2.191 — often missing on Huawei/yum mirrors → dnf aborts before k3s starts.
+    # Skip the SELinux RPM when SELinux is off, or on hce/openEuler (aligns with permissive/disabled lab setups).
+    local _skip_selinux_rpm="${INSTALL_K3S_SKIP_SELINUX_RPM}"
+    if [[ -z "${_skip_selinux_rpm}" ]]; then
+        local _want_skip=false
+        local os_id=""
+        if [[ -f /etc/os-release ]]; then
+            os_id="$(awk -F= '/^ID=/{gsub(/"/,"",$2); print $2; exit}' /etc/os-release)"
+        fi
+        case "${os_id}" in
+            hce|openEuler|openeuler) _want_skip=true ;;
+        esac
+        if command -v getenforce &>/dev/null && [[ "$(getenforce 2>/dev/null)" == "Disabled" ]]; then
+            _want_skip=true
+        fi
+        if [[ -f /etc/selinux/config ]] && grep -qE '^[[:space:]]*SELINUX[[:space:]]*=[[:space:]]*disabled' /etc/selinux/config 2>/dev/null; then
+            _want_skip=true
+        fi
+        if [[ "${_want_skip}" == "true" ]]; then
+            _skip_selinux_rpm=true
+            log_info "INSTALL_K3S_SKIP_SELINUX_RPM=true (auto: hce/openEuler and/or SELinux disabled — avoid k3s-selinux dependency failure). Override with INSTALL_K3S_SKIP_SELINUX_RPM=false if you need the RPM after satisfying container-selinux)."
+        fi
+    else
+        log_info "INSTALL_K3S_SKIP_SELINUX_RPM=${INSTALL_K3S_SKIP_SELINUX_RPM} (user-set)"
+    fi
+
     curl -sfL "${K3S_INSTALL_URL}" \
         | INSTALL_K3S_VERSION="${INSTALL_K3S_VERSION}" \
             INSTALL_K3S_MIRROR="${INSTALL_K3S_MIRROR}" \
             INSTALL_K3S_EXEC="${INSTALL_K3S_EXEC}" \
+            INSTALL_K3S_SKIP_SELINUX_RPM="${_skip_selinux_rpm:-false}" \
             sh -
 
     if [[ ! -f /etc/rancher/k3s/k3s.yaml ]]; then
