@@ -131,8 +131,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByEx)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByEx)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByEx)
-			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByEx)
 
+			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByEx)
 		}
 
 		// BuildTask APIs - External
@@ -206,8 +206,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByIn)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByIn)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByIn)
-			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByIn)
 
+			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByIn)
 		}
 
 		// BuildTask APIs - Internal

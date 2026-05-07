@@ -30,38 +30,38 @@ import (
 )
 
 var (
-	sqlQueryServiceOnce     sync.Once
-	sqlQueryServiceInstance interfaces.SQLQueryService
+	rawQueryServiceOnce     sync.Once
+	rawQueryServiceInstance interfaces.RawQueryService
 )
 
-type sqlQueryService struct {
+type rawQueryService struct {
 	cs interfaces.CatalogService
 	rs interfaces.ResourceService
 }
 
-// NewSQLQueryService 创建SQL查询服务（单例模式）
-func NewSQLQueryService(appSetting *common.AppSetting) interfaces.SQLQueryService {
-	sqlQueryServiceOnce.Do(func() {
-		sqlQueryServiceInstance = &sqlQueryService{
+// NewRawQueryService 创建SQL查询服务（单例模式）
+func NewRawQueryService(appSetting *common.AppSetting) interfaces.RawQueryService {
+	rawQueryServiceOnce.Do(func() {
+		rawQueryServiceInstance = &rawQueryService{
 			cs: catalog.NewCatalogService(appSetting),
 			rs: resource.NewResourceService(appSetting),
 		}
 	})
-	return sqlQueryServiceInstance
+	return rawQueryServiceInstance
 }
 
-// NewSQLQueryServiceWithDeps 创建SQL查询服务（用于测试）
-func NewSQLQueryServiceWithDeps(cs interfaces.CatalogService, rs interfaces.ResourceService) interfaces.SQLQueryService {
-	return &sqlQueryService{cs: cs, rs: rs}
+// NewRawQueryServiceWithDeps 创建SQL查询服务（用于测试）
+func NewRawQueryServiceWithDeps(cs interfaces.CatalogService, rs interfaces.ResourceService) interfaces.RawQueryService {
+	return &rawQueryService{cs: cs, rs: rs}
 }
 
 // Execute 执行SQL查询
-func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) Execute(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "SQLQueryExecute")
 	defer span.End()
 
 	// 记录请求参数
-	logger.Infof("SQLQueryRequest - query_type: %s, resource_type: %s, query: %v", req.QueryType, req.ResourceType, req.Query)
+	logger.Infof("RawQueryRequest - query_type: %s, resource_type: %s, query: %v", req.QueryType, req.ResourceType, req.Query)
 
 	// 1. 校验请求
 	if err := s.validateRequest(ctx, req); err != nil {
@@ -314,7 +314,7 @@ func (s *sqlQueryService) Execute(ctx context.Context, req *interfaces.SQLQueryR
 }
 
 // validateRequest 校验请求
-func (s *sqlQueryService) validateRequest(ctx context.Context, req *interfaces.SQLQueryRequest) error {
+func (s *rawQueryService) validateRequest(ctx context.Context, req *interfaces.RawQueryRequest) error {
 	// 校验查询类型
 	if req.QueryType != "" && req.QueryType != "standard" && req.QueryType != "stream" {
 		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_Query_InvalidParameter).
@@ -374,7 +374,7 @@ func (s *sqlQueryService) validateRequest(ctx context.Context, req *interfaces.S
 }
 
 // extractResourceIds 从SQL中提取所有{{.resource_id}}占位符
-func (s *sqlQueryService) extractResourceIds(query any) ([]string, error) {
+func (s *rawQueryService) extractResourceIds(query any) ([]string, error) {
 	// 如果query是字符串类型，使用正则表达式提取resource_id
 	if queryStr, ok := query.(string); ok {
 		re := regexp.MustCompile(`\{\{\.?(\w+)\}\}`)
@@ -402,7 +402,7 @@ func (s *sqlQueryService) extractResourceIds(query any) ([]string, error) {
 }
 
 // checkSameDataSource 检查所有resource_id是否来自同一个数据源
-func (s *sqlQueryService) checkSameDataSource(ctx context.Context, resourceIds []string) (*interfaces.Catalog, error) {
+func (s *rawQueryService) checkSameDataSource(ctx context.Context, resourceIds []string) (*interfaces.Catalog, error) {
 	if len(resourceIds) == 0 {
 		return nil, fmt.Errorf("no resource ids provided")
 	}
@@ -455,7 +455,7 @@ func (s *sqlQueryService) checkSameDataSource(ctx context.Context, resourceIds [
 }
 
 // replaceResourceIdWithSchemaTable 将resource_id替换为catalog.schema.table格式
-func (s *sqlQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, sql any, resourceIds []string, catalog *interfaces.Catalog) (string, error) {
+func (s *rawQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, sql any, resourceIds []string, catalog *interfaces.Catalog) (string, error) {
 	replacedSQL := sql.(string)
 	logger.Infof("Before replace - sql: %s, resource_ids: %v", replacedSQL, resourceIds)
 
@@ -486,7 +486,7 @@ func (s *sqlQueryService) replaceResourceIdWithSchemaTable(ctx context.Context, 
 }
 
 // executeSQLWithQueryType 执行SQL查询并记录日志
-func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *interfaces.Catalog, sql string, queryType string) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeSQLWithQueryType(ctx context.Context, catalog *interfaces.Catalog, sql string, queryType string) (*interfaces.RawQueryResponse, error) {
 	// 打印SQL日志，包含查询类型
 	logger.Infof("Executing %s query - sql: %s, catalog: %s", queryType, sql, catalog.Name)
 
@@ -499,7 +499,7 @@ func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *
 	}
 
 	// 根据connector类型执行SQL
-	var result *interfaces.SQLQueryResponse
+	var result *interfaces.RawQueryResponse
 	switch catalog.ConnectorType {
 	case interfaces.ConnectorTypeMariaDB, interfaces.ConnectorTypeMySQL:
 		mariadbConnector := connector.(*mariadb.MariaDBConnector)
@@ -523,7 +523,7 @@ func (s *sqlQueryService) executeSQLWithQueryType(ctx context.Context, catalog *
 }
 
 // executeNativeSQL 执行原生SQL（不包含resource_id）
-func (s *sqlQueryService) executeNativeSQL(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeNativeSQL(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	// 获取SQL语句
 	sql, ok := req.Query.(string)
 	if !ok {
@@ -569,7 +569,7 @@ func (s *sqlQueryService) executeNativeSQL(ctx context.Context, req *interfaces.
 }
 
 // executeOpenSearchQuery 执行OpenSearch DSL查询
-func (s *sqlQueryService) executeOpenSearchQuery(ctx context.Context, req *interfaces.SQLQueryRequest, resourceIds []string, catalog *interfaces.Catalog) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeOpenSearchQuery(ctx context.Context, req *interfaces.RawQueryRequest, resourceIds []string, catalog *interfaces.Catalog) (*interfaces.RawQueryResponse, error) {
 	// 验证query字段是否为有效的JSON对象
 	queryMap, ok := req.Query.(map[string]any)
 	if !ok {
@@ -675,7 +675,7 @@ func (s *sqlQueryService) executeOpenSearchQuery(ctx context.Context, req *inter
 }
 
 // executeStreamQuery 执行流式查询
-func (s *sqlQueryService) executeStreamQuery(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeStreamQuery(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	// 1. 如果提供了query_id，则使用已有会话
 	if req.QueryID != "" {
 		return s.executeStreamQueryWithSession(ctx, req)
@@ -686,7 +686,7 @@ func (s *sqlQueryService) executeStreamQuery(ctx context.Context, req *interface
 }
 
 // executeStreamQueryNewSession 创建新会话并执行流式查询
-func (s *sqlQueryService) executeStreamQueryNewSession(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeStreamQueryNewSession(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	// 1. 从SQL中提取resource_id
 	resourceIds, err := s.extractResourceIds(req.Query)
 	if err != nil {
@@ -748,7 +748,7 @@ func (s *sqlQueryService) executeStreamQueryNewSession(ctx context.Context, req 
 }
 
 // executeStreamQueryWithSession 使用已有会话执行流式查询
-func (s *sqlQueryService) executeStreamQueryWithSession(ctx context.Context, req *interfaces.SQLQueryRequest) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeStreamQueryWithSession(ctx context.Context, req *interfaces.RawQueryRequest) (*interfaces.RawQueryResponse, error) {
 	// 1. 获取会话
 	streamManager := GetStreamQueryManager()
 	session, ok := streamManager.GetSession(req.QueryID)
@@ -777,7 +777,7 @@ func (s *sqlQueryService) executeStreamQueryWithSession(ctx context.Context, req
 }
 
 // executeSQLWithSession 使用会话执行SQL查询
-func (s *sqlQueryService) executeSQLWithSession(ctx context.Context, req *interfaces.SQLQueryRequest, resourceIds []string, session *StreamQuerySession) (*interfaces.SQLQueryResponse, error) {
+func (s *rawQueryService) executeSQLWithSession(ctx context.Context, req *interfaces.RawQueryRequest, resourceIds []string, session *StreamQuerySession) (*interfaces.RawQueryResponse, error) {
 	// 1. 获取catalog和resourceIds
 	var catalog *interfaces.Catalog
 	var err error
