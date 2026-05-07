@@ -7,7 +7,7 @@ info:
 
     DiscoverTask 是**执行审计记录**，由两条路径产生：
 
-    - 手动触发：`POST /catalogs/{id}/discover`（动作端点，未在本规范覆盖；语义见 catalog.yaml）
+    - 手动触发：`POST /catalogs/{id}/discover`（动作端点，本规范末尾覆盖）
     - 定时触发：worker 内部从 `ScheduledDiscoverTask.ExecuteTask` 调起
 
     状态机（`pending → running → completed/failed`）由 worker 单向推进；
@@ -160,6 +160,40 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/catalogs/{id}/discover:
+    parameters:
+      - name: id
+        description: Catalog ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 手动触发 catalog 资源发现
+      description: |
+        对指定 catalog 触发一次资源发现。**异步语义**：服务端创建一条 `trigger_type=manual`
+        的 DiscoverTask 并立即返回 task id；实际发现执行由 worker 异步推进。客户端可用
+        返回的 task id 通过 `GET /discover-tasks/{id}` 轮询执行进度。
+
+        无 request body。本端点保留 RPC 风格嵌套形态——是对 catalog 的动作而非创建顶层
+        task；详见 [discover_task_redesign.md] §1 非目标。
+      responses:
+        "200":
+          description: 触发成功，DiscoverTask 已创建并入队
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoverTriggerResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Catalog 不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/InternalServerError"
 components:
@@ -342,6 +376,15 @@ components:
           description: 创建时间，毫秒级时间戳
           type: integer
           format: int64
+    DiscoverTriggerResponse:
+      description: 手动触发响应（异步——返回新建的 DiscoverTask ID）
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          description: 新建 DiscoverTask 的 ID；可用 `GET /discover-tasks/{id}` 轮询进度
+          type: string
     ListDiscoverTasks:
       description: 发现任务列表
       type: object
