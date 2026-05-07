@@ -67,3 +67,28 @@ ErrorLink = "暂无"
 Description = "删除构建任务失败"
 Solution = "请联系管理员"
 ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.NotFound]
+Description = "采集任务不存在"
+Solution = "请检查采集任务 ID 是否存在"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InvalidStatus]
+Description = "采集任务状态无效"
+Solution = "status 必须为 pending / running / completed / failed 之一"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.HasRunningExecution]
+Description = "采集任务处于 pending 或 running 状态，无法删除"
+Solution = "请等待任务完成或失败后再删除"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InternalError.GetFailed]
+Description = "获取采集任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"
+
+[VegaBackend.DiscoverTask.InternalError.DeleteFailed]
+Description = "删除采集任务失败"
+Solution = "请联系管理员"
+ErrorLink = "暂无"

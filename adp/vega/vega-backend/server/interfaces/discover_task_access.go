@@ -16,8 +16,6 @@ type DiscoverTaskAccess interface {
 	Create(ctx context.Context, task *DiscoverTask) error
 	// GetByID retrieves a DiscoverTask by ID.
 	GetByID(ctx context.Context, id string) (*DiscoverTask, error)
-	// GetByScheduledID retrieves DiscoverTasks by scheduled ID.
-	GetByScheduledID(ctx context.Context, scheduledID string) ([]*DiscoverTask, error)
 	// List lists DiscoverTasks with filters.
 	List(ctx context.Context, params DiscoverTaskQueryParams) ([]*DiscoverTask, int64, error)
 	// UpdateStatus updates a DiscoverTask's status and message.
@@ -29,4 +27,7 @@ type DiscoverTaskAccess interface {
 
 	// CheckExistByStatuses checks if DiscoverTasks exists by catalog ID and statuses.
 	CheckExistByStatuses(ctx context.Context, catalogID string, statuses []string) (bool, error)
+
+	// Delete deletes a DiscoverTask by ID. Returns sql.ErrNoRows if no row was affected.
+	Delete(ctx context.Context, id string) error
 }

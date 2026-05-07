@@ -91,20 +91,7 @@ func (mr *MockDiscoverTaskServiceMockRecorder) GetByID(ctx, id any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDiscoverTaskService)(nil).GetByID), ctx, id)
 }
 
-// GetByScheduledID mocks base method.
-func (m *MockDiscoverTaskService) GetByScheduledID(ctx context.Context, scheduledID string) ([]*interfaces.DiscoverTask, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByScheduledID", ctx, scheduledID)
-	ret0, _ := ret[0].([]*interfaces.DiscoverTask)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
 
-// GetByScheduledID indicates an expected call of GetByScheduledID.
-func (mr *MockDiscoverTaskServiceMockRecorder) GetByScheduledID(ctx, scheduledID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByScheduledID", reflect.TypeOf((*MockDiscoverTaskService)(nil).GetByScheduledID), ctx, scheduledID)
-}
 
 // List mocks base method.
 func (m *MockDiscoverTaskService) List(ctx context.Context, params interfaces.DiscoverTaskQueryParams) ([]*interfaces.DiscoverTask, int64, error) {
@@ -148,4 +135,18 @@ func (m *MockDiscoverTaskService) UpdateStatus(ctx context.Context, id, status, 
 func (mr *MockDiscoverTaskServiceMockRecorder) UpdateStatus(ctx, id, status, message, stime any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockDiscoverTaskService)(nil).UpdateStatus), ctx, id, status, message, stime)
+}
+
+// Delete mocks base method.
+func (m *MockDiscoverTaskService) Delete(ctx context.Context, ids []string, ignoreMissing bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, ids, ignoreMissing)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDiscoverTaskServiceMockRecorder) Delete(ctx, ids, ignoreMissing any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDiscoverTaskService)(nil).Delete), ctx, ids, ignoreMissing)
 }
