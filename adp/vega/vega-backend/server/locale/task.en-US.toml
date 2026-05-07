@@ -3,6 +3,31 @@ Description = "Task not found"
 Solution = "Please check the parameters"
 ErrorLink = "No solution"
 
+[VegaBackend.BuildTask.NotFound]
+Description = "Build task not found"
+Solution = "Please check if the build task ID exists"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidParameter.ResourceID]
+Description = "Invalid resource ID"
+Solution = "Please check if the resource ID is provided and exists"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidParameter.Mode]
+Description = "Invalid build task mode"
+Solution = "Mode must be one of: streaming, batch"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.InvalidStateTransition]
+Description = "Invalid build task state transition"
+Solution = "Check current task status; start requires status in {init, stopped}; stop requires status == running"
+ErrorLink = "No solution"
+
+[VegaBackend.BuildTask.HasRunningExecution]
+Description = "Build task has running execution and cannot be deleted"
+Solution = "Stop the task before deleting it"
+ErrorLink = "No solution"
+
 [VegaBackend.BuildTask.InternalError.CreateFailed]
 Description = "Failed to create build task"
 Solution = "Please contact the administrator"

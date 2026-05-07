@@ -23,6 +23,7 @@ import (
 	"vega-backend/common"
 	"vega-backend/interfaces"
 	"vega-backend/logics/auth"
+	"vega-backend/logics/build_task"
 	"vega-backend/logics/catalog"
 	"vega-backend/logics/connector_type"
 	"vega-backend/logics/dataset"
@@ -43,6 +44,7 @@ type restHandler struct {
 	as         interfaces.AuthService
 	cs         interfaces.CatalogService
 	rs         interfaces.ResourceService
+	bts        interfaces.BuildTaskService
 	ds         interfaces.DatasetService
 	cts        interfaces.ConnectorTypeService
 	dts        interfaces.DiscoverTaskService
@@ -55,6 +57,7 @@ type restHandler struct {
 func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) RestHandler {
 	cs := catalog.NewCatalogService(appSetting)
 	rs := resource.NewResourceService(appSetting)
+	bts := build_task.NewBuildTaskService(appSetting)
 	ds := dataset.NewDatasetService(appSetting)
 	dts := discover_task.NewDiscoverTaskService(appSetting)
 	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
@@ -64,6 +67,7 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 		as:         auth.NewAuthService(appSetting),
 		cs:         cs,
 		rs:         rs,
+		bts:        bts,
 		ds:         ds,
 		cts:        connector_type.NewConnectorTypeService(appSetting),
 		dts:        dts,
@@ -97,9 +101,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
 
-			// 资源列表
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByEx)
-
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
 			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
@@ -132,12 +133,17 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
+		}
 
-			resources.POST("/buildtask/:id", r.CreateBuildTaskByEx)
-			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByEx)
-			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByEx)
-			resources.GET("/buildtask", r.ListBuildTasksByEx)
-			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByEx)
+		// BuildTask APIs - External
+		buildTasks := apiV1.Group("/build-tasks")
+		{
+			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByEx)
+			buildTasks.GET("", r.ListBuildTasksByEx)
+			buildTasks.GET("/:id", r.GetBuildTaskByEx)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByEx)
+			buildTasks.POST("/:id/start", r.StartBuildTaskByEx)
+			buildTasks.POST("/:id/stop", r.StopBuildTaskByEx)
 		}
 
 		// ConnectorType APIs - External
@@ -169,9 +175,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 
 			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
-
-			//
-			catalogs.GET("/:ids/resources", r.ListCatalogResourcesByIn)
 
 			// 定时&策略采集相关
 			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
@@ -205,12 +208,17 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
 			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
 			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
+		}
 
-			resources.POST("/buildtask/:id", r.CreateBuildTaskByIn)
-			resources.GET("/buildtask/:id/:taskid", r.GetBuildTaskByIn)
-			resources.PUT("/buildtask/:id/:taskid/status", r.verifyJsonContentType(), r.UpdateBuildTaskStatusByIn)
-			resources.GET("/buildtask", r.ListBuildTasksByIn)
-			resources.DELETE("/buildtask/:taskids", r.DeleteBuildTasksByIn)
+		// BuildTask APIs - Internal
+		buildTasks := apiInV1.Group("/build-tasks")
+		{
+			buildTasks.POST("", r.verifyJsonContentType(), r.CreateBuildTaskByIn)
+			buildTasks.GET("", r.ListBuildTasksByIn)
+			buildTasks.GET("/:id", r.GetBuildTaskByIn)
+			buildTasks.DELETE("/:ids", r.DeleteBuildTasksByIn)
+			buildTasks.POST("/:id/start", r.StartBuildTaskByIn)
+			buildTasks.POST("/:id/stop", r.StopBuildTaskByIn)
 		}
 	}
 

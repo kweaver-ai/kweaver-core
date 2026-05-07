@@ -42,12 +42,4 @@ type ResourceService interface {
 
 	// CheckExistByCategories checks if Resources exists by catalog ID and categories.
 	CheckExistByCategories(ctx context.Context, catalogID string, categories []string) (bool, error)
-
-	// Resource Build task management methods
-	CreateBuildTask(ctx context.Context, id string, req *BuildTaskRequest) (string, error)
-	GetBuildTaskByID(ctx context.Context, id string) (*BuildTask, error)
-	GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*BuildTask, error)
-	GetBuildTasks(ctx context.Context, offset, limit int) ([]*BuildTask, int64, error)
-	UpdateBuildTaskStatus(ctx context.Context, taskID string, req *UpdateBuildTaskStatusRequest) error
-	DeleteBuildTask(ctx context.Context, taskID string) error
 }
