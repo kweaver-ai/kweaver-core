@@ -8,10 +8,14 @@ package driveradapters
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
+	"github.com/kweaver-ai/kweaver-go-lib/audit"
+	"github.com/kweaver-ai/kweaver-go-lib/hydra"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
@@ -21,280 +25,199 @@ import (
 	"vega-backend/interfaces"
 )
 
-// GetDiscoverTask handles GET /api/vega-backend/v1/discover-tasks/:id
-func (r *restHandler) GetDiscoverTask(c *gin.Context) {
+// =========================== GET /discover-tasks ===========================
+
+// ListDiscoverTasksByEx handles GET /api/vega-backend/v1/discover-tasks (External)
+func (r *restHandler) ListDiscoverTasksByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTask", trace.WithSpanKind(trace.SpanKindServer))
+		"ListDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// 校验token
 	visitor, err := r.verifyOAuth(ctx, c)
 	if err != nil {
 		return
 	}
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	taskID := c.Param("id")
-	// Get task
-	task, err := r.dts.GetByID(ctx, taskID)
-	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	if task == nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	logger.Debug("Handler GetDiscoverTask Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, task)
+	r.listDiscoverTasks(c, ctx, span, visitor)
 }
 
-// GetDiscoverTaskByScheduleId handles GET /api/vega-backend/v1/discover-tasks/:scheduleId
-func (r *restHandler) GetDiscoverTaskByScheduleId(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTaskByScheduleId", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
-	if err != nil {
-		return
-	}
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	scheduleId := c.Param("scheduleId")
-	// Get tasks by scheduled ID
-	tasks, err := r.dts.GetByScheduledID(ctx, scheduleId)
-	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-	if len(tasks) == 0 {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	logger.Debug("Handler GetDiscoverTaskByScheduleId Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	result := map[string]any{
-		"entries":     tasks,
-		"total_count": len(tasks),
-	}
-	rest.ReplyOK(c, http.StatusOK, result)
-}
-
-// ListDiscoverTasks handles GET /api/vega-backend/v1/discover-tasks
-func (r *restHandler) ListDiscoverTasks(c *gin.Context) {
-	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"ListDiscoverTasks", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	// 校验token
-	visitor, err := r.verifyOAuth(ctx, c)
-	if err != nil {
-		return
-	}
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
-
-	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
-
-	// Parse query params
-	params := interfaces.DiscoverTaskQueryParams{
-		CatalogID:   c.Query("catalog_id"),
-		Status:      c.Query("status"),
-		TriggerType: c.Query("trigger_type"),
-	}
-	if err := c.ShouldBindQuery(&params.PaginationQueryParams); err == nil {
-		if params.Limit == 0 {
-			params.Limit = 10
-		}
-	}
-
-	// Verify catalog exists if catalog_id is provided
-	if params.CatalogID != "" {
-		catalog, err := r.cs.GetByID(ctx, params.CatalogID, false)
-		if err != nil {
-			httpErr := err.(*rest.HTTPError)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
-			rest.ReplyError(c, httpErr)
-			return
-		}
-		if catalog == nil {
-			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Catalog_NotFound)
-			o11y.AddHttpAttrs4HttpError(span, httpErr)
-			rest.ReplyError(c, httpErr)
-			return
-		}
-	}
-
-	// List tasks
-	tasks, total, err := r.dts.List(ctx, params)
-	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
-	}
-
-	logger.Debug("Handler ListDiscoverTasks Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	rest.ReplyOK(c, http.StatusOK, gin.H{
-		"entries": tasks,
-		"total":   total,
-	})
-}
-
-// ListDiscoverTasksByIn handles GET /api/vega-backend/in/v1/discover-tasks
+// ListDiscoverTasksByIn handles GET /api/vega-backend/in/v1/discover-tasks (Internal)
 func (r *restHandler) ListDiscoverTasksByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"ListDiscoverTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// Generate visitor from request headers (for internal APIs)
 	visitor := GenerateVisitor(c)
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	r.listDiscoverTasks(c, ctx, span, visitor)
+}
 
+func (r *restHandler) listDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	// Parse query params
-	params := interfaces.DiscoverTaskQueryParams{
-		CatalogID:   c.Query("catalog_id"),
-		Status:      c.Query("status"),
-		TriggerType: c.Query("trigger_type"),
+	var params interfaces.DiscoverTaskQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails(err.Error())
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
 	}
-	if err := c.ShouldBindQuery(&params.PaginationQueryParams); err == nil {
-		if params.Limit == 0 {
-			params.Limit = 10
-		}
+	if params.Limit == 0 {
+		params.Limit = 20
 	}
 
-	// List tasks
+	if params.Status != "" && !isValidDiscoverTaskStatus(params.Status) {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_DiscoverTask_InvalidStatus).
+			WithErrorDetails(fmt.Sprintf("invalid status: %s", params.Status))
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
+	}
+
 	tasks, total, err := r.dts.List(ctx, params)
 	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	logger.Debug("Handler ListDiscoverTasksByIn Success")
+	logger.Debug("Handler ListDiscoverTasksByEx Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, gin.H{
-		"entries": tasks,
-		"total":   total,
+		"entries":     tasks,
+		"total_count": total,
 	})
 }
 
-// GetDiscoverTaskByIn handles GET /api/vega-backend/in/v1/discover-tasks/:id
+// =========================== GET /discover-tasks/:id ===========================
+
+// GetDiscoverTaskByEx handles GET /api/vega-backend/v1/discover-tasks/:id (External)
+func (r *restHandler) GetDiscoverTaskByEx(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"GetDiscoverTaskByEx", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
+	}
+	r.getDiscoverTask(c, ctx, span, visitor)
+}
+
+// GetDiscoverTaskByIn handles GET /api/vega-backend/in/v1/discover-tasks/:id (Internal)
 func (r *restHandler) GetDiscoverTaskByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"GetDiscoverTaskByIn", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// Generate visitor from request headers (for internal APIs)
 	visitor := GenerateVisitor(c)
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
-	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	r.getDiscoverTask(c, ctx, span, visitor)
+}
 
+func (r *restHandler) getDiscoverTask(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
 	taskID := c.Param("id")
-	// Get task
+
 	task, err := r.dts.GetByID(ctx, taskID)
 	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
+		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverTask_InternalError_GetFailed).
 			WithErrorDetails(err.Error())
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 	if task == nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
+		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_DiscoverTask_NotFound)
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	logger.Debug("Handler GetDiscoverTaskByIn Success")
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, task)
 }
 
-// GetDiscoverTaskByScheduleIdByIn handles GET /api/vega-backend/in/v1/discover-tasks/by-schedule/:scheduleId
-func (r *restHandler) GetDiscoverTaskByScheduleIdByIn(c *gin.Context) {
+// =========================== DELETE /discover-tasks/:ids ===========================
+
+// DeleteDiscoverTasksByEx handles DELETE /api/vega-backend/v1/discover-tasks/:ids (External).
+// `ids` is comma-separated. Optional query: ?ignore_missing=true
+func (r *restHandler) DeleteDiscoverTasksByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
-		"GetDiscoverTaskByScheduleIdByIn", trace.WithSpanKind(trace.SpanKindServer))
+		"DeleteDiscoverTasksByEx", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	// Generate visitor from request headers (for internal APIs)
-	visitor := GenerateVisitor(c)
-	accountInfo := interfaces.AccountInfo{
-		ID:   visitor.ID,
-		Type: string(visitor.Type),
+	visitor, err := r.verifyOAuth(ctx, c)
+	if err != nil {
+		return
 	}
-	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
+	r.deleteDiscoverTasks(c, ctx, span, visitor)
+}
 
+// DeleteDiscoverTasksByIn handles DELETE /api/vega-backend/in/v1/discover-tasks/:ids (Internal)
+func (r *restHandler) DeleteDiscoverTasksByIn(c *gin.Context) {
+	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
+		"DeleteDiscoverTasksByIn", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	visitor := GenerateVisitor(c)
+	r.deleteDiscoverTasks(c, ctx, span, visitor)
+}
+
+func (r *restHandler) deleteDiscoverTasks(c *gin.Context, ctx context.Context, span trace.Span, visitor hydra.Visitor) {
+	accountInfo := interfaces.AccountInfo{ID: visitor.ID, Type: string(visitor.Type)}
+	ctx = context.WithValue(ctx, interfaces.ACCOUNT_INFO_KEY, accountInfo)
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	scheduleId := c.Param("scheduleId")
-	// Get tasks by scheduled ID
-	tasks, err := r.dts.GetByScheduledID(ctx, scheduleId)
-	if err != nil {
-		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_Catalog_InternalError).
-			WithErrorDetails(err.Error())
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
+	idsStr := c.Param("ids")
+	ids := make([]string, 0)
+	for _, id := range strings.Split(idsStr, ",") {
+		id = strings.TrimSpace(id)
+		if id != "" {
+			ids = append(ids, id)
+		}
 	}
-	if len(tasks) == 0 {
-		httpErr := rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_Task_NotFound)
+	if len(ids) == 0 {
+		httpErr := rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_InvalidParameter_RequestBody).
+			WithErrorDetails("ids path parameter is required")
 		o11y.AddHttpAttrs4HttpError(span, httpErr)
 		rest.ReplyError(c, httpErr)
 		return
 	}
 
-	logger.Debug("Handler GetDiscoverTaskByScheduleIdByIn Success")
-	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
-	result := map[string]any{
-		"entries":     tasks,
-		"total_count": len(tasks),
+	ignoreMissing := strings.EqualFold(c.Query("ignore_missing"), "true")
+
+	if err := r.dts.Delete(ctx, ids, ignoreMissing); err != nil {
+		httpErr := err.(*rest.HTTPError)
+		o11y.AddHttpAttrs4HttpError(span, httpErr)
+		rest.ReplyError(c, httpErr)
+		return
 	}
-	rest.ReplyOK(c, http.StatusOK, result)
+
+	for _, id := range ids {
+		audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
+			interfaces.GenerateResourceAuditObject(id, ""), audit.SUCCESS, "")
+	}
+
+	logger.Debug("Handler DeleteDiscoverTasksByEx Success")
+	o11y.AddHttpAttrs4Ok(span, http.StatusNoContent)
+	rest.ReplyOK(c, http.StatusNoContent, nil)
+}
+
+// =========================== helpers ===========================
+
+func isValidDiscoverTaskStatus(s string) bool {
+	switch s {
+	case interfaces.DiscoverTaskStatusPending,
+		interfaces.DiscoverTaskStatusRunning,
+		interfaces.DiscoverTaskStatusCompleted,
+		interfaces.DiscoverTaskStatusFailed:
+		return true
+	}
+	return false
 }

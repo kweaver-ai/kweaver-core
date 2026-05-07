@@ -112,9 +112,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		// DiscoverTask APIs - External
 		discoverTasks := apiV1.Group("/discover-tasks")
 		{
-			discoverTasks.GET("", r.ListDiscoverTasks)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTask)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleId)
+			discoverTasks.GET("", r.ListDiscoverTasksByEx)
+			discoverTasks.GET("/:id", r.GetDiscoverTaskByEx)
+			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByEx)
 		}
 
 		// Resource APIs - External
@@ -188,8 +188,8 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		discoverTasks := apiInV1.Group("/discover-tasks")
 		{
 			discoverTasks.GET("", r.ListDiscoverTasksByIn)
-			discoverTasks.GET("/by-id/:id", r.GetDiscoverTaskByIn)
-			discoverTasks.GET("/by-schedule/:scheduleId", r.GetDiscoverTaskByScheduleIdByIn)
+			discoverTasks.GET("/:id", r.GetDiscoverTaskByIn)
+			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByIn)
 		}
 
 		// Resource APIs - Internal

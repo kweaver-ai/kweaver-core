@@ -54,10 +54,10 @@ type AccountInfo struct {
 
 // PaginationQueryParams holds common pagination parameters.
 type PaginationQueryParams struct {
-	Offset    int
-	Limit     int
-	Sort      string
-	Direction string
+	Offset    int    `form:"offset" json:"offset"`
+	Limit     int    `form:"limit" json:"limit"`
+	Sort      string `form:"sort" json:"sort"`
+	Direction string `form:"direction" json:"direction"`
 }
 
 func GenerateCatalogAuditObject(id string, name string) audit.AuditObject {
