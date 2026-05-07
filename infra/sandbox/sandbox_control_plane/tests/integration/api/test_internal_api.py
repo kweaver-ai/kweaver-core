@@ -9,31 +9,28 @@ class TestInternalAPIContract:
     """Contract tests for internal API endpoints."""
 
     async def test_container_ready_callback_contract(self, http_client: AsyncClient) -> None:
-        """Test POST /internal/sessions/{id}/container_ready contract."""
-        # This would require a valid session and INTERNAL_API_TOKEN
-        # For contract test, we validate the endpoint structure
+        """Test POST /internal/containers/ready contract."""
         response = await http_client.post(
-            "/internal/sessions/sess_test123/container_ready",
+            "/internal/containers/ready",
             json={
                 "container_id": "abc123",
                 "executor_port": 8080,
             },
-            headers={"Authorization": "Bearer test-token"},
         )
 
-        # Should return 401 with invalid token, but endpoint exists
-        assert response.status_code in [200, 401, 404]
+        assert response.status_code == 200
+        assert "message" in response.json()
 
     async def test_container_exited_callback_contract(self, http_client: AsyncClient) -> None:
-        """Test POST /internal/sessions/{id}/container_exited contract."""
-        response = await http_client.post(
-            "/internal/sessions/sess_test123/container_exited",
-            json={
-                "exit_code": 143,
-                "exit_reason": "sigterm",
-            },
-            headers={"Authorization": "Bearer test-token"},
-        )
+        """Test POST /internal/containers/exited contract."""
+        response = await http_client.post("/internal/containers/exited")
 
-        # Should return 401 with invalid token, but endpoint exists
-        assert response.status_code in [200, 401, 404]
+        assert response.status_code == 200
+        assert response.json()["message"] == "Container exited acknowledged"
+
+    async def test_execution_heartbeat_contract(self, http_client: AsyncClient) -> None:
+        """Test POST /internal/executions/{execution_id}/heartbeat contract."""
+        response = await http_client.post("/internal/executions/exec_test123/heartbeat")
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Heartbeat acknowledged"

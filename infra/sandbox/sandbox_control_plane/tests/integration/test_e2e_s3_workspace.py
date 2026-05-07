@@ -11,68 +11,22 @@ This test verifies:
 
 These tests require the control plane to be running on localhost:8000
 """
-import pytest
-import httpx
 import asyncio
 import io
 import zipfile
-from typing import Generator
+
+import httpx
+import pytest
 
 
 # Configuration
 BASE_URL = "http://localhost:8000"
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    """Create an event loop for async tests"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture
-async def http_client() -> Generator[httpx.AsyncClient, None, None]:
-    """Create an HTTP client for testing"""
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        yield client
-
-
-@pytest.fixture
-async def session_id(http_client: httpx.AsyncClient) -> str:
-    """Create a test session and return its ID"""
-    response = await http_client.post(
-        f"{BASE_URL}/api/v1/sessions",
-        json={"template_id": "python-basic", "timeout": 300}
-    )
-
-    if response.status_code not in [200, 201]:
-        pytest.skip(f"Failed to create session: {response.text}")
-
-    session = response.json()
-    sid = session["id"]
-
-    # Wait for session to be running
-    max_wait = 30
-    for _ in range(max_wait):
-        response = await http_client.get(f"{BASE_URL}/api/v1/sessions/{sid}")
-        if response.status_code == 200:
-            status = response.json()
-            if status["status"] == "running":
-                break
-            elif status["status"] in ["failed", "terminated"]:
-                pytest.skip(f"Session failed with status: {status['status']}")
-        await asyncio.sleep(1)
-    else:
-        pytest.skip("Session did not start within 30 seconds")
-
-    yield sid
-
-    # Cleanup: Delete the session
-    try:
-        await http_client.delete(f"{BASE_URL}/api/v1/sessions/{sid}")
-    except Exception:
-        pass  # Ignore cleanup errors
+def session_id(test_session_id: str) -> str:
+    """Reuse the shared integration session fixture and cleanup policy."""
+    return test_session_id
 
 
 @pytest.mark.asyncio
@@ -81,7 +35,7 @@ async def test_file_upload(http_client: httpx.AsyncClient, session_id: str):
     test_csv_content = b"name,age\nAlice,30\nBob,25\nCharlie,35\n"
 
     response = await http_client.post(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=uploads/test_data.csv",
+        f"/sessions/{session_id}/files/upload?path=uploads/test_data.csv",
         files={"file": ("test_data.csv", test_csv_content, "text/csv")}
     )
 
@@ -97,14 +51,15 @@ async def test_file_download(http_client: httpx.AsyncClient, session_id: str):
     """Test downloading a file from S3"""
     # First upload a file
     test_content = b"test,data\n1,2\n3,4\n"
-    await http_client.post(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=test/download.csv",
+    upload_response = await http_client.post(
+        f"/sessions/{session_id}/files/upload?path=test/download.csv",
         files={"file": ("download.csv", test_content, "text/csv")}
     )
+    assert upload_response.status_code == 200, upload_response.text
 
     # Download the file
     response = await http_client.get(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/test/download.csv"
+        f"/sessions/{session_id}/files/test/download.csv"
     )
 
     assert response.status_code == 200
@@ -117,10 +72,11 @@ async def test_execute_code_read_file(http_client: httpx.AsyncClient, session_id
     """Test executing code that reads uploaded files"""
     # Upload a test file
     test_csv_content = b"name,age\nAlice,30\nBob,25\n"
-    await http_client.post(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=input/people.csv",
+    upload_response = await http_client.post(
+        f"/sessions/{session_id}/files/upload?path=input/people.csv",
         files={"file": ("people.csv", test_csv_content, "text/csv")}
     )
+    assert upload_response.status_code == 200, upload_response.text
 
     # Execute code to read the file
     read_code = """
@@ -147,23 +103,22 @@ def handler(event):
 """
 
     response = await http_client.post(
-        f"{BASE_URL}/api/v1/executions/sessions/{session_id}/execute",
+        f"/executions/sessions/{session_id}/execute",
         json={"code": read_code, "language": "python"}
     )
 
-    # Handle executor connection failures
-    if response.status_code not in [200, 201]:
-        pytest.skip(f"Execution creation failed: {response.text}")
+    assert response.status_code in [200, 201], f"Execution creation failed: {response.text}"
 
     # Wait for execution to complete
     execution = response.json()
     exec_id = execution.get("execution_id")
+    assert exec_id, execution
 
     # Poll for result
     max_wait = 20
     for _ in range(max_wait):
         response = await http_client.get(
-            f"{BASE_URL}/api/v1/executions/{exec_id}/result"
+            f"/executions/{exec_id}/result"
         )
         if response.status_code == 200:
             result = response.json()
@@ -172,6 +127,8 @@ def handler(event):
                 assert "people.csv" in stdout, f"File not accessed. Output: {stdout}"
                 break
         await asyncio.sleep(1)
+    else:
+        pytest.fail("Execution did not complete while reading uploaded file")
 
 
 @pytest.mark.asyncio
@@ -189,33 +146,34 @@ def handler(event):
 """
 
     response = await http_client.post(
-        f"{BASE_URL}/api/v1/executions/sessions/{session_id}/execute",
+        f"/executions/sessions/{session_id}/execute",
         json={"code": write_code, "language": "python"}
     )
 
-    # Handle executor connection failures
-    if response.status_code not in [200, 201]:
-        pytest.skip(f"Execution creation failed: {response.text}")
+    assert response.status_code in [200, 201], f"Execution creation failed: {response.text}"
 
     # Wait for execution and download the created file
     execution = response.json()
     exec_id = execution.get("execution_id")
+    assert exec_id, execution
 
     # Poll for result
     max_wait = 10
     for _ in range(max_wait):
         response = await http_client.get(
-            f"{BASE_URL}/api/v1/executions/{exec_id}/result"
+            f"/executions/{exec_id}/result"
         )
         if response.status_code == 200:
             result = response.json()
-            if result.get("status") in ["completed", "failed"]:
+            if result.get("status") in ["completed", "failed", "success"]:
                 break
         await asyncio.sleep(1)
+    else:
+        pytest.fail("Execution did not complete while writing output file")
 
     # Download the created file
     response = await http_client.get(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/output/result.txt"
+        f"/sessions/{session_id}/files/output/result.txt"
     )
 
     assert response.status_code == 200
@@ -228,7 +186,7 @@ async def test_nested_directory_upload(http_client: httpx.AsyncClient, session_i
     # Upload to nested path
     test_content = b"x,y\n1,2\n"
     response = await http_client.post(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=data/nested/test.csv",
+        f"/sessions/{session_id}/files/upload?path=data/nested/test.csv",
         files={"file": ("test.csv", test_content, "text/csv")}
     )
 
@@ -238,10 +196,31 @@ async def test_nested_directory_upload(http_client: httpx.AsyncClient, session_i
 
     # Download to verify
     response = await http_client.get(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/data/nested/test.csv"
+        f"/sessions/{session_id}/files/data/nested/test.csv"
     )
     assert response.status_code == 200
     assert "x,y" in response.text
+
+
+@pytest.mark.asyncio
+async def test_list_files(http_client: httpx.AsyncClient, session_id: str):
+    """Test listing files in a session workspace."""
+    test_content = b"name,value\nalpha,1\n"
+    upload_response = await http_client.post(
+        f"/sessions/{session_id}/files/upload?path=reports/listed.csv",
+        files={"file": ("listed.csv", test_content, "text/csv")}
+    )
+    assert upload_response.status_code == 200
+
+    response = await http_client.get(
+        f"/sessions/{session_id}/files?path=reports"
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["session_id"] == session_id
+    assert result["count"] >= 1
+    assert any(file["name"].endswith("reports/listed.csv") for file in result["files"])
 
 
 @pytest.mark.asyncio
@@ -252,7 +231,7 @@ async def test_zip_upload_and_extract(http_client: httpx.AsyncClient, session_id
         archive.writestr("nested/hello.txt", "hello from zip")
 
     response = await http_client.post(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=archives/input&extract=true",
+        f"/sessions/{session_id}/files/upload?path=archives/input&extract=true",
         files={"file": ("input.zip", archive_buffer.getvalue(), "application/zip")}
     )
 
@@ -263,7 +242,7 @@ async def test_zip_upload_and_extract(http_client: httpx.AsyncClient, session_id
     assert result["extracted_file_count"] == 1
 
     response = await http_client.get(
-        f"{BASE_URL}/api/v1/sessions/{session_id}/files/archives/input/nested/hello.txt"
+        f"/sessions/{session_id}/files/archives/input/nested/hello.txt"
     )
     assert response.status_code == 200
     assert "hello from zip" in response.text
@@ -276,11 +255,15 @@ async def main():
     print("E2E Test: S3 Workspace Mounting")
     print("=" * 60)
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(
+        base_url=f"{BASE_URL}/api/v1",
+        timeout=60.0,
+        trust_env=False,
+    ) as client:
         # Create session
         print("\n[Step 1] Creating session...")
         response = await client.post(
-            f"{BASE_URL}/api/v1/sessions",
+            "/sessions",
             json={"template_id": "python-basic", "timeout": 300}
         )
 
@@ -297,7 +280,7 @@ async def main():
         print("\n[Step 2] Uploading test file...")
         test_csv_content = b"name,age\nAlice,30\nBob,25\nCharlie,35\n"
         response = await client.post(
-            f"{BASE_URL}/api/v1/sessions/{session_id}/files/upload?path=uploads/test.csv",
+            f"/sessions/{session_id}/files/upload?path=uploads/test.csv",
             files={"file": ("test.csv", test_csv_content, "text/csv")}
         )
 
@@ -311,10 +294,10 @@ async def main():
         # Wait for session ready
         print("\n[Step 3] Waiting for session to be ready...")
         for i in range(30):
-            response = await client.get(f"{BASE_URL}/api/v1/sessions/{session_id}")
+            response = await client.get(f"/sessions/{session_id}")
             if response.status_code == 200:
                 status = response.json()
-                if status["status"] == "running":
+                if status["status"] in ("running", "ready"):
                     print(f"  Session is running after {i+1} seconds")
                     break
                 elif status["status"] in ["failed", "terminated"]:
@@ -331,7 +314,7 @@ print(f"Workspace contents: {os.listdir('/workspace') if os.path.exists('/worksp
 """
 
         response = await client.post(
-            f"{BASE_URL}/api/v1/executions/sessions/{session_id}/execute",
+            f"/executions/sessions/{session_id}/execute",
             json={"code": read_code, "language": "python"}
         )
 
@@ -341,7 +324,7 @@ print(f"Workspace contents: {os.listdir('/workspace') if os.path.exists('/worksp
 
         # Cleanup
         print("\n[Step 5] Deleting session...")
-        await client.delete(f"{BASE_URL}/api/v1/sessions/{session_id}")
+        await client.delete(f"/sessions/{session_id}")
         print("  Session deleted")
 
         print("\n" + "=" * 60)

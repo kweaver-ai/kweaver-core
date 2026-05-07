@@ -96,6 +96,24 @@ uv sync --extra dev
 pytest tests/integration/ -v
 ```
 
+### Run Happy Path Smoke Tests
+
+```bash
+pytest tests/integration/ -m happy_path -v
+```
+
+### Run Without Slow Tests
+
+```bash
+pytest tests/integration/ -m "not slow" -v
+```
+
+### Run Slow Tests Only
+
+```bash
+pytest tests/integration/ -m slow -v
+```
+
 ### Run Specific Test File
 
 ```bash

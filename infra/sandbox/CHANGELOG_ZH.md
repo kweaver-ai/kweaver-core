@@ -43,6 +43,8 @@
 - 将自包含 Helm Chart 从 `sandbox_local` 重命名为 `sandbox_standalone`，更准确表达其独立部署范围
 - 新增 `.dockerignore`，覆盖常见缓存、本地数据库、构建输出和开发环境产物
 - 补充默认模板镜像解析、可选 session template、Go shell 执行路径、ZIP 解压防护和依赖安装超时透传相关单元测试
+- 改进集成测试运维能力，新增 `happy_path` 与 `slow` pytest marker，强化每个测试后的 session 清理，补充 internal API 与 health 冒烟覆盖，并让 workspace 测试复用统一 session fixture，避免将 session 创建失败误标记为 skip
+- 从常规集成测试集中移除较慢的非 happy path 依赖失败检查，使日常运行聚焦稳定成功路径，完整覆盖可通过显式 marker 选择运行
 
 ### ⚠️ 破坏性变更
 
@@ -53,6 +55,7 @@
 ### 📚 文档
 
 - 更新 README、构建文档、项目结构文档、部署说明和多语言 Go 执行设计文档，说明新的镜像分层和 SWR 推送流程
+- 补充集成测试运行模式说明，包括 happy path 冒烟、完整运行、仅运行慢测试，以及排除慢测试的完整运行方式
 - 新增 `deploy/helm/README.md`，说明 Kweaver Core 组件 Chart 与 Sandbox 独立部署 Chart 的区别
 - 重写 Helm Chart README，使 `deploy/helm/sandbox` 明确说明 Core 组件部署方式，`deploy/helm/sandbox_standalone` 明确说明包含 Web、MariaDB、MinIO 的自包含部署方式
 

@@ -151,6 +151,33 @@ class TestNormalizeShellCode:
 
         assert normalized == "bash run.sh"
 
+    def test_normalize_keeps_shell_flags(self):
+        """Test preserving explicit shell options."""
+        normalized = normalize_shell_code('bash -lc "echo ok"', Path("/workspace"))
+
+        assert normalized == 'bash -lc "echo ok"'
+
+    def test_normalize_keeps_path_like_command(self):
+        """Test preserving path-like next tokens."""
+        normalized = normalize_shell_code("bash ./tool", Path("/workspace"))
+
+        assert normalized == "bash ./tool"
+
+    def test_normalize_keeps_existing_file_without_extension(self, tmp_path: Path):
+        """Test preserving executable file names without .sh suffix."""
+        tool = tmp_path / "tool"
+        tool.write_text("#!/bin/sh\necho ok\n")
+
+        normalized = normalize_shell_code("bash tool", tmp_path)
+
+        assert normalized == "bash tool"
+
+    def test_normalize_strips_sh_prefix_for_common_command(self):
+        """Test stripping accidental sh prefix before a common command."""
+        normalized = normalize_shell_code("sh pytest tests && sh uv run ruff", Path("/workspace"))
+
+        assert normalized == "pytest tests && uv run ruff"
+
 
 class TestValidatePythonHandler:
     """Tests for validate_python_handler function."""
@@ -253,6 +280,15 @@ class TestWrapForExecution:
         assert "===SANDBOX_RESULT===" in wrapped
         assert "def handler(event):" in wrapped
 
+    def test_wrap_python_code_with_invalid_handler_still_wraps(self):
+        """Test invalid Python handler logs warning but still returns wrapper."""
+        code = 'print("missing handler")'
+
+        wrapped = wrap_for_execution(code, "python")
+
+        assert 'print("missing handler")' in wrapped
+        assert "===SANDBOX_RESULT===" in wrapped
+
     def test_wrap_javascript_code(self):
         """Test wrapping JavaScript code."""
         code = 'console.log("test");'
@@ -299,6 +335,14 @@ class TestUnwrapPythonCode:
         unwrapped = unwrap_python_code(code)
 
         # Should return original code if markers not found
+        assert unwrapped == code
+
+    def test_unwrap_with_start_marker_only(self):
+        """Test unwrapping returns original code if end marker is missing."""
+        code = "# User code starts here\ndef handler(event):\n    return event"
+
+        unwrapped = unwrap_python_code(code)
+
         assert unwrapped == code
 
     def test_unwrap_empty_input(self):

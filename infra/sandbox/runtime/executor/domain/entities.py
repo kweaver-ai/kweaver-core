@@ -5,9 +5,14 @@ Core domain entities for code execution within the sandbox.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 from executor.domain.value_objects import ExecutionStatus, ExecutionContext
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -26,7 +31,7 @@ class Execution:
     context: ExecutionContext
     status: ExecutionStatus = ExecutionStatus.PENDING
     result: Optional["ExecutionResult"] = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     retry_count: int = 0
@@ -35,24 +40,24 @@ class Execution:
     def mark_as_running(self) -> None:
         """Mark the execution as running."""
         self.status = ExecutionStatus.RUNNING
-        self.started_at = datetime.utcnow()
+        self.started_at = utc_now()
 
     def mark_as_completed(self, result: "ExecutionResult") -> None:
         """Mark the execution as completed with results."""
         self.status = ExecutionStatus.COMPLETED
         self.result = result
-        self.completed_at = datetime.utcnow()
+        self.completed_at = utc_now()
 
     def mark_as_failed(self, error: str) -> None:
         """Mark the execution as failed."""
         self.status = ExecutionStatus.FAILED
         self.error_message = error
-        self.completed_at = datetime.utcnow()
+        self.completed_at = utc_now()
 
     def mark_as_timeout(self) -> None:
         """Mark the execution as timed out."""
         self.status = ExecutionStatus.TIMEOUT
-        self.completed_at = datetime.utcnow()
+        self.completed_at = utc_now()
 
     def increment_retry(self) -> None:
         """Increment the retry counter."""

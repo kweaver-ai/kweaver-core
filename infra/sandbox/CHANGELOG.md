@@ -43,6 +43,8 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 - Renamed the self-contained Helm chart from `sandbox_local` to `sandbox_standalone` to better describe its deployment scope
 - Added `.dockerignore` coverage for common caches, local databases, build outputs, and development artifacts
 - Expanded unit coverage for default template image resolution, optional session template selection, Go shell execution path handling, ZIP extraction safeguards, and dependency install timeout propagation
+- Improved integration test operations with `happy_path` and `slow` pytest markers, stronger per-test session cleanup, updated internal API and health smoke coverage, and workspace tests that reuse the shared session fixture instead of skipping session creation failures
+- Removed slow non-happy-path dependency failure checks from the regular integration suite so routine runs focus on stable success paths while full coverage remains available through explicit marker selection
 
 ### ⚠️ Breaking Changes
 
@@ -53,6 +55,7 @@ All new features and capabilities added in this branch (`feature/803264`) are do
 ### 📚 Documentation
 
 - Updated README, build documentation, project structure docs, deployment notes, and the multi-language Go execution design to describe the new image layering and SWR push workflow
+- Documented integration test run modes for happy-path smoke tests, full runs, slow-only runs, and full runs excluding slow tests
 - Added `deploy/helm/README.md` to explain the difference between the Kweaver Core component chart and the standalone Sandbox chart
 - Rewrote the Helm chart READMEs so `deploy/helm/sandbox` documents the Core component deployment and `deploy/helm/sandbox_standalone` documents the self-contained stack with Web, MariaDB, and MinIO
 
