@@ -126,13 +126,13 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByEx)
 			resources.DELETE("/:ids", r.DeleteResourcesByEx)
 
-			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByEx)
+			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByEx)
+			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByEx)
+			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByEx)
+			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByEx)
+			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByEx)
 			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByEx)
 
-			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByEx)
-			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByEx)
-			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByEx)
-			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByEx)
 		}
 
 		// BuildTask APIs - External
@@ -201,13 +201,13 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
 			resources.DELETE("/:ids", r.DeleteResourcesByIn)
 
-			resources.POST("/:id/data", r.verifyJsonContentType(), r.QueryResourceDataByIn)
+			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByIn)
+			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByIn)
+			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByIn)
+			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByIn)
+			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByIn)
 			resources.POST("/query", r.verifyJsonContentType(), r.SQLQueryByIn)
 
-			resources.POST("/dataset/:id/docs", r.verifyJsonContentType(), r.CreateDatasetDocumentsByIn)
-			resources.PUT("/dataset/:id/docs", r.verifyJsonContentType(), r.UpdateDatasetDocumentsByIn)
-			resources.DELETE("/dataset/:id/docs/:ids", r.DeleteDatasetDocumentsByIn)
-			resources.POST("/dataset/:id/docs/query", r.DeleteDatasetDocumentsByQueryByIn)
 		}
 
 		// BuildTask APIs - Internal
