@@ -36,7 +36,7 @@ usage() {
     echo "  -y, --yes            Auto-approve every fix (skip per-fix y/N prompt)"
     echo "  -n, --no             Auto-decline every fix (preview risk text, change nothing)"
     echo "  --fix-allow=LIST     Comma-separated fix names to auto-approve (others are skipped)."
-    echo "                       Names: k3s-uninstall,kubeadm-reset,k8s-pkgs-repo,k8s-bins,containerd-install,helm-v3,"
+    echo "                       Names: k3s-uninstall,kubeadm-reset,k8s-pkgs-repo,k8s-bins,kubernetes-cni,containerd-install,helm-v3,"
     echo "                       docker-disable,chrony,firewalld,ufw,selinux,system-tuning,bridge-sysctl,kernel-limits,nofile-limits,iptables-legacy,etc-hosts,"
     echo "                       onboard-tooling,nodejs-npm,node-22,kweaver-sdk,kweaver-admin"
     echo "  --list-fixes         Run checks then list fixes that would be offered (no changes; requires root)"
