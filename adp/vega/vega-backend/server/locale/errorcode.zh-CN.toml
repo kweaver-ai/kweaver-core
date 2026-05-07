@@ -224,6 +224,11 @@ Description = "暂不支持多数据源 JOIN"
 Solution = "计划使用 Trino/DuckDB 实现"
 ErrorLink = "暂无"
 
+[VegaBackend.Query.ConcurrencyLimitExceeded]
+Description = "查询并发数超过限制"
+Solution = "请稍后重试"
+ErrorLink = "暂无"
+
 [VegaBackend.Query.ExecuteFailed]
 Description = "执行查询失败"
 Solution = "请联系管理员"

@@ -220,104 +220,8 @@ func (bts *buildTaskService) ListBuildTasks(ctx context.Context, params interfac
 	return buildTasks, total, nil
 }
 
-// UpdateBuildTaskStatus updates a build task's status (called by worker; HTTP path uses Start/Stop).
-func (bts *buildTaskService) UpdateBuildTaskStatus(ctx context.Context, taskID string, req *interfaces.UpdateBuildTaskStatusRequest) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Update build task status")
-	defer span.End()
-
-	if req.ExecuteType == "" {
-		req.ExecuteType = interfaces.BuildTaskExecuteTypeIncremental
-	} else if req.ExecuteType != interfaces.BuildTaskExecuteTypeIncremental && req.ExecuteType != interfaces.BuildTaskExecuteTypeFull {
-		span.SetStatus(codes.Error, "Invalid execute type")
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidExecuteType).
-			WithErrorDetails("Invalid execute type")
-	}
-
-	buildTask, err := bts.bta.GetByID(ctx, taskID)
-	if err != nil {
-		span.SetStatus(codes.Error, "Get build task failed")
-		return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_GetFailed).
-			WithErrorDetails(err.Error())
-	}
-	if buildTask == nil {
-		span.SetStatus(codes.Error, "Build task not found")
-		return rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_BuildTask_NotFound)
-	}
-
-	updates := map[string]interface{}{}
-	switch req.Status {
-	case interfaces.BuildTaskStatusRunning:
-		switch buildTask.Status {
-		case interfaces.BuildTaskStatusRunning:
-			span.SetStatus(codes.Error, "Task is already running")
-			return rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_BuildTask_InvalidStateTransition).
-				WithErrorDetails("Task is already running")
-		case interfaces.BuildTaskStatusStopping:
-			span.SetStatus(codes.Error, "Task is stopping")
-			return rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_BuildTask_InvalidStateTransition).
-				WithErrorDetails("Task is stopping")
-		}
-		// status transition to running is performed by worker on actual execution
-	case interfaces.BuildTaskStatusStopped:
-		if buildTask.Status == interfaces.BuildTaskStatusStopped || buildTask.Status == interfaces.BuildTaskStatusStopping || buildTask.Status == interfaces.BuildTaskStatusFailed {
-			span.SetStatus(codes.Ok, "Task is already stopped")
-			return nil
-		}
-		if buildTask.Status == interfaces.BuildTaskStatusInit {
-			span.SetStatus(codes.Error, "Task is init, cannot stop")
-			return rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_BuildTask_InvalidStateTransition).
-				WithErrorDetails("Task is init, cannot stop")
-		}
-		updates["status"] = interfaces.BuildTaskStatusStopping
-	default:
-		span.SetStatus(codes.Error, "Invalid status")
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, verrors.VegaBackend_BuildTask_InvalidStatus).
-			WithErrorDetails("Invalid status")
-	}
-
-	if req.Status == interfaces.BuildTaskStatusRunning {
-		payload, err := sonic.Marshal(&interfaces.BatchBuildTaskMessage{
-			TaskID:      taskID,
-			ExecuteType: req.ExecuteType,
-		})
-		if err != nil {
-			logger.Errorf("Marshal build task message failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Marshal build task message failed: %v", err))
-		} else {
-			typename := interfaces.BuildTaskTypeBatch
-			if buildTask.Mode == interfaces.BuildTaskModeStreaming {
-				typename = interfaces.BuildTaskTypeStreaming
-			}
-			asynqTask := asynq.NewTask(typename, payload)
-			client := asynqAccess.NewAsynqAccess(bts.appSetting).CreateClient(context.Background())
-			if _, err := client.Enqueue(asynqTask,
-				asynq.Queue(interfaces.DefaultQueue),
-				asynq.MaxRetry(interfaces.BUILD_TASK_MAX_RETRY_COUNT),
-				asynq.Timeout(math.MaxInt64),
-				asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)),
-			); err != nil {
-				logger.Errorf("Enqueue build task failed: %v", err)
-				o11y.Error(ctx, fmt.Sprintf("Enqueue build task failed: %v", err))
-			} else {
-				logger.Infof("Build task %s enqueued for execution", taskID)
-			}
-		}
-	} else {
-		if err := bts.bta.UpdateStatus(ctx, taskID, updates); err != nil {
-			logger.Errorf("Update build task status failed: %v", err)
-			o11y.Error(ctx, fmt.Sprintf("Update build task status failed: %v", err))
-			span.SetStatus(codes.Error, "Update build task status failed")
-			return rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_UpdateFailed).
-				WithErrorDetails(err.Error())
-		}
-	}
-
-	span.SetStatus(codes.Ok, "")
-	return nil
-}
-
-// StartBuildTask transitions a task from {init, stopped} to running.
-// Note: persisted status remains init/stopped until the worker picks it up — clients should poll.
+// StartBuildTask transitions a task from {init/stopped/completed, failed task auto retry} to running.
+// Note: persisted status remains init/stopped/completed until the worker picks it up — clients should poll.
 func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, executeType string) (*interfaces.BuildTask, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Start build task")
 	defer span.End()
@@ -341,17 +245,38 @@ func (bts *buildTaskService) StartBuildTask(ctx context.Context, taskID string, 
 		span.SetStatus(codes.Error, "Build task not found")
 		return nil, rest.NewHTTPError(ctx, http.StatusNotFound, verrors.VegaBackend_BuildTask_NotFound)
 	}
-	if buildTask.Status != interfaces.BuildTaskStatusInit && buildTask.Status != interfaces.BuildTaskStatusStopped {
+	if buildTask.Status != interfaces.BuildTaskStatusInit && buildTask.Status != interfaces.BuildTaskStatusStopped && buildTask.Status != interfaces.BuildTaskStatusCompleted {
 		span.SetStatus(codes.Error, "Invalid state transition for start")
 		return nil, rest.NewHTTPError(ctx, http.StatusConflict, verrors.VegaBackend_BuildTask_InvalidStateTransition).
 			WithErrorDetails(fmt.Sprintf("cannot start task in status: %s", buildTask.Status))
 	}
 
-	if err := bts.UpdateBuildTaskStatus(ctx, taskID, &interfaces.UpdateBuildTaskStatusRequest{
-		Status:      interfaces.BuildTaskStatusRunning,
+	// status transition to running is performed by worker on actual execution，only need to enqueue the task
+	payload, err := sonic.Marshal(&interfaces.BatchBuildTaskMessage{
+		TaskID:      taskID,
 		ExecuteType: executeType,
-	}); err != nil {
-		return nil, err
+	})
+	if err != nil {
+		logger.Errorf("Marshal build task message failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Marshal build task message failed: %v", err))
+	} else {
+		typename := interfaces.BuildTaskTypeBatch
+		if buildTask.Mode == interfaces.BuildTaskModeStreaming {
+			typename = interfaces.BuildTaskTypeStreaming
+		}
+		asynqTask := asynq.NewTask(typename, payload)
+		client := asynqAccess.NewAsynqAccess(bts.appSetting).CreateClient(context.Background())
+		if _, err := client.Enqueue(asynqTask,
+			asynq.Queue(interfaces.DefaultQueue),
+			asynq.MaxRetry(interfaces.BUILD_TASK_MAX_RETRY_COUNT),
+			asynq.Timeout(math.MaxInt64),
+			asynq.Deadline(time.Unix(math.MaxInt64/1000000000, math.MaxInt64%1000000000)),
+		); err != nil {
+			logger.Errorf("Enqueue build task failed: %v", err)
+			o11y.Error(ctx, fmt.Sprintf("Enqueue build task failed: %v", err))
+		} else {
+			logger.Infof("Build task %s enqueued for execution", taskID)
+		}
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -380,10 +305,15 @@ func (bts *buildTaskService) StopBuildTask(ctx context.Context, taskID string) (
 			WithErrorDetails(fmt.Sprintf("cannot stop task in status: %s", buildTask.Status))
 	}
 
-	if err := bts.UpdateBuildTaskStatus(ctx, taskID, &interfaces.UpdateBuildTaskStatusRequest{
-		Status: interfaces.BuildTaskStatusStopped,
-	}); err != nil {
-		return nil, err
+	updates := map[string]any{
+		"status": interfaces.BuildTaskStatusStopping,
+	}
+	if err := bts.bta.UpdateStatus(ctx, taskID, updates); err != nil {
+		logger.Errorf("Update build task status failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Update build task status failed: %v", err))
+		span.SetStatus(codes.Error, "Update build task status failed")
+		return nil, rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_BuildTask_InternalError_UpdateFailed).
+			WithErrorDetails(err.Error())
 	}
 
 	span.SetStatus(codes.Ok, "")

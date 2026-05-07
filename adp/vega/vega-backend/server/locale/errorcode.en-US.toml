@@ -224,6 +224,11 @@ Description = "Multi-catalog JOIN not supported yet"
 Solution = "Planned with Trino/DuckDB"
 ErrorLink = "None"
 
+[VegaBackend.Query.ConcurrencyLimitExceeded]
+Description = "Query concurrency limit exceeded"
+Solution = "Please try again later"
+ErrorLink = "None"
+
 [VegaBackend.Query.ExecuteFailed]
 Description = "Query execution failed"
 Solution = "Please contact the administrator"

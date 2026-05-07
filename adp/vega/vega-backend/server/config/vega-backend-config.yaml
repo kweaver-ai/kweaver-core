@@ -80,3 +80,9 @@ depServices:
     host: mf-model-api
     port: 9898
     protocol: http
+
+rateLimiting:
+  concurrency:
+    enabled: false
+    global:
+      max_concurrent_queries: 10
