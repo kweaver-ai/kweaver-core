@@ -4,26 +4,29 @@
 测试 SessionService 的用例编排逻辑。
 """
 
-import pytest
 from types import SimpleNamespace
-from datetime import datetime, timezone
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
-from src.application.services.session_service import SessionService
+import pytest
+
 from src.application.commands.create_session import CreateSessionCommand
+from src.application.commands.execute_code import ExecuteCodeCommand
 from src.application.commands.install_session_dependencies import (
     InstallSessionDependenciesCommand,
 )
+from src.application.queries.get_execution import GetExecutionQuery
+from src.application.services.session_service import SessionService
 from src.domain.entities.session import Session
 from src.domain.entities.template import Template
-from src.domain.value_objects.resource_limit import ResourceLimit
-from src.domain.value_objects.execution_status import ExecutionStatus, SessionStatus
 from src.domain.services.scheduler import RuntimeNode
+from src.domain.value_objects.execution_status import ExecutionStatus, SessionStatus
+from src.domain.value_objects.resource_limit import ResourceLimit
 from src.infrastructure.executors.dto import (
     ExecutorInstalledDependency,
     ExecutorSyncSessionConfigResponse,
 )
-from src.shared.errors.domain import ConflictError, NotFoundError
+from src.infrastructure.executors.errors import ExecutorConnectionError
+from src.shared.errors.domain import ConflictError, NotFoundError, ValidationError
 
 
 class TestSessionService:
@@ -651,3 +654,385 @@ class TestSessionService:
 
         # 应该返回空列表
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_create_session_without_container_creation_support(
+        self, session_repo, template_repo, scheduler
+    ):
+        """调度器不支持容器创建时保留创建中的会话记录。"""
+        scheduler_without_container_create = SimpleNamespace(schedule=scheduler.schedule)
+        service = SessionService(
+            session_repo=session_repo,
+            execution_repo=Mock(),
+            template_repo=template_repo,
+            scheduler=scheduler_without_container_create,
+        )
+        template_repo.find_by_id.return_value = Template(
+            id="python-test",
+            name="Python Test",
+            image="python:3.11",
+            base_image="python:3.11-slim",
+        )
+        scheduler.schedule.return_value = RuntimeNode(
+            id="node-1",
+            type="docker",
+            url="http://node-1:2375",
+            status="healthy",
+            cpu_usage=0.1,
+            mem_usage=0.1,
+            session_count=1,
+            max_sessions=10,
+            cached_templates=[],
+        )
+
+        result = await service.create_session(
+            CreateSessionCommand(template_id="python-test", timeout=300)
+        )
+
+        assert result.status == SessionStatus.CREATING.value
+        assert result.container_id is None
+
+    @pytest.mark.asyncio
+    async def test_create_session_marks_failed_when_container_creation_fails(
+        self, service, template_repo, scheduler, session_repo
+    ):
+        template_repo.find_by_id.return_value = Template(
+            id="python-test",
+            name="Python Test",
+            image="python:3.11",
+            base_image="python:3.11-slim",
+        )
+        scheduler.schedule.return_value = RuntimeNode(
+            id="node-1",
+            type="docker",
+            url="http://node-1:2375",
+            status="healthy",
+            cpu_usage=0.1,
+            mem_usage=0.1,
+            session_count=1,
+            max_sessions=10,
+            cached_templates=[],
+        )
+        scheduler.create_container_for_session.side_effect = RuntimeError("docker failed")
+
+        with pytest.raises(ValidationError, match="Failed to create container"):
+            await service.create_session(
+                CreateSessionCommand(
+                    template_id="python-test",
+                    timeout=300,
+                    dependencies=["requests==2.31.0"],
+                )
+            )
+
+        saved_session = session_repo.save.call_args.args[0]
+        assert saved_session.status == SessionStatus.FAILED
+        assert saved_session.dependency_install_status == "failed"
+
+    @pytest.mark.asyncio
+    async def test_handle_container_creation_failure_cleans_existing_container(
+        self, service, session_repo, scheduler
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.CREATING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="docker",
+        )
+
+        with pytest.raises(ValidationError):
+            await service._handle_container_creation_failure(
+                session=session,
+                container_id="container-1",
+                error=RuntimeError("boom"),
+            )
+
+        scheduler.destroy_container.assert_awaited_once_with("container-1")
+        session_repo.save.assert_awaited()
+        assert session.status == SessionStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_destroy_container_ignores_scheduler_errors(self, service, scheduler):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="docker",
+            container_id="container-1",
+        )
+        scheduler.destroy_container.side_effect = RuntimeError("cleanup failed")
+
+        await service._destroy_container(session)
+
+        scheduler.destroy_container.assert_awaited_once_with(container_id="container-1")
+
+    @pytest.mark.asyncio
+    async def test_cleanup_storage_success_and_failure(self, session_repo, template_repo, scheduler):
+        storage = Mock()
+        storage.delete_prefix = AsyncMock(return_value=3)
+        service = SessionService(
+            session_repo=session_repo,
+            execution_repo=Mock(),
+            template_repo=template_repo,
+            scheduler=scheduler,
+            storage_service=storage,
+        )
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="docker",
+        )
+
+        await service._cleanup_storage(session)
+        storage.delete_prefix.assert_awaited_once_with("s3://bucket/sessions/sess_1")
+
+        storage.delete_prefix.reset_mock()
+        storage.delete_prefix.side_effect = RuntimeError("s3 failed")
+        await service._cleanup_storage(session)
+        storage.delete_prefix.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_execute_code_success(self, service, session_repo, execution_repo, scheduler):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="container-1",
+            env_vars={"A": "B"},
+        )
+        session_repo.find_by_id.return_value = session
+        execution_repo.commit = AsyncMock()
+        scheduler.execute = AsyncMock(return_value="exec_1")
+
+        result = await service.execute_code(
+            ExecuteCodeCommand(
+                session_id="sess_1",
+                code="print('ok')",
+                language="python",
+                timeout=10,
+                event_data={"name": "Ada"},
+                working_directory="src",
+            )
+        )
+
+        assert result.session_id == "sess_1"
+        execution_repo.save.assert_awaited_once()
+        execution_repo.commit.assert_awaited_once()
+        scheduler.execute.assert_awaited_once()
+        request = scheduler.execute.call_args.kwargs["execution_request"]
+        assert request.working_directory == "src"
+
+    @pytest.mark.asyncio
+    async def test_execute_code_rejects_missing_inactive_and_containerless_sessions(
+        self, service, session_repo, execution_repo
+    ):
+        command = ExecuteCodeCommand(session_id="sess_1", code="print(1)", language="python")
+        session_repo.find_by_id.return_value = None
+        with pytest.raises(NotFoundError):
+            await service.execute_code(command)
+
+        session_repo.find_by_id.return_value = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.TERMINATED,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+        )
+        with pytest.raises(ValidationError, match="Session is not active"):
+            await service.execute_code(command)
+
+        session_repo.find_by_id.return_value = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+        )
+        execution_repo.commit = AsyncMock()
+        with pytest.raises(ValidationError, match="has no container"):
+            await service.execute_code(command)
+
+    @pytest.mark.asyncio
+    async def test_get_execution_success_and_not_found(self, service, execution_repo):
+        from src.domain.entities.execution import Execution
+        from src.domain.value_objects.execution_status import ExecutionState
+
+        execution_repo.find_by_id.return_value = Execution(
+            id="exec_1",
+            session_id="sess_1",
+            state=ExecutionState(status=ExecutionStatus.COMPLETED),
+            code="print('hello')",
+            language="python",
+        )
+
+        result = await service.get_execution(GetExecutionQuery(execution_id="exec_1"))
+        assert result.id == "exec_1"
+
+        execution_repo.find_by_id.return_value = None
+        with pytest.raises(NotFoundError):
+            await service.get_execution(GetExecutionQuery(execution_id="missing"))
+
+    @pytest.mark.asyncio
+    async def test_cleanup_idle_sessions_counts_only_cleaned_sessions(
+        self, service, session_repo, scheduler
+    ):
+        class HashableSession(Session):
+            def __hash__(self):
+                return hash(self.id)
+
+        active = HashableSession(
+            id="sess_active",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_active",
+            runtime_type="docker",
+            container_id="container-1",
+        )
+        terminated = HashableSession(
+            id="sess_done",
+            template_id="python-test",
+            status=SessionStatus.TERMINATED,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_done",
+            runtime_type="docker",
+        )
+        session_repo.find_idle_sessions = AsyncMock(return_value=[active])
+        session_repo.find_expired_sessions = AsyncMock(return_value=[active, terminated])
+
+        cleaned = await service.cleanup_idle_sessions()
+
+        assert cleaned == 1
+        assert active.status == SessionStatus.TERMINATED
+        scheduler.destroy_container.assert_awaited_with(container_id="container-1")
+
+    @pytest.mark.asyncio
+    async def test_cleanup_session_ignores_container_destroy_error(
+        self, service, session_repo, scheduler
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="docker",
+            container_id="container-1",
+        )
+        scheduler.destroy_container.side_effect = RuntimeError("docker failed")
+
+        assert await service._cleanup_session(session) is True
+        assert session.status == SessionStatus.TERMINATED
+        session_repo.save.assert_awaited_once_with(session)
+
+    @pytest.mark.asyncio
+    async def test_sync_session_dependencies_validation_failures(self, service):
+        inactive = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.TERMINATED,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="container-1",
+        )
+        with pytest.raises(ValidationError, match="not active"):
+            await service._sync_session_dependencies(inactive, sync_mode="replace")
+
+        no_container = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+        )
+        with pytest.raises(ValidationError, match="has no container"):
+            await service._sync_session_dependencies(no_container, sync_mode="replace")
+
+    @pytest.mark.asyncio
+    async def test_sync_session_dependencies_marks_failed_on_executor_error(
+        self, service, session_repo, executor_client
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="container-1",
+            requested_dependencies=["requests==2.31.0"],
+        )
+        executor_client.sync_session_config.side_effect = ExecutorConnectionError(
+            "http://sandbox", "refused"
+        )
+
+        with pytest.raises(ExecutorConnectionError):
+            await service._sync_session_dependencies(session, sync_mode="merge")
+
+        assert session.dependency_install_status == "failed"
+        assert session_repo.save.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_sync_session_dependencies_without_completed_or_started_timestamps(
+        self, service, session_repo, executor_client
+    ):
+        session = Session(
+            id="sess_1",
+            template_id="python-test",
+            status=SessionStatus.RUNNING,
+            resource_limit=ResourceLimit.default(),
+            workspace_path="s3://bucket/sessions/sess_1",
+            runtime_type="python3.11",
+            container_id="container-1",
+            requested_dependencies=["requests==2.31.0"],
+        )
+        executor_client.sync_session_config.return_value = ExecutorSyncSessionConfigResponse(
+            status="completed",
+            installed_dependencies=[
+                ExecutorInstalledDependency(
+                    name="requests",
+                    version="2.31.0",
+                    install_location="/workspace/.venv/",
+                    install_time="2026-03-09T12:00:05Z",
+                    is_from_template=False,
+                )
+            ],
+            started_at=None,
+            completed_at=None,
+        )
+
+        result = await service._sync_session_dependencies(session, sync_mode="replace")
+
+        assert result.dependency_install_status == "completed"
+        assert result.installed_dependencies[0]["name"] == "requests"
+
+    def test_schedule_initial_dependency_sync_without_scheduler(
+        self, session_repo, template_repo, scheduler
+    ):
+        service = SessionService(
+            session_repo=session_repo,
+            execution_repo=Mock(),
+            template_repo=template_repo,
+            scheduler=scheduler,
+        )
+
+        service._schedule_initial_dependency_sync("sess_1", 300, 1)
+
+    def test_infer_runtime_type_variants(self, service):
+        assert service._infer_runtime_type("node:20") == "nodejs20"
+        assert service._infer_runtime_type("java:17") == "java17"
+        assert service._infer_runtime_type("golang:1.21") == "go1.21"
+        assert service._infer_runtime_type("ubuntu:22.04") == "python3.11"
