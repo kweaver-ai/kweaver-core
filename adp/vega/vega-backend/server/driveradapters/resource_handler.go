@@ -444,10 +444,16 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	ids := strings.Split(c.Param("ids"), ",")
+	rawIDs := strings.Split(c.Param("ids"), ",")
+	ignoreMissing := strings.EqualFold(c.Query("ignore_missing"), "true")
 
-	// Check if ids exists
-	for _, id := range ids {
+	// Pre-validate existence; collect ids to delete based on ignore_missing.
+	idsToDelete := make([]string, 0, len(rawIDs))
+	for _, id := range rawIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
 		exists, err := r.rs.CheckExistByID(ctx, id)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
@@ -456,22 +462,28 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 			return
 		}
 		if !exists {
+			if ignoreMissing {
+				continue
+			}
 			httpErr := rest.NewHTTPError(ctx, http.StatusNotFound,
 				verrors.VegaBackend_Resource_NotFound).WithErrorDetails(fmt.Sprintf("id %s not found", id))
 			o11y.AddHttpAttrs4HttpError(span, httpErr)
 			rest.ReplyError(c, httpErr)
 			return
 		}
+		idsToDelete = append(idsToDelete, id)
 	}
 
-	if err := r.rs.DeleteByIDs(ctx, ids); err != nil {
-		httpErr := err.(*rest.HTTPError)
-		o11y.AddHttpAttrs4HttpError(span, httpErr)
-		rest.ReplyError(c, httpErr)
-		return
+	if len(idsToDelete) > 0 {
+		if err := r.rs.DeleteByIDs(ctx, idsToDelete); err != nil {
+			httpErr := err.(*rest.HTTPError)
+			o11y.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
 	}
 
-	for _, id := range ids {
+	for _, id := range idsToDelete {
 		audit.NewWarnLog(audit.OPERATION, audit.DELETE, audit.TransforOperator(visitor),
 			interfaces.GenerateResourceAuditObject(id, ""), audit.SUCCESS, "")
 	}

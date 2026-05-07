@@ -1,0 +1,619 @@
+---
+openapi: 3.1.1
+info:
+  title: Resource
+  description: |
+    Vega Backend Resource（数据资源）相关 API。
+
+    Resource 是数据资源主实体，归属于某个 Catalog。每个 Resource 有一种 `category`：
+
+    | category | 类型 | 说明 |
+    |---|---|---|
+    | `table` | 物理 | 关系表（mysql / postgresql / clickhouse / 达梦 / oracle） |
+    | `index` | 物理 | OpenSearch / Elasticsearch 索引 |
+    | `topic` | 物理 | 消息队列 topic（计划中） |
+    | `file` | 物理 | 单文件 |
+    | `fileset` | 物理 | 文件集（计划中） |
+    | `metric` | 物理 | 指标（计划中） |
+    | `api` | 物理 | API 数据源（计划中） |
+    | `logicview` | 逻辑 | 衍生 / 复合视图，由 `logic_definition` 定义 |
+    | `dataset` | 逻辑 | 文档集合（RAG 索引），documents 子资源走 [resource-data.yaml] |
+
+    `status` 取值：`active` / `disabled` / `deprecated` / `stale`。
+
+    **子资源端点指引**：
+
+    - 数据访问（dataset 文档 / 通用查询）→ [resource-data.yaml](resource-data.yaml)
+    - 原生 SQL/DSL 查询 → [raw-query.yaml](raw-query.yaml)
+    - 构建任务（streaming / batch / embedding）→ [build-task.yaml](build-task.yaml)
+    - 资源发现 → [discover-task.yaml](discover-task.yaml)
+
+    端点设计遵循 [vega-backend/CLAUDE.md] 的"端点设计规则"：批量 GET / DELETE 走 path
+    （`/resources/{ids}` 逗号分隔，单条退化），列表过滤走 query。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/resources:
+    get:
+      summary: 获取资源列表
+      description: 分页 + 多维过滤获取 Resource 列表。
+      parameters:
+        - name: catalog_id
+          description: 按归属 catalog 过滤
+          in: query
+          schema:
+            type: string
+        - name: category
+          description: 按类别过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - table
+              - file
+              - fileset
+              - api
+              - metric
+              - topic
+              - index
+              - logicview
+              - dataset
+        - name: status
+          description: 按状态过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - disabled
+              - deprecated
+              - stale
+        - name: database
+          description: 按所属 database 过滤（实例级 catalog 时有意义）
+          in: query
+          schema:
+            type: string
+        - name: offset
+          description: 分页偏移量，>=0，默认 0
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          description: 每页数量，默认 20
+          in: query
+          schema:
+            type: integer
+            format: int64
+            default: 20
+        - name: sort
+          description: 排序字段
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - create_time
+              - update_time
+            default: update_time
+        - name: direction
+          description: 排序方向
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResources"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: 创建资源
+      description: |
+        创建 Resource。`catalog_id` 必填且 catalog 必须存在；不存在返回 404
+        `VegaBackend.Resource.CatalogNotFound`。
+
+        - `id` 字段可选；后端在不指定时生成。
+        - `category` 必须为支持的取值之一。
+        - `name` 在 catalog 内唯一；冲突返回 409 `VegaBackend.Resource.NameExists`。
+        - `schema_definition` / `logic_definition` 视 category 而定（如 `logicview`
+          需要 `logic_definition`，`table` / `index` 通常需要 `schema_definition`）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceRequest"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/resources/{ids}:
+    parameters:
+      - name: ids
+        description: |
+          Resource ID 列表，逗号分隔（单条即长度 1 的退化情形）。
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 批量获取资源
+      description: |
+        按 ids 批量取 Resource。**整体事务语义**：任一 id 不存在返回 404
+        `VegaBackend.Resource.NotFound`，`error_details` 含具体缺失 id。
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchResources"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: 批量删除资源
+      description: |
+        按 ids 批量删除 Resource。**整体事务**：所有 id 通过预校验后才进入删除阶段，
+        任一不存在返回 404 `VegaBackend.Resource.NotFound`，整批不删。
+
+        可选 `?ignore_missing=true`：忽略不存在的 id（视为已删除），其它 id 正常删。
+      parameters:
+        - name: ignore_missing
+          description: 忽略不存在的 id；默认 false
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/resources/{id}:
+    parameters:
+      - name: id
+        description: Resource ID
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: 更新资源
+      description: |
+        更新 Resource。
+
+        - `name` 在 catalog 内唯一；改名为已占用值返回 409 `VegaBackend.Resource.NameExists`。
+        - 不能跨 catalog 移动（`catalog_id` 与原值不一致时按 service 层规则处理）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceRequest"
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: |
+        请求参数 / 请求体非法。常见 errcode：
+        - `VegaBackend.InvalidParameter.RequestBody`：body schema 不合法
+        - `VegaBackend.Resource.InvalidParameter.*`：具体字段非法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: |
+        Resource 或 Catalog 不存在。errcode：
+        - `VegaBackend.Resource.NotFound`：resource id 不存在
+        - `VegaBackend.Resource.CatalogNotFound`：创建时 catalog_id 不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: |
+        资源冲突。常见 errcode：
+        - `VegaBackend.Resource.NameExists`：catalog 内 name 已被占用
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: 服务内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: 统一错误响应体（`kweaver-go-lib/rest.BaseError` JSON 序列化）。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          type: string
+        description:
+          type: string
+        solution:
+          type: string
+        error_link:
+          type: string
+        error_details:
+          description: 详细内容，类型不固定；无详情时为空字符串
+    AccountInfo:
+      description: 操作者信息
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        name:
+          type: string
+    Property:
+      description: Schema 字段定义
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          description: 字段名
+          type: string
+        type:
+          description: |
+            VEGA 统一类型，取值见 [vega-backend/CLAUDE.md]:
+            integer / unsigned_integer / float / decimal / string / text /
+            date / datetime / time / boolean / binary / json / vector
+          type: string
+        orig_type:
+          description: 源端原始类型字符串（如 mysql 的 `varchar(255)`）
+          type: string
+        display_name:
+          description: 显示名
+          type: string
+        original_name:
+          description: 源端字段原名（建表脚本里的字段名）
+          type: string
+        description:
+          type: string
+        features:
+          description: 字段特性集合
+          type: array
+          items:
+            $ref: "#/components/schemas/PropertyFeature"
+        attributes:
+          description: connector-specific 扩展属性，opaque
+          type: object
+          additionalProperties: true
+    PropertyFeature:
+      description: 字段特性（决定字段在索引/查询/向量化中的行为）
+      type: object
+      required:
+        - name
+        - feature_type
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+        feature_type:
+          description: 特性类型
+          type: string
+          enum:
+            - keyword
+            - fulltext
+            - vector
+        description:
+          type: string
+        ref_property:
+          description: 关联到的字段名（如 vector 特性引用源字段）
+          type: string
+        is_default:
+          type: boolean
+        is_native:
+          type: boolean
+        config:
+          description: 特性配置，opaque
+          type: object
+          additionalProperties: true
+    LogicDefinitionNode:
+      description: |
+        逻辑视图（`category=logicview`）定义图中的一个节点。
+
+        节点类型 `type` 已知取值（不限于）：
+
+        - `resource` — 引用一个 resource 作为数据源；`config` 形如 `ResourceNodeCfg`
+        - `join` — 多输入连接；`config` 形如 `JoinNodeCfg`（含 join_type / join_on / filters）
+        - 其他类型（filter / aggregate 等）按 connector 实现扩展
+
+        `config` 字段结构依赖 `type`，OpenAPI 不展开为 union——保留 opaque object。
+        `inputs` 是上游节点 ID 列表，构成 DAG。
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - inputs
+        - config
+        - output_fields
+      properties:
+        id:
+          description: 节点 ID（逻辑视图内 unique）
+          type: string
+        name:
+          description: 节点名（用于 SQL 引用 / 调试）
+          type: string
+        type:
+          description: 节点类型
+          type: string
+        inputs:
+          description: 上游节点 ID 列表（构成 DAG）
+          type: array
+          items:
+            type: string
+        config:
+          description: 节点配置，结构依赖 `type`；opaque
+          type: object
+          additionalProperties: true
+        output_fields:
+          description: 节点输出字段集合
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    Resource:
+      description: |
+        Data Resource 实体。
+
+        - `operations` 是后端计算的"该资源支持的操作集合"，**只读**字段（创建 / 更新
+          请求中不接受）。
+        - `index_name` 由构建任务填充，外部一般不直接设置。
+        - `schema_definition` / `logic_definition` 互斥使用：物理资源用前者，逻辑视图
+          用后者。
+      type: object
+      required:
+        - id
+        - catalog_id
+        - name
+        - category
+        - status
+        - source_identifier
+        - creator
+        - create_time
+        - updater
+        - update_time
+      properties:
+        id:
+          type: string
+        catalog_id:
+          type: string
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum:
+            - table
+            - file
+            - fileset
+            - api
+            - metric
+            - topic
+            - index
+            - logicview
+            - dataset
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+            - deprecated
+            - stale
+        status_message:
+          type: string
+        database:
+          description: 所属数据库（实例级 Catalog 时填充）
+          type: string
+        source_identifier:
+          description: 源端标识（原始表名 / 路径 / topic 名等）
+          type: string
+        source_metadata:
+          description: 源端配置（JSON），由 connector 实现解释
+          type: object
+          additionalProperties: true
+        schema_definition:
+          description: Schema 定义（物理资源使用）
+          type: array
+          items:
+            $ref: "#/components/schemas/Property"
+        index_name:
+          description: 关联索引名（由构建任务填充）
+          type: string
+        logic_type:
+          description: 逻辑视图类型（仅 category=logicview 有意义）
+          type: string
+          enum:
+            - derived
+            - composite
+        logic_definition:
+          description: 逻辑视图定义（仅 category=logicview 有意义）
+          type: array
+          items:
+            $ref: "#/components/schemas/LogicDefinitionNode"
+        creator:
+          $ref: "#/components/schemas/AccountInfo"
+        create_time:
+          description: 创建时间，毫秒时间戳
+          type: integer
+          format: int64
+        updater:
+          $ref: "#/components/schemas/AccountInfo"
+        update_time:
+          description: 更新时间，毫秒时间戳
+          type: integer
+          format: int64
+        operations:
+          description: 后端计算的支持操作集合（只读）
+          type: array
+          items:
+            type: string
+    ResourceRequest:
+      description: |
+        创建 / 更新请求体。与 `Resource` 实体相比，去掉了后端计算 / 时间戳 / 操作者
+        等只读字段。
+      type: object
+      required:
+        - catalog_id
+        - name
+        - category
+      properties:
+        id:
+          description: 可选；创建时不指定则后端生成
+          type: string
+        catalog_id:
+          type: string
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum:
+            - table
+            - file
+            - fileset
+            - api
+            - metric
+            - topic
+            - index
+            - logicview
+            - dataset
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+            - deprecated
+            - stale
+        database:
+          type: string
+        source_identifier:
+          type: string
+        source_metadata:
+          type: object
+          additionalProperties: true
+        schema_definition:
+          type: array
+          items:
+            $ref: "#/components/schemas/Property"
+        logic_definition:
+          type: array
+          items:
+            $ref: "#/components/schemas/LogicDefinitionNode"
+    ListResources:
+      description: 资源列表响应
+      type: object
+      required:
+        - entries
+        - total_count
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Resource"
+        total_count:
+          type: integer
+          format: int64
+    BatchResources:
+      description: 批量获取响应（无 total_count，因为整体事务且数量等于请求 ids 数）
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Resource"
