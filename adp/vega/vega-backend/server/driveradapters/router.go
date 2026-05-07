@@ -27,10 +27,10 @@ import (
 	"vega-backend/logics/catalog"
 	"vega-backend/logics/connector_type"
 	"vega-backend/logics/dataset"
+	"vega-backend/logics/discover_schedule"
 	"vega-backend/logics/discover_task"
 	"vega-backend/logics/resource"
 	"vega-backend/logics/resource_data"
-	scheduled_discover_task "vega-backend/logics/scheduled_discover_task"
 	"vega-backend/version"
 )
 
@@ -48,9 +48,10 @@ type restHandler struct {
 	ds         interfaces.DatasetService
 	cts        interfaces.ConnectorTypeService
 	dts        interfaces.DiscoverTaskService
-	sdtService interfaces.ScheduledDiscoverTaskService
-	scheduler  *worker.Scheduler
+	dss        interfaces.DiscoverScheduleService
 	rds        interfaces.ResourceDataService
+
+	scheduler *worker.Scheduler
 }
 
 // NewRestHandler creates a new RestHandler.
@@ -60,7 +61,7 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 	bts := build_task.NewBuildTaskService(appSetting)
 	ds := dataset.NewDatasetService(appSetting)
 	dts := discover_task.NewDiscoverTaskService(appSetting)
-	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
+	dss := discover_schedule.NewDiscoverScheduleService(appSetting, dts)
 
 	return &restHandler{
 		appSetting: appSetting,
@@ -71,7 +72,7 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 		ds:         ds,
 		cts:        connector_type.NewConnectorTypeService(appSetting),
 		dts:        dts,
-		sdtService: sdtService,
+		dss:        dss,
 		scheduler:  scheduler,
 		rds:        resource_data.NewResourceDataService(appSetting),
 	}
@@ -101,12 +102,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
 
-			// 定时&策略采集相关
-			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByEx)
-			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByEx)
-			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByEx)
-			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByEx)
-			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByEx)
 		}
 
 		// DiscoverTask APIs - External
@@ -115,6 +110,18 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			discoverTasks.GET("", r.ListDiscoverTasksByEx)
 			discoverTasks.GET("/:id", r.GetDiscoverTaskByEx)
 			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByEx)
+		}
+
+		// DiscoverSchedule APIs - External
+		discoverSchedules := apiV1.Group("/discover-schedules")
+		{
+			discoverSchedules.POST("", r.verifyJsonContentType(), r.CreateDiscoverScheduleByEx)
+			discoverSchedules.GET("", r.ListDiscoverSchedulesByEx)
+			discoverSchedules.GET("/:id", r.GetDiscoverScheduleByEx)
+			discoverSchedules.PUT("/:id", r.verifyJsonContentType(), r.UpdateDiscoverScheduleByEx)
+			discoverSchedules.DELETE("/:id", r.DeleteDiscoverScheduleByEx)
+			discoverSchedules.POST("/:id/enable", r.EnableDiscoverScheduleByEx)
+			discoverSchedules.POST("/:id/disable", r.DisableDiscoverScheduleByEx)
 		}
 
 		// Resource APIs - External
@@ -176,12 +183,6 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
 
-			// 定时&策略采集相关
-			catalogs.GET("/scheduled-discover", r.ListScheduledDiscoverTasksByIn)
-			catalogs.POST("/:id/scheduled-discover", r.verifyJsonContentType(), r.ScheduledDiscoverCatalogResourcesByIn)
-			catalogs.POST("/:id/scheduled-discover/:task_id/start", r.StartScheduledDiscoverTaskByIn)
-			catalogs.POST("/:id/scheduled-discover/:task_id/stop", r.StopScheduledDiscoverTaskByIn)
-			catalogs.PUT("/:id/scheduled-discover/:task_id", r.verifyJsonContentType(), r.UpdateScheduledDiscoverTaskByIn)
 		}
 
 		// DiscoverTask APIs - Internal
@@ -190,6 +191,18 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 			discoverTasks.GET("", r.ListDiscoverTasksByIn)
 			discoverTasks.GET("/:id", r.GetDiscoverTaskByIn)
 			discoverTasks.DELETE("/:ids", r.DeleteDiscoverTasksByIn)
+		}
+
+		// DiscoverSchedule APIs - Internal
+		discoverSchedules := apiInV1.Group("/discover-schedules")
+		{
+			discoverSchedules.POST("", r.verifyJsonContentType(), r.CreateDiscoverScheduleByIn)
+			discoverSchedules.GET("", r.ListDiscoverSchedulesByIn)
+			discoverSchedules.GET("/:id", r.GetDiscoverScheduleByIn)
+			discoverSchedules.PUT("/:id", r.verifyJsonContentType(), r.UpdateDiscoverScheduleByIn)
+			discoverSchedules.DELETE("/:id", r.DeleteDiscoverScheduleByIn)
+			discoverSchedules.POST("/:id/enable", r.EnableDiscoverScheduleByIn)
+			discoverSchedules.POST("/:id/disable", r.DisableDiscoverScheduleByIn)
 		}
 
 		// Resource APIs - Internal

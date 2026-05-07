@@ -30,7 +30,7 @@ import (
 	"vega-backend/logics"
 	"vega-backend/logics/connectors/factory"
 	"vega-backend/logics/discover_task"
-	"vega-backend/logics/scheduled_discover_task"
+	"vega-backend/logics/discover_schedule"
 	"vega-backend/worker"
 )
 
@@ -127,8 +127,8 @@ func main() {
 
 	// 初始化并启动调度器
 	dts := discover_task.NewDiscoverTaskService(appSetting)
-	sdtService := scheduled_discover_task.NewScheduledDiscoverTaskService(appSetting, dts)
-	scheduler := worker.NewScheduler(appSetting, sdtService)
+	dsService := discover_schedule.NewDiscoverScheduleService(appSetting, dts)
+	scheduler := worker.NewScheduler(appSetting, dsService)
 	if err := scheduler.Start(); err != nil {
 		logger.Fatalf("Failed to start scheduler: %v", err)
 	}

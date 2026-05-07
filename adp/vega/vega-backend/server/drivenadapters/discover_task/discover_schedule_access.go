@@ -60,38 +60,38 @@ const (
 )
 
 var (
-	sdtAccessOnce sync.Once
-	sdtAccess     interfaces.ScheduledDiscoverTaskAccess
+	dsAccessOnce sync.Once
+	dsAccess     interfaces.DiscoverScheduleAccess
 )
 
-type scheduledDiscoverTaskAccess struct {
+type discoverScheduleAccess struct {
 	appSetting *common.AppSetting
 	db         *sql.DB
 }
 
-// NewScheduledDiscoverTaskAccess creates a new ScheduledDiscoverTaskAccess.
-func NewScheduledDiscoverTaskAccess(appSetting *common.AppSetting) interfaces.ScheduledDiscoverTaskAccess {
-	sdtAccessOnce.Do(func() {
-		sdtAccess = &scheduledDiscoverTaskAccess{
+// NewDiscoverScheduleAccess creates a new DiscoverScheduleAccess.
+func NewDiscoverScheduleAccess(appSetting *common.AppSetting) interfaces.DiscoverScheduleAccess {
+	dsAccessOnce.Do(func() {
+		dsAccess = &discoverScheduleAccess{
 			appSetting: appSetting,
 			db:         libdb.NewDB(&appSetting.DBSetting),
 		}
 	})
-	return sdtAccess
+	return dsAccess
 }
 
-func (sda *scheduledDiscoverTaskAccess) Enable(ctx context.Context, id string) error {
-	_, span := ar_trace.Tracer.Start(ctx, "Enable scheduled_discover_task",
+func (dsa *discoverScheduleAccess) Enable(ctx context.Context, id string) error {
+	_, span := ar_trace.Tracer.Start(ctx, "Enable discover_schedule",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("task_id").String(id))
+	span.SetAttributes(attr.Key("schedule_id").String(id))
 
 	// Get task to calculate next run time
-	task, err := sda.GetByID(ctx, id)
+	task, err := dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get scheduled discover task: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to get scheduled discover task: %v", err))
+		logger.Errorf("Failed to get discover schedule: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to get discover schedule: %v", err))
 		span.SetStatus(codes.Error, "Get task failed")
 		return err
 	}
@@ -112,19 +112,19 @@ func (sda *scheduledDiscoverTaskAccess) Enable(ctx context.Context, id string) e
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build enable scheduled_discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build enable scheduled_discover_task sql: %v", err))
+		logger.Errorf("Failed to build enable discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build enable discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Enable scheduled_discover_task SQL: %s", sqlStr))
+	o11y.Info(ctx, fmt.Sprintf("Enable discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
-	_, err = sda.db.ExecContext(ctx, sqlStr, vals...)
+	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Enable scheduled_discover_task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Enable scheduled_discover_task failed: %v", err))
+		logger.Errorf("Enable discover_schedule failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Enable discover_schedule failed: %v", err))
 		span.SetStatus(codes.Error, "Enable failed")
 		return err
 	}
@@ -134,12 +134,12 @@ func (sda *scheduledDiscoverTaskAccess) Enable(ctx context.Context, id string) e
 	return nil
 }
 
-func (sda *scheduledDiscoverTaskAccess) Disable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Disable scheduled_discover_task",
+func (dsa *discoverScheduleAccess) Disable(ctx context.Context, id string) error {
+	_, span := ar_trace.Tracer.Start(ctx, "Disable discover_schedule",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("task_id").String(id))
+	span.SetAttributes(attr.Key("schedule_id").String(id))
 
 	// Build update SQL
 	sqlStr, vals, err := sq.Update(SCHEDULED_DISCOVER_TASK_TABLE_NAME).
@@ -147,16 +147,16 @@ func (sda *scheduledDiscoverTaskAccess) Disable(ctx context.Context, id string) 
 		Where(sq.Eq{"f_id": id}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build disable scheduled_discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build disable scheduled_discover_task sql: %v", err))
+		logger.Errorf("Failed to build disable discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build disable discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
 
-	o11y.Info(ctx, fmt.Sprintf("Disable scheduled_discover_task SQL: %s", sqlStr))
+	o11y.Info(ctx, fmt.Sprintf("Disable discover_schedule SQL: %s", sqlStr))
 
 	// Execute update
-	_, err = sda.db.ExecContext(ctx, sqlStr, vals...)
+	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Disable scheduled_discover_task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Disable scheduled_discover_task failed: %v", err))
@@ -169,13 +169,13 @@ func (sda *scheduledDiscoverTaskAccess) Disable(ctx context.Context, id string) 
 	return nil
 }
 
-func (sda *scheduledDiscoverTaskAccess) ExecuteTask(ctx context.Context, task *interfaces.ScheduledDiscoverTask) error {
+func (dsa *discoverScheduleAccess) ExecuteTask(ctx context.Context, task *interfaces.DiscoverSchedule) error {
 	_, span := ar_trace.Tracer.Start(ctx, "Execute scheduled_discover_task",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	span.SetAttributes(
-		attr.Key("task_id").String(task.ID),
+		attr.Key("schedule_id").String(task.ID),
 		attr.Key("catalog_id").String(task.CatalogID),
 	)
 
@@ -193,7 +193,7 @@ func (sda *scheduledDiscoverTaskAccess) ExecuteTask(ctx context.Context, task *i
  * @param task 定时发现任务结构体指针，包含任务的所有信息
  * @return error 执行结果，成功为nil，失败为错误信息
  */
-func (sda *scheduledDiscoverTaskAccess) Create(ctx context.Context, task *interfaces.ScheduledDiscoverTask) error {
+func (dsa *discoverScheduleAccess) Create(ctx context.Context, task *interfaces.DiscoverSchedule) error {
 	// 使用OpenTelemetry追踪函数执行过程，创建一个客户端类型的span
 	ctx, span := ar_trace.Tracer.Start(ctx, "Insert into t_scheduled_discover_task", trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End() // 确保span在函数结束时结束
@@ -263,7 +263,7 @@ func (sda *scheduledDiscoverTaskAccess) Create(ctx context.Context, task *interf
 	o11y.Info(ctx, fmt.Sprintf("Insert scheduled_discover_task SQL: %s", sqlStr))
 
 	// Execute insert
-	_, err = sda.db.ExecContext(ctx, sqlStr, vals...)
+	_, err = dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Insert scheduled_discover_task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Insert scheduled_discover_task failed: %v", err))
@@ -277,12 +277,12 @@ func (sda *scheduledDiscoverTaskAccess) Create(ctx context.Context, task *interf
 }
 
 // GetByID retrieves a scheduled discover task by ID.
-func (sda *scheduledDiscoverTaskAccess) GetByID(ctx context.Context, id string) (*interfaces.ScheduledDiscoverTask, error) {
+func (dsa *discoverScheduleAccess) GetByID(ctx context.Context, id string) (*interfaces.DiscoverSchedule, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Query scheduled_discover_task by ID",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("task_id").String(id))
+	span.SetAttributes(attr.Key("schedule_id").String(id))
 
 	// Build select SQL
 	sqlStr, vals, err := sq.Select(
@@ -310,11 +310,11 @@ func (sda *scheduledDiscoverTaskAccess) GetByID(ctx context.Context, id string) 
 		return nil, err
 	}
 
-	task := &interfaces.ScheduledDiscoverTask{}
+	task := &interfaces.DiscoverSchedule{}
 	var strategiesStr string
 
 	// Execute query
-	row := sda.db.QueryRowContext(ctx, sqlStr, vals...)
+	row := dsa.db.QueryRowContext(ctx, sqlStr, vals...)
 	err = row.Scan(
 		&task.ID,
 		&task.CatalogID,
@@ -350,7 +350,7 @@ func (sda *scheduledDiscoverTaskAccess) GetByID(ctx context.Context, id string) 
 }
 
 // List lists scheduled discover tasks with filters.
-func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfaces.ScheduledDiscoverTaskQueryParams) ([]*interfaces.ScheduledDiscoverTask, int64, error) {
+func (dsa *discoverScheduleAccess) List(ctx context.Context, params interfaces.DiscoverScheduleQueryParams) ([]*interfaces.DiscoverSchedule, int64, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "List scheduled_discover_tasks",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
@@ -399,7 +399,7 @@ func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfa
 	}
 
 	var total int64
-	err = sda.db.QueryRowContext(ctx, countSql, countVals...).Scan(&total)
+	err = dsa.db.QueryRowContext(ctx, countSql, countVals...).Scan(&total)
 	if err != nil {
 		logger.Errorf("Count scheduled_discover_task failed: %v", err)
 		span.SetStatus(codes.Error, "Count failed")
@@ -421,7 +421,7 @@ func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfa
 	}
 
 	// Execute query
-	rows, err := sda.db.QueryContext(ctx, sqlStr, vals...)
+	rows, err := dsa.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Query scheduled_discover_task failed: %v", err)
 		span.SetStatus(codes.Error, "Query failed")
@@ -429,9 +429,9 @@ func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfa
 	}
 	defer func() { _ = rows.Close() }()
 
-	tasks := []*interfaces.ScheduledDiscoverTask{}
+	tasks := []*interfaces.DiscoverSchedule{}
 	for rows.Next() {
-		task := &interfaces.ScheduledDiscoverTask{}
+		task := &interfaces.DiscoverSchedule{}
 		var strategiesStr string
 		err := rows.Scan(
 			&task.ID,
@@ -465,12 +465,12 @@ func (sda *scheduledDiscoverTaskAccess) List(ctx context.Context, params interfa
 }
 
 // Update updates a scheduled discover task.
-func (sda *scheduledDiscoverTaskAccess) Update(ctx context.Context, task *interfaces.ScheduledDiscoverTask) error {
+func (dsa *discoverScheduleAccess) Update(ctx context.Context, task *interfaces.DiscoverSchedule) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update scheduled_discover_task",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("task_id").String(task.ID))
+	span.SetAttributes(attr.Key("schedule_id").String(task.ID))
 
 	// Set update time
 	task.UpdateTime = time.Now().UnixMilli()
@@ -532,7 +532,7 @@ func (sda *scheduledDiscoverTaskAccess) Update(ctx context.Context, task *interf
 	o11y.Info(ctx, fmt.Sprintf("Update scheduled_discover_task SQL: %s", sqlStr))
 
 	// Execute update
-	result, err := sda.db.ExecContext(ctx, sqlStr, vals...)
+	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Update scheduled_discover_task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Update scheduled_discover_task failed: %v", err))
@@ -557,12 +557,12 @@ func (sda *scheduledDiscoverTaskAccess) Update(ctx context.Context, task *interf
 }
 
 // Delete deletes a scheduled discover task by ID.
-func (sda *scheduledDiscoverTaskAccess) Delete(ctx context.Context, id string) error {
+func (dsa *discoverScheduleAccess) Delete(ctx context.Context, id string) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Delete scheduled_discover_task",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
-	span.SetAttributes(attr.Key("task_id").String(id))
+	span.SetAttributes(attr.Key("schedule_id").String(id))
 
 	// Build delete SQL
 	sqlStr, vals, err := sq.Delete(SCHEDULED_DISCOVER_TASK_TABLE_NAME).
@@ -578,7 +578,7 @@ func (sda *scheduledDiscoverTaskAccess) Delete(ctx context.Context, id string) e
 	o11y.Info(ctx, fmt.Sprintf("Delete scheduled_discover_task SQL: %s", sqlStr))
 
 	// Execute delete
-	result, err := sda.db.ExecContext(ctx, sqlStr, vals...)
+	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Delete scheduled_discover_task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Delete scheduled_discover_task failed: %v", err))
@@ -603,7 +603,7 @@ func (sda *scheduledDiscoverTaskAccess) Delete(ctx context.Context, id string) e
 }
 
 // GetEnabledTasks retrieves all enabled scheduled discover tasks.
-func (sda *scheduledDiscoverTaskAccess) GetEnabledTasks(ctx context.Context) ([]*interfaces.ScheduledDiscoverTask, error) {
+func (dsa *discoverScheduleAccess) GetEnabledTasks(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Query enabled scheduled_discover_tasks",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
@@ -640,7 +640,7 @@ func (sda *scheduledDiscoverTaskAccess) GetEnabledTasks(ctx context.Context) ([]
 	}
 
 	// Execute query
-	rows, err := sda.db.QueryContext(ctx, sqlStr, vals...)
+	rows, err := dsa.db.QueryContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Query enabled scheduled_discover_task failed: %v", err)
 		span.SetStatus(codes.Error, "Query failed")
@@ -648,9 +648,9 @@ func (sda *scheduledDiscoverTaskAccess) GetEnabledTasks(ctx context.Context) ([]
 	}
 	defer func() { _ = rows.Close() }()
 
-	tasks := []*interfaces.ScheduledDiscoverTask{}
+	tasks := []*interfaces.DiscoverSchedule{}
 	for rows.Next() {
-		task := &interfaces.ScheduledDiscoverTask{}
+		task := &interfaces.DiscoverSchedule{}
 		err := rows.Scan(
 			&task.ID,
 			&task.CatalogID,
@@ -680,13 +680,13 @@ func (sda *scheduledDiscoverTaskAccess) GetEnabledTasks(ctx context.Context) ([]
 }
 
 // UpdateLastRun updates the last run time and calculates next run time.
-func (sda *scheduledDiscoverTaskAccess) UpdateLastRun(ctx context.Context, id string, lastRun int64) error {
+func (dsa *discoverScheduleAccess) UpdateLastRun(ctx context.Context, id string, lastRun int64) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "Update last run for scheduled_discover_task",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	// Get task to calculate next run
-	task, err := sda.GetByID(ctx, id)
+	task, err := dsa.GetByID(ctx, id)
 	if err != nil {
 		logger.Errorf("Failed to get scheduled discover task: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Failed to get scheduled discover task: %v", err))
@@ -704,7 +704,7 @@ func (sda *scheduledDiscoverTaskAccess) UpdateLastRun(ctx context.Context, id st
 	}
 
 	span.SetAttributes(
-		attr.Key("task_id").String(id),
+		attr.Key("schedule_id").String(id),
 		attr.Key("last_run").Int64(lastRun),
 		attr.Key("next_run").Int64(nextRun.UnixMilli()),
 	)
@@ -725,7 +725,7 @@ func (sda *scheduledDiscoverTaskAccess) UpdateLastRun(ctx context.Context, id st
 	o11y.Info(ctx, fmt.Sprintf("Update last run scheduled_discover_task SQL: %s", sqlStr))
 
 	// Execute update
-	result, err := sda.db.ExecContext(ctx, sqlStr, vals...)
+	result, err := dsa.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
 		logger.Errorf("Update last run scheduled_discover_task failed: %v", err)
 		o11y.Error(ctx, fmt.Sprintf("Update last run scheduled_discover_task failed: %v", err))

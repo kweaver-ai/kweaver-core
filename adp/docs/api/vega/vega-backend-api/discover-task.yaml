@@ -8,7 +8,7 @@ info:
     DiscoverTask 是**执行审计记录**，由两条路径产生：
 
     - 手动触发：`POST /catalogs/{id}/discover`（动作端点，本规范末尾覆盖）
-    - 定时触发：worker 内部从 `ScheduledDiscoverTask.ExecuteTask` 调起
+    - 定时触发：worker 内部由 `DiscoverSchedule`（见 [discover-schedule.yaml](discover-schedule.yaml)）按 cron 触发
 
     状态机（`pending → running → completed/failed`）由 worker 单向推进；
     用户不能 cancel / retry / restart。对外仅暴露 list / get / delete 三类只读 + 清理操作。
@@ -32,7 +32,7 @@ paths:
             type: string
         - name: schedule_id
           description: |
-            按归属 ScheduledDiscoverTask 过滤；trigger_type=manual 的 task 该字段恒为空字符串。
+            按归属 DiscoverSchedule 过滤；trigger_type=manual 的 task 该字段恒为空字符串。
           in: query
           schema:
             type: string
@@ -326,7 +326,7 @@ components:
           type: string
         schedule_id:
           description: |
-            关联的 ScheduledDiscoverTask ID。trigger_type=manual 时为空字符串。
+            关联的 DiscoverSchedule ID。trigger_type=manual 时为空字符串。
           type: string
         strategies:
           description: |

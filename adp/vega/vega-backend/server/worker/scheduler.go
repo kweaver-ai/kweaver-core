@@ -27,33 +27,37 @@ var (
 // Scheduler 管理定时发现任务的调度器
 // 使用 cron 表达式来定义任务的执行时间
 type Scheduler struct {
-	appSetting       *common.AppSetting                      // 应用配置
-	cron             *cron.Cron                              // cron 调度器实例
-	sdtService       interfaces.ScheduledDiscoverTaskService // 定时发现任务服务
-	taskEntries      map[string]cron.EntryID                 // 任务ID到cron条目ID的映射
-	taskEntriesMutex sync.RWMutex                            // 保护taskEntries的读写锁
-	ctx              context.Context                         // 上下文
-	cancel           context.CancelFunc                      // 取消函数
+	appSetting *common.AppSetting                 // 应用配置
+	cron       *cron.Cron                         // cron 调度器实例
+	dss        interfaces.DiscoverScheduleService // 定时发现任务服务
+
+	taskEntries      map[string]cron.EntryID // 任务ID到cron条目ID的映射
+	taskEntriesMutex sync.RWMutex            // 保护taskEntries的读写锁
+
+	ctx    context.Context    // 上下文
+	cancel context.CancelFunc // 取消函数
 }
 
 // NewScheduler 创建或返回单例 Scheduler
 // 使用 sync.Once 确保只创建一个实例
 // 参数:
 //   - appSetting: 应用配置
-//   - sdtService: 定时发现任务服务
+//   - dss: 定时发现任务服务
 //
 // 返回:
 //   - *Scheduler: 调度器实例
-func NewScheduler(appSetting *common.AppSetting, sdtService interfaces.ScheduledDiscoverTaskService) *Scheduler {
+func NewScheduler(appSetting *common.AppSetting, dss interfaces.DiscoverScheduleService) *Scheduler {
 	schedulerOnce.Do(func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		scheduler = &Scheduler{
-			appSetting:  appSetting,
-			cron:        cron.New(), // Support seconds in cron expression:cron.WithSeconds()
+			appSetting: appSetting,
+			cron:       cron.New(), // Support seconds in cron expression:cron.WithSeconds()
+			dss:        dss,
+
 			taskEntries: make(map[string]cron.EntryID),
-			ctx:         ctx,
-			cancel:      cancel,
-			sdtService:  sdtService,
+
+			ctx:    ctx,
+			cancel: cancel,
 		}
 	})
 	return scheduler
@@ -71,7 +75,7 @@ func (s *Scheduler) Start() error {
 	logger.Info("Starting scheduler") // 记录调度器启动信息
 
 	// 从数据库加载所有启用的任务
-	tasks, err := s.sdtService.GetEnabledTasks(s.ctx)
+	tasks, err := s.dss.GetEnabledTasks(s.ctx)
 	if err != nil {
 		logger.Errorf("Failed to load enabled tasks: %v", err)
 		return fmt.Errorf("failed to load enabled tasks: %w", err)
@@ -122,7 +126,7 @@ func (s *Scheduler) Reload() error {
 	s.taskEntriesMutex.Unlock()
 
 	// 从数据库重新加载所有启用的任务
-	tasks, err := s.sdtService.GetEnabledTasks(s.ctx)
+	tasks, err := s.dss.GetEnabledTasks(s.ctx)
 	if err != nil {
 		logger.Errorf("Failed to load enabled tasks: %v", err)
 		return fmt.Errorf("failed to load enabled tasks: %w", err)
@@ -142,11 +146,11 @@ func (s *Scheduler) Reload() error {
 // scheduleTask 调度一个定时发现任务
 // 该方法为指定的任务创建 cron 调度条目
 // 参数:
-//   - task: 指向 ScheduledDiscoverTask 结构体的指针，包含要调度的任务信息
+//   - task: 指向 DiscoverSchedule 结构体的指针，包含要调度的任务信息
 //
 // 返回值:
 //   - error: 如果任务调度成功则返回 nil，否则返回相应的错误信息
-func (s *Scheduler) scheduleTask(task *interfaces.ScheduledDiscoverTask) error {
+func (s *Scheduler) scheduleTask(task *interfaces.DiscoverSchedule) error {
 	// 检查任务是否已经被调度
 	s.taskEntriesMutex.RLock()
 	if _, exists := s.taskEntries[task.ID]; exists {
@@ -211,11 +215,11 @@ func (s *Scheduler) unscheduleTask(taskID string) error {
 //
 // 参数:
 //   - task: 要执行的任务
-func (s *Scheduler) executeTask(task *interfaces.ScheduledDiscoverTask) {
+func (s *Scheduler) executeTask(task *interfaces.DiscoverSchedule) {
 	logger.Infof("Executing scheduled discover task: id=%s, catalog_id=%s", task.ID, task.CatalogID)
 
 	// 从数据库获取最新的任务状态
-	currentTask, err := s.sdtService.GetByID(s.ctx, task.ID)
+	currentTask, err := s.dss.GetByID(s.ctx, task.ID)
 	if err != nil {
 		logger.Errorf("Failed to get task %s: %v", task.ID, err)
 		o11y.Error(s.ctx, fmt.Sprintf("Failed to get task %s", task.ID))
@@ -242,7 +246,7 @@ func (s *Scheduler) executeTask(task *interfaces.ScheduledDiscoverTask) {
 		logger.Warnf("Task %s has expired, disabling and unscheduling", task.ID)
 
 		// 禁用过期任务
-		if err := s.sdtService.Disable(s.ctx, task.ID); err != nil {
+		if err := s.dss.Disable(s.ctx, task.ID); err != nil {
 			logger.Errorf("Failed to disable expired task %s: %v", task.ID, err)
 			o11y.Error(s.ctx, fmt.Sprintf("Failed to disable expired task %s", task.ID))
 			return
@@ -260,7 +264,7 @@ func (s *Scheduler) executeTask(task *interfaces.ScheduledDiscoverTask) {
 	}
 
 	// 执行任务
-	if err := s.sdtService.ExecuteTask(s.ctx, currentTask); err != nil {
+	if err := s.dss.ExecuteTask(s.ctx, currentTask); err != nil {
 		logger.Errorf("Failed to execute task %s: %v", task.ID, err)
 		o11y.Error(s.ctx, fmt.Sprintf("Failed to execute task %s", task.ID))
 		return
@@ -278,7 +282,7 @@ func (s *Scheduler) executeTask(task *interfaces.ScheduledDiscoverTask) {
 //   - error: 如果调度失败则返回错误
 func (s *Scheduler) ScheduleTask(taskID string) error {
 	// 从数据库获取任务信息
-	task, err := s.sdtService.GetByID(s.ctx, taskID)
+	task, err := s.dss.GetByID(s.ctx, taskID)
 	if err != nil {
 		logger.Errorf("Failed to get task %s: %v", taskID, err)
 		return fmt.Errorf("failed to get task: %w", err)
@@ -324,7 +328,7 @@ func (s *Scheduler) UpdateTask(taskID string) error {
 	}
 
 	// 从数据库获取更新后的任务
-	task, err := s.sdtService.GetByID(s.ctx, taskID)
+	task, err := s.dss.GetByID(s.ctx, taskID)
 	if err != nil {
 		logger.Errorf("Failed to get task %s: %v", taskID, err)
 		return fmt.Errorf("failed to get task: %w", err)

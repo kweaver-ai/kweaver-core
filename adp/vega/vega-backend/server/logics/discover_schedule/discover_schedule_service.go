@@ -3,7 +3,7 @@
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file in the project root for details.
 
-package scheduled_discover_task
+package discover_schedule
 
 import (
 	"context"
@@ -23,42 +23,42 @@ import (
 )
 
 var (
-	dtsOnce sync.Once
-	std     interfaces.ScheduledDiscoverTaskService
+	dsServiceOnce sync.Once
+	dsService     interfaces.DiscoverScheduleService
 )
 
-type scheduledDiscoverTaskService struct {
+type discoverScheduleService struct {
 	appSetting *common.AppSetting
-	sda        interfaces.ScheduledDiscoverTaskAccess
+	dsa        interfaces.DiscoverScheduleAccess
 	dts        interfaces.DiscoverTaskService
 }
 
-func (sdt *scheduledDiscoverTaskService) UpdateLastRun(ctx context.Context, id string, lastRun int64) error {
-	return sdt.sda.UpdateLastRun(ctx, id, lastRun)
+func (dss *discoverScheduleService) UpdateLastRun(ctx context.Context, id string, lastRun int64) error {
+	return dss.dsa.UpdateLastRun(ctx, id, lastRun)
 }
 
-// NewScheduledDiscoverTaskService creates a new ScheduledDiscoverTaskService.
-func NewScheduledDiscoverTaskService(appSetting *common.AppSetting, dts interfaces.DiscoverTaskService) interfaces.ScheduledDiscoverTaskService {
-	dtsOnce.Do(func() {
-		std = &scheduledDiscoverTaskService{
+// NewDiscoverScheduleService creates a new DiscoverScheduleService.
+func NewDiscoverScheduleService(appSetting *common.AppSetting, dts interfaces.DiscoverTaskService) interfaces.DiscoverScheduleService {
+	dsServiceOnce.Do(func() {
+		dsService = &discoverScheduleService{
 			appSetting: appSetting,
-			sda:        discover_task.NewScheduledDiscoverTaskAccess(appSetting),
+			dsa:        discover_task.NewDiscoverScheduleAccess(appSetting),
 			dts:        dts,
 		}
 	})
-	return std
+	return dsService
 }
 
 /**
  * 创建定时发现任务服务
  * @param ctx context.Context 上下文信息，用于传递请求范围的数据和取消信号
- * @param req *interfaces.ScheduledDiscoverTask 定时发现任务请求结构体
+ * @param req *interfaces.DiscoverSchedule 定时发现任务请求结构体
  * @return string 返回创建的任务ID
  * @return error 返回操作过程中可能发生的错误
  */
-func (sdt *scheduledDiscoverTaskService) Create(ctx context.Context, req *interfaces.ScheduledDiscoverTask) (string, error) {
+func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.DiscoverScheduleRequest) (string, error) {
 	// 使用OpenTelemetry追踪请求执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.Create",
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Create",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -75,41 +75,55 @@ func (sdt *scheduledDiscoverTaskService) Create(ctx context.Context, req *interf
 		return "", fmt.Errorf("cron_expr is required")
 	}
 
-	// Set creator
-	req.Creator = accountInfo
+	currentTime := time.Now().UnixMilli()
+	schedule := &interfaces.DiscoverSchedule{
+		ID:         req.CatalogID,
+		CatalogID:  req.CatalogID,
+		CronExpr:   req.CronExpr,
+		StartTime:  req.StartTime,
+		EndTime:    req.EndTime,
+		Enabled:    req.Enabled,
+		Strategies: req.Strategies,
+
+		Creator:    accountInfo,
+		CreateTime: currentTime,
+		Updater:    accountInfo,
+		UpdateTime: currentTime,
+	}
 
 	// Create task
-	if err := sdt.sda.Create(ctx, req); err != nil {
+	if err := dss.dsa.Create(ctx, schedule); err != nil {
 		logger.Errorf("Failed to create scheduled discover task: %v", err)
 		o11y.Error(ctx, "Failed to create scheduled discover task")
 		return "", err
 	}
 
-	logger.Infof("Created scheduled discover task: id=%s, catalog_id=%s, cron=%s", req.ID, req.CatalogID, req.CronExpr)
-	return req.ID, nil
+	logger.Infof("Created scheduled discover task: id=%s, catalog_id=%s, cron=%s",
+		schedule.ID, schedule.CatalogID, schedule.CronExpr)
+	return schedule.ID, nil
 }
 
 // GetByID retrieves a scheduled discover task by ID.
-func (sdt *scheduledDiscoverTaskService) GetByID(ctx context.Context, id string) (*interfaces.ScheduledDiscoverTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.GetByID",
+func (dss *discoverScheduleService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverSchedule, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetByID",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	return sdt.sda.GetByID(ctx, id)
+	return dss.dsa.GetByID(ctx, id)
 }
 
 // List lists scheduled discover tasks.
-func (sdt *scheduledDiscoverTaskService) List(ctx context.Context, params interfaces.ScheduledDiscoverTaskQueryParams) ([]*interfaces.ScheduledDiscoverTask, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.List",
+func (dss *discoverScheduleService) List(ctx context.Context, params interfaces.DiscoverScheduleQueryParams) ([]*interfaces.DiscoverSchedule, int64, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.List",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	return sdt.sda.List(ctx, params)
+	return dss.dsa.List(ctx, params)
 }
 
 // Update updates a scheduled discover task.
-func (sdt *scheduledDiscoverTaskService) Update(ctx context.Context, id string, req *interfaces.ScheduledDiscoverTask) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.Update",
+func (dss *discoverScheduleService) Update(ctx context.Context, id string, req *interfaces.DiscoverSchedule) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Update",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -123,7 +137,7 @@ func (sdt *scheduledDiscoverTaskService) Update(ctx context.Context, id string, 
 	req.Updater = accountInfo
 	req.UpdateTime = time.Now().Unix()
 	// Update task
-	if err := sdt.sda.Update(ctx, req); err != nil {
+	if err := dss.dsa.Update(ctx, req); err != nil {
 		logger.Errorf("Failed to update scheduled discover task: %v", err)
 		o11y.Error(ctx, "Failed to update scheduled discover task")
 		return err
@@ -133,12 +147,12 @@ func (sdt *scheduledDiscoverTaskService) Update(ctx context.Context, id string, 
 }
 
 // Delete deletes a scheduled discover task by ID.
-func (sdt *scheduledDiscoverTaskService) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.Delete",
+func (dss *discoverScheduleService) Delete(ctx context.Context, id string) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Delete",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	if err := sdt.sda.Delete(ctx, id); err != nil {
+	if err := dss.dsa.Delete(ctx, id); err != nil {
 		logger.Errorf("Failed to delete scheduled discover task: %v", err)
 		o11y.Error(ctx, "Failed to delete scheduled discover task")
 		return err
@@ -149,12 +163,12 @@ func (sdt *scheduledDiscoverTaskService) Delete(ctx context.Context, id string) 
 }
 
 // Enable enables a scheduled discover task.
-func (sdt *scheduledDiscoverTaskService) Enable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.Enable",
+func (dss *discoverScheduleService) Enable(ctx context.Context, id string) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Enable",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	task, err := sdt.sda.GetByID(ctx, id)
+	task, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
 		logger.Errorf("Failed to get scheduled discover task: %v", err)
 		o11y.Error(ctx, "Failed to get scheduled discover task")
@@ -162,16 +176,16 @@ func (sdt *scheduledDiscoverTaskService) Enable(ctx context.Context, id string) 
 	}
 
 	task.Enabled = true
-	return sdt.Update(ctx, id, task)
+	return dss.Update(ctx, id, task)
 }
 
 // Disable disables a scheduled discover task.
-func (sdt *scheduledDiscoverTaskService) Disable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.Disable",
+func (dss *discoverScheduleService) Disable(ctx context.Context, id string) error {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Disable",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	task, err := sdt.sda.GetByID(ctx, id)
+	task, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
 		logger.Errorf("Failed to get scheduled discover task: %v", err)
 		o11y.Error(ctx, "Failed to get scheduled discover task")
@@ -179,34 +193,34 @@ func (sdt *scheduledDiscoverTaskService) Disable(ctx context.Context, id string)
 	}
 
 	task.Enabled = false
-	return sdt.Update(ctx, id, task)
+	return dss.Update(ctx, id, task)
 }
 
 // GetEnabledTasks retrieves all enabled scheduled discover tasks.
-func (sdt *scheduledDiscoverTaskService) GetEnabledTasks(ctx context.Context) ([]*interfaces.ScheduledDiscoverTask, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.GetEnabledTasks",
+func (dss *discoverScheduleService) GetEnabledTasks(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetEnabledTasks",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
-	return sdt.sda.GetEnabledTasks(ctx)
+	return dss.dsa.GetEnabledTasks(ctx)
 }
 
 // ExecuteTask 是一个执行计划发现任务的方法
 // 它接收一个上下文和一个计划发现任务作为参数，返回一个错误
-func (sdt *scheduledDiscoverTaskService) ExecuteTask(ctx context.Context, task *interfaces.ScheduledDiscoverTask) error {
+func (dss *discoverScheduleService) ExecuteTask(ctx context.Context, task *interfaces.DiscoverSchedule) error {
 	// 使用追踪器创建一个新的span，用于监控和追踪请求的执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "ScheduledDiscoverTaskService.ExecuteTask",
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.ExecuteTask",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End() // 确保在函数返回时结束span
 
 	// 检查DiscoverTaskService是否已设置
-	if sdt.dts == nil {
+	if dss.dts == nil {
 		logger.Error("DiscoverTaskService not set")
 		o11y.Error(ctx, "DiscoverTaskService not set")
 		return fmt.Errorf("DiscoverTaskService not set")
 	}
 
 	// 检查是否有正在执行的相同任务
-	_, tasks, err := sdt.dts.List(ctx, interfaces.DiscoverTaskQueryParams{
+	_, tasks, err := dss.dts.List(ctx, interfaces.DiscoverTaskQueryParams{
 		CatalogID:   task.CatalogID,
 		Status:      interfaces.DiscoverTaskStatusRunning,
 		TriggerType: interfaces.DiscoverTaskTriggerScheduled,
@@ -222,7 +236,7 @@ func (sdt *scheduledDiscoverTaskService) ExecuteTask(ctx context.Context, task *
 	}
 	// Create discover task：这里会创建一个task然后发送到redis mq里面去
 	strategiesStr := strategiesToString(task.Strategies)
-	_, err = sdt.dts.Create(ctx, task.CatalogID, interfaces.DiscoverTaskTriggerScheduled, task.ID, strategiesStr)
+	_, err = dss.dts.Create(ctx, task.CatalogID, interfaces.DiscoverTaskTriggerScheduled, task.ID, strategiesStr)
 	if err != nil {
 		logger.Errorf("Failed to create discover task for catalog %s: %v", task.CatalogID, err)
 		o11y.Error(ctx, "Failed to create discover task")
@@ -230,7 +244,7 @@ func (sdt *scheduledDiscoverTaskService) ExecuteTask(ctx context.Context, task *
 	}
 	// Update last run time
 	now := time.Now().UnixMilli()
-	if err := sdt.UpdateLastRun(ctx, task.ID, now); err != nil {
+	if err := dss.UpdateLastRun(ctx, task.ID, now); err != nil {
 		logger.Errorf("Failed to update last run time: %v", err)
 		// Don't return error here as the task was already executed
 	}
