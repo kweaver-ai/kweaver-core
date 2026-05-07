@@ -1791,13 +1791,35 @@ preflight_fix_kubernetes_cni() {
 
 # Optional fixes (called from preflight_apply_safe_fixes) --------------------
 preflight_fix_k3s_uninstall() {
-    if [[ -x /usr/local/bin/k3s-killall.sh ]]; then
-        /usr/local/bin/k3s-killall.sh 2>/dev/null || true
+    local path
+    for path in /usr/local/bin/k3s-killall.sh /usr/bin/k3s-killall.sh; do
+        if [[ -x "${path}" ]]; then
+            log_info "Running ${path} ..."
+            if ! bash "${path}"; then
+                log_warn "${path} exited with non-zero status (processes may still be running)"
+            fi
+            break
+        fi
+    done
+
+    local uninstaller=""
+    for path in /usr/local/bin/k3s-uninstall.sh /usr/bin/k3s-uninstall.sh; do
+        if [[ -x "${path}" ]]; then
+            uninstaller="${path}"
+            break
+        fi
+    done
+
+    if [[ -n "${uninstaller}" ]]; then
+        log_info "Running ${uninstaller} ..."
+        if bash "${uninstaller}"; then
+            preflight_fixed "k3s removed via ${uninstaller}"
+        else
+            log_warn "${uninstaller} exited with non-zero status; verify: command -v k3s; systemctl status k3s 2>/dev/null || true"
+        fi
+    else
+        preflight_warn "k3s-uninstall.sh not found (looked in /usr/local/bin and /usr/bin). Nothing was removed. If k3s was installed outside those paths, remove it manually or via your package manager."
     fi
-    if [[ -x /usr/local/bin/k3s-uninstall.sh ]]; then
-        /usr/local/bin/k3s-uninstall.sh 2>/dev/null || true
-    fi
-    preflight_fixed "Attempted k3s-killall + k3s-uninstall (see logs if scripts missing)"
 }
 
 # Stop/disable Docker daemon + socket (conflicts with k3s or kubeadm+containerd on same host).
