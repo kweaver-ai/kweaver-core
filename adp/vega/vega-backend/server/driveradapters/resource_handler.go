@@ -587,4 +587,3 @@ func (r *restHandler) ListResources(c *gin.Context) {
 	}
 
 }
-

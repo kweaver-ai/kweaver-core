@@ -13,11 +13,11 @@ import (
 	"net/url"
 	"strings"
 
-	"vega-backend/interfaces"
-	"vega-backend/logics/connectors"
-
 	"github.com/mitchellh/mapstructure"
 	_ "github.com/sijms/go-ora/v2"
+
+	"vega-backend/interfaces"
+	"vega-backend/logics/connectors"
 )
 
 type oracleConfig struct {

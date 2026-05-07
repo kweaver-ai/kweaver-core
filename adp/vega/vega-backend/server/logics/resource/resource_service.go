@@ -764,4 +764,3 @@ func (rs *resourceService) CheckExistByCategories(ctx context.Context, catalogID
 
 	return rs.ra.CheckExistByCategories(ctx, catalogID, categories)
 }
-

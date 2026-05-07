@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"vega-backend/drivenadapters/discover_task"
 
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
@@ -19,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"vega-backend/common"
+	"vega-backend/drivenadapters/discover_schedule"
 	"vega-backend/interfaces"
 )
 
@@ -42,7 +42,7 @@ func NewDiscoverScheduleService(appSetting *common.AppSetting, dts interfaces.Di
 	dsServiceOnce.Do(func() {
 		dsService = &discoverScheduleService{
 			appSetting: appSetting,
-			dsa:        discover_task.NewDiscoverScheduleAccess(appSetting),
+			dsa:        discover_schedule.NewDiscoverScheduleAccess(appSetting),
 			dts:        dts,
 		}
 	})

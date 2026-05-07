@@ -11,22 +11,22 @@ import (
 	"net/http"
 	"regexp"
 	"sync"
-	"vega-backend/logics/catalog"
-	"vega-backend/logics/connectors"
-	"vega-backend/logics/connectors/local/table/mariadb"
-	"vega-backend/logics/connectors/local/table/postgresql"
-	"vega-backend/logics/resource"
-
-	"vega-backend/common"
-	verrors "vega-backend/errors"
-	"vega-backend/interfaces"
-	"vega-backend/logics/connectors/factory"
-	"vega-backend/logics/query/sqlglot"
 
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
 	"go.opentelemetry.io/otel/codes"
+
+	"vega-backend/common"
+	verrors "vega-backend/errors"
+	"vega-backend/interfaces"
+	"vega-backend/logics/catalog"
+	"vega-backend/logics/connectors"
+	"vega-backend/logics/connectors/factory"
+	"vega-backend/logics/connectors/local/table/mariadb"
+	"vega-backend/logics/connectors/local/table/postgresql"
+	"vega-backend/logics/query/sqlglot"
+	"vega-backend/logics/resource"
 )
 
 var (

@@ -848,4 +848,3 @@ func (r *restHandler) listCatalogSrcs(c *gin.Context, ctx context.Context, span 
 	o11y.AddHttpAttrs4Ok(span, http.StatusOK)
 	rest.ReplyOK(c, http.StatusOK, result)
 }
-

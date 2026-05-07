@@ -29,8 +29,8 @@ import (
 	"vega-backend/driveradapters"
 	"vega-backend/logics"
 	"vega-backend/logics/connectors/factory"
-	"vega-backend/logics/discover_task"
 	"vega-backend/logics/discover_schedule"
+	"vega-backend/logics/discover_task"
 	"vega-backend/worker"
 )
 

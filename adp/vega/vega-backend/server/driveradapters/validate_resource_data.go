@@ -10,9 +10,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mitchellh/mapstructure"
-
 	"github.com/kweaver-ai/kweaver-go-lib/rest"
+	"github.com/mitchellh/mapstructure"
 
 	verrors "vega-backend/errors"
 	"vega-backend/interfaces"
