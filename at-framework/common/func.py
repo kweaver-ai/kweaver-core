@@ -374,13 +374,20 @@ def get_cases(base_dir: str, scope=None, tags=None, suite=None, name=None, names
 
 
 def replace_params(input_case, **kwargs):
-    tmp_case = copy.deepcopy(input_case)
     '''
     使用JinJa2.Template会导致未配置的参数项置空
     故此处应用string.Template，仅替换信息
     用例执行时渲染参数
     '''
-    output_case = {k: string.Template(str(v)).safe_substitute(kwargs) for k, v in tmp_case.items()}
+
+    output_case = {}
+    for k, v in input_case.items():
+        if isinstance(v, dict):
+            # 针对结构化数据，递归调用，以保持结构不变
+            output_case[k] = replace_params(v, **kwargs)
+        else:
+            output_case[k] = string.Template(str(v)).safe_substitute(kwargs)
+
     return output_case
 
 
@@ -531,7 +538,7 @@ def replace_params_with_placeholders(input_case, **kwargs):
 
 if __name__ == "__main__":
     base = os.path.join(os.path.dirname(__file__), "..")
-    case_file = os.path.join(base, "testcase", "agent-backend")  # 默认示例模块
+    case_file = os.path.join(base, "testcase", "vega-backend")  # 默认示例模块
     rst = load_case(case_file)
     for x in rst:
         print(x)

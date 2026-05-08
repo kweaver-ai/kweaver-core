@@ -15,12 +15,12 @@
         "Accept": "application/json"
       }
     resp_schema:
-      "200": >-
+      200: >-
         {
           "entries": [],
           "total_count": 0
         }
-      "400": >-
+      400: >-
         {
           "error_code": "",
           "description": "请求参数无效",
@@ -28,7 +28,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -36,7 +36,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -54,11 +54,11 @@
         "Content-Type": "application/json"
       }
     resp_schema:
-      "201": >-
+      201: >-
         {
           "id": "catalog_id"
         }
-      "400": >-
+      400: >-
         {
           "error_code": "",
           "description": "请求参数无效",
@@ -66,7 +66,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -74,7 +74,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "406": >-
+      406: >-
         {
           "error_code": "",
           "description": "Content-Type 不是 application/json",
@@ -82,7 +82,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "409": >-
+      409: >-
         {
           "error_code": "",
           "description": "资源冲突",
@@ -90,7 +90,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -107,17 +107,19 @@
         "Accept": "application/json"
       }
     resp_schema:
-      "200": >-
-        [
-          {
-            "id": "catalog_id",
-            "name": "name",
-            "type": "physical",
-            "enabled": true,
-            "connector_type": "mysql"
-          }
-        ]
-      "401": >-
+      200: >-
+        { 
+          "entries": [
+            {
+              "id": "catalog_id",
+              "name": "name",
+              "type": "physical",
+              "enabled": true,
+              "connector_type": "mysql"
+            }
+          ]
+        }
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -125,7 +127,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -144,7 +146,7 @@
     resp_schema:
       "204": >-
         {}
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -152,7 +154,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "404": >-
+      404: >-
         {
           "error_code": "",
           "description": "目录不存在",
@@ -160,7 +162,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -180,7 +182,7 @@
     resp_schema:
       "204": >-
         {}
-      "400": >-
+      400: >-
         {
           "error_code": "",
           "description": "请求参数无效",
@@ -188,7 +190,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -196,7 +198,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "404": >-
+      404: >-
         {
           "error_code": "",
           "description": "目录不存在",
@@ -204,7 +206,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "406": >-
+      406: >-
         {
           "error_code": "",
           "description": "Content-Type 不是 application/json",
@@ -212,7 +214,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "409": >-
+      409: >-
         {
           "error_code": "",
           "description": "资源冲突",
@@ -220,7 +222,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -237,7 +239,7 @@
         "Accept": "application/json"
       }
     resp_schema:
-      "200": >-
+      200: >-
         [
           {
             "id": "catalog_id",
@@ -246,7 +248,7 @@
             "health_check_result": "ok"
           }
         ]
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -254,7 +256,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",
@@ -271,13 +273,13 @@
         "Accept": "application/json"
       }
     resp_schema:
-      "200": >-
+      200: >-
         {
           "success": true,
           "message": "连接成功",
           "latency_ms": 0
         }
-      "401": >-
+      401: >-
         {
           "error_code": "",
           "description": "未授权",
@@ -285,7 +287,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "404": >-
+      404: >-
         {
           "error_code": "",
           "description": "目录不存在",
@@ -293,7 +295,7 @@
           "error_link": "",
           "error_details": ""
         }
-      "500": >-
+      500: >-
         {
           "error_code": "",
           "description": "服务器内部错误",

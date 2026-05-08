@@ -679,11 +679,10 @@ def test_case(feature, story, case_name, case_info):
             passed, error_msg = _parse_check_expression(expected_value, actual_value, jsonpath_key)
             assert passed, "resp_check failed for '%s': %s" % (jsonpath_key, error_msg)
 
-    # if "resp_schema" in case_info:
-    #     resp_schema = json.loads(case_info.get("resp_schema"))
-    #     if resp_code in resp_schema:
-    #         json_schema = genson(resp_schema[str(resp_code)])
-    #         validate(instance=resp_body, schema=json_schema)
+    if "resp_schema" in case_info:
+        if resp_code in case_info["resp_schema"]:
+            resp_schema = genson(json.loads(case_info["resp_schema"][resp_code]))
+            validate(instance=resp_body, schema=resp_schema)
 
     # 提取响应中的变量
     if "resp_values" in case_info:
