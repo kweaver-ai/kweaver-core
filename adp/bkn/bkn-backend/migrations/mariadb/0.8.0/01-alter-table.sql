@@ -21,7 +21,7 @@ ALTER TABLE t_metric_definition
   ADD COLUMN IF NOT EXISTS f_color VARCHAR(40) NOT NULL DEFAULT '' COMMENT '颜色' AFTER f_icon;
 
 ALTER TABLE t_metric_definition
-  ADD COLUMN IF NOT EXISTS f_bkn_raw_content MEDIUMTEXT NOT NULL DEFAULT '' COMMENT 'BKNRawContent' AFTER f_color;
+  ADD COLUMN IF NOT EXISTS f_bkn_raw_content MEDIUMTEXT NULL COMMENT 'BKNRawContent' AFTER f_color;
 
 UPDATE t_metric_definition SET f_bkn_raw_content = '' WHERE f_bkn_raw_content IS NULL;
 
