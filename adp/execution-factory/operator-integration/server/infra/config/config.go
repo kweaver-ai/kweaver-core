@@ -261,12 +261,16 @@ var (
 func NewConfigLoader() *Config {
 	once.Do(func() {
 		profileDir := os.Getenv("CONFIG_PROFILE")
+		var configFilePath, secretFilePath, mqConfigFilePath string
 		if profileDir == "" {
-			profileDir = "/sysvol/config"
+			configFilePath = "/sysvol/config/agent-operator-integration.yaml"
+			secretFilePath = "/sysvol/secret/agent-operator-integration-secret.yaml"
+			mqConfigFilePath = "/sysvol/config/mq_config.yaml"
+		} else {
+			configFilePath = filepath.Join(profileDir, "agent-operator-integration.yaml")
+			secretFilePath = filepath.Join(profileDir, "agent-operator-integration-secret.yaml")
+			mqConfigFilePath = filepath.Join(profileDir, "mq_config.yaml")
 		}
-		configFilePath := filepath.Join(profileDir, "agent-operator-integration.yaml")
-		secretFilePath := filepath.Join(profileDir, "agent-operator-integration-secret.yaml")
-		mqConfigFilePath := filepath.Join(profileDir, "mq_config.yaml")
 		// 设置默认配置
 		configLoader = &Config{
 			MQConfigFile: mqConfigFilePath,
