@@ -66,11 +66,6 @@ func NewMetricService(appSetting *common.AppSetting) interfaces.MetricService {
 	return metricServiceInst
 }
 
-func buildMetricBKNRawContent(def *interfaces.MetricDefinition) string {
-	cf, _ := json.Marshal(def.CalculationFormula)
-	return strings.Join([]string{def.Name, def.Comment, string(cf)}, "\n")
-}
-
 func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
 	ctx, span := ar_trace.Tracer.Start(ctx, "metric index write")
 	defer span.End()
@@ -82,8 +77,11 @@ func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*inter
 	if ms.appSetting.ServerSetting.DefaultSmallModelEnabled && ms.mfa != nil {
 		words := make([]string, 0, len(metrics))
 		for _, m := range metrics {
-			m.BKNRawContent = buildMetricBKNRawContent(m)
-			words = append(words, m.BKNRawContent)
+			arr := []string{m.Name}
+			arr = append(arr, m.Tags...)
+			arr = append(arr, m.Comment, m.BKNRawContent)
+			word := strings.Join(arr, "\n")
+			words = append(words, word)
 		}
 		dftModel, err := ms.mfa.GetDefaultModel(ctx)
 		if err != nil {
@@ -107,9 +105,6 @@ func (ms *metricService) InsertDatasetData(ctx context.Context, metrics []*inter
 
 	documents := make([]map[string]any, 0, len(metrics))
 	for _, def := range metrics {
-		if def.BKNRawContent == "" {
-			def.BKNRawContent = buildMetricBKNRawContent(def)
-		}
 		docid := interfaces.GenerateConceptDocuemtnID(def.KnID, interfaces.MODULE_TYPE_METRIC, def.ID, def.Branch)
 		def.ModuleType = interfaces.MODULE_TYPE_METRIC
 
@@ -216,7 +211,9 @@ func (ms *metricService) CreateMetrics(ctx context.Context, tx *sql.Tx, entries 
 			}
 		}
 
-		m.BKNRawContent = buildMetricBKNRawContent(m)
+		// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
+		// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
+		m.BKNRawContent = ""
 	}
 
 	var creates []*interfaces.MetricDefinition
@@ -492,6 +489,10 @@ func (ms *metricService) UpdateMetric(ctx context.Context, tx *sql.Tx, req *inte
 		req.Updater = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 	req.UpdateTime = time.Now().UnixMilli()
+
+	// todo: Persist empty BKN raw content until metric serialization is available in BKN SDK.
+	// objectType.BKNRawContent = bknsdk.SerializeObjectType(bknObj)
+	req.BKNRawContent = ""
 
 	err = ms.ma.UpdateMetric(ctx, tx, req)
 	if err != nil {

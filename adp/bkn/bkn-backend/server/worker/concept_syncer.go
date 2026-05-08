@@ -7,7 +7,6 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"runtime/debug"
 	"strings"
@@ -910,11 +909,6 @@ func (cs *ConceptSyncer) insertDatasetDataForRiskTypes(ctx context.Context, risk
 	return nil
 }
 
-func buildMetricBKNRawContent(def *interfaces.MetricDefinition) string {
-	cf, _ := json.Marshal(def.CalculationFormula)
-	return strings.Join([]string{def.Name, def.Comment, string(cf)}, "\n")
-}
-
 func (cs *ConceptSyncer) insertDatasetDataForMetrics(ctx context.Context, metrics []*interfaces.MetricDefinition) error {
 	if len(metrics) == 0 {
 		return nil
@@ -923,8 +917,11 @@ func (cs *ConceptSyncer) insertDatasetDataForMetrics(ctx context.Context, metric
 	if cs.appSetting.ServerSetting.DefaultSmallModelEnabled {
 		words := make([]string, 0, len(metrics))
 		for _, m := range metrics {
-			m.BKNRawContent = buildMetricBKNRawContent(m)
-			words = append(words, m.BKNRawContent)
+			arr := []string{m.Name}
+			arr = append(arr, m.Tags...)
+			arr = append(arr, m.Comment, m.BKNRawContent)
+			word := strings.Join(arr, "\n")
+			words = append(words, word)
 		}
 
 		dftModel, err := cs.mfa.GetDefaultModel(ctx)
@@ -948,9 +945,6 @@ func (cs *ConceptSyncer) insertDatasetDataForMetrics(ctx context.Context, metric
 
 	documents := make([]map[string]any, 0, len(metrics))
 	for _, def := range metrics {
-		if def.BKNRawContent == "" {
-			def.BKNRawContent = buildMetricBKNRawContent(def)
-		}
 		docid := interfaces.GenerateConceptDocuemtnID(def.KnID, interfaces.MODULE_TYPE_METRIC, def.ID, def.Branch)
 		def.ModuleType = interfaces.MODULE_TYPE_METRIC
 

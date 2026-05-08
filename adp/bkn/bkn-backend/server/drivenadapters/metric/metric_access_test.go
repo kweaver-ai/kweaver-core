@@ -34,11 +34,13 @@ func TestMetricAccess_CreateMetric(t *testing.T) {
 		defer cleanup()
 
 		def := &interfaces.MetricDefinition{
-			ID:         "mid1",
-			KnID:       "kn1",
-			Branch:     interfaces.MAIN_BRANCH,
-			Name:       "m1",
-			Comment:    "",
+			ID:     "mid1",
+			KnID:   "kn1",
+			Branch: interfaces.MAIN_BRANCH,
+			Name:   "m1",
+			CommonInfo: interfaces.CommonInfo{
+				Comment: "c",
+			},
 			UnitType:   "",
 			Unit:       "",
 			MetricType: interfaces.MetricTypeAtomic,
@@ -75,7 +77,7 @@ func TestMetricAccess_GetMetricByID(t *testing.T) {
 
 		cols := metricSelectColumns()
 		rows := sqlmock.NewRows(cols).
-			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", interfaces.MetricTypeAtomic,
+			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", "", "", "", "", interfaces.MetricTypeAtomic,
 				interfaces.ScopeTypeObjectType, "ot1", nil, `{"aggregation":{"property":"x","aggr":"count"}}`, nil,
 				"u1", "user", int64(1), "u1", "user", int64(1))
 
@@ -100,7 +102,7 @@ func TestMetricAccess_GetMetricByID_timeDimensionLegacyFieldJSON(t *testing.T) {
 
 		cols := metricSelectColumns()
 		rows := sqlmock.NewRows(cols).
-			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", interfaces.MetricTypeAtomic,
+			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", "", "", "", "", interfaces.MetricTypeAtomic,
 				interfaces.ScopeTypeObjectType, "ot1", `{"field":"@timestamp","default_range_policy":"last_1h"}`,
 				`{"aggregation":{"property":"x","aggr":"count"}}`, nil,
 				"u1", "user", int64(1), "u1", "user", int64(1))
@@ -193,10 +195,10 @@ func TestMetricAccess_GetMetricsByIDs(t *testing.T) {
 
 		cols := metricSelectColumns()
 		rows := sqlmock.NewRows(cols).
-			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", interfaces.MetricTypeAtomic,
+			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", "", "", "", "", interfaces.MetricTypeAtomic,
 				interfaces.ScopeTypeObjectType, "ot1", nil, `{"aggregation":{"property":"x","aggr":"count"}}`, nil,
 				"u1", "user", int64(1), "u1", "user", int64(1)).
-			AddRow("mid2", "kn1", interfaces.MAIN_BRANCH, "m2", "", "", "", interfaces.MetricTypeAtomic,
+			AddRow("mid2", "kn1", interfaces.MAIN_BRANCH, "m2", "", "", "", "", "", "", "", interfaces.MetricTypeAtomic,
 				interfaces.ScopeTypeObjectType, "ot1", nil, `{"aggregation":{"property":"y","aggr":"sum"}}`, nil,
 				"u1", "user", int64(1), "u1", "user", int64(1))
 
@@ -228,10 +230,12 @@ func TestMetricAccess_UpdateMetric(t *testing.T) {
 		defer cleanup()
 
 		m := &interfaces.MetricDefinition{
-			ID:         "mid1",
-			KnID:       "kn1",
-			Branch:     interfaces.MAIN_BRANCH,
-			Comment:    "c2",
+			ID:     "mid1",
+			KnID:   "kn1",
+			Branch: interfaces.MAIN_BRANCH,
+			CommonInfo: interfaces.CommonInfo{
+				Comment: "c2",
+			},
 			UnitType:   "numUnit",
 			Unit:       "none",
 			MetricType: interfaces.MetricTypeAtomic,
@@ -245,7 +249,7 @@ func TestMetricAccess_UpdateMetric(t *testing.T) {
 		mock.ExpectBegin()
 		tx, err := ma.db.Begin()
 		So(err, ShouldBeNil)
-		mock.ExpectExec("UPDATE "+METRIC_TABLE_NAME).
+		mock.ExpectExec("UPDATE " + METRIC_TABLE_NAME).
 			WillReturnResult(sqlmock.NewResult(0, 1)) // RowsAffected 1
 		err = ma.UpdateMetric(context.Background(), tx, m)
 		So(err, ShouldBeNil)
@@ -284,7 +288,7 @@ func TestMetricAccess_ListMetrics_and_GetMetricsTotal(t *testing.T) {
 
 		cols := metricSelectColumns()
 		rows := sqlmock.NewRows(cols).
-			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", interfaces.MetricTypeAtomic,
+			AddRow("mid1", "kn1", interfaces.MAIN_BRANCH, "m1", "", "", "", "", "", "", "", interfaces.MetricTypeAtomic,
 				interfaces.ScopeTypeObjectType, "ot1", nil, `{"aggregation":{"property":"x","aggr":"count"}}`, nil,
 				"u1", "user", int64(1), "u1", "user", int64(1))
 
