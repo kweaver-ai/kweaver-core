@@ -146,18 +146,30 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 	}
 	for _, conceptGroup := range kn.ConceptGroups {
 		conceptGroup.KNID = kn.KNID
+		conceptGroup.Branch = kn.Branch
 	}
 	for _, objectType := range kn.ObjectTypes {
 		objectType.KNID = kn.KNID
+		objectType.Branch = kn.Branch
 	}
 	for _, relationType := range kn.RelationTypes {
 		relationType.KNID = kn.KNID
+		relationType.Branch = kn.Branch
 	}
 	for _, actionType := range kn.ActionTypes {
 		actionType.KNID = kn.KNID
+		actionType.Branch = kn.Branch
 	}
 	for _, riskType := range kn.RiskTypes {
 		riskType.KNID = kn.KNID
+		riskType.Branch = kn.Branch
+	}
+	for _, m := range kn.Metrics {
+		if m == nil {
+			continue
+		}
+		m.KnID = kn.KNID
+		m.Branch = kn.Branch
 	}
 
 	accountInfo := interfaces.AccountInfo{}
@@ -276,6 +288,15 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 					WithErrorDetails(err.Error())
 			}
 		}
+
+		if len(kn.Metrics) > 0 {
+			_, err = kns.ms.CreateMetrics(ctx, tx, kn.Metrics, strictMode, mode)
+			if err != nil {
+				logger.Errorf("CreateMetrics error: %s", err.Error())
+				span.SetStatus(codes.Error, "创建业务知识网络指标失败")
+				return "", err
+			}
+		}
 	}
 
 	// 处理更新情况
@@ -344,6 +365,15 @@ func (kns *knowledgeNetworkService) CreateKN(ctx context.Context, kn *interfaces
 				return "", rest.NewHTTPError(ctx, http.StatusInternalServerError,
 					berrors.BknBackend_RiskType_InternalError).
 					WithErrorDetails(err.Error())
+			}
+		}
+
+		if len(kn.Metrics) > 0 {
+			_, err = kns.ms.CreateMetrics(ctx, tx, kn.Metrics, strictMode, mode)
+			if err != nil {
+				logger.Errorf("CreateMetrics error: %s", err.Error())
+				span.SetStatus(codes.Error, "创建业务知识网络指标失败")
+				return "", err
 			}
 		}
 	}
@@ -439,6 +469,11 @@ func (kns *knowledgeNetworkService) ValidateKN(ctx context.Context, kn *interfac
 	}
 	if len(kn.ActionTypes) > 0 {
 		if err := kns.ats.ValidateActionTypes(ctx, knID, branch, kn.ActionTypes, strictMode, batch, mode); err != nil {
+			return err
+		}
+	}
+	if len(kn.Metrics) > 0 {
+		if err := kns.ms.ValidateMetrics(ctx, kn.Metrics, strictMode, mode, batch); err != nil {
 			return err
 		}
 	}
@@ -628,6 +663,18 @@ func (kns *knowledgeNetworkService) GetKNByID(ctx context.Context, knID string, 
 			}
 			kn.RiskTypes = riskTypes
 		}
+
+		metricsList, err := kns.ms.ListMetrics(ctx, interfaces.MetricsListQueryParams{
+			PaginationQueryParameters: interfaces.PaginationQueryParameters{
+				Limit: -1,
+			},
+			KNID:   kn.KNID,
+			Branch: kn.Branch,
+		})
+		if err != nil {
+			return nil, err
+		}
+		kn.Metrics = metricsList.Entries
 	}
 
 	span.SetStatus(codes.Ok, "")

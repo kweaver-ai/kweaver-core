@@ -95,6 +95,22 @@ func TestBKNImportExport(t *testing.T) {
 			So(len(cgEntries), ShouldBeGreaterThan, 0)
 		})
 
+		Convey("BKN103: 导入含 metrics 的 k8s-network 并校验指标条数", func() {
+			knID := "k8s-network"
+			tarData, err := helpers.BuildTarFromExamplesDir("k8s-network")
+			So(err, ShouldBeNil)
+			resp := client.POSTMultipart(
+				"/api/bkn-backend/v1/bkns",
+				"file",
+				tarData,
+				"k8s-network.tar",
+				nil,
+			)
+			So(resp.StatusCode, ShouldEqual, http.StatusOK)
+			n := helpers.VerifyMetricsCountAtLeast(client, knID, t, 5)
+			So(n, ShouldBeGreaterThanOrEqualTo, 5)
+		})
+
 		// ========== BKN 导出测试（BKN121-BKN122） ==========
 
 		Convey("BKN121: 导出BKN - 基本场景", func() {
@@ -140,6 +156,23 @@ func TestBKNImportExport(t *testing.T) {
 			contentDisposition := resp.Headers.Get("Content-Disposition")
 			So(contentDisposition, ShouldNotBeEmpty)
 			So(strings.Contains(contentDisposition, knID), ShouldBeTrue)
+		})
+
+		Convey("BKN124: 导出 tar 含 metrics 条目（内容与示例一致）", func() {
+			knID := "k8s-network"
+			tarData, _ := helpers.BuildTarFromExamplesDir("k8s-network")
+			client.POSTMultipart(
+				"/api/bkn-backend/v1/bkns",
+				"file",
+				tarData,
+				"k8s-network.tar",
+				nil,
+			)
+
+			resp := client.GET("/api/bkn-backend/v1/bkns/" + knID)
+			So(resp.StatusCode, ShouldEqual, http.StatusOK)
+			So(bytes.Contains(resp.RawBody, []byte("metrics/")), ShouldBeTrue)
+			So(bytes.Contains(resp.RawBody, []byte("pod_running_count")), ShouldBeTrue)
 		})
 
 		// ========== 负向测试（BKN201-BKN220） ==========
@@ -198,6 +231,19 @@ func TestBKNImportExport(t *testing.T) {
 			)
 
 			// 应该返回错误
+			So(resp.StatusCode, ShouldBeGreaterThanOrEqualTo, 400)
+		})
+
+		Convey("BKN206: strict_mode=true 时 data_view 对象类上的指标严格校验失败", func() {
+			tarData, err := helpers.BuildTarFromExamplesDir("k8s-network")
+			So(err, ShouldBeNil)
+			resp := client.POSTMultipart(
+				"/api/bkn-backend/v1/bkns?strict_mode=true",
+				"file",
+				tarData,
+				"k8s-network.tar",
+				nil,
+			)
 			So(resp.StatusCode, ShouldBeGreaterThanOrEqualTo, 400)
 		})
 

@@ -123,6 +123,12 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 			}
 		}
 	}
+	for _, bknM := range bknNetwork.Metrics {
+		if bknM == nil {
+			continue
+		}
+		kn.Metrics = append(kn.Metrics, logics.ToADPMetricDefinition(kn.KNID, branch, bknM))
+	}
 
 	// 1. 校验 业务知识网络必要创建参数的合法性, 非空、长度、是枚举值
 	err = ValidateKN(ctx, kn)
@@ -181,6 +187,15 @@ func (r *restHandler) UploadBKN(c *gin.Context) {
 	}
 	if len(kn.RiskTypes) > 0 {
 		err = ValidateRiskTypes(ctx, kn.KNID, kn.RiskTypes)
+		if err != nil {
+			httpErr := err.(*rest.HTTPError)
+			oteltrace.AddHttpAttrs4HttpError(span, httpErr)
+			rest.ReplyError(c, httpErr)
+			return
+		}
+	}
+	if len(kn.Metrics) > 0 {
+		err = ValidateMetricRequests(ctx, kn.Metrics, false)
 		if err != nil {
 			httpErr := err.(*rest.HTTPError)
 			oteltrace.AddHttpAttrs4HttpError(span, httpErr)

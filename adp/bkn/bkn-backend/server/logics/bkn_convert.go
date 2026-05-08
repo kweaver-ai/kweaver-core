@@ -48,6 +48,203 @@ func ToBKNNetWork(kn *interfaces.KN) *bknsdk.BknNetwork {
 	}
 }
 
+// ── Metric (BKN ↔ MetricDefinition) ───────────────────────────────────────────
+
+// ToADPMetricDefinition converts a parsed BKN metric file into the persisted/API MetricDefinition shape.
+func ToADPMetricDefinition(knID, branch string, m *bknsdk.BknMetric) *interfaces.MetricDefinition {
+	if m == nil {
+		return nil
+	}
+	comment := m.Description
+	if comment == "" {
+		comment = m.Summary
+	}
+	metricType := m.MetricAttributes.MetricType
+	if metricType == "" && m.Formula != nil {
+		metricType = m.Formula.Kind
+	}
+
+	out := &interfaces.MetricDefinition{
+		ID:     m.ID,
+		KnID:   knID,
+		Branch: branch,
+		Name:   m.Name,
+		CommonInfo: interfaces.CommonInfo{
+			Comment:       comment,
+			Tags:          append([]string(nil), m.Tags...),
+			BKNRawContent: m.RawContent,
+		},
+		UnitType:   m.MetricAttributes.UnitType,
+		Unit:       m.MetricAttributes.Unit,
+		MetricType: metricType,
+		ScopeType:  m.ScopeType,
+		ScopeRef:   m.ScopeRef,
+	}
+
+	if len(m.TimeDimensions) > 0 {
+		out.TimeDimension = &interfaces.MetricTimeDimension{
+			Property:           m.TimeDimensions[0].Property,
+			DefaultRangePolicy: m.TimeDimensions[0].Policy,
+		}
+	}
+
+	if len(m.AnalysisDimensions) > 0 {
+		out.AnalysisDimensions = make([]interfaces.MetricAnalysisDimension, 0, len(m.AnalysisDimensions))
+		for _, row := range m.AnalysisDimensions {
+			out.AnalysisDimensions = append(out.AnalysisDimensions, interfaces.MetricAnalysisDimension{
+				Name:        row.Name,
+				DisplayName: row.DisplayName,
+			})
+		}
+	}
+
+	if m.Formula != nil && m.Formula.Atomic != nil {
+		atomic := m.Formula.Atomic
+		out.CalculationFormula = &interfaces.MetricCalculationFormula{
+			Condition: metricConditionToCondCfg(atomic.Condition),
+			Having:    metricHavingToADP(atomic.Having),
+		}
+		if atomic.Aggregation != nil {
+			out.CalculationFormula.Aggregation = interfaces.MetricAggregation{
+				Property: atomic.Aggregation.Property,
+				Aggr:     atomic.Aggregation.Aggr,
+			}
+		}
+		for _, g := range atomic.GroupBy {
+			out.CalculationFormula.GroupBy = append(out.CalculationFormula.GroupBy, interfaces.MetricGroupBy{
+				Property:    g.Property,
+				Description: g.Description,
+			})
+		}
+		for _, o := range atomic.OrderBy {
+			out.CalculationFormula.OrderBy = append(out.CalculationFormula.OrderBy, interfaces.MetricOrderBy{
+				Property:  o.Property,
+				Direction: o.Direction,
+			})
+		}
+	}
+
+	return out
+}
+
+// ToBKNMetricDefinition converts MetricDefinition (export path) into SDK BknMetric for tar serialization.
+func ToBKNMetricDefinition(m *interfaces.MetricDefinition) *bknsdk.BknMetric {
+	if m == nil {
+		return nil
+	}
+	out := &bknsdk.BknMetric{
+		BknMetricFrontmatter: bknsdk.BknMetricFrontmatter{
+			ID:   m.ID,
+			Name: m.Name,
+			Tags: append([]string(nil), m.Tags...),
+		},
+		MetricAttributes: bknsdk.MetricAttributes{
+			MetricType: m.MetricType,
+			UnitType:   m.UnitType,
+			Unit:       m.Unit,
+		},
+		Description: m.Comment,
+		RawContent:  m.BKNRawContent,
+		ScopeType:   m.ScopeType,
+		ScopeRef:    m.ScopeRef,
+	}
+
+	if m.Comment != "" {
+		out.Summary = bknsdk.ExtractSummary(m.Comment)
+	}
+
+	if m.TimeDimension != nil {
+		out.TimeDimensions = []bknsdk.MetricTimeDimRow{
+			{Property: m.TimeDimension.Property, Policy: m.TimeDimension.DefaultRangePolicy},
+		}
+	}
+
+	for _, ad := range m.AnalysisDimensions {
+		out.AnalysisDimensions = append(out.AnalysisDimensions, bknsdk.MetricAnalysisDimRow{
+			Name:        ad.Name,
+			DisplayName: ad.DisplayName,
+		})
+	}
+
+	if m.CalculationFormula != nil {
+		cf := m.CalculationFormula
+		atomic := &bknsdk.MetricAtomic{
+			Condition: condCfgToMetricCondition(cf.Condition),
+			Having:    adpHavingToBKN(cf.Having),
+		}
+		if cf.Aggregation.Property != "" || cf.Aggregation.Aggr != "" {
+			atomic.Aggregation = &bknsdk.MetricAggregation{
+				Property: cf.Aggregation.Property,
+				Aggr:     cf.Aggregation.Aggr,
+			}
+		}
+		for _, g := range cf.GroupBy {
+			atomic.GroupBy = append(atomic.GroupBy, bknsdk.MetricGroupBy{
+				Property:    g.Property,
+				Description: g.Description,
+			})
+		}
+		for _, o := range cf.OrderBy {
+			atomic.OrderBy = append(atomic.OrderBy, bknsdk.MetricOrderBy{
+				Property:  o.Property,
+				Direction: o.Direction,
+			})
+		}
+		out.Formula = &bknsdk.MetricFormula{
+			Kind:   m.MetricType,
+			Atomic: atomic,
+		}
+	}
+
+	return out
+}
+
+func metricConditionToCondCfg(c *bknsdk.MetricCondition) *cond.CondCfg {
+	if c == nil {
+		return nil
+	}
+	return &cond.CondCfg{
+		Field:     c.Field,
+		Operation: c.Operation,
+		ValueOptCfg: cond.ValueOptCfg{
+			Value: c.Value,
+		},
+	}
+}
+
+func condCfgToMetricCondition(c *cond.CondCfg) *bknsdk.MetricCondition {
+	if c == nil {
+		return nil
+	}
+	return &bknsdk.MetricCondition{
+		Field:     c.Field,
+		Operation: c.Operation,
+		Value:     c.Value,
+	}
+}
+
+func metricHavingToADP(h *bknsdk.MetricHaving) *interfaces.MetricHaving {
+	if h == nil {
+		return nil
+	}
+	return &interfaces.MetricHaving{
+		Field:     h.Field,
+		Operation: h.Operation,
+		Value:     h.Value,
+	}
+}
+
+func adpHavingToBKN(h *interfaces.MetricHaving) *bknsdk.MetricHaving {
+	if h == nil {
+		return nil
+	}
+	return &bknsdk.MetricHaving{
+		Field:     h.Field,
+		Operation: h.Operation,
+		Value:     h.Value,
+	}
+}
+
 // ToADPObjectType 将 BKN ObjectType 转换为 ADP ObjectType
 func ToADPObjectType(knID string, branch string, bknObj *bknsdk.BknObjectType) *interfaces.ObjectType {
 	adpObj := &interfaces.ObjectType{

@@ -92,7 +92,7 @@ func Test_ValidateMetricRequests(t *testing.T) {
 		Convey("Failed with duplicate metric name in batch\n", func() {
 			e := validStrictCreateMetric()
 			e.Name = "dup"
-			err := ValidateMetricRequests(ctx, []*interfaces.MetricDefinition{e, e}, true, interfaces.ImportMode_Normal)
+			err := ValidateMetricRequests(ctx, []*interfaces.MetricDefinition{e, e}, true)
 			So(err, ShouldNotBeNil)
 		})
 	})

@@ -33,8 +33,7 @@ var validMetricTimeRangePolicies = map[string]struct{}{
 }
 
 // ValidateMetricRequests 校验批量创建指标请求体：id/名称/tag、单位、统计主体、公式、时间维度、分析维度等（不写库、不查依赖资源）。
-func ValidateMetricRequests(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool, importMode string) error {
-	_ = importMode
+func ValidateMetricRequests(ctx context.Context, entries []*interfaces.MetricDefinition, strictMode bool) error {
 	if len(entries) == 0 {
 		return nil
 	}
