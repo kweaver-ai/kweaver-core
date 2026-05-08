@@ -210,9 +210,9 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			resources.GET("", r.ListResourcesByIn)
 			resources.POST("", r.verifyJsonContentType(), r.CreateResourceByIn)
-			resources.GET("/:ids", r.GetResourcesByIn)
+			resources.GET("/:id", r.GetResourcesByIn) // id为资源ID，多个资源ID逗号分隔
 			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
-			resources.DELETE("/:ids", r.DeleteResourcesByIn)
+			resources.DELETE("/:id", r.DeleteResourcesByIn) // id为资源ID，多个资源ID逗号分隔
 
 			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByIn)
 			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByIn)
