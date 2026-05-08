@@ -91,7 +91,7 @@ func ValidateMetricRequest(ctx context.Context, metric *interfaces.MetricDefinit
 	if err := validateMetricTimeDimensionBody(ctx, metric.TimeDimension, strictMode); err != nil {
 		return err
 	}
-	if err := validateMetricCalculationFormulaBody(ctx, metric.CalculationFormula, strictMode); err != nil {
+	if err := validateMetricCalculationFormula(ctx, metric.CalculationFormula, strictMode); err != nil {
 		return err
 	}
 	if err := validateMetricAnalysisDimensionsBody(ctx, metric.AnalysisDimensions, strictMode); err != nil {
@@ -100,113 +100,53 @@ func ValidateMetricRequest(ctx context.Context, metric *interfaces.MetricDefinit
 	return nil
 }
 
-// ValidateUpdateMetricRequest 校验 PUT 更新指标请求体：允许等价于 "{}" 的空 body（名称与各字段均可省略，由路由覆盖 id/kn_id/branch）。
-func ValidateUpdateMetricRequest(ctx context.Context, metric *interfaces.MetricDefinition, strictMode bool) error {
-	if err := validateID(ctx, strings.TrimSpace(metric.ID)); err != nil {
-		return err
+func validateMetricCalculationFormula(ctx context.Context, f *interfaces.MetricCalculationFormula, strictMode bool) error {
+	if f == nil {
+		if strictMode {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
+				WithErrorDetails("calculation_formula is required in strict mode")
+		}
+		return nil
 	}
-	if name := strings.TrimSpace(metric.Name); name != "" {
-		if err := validateObjectName(ctx, name, interfaces.MODULE_TYPE_METRIC); err != nil {
+	if f.Condition != nil {
+		if err := validateMetricCond(ctx, f.Condition); err != nil {
 			return err
 		}
 	}
-	if err := ValidateTags(ctx, metric.Tags); err != nil {
+	if err := validateMetricAggregation(ctx, &f.Aggregation, strictMode); err != nil {
 		return err
 	}
-	if err := validateMetricTypeUpdate(ctx, strings.TrimSpace(metric.MetricType), strictMode); err != nil {
-		return err
-	}
-	if err := validateMetricUnitsUpdate(ctx, strings.TrimSpace(metric.UnitType), strings.TrimSpace(metric.Unit), strictMode); err != nil {
-		return err
-	}
-	if err := validateMetricScopeBodyUpdate(ctx, strings.TrimSpace(metric.ScopeType), strings.TrimSpace(metric.ScopeRef), strictMode); err != nil {
-		return err
-	}
-	if err := validateMetricTimeDimensionBody(ctx, metric.TimeDimension, strictMode); err != nil {
-		return err
-	}
-	if err := validateMetricCalculationFormulaBodyUpdate(ctx, metric.CalculationFormula, strictMode); err != nil {
-		return err
-	}
-	if err := validateMetricAnalysisDimensionsBody(ctx, metric.AnalysisDimensions, strictMode); err != nil {
-		return err
-	}
-	return nil
-}
-
-func validateMetricTypeUpdate(ctx context.Context, metricType string, strictMode bool) error {
-	if metricType == "" {
-		return nil
-	}
-	if strictMode {
-		if metricType != interfaces.MetricTypeAtomic {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidMetricType)
-		}
-		return nil
-	}
-	if _, ok := validMetricTypesEnum[metricType]; !ok {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-			WithErrorDetails("metric_type must be one of atomic, derived, composite")
-	}
-	return nil
-}
-
-func validateMetricUnitsUpdate(ctx context.Context, unitType string, unit string, strictMode bool) error {
-	if unitType == "" && unit == "" {
-		return nil
-	}
-	if strictMode {
-		if unitType == "" || unit == "" {
+	for i := range f.GroupBy {
+		p := strings.TrimSpace(f.GroupBy[i].Property)
+		if p == "" {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails("unit_type and unit are required in strict mode when either is provided")
+				WithErrorDetails(fmt.Sprintf("calculation_formula.group_by[%d].property is required", i))
+		}
+		if err := ValidatePropertyName(ctx, p); err != nil {
+			return err
 		}
 	}
-	if unitType != "" {
-		if _, ok := interfaces.ValidMetricUnitTypes[unitType]; !ok {
+	for i := range f.OrderBy {
+		p := strings.TrimSpace(f.OrderBy[i].Property)
+		if p == "" {
 			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("invalid unit_type %q, expected one of %v", unitType, interfaces.ValidMetricUnitTypesArr))
+				WithErrorDetails(fmt.Sprintf("calculation_formula.order_by[%d].property is required", i))
+		}
+		if err := ValidatePropertyName(ctx, p); err != nil {
+			return err
+		}
+		d := strings.TrimSpace(f.OrderBy[i].Direction)
+		if d != "" && d != interfaces.MetricOrderDirectionAsc && d != interfaces.MetricOrderDirectionDesc {
+			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
+				WithErrorDetails("calculation_formula.order_by direction must be asc or desc")
 		}
 	}
-	if unit != "" {
-		if _, ok := interfaces.ValidMetricUnits[unit]; !ok {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("invalid unit %q, expected one of %v", unit, interfaces.ValidMetricUnitsArr))
+	if f.Having != nil {
+		if err := validateMetricHaving(ctx, f.Having); err != nil {
+			return err
 		}
 	}
 	return nil
-}
-
-func validateMetricScopeBodyUpdate(ctx context.Context, scopeType, scopeRef string, strictMode bool) error {
-	if scopeType == "" && scopeRef == "" {
-		return nil
-	}
-	if strictMode {
-		if scopeType == "" || scopeRef == "" {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails("scope_type and scope_ref are required in strict mode when scope is provided")
-		}
-		if scopeType != interfaces.ScopeTypeObjectType {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails("only scope_type object_type is supported for metrics")
-		}
-		return nil
-	}
-	if scopeType != interfaces.ScopeTypeObjectType {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-			WithErrorDetails("only scope_type object_type is supported for metrics")
-	}
-	if scopeRef == "" {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-			WithErrorDetails("scope_ref is required when scope is provided")
-	}
-	return nil
-}
-
-func validateMetricCalculationFormulaBodyUpdate(ctx context.Context, f *interfaces.MetricCalculationFormula, strictMode bool) error {
-	if f == nil || metricCalculationFormulaEmpty(f) {
-		return nil
-	}
-	return validateMetricCalculationFormulaBody(ctx, f, strictMode)
 }
 
 func validateMetricType(ctx context.Context, metricType string, strictMode bool) error {
@@ -324,78 +264,6 @@ func validateMetricAnalysisDimensionsBody(ctx context.Context, ads []interfaces.
 			if err := validateObjectName(ctx, ads[i].DisplayName, interfaces.MODULE_TYPE_METRIC); err != nil {
 				return err
 			}
-		}
-	}
-	return nil
-}
-
-func metricCalculationFormulaEmpty(f *interfaces.MetricCalculationFormula) bool {
-	if f == nil {
-		return true
-	}
-	if f.Condition != nil {
-		return false
-	}
-	if strings.TrimSpace(f.Aggregation.Property) != "" || strings.TrimSpace(f.Aggregation.Aggr) != "" {
-		return false
-	}
-	if len(f.GroupBy) > 0 || len(f.OrderBy) > 0 || f.Having != nil {
-		return false
-	}
-	return true
-}
-
-func validateMetricCalculationFormulaBody(ctx context.Context, f *interfaces.MetricCalculationFormula, strictMode bool) error {
-	if f == nil {
-		if strictMode {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails("calculation_formula is required in strict mode")
-		}
-		return nil
-	}
-	if strictMode && metricCalculationFormulaEmpty(f) {
-		return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-			WithErrorDetails("calculation_formula is required in strict mode")
-	}
-	if !strictMode && metricCalculationFormulaEmpty(f) {
-		return nil
-	}
-	if f.Condition != nil {
-		if err := validateMetricCond(ctx, f.Condition); err != nil {
-			return err
-		}
-	}
-	if err := validateMetricAggregation(ctx, &f.Aggregation, strictMode); err != nil {
-		return err
-	}
-	for i := range f.GroupBy {
-		p := strings.TrimSpace(f.GroupBy[i].Property)
-		if p == "" {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("calculation_formula.group_by[%d].property is required", i))
-		}
-		if err := ValidatePropertyName(ctx, p); err != nil {
-			return err
-		}
-	}
-	for i := range f.OrderBy {
-		p := strings.TrimSpace(f.OrderBy[i].Property)
-		if p == "" {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails(fmt.Sprintf("calculation_formula.order_by[%d].property is required", i))
-		}
-		if err := ValidatePropertyName(ctx, p); err != nil {
-			return err
-		}
-		d := strings.TrimSpace(f.OrderBy[i].Direction)
-		if d != "" && d != interfaces.MetricOrderDirectionAsc && d != interfaces.MetricOrderDirectionDesc {
-			return rest.NewHTTPError(ctx, http.StatusBadRequest, berrors.BknBackend_Metric_InvalidParameter).
-				WithErrorDetails("calculation_formula.order_by direction must be asc or desc")
-		}
-	}
-	if f.Having != nil {
-		if err := validateMetricHaving(ctx, f.Having); err != nil {
-			return err
 		}
 	}
 	return nil

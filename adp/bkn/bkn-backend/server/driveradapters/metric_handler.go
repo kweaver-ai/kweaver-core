@@ -457,7 +457,7 @@ func (r *restHandler) UpdateMetric(c *gin.Context, vis hydra.Visitor) {
 	req.KnID = knID
 	req.Branch = branch
 
-	if err := ValidateUpdateMetricRequest(ctx, &req, strictMode); err != nil {
+	if err := ValidateMetricRequest(ctx, &req, strictMode); err != nil {
 		var httpErr *rest.HTTPError
 		if errors.As(err, &httpErr) {
 			rest.ReplyError(c, httpErr)
