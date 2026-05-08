@@ -145,17 +145,3 @@ func (mr *MockBuildTaskServiceMockRecorder) StopBuildTask(ctx, taskID any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopBuildTask", reflect.TypeOf((*MockBuildTaskService)(nil).StopBuildTask), ctx, taskID)
 }
-
-// UpdateBuildTaskStatus mocks base method.
-func (m *MockBuildTaskService) UpdateBuildTaskStatus(ctx context.Context, taskID string, req *interfaces.UpdateBuildTaskStatusRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBuildTaskStatus", ctx, taskID, req)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateBuildTaskStatus indicates an expected call of UpdateBuildTaskStatus.
-func (mr *MockBuildTaskServiceMockRecorder) UpdateBuildTaskStatus(ctx, taskID, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBuildTaskStatus", reflect.TypeOf((*MockBuildTaskService)(nil).UpdateBuildTaskStatus), ctx, taskID, req)
-}

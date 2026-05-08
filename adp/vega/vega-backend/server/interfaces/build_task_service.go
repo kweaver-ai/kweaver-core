@@ -19,8 +19,6 @@ type BuildTaskService interface {
 	GetBuildTaskByResourceID(ctx context.Context, resourceID string) (*BuildTask, error)
 	// ListBuildTasks retrieves build tasks with filters and pagination.
 	ListBuildTasks(ctx context.Context, params BuildTasksQueryParams) ([]*BuildTask, int64, error)
-	// UpdateBuildTaskStatus updates a build task's status (used by worker; HTTP path uses Start/Stop).
-	UpdateBuildTaskStatus(ctx context.Context, taskID string, req *UpdateBuildTaskStatusRequest) error
 	// StartBuildTask transitions a task from {init, stopped} to running (asynchronous; status persisted by worker).
 	StartBuildTask(ctx context.Context, taskID string, executeType string) (*BuildTask, error)
 	// StopBuildTask transitions a task from running to stopping (asynchronous; status persisted by worker).

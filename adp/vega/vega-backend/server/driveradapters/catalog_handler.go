@@ -401,7 +401,7 @@ func (r *restHandler) updateCatalog(c *gin.Context, ctx context.Context, span tr
 
 	// connector_config immutable fields: host, port, database, databases, schemas, paths, protocol
 	// These fields cannot be modified or removed if they exist in the original catalog
-	immutableFields := []string{"host", "port", "database", "databases", "schemas", "paths", "protocol"}
+	immutableFields := []string{"host", "port", "database", "databases", "schemas", "paths", "protocol", "concurrent"}
 	for _, field := range immutableFields {
 		if _, existsInCatalog := catalog.ConnectorCfg[field]; existsInCatalog {
 			if _, existsInReq := req.ConnectorCfg[field]; existsInReq {

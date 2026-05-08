@@ -158,10 +158,10 @@ func createTestCatalog(client *testutil.HTTPClient, t *testing.T) string {
 		"description": "测试dataset catalog",
 		"tags":        []string{"test", "dataset", "catalog"},
 		"type":        "mariadb",
-		"connection_info": map[string]any{
+		"connector_config": map[string]any{
 			"host":     "localhost",
 			"port":     3306,
-			"user":     "root",
+			"username": "root",
 			"password": "password",
 			"database": "test",
 		},

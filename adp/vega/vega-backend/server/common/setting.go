@@ -68,6 +68,22 @@ type KafkaConnectSetting struct {
 	Protocol string
 }
 
+// RateLimitingConfig rate limiting 配置项
+type RateLimitingConfig struct {
+	Concurrency ConcurrencyConfig `mapstructure:"concurrency"`
+}
+
+// ConcurrencyConfig 并发控制配置项
+type ConcurrencyConfig struct {
+	Enabled     bool                      `mapstructure:"enabled"`
+	Global      GlobalConcurrencyConfig   `mapstructure:"global"`
+}
+
+// GlobalConcurrencyConfig 全局并发配置
+type GlobalConcurrencyConfig struct {
+	MaxConcurrentQueries int `mapstructure:"max_concurrent_queries"`
+}
+
 // AppSetting app配置项
 type AppSetting struct {
 	ServerSetting        ServerSetting             `mapstructure:"server"`
@@ -75,6 +91,7 @@ type AppSetting struct {
 	ObservabilitySetting o11y.ObservabilitySetting `mapstructure:"observability"`
 	CryptoSetting        CryptoSetting             `mapstructure:"crypto"`
 	DepServices          map[string]map[string]any `mapstructure:"depServices"`
+	RateLimitingSetting  RateLimitingConfig        `mapstructure:"rateLimiting"`
 
 	DBSetting           libdb.DBSetting
 	MQSetting           libmq.MQSetting
