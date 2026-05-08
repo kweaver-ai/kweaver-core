@@ -226,6 +226,7 @@ func (s *skillIndexSync) buildSkillDocument(ctx context.Context, skill *model.Sk
 
 	return map[string]any{
 		"_id":         skill.SkillID,
+		"id":          skill.SkillID,
 		"skill_id":    skill.SkillID,
 		"name":        skill.Name,
 		"description": skill.Description,
