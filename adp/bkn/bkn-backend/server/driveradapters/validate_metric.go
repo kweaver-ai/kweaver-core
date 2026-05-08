@@ -102,9 +102,6 @@ func ValidateMetricRequest(ctx context.Context, metric *interfaces.MetricDefinit
 
 // ValidateUpdateMetricRequest 校验 PUT 更新指标请求体：允许等价于 "{}" 的空 body（名称与各字段均可省略，由路由覆盖 id/kn_id/branch）。
 func ValidateUpdateMetricRequest(ctx context.Context, metric *interfaces.MetricDefinition, strictMode bool) error {
-	if metric == nil || metricUpdatePayloadEmpty(metric) {
-		return nil
-	}
 	if err := validateID(ctx, strings.TrimSpace(metric.ID)); err != nil {
 		return err
 	}
@@ -135,41 +132,6 @@ func ValidateUpdateMetricRequest(ctx context.Context, metric *interfaces.MetricD
 		return err
 	}
 	return nil
-}
-
-// metricUpdatePayloadEmpty 判断 JSON 是否未携带任何可更新的业务字段（忽略 id/kn_id/branch 等由路由写入的字段）。
-func metricUpdatePayloadEmpty(m *interfaces.MetricDefinition) bool {
-	if strings.TrimSpace(m.Name) != "" {
-		return false
-	}
-	if strings.TrimSpace(m.Comment) != "" {
-		return false
-	}
-	if len(m.Tags) > 0 {
-		return false
-	}
-	if strings.TrimSpace(m.Icon) != "" || strings.TrimSpace(m.Color) != "" {
-		return false
-	}
-	if strings.TrimSpace(m.UnitType) != "" || strings.TrimSpace(m.Unit) != "" {
-		return false
-	}
-	if strings.TrimSpace(m.MetricType) != "" {
-		return false
-	}
-	if strings.TrimSpace(m.ScopeType) != "" || strings.TrimSpace(m.ScopeRef) != "" {
-		return false
-	}
-	if timeDimensionPresent(m.TimeDimension) {
-		return false
-	}
-	if m.CalculationFormula != nil && !metricCalculationFormulaEmpty(m.CalculationFormula) {
-		return false
-	}
-	if len(m.AnalysisDimensions) > 0 {
-		return false
-	}
-	return true
 }
 
 func validateMetricTypeUpdate(ctx context.Context, metricType string, strictMode bool) error {
