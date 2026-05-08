@@ -19,9 +19,9 @@
 | ID | 场景 | 前置条件 | 请求参数 | 期望响应 | 验证点 |
 |----|------|---------|---------|---------|--------|
 | E1 | zip 注册 — 默认(url模式)返回 URL | FileManifest 含 scripts/main.py、SKILL.md 等多条；skill_file_index 存在 SKILL.md 记录 | BusinessDomainID:bd-1 SkillID:skill-1 response_mode:""(缺省) | file_type:zip url:https://...(非空) content:"(omitempty) files:[...] | url 非空；content 不存在或为空；files 含全部 manifest |
-| E2 | zip 注册 + content 模式 — 返回 OSS 下载的内联正文 | 同 E1；且 OSS 中 SKILL.md 可下载 | 同上 + response_mode:content | file_type:zip url:https://... content:"# SKILL.md body" | content 为 OSS 中 SKILL.md 全文；url 仍非空 |
-| E3 | content 注册 + url 模式 — 只返回 URL | SkillContent 非空；skill_file_index 有 SKILL.md 记录 | BusinessDomainID:bd-1 SkillID:skill-content-1 response_mode:url | file_type:content url:https://... content:""(omitempty) | url 非空；content 为空 |
-| E4 | content 注册 + content 模式 — 返回 DB 正文 | SkillContent 非空；skill_file_index 可有可无 | 同上 + response_mode:content | file_type:content content:"body text" url:https://...(若有 OSS) | content 等于 SkillContent 原文 |
+| E2 | zip 注册 + content 模式 — 返回 OSS 下载的内联正文（url 为空） | 同 E1；且 OSS 中 SKILL.md 可下载 | 同上 + response_mode:content | file_type:zip url:"" content:"# SKILL.md body" | content 为 OSS 中 SKILL.md 全文；url 为空（content 模式不返回 url） |
+| E3 | content 注册 + url 模式 — 有 OSS 记录则返回 url | SkillContent 非空；skill_file_index 有 SKILL.md 记录 | BusinessDomainID:bd-1 SkillID:skill-content-1 response_mode:url | file_type:content url:https://... content:""(omitempty) | url 非空；content 为空 |
+| E4 | content 注册 + content 模式 — 返回 DB 正文（url 为空） | SkillContent 非空；skill_file_index 可有可无 | 同上 + response_mode:content | file_type:content content:"body text" url:"" | content 等于 SkillContent 原文；url 为空 |
 | E5 | 已删除 Skill — 返回 404 | IsDeleted:true | BusinessDomainID:bd-1 SkillID:skill-deleted-1 | HTTP 404 | 不调用 fileRepo/assetStore |
 | E6 | 不存在 Skill — 返回 404 | SelectSkillByID 返回 nil,nil | BusinessDomainID:bd-1 SkillID:skill-nonexistent | HTTP 404 | 同上 |
 | E7 | 公有 API + 有权限 — 正常返回 | IsPublicAPIFromCtx:true；OperationCheckAny(view,modify)返回true | 同上 + UserID:user-view | 正常 200 响应 | AuthService.GetAccessor + OperationCheckAny 被调用 |

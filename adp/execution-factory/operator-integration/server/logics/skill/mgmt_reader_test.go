@@ -307,8 +307,6 @@ func TestSkillManagementReader(t *testing.T) {
 					SkillID: "skill-1", SkillVersion: "v1", RelPath: SkillMD,
 					StorageKey: testBuildObjectKey("skill-1", "v1", SkillMD),
 				}, nil)
-			mockAssetStore.EXPECT().GetDownloadURL(gomock.Any(), gomock.Any()).
-				Return("https://download/skill-1/SKILL.md", nil)
 			mockAssetStore.EXPECT().Download(gomock.Any(), gomock.Any()).
 				Return([]byte("# SKILL.md from OSS"), nil)
 
@@ -320,7 +318,7 @@ func TestSkillManagementReader(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(resp, ShouldNotBeNil)
-			So(resp.URL, ShouldEqual, "https://download/skill-1/SKILL.md")
+			So(resp.URL, ShouldEqual, "") // content mode: url is empty
 			So(resp.Content, ShouldEqual, "# SKILL.md from OSS")
 			So(resp.FileType, ShouldEqual, "zip")
 		})

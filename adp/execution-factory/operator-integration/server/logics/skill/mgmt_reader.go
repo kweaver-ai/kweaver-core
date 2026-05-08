@@ -100,25 +100,15 @@ func (r *skillManagementReader) GetManagementContent(ctx context.Context, req *i
 		resp.Files = []*interfaces.SkillFileSummary{}
 	}
 
-	// 统一查询 SKILL.md 的 OSS 记录，用于 URL 和 content 模式
+	// 查询 SKILL.md 的 OSS 记录，供后续使用
 	skillFile, err := r.fileRepo.SelectSkillFileByPath(ctx, nil, skill.SkillID, skill.Version, SkillMD)
 	if err != nil {
 		return nil, err
 	}
-	if skillFile != nil {
-		downloadURL, err := r.assetStore.GetDownloadURL(ctx, &interfaces.OssObject{
-			StorageID:  skillFile.StorageID,
-			StorageKey: skillFile.StorageKey,
-		})
-		if err != nil {
-			return nil, err
-		}
-		resp.URL = downloadURL
-	}
 
-	// 根据 response_mode 填充 Content:
-	//   url(默认) — Content 为空，客户端通过 URL 下载
-	//   content  — 优先用 DB 中的 skill_content，zip 类型从 OSS 下载 SKILL.md
+	// 根据 response_mode 决定返回 URL 还是正文内容:
+	//   url(默认) — 填充 url，Content 为空
+	//   content   — 填充 Content，url 为空
 	switch req.ResponseMode {
 	case "content":
 		if skill.SkillContent != "" {
@@ -134,7 +124,18 @@ func (r *skillManagementReader) GetManagementContent(ctx context.Context, req *i
 				resp.Content = string(ossContent)
 			}
 		}
-		// default(""/"url"): Content 保持零值，omitempty 跳过
+	default:
+		// url 模式（含默认空值）：填充 URL，Content 保持零值
+		if skillFile != nil {
+			downloadURL, err := r.assetStore.GetDownloadURL(ctx, &interfaces.OssObject{
+				StorageID:  skillFile.StorageID,
+				StorageKey: skillFile.StorageKey,
+			})
+			if err != nil {
+				return nil, err
+			}
+			resp.URL = downloadURL
+		}
 	}
 
 	return resp, nil
