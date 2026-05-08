@@ -7,299 +7,298 @@
 #   POST      /api/vega-backend/v1/catalogs/{id}/test-connection
 
 
-  - name: 查询catalog列表
+-   name: 查询catalog列表
     url: /api/vega-backend/v1/catalogs
     method: GET
     headers: >-
-      {
-        "Accept": "application/json"
-      }
+        {
+          "Accept": "application/json"
+        }
     resp_schema:
-      200: >-
-        {
-          "entries": [],
-          "total_count": 0
-        }
-      400: >-
-        {
-          "error_code": "",
-          "description": "请求参数无效",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        200: >-
+            {
+              "entries": [],
+              "total_count": 0
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
 
-  - name: 创建catalog
+-   name: 创建catalog
     url: /api/vega-backend/v1/catalogs
     method: POST
     headers: >-
-      {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      }
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
     resp_schema:
-      201: >-
-        {
-          "id": "catalog_id"
-        }
-      400: >-
-        {
-          "error_code": "",
-          "description": "请求参数无效",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      406: >-
-        {
-          "error_code": "",
-          "description": "Content-Type 不是 application/json",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      409: >-
-        {
-          "error_code": "",
-          "description": "资源冲突",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        201: >-
+            {
+              "id": "catalog_id"
+            }
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
 
-  - name: 查看catalog详情
+-   name: 查看catalog详情
     url: /api/vega-backend/v1/catalogs/${ids}
     method: GET
     headers: >-
-      {
-        "Accept": "application/json"
-      }
+        {
+          "Accept": "application/json"
+        }
     resp_schema:
-      200: >-
-        { 
-          "entries": [
-            {
-              "id": "catalog_id",
-              "name": "name",
-              "type": "physical",
-              "enabled": true,
-              "connector_type": "mysql"
+        200: >-
+            { 
+              "entries": [
+                {
+                  "id": "catalog_id",
+                  "name": "name",
+                  "type": "physical",
+                  "enabled": true,
+                  "connector_type": "mysql"
+                }
+              ]
             }
-          ]
-        }
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
 
-  - name: 删除catalog
+-   name: 删除catalog
     url: /api/vega-backend/v1/catalogs/${ids}
     method: DELETE
     headers: >-
-      {
-        "Accept": "application/json"
-      }
+        {
+          "Accept": "application/json"
+        }
     resp_schema:
-      "204": >-
-        {}
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      404: >-
-        {
-          "error_code": "",
-          "description": "目录不存在",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        "204": >-
+            {}
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "目录不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
 
-  - name: 编辑catalog
+-   name: 编辑catalog
     url: /api/vega-backend/v1/catalogs/${id}
     method: PUT
     headers: >-
-      {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      }
+        {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
     resp_schema:
-      "204": >-
-        {}
-      400: >-
-        {
-          "error_code": "",
-          "description": "请求参数无效",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      404: >-
-        {
-          "error_code": "",
-          "description": "目录不存在",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      406: >-
-        {
-          "error_code": "",
-          "description": "Content-Type 不是 application/json",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      409: >-
-        {
-          "error_code": "",
-          "description": "资源冲突",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        "204": >-
+            {}
+        400: >-
+            {
+              "error_code": "",
+              "description": "请求参数无效",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "目录不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        406: >-
+            {
+              "error_code": "",
+              "description": "Content-Type 不是 application/json",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        409: >-
+            {
+              "error_code": "",
+              "description": "资源冲突",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
 
-  - name: 检查catalog状态
+-   name: 检查catalog状态
     url: /api/vega-backend/v1/catalogs/${ids}/health-status
     method: GET
     headers: >-
-      {
-        "Accept": "application/json"
-      }
+        {
+          "Accept": "application/json"
+        }
     resp_schema:
-      200: >-
-        [
-          {
-            "id": "catalog_id",
-            "health_check_status": "healthy",
-            "last_check_time": 0,
-            "health_check_result": "ok"
-          }
-        ]
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        200: >-
+            {
+              "id": "catalog_id",
+              "health_check_status": "healthy",
+              "last_check_time": 0,
+              "health_check_result": "ok"
+            }
 
-  - name: 测试目录连接
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+
+-   name: 测试目录连接
     url: /api/vega-backend/v1/catalogs/${id}/test-connection
     method: POST
     headers: >-
-      {
-        "Accept": "application/json"
-      }
+        {
+          "Accept": "application/json"
+        }
     resp_schema:
-      200: >-
-        {
-          "success": true,
-          "message": "连接成功",
-          "latency_ms": 0
-        }
-      401: >-
-        {
-          "error_code": "",
-          "description": "未授权",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      404: >-
-        {
-          "error_code": "",
-          "description": "目录不存在",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
-      500: >-
-        {
-          "error_code": "",
-          "description": "服务器内部错误",
-          "solution": "",
-          "error_link": "",
-          "error_details": ""
-        }
+        200: >-
+            {
+              "success": true,
+              "message": "连接成功",
+              "latency_ms": 0
+            }
+        401: >-
+            {
+              "error_code": "",
+              "description": "未授权",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        404: >-
+            {
+              "error_code": "",
+              "description": "目录不存在",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }
+        500: >-
+            {
+              "error_code": "",
+              "description": "服务器内部错误",
+              "solution": "",
+              "error_link": "",
+              "error_details": ""
+            }

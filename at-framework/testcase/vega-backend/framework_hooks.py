@@ -30,14 +30,16 @@ def session_clean_up(config: Dict[str, Dict[str, str]], allure) -> None:
         query_catalog_url, params={"limit": -1, "offset": 0}, headers=headers, verify=False
     )
     if response.status_code != 200:
-        allure.attach("清理 vega-backend 历史数据失败：%s" % response.content, name="session_clean_up")
+        allure.attach("查询catalog列表失败：%s" % response.json(), name=query_catalog_url)
         return
 
-    catalog_ids = [x["id"] for x in response.json().get("entries", []) if "adp_bkn" not in x["name"]]
+    catalog_ids = [x["id"] for x in response.json().get("entries")
+                   if x["name"] not in ("adp_bkn_catalog", "kweaver_execution_factory_catalog")]
+
     delete_catalog_url = "%s://%s/api/vega-backend/v1/catalogs/%s" % (scheme, host, ','.join(catalog_ids))
     response = requests.delete(delete_catalog_url, headers=headers, verify=False)
     if response.status_code != 204:
-        allure.attach("清理 vega-backend 历史数据失败：%s" % response.content, name="session_clean_up")
+        allure.attach("删除catalog失败：%s" % response.json(), name=delete_catalog_url)
         return
 
     allure.attach("vega-backend 历史数据清理完成", name="session_clean_up")
