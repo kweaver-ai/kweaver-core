@@ -1,1172 +1,303 @@
 # API 列表：vega-backend 模块
+# OpenAPI paths 覆盖：
+#   GET|POST  /api/vega-backend/v1/catalogs
+#   GET|DELETE /api/vega-backend/v1/catalogs/{ids}
+#   PUT       /api/vega-backend/v1/catalogs/{id}
+#   GET       /api/vega-backend/v1/catalogs/{ids}/health-status
+#   POST      /api/vega-backend/v1/catalogs/{id}/test-connection
 
-- name: 健康检查
-  url: /api/vega-backend/v1/health
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "status": "ok"
-      }
 
-- name: 获取目录列表
-  url: /api/vega-backend/v1/catalogs
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
+  - name: 查询catalog列表
+    url: /api/vega-backend/v1/catalogs
+    method: GET
+    headers: >-
       {
-        "entries": [],
-        "total_count": 0
+        "Accept": "application/json"
       }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+    resp_schema:
+      "200": >-
+        {
+          "entries": [],
+          "total_count": 0
+        }
+      "400": >-
+        {
+          "error_code": "",
+          "description": "请求参数无效",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 创建目录
-  url: /api/vega-backend/v1/catalogs
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    201: >-
+  - name: 创建catalog
+    url: /api/vega-backend/v1/catalogs
+    method: POST
+    headers: >-
       {
-        "id": "catalog_id"
+        "Accept": "application/json",
+        "Content-Type": "application/json"
       }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+    resp_schema:
+      "201": >-
+        {
+          "id": "catalog_id"
+        }
+      "400": >-
+        {
+          "error_code": "",
+          "description": "请求参数无效",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "406": >-
+        {
+          "error_code": "",
+          "description": "Content-Type 不是 application/json",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "409": >-
+        {
+          "error_code": "",
+          "description": "资源冲突",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 更新目录
-  url: /api/vega-backend/v1/catalogs/${id}
-  method: PUT
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
+  - name: 查看catalog详情
+    url: /api/vega-backend/v1/catalogs/${ids}
+    method: GET
+    headers: >-
       {
-        "code": "bad_request",
-        "message": "请求参数无效"
+        "Accept": "application/json"
       }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 触发目录资源发现
-  url: /api/vega-backend/v1/catalogs/${id}/discover
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "id": "discover_task_id"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 查询定时发现任务列表
-  url: /api/vega-backend/v1/catalogs/scheduled-discover
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [],
-        "total_count": 0
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 创建定时发现任务
-  url: /api/vega-backend/v1/catalogs/${id}/scheduled-discover
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "task_id": "scheduled_task_id",
-        "message": "created"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 更新定时发现任务
-  url: /api/vega-backend/v1/catalogs/${id}/scheduled-discover/${task_id}
-  method: PUT
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "task_id": "scheduled_task_id",
-        "message": "updated"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录或任务不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 启动定时发现任务
-  url: /api/vega-backend/v1/catalogs/${id}/scheduled-discover/${task_id}/start
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "task_id": "scheduled_task_id",
-        "message": "started"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录或任务不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 停止定时发现任务
-  url: /api/vega-backend/v1/catalogs/${id}/scheduled-discover/${task_id}/stop
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "task_id": "scheduled_task_id",
-        "message": "stopped"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录或任务不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 测试目录连接
-  url: /api/vega-backend/v1/catalogs/${id}/test-connection
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "success": true,
-        "message": "连接成功"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 批量删除目录
-  url: /api/vega-backend/v1/catalogs/${ids}
-  method: DELETE
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 批量获取目录
-  url: /api/vega-backend/v1/catalogs/${ids}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": []
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取目录健康状态
-  url: /api/vega-backend/v1/catalogs/${ids}/health-status
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "id": "catalog_id",
-        "health_check_status": "healthy",
-        "last_check_time": 0,
-        "health_check_result": "ok"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取目录下资源列表
-  url: /api/vega-backend/v1/catalogs/${ids}/resources
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [],
-        "total_count": 0
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取资源列表
-  url: /api/vega-backend/v1/resources
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [],
-        "total_count": 0
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 创建资源
-  url: /api/vega-backend/v1/resources
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    201: >-
-      {
-        "id": "resource_id"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 按类型列出资源
-  url: /api/vega-backend/v1/resources/list
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [
+    resp_schema:
+      "200": >-
+        [
           {
-            "id": "id",
-            "type": "catalog",
-            "name": "name"
+            "id": "catalog_id",
+            "name": "name",
+            "type": "physical",
+            "enabled": true,
+            "connector_type": "mysql"
           }
-        ],
-        "total_count": 1
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "资源不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+        ]
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 更新资源
-  url: /api/vega-backend/v1/resources/${id}
-  method: PUT
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
+  - name: 删除catalog
+    url: /api/vega-backend/v1/catalogs/${ids}
+    method: DELETE
+    headers: >-
       {
-        "code": "bad_request",
-        "message": "请求参数无效"
+        "Accept": "application/json"
       }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "资源不存在"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+    resp_schema:
+      "204": >-
+        {}
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "404": >-
+        {
+          "error_code": "",
+          "description": "目录不存在",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 查询资源数据
-  url: /api/vega-backend/v1/resources/${id}/data
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    200: >-
+  - name: 编辑catalog
+    url: /api/vega-backend/v1/catalogs/${id}
+    method: PUT
+    headers: >-
       {
-        "entries": [],
-        "total_count": 0
+        "Accept": "application/json",
+        "Content-Type": "application/json"
       }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "资源不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+    resp_schema:
+      "204": >-
+        {}
+      "400": >-
+        {
+          "error_code": "",
+          "description": "请求参数无效",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "404": >-
+        {
+          "error_code": "",
+          "description": "目录不存在",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "406": >-
+        {
+          "error_code": "",
+          "description": "Content-Type 不是 application/json",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "409": >-
+        {
+          "error_code": "",
+          "description": "资源冲突",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 批量删除资源
-  url: /api/vega-backend/v1/resources/${ids}
-  method: DELETE
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
+  - name: 检查catalog状态
+    url: /api/vega-backend/v1/catalogs/${ids}/health-status
+    method: GET
+    headers: >-
       {
-        "code": "bad_request",
-        "message": "请求参数无效"
+        "Accept": "application/json"
       }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "资源不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+    resp_schema:
+      "200": >-
+        [
+          {
+            "id": "catalog_id",
+            "health_check_status": "healthy",
+            "last_check_time": 0,
+            "health_check_result": "ok"
+          }
+        ]
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
 
-- name: 批量获取资源
-  url: /api/vega-backend/v1/resources/${ids}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": []
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "资源不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取数据集文档
-  url: /api/vega-backend/v1/resources/dataset/${id}/${docid}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "id": "doc_id"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "文档不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 创建数据集文档
-  url: /api/vega-backend/v1/resources/dataset/${id}/docs
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    201: >-
-      {
-        "created": 1
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "数据集不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 更新数据集文档
-  url: /api/vega-backend/v1/resources/dataset/${id}/docs
-  method: PUT
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "数据集不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 删除数据集文档
-  url: /api/vega-backend/v1/resources/dataset/${id}/docs/${ids}
-  method: DELETE
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "文档不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 按查询删除数据集文档
-  url: /api/vega-backend/v1/resources/dataset/${id}/docs/query
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "数据集不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取连接器类型列表
-  url: /api/vega-backend/v1/connector-types
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [],
-        "total_count": 0
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 注册连接器类型
-  url: /api/vega-backend/v1/connector-types
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    201: >-
-      {
-        "id": "connector_type"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取连接器类型详情
-  url: /api/vega-backend/v1/connector-types/${type}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "type": "mysql",
-        "name": "MySQL"
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "连接器类型不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 更新连接器类型
-  url: /api/vega-backend/v1/connector-types/${type}
-  method: PUT
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "连接器类型不存在"
-      }
-    409: >-
-      {
-        "code": "conflict",
-        "message": "资源冲突"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 删除连接器类型
-  url: /api/vega-backend/v1/connector-types/${type}
-  method: DELETE
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    204: >-
-      {}
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "连接器类型不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 设置连接器类型启用状态
-  url: /api/vega-backend/v1/connector-types/${type}/enabled
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "type": "mysql",
-        "enabled": true
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "连接器类型不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 执行查询
-  url: /api/vega-backend/v1/resources/query
-  method: POST
-  headers: >-
-    {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "columns": [],
-        "entries": [],
-        "total_count": 0,
-        "stats": {}
-      }
-    400: >-
-      {
-        "code": "bad_request",
-        "message": "请求参数无效"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 获取发现任务列表
-  url: /api/vega-backend/v1/discover-tasks
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "items": [],
-        "total": 0
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "目录不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 通过ID获取发现任务
-  url: /api/vega-backend/v1/discover-tasks/by-id/${id}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "id": "discover_task_id",
-        "status": "completed"
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "任务不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
-
-- name: 通过调度ID获取发现任务列表
-  url: /api/vega-backend/v1/discover-tasks/by-schedule/${scheduleId}
-  method: GET
-  headers: >-
-    {
-      "Accept": "application/json"
-    }
-  resp_schema:
-    200: >-
-      {
-        "entries": [],
-        "total_count": 0
-      }
-    401: >-
-      {
-        "code": "unauthorized",
-        "message": "未授权"
-      }
-    404: >-
-      {
-        "code": "not_found",
-        "message": "任务不存在"
-      }
-    500: >-
-      {
-        "code": "internal_error",
-        "message": "服务器内部错误"
-      }
+  - name: 测试目录连接
+    url: /api/vega-backend/v1/catalogs/${id}/test-connection
+    method: POST
+    headers: >-
+      {
+        "Accept": "application/json"
+      }
+    resp_schema:
+      "200": >-
+        {
+          "success": true,
+          "message": "连接成功",
+          "latency_ms": 0
+        }
+      "401": >-
+        {
+          "error_code": "",
+          "description": "未授权",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "404": >-
+        {
+          "error_code": "",
+          "description": "目录不存在",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }
+      "500": >-
+        {
+          "error_code": "",
+          "description": "服务器内部错误",
+          "solution": "",
+          "error_link": "",
+          "error_details": ""
+        }

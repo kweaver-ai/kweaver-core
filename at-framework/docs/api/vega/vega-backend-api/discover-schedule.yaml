@@ -1,0 +1,414 @@
+---
+openapi: 3.1.1
+info:
+  title: DiscoverSchedule
+  description: |
+    Vega Backend 资源发现调度（DiscoverSchedule）相关 API。
+
+    DiscoverSchedule 是**cron 配置**实体，不直接承载执行：
+
+    - 调度器到点触发后产出一条 `trigger_type=scheduled` 的 DiscoverTask（详见 [discover-task.yaml](discover-task.yaml)）
+    - 用户通过本规范增删改查 DiscoverSchedule，通过 enable/disable 控制其是否生效
+    - 一次性发现走 `POST /catalogs/{id}/discover`（[discover-task.yaml](discover-task.yaml) 末尾），不通过本规范
+
+    每个 DiscoverSchedule 归属一个 Catalog（多对一）。`catalog_id` 在创建后**不可修改**。
+
+    端点设计遵循 [vega-backend/CLAUDE.md] 的"端点设计规则"——状态切换走动作端点
+    `enable` / `disable`，与 ConnectorType 风格对齐；不暴露 `enabled` 字段为可写。
+
+    **错误码新增** `VegaBackend.DiscoverSchedule.*` 系列，与其它资源解耦。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/discover-schedules:
+    post:
+      summary: 创建发现调度
+      description: |
+        创建 DiscoverSchedule。`catalog_id` 必填且 catalog 必须存在；不存在返回 404
+        `VegaBackend.Catalog.NotFound`。
+
+        - body 中 `enabled=true` 时，创建后立即注册到 cron 引擎；`false` 时仅入库不调度。
+        - `cron_expr` 必填，标准 5 字段格式；非法返回 400 `VegaBackend.DiscoverSchedule.InvalidCronExpr`。
+        - `strategies` 可空（表示全部）；非空时元素必须是 `insert` / `delete` / `update` 的子集。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoverScheduleRequest"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    description: 新建 DiscoverSchedule 的 ID
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      summary: 获取调度列表
+      description: 分页 + filter 获取 DiscoverSchedule 列表。
+      parameters:
+        - name: catalog_id
+          description: 按归属 catalog 过滤
+          in: query
+          schema:
+            type: string
+        - name: enabled
+          description: 按启用状态过滤；不传表示不过滤
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListDiscoverSchedules"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/discover-schedules/{id}:
+    parameters:
+      - name: id
+        description: DiscoverSchedule ID
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取调度详情
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoverSchedule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: 严格更新调度
+      description: |
+        **严格全量替换**，**只允许变更"配置"字段**（`cron_expr` / `strategies` /
+        `start_time` / `end_time`）。下列字段在 body 中携带且与当前不一致时返回 409：
+
+        | 字段 | errcode | 说明 |
+        |---|---|---|
+        | `id` | `DiscoverSchedule.IdMismatch` | path 为权威来源；body 可省略 |
+        | `catalog_id` | `DiscoverSchedule.CatalogMismatch` | 创建后归属不可改；如要换 catalog 请新建 |
+        | `enabled` | `DiscoverSchedule.EnabledFieldNotAllowed` | 状态切换走 `POST .../enable` `disable` |
+
+        其它系统维护字段（`last_run` / `next_run` / 时间戳 / 操作者）携带时静默忽略。
+
+        若 schedule 当前 `enabled=true`，更新后调度器会重新注册以应用新 cron。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoverScheduleRequest"
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: 删除调度
+      description: |
+        删除 DiscoverSchedule，从 cron 引擎注销并从 DB 删除。
+
+        **不删除已有 DiscoverTask 历史**——该 schedule 历史触发的 DiscoverTask 保留
+        `schedule_id` 字段作为孤儿引用，便于审计追溯。正在执行的 DiscoverTask 不受影响。
+      responses:
+        "204":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/discover-schedules/{id}/enable:
+    parameters:
+      - name: id
+        description: DiscoverSchedule ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 启用调度
+      description: |
+        启用 DiscoverSchedule 并注册到 cron 引擎。**幂等**：对已 enable 的 schedule
+        再 enable 返回 204，不报错。
+      responses:
+        "204":
+          description: 启用成功（含已启用的幂等返回）
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/discover-schedules/{id}/disable:
+    parameters:
+      - name: id
+        description: DiscoverSchedule ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 停用调度
+      description: |
+        停用 DiscoverSchedule 并从 cron 引擎注销。**幂等**：对已 disable 的 schedule
+        再 disable 返回 204，不报错。
+
+        **不影响已经入队 / 正在执行的 DiscoverTask**；这些任务执行时已经持有所需上下文。
+      responses:
+        "204":
+          description: 停用成功（含已停用的幂等返回）
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: |
+        请求参数 / 请求体非法。常见 errcode：
+        - `VegaBackend.InvalidParameter.RequestBody`：body schema 不合法
+        - `VegaBackend.DiscoverSchedule.InvalidCronExpr`：cron 表达式非法
+        - `VegaBackend.DiscoverSchedule.InvalidStrategies`：strategies 元素非法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: |
+        资源不存在。errcode：
+        - `VegaBackend.DiscoverSchedule.NotFound`：schedule id 不存在
+        - `VegaBackend.Catalog.NotFound`：创建时 catalog_id 不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: |
+        PUT 严格更新冲突。errcode：
+        - `VegaBackend.DiscoverSchedule.IdMismatch`
+        - `VegaBackend.DiscoverSchedule.CatalogMismatch`
+        - `VegaBackend.DiscoverSchedule.EnabledFieldNotAllowed`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: |
+        服务内部错误。常见 errcode：
+        - `VegaBackend.DiscoverSchedule.InternalError.GetFailed`
+        - `VegaBackend.DiscoverSchedule.InternalError.CreateFailed`
+        - `VegaBackend.DiscoverSchedule.InternalError.UpdateFailed`
+        - `VegaBackend.DiscoverSchedule.InternalError.DeleteFailed`
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: 统一错误响应体（`kweaver-go-lib/rest.BaseError` JSON 序列化）。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          type: string
+        description:
+          type: string
+        solution:
+          type: string
+        error_link:
+          type: string
+        error_details:
+          description: 详细内容，类型不固定；无详情时为空字符串
+    AccountInfo:
+      description: 操作者信息
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        name:
+          type: string
+    DiscoverSchedule:
+      description: 发现调度实体
+      type: object
+      required:
+        - id
+        - catalog_id
+        - cron_expr
+        - enabled
+        - strategies
+        - creator
+        - create_time
+        - updater
+        - update_time
+      properties:
+        id:
+          description: 全局唯一 ID
+          type: string
+        catalog_id:
+          description: 关联 catalog；创建后**不可修改**
+          type: string
+        cron_expr:
+          description: 标准 5 字段 cron 表达式
+          type: string
+        start_time:
+          description: 调度生效起始时间，毫秒时间戳
+          type: integer
+          format: int64
+        end_time:
+          description: 调度结束时间，毫秒时间戳；0 表示无结束时间
+          type: integer
+          format: int64
+        enabled:
+          description: |
+            是否启用；**只读**输出字段，状态切换走 `POST .../enable` `POST .../disable`
+          type: boolean
+        strategies:
+          description: |
+            发现策略集合，元素为 `insert` / `delete` / `update`；空数组表示全部。
+          type: array
+          items:
+            type: string
+            enum:
+              - insert
+              - delete
+              - update
+        last_run:
+          description: 上次执行时间，毫秒时间戳；系统维护
+          type: integer
+          format: int64
+        next_run:
+          description: 下次预计执行时间，毫秒时间戳；系统维护
+          type: integer
+          format: int64
+        creator:
+          $ref: "#/components/schemas/AccountInfo"
+        create_time:
+          description: 创建时间，毫秒时间戳
+          type: integer
+          format: int64
+        updater:
+          $ref: "#/components/schemas/AccountInfo"
+        update_time:
+          description: 更新时间，毫秒时间戳
+          type: integer
+          format: int64
+    DiscoverScheduleRequest:
+      description: |
+        创建 / 更新请求体。
+
+        - 创建时 `catalog_id` 与 `cron_expr` 必填；`enabled` 默认 false（可同时传 true 一步启用）
+        - PUT 时三个只读字段（id / catalog_id / enabled）允许省略；如携带必须与当前一致
+      type: object
+      properties:
+        id:
+          description: 创建时省略；PUT 时如携带必须与 path 一致
+          type: string
+        catalog_id:
+          description: 关联 catalog；创建必填，PUT 时必须与当前一致
+          type: string
+        cron_expr:
+          description: 标准 5 字段 cron 表达式（必填）
+          type: string
+        start_time:
+          type: integer
+          format: int64
+        end_time:
+          type: integer
+          format: int64
+        enabled:
+          description: |
+            创建时可选（默认 false）；PUT 时必须与当前一致，否则 409 EnabledFieldNotAllowed
+          type: boolean
+        strategies:
+          description: |
+            发现策略，元素必须是 `insert` / `delete` / `update` 的子集；空数组表示全部
+          type: array
+          items:
+            type: string
+            enum:
+              - insert
+              - delete
+              - update
+    ListDiscoverSchedules:
+      description: 调度列表响应
+      type: object
+      required:
+        - entries
+        - total_count
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscoverSchedule"
+        total_count:
+          type: integer
+          format: int64

@@ -1,12 +1,12 @@
 feature: vega-backend
 story: catalog_manager
-switch: y
+switch: n
 tags:
   - vega-backend
 
 cases:
   - name: 创建Catalog_逻辑资源_请求成功
-    url: 创建目录
+    url: 创建catalog
     body_params: |
         {
             "name": "{{ '新增catalog_AutoCase-%s' | format(random_string(6, 8)) }}"

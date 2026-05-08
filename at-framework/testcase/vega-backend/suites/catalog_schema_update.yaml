@@ -59,7 +59,7 @@ cases:
       }
     resp_values: >-
       {
-       "catalog_name": "$.entries[0].name"
+       "catalog_name": "$[0].name"
       }
     code_check: "200"
   - name: "查看catalog详情_MySQL数据源"
@@ -71,7 +71,7 @@ cases:
       }
     resp_values: >-
       {
-       "catalog_name": "$.entries[0].name"
+       "catalog_name": "$[0].name"
       }
     code_check: "200"
   - name: "删除catalog_MySQL数据源"

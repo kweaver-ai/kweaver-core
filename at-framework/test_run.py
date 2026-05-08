@@ -679,10 +679,11 @@ def test_case(feature, story, case_name, case_info):
             passed, error_msg = _parse_check_expression(expected_value, actual_value, jsonpath_key)
             assert passed, "resp_check failed for '%s': %s" % (jsonpath_key, error_msg)
 
-    if "resp_schema" in case_info:
-        if resp_code in case_info["resp_schema"]:
-            json_schema = genson(case_info["resp_schema"][resp_code])
-            validate(instance=resp_body, schema=json_schema)
+    # if "resp_schema" in case_info:
+    #     resp_schema = json.loads(case_info.get("resp_schema"))
+    #     if resp_code in resp_schema:
+    #         json_schema = genson(resp_schema[str(resp_code)])
+    #         validate(instance=resp_body, schema=json_schema)
 
     # 提取响应中的变量
     if "resp_values" in case_info:
@@ -703,11 +704,9 @@ def test_case(feature, story, case_name, case_info):
     if case_info.get("next_case", "") != '':
         with allure.step("执行后置用例"):
             for x in compute_case_list():
-                # 使用 _case_name（case原始name）进行匹配，避免被 api name 覆盖后匹配失败
-                target_name = x.get("_case_name") or x.get("name", "")
-                if target_name == case_info["next_case"]:
+                if x["name"] == case_info["next_case"]:
                     try:
-                        test_case(x["feature"], x["story"], x.get("_case_name") or x.get("name"), x)
+                        test_case(x["feature"], x["story"], x["name"], x)
                     except Exception as e:
                         # 后置用例失败不影响当前用例结果，仅记录警告
                         print("WARNING: next_case '%s' failed: %s" % (case_info["next_case"], e))

@@ -8,7 +8,6 @@
 """
 import configparser
 import copy
-import json
 import os
 import random
 import re
@@ -204,7 +203,7 @@ def load_case_by_suite(file_path: str):
     with open(file_path, "r", encoding="utf-8") as fp:
         suite = yaml.safe_load(fp)
 
-    if suite["switch"] not in ('y', 'Y', '1', 'ON'):
+    if suite.get("switch", "n") not in ('y', 'Y', '1', 'ON'):
         return []
 
     case_list = []
@@ -288,9 +287,9 @@ def load_case(path: str):
     global_flat.setdefault("port", default_port)
 
     # 加载接口信息
-    # 为方便查找，转换index格式：name -> {name, url, method, headers, response: {200: {}, 400: {}}}
+    # 为方便查找，转换index格式：name -> {url, method, headers, resp_schema: {200: {}, 400: {}}}
     api_list = _read_yaml(os.path.join(path, "_config", "apis.yaml"))
-    api_params = {item["name"]: item for item in api_list}
+    api_params = {x["name"]: {k: v for k, v in x.items() if k != 'name'} for x in api_list}
 
     case_list = []
     # 加载suite
@@ -316,11 +315,7 @@ def load_case(path: str):
         raise ValueError(msg)
 
     # 更新api信息
-    # 合并 api_params 到 case，但保留 case 的原始 name（存到 _case_name），避免 prev_case 匹配失败
-    case_list = [
-        {**({"_case_name": x["name"]} if "name" in x else {}), **x, **api_params[x["url"]]}
-        for x in case_list if x["url"] in api_params
-    ]
+    case_list = [{**x, **api_params[x["url"]]} for x in case_list if x["url"] in api_params]
 
     # 替换全局变量
     case_list = [replace_params(x, **global_flat) for x in case_list]
@@ -538,5 +533,7 @@ if __name__ == "__main__":
     base = os.path.join(os.path.dirname(__file__), "..")
     case_file = os.path.join(base, "testcase", "agent-backend")  # 默认示例模块
     rst = load_case(case_file)
-    # for x in rst:
-    #     print(x)
+    for x in rst:
+        print(x)
+    pass
+

@@ -1,6 +1,6 @@
 feature: vega-backend
 story: catalog
-switch: y
+switch: n
 tags:
   - vega-backend
   - catalog

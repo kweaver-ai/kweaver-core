@@ -1,0 +1,503 @@
+---
+openapi: 3.1.1
+info:
+  title: Catalog
+  description: |
+    Vega Backend Catalog（数据目录）API。
+
+    Catalog 是一个数据源连接的抽象，对应一个物理数据源（MySQL / OpenSearch / S3 等）
+    或逻辑目录（虚拟视图）。资源（`Resource`）按 catalog 归属注册。
+
+    本文件仅包含 catalog 自身的 CRUD 与状态相关端点。跨资源的便利端点：
+    - `POST /catalogs/{id}/discover`（手动发现一次） → 见 `discover-task.yaml`
+    - `GET /catalogs/{ids}/resources`（按 catalog 列资源） → 见 `resource.yaml`
+    - `GET /catalogs/{cid}/discover-schedules`（按 catalog 列调度） → 见 `discover-schedule.yaml`
+
+    每个外部接口都有一一对应的内部版本，路径前缀为 `/api/vega-backend/in/v1`，请求体与
+    响应结构与外部完全一致；区别仅在于鉴权方式：外部走 OAuth Token 校验，内部从请求头
+    （`X-Account-ID` / `X-Account-Type`）解析访问者。本文档仅描述外部接口。
+  version: 0.1.0
+servers:
+  - url: /api/vega-backend/v1
+paths:
+  /api/vega-backend/v1/catalogs:
+    get:
+      summary: 获取 catalog 列表
+      description: 分页获取 catalog；支持按 tag、type、health_check_status 过滤。
+      parameters:
+        - name: tag
+          description: 按标签精确过滤
+          in: query
+          schema:
+            type: string
+        - name: type
+          description: 按 catalog 类型过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - physical
+              - logical
+        - name: health_check_status
+          description: 按健康检查状态过滤
+          in: query
+          schema:
+            type: string
+            enum:
+              - healthy
+              - degraded
+              - unhealthy
+              - offline
+              - disabled
+        - name: offset
+          description: 分页偏移量，>=0，默认 0
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          description: 每页数量，1-1000，-1 表示不分页，默认 20
+          in: query
+          schema:
+            type: integer
+            format: int64
+            default: 20
+        - name: sort
+          description: 排序字段
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - create_time
+              - update_time
+            default: update_time
+        - name: direction
+          description: 排序方向
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCatalogs"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: 创建 catalog
+      description: |
+        创建一个新的 catalog。`name` 全局唯一，已存在时返回 409。
+        `connector_type` 必须是已注册且 enabled 的连接器类型。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogRequest"
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogRef"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          description: 同名 catalog 已存在 / connector_type 未启用
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/catalogs/{ids}:
+    parameters:
+      - name: ids
+        description: catalog ID，多个用英文逗号分隔（如 `id1,id2,id3`）
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取 catalog 详情
+      description: 路径参数支持单条或批量（逗号分隔）；批量时不存在的 ID 不会报错，结果中按存在的返回。
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Catalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: 删除 catalog
+      description: 路径参数支持单条或批量（逗号分隔）。删除会同步移除该 catalog 下的资源、调度等关联记录。
+      responses:
+        "204":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/catalogs/{id}:
+    parameters:
+      - name: id
+        description: catalog ID
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: 修改 catalog
+      description: |
+        全量更新指定 catalog。catalog 由路径参数 `id` 唯一确定（主键不可改）。
+
+        请求体的 `id` 字段**必填**，且必须与路径参数完全一致：
+        - 缺失 → 400 `VegaBackend.Catalog.InvalidParameter.ID`。
+        - 不一致 → 409 `VegaBackend.Catalog.IDMismatch`。
+
+        `name` 改动后若新名称已被其它 catalog 占用，返回 409 `VegaBackend.Catalog.NameExists`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogRequest"
+      responses:
+        "204":
+          description: 更新成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "409":
+          description: |
+            主键 / 名称冲突。可能的错误码：
+            - `VegaBackend.Catalog.IDMismatch`
+            - `VegaBackend.Catalog.NameExists`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/catalogs/{ids}/health-status:
+    parameters:
+      - name: ids
+        description: catalog ID，多个用英文逗号分隔
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: 获取 catalog 健康状态
+      description: 返回每个 catalog 的最近一次健康检查结果（状态 + 时间 + 详情）。
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogHealthStatusEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/vega-backend/v1/catalogs/{id}/test-connection:
+    parameters:
+      - name: id
+        description: catalog ID
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: 测试 catalog 连接
+      description: |
+        以当前持久化的 `connector_config` 真实建立一次到数据源的连接，验证连通性。
+        与 `health-status`（异步定时检查的最近结果）不同，本端点是**同步实时探测**。
+
+        探测结果通过响应体 `success` 字段返回；连不通**不**视为 HTTP 错误：
+        - 连通 → 200 `{ success: true, latency_ms }`
+        - 连不通 → 200 `{ success: false, message }`
+        - 非 2xx 仅用于"请求 / 鉴权 / 服务内部"问题，与目标连通性无关。
+      responses:
+        "200":
+          description: 探测完成（成功或失败均返回，业务结果看 `success` 字段）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestConnectionResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  responses:
+    BadRequest:
+      description: 请求参数 / 请求体非法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未授权（OAuth Token 校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAcceptable:
+      description: Content-Type 不是 application/json
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: 服务内部错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: |
+        统一错误响应体。由 `kweaver-go-lib/rest.BaseError` JSON 序列化得到。
+      type: object
+      required:
+        - error_code
+        - description
+        - solution
+        - error_link
+        - error_details
+      properties:
+        error_code:
+          type: string
+        description:
+          type: string
+        solution:
+          type: string
+        error_link:
+          type: string
+        error_details:
+          description: 详细内容，类型不固定
+    AccountInfo:
+      description: 账号信息
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          description: 账号类型（user / app / anonymous 等）
+          type: string
+    Catalog:
+      description: Catalog（数据目录）实体
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - enabled
+        - connector_type
+      properties:
+        id:
+          description: catalog ID
+          type: string
+        name:
+          description: catalog 名称，全局唯一
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        description:
+          description: 描述
+          type: string
+        type:
+          description: catalog 类型
+          type: string
+          enum:
+            - physical
+            - logical
+        enabled:
+          description: 是否启用
+          type: boolean
+        connector_type:
+          description: 连接器类型标识（参见 connector-type.yaml）
+          type: string
+        connector_config:
+          description: 连接器配置（结构由 ConnectorType.field_config 决定）
+          type: object
+          additionalProperties: true
+        metadata:
+          description: 扩展元信息
+          type: object
+          additionalProperties: true
+        health_check_enabled:
+          description: 是否开启周期健康检查
+          type: boolean
+        health_check_status:
+          description: 最近一次健康检查状态
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+            - offline
+            - disabled
+        last_check_time:
+          description: 最近一次健康检查时间（毫秒时间戳）
+          type: integer
+          format: int64
+        health_check_result:
+          description: 最近一次健康检查详情
+          type: string
+        creator:
+          $ref: "#/components/schemas/AccountInfo"
+        create_time:
+          type: integer
+          format: int64
+        updater:
+          $ref: "#/components/schemas/AccountInfo"
+        update_time:
+          type: integer
+          format: int64
+        operations:
+          description: 当前用户对该 catalog 的操作权限集合
+          type: array
+          items:
+            type: string
+    CatalogRequest:
+      description: |
+        catalog 创建 / 更新请求体。
+
+        - POST：`id` 可省略，由后端生成；若携带且已存在，返回 409 `VegaBackend.Catalog.IdExists`。
+        - PUT：`id` **必填**，且必须与路径参数 `id` 完全一致。缺失返回 400 `VegaBackend.Catalog.InvalidParameter.ID`，不一致返回 409 `VegaBackend.Catalog.IDMismatch`。
+      type: object
+      required:
+        - name
+        - connector_type
+      properties:
+        id:
+          description: catalog ID；POST 时可省略由后端生成，PUT 时必填且必须与路径参数一致
+          type: string
+        name:
+          description: catalog 名称，全局唯一
+          type: string
+        tags:
+          description: 标签
+          type: array
+          items:
+            type: string
+        description:
+          description: 描述
+          type: string
+        connector_type:
+          description: 连接器类型标识；必须是已注册且 enabled 的类型
+          type: string
+        connector_config:
+          description: 连接器配置；字段由 ConnectorType.field_config 决定
+          type: object
+          additionalProperties: true
+    ListCatalogs:
+      description: catalog 列表
+      type: object
+      required:
+        - entries
+        - total_count
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Catalog"
+        total_count:
+          type: integer
+          format: int64
+    CatalogRef:
+      description: catalog 引用
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+    CatalogHealthStatusEntry:
+      description: catalog 健康状态条目
+      type: object
+      required:
+        - id
+        - health_check_status
+      properties:
+        id:
+          description: catalog ID
+          type: string
+        health_check_status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+            - offline
+            - disabled
+        last_check_time:
+          description: 最近一次检查时间（毫秒时间戳）
+          type: integer
+          format: int64
+        health_check_result:
+          description: 检查详情 / 错误信息
+          type: string
+    TestConnectionResult:
+      description: 连接测试结果
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          description: 是否连通
+          type: boolean
+        message:
+          description: 详情（失败时为错误信息）
+          type: string
+        latency_ms:
+          description: 探测耗时（毫秒）
+          type: integer
+          format: int64
