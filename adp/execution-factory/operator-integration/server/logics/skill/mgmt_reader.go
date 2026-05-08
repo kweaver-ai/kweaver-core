@@ -252,7 +252,7 @@ func (r *skillManagementReader) DownloadManagementSkill(ctx context.Context, req
 		return nil, err
 	}
 
-	skill, zipName, content, err := buildArchiveFromFiles(ctx, r.assetStore, skill, files)
+	_, zipName, content, err := buildArchiveFromFiles(ctx, r.assetStore, skill, files)
 	if err != nil {
 		r.Logger.WithContext(ctx).Errorf("build management archive failed: %v", err)
 		return nil, err
