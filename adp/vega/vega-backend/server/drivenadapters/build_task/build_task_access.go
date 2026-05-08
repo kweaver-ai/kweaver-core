@@ -469,7 +469,7 @@ func (bta *buildTaskAccess) List(ctx context.Context, params interfaces.BuildTas
 		span.SetStatus(codes.Error, "Get build tasks with filters failed")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	buildTasks := []*interfaces.BuildTask{}
 	for rows.Next() {

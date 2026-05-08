@@ -379,7 +379,7 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 	}
 
 	// Unschedule first; ignore error since DB delete is the source of truth.
-	r.scheduler.UnscheduleTask(id)
+	_ = r.scheduler.UnscheduleTask(id)
 
 	if err := r.dss.Delete(ctx, id); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_DeleteFailed).
@@ -494,7 +494,7 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 			rest.ReplyError(c, httpErr)
 			return
 		}
-		r.scheduler.UnscheduleTask(id)
+		_ = r.scheduler.UnscheduleTask(id)
 	}
 
 	op := audit.UPDATE
