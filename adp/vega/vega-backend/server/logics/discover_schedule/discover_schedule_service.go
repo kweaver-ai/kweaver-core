@@ -15,7 +15,7 @@ import (
 	"github.com/kweaver-ai/TelemetrySDK-Go/exporter/v2/ar_trace"
 	"github.com/kweaver-ai/kweaver-go-lib/logger"
 	o11y "github.com/kweaver-ai/kweaver-go-lib/observability"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/rs/xid"
 
 	"vega-backend/common"
 	"vega-backend/drivenadapters/discover_schedule"
@@ -58,15 +58,8 @@ func NewDiscoverScheduleService(appSetting *common.AppSetting, dts interfaces.Di
  */
 func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.DiscoverScheduleRequest) (string, error) {
 	// 使用OpenTelemetry追踪请求执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Create",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Create")
 	defer span.End()
-
-	// Get account info from context
-	accountInfo := interfaces.AccountInfo{}
-	if ai, ok := ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo); ok {
-		accountInfo = ai
-	}
 
 	// Validate cron expression
 	if req.CronExpr == "" {
@@ -75,9 +68,14 @@ func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.
 		return "", fmt.Errorf("cron_expr is required")
 	}
 
-	currentTime := time.Now().UnixMilli()
+	accountInfo := interfaces.AccountInfo{}
+	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
+		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
+	}
+
+	now := time.Now().UnixMilli()
 	schedule := &interfaces.DiscoverSchedule{
-		ID:         req.CatalogID,
+		ID:         xid.New().String(),
 		CatalogID:  req.CatalogID,
 		CronExpr:   req.CronExpr,
 		StartTime:  req.StartTime,
@@ -86,130 +84,130 @@ func (dss *discoverScheduleService) Create(ctx context.Context, req *interfaces.
 		Strategies: req.Strategies,
 
 		Creator:    accountInfo,
-		CreateTime: currentTime,
+		CreateTime: now,
 		Updater:    accountInfo,
-		UpdateTime: currentTime,
+		UpdateTime: now,
 	}
 
-	// Create task
+	// Create schedule
 	if err := dss.dsa.Create(ctx, schedule); err != nil {
-		logger.Errorf("Failed to create scheduled discover task: %v", err)
-		o11y.Error(ctx, "Failed to create scheduled discover task")
+		logger.Errorf("Failed to create scheduled discover schedule: %v", err)
+		o11y.Error(ctx, "Failed to create discover schedule")
 		return "", err
 	}
 
-	logger.Infof("Created scheduled discover task: id=%s, catalog_id=%s, cron=%s",
+	logger.Infof("Created discover schedule: id=%s, catalog_id=%s, cron=%s",
 		schedule.ID, schedule.CatalogID, schedule.CronExpr)
 	return schedule.ID, nil
 }
 
-// GetByID retrieves a scheduled discover task by ID.
+// GetByID retrieves a discover schedule by ID.
 func (dss *discoverScheduleService) GetByID(ctx context.Context, id string) (*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetByID",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetByID")
 	defer span.End()
 
 	return dss.dsa.GetByID(ctx, id)
 }
 
-// List lists scheduled discover tasks.
+// List lists discover schedules.
 func (dss *discoverScheduleService) List(ctx context.Context, params interfaces.DiscoverScheduleQueryParams) ([]*interfaces.DiscoverSchedule, int64, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.List",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.List")
 	defer span.End()
 
 	return dss.dsa.List(ctx, params)
 }
 
-// Update updates a scheduled discover task.
+// Update updates a discover schedule.
 func (dss *discoverScheduleService) Update(ctx context.Context, id string, req *interfaces.DiscoverSchedule) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Update",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Update")
 	defer span.End()
 
-	// Get account info from context
+	// Validate cron expression
+	if req.CronExpr == "" {
+		logger.Error("Cron expression is required")
+		o11y.Error(ctx, "Cron expression is required")
+		return fmt.Errorf("cron_expr is required")
+	}
+
 	accountInfo := interfaces.AccountInfo{}
-	if ai, ok := ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo); ok {
-		accountInfo = ai
+	if ctx.Value(interfaces.ACCOUNT_INFO_KEY) != nil {
+		accountInfo = ctx.Value(interfaces.ACCOUNT_INFO_KEY).(interfaces.AccountInfo)
 	}
 
 	// Set updater
 	req.Updater = accountInfo
-	req.UpdateTime = time.Now().Unix()
-	// Update task
+	req.UpdateTime = time.Now().UnixMilli()
+
+	// Update schedule
 	if err := dss.dsa.Update(ctx, req); err != nil {
-		logger.Errorf("Failed to update scheduled discover task: %v", err)
-		o11y.Error(ctx, "Failed to update scheduled discover task")
+		logger.Errorf("Failed to update discover schedule: %v", err)
+		o11y.Error(ctx, "Failed to update discover schedule")
 		return err
 	}
-	logger.Infof("Updated scheduled discover task: id=%s", id)
+	logger.Infof("Updated discover schedule: id=%s", id)
 	return nil
 }
 
-// Delete deletes a scheduled discover task by ID.
+// Delete deletes a discover schedule by ID.
 func (dss *discoverScheduleService) Delete(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Delete",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Delete")
 	defer span.End()
 
+	// Delete schedule
 	if err := dss.dsa.Delete(ctx, id); err != nil {
-		logger.Errorf("Failed to delete scheduled discover task: %v", err)
-		o11y.Error(ctx, "Failed to delete scheduled discover task")
+		logger.Errorf("Failed to delete discover schedule: %v", err)
+		o11y.Error(ctx, "Failed to delete discover schedule")
 		return err
 	}
 
-	logger.Infof("Deleted scheduled discover task: id=%s", id)
+	logger.Infof("Deleted discover schedule: id=%s", id)
 	return nil
 }
 
-// Enable enables a scheduled discover task.
+// Enable enables a discover schedule.
 func (dss *discoverScheduleService) Enable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Enable",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Enable")
 	defer span.End()
 
-	task, err := dss.dsa.GetByID(ctx, id)
+	schedule, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get scheduled discover task: %v", err)
-		o11y.Error(ctx, "Failed to get scheduled discover task")
+		logger.Errorf("Failed to get discover schedule: %v", err)
+		o11y.Error(ctx, "Failed to get discover schedule")
 		return err
 	}
 
-	task.Enabled = true
-	return dss.Update(ctx, id, task)
+	schedule.Enabled = true
+	return dss.Update(ctx, id, schedule)
 }
 
-// Disable disables a scheduled discover task.
+// Disable disables a discover schedule.
 func (dss *discoverScheduleService) Disable(ctx context.Context, id string) error {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Disable",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.Disable")
 	defer span.End()
 
-	task, err := dss.dsa.GetByID(ctx, id)
+	schedule, err := dss.dsa.GetByID(ctx, id)
 	if err != nil {
-		logger.Errorf("Failed to get scheduled discover task: %v", err)
-		o11y.Error(ctx, "Failed to get scheduled discover task")
+		logger.Errorf("Failed to get discover schedule: %v", err)
+		o11y.Error(ctx, "Failed to get discover schedule")
 		return err
 	}
 
-	task.Enabled = false
-	return dss.Update(ctx, id, task)
+	schedule.Enabled = false
+	return dss.Update(ctx, id, schedule)
 }
 
-// GetEnabledTasks retrieves all enabled scheduled discover tasks.
-func (dss *discoverScheduleService) GetEnabledTasks(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetEnabledTasks",
-		trace.WithSpanKind(trace.SpanKindServer))
+// GetEnabledSchedules retrieves all enabled discover schedules.
+func (dss *discoverScheduleService) GetEnabledSchedules(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.GetEnabledSchedules")
 	defer span.End()
-	return dss.dsa.GetEnabledTasks(ctx)
+	return dss.dsa.GetEnabledSchedules(ctx)
 }
 
-// ExecuteTask 是一个执行计划发现任务的方法
+// ExecuteSchedule 是一个执行计划发现任务的方法
 // 它接收一个上下文和一个计划发现任务作为参数，返回一个错误
-func (dss *discoverScheduleService) ExecuteTask(ctx context.Context, task *interfaces.DiscoverSchedule) error {
+func (dss *discoverScheduleService) ExecuteSchedule(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	// 使用追踪器创建一个新的span，用于监控和追踪请求的执行过程
-	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.ExecuteTask",
-		trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := ar_trace.Tracer.Start(ctx, "DiscoverScheduleService.ExecuteSchedule")
 	defer span.End() // 确保在函数返回时结束span
 
 	// 检查DiscoverTaskService是否已设置
@@ -221,34 +219,37 @@ func (dss *discoverScheduleService) ExecuteTask(ctx context.Context, task *inter
 
 	// 检查是否有正在执行的相同任务
 	_, tasks, err := dss.dts.List(ctx, interfaces.DiscoverTaskQueryParams{
-		CatalogID:   task.CatalogID,
+		CatalogID:   schedule.CatalogID,
 		Status:      interfaces.DiscoverTaskStatusRunning,
 		TriggerType: interfaces.DiscoverTaskTriggerScheduled,
 	})
 	if err != nil {
-		logger.Errorf("Failed to check running tasks for catalog %s: %v", task.CatalogID, err)
+		logger.Errorf("Failed to check running tasks for catalog %s: %v", schedule.CatalogID, err)
 		o11y.Error(ctx, "Failed to check running tasks")
 		return err
 	}
 	if tasks > 0 {
-		logger.Warnf("There is already a running discover task for catalog %s, skipping execution", task.CatalogID)
+		logger.Warnf("There is already a running discover task for catalog %s, skipping execution", schedule.CatalogID)
 		return nil
 	}
+
 	// Create discover task：这里会创建一个task然后发送到redis mq里面去
-	strategiesStr := strategiesToString(task.Strategies)
-	_, err = dss.dts.Create(ctx, task.CatalogID, interfaces.DiscoverTaskTriggerScheduled, task.ID, strategiesStr)
+	strategiesStr := strategiesToString(schedule.Strategies)
+	_, err = dss.dts.Create(ctx, schedule.CatalogID, interfaces.DiscoverTaskTriggerScheduled, schedule.ID, strategiesStr)
 	if err != nil {
-		logger.Errorf("Failed to create discover task for catalog %s: %v", task.CatalogID, err)
+		logger.Errorf("Failed to create discover task for catalog %s: %v", schedule.CatalogID, err)
 		o11y.Error(ctx, "Failed to create discover task")
 		return err
 	}
+
 	// Update last run time
 	now := time.Now().UnixMilli()
-	if err := dss.UpdateLastRun(ctx, task.ID, now); err != nil {
+	if err := dss.UpdateLastRun(ctx, schedule.ID, now); err != nil {
 		logger.Errorf("Failed to update last run time: %v", err)
-		// Don't return error here as the task was already executed
+		o11y.Error(ctx, "Failed to update last run time")
+		return err
 	}
-	logger.Infof("Executed scheduled discover task: id=%s, catalog_id=%s", task.ID, task.CatalogID)
+	logger.Infof("Executed discover schedule: id=%s, catalog_id=%s", schedule.ID, schedule.CatalogID)
 	return nil
 }
 

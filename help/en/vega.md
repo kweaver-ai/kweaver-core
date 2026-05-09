@@ -406,8 +406,6 @@ curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/resource
 # Resources: list, list-all, get, create, update, delete, data
 curl -sk "https://<access-address>/api/vega-backend/v1/resources?catalog_id=cat-001&limit=50" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
-curl -sk "https://<access-address>/api/vega-backend/v1/resources/list?limit=50" \
-  -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
@@ -425,17 +423,19 @@ curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/res-001
   -H "x-http-method-override: GET" \
   -d '{"limit":10,"offset":0,"need_total":true}'
 
-# Dataset docs + build (replace resource id / task id)
-curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/docs" \
+# Dataset docs (use POST override)
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/res-ds/data" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '[{"id":"doc1"}]'
-# Dataset build (vega-backend: POST .../resources/dataset/:id/build)
-curl -sk -X POST "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/build" \
+  -H "x-http-method-override: POST" \
+  -d '[{"id":"doc1","content":"..."}]'
+
+# Dataset build task
+curl -sk -X POST "https://<access-address>/api/vega-backend/v1/build-tasks" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public" \
   -H "Content-Type: application/json" \
-  -d '{"mode":"full"}'
-curl -sk "https://<access-address>/api/vega-backend/v1/resources/dataset/res-ds/build/<task-id>" \
+  -d '{"resource_id":"res-ds","mode":"full"}'
+curl -sk "https://<access-address>/api/vega-backend/v1/build-tasks/<task-id>" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
 # Structured query / direct SQL

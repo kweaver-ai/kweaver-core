@@ -42,17 +42,17 @@ func (m *MockDiscoverScheduleAccess) EXPECT() *MockDiscoverScheduleAccessMockRec
 }
 
 // Create mocks base method.
-func (m *MockDiscoverScheduleAccess) Create(ctx context.Context, task *interfaces.DiscoverSchedule) error {
+func (m *MockDiscoverScheduleAccess) Create(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, task)
+	ret := m.ctrl.Call(m, "Create", ctx, schedule)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockDiscoverScheduleAccessMockRecorder) Create(ctx, task any) *gomock.Call {
+func (mr *MockDiscoverScheduleAccessMockRecorder) Create(ctx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).Create), ctx, task)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).Create), ctx, schedule)
 }
 
 // Delete mocks base method.
@@ -84,19 +84,19 @@ func (mr *MockDiscoverScheduleAccessMockRecorder) GetByID(ctx, id any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).GetByID), ctx, id)
 }
 
-// GetEnabledTasks mocks base method.
-func (m *MockDiscoverScheduleAccess) GetEnabledTasks(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
+// GetEnabledSchedules mocks base method.
+func (m *MockDiscoverScheduleAccess) GetEnabledSchedules(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEnabledTasks", ctx)
+	ret := m.ctrl.Call(m, "GetEnabledSchedules", ctx)
 	ret0, _ := ret[0].([]*interfaces.DiscoverSchedule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetEnabledTasks indicates an expected call of GetEnabledTasks.
-func (mr *MockDiscoverScheduleAccessMockRecorder) GetEnabledTasks(ctx any) *gomock.Call {
+// GetEnabledSchedules indicates an expected call of GetEnabledSchedules.
+func (mr *MockDiscoverScheduleAccessMockRecorder) GetEnabledSchedules(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnabledTasks", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).GetEnabledTasks), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnabledSchedules", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).GetEnabledSchedules), ctx)
 }
 
 // List mocks base method.
@@ -116,17 +116,17 @@ func (mr *MockDiscoverScheduleAccessMockRecorder) List(ctx, params any) *gomock.
 }
 
 // Update mocks base method.
-func (m *MockDiscoverScheduleAccess) Update(ctx context.Context, task *interfaces.DiscoverSchedule) error {
+func (m *MockDiscoverScheduleAccess) Update(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, task)
+	ret := m.ctrl.Call(m, "Update", ctx, schedule)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockDiscoverScheduleAccessMockRecorder) Update(ctx, task any) *gomock.Call {
+func (mr *MockDiscoverScheduleAccessMockRecorder) Update(ctx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).Update), ctx, task)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDiscoverScheduleAccess)(nil).Update), ctx, schedule)
 }
 
 // UpdateLastRun mocks base method.

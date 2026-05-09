@@ -43,7 +43,7 @@ type discoverTaskAccess struct {
 
 // GetScheduledTaskStrategies retrieves strategies from t_discover_schedule table by ID.
 func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, scheduledTaskID string) ([]string, error) {
-	ctx, span := ar_trace.Tracer.Start(ctx, "Query scheduled_discover_task by ID",
+	ctx, span := ar_trace.Tracer.Start(ctx, "Query discover_schedule by ID",
 		trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
@@ -56,8 +56,8 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		Where(sq.Eq{"f_id": scheduledTaskID}).
 		ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build select scheduled_discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build select scheduled_discover_task sql: %v", err))
+		logger.Errorf("Failed to build select discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build select discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (da *discoverTaskAccess) GetScheduledTaskStrategies(ctx context.Context, sc
 		return []string{}, nil
 	}
 	if err != nil {
-		logger.Errorf("Scan scheduled_discover_task failed: %v", err)
+		logger.Errorf("Scan discover_schedule failed: %v", err)
 		span.SetStatus(codes.Error, "Scan failed")
 		return nil, err
 	}
@@ -156,8 +156,8 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 			task.CreateTime,
 		).ToSql()
 	if err != nil {
-		logger.Errorf("Failed to build insert discover_task sql: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_task sql: %v", err))
+		logger.Errorf("Failed to build insert discover_schedule sql: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Failed to build insert discover_schedule sql: %v", err))
 		span.SetStatus(codes.Error, "Build sql failed")
 		return err
 	}
@@ -166,8 +166,8 @@ func (da *discoverTaskAccess) Create(ctx context.Context, task *interfaces.Disco
 
 	_, err = da.db.ExecContext(ctx, sqlStr, vals...)
 	if err != nil {
-		logger.Errorf("Insert discover_task failed: %v", err)
-		o11y.Error(ctx, fmt.Sprintf("Insert discover_task failed: %v", err))
+		logger.Errorf("Insert discover_schedule failed: %v", err)
+		o11y.Error(ctx, fmt.Sprintf("Insert discover_schedule failed: %v", err))
 		span.SetStatus(codes.Error, "Insert failed")
 		return err
 	}

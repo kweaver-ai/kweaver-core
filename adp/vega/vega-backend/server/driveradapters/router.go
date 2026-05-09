@@ -51,11 +51,11 @@ type restHandler struct {
 	dss        interfaces.DiscoverScheduleService
 	rds        interfaces.ResourceDataService
 
-	scheduler *worker.Scheduler
+	sw *worker.ScheduleWorker
 }
 
 // NewRestHandler creates a new RestHandler.
-func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) RestHandler {
+func NewRestHandler(appSetting *common.AppSetting, sw *worker.ScheduleWorker) RestHandler {
 	cs := catalog.NewCatalogService(appSetting)
 	rs := resource.NewResourceService(appSetting)
 	bts := build_task.NewBuildTaskService(appSetting)
@@ -73,7 +73,7 @@ func NewRestHandler(appSetting *common.AppSetting, scheduler *worker.Scheduler) 
 		cts:        connector_type.NewConnectorTypeService(appSetting),
 		dts:        dts,
 		dss:        dss,
-		scheduler:  scheduler,
+		sw:         sw,
 		rds:        resource_data.NewResourceDataService(appSetting),
 	}
 }

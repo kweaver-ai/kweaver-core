@@ -42,7 +42,7 @@ func (m *MockDiscoverScheduleService) EXPECT() *MockDiscoverScheduleServiceMockR
 }
 
 // Create mocks base method.
-func (m *MockDiscoverScheduleService) Create(ctx context.Context, req *interfaces.DiscoverSchedule) (string, error) {
+func (m *MockDiscoverScheduleService) Create(ctx context.Context, req *interfaces.DiscoverScheduleRequest) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, req)
 	ret0, _ := ret[0].(string)
@@ -98,18 +98,18 @@ func (mr *MockDiscoverScheduleServiceMockRecorder) Enable(ctx, id any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enable", reflect.TypeOf((*MockDiscoverScheduleService)(nil).Enable), ctx, id)
 }
 
-// ExecuteTask mocks base method.
-func (m *MockDiscoverScheduleService) ExecuteTask(ctx context.Context, task *interfaces.DiscoverSchedule) error {
+// ExecuteSchedule mocks base method.
+func (m *MockDiscoverScheduleService) ExecuteSchedule(ctx context.Context, schedule *interfaces.DiscoverSchedule) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecuteTask", ctx, task)
+	ret := m.ctrl.Call(m, "ExecuteSchedule", ctx, schedule)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ExecuteTask indicates an expected call of ExecuteTask.
-func (mr *MockDiscoverScheduleServiceMockRecorder) ExecuteTask(ctx, task any) *gomock.Call {
+// ExecuteSchedule indicates an expected call of ExecuteSchedule.
+func (mr *MockDiscoverScheduleServiceMockRecorder) ExecuteSchedule(ctx, schedule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteTask", reflect.TypeOf((*MockDiscoverScheduleService)(nil).ExecuteTask), ctx, task)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteSchedule", reflect.TypeOf((*MockDiscoverScheduleService)(nil).ExecuteSchedule), ctx, schedule)
 }
 
 // GetByID mocks base method.
@@ -127,19 +127,19 @@ func (mr *MockDiscoverScheduleServiceMockRecorder) GetByID(ctx, id any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDiscoverScheduleService)(nil).GetByID), ctx, id)
 }
 
-// GetEnabledTasks mocks base method.
-func (m *MockDiscoverScheduleService) GetEnabledTasks(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
+// GetEnabledSchedules mocks base method.
+func (m *MockDiscoverScheduleService) GetEnabledSchedules(ctx context.Context) ([]*interfaces.DiscoverSchedule, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEnabledTasks", ctx)
+	ret := m.ctrl.Call(m, "GetEnabledSchedules", ctx)
 	ret0, _ := ret[0].([]*interfaces.DiscoverSchedule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetEnabledTasks indicates an expected call of GetEnabledTasks.
-func (mr *MockDiscoverScheduleServiceMockRecorder) GetEnabledTasks(ctx any) *gomock.Call {
+// GetEnabledSchedules indicates an expected call of GetEnabledSchedules.
+func (mr *MockDiscoverScheduleServiceMockRecorder) GetEnabledSchedules(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnabledTasks", reflect.TypeOf((*MockDiscoverScheduleService)(nil).GetEnabledTasks), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnabledSchedules", reflect.TypeOf((*MockDiscoverScheduleService)(nil).GetEnabledSchedules), ctx)
 }
 
 // List mocks base method.

@@ -100,8 +100,8 @@ func (r *restHandler) createDiscoverSchedule(c *gin.Context, ctx context.Context
 	}
 
 	if req.Enabled {
-		if err := r.scheduler.ScheduleTask(scheduleID); err != nil {
-			logger.Errorf("Failed to schedule task %s: %v", scheduleID, err)
+		if err := r.sw.Schedule(scheduleID); err != nil {
+			logger.Errorf("Failed to schedule schedule %s: %v", scheduleID, err)
 		}
 	}
 
@@ -318,8 +318,8 @@ func (r *restHandler) updateDiscoverSchedule(c *gin.Context, ctx context.Context
 	}
 
 	if current.Enabled {
-		if err := r.scheduler.ScheduleTask(id); err != nil {
-			logger.Errorf("Failed to reschedule task %s after update: %v", id, err)
+		if err := r.sw.Schedule(id); err != nil {
+			logger.Errorf("Failed to reschedule schedule %s after update: %v", id, err)
 		}
 	}
 
@@ -379,7 +379,7 @@ func (r *restHandler) deleteDiscoverSchedule(c *gin.Context, ctx context.Context
 	}
 
 	// Unschedule first; ignore error since DB delete is the source of truth.
-	_ = r.scheduler.UnscheduleTask(id)
+	_ = r.sw.Unschedule(id)
 
 	if err := r.dss.Delete(ctx, id); err != nil {
 		httpErr := rest.NewHTTPError(ctx, http.StatusInternalServerError, verrors.VegaBackend_DiscoverSchedule_InternalError_DeleteFailed).
@@ -483,8 +483,8 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 			rest.ReplyError(c, httpErr)
 			return
 		}
-		if err := r.scheduler.ScheduleTask(id); err != nil {
-			logger.Errorf("Failed to schedule task %s: %v", id, err)
+		if err := r.sw.Schedule(id); err != nil {
+			logger.Errorf("Failed to schedule schedule %s: %v", id, err)
 		}
 	} else {
 		if err := r.dss.Disable(ctx, id); err != nil {
@@ -494,7 +494,7 @@ func (r *restHandler) toggleDiscoverSchedule(c *gin.Context, ctx context.Context
 			rest.ReplyError(c, httpErr)
 			return
 		}
-		_ = r.scheduler.UnscheduleTask(id)
+		_ = r.sw.Unschedule(id)
 	}
 
 	op := audit.UPDATE
