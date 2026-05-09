@@ -1,0 +1,28 @@
+---
+type: object_type
+id: confederations
+name: Confederations
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Confederations
+
+来自 `data/confederations.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| confederation_id | Confederation Id | integer | Fjelstul World Cup CSV 字段 confederation_id | confederation_id |
+| confederation_name | Confederation Name | string | Fjelstul World Cup CSV 字段 confederation_name | confederation_name |
+| confederation_code | Confederation Code | string | Fjelstul World Cup CSV 字段 confederation_code | confederation_code |
+| confederation_wikipedia_link | Confederation Wikipedia Link | string | Fjelstul World Cup CSV 字段 confederation_wikipedia_link | confederation_wikipedia_link |
+
+### Keys
+
+Primary Keys: confederation_id
+Display Key: confederation_name
+Incremental Key:
+
+### Logic Properties

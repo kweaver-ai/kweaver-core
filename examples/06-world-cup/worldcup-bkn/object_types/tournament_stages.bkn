@@ -1,0 +1,39 @@
+---
+type: object_type
+id: tournament_stages
+name: Tournament Stages
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Tournament Stages
+
+来自 `data/tournament_stages.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| stage_number | Stage Number | integer | Fjelstul World Cup CSV 字段 stage_number | stage_number |
+| stage_name | Stage Name | string | Fjelstul World Cup CSV 字段 stage_name | stage_name |
+| group_stage | Group Stage | boolean | Fjelstul World Cup CSV 字段 group_stage | group_stage |
+| knockout_stage | Knockout Stage | boolean | Fjelstul World Cup CSV 字段 knockout_stage | knockout_stage |
+| unbalanced_groups | Unbalanced Groups | string | Fjelstul World Cup CSV 字段 unbalanced_groups | unbalanced_groups |
+| start_date | Start Date | date | Fjelstul World Cup CSV 字段 start_date | start_date |
+| end_date | End Date | date | Fjelstul World Cup CSV 字段 end_date | end_date |
+| count_matches | Count Matches | integer | Fjelstul World Cup CSV 字段 count_matches | count_matches |
+| count_teams | Count Teams | integer | Fjelstul World Cup CSV 字段 count_teams | count_teams |
+| count_scheduled | Count Scheduled | integer | Fjelstul World Cup CSV 字段 count_scheduled | count_scheduled |
+| count_replays | Count Replays | integer | Fjelstul World Cup CSV 字段 count_replays | count_replays |
+| count_playoffs | Count Playoffs | integer | Fjelstul World Cup CSV 字段 count_playoffs | count_playoffs |
+| count_walkovers | Count Walkovers | integer | Fjelstul World Cup CSV 字段 count_walkovers | count_walkovers |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

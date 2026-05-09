@@ -63,6 +63,18 @@ kweaver auth login https://<你的平台地址>
 # curl：用于 download.sh
 ```
 
+### 分支流程：CSV 入库 + 扫描 DS + 导出/推送 BKN + Agent
+
+若要按 **「CSV `import-csv` 写入 MySQL → 扫描数据源 → 导出 `.bkn` → push → 绑定 Agent」** 走，见 **[WORKFLOW-BRANCH.zh.md](./WORKFLOW-BRANCH.zh.md)**。快速入口：
+
+```bash
+cp env.sample .env && vim .env     # 含 DB_*、AGENT_LLM_ID、BKN_* 等
+./download.sh
+./run-branch-bkn.sh
+```
+
+（如需单独 rsync CSV 备份，与灌库无关，见该文档「可选备份」、`./upload-data.sh`。）
+
 ## 快速开始
 
 ```bash
@@ -73,7 +85,7 @@ vim .env   # 填写 DB_HOST / DB_NAME / DB_USER / DB_PASS，可选 AGENT_ID、WO
 ./run.sh
 ```
 
-> **安全：**`.env` 与 `data/` 已加入 gitignore，勿提交凭据与下载数据。
+> **MySQL：**`create-from-csv` / `import-csv` 会令宽表易触发 Error 1118；`run.sh` 默认在灌库前瘦身 `matches` / `team_appearances`（见 `WORKFLOW-BRANCH.zh.md`、`SLIM_WIDE_CSV_FOR_MYSQL`）。
 
 ### Agent 准备
 

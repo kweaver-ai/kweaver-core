@@ -68,6 +68,18 @@ kweaver auth login https://<your-platform-url>
 # 4. curl (for download.sh)
 ```
 
+### Branch workflow: CSV import → DS scan → BKN export → Agent
+
+For **`ds import-csv` (CSV → MySQL) → `ds tables` → `.bkn` tree via `bkn pull` → `validate` / `push` → optional Agent**, see **[WORKFLOW-BRANCH.zh.md](./WORKFLOW-BRANCH.zh.md)** (Chinese narrative; command list is language-agnostic). Entry point:
+
+```bash
+cp env.sample .env && vim .env   # DB_*, branch BKN + agent fields
+./download.sh
+./run-branch-bkn.sh
+```
+
+(Optional CSV backup-only rsync lives in `./upload-data.sh`; it does **not** load data into MySQL.)
+
 ## Quick start
 
 ```bash
@@ -78,7 +90,7 @@ vim .env   # DB_HOST / DB_NAME / DB_USER / DB_PASS (+ optional AGENT_ID, WORLDCU
 ./run.sh
 ```
 
-> **Security:** `.env` and `data/` are gitignored. Never commit credentials or downloaded CSVs.
+> **MySQL:** `create-from-csv` / `import-csv` defaults can hit Error 1118 on wide CSVs; `run.sh` slims `matches` / `team_appearances` before import by default (`WORKFLOW-BRANCH.zh.md`, `SLIM_WIDE_CSV_FOR_MYSQL`).
 
 ### Agent provisioning
 

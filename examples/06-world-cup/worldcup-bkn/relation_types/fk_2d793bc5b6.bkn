@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_2d793bc5b6
+name: fk_2d793bc5b6 player_id
+tags: [worldcup]
+---
+
+## RelationType: fk_2d793bc5b6 player_id
+
+CSV `player_appearances.player_id` ↔ `players.player_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| player_appearances | players | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| player_id | player_id |

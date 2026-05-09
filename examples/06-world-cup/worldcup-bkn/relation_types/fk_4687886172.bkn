@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_4687886172
+name: fk_4687886172 team_id
+tags: [worldcup]
+---
+
+## RelationType: fk_4687886172 team_id
+
+CSV `bookings.team_id` ↔ `teams.team_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| bookings | teams | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| team_id | team_id |

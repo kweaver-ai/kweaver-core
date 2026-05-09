@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_82700adbff
+name: fk_82700adbff confederation_id
+tags: [worldcup]
+---
+
+## RelationType: fk_82700adbff confederation_id
+
+CSV `referee_appearances.confederation_id` ↔ `confederations.confederation_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| referee_appearances | confederations | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| confederation_id | confederation_id |

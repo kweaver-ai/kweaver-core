@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_6ce956f0b7
+name: fk_6ce956f0b7 confederation_id
+tags: [worldcup]
+---
+
+## RelationType: fk_6ce956f0b7 confederation_id
+
+CSV `teams.confederation_id` ↔ `confederations.confederation_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| teams | confederations | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| confederation_id | confederation_id |

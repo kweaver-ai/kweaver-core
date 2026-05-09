@@ -1,0 +1,16 @@
+---
+type: knowledge_network
+id: worldcup_fjelstul_bkn
+name: Fjelstul 世界杯数据集（CSV）
+tags: [worldcup, fjelstul, CSV]
+---
+
+# Fjelstul 世界杯数据集（CSV）
+
+由 `examples/06-world-cup/data/` 共 27 张 CSV 表头自动推导对象类型与外键关联；数据源版权与许可见 README。
+
+## Network Overview
+
+- **ObjectTypes** (object_types/): award_winners, awards, bookings, confederations, goals, group_standings, groups, host_countries, manager_appearances, manager_appointments, managers, matches, penalty_kicks, player_appearances, players, qualified_teams, referee_appearances, referee_appointments, referees, squads, stadiums, substitutions, team_appearances, teams, tournament_stages, tournament_standings, tournaments
+- **RelationTypes** (relation_types/): fk_00d764d56c, fk_030ab19e9a, fk_053d627243, fk_0cb6badd32, fk_0eef744526, fk_107a449f96, fk_136378b126, fk_1593280584, fk_253d6feb77, fk_25efc23fa7, fk_289a278200, fk_2982c54c35, fk_2d793bc5b6, fk_307a763840, fk_3425e6dec4, fk_3a7c6cf7ce, fk_3b1bdf1b3d, fk_4487b32106, fk_467023f583, fk_4687886172, fk_49bf66c121, fk_4bbbf52a61, fk_52500f97b9, fk_5bedb4ad62, fk_5d42fe24e5, fk_5f10e4c8b0, fk_5ffb8f7f1b, fk_61e145f156, fk_6a87b5e62e, fk_6ce956f0b7, fk_6d7a6054e4, fk_71afa2a60c, fk_73fad83e1f, fk_75506d4b6a, fk_82700adbff, fk_82daff2058, fk_83d1ff946e, fk_84c5aa5892, fk_a2d6e1643a, fk_a325daa3eb, fk_a6e4bfdd0a, fk_ae12e31ab5, fk_b68b5f961f, fk_c6bed68ae7, fk_ca8915efcf, fk_ccc63e0934, fk_ccf87f23d6, fk_d388792f0e, fk_d8b50126cc, fk_dcf9ab2249, fk_df6aec5893, fk_e10d887a54, fk_e2ad91bd94, fk_e75b33c9c6, fk_e9f2082066, fk_ef4609ab3c, fk_ef6268aa41, fk_efb9404f21, fk_f4d954b657, fk_f54314b211, fk_fa0d38fd53, fk_fbd3f83add, fk_fd6e0672b2
+- **ConceptGroups** (concept_groups/): worldcup_entities

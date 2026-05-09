@@ -1,0 +1,49 @@
+---
+type: object_type
+id: bookings
+name: Bookings
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Bookings
+
+来自 `data/bookings.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| booking_id | Booking Id | integer | Fjelstul World Cup CSV 字段 booking_id | booking_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| match_id | Match Id | integer | Fjelstul World Cup CSV 字段 match_id | match_id |
+| match_name | Match Name | string | Fjelstul World Cup CSV 字段 match_name | match_name |
+| match_date | Match Date | date | Fjelstul World Cup CSV 字段 match_date | match_date |
+| stage_name | Stage Name | string | Fjelstul World Cup CSV 字段 stage_name | stage_name |
+| group_name | Group Name | string | Fjelstul World Cup CSV 字段 group_name | group_name |
+| team_id | Team Id | integer | Fjelstul World Cup CSV 字段 team_id | team_id |
+| team_name | Team Name | string | Fjelstul World Cup CSV 字段 team_name | team_name |
+| team_code | Team Code | string | Fjelstul World Cup CSV 字段 team_code | team_code |
+| home_team | Home Team | boolean | Fjelstul World Cup CSV 字段 home_team | home_team |
+| away_team | Away Team | boolean | Fjelstul World Cup CSV 字段 away_team | away_team |
+| player_id | Player Id | integer | Fjelstul World Cup CSV 字段 player_id | player_id |
+| family_name | Family Name | string | Fjelstul World Cup CSV 字段 family_name | family_name |
+| given_name | Given Name | string | Fjelstul World Cup CSV 字段 given_name | given_name |
+| shirt_number | Shirt Number | integer | Fjelstul World Cup CSV 字段 shirt_number | shirt_number |
+| minute_label | Minute Label | string | Fjelstul World Cup CSV 字段 minute_label | minute_label |
+| minute_regulation | Minute Regulation | integer | Fjelstul World Cup CSV 字段 minute_regulation | minute_regulation |
+| minute_stoppage | Minute Stoppage | integer | Fjelstul World Cup CSV 字段 minute_stoppage | minute_stoppage |
+| match_period | Match Period | string | Fjelstul World Cup CSV 字段 match_period | match_period |
+| yellow_card | Yellow Card | boolean | Fjelstul World Cup CSV 字段 yellow_card | yellow_card |
+| red_card | Red Card | boolean | Fjelstul World Cup CSV 字段 red_card | red_card |
+| second_yellow_card | Second Yellow Card | boolean | Fjelstul World Cup CSV 字段 second_yellow_card | second_yellow_card |
+| sending_off | Sending Off | boolean | Fjelstul World Cup CSV 字段 sending_off | sending_off |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

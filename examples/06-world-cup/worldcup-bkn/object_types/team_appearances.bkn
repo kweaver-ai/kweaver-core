@@ -1,0 +1,59 @@
+---
+type: object_type
+id: team_appearances
+name: Team Appearances
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Team Appearances
+
+来自 `data/team_appearances.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| match_id | Match Id | integer | Fjelstul World Cup CSV 字段 match_id | match_id |
+| match_name | Match Name | string | Fjelstul World Cup CSV 字段 match_name | match_name |
+| stage_name | Stage Name | string | Fjelstul World Cup CSV 字段 stage_name | stage_name |
+| group_name | Group Name | string | Fjelstul World Cup CSV 字段 group_name | group_name |
+| group_stage | Group Stage | boolean | Fjelstul World Cup CSV 字段 group_stage | group_stage |
+| knockout_stage | Knockout Stage | boolean | Fjelstul World Cup CSV 字段 knockout_stage | knockout_stage |
+| replayed | Replayed | boolean | Fjelstul World Cup CSV 字段 replayed | replayed |
+| replay | Replay | boolean | Fjelstul World Cup CSV 字段 replay | replay |
+| match_date | Match Date | date | Fjelstul World Cup CSV 字段 match_date | match_date |
+| match_time | Match Time | time | Fjelstul World Cup CSV 字段 match_time | match_time |
+| stadium_id | Stadium Id | integer | Fjelstul World Cup CSV 字段 stadium_id | stadium_id |
+| stadium_name | Stadium Name | string | Fjelstul World Cup CSV 字段 stadium_name | stadium_name |
+| city_name | City Name | string | Fjelstul World Cup CSV 字段 city_name | city_name |
+| country_name | Country Name | string | Fjelstul World Cup CSV 字段 country_name | country_name |
+| team_id | Team Id | integer | Fjelstul World Cup CSV 字段 team_id | team_id |
+| team_name | Team Name | string | Fjelstul World Cup CSV 字段 team_name | team_name |
+| team_code | Team Code | string | Fjelstul World Cup CSV 字段 team_code | team_code |
+| opponent_id | Opponent Id | integer | Fjelstul World Cup CSV 字段 opponent_id | opponent_id |
+| opponent_name | Opponent Name | string | Fjelstul World Cup CSV 字段 opponent_name | opponent_name |
+| opponent_code | Opponent Code | string | Fjelstul World Cup CSV 字段 opponent_code | opponent_code |
+| home_team | Home Team | boolean | Fjelstul World Cup CSV 字段 home_team | home_team |
+| away_team | Away Team | boolean | Fjelstul World Cup CSV 字段 away_team | away_team |
+| goals_for | Goals For | string | Fjelstul World Cup CSV 字段 goals_for | goals_for |
+| goals_against | Goals Against | string | Fjelstul World Cup CSV 字段 goals_against | goals_against |
+| goal_differential | Goal Differential | string | Fjelstul World Cup CSV 字段 goal_differential | goal_differential |
+| extra_time | Extra Time | time | Fjelstul World Cup CSV 字段 extra_time | extra_time |
+| penalty_shootout | Penalty Shootout | boolean | Fjelstul World Cup CSV 字段 penalty_shootout | penalty_shootout |
+| penalties_for | Penalties For | string | Fjelstul World Cup CSV 字段 penalties_for | penalties_for |
+| penalties_against | Penalties Against | string | Fjelstul World Cup CSV 字段 penalties_against | penalties_against |
+| result | Result | string | Fjelstul World Cup CSV 字段 result | result |
+| win | Win | boolean | Fjelstul World Cup CSV 字段 win | win |
+| lose | Lose | boolean | Fjelstul World Cup CSV 字段 lose | lose |
+| draw | Draw | boolean | Fjelstul World Cup CSV 字段 draw | draw |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

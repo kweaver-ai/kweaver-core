@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_e9f2082066
+name: fk_e9f2082066 away_team_id
+tags: [worldcup]
+---
+
+## RelationType: fk_e9f2082066 away_team_id
+
+CSV `matches.away_team_id` ↔ `teams.team_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| matches | teams | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| away_team_id | team_id |

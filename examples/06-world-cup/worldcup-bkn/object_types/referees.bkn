@@ -1,0 +1,33 @@
+---
+type: object_type
+id: referees
+name: Referees
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Referees
+
+来自 `data/referees.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| referee_id | Referee Id | integer | Fjelstul World Cup CSV 字段 referee_id | referee_id |
+| family_name | Family Name | string | Fjelstul World Cup CSV 字段 family_name | family_name |
+| given_name | Given Name | string | Fjelstul World Cup CSV 字段 given_name | given_name |
+| female | Female | boolean | Fjelstul World Cup CSV 字段 female | female |
+| country_name | Country Name | string | Fjelstul World Cup CSV 字段 country_name | country_name |
+| confederation_id | Confederation Id | integer | Fjelstul World Cup CSV 字段 confederation_id | confederation_id |
+| confederation_name | Confederation Name | string | Fjelstul World Cup CSV 字段 confederation_name | confederation_name |
+| confederation_code | Confederation Code | string | Fjelstul World Cup CSV 字段 confederation_code | confederation_code |
+| referee_wikipedia_link | Referee Wikipedia Link | string | Fjelstul World Cup CSV 字段 referee_wikipedia_link | referee_wikipedia_link |
+
+### Keys
+
+Primary Keys: referee_id
+Display Key: confederation_name
+Incremental Key:
+
+### Logic Properties

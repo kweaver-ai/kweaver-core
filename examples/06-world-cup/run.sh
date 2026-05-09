@@ -63,6 +63,12 @@ if [ "$actual" -lt "$EXPECTED_CSV" ]; then
     exit 1
 fi
 
+SLIM_WIDE_CSV_FOR_MYSQL="${SLIM_WIDE_CSV_FOR_MYSQL:-1}"
+if [ "$SLIM_WIDE_CSV_FOR_MYSQL" = 1 ] || [ "$SLIM_WIDE_CSV_FOR_MYSQL" = true ]; then
+    echo "=== Slim wide tables for MySQL (avoid Error 1118 row size) ==="
+    python3 "$SCRIPT_DIR/scripts/slim_wide_tables_for_mysql_import.py" --data-dir "$DATA_DIR"
+fi
+
 TIMESTAMP=$(date +%s)
 DS_NAME="worldcup_ds_${TIMESTAMP}"
 KN_NAME="worldcup_kn_${TIMESTAMP}"

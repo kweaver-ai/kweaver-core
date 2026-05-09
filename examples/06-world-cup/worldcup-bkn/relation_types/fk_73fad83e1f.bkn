@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_73fad83e1f
+name: fk_73fad83e1f player_id
+tags: [worldcup]
+---
+
+## RelationType: fk_73fad83e1f player_id
+
+CSV `penalty_kicks.player_id` ↔ `players.player_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| penalty_kicks | players | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| player_id | player_id |

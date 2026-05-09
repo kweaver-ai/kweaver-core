@@ -1,0 +1,35 @@
+---
+type: object_type
+id: squads
+name: Squads
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Squads
+
+来自 `data/squads.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| team_id | Team Id | integer | Fjelstul World Cup CSV 字段 team_id | team_id |
+| team_name | Team Name | string | Fjelstul World Cup CSV 字段 team_name | team_name |
+| team_code | Team Code | string | Fjelstul World Cup CSV 字段 team_code | team_code |
+| player_id | Player Id | integer | Fjelstul World Cup CSV 字段 player_id | player_id |
+| family_name | Family Name | string | Fjelstul World Cup CSV 字段 family_name | family_name |
+| given_name | Given Name | string | Fjelstul World Cup CSV 字段 given_name | given_name |
+| shirt_number | Shirt Number | integer | Fjelstul World Cup CSV 字段 shirt_number | shirt_number |
+| position_name | Position Name | integer | Fjelstul World Cup CSV 字段 position_name | position_name |
+| position_code | Position Code | integer | Fjelstul World Cup CSV 字段 position_code | position_code |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

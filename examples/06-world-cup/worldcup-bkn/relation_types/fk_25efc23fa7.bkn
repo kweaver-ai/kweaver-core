@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_25efc23fa7
+name: fk_25efc23fa7 stadium_id
+tags: [worldcup]
+---
+
+## RelationType: fk_25efc23fa7 stadium_id
+
+CSV `team_appearances.stadium_id` ↔ `stadiums.stadium_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| team_appearances | stadiums | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| stadium_id | stadium_id |

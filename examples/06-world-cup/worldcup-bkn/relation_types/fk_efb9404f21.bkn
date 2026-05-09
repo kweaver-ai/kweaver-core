@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_efb9404f21
+name: fk_efb9404f21 tournament_id
+tags: [worldcup]
+---
+
+## RelationType: fk_efb9404f21 tournament_id
+
+CSV `penalty_kicks.tournament_id` ↔ `tournaments.tournament_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| penalty_kicks | tournaments | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| tournament_id | tournament_id |

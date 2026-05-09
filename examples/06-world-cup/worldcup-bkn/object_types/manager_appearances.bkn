@@ -1,0 +1,40 @@
+---
+type: object_type
+id: manager_appearances
+name: Manager Appearances
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Manager Appearances
+
+来自 `data/manager_appearances.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| match_id | Match Id | integer | Fjelstul World Cup CSV 字段 match_id | match_id |
+| match_name | Match Name | string | Fjelstul World Cup CSV 字段 match_name | match_name |
+| match_date | Match Date | date | Fjelstul World Cup CSV 字段 match_date | match_date |
+| stage_name | Stage Name | string | Fjelstul World Cup CSV 字段 stage_name | stage_name |
+| group_name | Group Name | string | Fjelstul World Cup CSV 字段 group_name | group_name |
+| team_id | Team Id | integer | Fjelstul World Cup CSV 字段 team_id | team_id |
+| team_name | Team Name | string | Fjelstul World Cup CSV 字段 team_name | team_name |
+| team_code | Team Code | string | Fjelstul World Cup CSV 字段 team_code | team_code |
+| home_team | Home Team | boolean | Fjelstul World Cup CSV 字段 home_team | home_team |
+| away_team | Away Team | boolean | Fjelstul World Cup CSV 字段 away_team | away_team |
+| manager_id | Manager Id | integer | Fjelstul World Cup CSV 字段 manager_id | manager_id |
+| family_name | Family Name | string | Fjelstul World Cup CSV 字段 family_name | family_name |
+| given_name | Given Name | string | Fjelstul World Cup CSV 字段 given_name | given_name |
+| country_name | Country Name | string | Fjelstul World Cup CSV 字段 country_name | country_name |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

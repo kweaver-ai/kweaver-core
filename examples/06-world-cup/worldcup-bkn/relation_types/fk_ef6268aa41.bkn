@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_ef6268aa41
+name: fk_ef6268aa41 player_id
+tags: [worldcup]
+---
+
+## RelationType: fk_ef6268aa41 player_id
+
+CSV `substitutions.player_id` ↔ `players.player_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| substitutions | players | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| player_id | player_id |

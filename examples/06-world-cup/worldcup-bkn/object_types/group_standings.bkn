@@ -1,0 +1,42 @@
+---
+type: object_type
+id: group_standings
+name: Group Standings
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Group Standings
+
+来自 `data/group_standings.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| tournament_id | Tournament Id | integer | Fjelstul World Cup CSV 字段 tournament_id | tournament_id |
+| tournament_name | Tournament Name | string | Fjelstul World Cup CSV 字段 tournament_name | tournament_name |
+| stage_number | Stage Number | integer | Fjelstul World Cup CSV 字段 stage_number | stage_number |
+| stage_name | Stage Name | string | Fjelstul World Cup CSV 字段 stage_name | stage_name |
+| group_name | Group Name | string | Fjelstul World Cup CSV 字段 group_name | group_name |
+| position | Position | integer | Fjelstul World Cup CSV 字段 position | position |
+| team_id | Team Id | integer | Fjelstul World Cup CSV 字段 team_id | team_id |
+| team_name | Team Name | string | Fjelstul World Cup CSV 字段 team_name | team_name |
+| team_code | Team Code | string | Fjelstul World Cup CSV 字段 team_code | team_code |
+| played | Played | integer | Fjelstul World Cup CSV 字段 played | played |
+| wins | Wins | integer | Fjelstul World Cup CSV 字段 wins | wins |
+| draws | Draws | integer | Fjelstul World Cup CSV 字段 draws | draws |
+| losses | Losses | integer | Fjelstul World Cup CSV 字段 losses | losses |
+| goals_for | Goals For | string | Fjelstul World Cup CSV 字段 goals_for | goals_for |
+| goals_against | Goals Against | string | Fjelstul World Cup CSV 字段 goals_against | goals_against |
+| goal_difference | Goal Difference | integer | Fjelstul World Cup CSV 字段 goal_difference | goal_difference |
+| points | Points | integer | Fjelstul World Cup CSV 字段 points | points |
+| advanced | Advanced | boolean | Fjelstul World Cup CSV 字段 advanced | advanced |
+
+### Keys
+
+Primary Keys: tournament_id
+Display Key: tournament_name
+Incremental Key:
+
+### Logic Properties

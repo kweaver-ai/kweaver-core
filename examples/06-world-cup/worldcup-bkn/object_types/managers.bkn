@@ -1,0 +1,30 @@
+---
+type: object_type
+id: managers
+name: Managers
+tags: [worldcup, fjelstul]
+---
+
+## ObjectType: Managers
+
+来自 `data/managers.csv` 的世界杯数据结构（Fjelstul World Cup Database）。
+
+### Data Properties
+
+| Name | Display Name | Type | Description | Mapped Field |
+|------|--------------|------|-------------|--------------|
+| key_id | Key Id | integer | Fjelstul World Cup CSV 字段 key_id | key_id |
+| manager_id | Manager Id | integer | Fjelstul World Cup CSV 字段 manager_id | manager_id |
+| family_name | Family Name | string | Fjelstul World Cup CSV 字段 family_name | family_name |
+| given_name | Given Name | string | Fjelstul World Cup CSV 字段 given_name | given_name |
+| female | Female | boolean | Fjelstul World Cup CSV 字段 female | female |
+| country_name | Country Name | string | Fjelstul World Cup CSV 字段 country_name | country_name |
+| manager_wikipedia_link | Manager Wikipedia Link | string | Fjelstul World Cup CSV 字段 manager_wikipedia_link | manager_wikipedia_link |
+
+### Keys
+
+Primary Keys: manager_id
+Display Key: family_name
+Incremental Key:
+
+### Logic Properties

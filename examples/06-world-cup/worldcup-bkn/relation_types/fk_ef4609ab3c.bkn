@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_ef4609ab3c
+name: fk_ef4609ab3c match_id
+tags: [worldcup]
+---
+
+## RelationType: fk_ef4609ab3c match_id
+
+CSV `team_appearances.match_id` ↔ `matches.tournament_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| team_appearances | matches | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| match_id | tournament_id |

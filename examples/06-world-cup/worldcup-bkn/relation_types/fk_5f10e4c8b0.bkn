@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_5f10e4c8b0
+name: fk_5f10e4c8b0 team_id
+tags: [worldcup]
+---
+
+## RelationType: fk_5f10e4c8b0 team_id
+
+CSV `qualified_teams.team_id` ↔ `teams.team_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| qualified_teams | teams | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| team_id | team_id |

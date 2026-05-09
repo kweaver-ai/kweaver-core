@@ -1,0 +1,22 @@
+---
+type: relation_type
+id: fk_75506d4b6a
+name: fk_75506d4b6a match_id
+tags: [worldcup]
+---
+
+## RelationType: fk_75506d4b6a match_id
+
+CSV `goals.match_id` ↔ `matches.tournament_id`。
+
+### Endpoint
+
+| Source | Target | Type |
+|--------|--------|------|
+| goals | matches | direct |
+
+### Mapping Rules
+
+| Source Property | Target Property |
+|-----------------|-----------------|
+| match_id | tournament_id |
