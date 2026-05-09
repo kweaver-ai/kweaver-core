@@ -581,7 +581,7 @@ func (r *restHandler) deleteCatalogs(c *gin.Context, ctx context.Context, span t
 
 // ========== GetCatalogHealthStatus ==========
 
-// GetCatalogHealthStatusByEx handles GET /api/vega-backend/v1/catalogs/:ids/health-status (External)
+// GetCatalogHealthStatusByEx handles GET /api/vega-backend/v1/catalogs/:id/health-status (External)
 func (r *restHandler) GetCatalogHealthStatusByEx(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"GetCatalogHealthStatusByEx", trace.WithSpanKind(trace.SpanKindServer))
@@ -595,7 +595,7 @@ func (r *restHandler) GetCatalogHealthStatusByEx(c *gin.Context) {
 	r.getCatalogHealthStatus(c, ctx, span, visitor)
 }
 
-// GetCatalogHealthStatusByIn handles GET /api/vega-backend/in/v1/catalogs/:ids/health-status (Internal)
+// GetCatalogHealthStatusByIn handles GET /api/vega-backend/in/v1/catalogs/:id/health-status (Internal)
 func (r *restHandler) GetCatalogHealthStatusByIn(c *gin.Context) {
 	ctx, span := ar_trace.Tracer.Start(rest.GetLanguageCtx(c),
 		"GetCatalogHealthStatusByIn", trace.WithSpanKind(trace.SpanKindServer))
@@ -616,7 +616,7 @@ func (r *restHandler) getCatalogHealthStatus(c *gin.Context, ctx context.Context
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	id := c.Param("ids")
+	id := c.Param("id")
 
 	catalog, err := r.cs.GetByID(ctx, id, false)
 	if err != nil {

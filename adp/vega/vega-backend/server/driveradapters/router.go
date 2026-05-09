@@ -93,15 +93,12 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			catalogs.GET("", r.ListCatalogsByEx)
 			catalogs.POST("", r.verifyJsonContentType(), r.CreateCatalogByEx)
-			catalogs.GET("/:ids", r.GetCatalogsByEx)
 			catalogs.PUT("/:id", r.verifyJsonContentType(), r.UpdateCatalogByEx)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
-			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByEx)
+			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByEx)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByEx)
-
-			// 资源发现
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByEx)
-
+			catalogs.GET("/:ids", r.GetCatalogsByEx)
+			catalogs.DELETE("/:ids", r.DeleteCatalogsByEx)
 		}
 
 		// DiscoverTask APIs - External
@@ -129,16 +126,14 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			resources.GET("", r.ListResourcesByEx)
 			resources.POST("", r.verifyJsonContentType(), r.CreateResourceByEx)
-			resources.GET("/:id", r.GetResourcesByEx) // id为资源ID，多个资源ID逗号分隔
-			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByEx)
-			resources.DELETE("/:id", r.DeleteResourcesByEx) // id为资源ID，多个资源ID逗号分隔
-
 			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByEx)
 			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByEx)
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByEx)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByEx)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByEx)
-
+			resources.GET("/:ids", r.GetResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
+			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByEx)
+			resources.DELETE("/:ids", r.DeleteResourcesByEx) // ids为资源ID，多个资源ID逗号分隔
 			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByEx)
 		}
 
@@ -174,14 +169,12 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			catalogs.GET("", r.ListCatalogsByIn)
 			catalogs.POST("", r.verifyJsonContentType(), r.CreateCatalogByIn)
-			catalogs.GET("/:ids", r.GetCatalogsByIn)
 			catalogs.PUT("/:id", r.verifyJsonContentType(), r.UpdateCatalogByIn)
-			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
-			catalogs.GET("/:ids/health-status", r.GetCatalogHealthStatusByIn)
+			catalogs.GET("/:id/health-status", r.GetCatalogHealthStatusByIn)
 			catalogs.POST("/:id/test-connection", r.TestConnectionByIn)
-
-			//
 			catalogs.POST("/:id/discover", r.DiscoverCatalogResourcesByIn)
+			catalogs.GET("/:ids", r.GetCatalogsByIn)
+			catalogs.DELETE("/:ids", r.DeleteCatalogsByIn)
 
 		}
 
@@ -210,16 +203,14 @@ func (r *restHandler) RegisterPublic(engine *gin.Engine) {
 		{
 			resources.GET("", r.ListResourcesByIn)
 			resources.POST("", r.verifyJsonContentType(), r.CreateResourceByIn)
-			resources.GET("/:id", r.GetResourcesByIn) // id为资源ID，多个资源ID逗号分隔
-			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
-			resources.DELETE("/:id", r.DeleteResourcesByIn) // id为资源ID，多个资源ID逗号分隔
-
 			resources.POST("/:id/data", r.verifyJsonContentType(), r.PostResourceDataByIn)
 			resources.PUT("/:id/data", r.verifyJsonContentType(), r.PutResourceDataByIn)
 			resources.GET("/:id/data/:doc_id", r.GetResourceDataDocByIn)
 			resources.PUT("/:id/data/:doc_id", r.verifyJsonContentType(), r.PutResourceDataDocByIn)
 			resources.DELETE("/:id/data/:doc_ids", r.DeleteResourceDataByIn)
-
+			resources.GET("/:ids", r.GetResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
+			resources.PUT("/:id", r.verifyJsonContentType(), r.UpdateResourceByIn)
+			resources.DELETE("/:ids", r.DeleteResourcesByIn) // ids为资源ID，多个资源ID逗号分隔
 			resources.POST("/query", r.verifyJsonContentType(), r.RawQueryByIn)
 		}
 

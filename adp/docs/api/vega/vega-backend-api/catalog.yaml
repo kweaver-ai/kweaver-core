@@ -210,26 +210,24 @@ paths:
                 $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /api/vega-backend/v1/catalogs/{ids}/health-status:
+  /api/vega-backend/v1/catalogs/{id}/health-status:
     parameters:
-      - name: ids
-        description: catalog ID，多个用英文逗号分隔
+      - name: id
+        description: catalog ID
         in: path
         required: true
         schema:
           type: string
     get:
       summary: 获取 catalog 健康状态
-      description: 返回每个 catalog 的最近一次健康检查结果（状态 + 时间 + 详情）。
+      description: 返回指定 catalog 的最近一次健康检查结果（状态 + 时间 + 详情）。
       responses:
         "200":
           description: ok
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CatalogHealthStatusEntry"
+                $ref: "#/components/schemas/CatalogHealthStatusEntry"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":

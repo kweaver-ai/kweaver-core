@@ -394,7 +394,7 @@ curl -sk -X DELETE "https://<access-address>/api/vega-backend/v1/catalogs/cat-00
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
 # Catalog health / test-connection / discover / resources
-curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001,cat-002/health-status" \
+curl -sk "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/health-status" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 curl -sk -X POST "https://<access-address>/api/vega-backend/v1/catalogs/cat-001/test-connection" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"

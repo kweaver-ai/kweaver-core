@@ -272,7 +272,7 @@ func (r *restHandler) getResources(c *gin.Context, ctx context.Context, span tra
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	ids := strings.Split(c.Param("id"), ",")
+	ids := strings.Split(c.Param("ids"), ",")
 
 	resources, err := r.rs.GetByIDs(ctx, ids)
 	if err != nil {
@@ -444,7 +444,7 @@ func (r *restHandler) deleteResources(c *gin.Context, ctx context.Context, span 
 
 	o11y.AddHttpAttrs4API(span, o11y.GetAttrsByGinCtx(c))
 
-	rawIDs := strings.Split(c.Param("id"), ",")
+	rawIDs := strings.Split(c.Param("ids"), ",")
 	ignoreMissing := strings.EqualFold(c.Query("ignore_missing"), "true")
 
 	// Pre-validate existence; collect ids to delete based on ignore_missing.

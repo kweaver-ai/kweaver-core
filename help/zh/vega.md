@@ -382,7 +382,7 @@ curl -sk -X PUT "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001" 
 curl -sk -X DELETE "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 
-curl -sk "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001,cat_mysql002/health-status" \
+curl -sk "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001/health-status" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
 curl -sk -X POST "https://<访问地址>/api/vega-backend/v1/catalogs/cat_pg001/test-connection" \
   -H "Authorization: Bearer $(kweaver token)" -H "x-business-domain: bd_public"
